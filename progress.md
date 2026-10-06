@@ -86,6 +86,11 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - COPPA: nothing may send a persistent identifier (analytics, error reporting, visit counting)
   before a 13+ answer. Hosting-layer IP logging needs legal review before launch.
 
+## Lanes (user decision 2026-10-06: two parallel lanes)
+- Lane A (main checkout, `dev`): S02 → S03 → S05a → S05b → S06
+- Lane B (worktree `.claude/worktrees/lane-b`): S04 → S04a → S04b → S04c → S04d → S04e
+- S05 waits for both lanes. Phase 2+ lanes are planned at each phase start.
+
 ## Phase user stories (qa-mafia, Mode A, at phase end)
 1. A new visitor on a phone opens the link and sees no age question; accepts Terms, picks audio,
    lands on the 3D map in Queens, takes or skips the tour, buys a first bodega breakfast, finds a

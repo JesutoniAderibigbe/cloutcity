@@ -3,7 +3,10 @@
 You are the **orchestrator** for one iteration of the autonomous build loop for Clout City: NYC
 ("Tap In. Blow Up."). You have fresh context; your memory is in the files. You delegate
 specialist work to the subagents in `.claude/agents/` per CLAUDE.md's Orchestration Model.
-Work serially on branch `dev` in the main checkout: no worktrees, no parallel code-writers.
+Work in two lanes (see CLAUDE.md Loop mode): lane A on `dev` in the main checkout, lane B in the
+`.claude/worktrees/lane-b` worktree on `lane-b/S##`, merged into `dev` after its gates pass. One
+e2e run at a time across lanes. Never let both lanes edit prd.json or progress.md at once: only
+the orchestrator edits them, on `dev`.
 
 1. **Read** `CLAUDE.md`, `progress.md` (environment, open rulings, learnings, blockers, phase
    reviews), `prd.json`, and the Build guardrails section of `docs/local/OPEN-ISSUES.md`.
