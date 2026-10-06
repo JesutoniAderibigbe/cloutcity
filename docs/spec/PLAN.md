@@ -1,4 +1,4 @@
-> **Status (2026-10-06):** approved with defaults, then amended by the user: the game is for **all ages** and the age check is asked only at the first social, live-city or money feature (S17). Everything about an 18+ audience, the year-of-birth welcome card and alcohol content below is superseded. The source of truth is `CLAUDE.md`, `prd.json` and `progress.md`; this file is the architect's original reasoning.
+> **Status (2026-10-06):** approved with defaults. The audience is **adults only (18+)**, checked on first open (the user's ruling, after a brief all-ages detour that was reverted). This plan's 18+ design is current. The source of truth is `CLAUDE.md`, `prd.json` and `progress.md`; this file is the architect's reasoning.
 
 # Clout City: NYC: revised spec and build plan (architect, read-only)
 
