@@ -85,14 +85,23 @@ describe('derived layers', () => {
   it('all land lies inside the projected NYC extent', () => {
     const sw = project({ lat: boundsJson.south, lng: boundsJson.west })
     const ne = project({ lat: boundsJson.north, lng: boundsJson.east })
+    // Same check as one assertion per vertex, computed once: the extremes of every land vertex.
+    let minX = Infinity,
+      maxX = -Infinity,
+      minY = Infinity,
+      maxY = -Infinity
     for (const borough of land.boroughs) {
       for (const point of borough.polygons.flat().flatMap(decodeRing)) {
-        expect(point.x).toBeGreaterThanOrEqual(Math.floor(sw.x))
-        expect(point.x).toBeLessThanOrEqual(Math.ceil(ne.x))
-        expect(point.y).toBeGreaterThanOrEqual(Math.floor(sw.y))
-        expect(point.y).toBeLessThanOrEqual(Math.ceil(ne.y))
+        minX = Math.min(minX, point.x)
+        maxX = Math.max(maxX, point.x)
+        minY = Math.min(minY, point.y)
+        maxY = Math.max(maxY, point.y)
       }
     }
+    expect(minX).toBeGreaterThanOrEqual(Math.floor(sw.x))
+    expect(maxX).toBeLessThanOrEqual(Math.ceil(ne.x))
+    expect(minY).toBeGreaterThanOrEqual(Math.floor(sw.y))
+    expect(maxY).toBeLessThanOrEqual(Math.ceil(ne.y))
   })
 
   it('the sea covers the whole extent', () => {

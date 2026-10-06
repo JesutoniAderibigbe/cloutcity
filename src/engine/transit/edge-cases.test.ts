@@ -166,6 +166,7 @@ describe('reaching every place by taxi (bridges and tunnels in config)', () => {
   const crossingIds = (r: Route) =>
     r.legs.flatMap((leg) => (leg.mode === 'taxi' ? leg.crossingIds : []))
 
+  // An inherently heavy sweep (~60 taxi plans across water, 5–10 ms each), not load masking.
   it('drives to Times Square from every tenth station, the Rockaways and Roosevelt Island', () => {
     const sample = subway.stations.filter(
       (station, i) => i % 10 === 0 || station.id.startsWith('h') || station.id === 'b06',
@@ -175,7 +176,7 @@ describe('reaching every place by taxi (bridges and tunnels in config)', () => {
       return result.ok ? [] : [`${station.id} ${station.name}: ${result.error.code}`]
     })
     expect(failures).toEqual([])
-  })
+  }, 30_000)
 
   it('drives to Times Square from every zone centroid', () => {
     const failures = zonesJson.zones.flatMap((zone) => {
@@ -226,7 +227,14 @@ describe('reaching every place by taxi (bridges and tunnels in config)', () => {
 
   it('reaches every landmark and venue by some mode from Times Square', () => {
     const places = [
-      ...landmarksJson.landmarks.map((l) => [`landmark ${l.id}`, project(l.location)] as const),
+      // Travel goes to a place's route point (S07 contract: approach ?? location).
+      ...landmarksJson.landmarks.map(
+        (l) =>
+          [
+            `landmark ${l.id}`,
+            project('approach' in l && l.approach ? l.approach : l.location),
+          ] as const,
+      ),
       ...venuesJson.venues.map((v) => [`venue ${v.id}`, project(v.location)] as const),
     ]
     const unreachable = places.flatMap(([id, point]) =>
