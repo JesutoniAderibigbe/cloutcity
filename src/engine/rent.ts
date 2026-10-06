@@ -14,6 +14,7 @@
  * Like stat decay, the result depends only on the start and end minute of an advance, never on
  * how the time was split into ticks or actions, so a boundary is never charged twice.
  */
+import { HOME_IDS, lowestRentHome } from '@/lib/data/homes'
 import { minutesPerDay } from './clock'
 import { isHomeId, type EngineConfig, type HomeId } from './config'
 import type { PlayerState } from './game'
@@ -59,22 +60,21 @@ export type RentEvent =
 
 export const initialRent: RentState = { owed: 0, missed: 0 }
 
+/** Every home, in HOME_IDS order (src/lib/data/homes.ts). */
 export function homeIds(config: EngineConfig): HomeId[] {
-  return Object.keys(config.rentPerWeek).filter((id) => isHomeId(id, config))
+  return HOME_IDS.filter((id) => isHomeId(id, config))
 }
 
 export function rentFor(home: HomeId, config: EngineConfig): number {
   return config.rentPerWeek[home]
 }
 
-/** The home with the lowest weekly rent (on a tie, the first listed in config). */
+/**
+ * The home with the lowest weekly rent (on a tie, the first in HOME_IDS), by the same rule the
+ * balance schema uses for `housing.moveInCost`.
+ */
 export function cheapestHome(config: EngineConfig): HomeId {
-  const [first, ...rest] = homeIds(config)
-  if (first === undefined) throw new Error('rentPerWeek lists no homes')
-  return rest.reduce(
-    (lowest, id) => (rentFor(id, config) < rentFor(lowest, config) ? id : lowest),
-    first,
-  )
+  return lowestRentHome(config.rentPerWeek)
 }
 
 /** The 1-based game day whose first minute is the next rent charge after `minute`. */

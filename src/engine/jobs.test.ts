@@ -9,6 +9,16 @@ import { isJobId, jobIds, jobLock, shiftAction, shiftWage, workShift } from './j
 const config: EngineConfig = {
   ...engineConfig,
   startCash: 150,
+  stats: {
+    max: 100,
+    start: { energy: 100, hunger: 80, mood: 70 },
+    decayPerGameHour: { energy: 3, hunger: 5, mood: 2 },
+    atZero: {
+      energy: { extraDecayPerGameHour: { mood: 3 }, durationMultiplier: 1.5 },
+      hunger: { extraDecayPerGameHour: { energy: 3, mood: 4 }, durationMultiplier: 1 },
+      mood: { extraDecayPerGameHour: {}, durationMultiplier: 1.25 },
+    },
+  },
   jobs: {
     shiftHours: 4,
     hourlyWage: { barista: 14, retail: 16, delivery: 18, 'junior-dev': 35 },
