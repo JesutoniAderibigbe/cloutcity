@@ -21,3 +21,4 @@ qa-reports/
 .cache/
 data/**/*.derived.json
 data/geo/SOURCES.md
+src/lib/supabase/database.types.ts

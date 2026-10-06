@@ -32,13 +32,15 @@ gitignored; later tasks document their variables here.
 | `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error |
 | `npm run format:check` / `format` | Prettier check / write                                                                                               |
 | `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                     |
+| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                         |
+| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                             |
 | `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                      |
 | `npm run budget`                  | Gzipped shell JS of `/` against `data/config/perf.json` (run after `npm run build`)                                  |
 | `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                             |
 | `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)               |
 
 Gate order used by the build loop:
-`npm run format:check && npm run typecheck && npm run lint && npm test && npm run build && npm run e2e && npm run budget`
+`npm run format:check && npm run typecheck && npm run lint && npm test && npm run test:integration && npm run build && npm run e2e && npm run budget`
 
 ## End-to-end tests
 
@@ -110,7 +112,8 @@ passes, since the birthday is unknown); numbers live in `data/config/onboarding.
 - **18+:** `src/state/onboarding.ts` stores under `cloutcity:onboarding` the attestation (boolean
   and timestamp), the consent version and timestamp, and the sound choice. The birth year is
   never stored, logged or sent. The guest session hook (`src/state/session.ts`) runs only after
-  this; S05 adds the anonymous Supabase sign-in there.
+  this; S05 adds the anonymous Supabase sign-in there, then records these answers on the server
+  profile with `attest_and_consent` (see Local Supabase).
 - **Under 18:** an in-voice screen, and the gate locks on that device for `underAgeLockHours`
   (setting the clock back keeps it locked). No session starts.
 - Returning players never see the card. A record from a newer build is respected and never
@@ -311,8 +314,42 @@ double-tap zoom in CSS but keeps pinch zoom (WCAG 1.4.4).
 
 ## Local Supabase
 
-The Supabase CLI is a devDependency (`npx supabase ...`) and `supabase/config.toml` is
-initialised. Nothing needs a running stack yet; see `progress.md` for when to `npx supabase start`.
+The Supabase CLI is a devDependency (`npx supabase ...`); Docker must be running.
+
+```bash
+npx supabase start              # first run pulls the images; prints URLs and local keys
+npx supabase db reset --local   # re-applies supabase/migrations and supabase/seed.sql
+npm run test:integration        # Vitest suites in tests/integration against the local stack
+npm run db:types                # regenerates src/lib/supabase/database.types.ts after a migration
+```
+
+- **Shared stack.** The stack is named after `project_id` in `supabase/config.toml`, so every
+  checkout and worktree of this repo talks to the same containers and database. `db reset` wipes
+  it for all of them; `supabase stop && supabase start` is needed after editing `config.toml`.
+- **Integration tests** read the URLs and keys from `npx supabase status -o json` (no env file
+  needed; `SUPABASE_API_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and
+  `SUPABASE_DB_URL` override them). They fail fast if the stack is down or the newest local
+  migration is not applied. They never reset the database: each test signs in fresh guests.
+  `tests/integration/types.test.ts` fails when `database.types.ts` is stale.
+- **Privileges are explicit.** The first migration revokes Supabase's default grants: a new
+  table or function in `public` is closed to `anon` and `authenticated` until a migration grants
+  it. Clients only ever get `SELECT` on rows they own or are a party to; every write is a
+  security-definer RPC or the service role. Server helpers live in the unexposed `private`
+  schema. Every function sets `search_path = ''` and uses schema-qualified names.
+- **Attestation gate.** A profile row is created (unattested) with each auth user. After
+  `signInAnonymously()` the client calls `attest_and_consent` with
+  `toAttestationArgs(record)` from `src/lib/supabase/attestation.ts` (the welcome card's
+  record, never the birth year). Every client RPC must start with
+  `v_uid := private.require_attestation();` or carry
+  `comment on function ... is '@attestation-exempt: <reason>'`; `tests/integration/catalog.test.ts`
+  enforces this and calls every gated RPC as an unattested guest.
+- **RPC errors** raise SQLSTATE `PTxyz` (PostgREST answers HTTP `xyz`) with a machine-code message
+  (`RPC_ERRORS` in `attestation.ts`; `parseRpcError()` reads it).
+- **Browser bundle.** `@supabase/supabase-js` may reach browser code only through a dynamic
+  `import()`; `src/lib/client-imports.test.ts` fails on a static import chain from a client entry.
+- **Production** (set in the Supabase dashboard, not `config.toml`): enable anonymous sign-ins,
+  set the anonymous sign-in rate limit per IP (locally raised to 1000/h for tests) and turn on
+  Turnstile under Auth > Bot and Abuse Protection (CAPTCHA). The local stack has no CAPTCHA.
 
 ## Ignored paths
 
