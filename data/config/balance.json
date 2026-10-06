@@ -87,6 +87,7 @@
     "minResalePct": 50,
     "maxGiftStack": 10
   },
+  "events": { "rollChance": 0.3, "defaultCooldownMin": 1440, "maxPendingEffects": 100 },
   "rarityTiers": ["common", "medium", "rare"],
   "premiumPriceTiersUsd": { "tier-1": 2, "tier-2": 5, "tier-3": 10 },
   "boroughs": {

@@ -1,3 +1,4 @@
+import { EventSheetMount } from '@/components/events/EventSheetMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { WelcomeGate } from '@/components/welcome/WelcomeGate'
@@ -16,6 +17,7 @@ export default function HomePage() {
             <p className="text-xs text-ink-300">{copy('app.tagline')}</p>
           </header>
         ),
+        sheet: <EventSheetMount />,
         tabs: <BottomTabs />,
       }}
     >

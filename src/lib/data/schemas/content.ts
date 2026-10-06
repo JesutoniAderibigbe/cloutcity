@@ -113,14 +113,6 @@ export const PremiumItemSchema = z.strictObject({
 export const PremiumFileSchema = z.strictObject({ items: listOf(PremiumItemSchema) })
 export type PremiumItem = z.infer<typeof PremiumItemSchema>
 
-export const EventSchema = z.strictObject({
-  id: IdSchema,
-  titleKey: CopyKeyRefSchema,
-  bodyKey: CopyKeyRefSchema,
-})
-export const EventsFileSchema = z.strictObject({ events: listOf(EventSchema) })
-export type GameEvent = z.infer<typeof EventSchema>
-
 /** Wages and shift length live in data/config/balance.json, keyed by job id. */
 export const JobSchema = z.strictObject({
   id: z.enum(JOB_IDS),
@@ -252,3 +244,151 @@ export const LandmarkSchema = z.discriminatedUnion('category', [
 ])
 export const LandmarksFileSchema = z.strictObject({ landmarks: listOf(LandmarkSchema) })
 export type Landmark = z.infer<typeof LandmarkSchema>
+
+/**
+ * Events (S14): data-driven moments with conditions, a weight and two or three choices.
+ * The engine (src/engine/events.ts) picks among the eligible ones with a seeded random source.
+ *
+ * Safety rules (CLAUDE.md "Map and landmarks", "Safety rules") are enforced twice: here, so no
+ * event can even name a memorial or put a crime event at a government building, and again in
+ * the engine, which refuses every event at a memorial and every crime event at a government
+ * building whatever the data says.
+ */
+export const EVENT_TAGS = [
+  'transit',
+  'money',
+  'food',
+  'nightlife',
+  'social',
+  'landmark',
+  'weather',
+  'home',
+  'crime',
+] as const
+export const EventTagSchema = z.enum(EVENT_TAGS)
+export type EventTag = z.infer<typeof EventTagSchema>
+
+/** Where an event may happen: a landmark category or a venue type. Memorials are never valid. */
+export const EventLocationCategorySchema = z.union([
+  z.enum(LANDMARK_CATEGORIES).exclude(['memorial']),
+  z.enum(VENUE_TYPES),
+])
+/** Every place category the engine can be told the player is at, memorials included. */
+export type LocationCategory = Landmark['category'] | Venue['type']
+
+const statPoints = z.int().nonnegative()
+
+/** An inclusive range; at least one bound, and min <= max. */
+function rangeOf(value: z.ZodInt) {
+  return z
+    .strictObject({ min: value.optional(), max: value.optional() })
+    .refine((range) => range.min !== undefined || range.max !== undefined, {
+      error: 'a range needs min or max',
+    })
+    .refine(
+      (range) => range.min === undefined || range.max === undefined || range.min <= range.max,
+      { error: 'min must not exceed max' },
+    )
+}
+
+/**
+ * All present conditions must hold. Within a list, any entry matches. `locationIds` and
+ * `locationCategories` together describe one "where": the player must be at a listed place
+ * or at a place of a listed category.
+ */
+export const EventConditionsSchema = z.strictObject({
+  /** Personal-clock hour window [from, to); wraps past midnight when from > to. */
+  hours: z
+    .strictObject({ from: z.int().min(0).max(23), to: z.int().min(0).max(23) })
+    .refine((window) => window.from !== window.to, {
+      error: 'an empty window: omit hours for all day',
+    })
+    .optional(),
+  /** Earliest game day (1-based) the event can fire. */
+  minDay: z.int().positive().optional(),
+  boroughs: z.array(BoroughSchema).min(1).optional(),
+  /** Landmark or venue ids. */
+  locationIds: z.array(IdSchema).min(1).optional(),
+  locationCategories: z.array(EventLocationCategorySchema).min(1).optional(),
+  stats: z.partialRecord(StatSchema, rangeOf(statPoints)).optional(),
+  /** Whole dollars on hand. */
+  cash: rangeOf(z.int().nonnegative()).optional(),
+  /** Clout points (S13). */
+  clout: rangeOf(z.int().nonnegative()).optional(),
+  /** Item ids (S10): owns at least one of `anyOf`, none of `noneOf`. */
+  items: z
+    .strictObject({
+      anyOf: z.array(IdSchema).min(1).optional(),
+      noneOf: z.array(IdSchema).min(1).optional(),
+    })
+    .optional(),
+})
+export type EventConditions = z.infer<typeof EventConditionsSchema>
+
+const nonZero = z.int().refine((amount) => amount !== 0, { error: 'amount must not be 0' })
+
+/**
+ * What a choice does. Cash, stats and time apply now through the engine. Clout (S13) and items
+ * (S10) are recorded as typed pending effects in the save until those systems consume them.
+ * There is deliberately no effect that involves drinking.
+ */
+export const EventEffectSchema = z.discriminatedUnion('kind', [
+  /** Whole dollars; negative is a cost the player must be able to pay. */
+  z.strictObject({ kind: z.literal('cash'), amount: nonZero }),
+  z.strictObject({ kind: z.literal('stat'), stat: StatSchema, amount: nonZero }),
+  /** Game minutes the personal clock fast-forwards. */
+  z.strictObject({ kind: z.literal('time'), minutes: z.int().positive() }),
+  z.strictObject({ kind: z.literal('clout'), amount: nonZero }),
+  z.strictObject({ kind: z.literal('item'), itemId: IdSchema, op: z.enum(['grant', 'consume']) }),
+])
+export type EventEffect = z.infer<typeof EventEffectSchema>
+
+export const EventChoiceSchema = z.strictObject({
+  id: IdSchema,
+  /** Button text: plain and clear. */
+  labelKey: CopyKeyRefSchema,
+  /** What happened, shown after the choice. */
+  resultKey: CopyKeyRefSchema,
+  effects: z.array(EventEffectSchema),
+})
+export type EventChoice = z.infer<typeof EventChoiceSchema>
+
+/** Net whole dollars a choice takes (0 when free). Mirrors `choiceCashCost` in src/engine/events.ts. */
+function choiceCashCost(choice: Pick<EventChoice, 'effects'>): number {
+  const net = choice.effects.reduce(
+    (sum, effect) => (effect.kind === 'cash' ? sum + effect.amount : sum),
+    0,
+  )
+  return Math.max(0, -net)
+}
+
+export const EventSchema = z
+  .strictObject({
+    id: IdSchema,
+    titleKey: CopyKeyRefSchema,
+    bodyKey: CopyKeyRefSchema,
+    tags: z.array(EventTagSchema).min(1),
+    /** Relative chance among the events eligible at the same moment. */
+    weight: z.int().positive(),
+    /** Game minutes before it can fire again; defaults to balance `events.defaultCooldownMin`. */
+    cooldownMin: z.int().nonnegative().optional(),
+    /** Fires at most once per save. */
+    once: z.boolean().optional(),
+    conditions: EventConditionsSchema,
+    choices: listOf(EventChoiceSchema).min(2).max(3),
+  })
+  .refine((event) => event.choices.some((choice) => choiceCashCost(choice) === 0), {
+    error: 'every event needs a choice that costs no cash, so a broke player is never stuck',
+    path: ['choices'],
+  })
+  .refine(
+    (event) =>
+      !event.tags.includes('crime') ||
+      !(event.conditions.locationCategories ?? []).includes('government'),
+    {
+      error: 'no crime events at government buildings',
+      path: ['conditions', 'locationCategories'],
+    },
+  )
+export const EventsFileSchema = z.strictObject({ events: listOf(EventSchema) })
+export type GameEvent = z.infer<typeof EventSchema>

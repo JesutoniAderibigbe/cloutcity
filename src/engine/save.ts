@@ -10,10 +10,13 @@
  * - v2 (S03): adds the personal clock, stats and the clock speed.
  * - v3 (S11): adds `player.clout`, `player.home` and `player.rent` (owed, missed).
  * - v4 (S10): adds `player.inventory` (owned wearables, gift stacks, outfit).
+ * - v5 (S14): adds `events` (open event, cooldown history, pending clout/item effects, random
+ *   generator state).
  */
 import * as z from 'zod/mini'
 import { isSpeed, realMsPerGameMinute } from './clock'
 import { isHomeId, type EngineConfig } from './config'
+import { initialEventsState, type EventsState } from './events'
 import { initialSnapshot, type GameSnapshot } from './game'
 import {
   ITEM_SLOTS,
@@ -27,15 +30,41 @@ import {
 } from './items'
 import { initialRent } from './rent'
 
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
   readonly speed: number
+  readonly events: EventsState
 }
 
 const CashSchema = z.int().check(z.gte(0))
 const CloutSchema = z.int().check(z.gte(0))
+
+const EffectSourceSchema = z.strictObject({
+  type: z.literal('event'),
+  eventId: z.string(),
+  choiceId: z.string(),
+})
+
+const PendingEffectSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('clout'), amount: z.int(), source: EffectSourceSchema }),
+  z.strictObject({
+    kind: z.literal('item'),
+    itemId: z.string(),
+    op: z.enum(['grant', 'consume']),
+    source: EffectSourceSchema,
+  }),
+])
+
+function eventsStateSchema(config: EngineConfig) {
+  return z.strictObject({
+    active: z.nullable(z.string()),
+    history: z.record(z.string(), z.int().check(z.gte(0))),
+    pending: z.array(PendingEffectSchema).check(z.maxLength(config.events.maxPendingEffects)),
+    rngState: z.int().check(z.gte(0), z.lte(0xffffffff)),
+  })
+}
 
 const knownWearable = (config: EngineConfig) => (id: string) => {
   const item = findItem(id, config)
@@ -115,6 +144,7 @@ export function createSaveSchema(config: EngineConfig) {
       inventory: inventorySchema(config),
     }),
     speed: z.number().check(z.refine((speed) => isSpeed(speed, config), 'Unsupported speed')),
+    events: eventsStateSchema(config),
   })
   return save.check(
     z.refine(
@@ -202,6 +232,22 @@ const LoadableSaveSchema = z.strictObject({
     inventory: z.unknown(),
   }),
   speed: z.unknown(),
+  // Repairable: a missing or unusable event state starts over (`repairEvents`).
+  events: z.optional(z.unknown()),
+})
+
+/** A v4 save's structure (S10): no event state yet. */
+const LoadableSaveV4Schema = z.strictObject({
+  clock: z.strictObject({ minute: z.int().check(z.gte(0)), remainderMs: z.unknown() }),
+  player: z.strictObject({
+    cash: CashSchema,
+    stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
+    clout: CloutSchema,
+    home: z.unknown(),
+    rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
+    inventory: z.unknown(),
+  }),
+  speed: z.unknown(),
 })
 
 /** A v3 save's structure (S11): no inventory yet. */
@@ -245,7 +291,8 @@ export type LoadResult =
  * - a home the config does not offer becomes the start home;
  * - a missed-rent count that is not a whole number in 0..evictAfterMissed-1 is clamped
  *   (a non-number becomes 0);
- * - an inconsistent or malformed inventory keeps what is usable (see `repairInventory`).
+ * - an inconsistent or malformed inventory keeps what is usable (see `repairInventory`);
+ * - unusable event state starts over (see `repairEvents`).
  * Only a structurally unusable save (missing objects, unknown keys, cash or minute of the wrong
  * type or range) fails, and the caller starts fresh.
  */
@@ -254,7 +301,7 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   if (!parsed.success) {
     return { ok: false, issues: parsed.error.issues.map((issue) => issue.path.join('.')) }
   }
-  const { clock, player, speed } = parsed.data
+  const { clock, player, speed, events } = parsed.data
   const repaired: string[] = []
 
   const inRange = (value: unknown): value is number =>
@@ -308,15 +355,50 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
         inventory,
       },
       speed: validSpeed,
+      events: repairEvents(events, config, repaired),
     },
     repaired,
   }
 }
 
+/**
+ * Event state is replaced by a fresh one when it does not fit the schema. Otherwise an open
+ * event or a history entry for an event no longer in the catalog (content changed between
+ * builds) is dropped, so a removed event can never be stuck open.
+ */
+function repairEvents(value: unknown, config: EngineConfig, repaired: string[]): EventsState {
+  const parsed = eventsStateSchema(config).safeParse(value)
+  if (!parsed.success) {
+    repaired.push('events')
+    return initialEventsState()
+  }
+  const known = new Set(config.events.catalog.map((event) => event.id))
+  const { active, history, pending, rngState } = parsed.data
+  const keptActive = active !== null && known.has(active) ? active : null
+  if (keptActive !== active) repaired.push('events.active')
+  const keptHistory = Object.fromEntries(Object.entries(history).filter(([id]) => known.has(id)))
+  if (Object.keys(keptHistory).length !== Object.keys(history).length) {
+    repaired.push('events.history')
+  }
+  return { active: keptActive, history: keptHistory, pending, rngState }
+}
+
 const SaveV1Schema = z.strictObject({ player: z.strictObject({ cash: CashSchema }) })
 
 export function initialSave(config: EngineConfig): SaveState {
-  return { ...initialSnapshot(config), speed: config.time.speeds[0] ?? 1 }
+  return {
+    ...initialSnapshot(config),
+    speed: config.time.speeds[0] ?? 1,
+    events: initialEventsState(),
+  }
+}
+
+/** A save written by a newer build: expected (an older tab or a rollback), not a failure. */
+export class NewerSaveError extends Error {
+  constructor(readonly version: number) {
+    super(`Saved game version ${version} is newer than this build (${SAVE_VERSION})`)
+    this.name = 'NewerSaveError'
+  }
 }
 
 export interface Migration {
@@ -328,12 +410,14 @@ export interface Migration {
 /**
  * Upgrades a save written by an older SAVE_VERSION. A v1 save keeps its cash and starts the
  * new clock and stats fresh. A v2 save keeps everything and starts with no clout, the start
- * home and no rent owed. A v3 save keeps everything and starts with no items. Anything older or malformed starts fresh. A save from a newer
- * build throws: it is not loaded, and not overwritten unless the player plays on.
+ * home and no rent owed. A v3 save keeps everything and starts with no items. A v4 save keeps
+ * everything and starts with fresh event state. Anything older or malformed starts fresh. A
+ * save from a newer build throws `NewerSaveError`: it is not loaded, and not overwritten unless
+ * the player plays on.
  */
 export function migrateSave(persisted: unknown, version: number, config: EngineConfig): Migration {
   if (version > SAVE_VERSION) {
-    throw new Error(`Saved game version ${version} is newer than this build (${SAVE_VERSION})`)
+    throw new NewerSaveError(version)
   }
   const fresh = initialSave(config)
   if (version === 1) {
@@ -358,6 +442,7 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
             rent: initialRent,
             inventory: emptyInventory,
           },
+          events: fresh.events,
         },
         config,
       )
@@ -368,9 +453,20 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
     const v3 = LoadableSaveV3Schema.safeParse(persisted)
     if (v3.success) {
       const loaded = loadSave(
-        { ...v3.data, player: { ...v3.data.player, inventory: emptyInventory } },
+        {
+          ...v3.data,
+          player: { ...v3.data.player, inventory: emptyInventory },
+          events: fresh.events,
+        },
         config,
       )
+      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
+    }
+  }
+  if (version === 4) {
+    const v4 = LoadableSaveV4Schema.safeParse(persisted)
+    if (v4.success) {
+      const loaded = loadSave({ ...v4.data, events: fresh.events }, config)
       if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
     }
   }

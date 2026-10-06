@@ -203,15 +203,17 @@ out-of-range fields are repaired (speed to 1x, remainder to 0, stats clamped and
 only a structurally unusable save is replaced by a fresh state. A save from a newer build is
 never overwritten: the store sets `newerSavePresent` and writes nothing until
 `discardNewerSaveAndStartFresh()` is called. Only meaningful changes (minute, cash, stats,
-speed) are written, not every tick. If localStorage is unavailable (private
+speed, event state) are written, not every tick. If localStorage is unavailable (private
 browsing, blocked site data, full quota) the store keeps working in memory for the session.
 
 The store holds an engine snapshot and calls the engine for every change (`tick`,
 `performAction`, `setSpeed`); it holds no game rules itself.
 
 - **Engine** (`src/engine/`): pure functions, no React, three, Supabase or store imports, and
-  no real clock or randomness (ESLint enforces it; `src/engine/purity.test.ts` proves it).
-  Every number comes from `data/config/balance.json` (`time`, `stats`, `actions`).
+  no real clock or `Math.random` (ESLint enforces it; `src/engine/purity.test.ts` proves it).
+  Randomness comes from the seeded generator in `rng.ts` (mulberry32), whose state the save
+  keeps. Every number comes from `data/config/balance.json` (`time`, `stats`, `actions`,
+  `events`).
 - **Two clocks.** The personal game clock (`clock.ts`) is whole game minutes since day 1, 00:00.
   Passive time runs at 10 game minutes per real minute while the tab is visible, at 1x or 2x;
   actions fast-forward it instantly by their duration. City time (`cityTime.ts`) is the real
@@ -229,6 +231,21 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   NPC (`{ npcId }` with an `npc-` id), never another player. Resale is `sellValue` (data,
   `floor(price * resalePct[rarity] / 100)`), less `depreciationPctPerGameDay` per game day
   owned for wearables, never below `minResalePct` (`balance.json` `items`).
+- **Events** (`events.ts`, data in `data/events/events.json`): each event lists conditions
+  (personal-clock `hours`, `minDay`, `boroughs`, `locationIds`/`locationCategories`, `stats`,
+  `cash`, `clout`, `items`), a `weight`, an optional `cooldownMin` or `once`, and two or three
+  choices whose `effects` are `cash`, `stat`, `time`, `clout` or `item`. Cash, stats and time
+  apply at once; clout and items are kept as typed pending effects (with their source) in the
+  save (v5) until the clout ledger (S13) and inventory (S10) consume them. `rollForEvent(context)` in the store rolls with
+  `events.rollChance`; the open event shows in `src/components/events/EventSheet.tsx`, loaded
+  lazily after hydration by `EventSheetMount.tsx` (DEC-11; the overlay sheet zone, modal). The engine refuses every event at a memorial and every crime
+  event at a government building whatever the data says. To add an event: add it to
+  `events.json` with `titleKey`, `bodyKey` and per-choice `labelKey`/`resultKey`, add the
+  plain strings to `data/copy/base.json` and the NYC voice to `data/copy/packs/nyc.json`, and
+  run `npm test` (`src/lib/data/events.test.ts` checks keys, places, items and scans the copy
+  for drinking, drug, sexual, gambling and strong-profanity words; a human still reads it).
+  For e2e, set `window.__CLOUTCITY_E2E__ = true` before load to get
+  `window.__cloutcityTest.events` (`open(id, context)`, `state()`).
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
 

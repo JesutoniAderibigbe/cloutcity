@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { EventContext } from '@/engine/events'
 import { createLogger, type LogRecord } from '@/lib/log'
 import { toNpcId } from '@/engine/items'
 import { createSafeJsonStorage } from './storage'
@@ -80,7 +81,7 @@ describe('game store persistence', () => {
     expect(after.version).toBe(STORE_VERSION)
     expect(after.state.player.cash).toBe(144)
     expect(after.state.clock.minute).toBe(500)
-    expect(Object.keys(after.state).sort()).toEqual(['clock', 'player', 'speed'])
+    expect(Object.keys(after.state).sort()).toEqual(['clock', 'events', 'player', 'speed'])
   })
 
   it('rehydrates a new store from what an earlier one saved', () => {
@@ -120,7 +121,9 @@ describe('game store persistence', () => {
     const { records, store } = setup(local)
     expect(store().getState().player).toEqual(fresh.player)
     expect(local.getItem(STORE_KEY)).toBe(newer)
-    expect(records.some((r) => r.level === 'warn' && /saved game/i.test(r.msg))).toBe(true)
+    // Expected, so info (warn fails the e2e console guard); the save is kept untouched.
+    expect(records.some((r) => r.level === 'info' && /newer build/i.test(r.msg))).toBe(true)
+    expect(records.filter((r) => r.level === 'warn' || r.level === 'error')).toEqual([])
   })
 
   it.each([
@@ -265,9 +268,9 @@ describe('storage unavailable', () => {
     const game = createGameStore(storage, logger)
     game.getState().performAction('bodega-breakfast')
     expect(game.getState().player.cash).toBe(144)
-    const { clock, player, speed } = game.getState()
+    const { clock, player, speed, events } = game.getState()
     expect(storage.getItem(STORE_KEY)).toEqual({
-      state: { clock, player, speed },
+      state: { clock, player, speed, events },
       version: STORE_VERSION,
     })
   })
@@ -295,7 +298,7 @@ describe('storage unavailable', () => {
 })
 
 describe('S03 save edge cases through the persist middleware', () => {
-  it('a v1 save with extra keys starts fresh and is replaced with a valid v2 save', () => {
+  it('a v1 save with extra keys starts fresh and is replaced with a valid current save', () => {
     const local = new MemoryStorage()
     local.setItem(
       STORE_KEY,
@@ -306,7 +309,7 @@ describe('S03 save edge cases through the persist middleware', () => {
     expect(saved(local)).toEqual({ state: fresh, version: STORE_VERSION })
   })
 
-  it('a v1 save round-trips to v2 and back through a reload with cash intact', () => {
+  it('a v1 save round-trips to the current version and back through a reload with cash intact', () => {
     const local = new MemoryStorage()
     local.setItem(STORE_KEY, JSON.stringify({ state: { player: { cash: 321 } }, version: 1 }))
     setup(local).store()
@@ -610,16 +613,18 @@ describe('items in the store', () => {
     expect(local.getItem(STORE_KEY)).toBe(written)
   })
 
-  it('a v3 save loads with an empty inventory and is rewritten as v4', () => {
+  it('a v3 save loads with an empty inventory and is rewritten as the current version', () => {
     const local = new MemoryStorage()
     const v3player: Record<string, unknown> = { ...saveOf(321).player }
     delete v3player.inventory
-    local.setItem(STORE_KEY, JSON.stringify({ state: { ...fresh, player: v3player }, version: 3 }))
+    const v3: Record<string, unknown> = { ...fresh, player: v3player }
+    delete v3.events
+    local.setItem(STORE_KEY, JSON.stringify({ state: v3, version: 3 }))
     const game = setup(local).store()
     expect(game.getState().player.cash).toBe(321)
     expect(game.getState().player.inventory).toEqual({ wearables: [], gifts: [], outfit: {} })
     game.getState().buyItem('subway-tote')
-    expect((saved(local) as { version: number }).version).toBe(4)
+    expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
 })
 
@@ -720,5 +725,77 @@ describe('items in the store: guards', () => {
     expect(game.getState().consumeGift('bodega-flowers', 'yourself').ok).toBe(true)
     expect(game.getState().sellItem('cargo-pants').ok).toBe(true)
     expect(local.getItem(STORE_KEY)).toBe(newer)
+  })
+})
+
+describe('events in the store', () => {
+  const bodega: EventContext = {
+    borough: 'queens',
+    locationId: null,
+    locationCategory: 'bodega',
+    clout: 0,
+    itemIds: [],
+  }
+
+  it('opens an event, resolves a choice through the engine and shows its outcome', () => {
+    const { local, store } = setup()
+    const game = store()
+    expect(game.getState().openEvent('bodega-cat', bodega).ok).toBe(true)
+    expect(game.getState().events.active).toBe('bodega-cat')
+    expect((saved(local!) as { state: PersistedState }).state.events.active).toBe('bodega-cat')
+
+    const result = game.getState().chooseEventOption('treat')
+    expect(result.ok).toBe(true)
+    const state = game.getState()
+    expect(state.player.cash).toBe(148)
+    expect(state.player.stats.mood).toBe(80)
+    expect(state.clock.minute).toBe(485)
+    expect(state.events.active).toBeNull()
+    expect(state.eventOutcome).toMatchObject({ eventId: 'bodega-cat', choiceId: 'treat' })
+    expect((saved(local!) as { state: PersistedState }).state.player.cash).toBe(148)
+
+    game.getState().dismissEventOutcome()
+    expect(game.getState().eventOutcome).toBeNull()
+  })
+
+  it('refuses an event at a memorial and leaves state alone', () => {
+    const { store } = setup()
+    const game = store()
+    const before = game.getState()
+    const memorial = { ...bodega, locationId: 'a-memorial', locationCategory: 'memorial' as const }
+    expect(game.getState().openEvent('bodega-cat', memorial)).toEqual({
+      ok: false,
+      error: { code: 'EVENT_NOT_ELIGIBLE', eventId: 'bodega-cat' },
+    })
+    expect(game.getState()).toBe(before)
+  })
+
+  it('a failed choice changes nothing', () => {
+    const { store } = setup()
+    const game = store()
+    game.getState().openEvent('bodega-cat', bodega)
+    const before = game.getState()
+    expect(game.getState().chooseEventOption('dance').ok).toBe(false)
+    expect(game.getState()).toBe(before)
+  })
+
+  it('an open event survives a reload; the outcome screen does not', () => {
+    const local = new MemoryStorage()
+    const first = setup(local).store()
+    first.getState().openEvent('bodega-cat', bodega)
+    const reloaded = setup(local).store()
+    expect(reloaded.getState().events.active).toBe('bodega-cat')
+    reloaded.getState().chooseEventOption('scratch')
+    expect(setup(local).store().getState().eventOutcome).toBeNull()
+  })
+
+  it('a roll saves the advanced generator, so a reload cannot re-roll', () => {
+    const local = new MemoryStorage()
+    const game = setup(local).store()
+    const before = game.getState().events.rngState
+    game.getState().rollForEvent(bodega)
+    const after = game.getState().events.rngState
+    expect(after).not.toBe(before)
+    expect((saved(local) as { state: PersistedState }).state.events.rngState).toBe(after)
   })
 })
