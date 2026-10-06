@@ -113,9 +113,9 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.
-- Lane A (main, 3100): S05a → S05 (needs S04a) → S06 → S05b
+- Lane A (worktree lane-a, 3100): S05a ✓ → S05b → S05 (needs S04a) → S06 (main checkout is integration-only from now on)
 - Lane B (lane-b, 3101): S04 → S04a → S04c → S04b → S04d
-- Lane C (lane-c, 3102): S11 → S10 → S12
+- Lane C (lane-c, 3102): S11 ✓ → S10 ✓ → S12 → S10a (needs S09)
 - Lane D (lane-d, 3103): S14 → S13 (needs S10)
 - Lane E (lane-e, 3104): S07 → S09 → S07a
 - Lane F (lane-f, 3105): S08 (needs S04 merged)

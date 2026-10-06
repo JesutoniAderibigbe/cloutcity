@@ -163,7 +163,7 @@
       "review": true,
       "passes": false,
       "blocked": false,
-      "attempts": 0
+      "attempts": 1
     },
     {
       "id": "S05c",
@@ -288,7 +288,7 @@
       "review": true,
       "passes": false,
       "blocked": false,
-      "attempts": 0
+      "attempts": 1
     },
     {
       "id": "S13",
