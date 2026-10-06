@@ -293,8 +293,11 @@ describe('content schemas', () => {
   const item = {
     id: 'tee',
     nameKey: 'items.tee.name',
+    descriptionKey: 'items.tee.description',
     category: 'clothing',
+    slot: 'top',
     rarity: 'common',
+    currency: 'cash',
     price: 20,
     sellValue: 8,
     cloutValue: 1,
@@ -358,7 +361,7 @@ describe('cross-file references', () => {
 
   it('every copy key named by content exists in data/copy/base.json', () => {
     const refs = [
-      ...items.map((entry) => entry.nameKey),
+      ...items.flatMap((entry) => [entry.nameKey, entry.descriptionKey]),
       ...premiumItems.map((entry) => entry.nameKey),
       ...events.flatMap((entry) => [entry.titleKey, entry.bodyKey]),
       ...jobs.map((entry) => entry.nameKey),

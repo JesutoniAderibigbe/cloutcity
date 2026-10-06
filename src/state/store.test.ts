@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createLogger, type LogRecord } from '@/lib/log'
+import { toNpcId } from '@/engine/items'
 import { createSafeJsonStorage } from './storage'
 import {
   PersistedStateSchema,
@@ -65,6 +66,7 @@ describe('game store persistence', () => {
       clout: 0,
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
+      inventory: { wearables: [], gifts: [], outfit: {} },
     })
     expect(state.clock).toEqual({ minute: 480, remainderMs: 0 })
     expect(state.speed).toBe(1)
@@ -163,6 +165,7 @@ describe('game store persistence', () => {
         clout: 12,
         home: 'penthouse',
         rent: { owed: 280, missed: 1.4 },
+        inventory: { wearables: [], gifts: [], outfit: {} },
       },
       speed: 3,
     }
@@ -177,6 +180,7 @@ describe('game store persistence', () => {
         clout: 12,
         home: 'queens-room',
         rent: { owed: 280, missed: 1 },
+        inventory: { wearables: [], gifts: [], outfit: {} },
       },
       speed: 1,
     })
@@ -461,6 +465,7 @@ describe('jobs and rent in the store', () => {
       clout: 0,
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
+      inventory: { wearables: [], gifts: [], outfit: {} },
     })
     expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
@@ -536,7 +541,7 @@ describe('jobs and rent in the store: guards', () => {
     ['manhattan-loft', 'manhattan-loft'],
   ])('a v3 save with home %j loads in %s', (home, expected) => {
     const local = new MemoryStorage()
-    const raw = `{"state":{"clock":{"minute":900,"remainderMs":0},"player":{"cash":321,"stats":{"energy":50,"hunger":50,"mood":50},"clout":0,"home":${JSON.stringify(home)},"rent":{"owed":0,"missed":0}},"speed":1},"version":${STORE_VERSION}}`
+    const raw = `{"state":{"clock":{"minute":900,"remainderMs":0},"player":{"cash":321,"stats":{"energy":50,"hunger":50,"mood":50},"clout":0,"home":${JSON.stringify(home)},"rent":{"owed":0,"missed":0}},"speed":1},"version":3}`
     local.setItem(STORE_KEY, raw)
     const { player } = setup(local).store().getState()
     expect(player.home).toBe(expected)
@@ -565,5 +570,155 @@ describe('jobs and rent in the store: guards', () => {
     local.setItem(STORE_KEY, JSON.stringify({ state: tampered, version: STORE_VERSION }))
     const { player } = setup(local).store().getState()
     expect(player).toEqual(fresh.player)
+  })
+})
+
+describe('items in the store', () => {
+  it('buy, wear, sell and gift go through the engine and persist', () => {
+    const { local, store } = setup()
+    const game = store()
+    expect(game.getState().buyItem('cargo-pants').ok).toBe(true)
+    expect(game.getState().equipItem('cargo-pants', 'bottom').ok).toBe(true)
+    expect(game.getState().buyItem('bodega-flowers').ok).toBe(true)
+    expect(game.getState().consumeGift('bodega-flowers', 'yourself').ok).toBe(true)
+    const after = saved(local!) as { state: PersistedState }
+    expect(after.state.player.cash).toBe(150 - 28 - 12)
+    expect(after.state.player.inventory).toEqual({
+      wearables: [{ itemId: 'cargo-pants', acquiredMinute: 480, worn: true }],
+      gifts: [],
+      outfit: { bottom: 'cargo-pants' },
+    })
+    expect(game.getState().unequipSlot('bottom').ok).toBe(true)
+    const sold = game.getState().sellItem('cargo-pants')
+    expect(sold.ok && sold.amount).toBe(11)
+    expect((saved(local!) as { state: PersistedState }).state.player.inventory.wearables).toEqual(
+      [],
+    )
+    const reloaded = store().getState()
+    expect(reloaded.player.cash).toBe(150 - 28 - 12 + 11)
+  })
+
+  it('a refused buy ($1 short) leaves state and storage untouched', () => {
+    const local = new MemoryStorage()
+    local.setItem(STORE_KEY, JSON.stringify({ state: saveOf(27), version: STORE_VERSION }))
+    const game = setup(local).store()
+    const before = game.getState()
+    const written = local.getItem(STORE_KEY)
+    const result = game.getState().buyItem('cargo-pants')
+    expect(result.ok === false && result.error.code).toBe('INSUFFICIENT_FUNDS')
+    expect(game.getState()).toBe(before)
+    expect(local.getItem(STORE_KEY)).toBe(written)
+  })
+
+  it('a v3 save loads with an empty inventory and is rewritten as v4', () => {
+    const local = new MemoryStorage()
+    const v3player: Record<string, unknown> = { ...saveOf(321).player }
+    delete v3player.inventory
+    local.setItem(STORE_KEY, JSON.stringify({ state: { ...fresh, player: v3player }, version: 3 }))
+    const game = setup(local).store()
+    expect(game.getState().player.cash).toBe(321)
+    expect(game.getState().player.inventory).toEqual({ wearables: [], gifts: [], outfit: {} })
+    game.getState().buyItem('subway-tote')
+    expect((saved(local) as { version: number }).version).toBe(4)
+  })
+})
+
+describe('items in the store: guards', () => {
+  /** A store loaded from a save holding a tee (worn) and one bunch of flowers. */
+  function stocked() {
+    const local = new MemoryStorage()
+    const state: PersistedState = {
+      ...fresh,
+      player: {
+        ...fresh.player,
+        cash: 5,
+        inventory: {
+          wearables: [{ itemId: 'bodega-graphic-tee', acquiredMinute: 480, worn: true }],
+          gifts: [{ itemId: 'bodega-flowers', count: 1 }],
+          outfit: { top: 'bodega-graphic-tee' },
+        },
+      },
+    }
+    local.setItem(STORE_KEY, JSON.stringify({ state, version: STORE_VERSION }))
+    const game = setup(local).store()
+    // The first write normalises the save; compare against what is stored after load.
+    return { local, game, written: local.getItem(STORE_KEY) }
+  }
+
+  it.each([
+    ['buy an unknown item', (g: ReturnType<typeof stocked>['game']) => g.getState().buyItem('x')],
+    [
+      'buy a second tee',
+      (g: ReturnType<typeof stocked>['game']) => g.getState().buyItem('bodega-graphic-tee'),
+    ],
+    [
+      'sell something not owned',
+      (g: ReturnType<typeof stocked>['game']) => g.getState().sellItem('cargo-pants'),
+    ],
+    [
+      'equip in the wrong slot',
+      (g: ReturnType<typeof stocked>['game']) =>
+        g.getState().equipItem('bodega-graphic-tee', 'face'),
+    ],
+    [
+      'unequip an unknown slot',
+      (g: ReturnType<typeof stocked>['game']) => g.getState().unequipSlot('__proto__'),
+    ],
+    [
+      'gift a player',
+      (g: ReturnType<typeof stocked>['game']) =>
+        g.getState().consumeGift('bodega-flowers', { playerId: 'u-1' } as never),
+    ],
+    [
+      'gift a wearable',
+      (g: ReturnType<typeof stocked>['game']) =>
+        g.getState().consumeGift('bodega-graphic-tee', 'yourself'),
+    ],
+  ])('a refused action (%s) changes no state and writes nothing', (_label, act) => {
+    const { local, game, written } = stocked()
+    const before = game.getState().player
+    expect(act(game).ok).toBe(false)
+    expect(game.getState().player).toBe(before)
+    expect(local.getItem(STORE_KEY)).toBe(written)
+  })
+
+  it('unequipping an empty slot succeeds without a write', () => {
+    const { local, game, written } = stocked()
+    expect(game.getState().unequipSlot('shoes').ok).toBe(true)
+    expect(local.getItem(STORE_KEY)).toBe(written)
+  })
+
+  it('selling the worn tee unequips it and persists the cash', () => {
+    const { local, game } = stocked()
+    const sold = game.getState().sellItem('bodega-graphic-tee')
+    expect(sold.ok && sold.amount).toBe(7)
+    const after = (saved(local) as { state: PersistedState }).state.player
+    expect(after.cash).toBe(12)
+    expect(after.inventory.outfit).toEqual({})
+    expect(after.inventory.wearables).toEqual([])
+  })
+
+  it('a gift used on an NPC is consumed and persisted, with no stat change', () => {
+    const { local, game } = stocked()
+    const stats = game.getState().player.stats
+    const npc = toNpcId('npc-promoter')
+    if (npc === null) throw new Error('npc id')
+    expect(game.getState().consumeGift('bodega-flowers', { npcId: npc }).ok).toBe(true)
+    const after = (saved(local) as { state: PersistedState }).state.player
+    expect(after.inventory.gifts).toEqual([])
+    expect(after.stats).toEqual(stats)
+  })
+
+  it('a newer-build save stays byte-identical through buying, wearing, selling and gifting', () => {
+    const local = new MemoryStorage()
+    const newer = JSON.stringify({ state: saveOf(5000), version: STORE_VERSION + 1 })
+    local.setItem(STORE_KEY, newer)
+    const game = setup(local).store()
+    expect(game.getState().buyItem('cargo-pants').ok).toBe(true)
+    expect(game.getState().equipItem('cargo-pants', 'bottom').ok).toBe(true)
+    expect(game.getState().buyItem('bodega-flowers').ok).toBe(true)
+    expect(game.getState().consumeGift('bodega-flowers', 'yourself').ok).toBe(true)
+    expect(game.getState().sellItem('cargo-pants').ok).toBe(true)
+    expect(local.getItem(STORE_KEY)).toBe(newer)
   })
 })

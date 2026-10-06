@@ -42,22 +42,55 @@ const dollars = z.int().nonnegative()
 export const STATS = ['energy', 'hunger', 'mood'] as const
 export const StatSchema = z.enum(STATS)
 
+/** Outfit slots. Clothing fills the first four; makeup fills `face` (src/engine/items.ts mirrors this). */
+export const ITEM_SLOTS = ['top', 'bottom', 'shoes', 'accessory', 'face'] as const
+export const ItemSlotSchema = z.enum(ITEM_SLOTS)
+export type ItemSlot = z.infer<typeof ItemSlotSchema>
+
+/** Which slots each wearable category may fill. Other categories have no slot. */
+const CATEGORY_SLOTS: Readonly<Record<string, readonly ItemSlot[]>> = {
+  clothing: ['top', 'bottom', 'shoes', 'accessory'],
+  makeup: ['face'],
+}
+
+/**
+ * An in-game cash item (CLAUDE.md "Two kinds of purchases"). `sellValue` is what the item sells
+ * back for on the day it is bought; worn items lose more value per game day owned
+ * (balance.json `items`, applied in src/engine/items.ts). It is always below `price`, so a
+ * buy/sell loop can only lose cash.
+ */
 export const ItemSchema = z
   .strictObject({
     id: IdSchema,
     nameKey: CopyKeyRefSchema,
+    descriptionKey: CopyKeyRefSchema,
     category: z.enum(['clothing', 'makeup', 'gift', 'decor', 'upgrade']),
+    /** Wearables only: the outfit slot the item fills. */
+    slot: ItemSlotSchema.optional(),
     rarity: RarityTierSchema,
+    currency: z.literal('cash'),
     /** In-game cash, whole dollars. */
-    price: dollars,
+    price: z.int().positive(),
     sellValue: dollars,
     cloutValue: z.int().nonnegative(),
-    statEffects: z.partialRecord(StatSchema, z.number()),
+    statEffects: z.partialRecord(StatSchema, z.int()),
   })
-  .refine((item) => item.sellValue <= item.price, {
-    error: 'sellValue must not exceed price',
+  .refine((item) => item.sellValue < item.price, {
+    error: 'sellValue must be below price',
     path: ['sellValue'],
   })
+  .refine(
+    (item) => {
+      const slots = CATEGORY_SLOTS[item.category]
+      return slots === undefined
+        ? item.slot === undefined
+        : item.slot !== undefined && slots.includes(item.slot)
+    },
+    {
+      error: 'clothing needs a clothing slot, makeup the face slot, others no slot',
+      path: ['slot'],
+    },
+  )
 export const ItemsFileSchema = z.strictObject({ items: listOf(ItemSchema) })
 export type Item = z.infer<typeof ItemSchema>
 

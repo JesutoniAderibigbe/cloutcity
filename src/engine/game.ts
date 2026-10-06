@@ -1,5 +1,5 @@
 /**
- * The engine's view of one player: personal clock, cash, stats, clout and housing. Pure
+ * The engine's view of one player: personal clock, cash, stats, clout, housing and items. Pure
  * functions only; the store (src/state) holds a snapshot and replaces it with what these return.
  */
 import {
@@ -12,6 +12,7 @@ import {
   type TickOptions,
 } from './clock'
 import type { EngineConfig, HomeId } from './config'
+import { emptyInventory, type Inventory } from './items'
 import { initialRent, settleRent, type RentEvent, type RentState } from './rent'
 import { decayStats, initialStats, type Stats } from './stats'
 
@@ -25,6 +26,8 @@ export interface GameSnapshot {
     readonly clout: number
     readonly home: HomeId
     readonly rent: RentState
+    /** Owned items and the outfit being worn (src/engine/items.ts). */
+    readonly inventory: Inventory
   }
 }
 
@@ -47,6 +50,7 @@ export function initialSnapshot(config: EngineConfig): GameSnapshot {
       clout: 0,
       home: config.startHome,
       rent: initialRent,
+      inventory: emptyInventory,
     },
   }
 }

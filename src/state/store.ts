@@ -19,6 +19,15 @@ import { performAction, type ActionResult } from '@/engine/actions'
 import { isSpeed } from '@/engine/clock'
 import { engineConfig } from '@/engine/config'
 import { tick } from '@/engine/game'
+import {
+  buyItem,
+  equipItem,
+  sellItem,
+  unequipSlot,
+  consumeGift,
+  type GiftTarget,
+  type ItemResult,
+} from '@/engine/items'
 import { workShift, type ShiftResult } from '@/engine/jobs'
 import {
   SAVE_VERSION,
@@ -44,6 +53,16 @@ export interface GameActions {
   performAction(actionId: string): ActionResult
   /** Works one shift of a job (rent falling due on the way is charged by the engine). */
   workShift(jobId: string): ShiftResult
+  /** Buys one of a shop item for its price in cash. */
+  buyItem(itemId: string): ReturnType<typeof buyItem>
+  /** Sells one owned item at its current resale value (a worn item is taken off). */
+  sellItem(itemId: string): ReturnType<typeof sellItem>
+  /** Wears an owned wearable in its slot. */
+  equipItem(itemId: string, slot: string): ItemResult
+  /** Takes off whatever is worn in a slot. */
+  unequipSlot(slot: string): ItemResult
+  /** Uses one gift on yourself or an NPC; it is consumed. Never another player. */
+  consumeGift(itemId: string, target: GiftTarget): ReturnType<typeof consumeGift>
   /** Sets the passive clock speed (one of balance `time.speeds`, i.e. 1x or 2x). */
   setSpeed(speed: number): void
   /**
@@ -111,7 +130,7 @@ export function mergeGameState(
 
 /**
  * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout,
- * home, rent) and speed. The sub-minute remainder alone is not, so a visible tab does not write
+ * home, rent, inventory) and speed. The sub-minute remainder alone is not, so a visible tab does not write
  * on every tick (a reload loses at most one game minute's worth of carried real time).
  */
 function saveSignature(value: StorageValue<unknown> | null): string | undefined {
@@ -192,6 +211,31 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         workShift: (jobId) => {
           const result = workShift(get(), jobId, engineConfig)
           if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
+          return result
+        },
+        buyItem: (itemId) => {
+          const result = buyItem(get(), itemId, engineConfig)
+          if (result.ok) set({ player: result.snapshot.player })
+          return result
+        },
+        sellItem: (itemId) => {
+          const result = sellItem(get(), itemId, engineConfig)
+          if (result.ok) set({ player: result.snapshot.player })
+          return result
+        },
+        equipItem: (itemId, slot) => {
+          const result = equipItem(get(), itemId, slot, engineConfig)
+          if (result.ok) set({ player: result.snapshot.player })
+          return result
+        },
+        unequipSlot: (slot) => {
+          const result = unequipSlot(get(), slot)
+          if (result.ok) set({ player: result.snapshot.player })
+          return result
+        },
+        consumeGift: (itemId, target) => {
+          const result = consumeGift(get(), itemId, target, engineConfig)
+          if (result.ok) set({ player: result.snapshot.player })
           return result
         },
         setSpeed: (speed) => {
