@@ -28,7 +28,7 @@ import {
   PremiumFileSchema,
   VenuesFileSchema,
 } from './schemas/content'
-import { BaseCopySchema, SlangPackSchema } from './schemas/copy'
+import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
 import {
   AudioManifestSchema,
   BoroughsFileSchema,
@@ -43,11 +43,14 @@ import {
 } from './schemas/world'
 import { balance, onboarding, perf, realtime, theme } from './config'
 import { events, geoBounds, items, jobs, landmarks, premiumItems, venues } from './content'
-import { baseCopy } from '@/lib/copy'
+import { baseCopy } from '@/lib/copy/all'
 
 const DATA = join(import.meta.dirname, '../../../data')
 
-/** The schema for each data file. Files under copy/packs/ all use SlangPackSchema. */
+/**
+ * The schema for each data file. Copy files are matched by pattern in `schemaFor`: each
+ * copy/<ns>/base.json is a NamespaceBaseSchema, any other copy/<ns>/<pack>.json a SlangPackSchema.
+ */
 const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'audio/manifest.json': AudioManifestSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
@@ -60,7 +63,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/perf.json': PerfConfigSchema,
   'config/realtime.json': RealtimeConfigSchema,
   'config/theme.json': ThemeConfigSchema,
-  'copy/base.json': BaseCopySchema,
+  'copy/superlatives.json': SuperlativesSchema,
   'events/events.json': EventsFileSchema,
   'geo/bounds.json': GeoBoundsSchema,
   'geo/land.derived.json': LandFileSchema,
@@ -78,7 +81,9 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
 }
 
 function schemaFor(file: string): z.ZodType | undefined {
-  return file.startsWith('copy/packs/') ? SlangPackSchema : SCHEMAS[file]
+  if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
+  if (/^copy\/[\w-]+\/[\w-]+\.json$/.test(file)) return SlangPackSchema
+  return SCHEMAS[file]
 }
 
 /** Extensions the data loaders parse. Every file with one of these needs a schema. */
@@ -174,6 +179,8 @@ describe('config/perf.json', () => {
   it('holds every budget from CLAUDE.md "Performance budgets"', () => {
     expect(perf).toEqual({
       shellJsGzKB: 180,
+      // S05c: the shell keeps 20 KB of the budget free for features still to land.
+      shellHeadroomGzKB: 20,
       sceneChunkJsGzKB: 350,
       totalJsToPlayableGzKB: 550,
       baseGeoGzKB: 400,
@@ -465,17 +472,35 @@ describe('content schemas', () => {
 describe('cross-file references', () => {
   const copyKeys = new Set(Object.keys(baseCopy.strings))
 
-  it('every copy key named by content exists in data/copy/base.json', () => {
-    const refs = [
-      ...items.flatMap((entry) => [entry.nameKey, entry.descriptionKey]),
-      ...premiumItems.map((entry) => entry.nameKey),
-      ...events.flatMap((entry) => [entry.titleKey, entry.bodyKey]),
-      ...jobs.map((entry) => entry.nameKey),
-      ...venues.flatMap((entry) => [entry.nameKey, entry.blurbKey]),
-      ...landmarks.flatMap((entry) => [entry.nameKey, entry.infoKey]),
-    ]
+  // Each content file's keys live in the one namespace its consumer loads (S05c): events in
+  // `events` (EventSheet), items in `items` (shopCopy), places in `venues` and `landmarks`
+  // (world/places), and so on. A key elsewhere would render as CopyNamespaceNotLoadedError.
+  const refsByNamespace: Readonly<Record<string, readonly string[]>> = {
+    items: items.flatMap((entry) => [entry.nameKey, entry.descriptionKey]),
+    premium: premiumItems.map((entry) => entry.nameKey),
+    events: events.flatMap((entry) => [
+      entry.titleKey,
+      entry.bodyKey,
+      ...entry.choices.flatMap((choice) => [choice.labelKey, choice.resultKey]),
+    ]),
+    jobs: jobs.map((entry) => entry.nameKey),
+    venues: venues.flatMap((entry) => [entry.nameKey, entry.blurbKey]),
+    landmarks: landmarks.flatMap((entry) => [entry.nameKey, entry.infoKey]),
+    club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
+  }
+
+  it('every copy key named by content exists in data/copy', () => {
+    const refs = Object.values(refsByNamespace).flat()
     expect(refs.filter((key) => !copyKeys.has(key))).toEqual([])
   })
+
+  it.each(Object.entries(refsByNamespace))(
+    'content keys for %s live in that copy namespace',
+    (namespace, refs) => {
+      expect(refs.length).toBeGreaterThan(0)
+      expect(refs.filter((key) => !key.startsWith(`${namespace}.`))).toEqual([])
+    },
+  )
 
   it('jobs and balance wages list the same job ids', () => {
     expect(jobs.map((job) => job.id).sort()).toEqual([...JOB_IDS].sort())

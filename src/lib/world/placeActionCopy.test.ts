@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
 import { initialSnapshot, type GameSnapshot } from '@/engine/game'
 import { performPlaceAction, placeActions, type PlaceAction } from '@/engine/placeActions'
-import { baseCopy, createCopy, slangPacks } from '@/lib/copy'
+import { createCopy } from '@/lib/copy'
+import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { formatMoney } from '@/lib/format'
 import {
   formatDuration,

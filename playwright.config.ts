@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test'
 
 const PORT = Number(process.env.E2E_PORT ?? 3100)
 const BASE_URL = `http://localhost:${PORT}`
+/** Build directory of the e2e (test-hook) build. */
+export const E2E_DIST_DIR = '.next-e2e'
 
 /**
  * Headless Chromium gets no GPU, so WebGL runs on SwiftShader (ANGLE's CPU Vulkan backend).
@@ -49,10 +51,13 @@ export default defineConfig({
     },
   ],
   // e2e runs against the production build: dev-mode overlays and HMR logs are not what ships.
+  // It builds with the scene test hooks (src/scene/testHooks.tsx) into its own distDir
+  // (next.config.ts), so the shipped `.next` build never contains them (`npm run budget` checks).
   webServer: {
     command: `npm run build && npm run start -- --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
+    env: { NEXT_PUBLIC_TEST_HOOKS: '1', NEXT_DIST_DIR: E2E_DIST_DIR },
   },
 })

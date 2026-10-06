@@ -48,6 +48,7 @@ export function OverlayLayout({ children, slots, modal }: OverlayLayoutProps) {
   const rootStyle = {
     gridTemplateRows: overlayGridTemplateRows(overlayLayout),
     '--overlay-sheet-max-w': `${overlayLayout.sheetMaxWidthPx}px`,
+    '--overlay-loading-delay': `${overlayLayout.loadingRevealDelayMs}ms`,
   } as CSSProperties
 
   return (

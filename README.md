@@ -33,7 +33,7 @@ gitignored; later tasks document their variables here.
 | `npm run format:check` / `format` | Prettier check / write                                                                                               |
 | `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                     |
 | `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                      |
-| `npm run budget`                  | Gzipped shell JS of `/` against `data/config/perf.json` (run after `npm run build`)                                  |
+| `npm run budget`                  | Gzipped shell JS of `/` against `data/config/perf.json`, then the boot-path guard (run after `npm run build`)        |
 | `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                             |
 
 Gate order used by the build loop:
@@ -128,7 +128,7 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
 | Folder            | Holds                                                                                                                                                                                                                             |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `layout.json`, `copy.json`, `geo.json` (geo build parameters)                               |
-| `data/copy/`      | `base.json` (every player-facing string) and `packs/*.json` (slang packs)                                                                                                                                                         |
+| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                  |
 | `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land) |
 | `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                |
 | `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                     |
@@ -137,21 +137,38 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
 - **Loading.** Server code and scripts import validated data from `src/lib/data/config.ts` and
   `src/lib/data/content.ts`, which parse at import and fail fast with the file name. Client
   code must not pull in zod's classic build (it costs about 90 KB gz of shell JS): the copy
-  layer reads its JSON directly (validated by the tests), and the store validates with
+  layer reads its JSON directly (validated by the tests), and the stores validate with
   `zod/mini`. Import it as `import * as z from 'zod/mini'`: the named `{ z }` export defeats
   Turbopack's tree shaking and ships all of zod/mini with its locales (about 92 KB gz).
-- **Adding content.** Add the entry to the JSON file, add its strings to `data/copy/base.json`
-  under the key the entry names (`nameKey`, `titleKey`, ...), and run `npm test`. An item's
+- **Adding content.** Add the entry to the JSON file, add its strings to its namespace's
+  `data/copy/<ns>/base.json` (events in `events`, items in `items`, ...) under the key the entry names (`nameKey`, `titleKey`, ...), and run `npm test`. An item's
   `sellValue` must equal `floor(price * resalePct[rarity] / 100)` (`items-data.test.ts`).
-- **Copy.** `copy(key, vars)` from `src/lib/copy.ts` renders a string with the active slang pack
-  (`data/config/copy.json` → `slangPack`) layered over base. Swapping the pack id changes the
-  text with no code change; a new pack file must also be registered in `slangPacks`. Templates
-  use `{name}` placeholders (a letter, then letters or digits) whose values are strings, so
-  numbers go through the formatters first. Any other brace is rejected by the schema and by
-  `interpolate`.
-  Packs may override only base keys and must keep the same placeholders.
+- **Copy.** `copy(key, vars)` from `src/lib/copy` renders a string with the active slang pack
+  (`data/config/copy.json` → `slangPack`, one of `packs`) layered over base. Swapping the pack id
+  changes the text with no code change. Strings are split by namespace, the first key segment
+  (`events.mtaDelay.title` → `events`), so the shell ships only the boot namespaces (`app`,
+  `nav`, `tabs`, `loading`) and every other namespace ships with the feature that renders it
+  (DEC-11):
+  - A module that renders a namespace imports `@/lib/copy/ns/<ns>` (after its other imports).
+    Rendering a key whose namespace is not loaded throws `CopyNamespaceNotLoadedError`, never the
+    raw key; `src/lib/copy/key-usage.test.ts` fails if a module names a key its imports do not load.
+  - **New namespace:** create `data/copy/<ns>/base.json` (`{ "strings": { "<ns>.…": "…" } }`), add
+    `src/lib/copy/ns/<ns>.ts` (copy an existing one: it imports the files and calls
+    `registerCopy`), add it to `src/lib/copy/keys.ts` (the `CopyKey` type) and `all.ts`.
+    `src/lib/copy/files.test.ts` checks all of this against the disk.
+  - **Pack overrides:** `data/copy/<ns>/<pack>.json` (`{ "id": "<pack>", "strings": {…} }`) for
+    a pack listed in `copy.json`, registered in the namespace module. A **new pack** is a new id
+    in `packs` plus a file in each namespace it overrides.
+  - Only the core may add a boot namespace (it costs shell bytes; `npm run budget` and
+    `src/lib/shell-boundary.test.ts` enforce the boot path). Tests and server code that need every
+    string import `src/lib/copy/all.ts`.
+    Templates
+    use `{name}` placeholders (a letter, then letters or digits) whose values are strings, so
+    numbers go through the formatters first. Any other brace is rejected by the schema and by
+    `interpolate`.
+    Packs may override only base keys and must keep the same placeholders.
 - **Superlatives (GR-11).** No copy string may contain "cheapest", "biggest", "best", "most" or
-  "fastest" as literal text (`src/lib/copy.test.ts`). Give the string a placeholder and fill it
+  "fastest" as literal text (`src/lib/copy/copy.test.ts`). Give the string a placeholder and fill it
   with `superlative(kind, subjectId, values)`, which returns the word only when the data proves
   it (a unique minimum or maximum) and `null` otherwise.
 - **Numbers (UX-2).** `formatMoney` (whole US dollars, halves rounded away from zero) and
@@ -238,14 +255,16 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   apply at once; clout and items are kept as typed pending effects (with their source) in the
   save (v5) until the clout ledger (S13) and inventory (S10) consume them. `rollForEvent(context)` in the store rolls with
   `events.rollChance`; the open event shows in `src/components/events/EventSheet.tsx`, loaded
-  lazily after hydration by `EventSheetMount.tsx` (DEC-11; the overlay sheet zone, modal). The engine refuses every event at a memorial and every crime
+  on first use by `EventSheetHost.tsx`, a boot island that `EventSheetMount.tsx` starts loading
+  when the shell runs (DEC-11; the overlay sheet zone, modal). The engine refuses every event at a memorial and every crime
   event at a government building whatever the data says. To add an event: add it to
   `events.json` with `titleKey`, `bodyKey` and per-choice `labelKey`/`resultKey`, add the
-  plain strings to `data/copy/base.json` and the NYC voice to `data/copy/packs/nyc.json`, and
+  plain strings to `data/copy/events/base.json` and the NYC voice to `data/copy/events/nyc.json`, and
   run `npm test` (`src/lib/data/events.test.ts` checks keys, places, items and scans the copy
   for drinking, drug, sexual, gambling and strong-profanity words; a human still reads it).
-  For e2e, set `window.__CLOUTCITY_E2E__ = true` before load to get
-  `window.__cloutcityTest.events` (`open(id, context)`, `state()`).
+  In builds with test hooks (`NEXT_PUBLIC_TEST_HOOKS=1`, the e2e build only), set
+  `window.__CLOUTCITY_E2E__ = true` before load to get `window.__cloutcityTest.events`
+  (`open(id, context)`, `state()`); production builds contain no hook code.
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
 
@@ -279,6 +298,23 @@ through the shared schema (KB = 1000 bytes) and sums the
 gzipped size of every script the prerendered `/` makes a modern browser run (Next.js chunks
 plus inline scripts; `nomodule` polyfills excluded). Enforcement of the other budgets joins it in
 later tasks.
+
+**Shell diet (S05c, DEC-11).** The shell of `/` carries only the boot path: the layout, overlay
+system, HUD, tab bar, the copy core with its boot namespaces, and the island mounts. Everything
+else loads through `lazyIsland` (`src/components/overlay/lazyIsland.tsx`):
+
+- **Boot islands** (`eager: true`) start loading as soon as the shell runs: the welcome card with
+  its zod/mini form and onboarding store (its loading card keeps the page inert, so the 18+ gate
+  fails closed) and the event-sheet host with the game store, engine, save and catalogs.
+- **Feature islands** load on first render: the event sheet UI, the place sheet, and later the
+  shop, panels and transit planner. Each shows a loading status in its own overlay zone (the
+  skeleton appears after `layout.json` `overlay.loadingRevealDelayMs`) and, if its chunk fails,
+  a retry there. Each feature root renders `data-cc-feature="cc-feature:<id>"`.
+
+`npm run budget` then runs `scripts/shell-guard.ts`: no shell chunk may contain a feature marker,
+a key of a non-boot copy namespace or zod, no static chunk may contain an e2e test hook, and the
+shell must stay at or under `shellJsGzKB - shellHeadroomGzKB` (20 KB kept for features still to
+land). `src/lib/shell-boundary.test.ts` checks the same boot path on the source import graph.
 
 ## PWA
 

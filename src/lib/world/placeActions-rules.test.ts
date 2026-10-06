@@ -12,7 +12,8 @@ import { initialSnapshot, type GameSnapshot } from '@/engine/game'
 import { performPlaceAction, placeActions, type PlaceAction } from '@/engine/placeActions'
 import { placeAllows, type PlaceHook } from '@/engine/places'
 import { boroughAccess } from '@/engine/boroughs'
-import { baseCopy, createCopy, slangPacks } from '@/lib/copy'
+import { createCopy } from '@/lib/copy'
+import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { cloutLevelName } from '@/lib/economyCopy'
 import {
   formatDuration,

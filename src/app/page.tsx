@@ -2,13 +2,13 @@ import { EventSheetMount } from '@/components/events/EventSheetMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
-import { WelcomeGate } from '@/components/welcome/WelcomeGate'
+import { WelcomeMount } from '@/components/welcome/WelcomeMount'
 import { copy } from '@/lib/copy'
 
 export default function HomePage() {
   return (
     <OverlayLayout
-      modal={<WelcomeGate />}
+      modal={<WelcomeMount />}
       slots={{
         hud: (
           <header className="flex h-full flex-col justify-center px-4">

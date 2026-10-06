@@ -1,0 +1,10 @@
+{
+  "strings": {
+    "clout.levels.nobody.name": "Nobody",
+    "clout.levels.local.name": "Local",
+    "clout.levels.sceneRegular.name": "Scene Regular",
+    "clout.levels.known.name": "Known",
+    "clout.levels.famous.name": "Famous",
+    "clout.levels.icon.name": "Icon"
+  }
+}

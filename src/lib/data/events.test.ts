@@ -4,7 +4,7 @@
  * conditions) are proven in src/engine/eventSafety.test.ts.
  */
 import { describe, expect, it } from 'vitest'
-import { baseCopy, slangPacks } from '@/lib/copy'
+import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { balance } from './config'
 import { events, items, landmarks, venues } from './content'
 import {

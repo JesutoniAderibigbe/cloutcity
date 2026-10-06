@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
 import { ITEM_SLOTS, shopItems } from '@/engine/items'
-import { baseCopy, createCopy, slangPacks } from './copy'
+import { createCopy } from '@/lib/copy'
+import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { formatMoney } from './format'
 import {
   alreadyOwnedLabel,

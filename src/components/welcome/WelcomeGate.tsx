@@ -44,7 +44,7 @@ function trapTab(dialog: HTMLElement, event: KeyboardEvent) {
  * The first-visit welcome card (S05a), over the already-loading map. It shows until this
  * device has a passing 18+ attestation, or the under-age lock screen while a lock holds, and
  * nothing for a returning player. There is no close button and Escape does nothing: the card is
- * the way in.
+ * the way in. Loaded as a boot island by WelcomeMount (DEC-11).
  */
 export function WelcomeGate() {
   const status = useSyncExternalStore(onboardingStore.subscribe, gateStatus, serverGateStatus)
@@ -67,7 +67,9 @@ export function WelcomeGate() {
     if (onboardingStore.getState().record?.status === 'complete') startGuestSession()
   }, [])
 
-  if (!open) return null
+  // Closed: an empty marker records that the boot island has decided (e2e specs wait for it
+  // before driving the page, which stays inert while the island loads).
+  if (!open) return <span hidden data-welcome-gate={status} />
 
   const ids =
     status === 'welcome'
@@ -82,6 +84,8 @@ export function WelcomeGate() {
       aria-labelledby={ids.title}
       aria-describedby={ids.description}
       data-welcome-dialog={status}
+      data-welcome-gate={status}
+      data-cc-feature="cc-feature:welcome"
       className="pointer-events-auto max-h-full w-full max-w-[var(--overlay-sheet-max-w)] self-center overflow-y-auto overscroll-contain rounded-3xl border border-night-700 bg-night-900 p-5 shadow-2xl"
     >
       {status === 'welcome' ? (

@@ -1,9 +1,6 @@
-import { readdirSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { BaseCopySchema, SlangPackSchema } from '@/lib/data/schemas/copy'
+import { SlangPackSchema } from '@/lib/data/schemas/copy'
 import {
-  baseCopy,
   copy,
   copyConfig,
   copyParts,
@@ -13,46 +10,17 @@ import {
   findLiteralSuperlatives,
   interpolate,
   placeholdersOf,
-  slangPacks,
   superlative,
-} from './copy'
+} from './index'
+// The whole catalogue, so every namespace is registered for these rendering tests. Namespace
+// loading itself is tested in registry.test.ts; the files on disk in files.test.ts.
+import { baseCopy, slangPacks } from './all'
 
-const PACKS_DIR = join(import.meta.dirname, '../../data/copy/packs')
 const pack = (id: string) => {
   const found = slangPacks[id]
   if (found === undefined) throw new Error(`pack ${id} is not registered`)
   return found
 }
-
-describe('copy files', () => {
-  it('base and every pack match their schemas', () => {
-    expect(BaseCopySchema.safeParse(baseCopy).success).toBe(true)
-    for (const [id, entry] of Object.entries(slangPacks)) {
-      expect(SlangPackSchema.safeParse(entry).success, id).toBe(true)
-      expect(entry.id, id).toBe(id)
-    }
-  })
-
-  it('every pack file is registered, and the active pack exists', () => {
-    const files = readdirSync(PACKS_DIR)
-      .filter((name) => name.endsWith('.json'))
-      .map((name) => name.replace(/\.json$/, ''))
-    expect(Object.keys(slangPacks).sort()).toEqual(files.sort())
-    expect(slangPacks[copyConfig.slangPack]).toBeDefined()
-  })
-
-  it('packs override only base keys and keep the same placeholders', () => {
-    for (const entry of Object.values(slangPacks)) {
-      for (const [key, text] of Object.entries(entry.strings)) {
-        const base = baseCopy.strings[key]
-        expect(base, `${entry.id}: ${key} is not a base key`).toBeDefined()
-        expect(placeholdersOf(text).sort(), `${entry.id}: ${key}`).toEqual(
-          placeholdersOf(base ?? '').sort(),
-        )
-      }
-    }
-  })
-})
 
 describe('slang-pack layer', () => {
   it('swapping the pack changes the rendered text', () => {

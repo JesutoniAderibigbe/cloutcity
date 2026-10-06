@@ -1,3 +1,4 @@
 {
-  "slangPack": "nyc"
+  "slangPack": "nyc",
+  "packs": ["nyc", "plain"]
 }

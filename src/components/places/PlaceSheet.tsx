@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useModalOpen } from '@/components/overlay/modalState'
 import { engineConfig } from '@/engine/config'
 import type { GameSnapshot } from '@/engine/game'
 import { placeActions, type PlaceAction } from '@/engine/placeActions'
@@ -18,6 +19,12 @@ import {
 import { findPlace, placeName } from '@/lib/world/places'
 import { closePlace } from '@/state/placeSheet'
 import { gameStore, useGameStore } from '@/state/store'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/boroughs'
+import '@/lib/copy/ns/club'
+import '@/lib/copy/ns/landmarks'
+import '@/lib/copy/ns/place'
+import '@/lib/copy/ns/venues'
 
 /**
  * The location action sheet (S09), in the overlay `sheet` zone. One sheet for every way into a
@@ -65,10 +72,10 @@ function PlaceCard({ place }: { readonly place: Place }) {
   const name = placeName(place)
   const lookOnly = view.kind === 'look-only'
 
-  // Focus the title on open; on close, give focus back (or to the scene if that is gone).
+  // On close, give focus back to what had it on open (or to the scene if that is gone). Runs
+  // before the title takes focus, so it records the control the player was on.
   useEffect(() => {
     const previous = document.activeElement
-    ref.current?.querySelector<HTMLElement>('h2')?.focus()
     return () => {
       if (previous instanceof HTMLElement && previous.isConnected && previous !== document.body) {
         previous.focus()
@@ -77,6 +84,14 @@ function PlaceCard({ place }: { readonly place: Place }) {
       }
     }
   }, [])
+  // Focus the title on open (once a modal holding the page inert at boot has closed).
+  const blocked = useModalOpen()
+  const titleFocused = useRef(false)
+  useEffect(() => {
+    if (blocked || titleFocused.current) return
+    titleFocused.current = true
+    ref.current?.querySelector<HTMLElement>('h2')?.focus()
+  }, [blocked])
 
   // Listened to directly: jsx-a11y does not allow key handlers on a non-interactive role.
   useEffect(() => {
@@ -138,6 +153,7 @@ function PlaceCard({ place }: { readonly place: Place }) {
       role="dialog"
       aria-labelledby={titleId}
       data-place-sheet={place.id}
+      data-cc-feature="cc-feature:place-sheet"
       data-look-only={lookOnly ? '' : undefined}
       className={`m-2 flex flex-col gap-2 rounded-2xl border p-3 shadow-lg ${
         lookOnly

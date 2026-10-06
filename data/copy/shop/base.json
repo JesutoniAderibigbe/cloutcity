@@ -1,0 +1,10 @@
+{
+  "strings": {
+    "shop.buy.label": "Buy {item} for {price}",
+    "shop.buy.locked": "{item} costs {price}. You have {cash}, so you need {short} more.",
+    "shop.buy.owned": "{item}: you already own it.",
+    "shop.buy.done": "Bought {item} for {price}.",
+    "shop.sell.label": "Sell {item} for {price}",
+    "shop.sell.done": "Sold {item} for {price}."
+  }
+}

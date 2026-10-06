@@ -1,0 +1,9 @@
+{
+  "id": "nyc",
+  "strings": {
+    "shop.buy.locked": "{item} is {price}. You've got {cash}. Pick up {short} more in shifts first.",
+    "shop.buy.owned": "{item}? Already in your closet.",
+    "shop.buy.done": "Copped {item} for {price}. It's giving main character.",
+    "shop.sell.done": "Flipped {item} for {price}. Closet's lighter, wallet's not."
+  }
+}

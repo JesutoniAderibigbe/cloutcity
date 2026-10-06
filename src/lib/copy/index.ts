@@ -1,15 +1,21 @@
 /**
- * The copy layer. Every player-facing string comes from data/copy/base.json, with the active
- * slang pack (data/config/copy.json → data/copy/packs/<id>.json) layered over it. Swapping
- * `slangPack` in config changes the text with no code change. Adding a new pack file also
- * means registering it in PACK_FILES below.
+ * The copy layer. Every player-facing string comes from data/copy/<namespace>/base.json, with
+ * the active slang pack (data/config/copy.json `slangPack`, a file data/copy/<namespace>/<pack>.json
+ * where the pack overrides that namespace) layered over it. Swapping `slangPack` in config
+ * changes the text with no code change.
+ *
+ * Strings are split by namespace (the first key segment) so the shell carries only the boot
+ * namespaces this module registers (app, nav, tabs, loading). Any other namespace loads with the
+ * feature that uses it: the feature module imports `@/lib/copy/ns/<namespace>`, so its strings
+ * ship in that feature's chunk (DEC-11). Rendering a key whose namespace is not loaded throws
+ * {@link CopyNamespaceNotLoadedError}: it is a bug, never shown as the raw key.
  *
  * Templates use `{name}` placeholders. Values are strings only, so numbers must go through the
  * shared formatters in src/lib/format.ts first (UX-2).
  *
- * This module ships to the browser, so it does not import zod (zod's classic build would cost
- * the shell JS budget most of its headroom). The copy files are bundled at build time, not
- * user input: their schemas run in copy.test.ts, which gates every build.
+ * This module ships to the browser, so it does not import zod. The copy files are bundled at
+ * build time, not user input: their schemas run in src/lib/copy/files.test.ts, which gates
+ * every build.
  *
  * Superlatives (GR-11): copy strings never contain "cheapest", "biggest", "best", "most" or
  * "fastest" as literal text (copy.test.ts enforces it). A string that needs one takes a
@@ -19,25 +25,28 @@
  *   copy('housing.rentRank', { rank: superlative('cheapest', home.id, rents) ?? '' })
  */
 import copyConfigJson from '@data/config/copy.json'
-import baseJson from '@data/copy/base.json'
-import nycPackJson from '@data/copy/packs/nyc.json'
-import plainPackJson from '@data/copy/packs/plain.json'
+import superlativesJson from '@data/copy/superlatives.json'
 import type { CopyConfig } from '@/lib/data/schemas/config'
 import type { BaseCopy, SlangPack, SuperlativeKind } from '@/lib/data/schemas/copy'
 import { PLACEHOLDER, hasMalformedPlaceholder, placeholdersOf } from '@/lib/placeholders'
+import type { CopyKey } from './keys'
+import { hasRegisteredKey, lookupTemplate } from './registry'
+// The boot namespaces: the shell's own copy.
+import './ns/app'
+import './ns/loading'
+import './ns/nav'
+import './ns/tabs'
 
-export type CopyKey = keyof typeof baseJson.strings
+/** The namespaces the copy core registers itself: the shell's own copy (imported above). */
+export const BOOT_NAMESPACES = ['app', 'loading', 'nav', 'tabs'] as const
+
+export type { CopyKey }
+export { CopyNamespaceNotLoadedError } from './registry'
 export type CopyVars = Readonly<Record<string, string>>
 export type CopyFn = (key: CopyKey, vars?: CopyVars) => string
 
-export const baseCopy: BaseCopy = baseJson
 export const copyConfig: CopyConfig = copyConfigJson
-
-/** Every slang pack, by file name (= pack id; copy.test.ts checks they match). */
-export const slangPacks: Readonly<Record<string, SlangPack>> = {
-  nyc: nycPackJson,
-  plain: plainPackJson,
-}
+export const superlativeWords: BaseCopy['superlatives'] = superlativesJson
 
 export { placeholdersOf }
 
@@ -56,8 +65,11 @@ export function interpolate(template: string, vars: CopyVars = {}): string {
   })
 }
 
-/** A copy function for one base and one pack. Pack strings win over base strings. */
-export function createCopy(base: BaseCopy, pack: SlangPack): CopyFn {
+/**
+ * A copy function for one complete base and one pack, independent of the registry (tests and
+ * tools build these from src/lib/copy/all.ts). Pack strings win over base strings.
+ */
+export function createCopy(base: Pick<BaseCopy, 'strings'>, pack: SlangPack): CopyFn {
   return (key, vars) => {
     const template = pack.strings[key] ?? base.strings[key]
     if (template === undefined) throw new Error(`Unknown copy key "${key}"`)
@@ -65,9 +77,9 @@ export function createCopy(base: BaseCopy, pack: SlangPack): CopyFn {
   }
 }
 
-/** True when `value` names a string in base copy. */
+/** True when `value` names a base string of a loaded namespace. */
 export function isCopyKey(value: string): value is CopyKey {
-  return Object.hasOwn(baseCopy.strings, value)
+  return hasRegisteredKey(value)
 }
 
 /** One piece of a template split by {@link copyParts}: literal text, or a named slot. */
@@ -95,22 +107,19 @@ export function splitTemplate(template: string): CopyPart[] {
   return parts
 }
 
-function activePack(): SlangPack {
-  const pack = slangPacks[copyConfig.slangPack]
-  if (pack === undefined) {
-    throw new Error(`config/copy.json: slang pack "${copyConfig.slangPack}" is not registered`)
-  }
-  return pack
+/** The active-pack template for `key`; throws if its namespace is not loaded or it is unknown. */
+function activeTemplate(key: CopyKey): string {
+  const template = lookupTemplate(key, copyConfig.slangPack)
+  if (template === undefined) throw new Error(`Unknown copy key "${key}"`)
+  return template
 }
 
 /** Renders a copy string with the active slang pack. */
-export const copy: CopyFn = createCopy(baseCopy, activePack())
+export const copy: CopyFn = (key, vars) => interpolate(activeTemplate(key), vars)
 
 /** The active-pack template for `key`, split into text and slots (see {@link splitTemplate}). */
 export function copyParts(key: CopyKey): CopyPart[] {
-  const template = activePack().strings[key] ?? baseCopy.strings[key]
-  if (template === undefined) throw new Error(`Unknown copy key "${key}"`)
-  return splitTemplate(template)
+  return splitTemplate(activeTemplate(key))
 }
 
 const SUPERLATIVE_DIRECTION: Readonly<Record<SuperlativeKind, 'min' | 'max'>> = {
@@ -137,7 +146,7 @@ export function superlative(
   kind: SuperlativeKind,
   subjectId: string,
   values: readonly RankedValue[],
-  base: BaseCopy = baseCopy,
+  words: Pick<BaseCopy, 'superlatives'> = { superlatives: superlativeWords },
 ): string | null {
   const subjects = values.filter((entry) => entry.id === subjectId)
   const subject = subjects[0]
@@ -148,7 +157,7 @@ export function superlative(
     (entry) =>
       entry.id === subjectId || (isMin ? subject.value < entry.value : subject.value > entry.value),
   )
-  return beaten ? base.superlatives[kind] : null
+  return beaten ? words.superlatives[kind] : null
 }
 
 const LITERAL_SUPERLATIVE = /\b(cheapest|biggest|best|most|fastest)\b/gi
