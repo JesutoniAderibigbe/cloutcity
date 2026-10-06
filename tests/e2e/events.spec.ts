@@ -192,8 +192,9 @@ test.describe('events', () => {
 
 // src/state/store.ts STORE_KEY. Not imported: Playwright's loader cannot load the store's JSON imports.
 const STORE_KEY = 'cloutcity:game'
-// src/engine/save.ts SAVE_VERSION (v5 adds event state), not imported for the same reason.
-const SAVE_VERSION = 5
+// src/engine/save.ts SAVE_VERSION (v5 adds event state, v6 club nights), not imported for the
+// same reason.
+const SAVE_VERSION = 6
 
 /** True when a click at the centre of the sheet zone lands outside every overlay zone. */
 function sheetPassesThrough(page: Page) {
@@ -328,6 +329,7 @@ test.describe('events: edge cases', () => {
             home: 'queens-room',
             rent: { owed: 0, missed: 0 },
             inventory: { wearables: [], gifts: [], outfit: {} },
+            clubNights: {},
           },
           speed: 1,
           events: { active: null, history: {}, pending: [], rngState: 0 },

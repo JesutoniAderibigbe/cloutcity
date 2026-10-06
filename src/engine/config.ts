@@ -39,6 +39,8 @@ export interface EngineConfig {
   readonly startCash: number
   /** The home a new player starts in. */
   readonly startHome: HomeId
+  /** Place actions, club doors, landmark visits and flex multipliers (src/engine/placeActions.ts). */
+  readonly place: BalanceConfig['place']
   /** Event tuning plus the event catalog (data/events, validated by EventsFileSchema). */
   readonly events: BalanceConfig['events'] & { readonly catalog: readonly GameEvent[] }
   /**
@@ -113,4 +115,5 @@ export const engineConfig: EngineConfig = {
   // JSON imports widen string unions to `string`; data.test.ts validates the file itself.
   events: { ...balanceJson.events, catalog: eventsJson.events as readonly GameEvent[] },
   places: placeCategories(landmarksJson.landmarks, venuesJson.venues),
+  place: balanceJson.place,
 }

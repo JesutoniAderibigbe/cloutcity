@@ -68,6 +68,7 @@ describe('game store persistence', () => {
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
       inventory: { wearables: [], gifts: [], outfit: {} },
+      clubNights: {},
     })
     expect(state.clock).toEqual({ minute: 480, remainderMs: 0 })
     expect(state.speed).toBe(1)
@@ -184,6 +185,7 @@ describe('game store persistence', () => {
         home: 'queens-room',
         rent: { owed: 280, missed: 1 },
         inventory: { wearables: [], gifts: [], outfit: {} },
+        clubNights: {},
       },
       speed: 1,
     })
@@ -469,6 +471,7 @@ describe('jobs and rent in the store', () => {
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
       inventory: { wearables: [], gifts: [], outfit: {} },
+      clubNights: {},
     })
     expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
@@ -617,6 +620,7 @@ describe('items in the store', () => {
     const local = new MemoryStorage()
     const v3player: Record<string, unknown> = { ...saveOf(321).player }
     delete v3player.inventory
+    delete v3player.clubNights
     const v3: Record<string, unknown> = { ...fresh, player: v3player }
     delete v3.events
     local.setItem(STORE_KEY, JSON.stringify({ state: v3, version: 3 }))

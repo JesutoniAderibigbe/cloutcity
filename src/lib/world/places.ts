@@ -163,3 +163,12 @@ export function placeAccessibleName(
   const reason = boroughClosedReason(place.borough, access, options)
   return reason === null ? name : copy('places.locked.label', { place: name, reason })
 }
+
+const placesById: ReadonlyMap<string, Venue | Landmark> = new Map(
+  [...venues, ...landmarks].map((place) => [place.id, place]),
+)
+
+/** The venue or landmark with `id`, or undefined when there is none. */
+export function findPlace(id: string): Venue | Landmark | undefined {
+  return placesById.get(id)
+}

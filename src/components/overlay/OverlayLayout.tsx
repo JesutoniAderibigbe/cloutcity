@@ -76,7 +76,7 @@ export function OverlayLayout({ children, slots, modal }: OverlayLayoutProps) {
             >
               {slots[zone] === undefined ? null : (
                 // `empty:` lets touches through a zone whose client content renders nothing
-                // (the event sheet when no event is open).
+                // (a sheet with no event or place open).
                 <div className="pointer-events-auto h-full overflow-y-auto overscroll-contain empty:pointer-events-none">
                   {slots[zone]}
                 </div>

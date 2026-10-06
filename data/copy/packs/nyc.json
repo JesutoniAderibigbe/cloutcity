@@ -130,6 +130,16 @@
     "boroughs.brooklyn.locked": "Brooklyn's not checking for you yet. Get to {level} and come through. Right now you're {current}.",
     "boroughs.manhattan.locked": "Manhattan? On bodega money? Hit {level} first. You're {current} right now.",
     "boroughs.bronx.teaser": "The Bronx is expanding soon. The Bronx ballpark is already warming up.",
-    "boroughs.statenIsland.teaser": "Staten Island is expanding soon. The ferry's coming, just not yet."
+    "boroughs.statenIsland.teaser": "Staten Island is expanding soon. The ferry's coming, just not yet.",
+    "place.hours.closed": "Closed right now. Doors open at {time}.",
+    "place.actions.none": "Nothing popping here yet.",
+    "place.blocked.funds": "That's {required}. Your wallet says {available}.",
+    "place.blocked.energy": "You're running on empty: {required} energy needed, you've got {available}.",
+    "place.done.consume": "Done. {effects}.",
+    "place.done.visit": "{place}: checked. {effects}.",
+    "place.done.clubNight": "You're in. The room clocked your fit. {effects}.",
+    "club.door.refused": "Bouncer checked the list, then checked your clout. Not tonight. Come back at {level}. You're {current}.",
+    "club.door.refusedVip": "Bouncer didn't even look up. This door is {level} only, and you're {current}. Not tonight.",
+    "place.done.clubNightRepeat": "Back again? You already made your name here tonight, so no extra clout. {effects}."
   }
 }

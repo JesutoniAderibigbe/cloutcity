@@ -267,6 +267,58 @@ export const TransitConfigSchema = z.strictObject({
 })
 export type TransitConfig = z.infer<typeof TransitConfigSchema>
 
+const KEBAB_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const COPY_KEY = /^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)+$/
+
+/**
+ * A club's door and what a night inside does (S09). The door refuses anyone below
+ * `minCloutLevel` (a `clout.levels` id) with the in-voice `refusalKey` copy; inside, the cover
+ * is paid up front, the night lasts `durationMin` and ends with `moodGain` and `cloutGain`.
+ */
+export const ClubRuleSchema = z.strictObject({
+  coverCharge: dollars,
+  minCloutLevel: z.string().regex(KEBAB_ID),
+  refusalKey: z.string().regex(COPY_KEY),
+  durationMin: positiveInt,
+  energyCost: statPoints,
+  // Positive so a repeat entry (no clout) still says what the night gave.
+  moodGain: positiveInt,
+  cloutGain: positiveInt,
+})
+export type ClubRule = z.infer<typeof ClubRuleSchema>
+
+/**
+ * What a player can do at a place (S09, src/engine/placeActions.ts). Ids of venues, venue
+ * types and landmarks are checked against data/venues and data/landmarks in
+ * src/lib/world/placeActions-content.test.ts (this file cannot import the content schemas).
+ */
+export const PlaceConfigSchema = z.strictObject({
+  /**
+   * Actions offered at each venue type, by id: a key of `actions.catalog` or of `actions`
+   * below. Shifts come from a venue's `jobIds` and the club night from `clubs`, not from here.
+   */
+  venueActions: z.record(z.string().regex(KEBAB_ID), z.array(z.string().regex(KEBAB_ID))),
+  /** Actions only places offer (a coffee, a meal out), shaped like `actions.catalog`. */
+  actions: z.record(z.string().regex(KEBAB_ID), ActionDefSchema),
+  /** Door and night rules for every club venue, by venue id. */
+  clubs: z.record(z.string().regex(KEBAB_ID), ClubRuleSchema),
+  /** The Visit action at any landmark that allows `visit` (never a memorial). */
+  visit: z.strictObject({
+    durationMin: positiveInt,
+    energyCost: statPoints,
+    moodGain: positiveInt,
+  }),
+  /**
+   * How much a flex at a landmark counts (read by S13), by landmark id; others get `default`.
+   * Landmarks that do not allow `flex` (memorials included) have no multiplier at all.
+   */
+  flexMultiplier: z.strictObject({
+    default: positive,
+    byLandmark: z.record(z.string().regex(KEBAB_ID), positive),
+  }),
+})
+export type PlaceConfig = z.infer<typeof PlaceConfigSchema>
+
 /** CLAUDE.md "Balance anchors". Money is whole in-game dollars. */
 export const BalanceConfigSchema = z
   .strictObject({
@@ -378,6 +430,8 @@ export const BalanceConfigSchema = z
       bronx: BoroughAccessRuleSchema,
       'staten-island': BoroughAccessRuleSchema,
     }),
+    /** Place actions, club doors, landmark visits and flex multipliers (S09). */
+    place: PlaceConfigSchema,
   })
   .refine((balance) => new Set(balance.rarityTiers).size === RARITY_TIERS.length, {
     error: 'rarityTiers must list each tier once',
@@ -460,6 +514,57 @@ export const BalanceConfigSchema = z
     {
       error: 'clout.levels must start at 0, rise strictly and have unique ids',
       path: ['clout', 'levels'],
+    },
+  )
+  .refine(
+    ({ actions, place }) =>
+      Object.values(place.venueActions).every((ids) =>
+        ids.every((id) => Object.hasOwn(actions.catalog, id) || Object.hasOwn(place.actions, id)),
+      ),
+    {
+      error: 'place.venueActions must name actions in actions.catalog or place.actions',
+      path: ['place', 'venueActions'],
+    },
+  )
+  .refine(
+    ({ actions, place }) =>
+      Object.keys(place.actions).every((id) => !Object.hasOwn(actions.catalog, id)),
+    { error: 'place.actions must not reuse an actions.catalog id', path: ['place', 'actions'] },
+  )
+  .refine(
+    ({ actions, stats, place }) =>
+      [
+        ...Object.values(place.actions).map((action) => ({
+          durationMin: action.durationMin,
+          energyCost: action.energyCost,
+          effects: STAT_KEYS.map((key) => action.statEffects[key] ?? 0),
+        })),
+        ...Object.values(place.clubs).map((club) => ({
+          durationMin: club.durationMin,
+          energyCost: club.energyCost,
+          effects: [club.moodGain],
+        })),
+        {
+          durationMin: place.visit.durationMin,
+          energyCost: place.visit.energyCost,
+          effects: [place.visit.moodGain],
+        },
+      ].every(
+        (action) =>
+          action.durationMin <= actions.maxDurationMin &&
+          action.energyCost <= stats.max &&
+          action.effects.every((effect) => Math.abs(effect) <= stats.max),
+      ),
+    { error: 'a place action exceeds maxDurationMin or stats.max', path: ['place'] },
+  )
+  .refine(
+    ({ clout, place }) =>
+      Object.values(place.clubs).every((club) =>
+        clout.levels.some((level) => level.id === club.minCloutLevel),
+      ),
+    {
+      error: 'place.clubs minCloutLevel must name a level in clout.levels',
+      path: ['place', 'clubs'],
     },
   )
 export type BalanceConfig = z.infer<typeof BalanceConfigSchema>

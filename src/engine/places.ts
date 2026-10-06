@@ -13,7 +13,8 @@ export type PlaceHook = 'visit' | 'flex' | 'emote' | 'events' | 'crime'
 
 const MINUTES_PER_DAY = 24 * 60
 
-function minuteOf(clock: string): number {
+/** Minutes after midnight of an `HH:MM` clock time. */
+export function minuteOf(clock: string): number {
   const [hours, minutes] = clock.split(':').map(Number)
   if (hours === undefined || minutes === undefined || Number.isNaN(hours + minutes)) {
     throw new Error(`Invalid clock time "${clock}"`)

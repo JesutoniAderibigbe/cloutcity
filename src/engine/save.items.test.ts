@@ -22,8 +22,8 @@ const valid: Inventory = {
 }
 
 describe('save v4 schema', () => {
-  it('is version 5 (v4 inventory, then v5 events) and a fresh save has an empty inventory', () => {
-    expect(SAVE_VERSION).toBe(5)
+  it('is version 6 (v4 inventory, v5 events, v6 club nights) and a fresh save has an empty inventory', () => {
+    expect(SAVE_VERSION).toBe(6)
     expect(initialSave(config).player.inventory).toEqual(emptyInventory)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
@@ -93,7 +93,7 @@ describe('save v3 -> v4', () => {
       outcome: 'carried',
       save: {
         ...v3,
-        player: { ...v3.player, inventory: emptyInventory },
+        player: { ...v3.player, inventory: emptyInventory, clubNights: {} },
         events: initialEventsState(),
       },
     })

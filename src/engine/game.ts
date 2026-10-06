@@ -28,10 +28,18 @@ export interface GameSnapshot {
     readonly rent: RentState
     /** Owned items and the outfit being worn (src/engine/items.ts). */
     readonly inventory: Inventory
+    /**
+     * The night each club last paid out clout, by club venue id (src/engine/placeActions.ts
+     * `clubNightKey`): clout is earned at most once per club per game night.
+     */
+    readonly clubNights: ClubNights
   }
 }
 
 export type PlayerState = GameSnapshot['player']
+
+/** Club venue id → the game day its last clout-paying night opened on. */
+export type ClubNights = Readonly<Record<string, number>>
 
 export interface Advance {
   readonly snapshot: GameSnapshot
@@ -51,6 +59,7 @@ export function initialSnapshot(config: EngineConfig): GameSnapshot {
       home: config.startHome,
       rent: initialRent,
       inventory: emptyInventory,
+      clubNights: {},
     },
   }
 }

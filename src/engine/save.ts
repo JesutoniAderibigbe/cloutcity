@@ -12,12 +12,13 @@
  * - v4 (S10): adds `player.inventory` (owned wearables, gift stacks, outfit).
  * - v5 (S14): adds `events` (open event, cooldown history, pending clout/item effects, random
  *   generator state).
+ * - v6 (S09): adds `player.clubNights` (the night each club last paid out clout).
  */
 import * as z from 'zod/mini'
-import { isSpeed, realMsPerGameMinute } from './clock'
+import { calendar, isSpeed, realMsPerGameMinute } from './clock'
 import { isHomeId, type EngineConfig } from './config'
 import { initialEventsState, type EventsState } from './events'
-import { initialSnapshot, type GameSnapshot } from './game'
+import { initialSnapshot, type ClubNights, type GameSnapshot } from './game'
 import {
   ITEM_SLOTS,
   emptyInventory,
@@ -30,7 +31,7 @@ import {
 } from './items'
 import { initialRent } from './rent'
 
-export const SAVE_VERSION = 5
+export const SAVE_VERSION = 6
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
@@ -56,6 +57,21 @@ const PendingEffectSchema = z.discriminatedUnion('kind', [
     source: EffectSourceSchema,
   }),
 ])
+
+/** A club's night key: the game day the night opened on (0 for day 1 before the club opens). */
+const NightKeySchema = z.int().check(z.gte(0))
+
+/** Only configured clubs, each with a night that opened no later than today. */
+function clubNightsSchema(config: EngineConfig) {
+  return z
+    .record(z.string(), NightKeySchema)
+    .check(
+      z.refine(
+        (nights) => Object.keys(nights).every((id) => Object.hasOwn(config.place.clubs, id)),
+        'Unknown club',
+      ),
+    )
+}
 
 function eventsStateSchema(config: EngineConfig) {
   return z.strictObject({
@@ -142,6 +158,7 @@ export function createSaveSchema(config: EngineConfig) {
         missed: z.int().check(z.gte(0), z.lt(config.rent.evictAfterMissed)),
       }),
       inventory: inventorySchema(config),
+      clubNights: clubNightsSchema(config),
     }),
     speed: z.number().check(z.refine((speed) => isSpeed(speed, config), 'Unsupported speed')),
     events: eventsStateSchema(config),
@@ -151,7 +168,39 @@ export function createSaveSchema(config: EngineConfig) {
       (value) => inventoryIssue(value.player.inventory, value.clock.minute, config) === null,
       { message: 'Inconsistent inventory', path: ['player', 'inventory'] },
     ),
+    z.refine(
+      (value) =>
+        Object.values(value.player.clubNights).every(
+          (night) => night <= calendar(value.clock.minute, config).day,
+        ),
+      { message: 'A club night in the future', path: ['player', 'clubNights'] },
+    ),
   )
+}
+
+/**
+ * Club nights from an untrusted save: entries for clubs the config does not have, keys that
+ * are not own string keys, and nights that are not whole numbers in 0..today are dropped (so
+ * a damaged entry can only let a club pay out once more, never block it for good).
+ */
+function repairClubNights(
+  raw: unknown,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly clubNights: ClubNights; readonly repaired: boolean } {
+  const today = calendar(nowMinute, config).day
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    return { clubNights: {}, repaired: true }
+  }
+  const entries = Object.entries(raw as Record<string, unknown>)
+  const kept = entries.filter(
+    (entry): entry is [string, number] =>
+      Object.hasOwn(config.place.clubs, entry[0]) &&
+      Number.isSafeInteger(entry[1]) &&
+      (entry[1] as number) >= 0 &&
+      (entry[1] as number) <= today,
+  )
+  return { clubNights: Object.fromEntries(kept), repaired: kept.length !== entries.length }
 }
 
 /**
@@ -230,9 +279,26 @@ const LoadableSaveSchema = z.strictObject({
     home: z.unknown(),
     rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
     inventory: z.unknown(),
+    // Repairable: unusable entries are dropped (`repairClubNights`).
+    clubNights: z.optional(z.unknown()),
   }),
   speed: z.unknown(),
   // Repairable: a missing or unusable event state starts over (`repairEvents`).
+  events: z.optional(z.unknown()),
+})
+
+/** A v5 save's structure (S14): no club nights yet. */
+const LoadableSaveV5Schema = z.strictObject({
+  clock: z.strictObject({ minute: z.int().check(z.gte(0)), remainderMs: z.unknown() }),
+  player: z.strictObject({
+    cash: CashSchema,
+    stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
+    clout: CloutSchema,
+    home: z.unknown(),
+    rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
+    inventory: z.unknown(),
+  }),
+  speed: z.unknown(),
   events: z.optional(z.unknown()),
 })
 
@@ -292,7 +358,8 @@ export type LoadResult =
  * - a missed-rent count that is not a whole number in 0..evictAfterMissed-1 is clamped
  *   (a non-number becomes 0);
  * - an inconsistent or malformed inventory keeps what is usable (see `repairInventory`);
- * - unusable event state starts over (see `repairEvents`).
+ * - unusable event state starts over (see `repairEvents`);
+ * - unusable club-night entries are dropped (see `repairClubNights`).
  * Only a structurally unusable save (missing objects, unknown keys, cash or minute of the wrong
  * type or range) fails, and the caller starts fresh.
  */
@@ -342,6 +409,13 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   )
   if (inventoryRepaired) repaired.push('player.inventory')
 
+  const { clubNights, repaired: nightsRepaired } = repairClubNights(
+    player.clubNights,
+    clock.minute,
+    config,
+  )
+  if (nightsRepaired) repaired.push('player.clubNights')
+
   return {
     ok: true,
     save: {
@@ -353,6 +427,7 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
         home,
         rent: { owed: player.rent.owed, missed },
         inventory,
+        clubNights,
       },
       speed: validSpeed,
       events: repairEvents(events, config, repaired),
@@ -411,7 +486,8 @@ export interface Migration {
  * Upgrades a save written by an older SAVE_VERSION. A v1 save keeps its cash and starts the
  * new clock and stats fresh. A v2 save keeps everything and starts with no clout, the start
  * home and no rent owed. A v3 save keeps everything and starts with no items. A v4 save keeps
- * everything and starts with fresh event state. Anything older or malformed starts fresh. A
+ * everything and starts with fresh event state. A v5 save keeps everything and starts with no
+ * club nights. Anything older or malformed starts fresh. A
  * save from a newer build throws `NewerSaveError`: it is not loaded, and not overwritten unless
  * the player plays on.
  */
@@ -441,6 +517,7 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
             home: config.startHome,
             rent: initialRent,
             inventory: emptyInventory,
+            clubNights: {},
           },
           events: fresh.events,
         },
@@ -455,7 +532,7 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
       const loaded = loadSave(
         {
           ...v3.data,
-          player: { ...v3.data.player, inventory: emptyInventory },
+          player: { ...v3.data.player, inventory: emptyInventory, clubNights: {} },
           events: fresh.events,
         },
         config,
@@ -466,7 +543,17 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
   if (version === 4) {
     const v4 = LoadableSaveV4Schema.safeParse(persisted)
     if (v4.success) {
-      const loaded = loadSave({ ...v4.data, events: fresh.events }, config)
+      const loaded = loadSave(
+        { ...v4.data, player: { ...v4.data.player, clubNights: {} }, events: fresh.events },
+        config,
+      )
+      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
+    }
+  }
+  if (version === 5) {
+    const v5 = LoadableSaveV5Schema.safeParse(persisted)
+    if (v5.success) {
+      const loaded = loadSave({ ...v5.data, player: { ...v5.data.player, clubNights: {} } }, config)
       if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
     }
   }
