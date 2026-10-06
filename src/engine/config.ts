@@ -7,7 +7,8 @@
  * classic zod and out of the shell JS budget (src/lib/client-imports.test.ts).
  */
 import balanceJson from '@data/config/balance.json'
-import type { BalanceConfig } from '@/lib/data/schemas/config'
+import type { BalanceConfig, BoroughAccessRule } from '@/lib/data/schemas/config'
+import type { Borough } from '@/lib/data/schemas/content'
 
 /** A housing tier: a key of `rentPerWeek`. */
 export type HomeId = keyof BalanceConfig['rentPerWeek']
@@ -23,6 +24,8 @@ export interface EngineConfig {
   readonly rentPerWeek: BalanceConfig['rentPerWeek']
   readonly rent: BalanceConfig['rent']
   readonly clout: BalanceConfig['clout']
+  /** Who may enter each borough (open, a clout level, or expanding soon). */
+  readonly boroughs: BalanceConfig['boroughs']
   /** Whole in-game dollars a new player starts with. */
   readonly startCash: number
   /** The home a new player starts in. */
@@ -42,6 +45,29 @@ function startHome(id: string): HomeId {
   return id as HomeId
 }
 
+/**
+ * JSON imports widen `access` to string, so the rules are narrowed here. A bad rule throws at
+ * load (fail fast); BalanceConfigSchema checks the same file in data.test.ts.
+ */
+function boroughRules(json: Readonly<Record<Borough, { access: string; level?: string }>>) {
+  const rule = (id: Borough): BoroughAccessRule => {
+    const entry = json[id]
+    if (entry.access === 'open' || entry.access === 'expanding-soon')
+      return { access: entry.access }
+    if (entry.access === 'clout' && entry.level !== undefined) {
+      return { access: 'clout', level: entry.level }
+    }
+    throw new Error(`config/balance.json: boroughs.${id} has an invalid access rule`)
+  }
+  return {
+    queens: rule('queens'),
+    brooklyn: rule('brooklyn'),
+    manhattan: rule('manhattan'),
+    bronx: rule('bronx'),
+    'staten-island': rule('staten-island'),
+  } satisfies BalanceConfig['boroughs']
+}
+
 export const engineConfig: EngineConfig = {
   time: balanceJson.time,
   stats: balanceJson.stats,
@@ -50,6 +76,7 @@ export const engineConfig: EngineConfig = {
   rentPerWeek,
   rent: balanceJson.rent,
   clout: balanceJson.clout,
+  boroughs: boroughRules(balanceJson.boroughs),
   startCash: balanceJson.start.cash,
   startHome: startHome(balanceJson.start.home),
 }

@@ -96,6 +96,10 @@ describe('browser code stays off classic zod (shell JS budget)', () => {
     expect(violations(clientEntries)).toEqual([])
   })
 
+  it('the client place layer (src/lib/world/places.ts) stays off classic zod and geo.ts', () => {
+    expect(violations([join(SRC, 'lib/world/places.ts')])).toEqual([])
+  })
+
   it('the forbidden list covers every classic-zod data loader, geo.ts included', () => {
     for (const file of [
       'src/lib/data/config.ts',

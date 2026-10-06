@@ -1,5 +1,6 @@
 /** Validated game content and world data. Import content from here, never the JSON directly. */
 import audioJson from '@data/audio/manifest.json'
+import boroughsJson from '@data/boroughs/boroughs.json'
 import eventsJson from '@data/events/events.json'
 import boundsJson from '@data/geo/bounds.json'
 import itemsJson from '@data/items/items.json'
@@ -17,7 +18,12 @@ import {
   PremiumFileSchema,
   VenuesFileSchema,
 } from './schemas/content'
-import { AudioManifestSchema, GeoBoundsSchema, ZonesFileSchema } from './schemas/world'
+import {
+  AudioManifestSchema,
+  BoroughsFileSchema,
+  GeoBoundsSchema,
+  ZonesFileSchema,
+} from './schemas/world'
 
 export const items = parseDataFile('items/items.json', ItemsFileSchema, itemsJson).items
 export const premiumItems = parseDataFile(
@@ -36,3 +42,8 @@ export const landmarks = parseDataFile(
 export const geoBounds = parseDataFile('geo/bounds.json', GeoBoundsSchema, boundsJson)
 export const zones = parseDataFile('zones/zones.derived.json', ZonesFileSchema, zonesJson).zones
 export const audioManifest = parseDataFile('audio/manifest.json', AudioManifestSchema, audioJson)
+export const boroughs = parseDataFile(
+  'boroughs/boroughs.json',
+  BoroughsFileSchema,
+  boroughsJson,
+).boroughs

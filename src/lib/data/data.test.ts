@@ -30,6 +30,7 @@ import {
 import { BaseCopySchema, SlangPackSchema } from './schemas/copy'
 import {
   AudioManifestSchema,
+  BoroughsFileSchema,
   GeoBoundsSchema,
   GeoManifestSchema,
   LandFileSchema,
@@ -48,6 +49,7 @@ const DATA = join(import.meta.dirname, '../../../data')
 /** The schema for each data file. Files under copy/packs/ all use SlangPackSchema. */
 const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'audio/manifest.json': AudioManifestSchema,
+  'boroughs/boroughs.json': BoroughsFileSchema,
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,
   'config/geo.json': GeoConfigSchema,
@@ -122,6 +124,7 @@ describe('/data files', () => {
     'geo',
     'zones',
     'audio',
+    'boroughs',
     'config',
     'copy',
   ])('/data/%s has at least one data file', (folder) => {
@@ -298,6 +301,48 @@ describe('config/balance.json', () => {
     expect(BalanceConfigSchema.safeParse({ ...valid, actions: badEffect }).success).toBe(false)
   })
 
+  it('rejects a borough rule with an unknown clout level, a missing borough or bad access', () => {
+    const valid = readJson('config/balance.json') as BalanceConfig
+    const boroughs = (patch: Record<string, unknown>) => ({
+      ...valid,
+      boroughs: { ...valid.boroughs, ...patch },
+    })
+    expect(BalanceConfigSchema.safeParse(boroughs({})).success).toBe(true)
+    const mayor = { brooklyn: { access: 'clout', level: 'mayor' } }
+    expect(BalanceConfigSchema.safeParse(boroughs(mayor)).success).toBe(false)
+    expect(BalanceConfigSchema.safeParse(boroughs({ queens: { access: 'clout' } })).success).toBe(
+      false,
+    )
+    expect(BalanceConfigSchema.safeParse(boroughs({ queens: { access: 'vip' } })).success).toBe(
+      false,
+    )
+    const withoutBronx: Partial<BalanceConfig['boroughs']> = { ...valid.boroughs }
+    delete withoutBronx.bronx
+    expect(BalanceConfigSchema.safeParse({ ...valid, boroughs: withoutBronx }).success).toBe(false)
+  })
+
+  it('rejects venue hours that never open and a station venue without its station', () => {
+    const file = readJson('venues/venues.json') as { venues: Record<string, unknown>[] }
+    const withVenue = (index: number, patch: Record<string, unknown>) => ({
+      venues: [{ ...file.venues[index], ...patch }],
+    })
+    const station = file.venues.findIndex((venue) => venue.type === 'subway-station')
+    const shop = file.venues.findIndex((venue) => venue.type === 'coffee-shop')
+    expect(VenuesFileSchema.safeParse(withVenue(shop, {})).success).toBe(true)
+    const same = { hours: { open: '09:00', close: '09:00' } }
+    expect(VenuesFileSchema.safeParse(withVenue(shop, same)).success).toBe(false)
+    const late = { hours: { open: '24:00', close: '09:00' } }
+    expect(VenuesFileSchema.safeParse(withVenue(shop, late)).success).toBe(false)
+    expect(VenuesFileSchema.safeParse(withVenue(shop, { price: 5 })).success).toBe(false)
+    expect(VenuesFileSchema.safeParse(withVenue(shop, { jobIds: ['dj'] })).success).toBe(false)
+    expect(VenuesFileSchema.safeParse(withVenue(station, { stationId: undefined })).success).toBe(
+      false,
+    )
+    expect(VenuesFileSchema.safeParse(withVenue(station, { jobIds: ['retail'] })).success).toBe(
+      false,
+    )
+  })
+
   it('food actions cost within the food range', () => {
     for (const id of ['bodega-breakfast', 'home-meal']) {
       const cost = balance.actions.catalog[id]?.cashCost
@@ -403,8 +448,8 @@ describe('cross-file references', () => {
       ...premiumItems.map((entry) => entry.nameKey),
       ...events.flatMap((entry) => [entry.titleKey, entry.bodyKey]),
       ...jobs.map((entry) => entry.nameKey),
-      ...venues.map((entry) => entry.nameKey),
-      ...landmarks.map((entry) => entry.nameKey),
+      ...venues.flatMap((entry) => [entry.nameKey, entry.blurbKey]),
+      ...landmarks.flatMap((entry) => [entry.nameKey, entry.infoKey]),
     ]
     expect(refs.filter((key) => !copyKeys.has(key))).toEqual([])
   })
