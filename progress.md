@@ -52,8 +52,8 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - Legal: generic labels for branded landmark names and derived subway artwork; everything stays
   `legalReviewed:false` until legal review.
 - Out-of-scope list in CLAUDE.md stands.
-- Q-I (default, awaiting user confirmation): no friendships, chat, roommates or emotes across age
-  bands (teen with teen, adult with adult).
+- Cross-age connections (user ruling 2026-10-06): no friendships, chat, roommates or emotes
+  across age bands (teen with teen, adult with adult).
 - Payments: Stripe test mode only. Real payouts need a Stripe account in a supported country
   (Stripe does not directly support Nigeria-registered businesses; e.g. a US entity via Stripe
   Atlas). Human step, not a loop task.
