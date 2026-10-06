@@ -146,6 +146,17 @@ export const ActionDefSchema = z.strictObject({
 })
 export type ActionDef = z.infer<typeof ActionDefSchema>
 
+/**
+ * Who may enter a borough: always (`open`), from a clout level (`clout`, a `clout.levels` id),
+ * or nobody yet (`expanding-soon`, shown as dimmed teaser land).
+ */
+export const BoroughAccessRuleSchema = z.discriminatedUnion('access', [
+  z.strictObject({ access: z.literal('open') }),
+  z.strictObject({ access: z.literal('clout'), level: z.string() }),
+  z.strictObject({ access: z.literal('expanding-soon') }),
+])
+export type BoroughAccessRule = z.infer<typeof BoroughAccessRuleSchema>
+
 /** CLAUDE.md "Balance anchors". Money is whole in-game dollars. */
 export const BalanceConfigSchema = z
   .strictObject({
@@ -240,6 +251,14 @@ export const BalanceConfigSchema = z
     rarityTiers: z.array(RarityTierSchema).length(RARITY_TIERS.length),
     /** Placeholder USD prices (whole dollars) until a human sets them. */
     premiumPriceTiersUsd: z.record(z.string().regex(/^tier-\d+$/), z.int().positive()),
+    /** Borough gating, keyed by borough id (the ids of BOROUGHS in schemas/content.ts). */
+    boroughs: z.strictObject({
+      queens: BoroughAccessRuleSchema,
+      brooklyn: BoroughAccessRuleSchema,
+      manhattan: BoroughAccessRuleSchema,
+      bronx: BoroughAccessRuleSchema,
+      'staten-island': BoroughAccessRuleSchema,
+    }),
   })
   .refine((balance) => new Set(balance.rarityTiers).size === RARITY_TIERS.length, {
     error: 'rarityTiers must list each tier once',
@@ -301,6 +320,14 @@ export const BalanceConfigSchema = z
       error: 'requiredCloutLevel must name a level in clout.levels',
       path: ['jobs', 'requiredCloutLevel'],
     },
+  )
+  .refine(
+    (balance) =>
+      Object.values(balance.boroughs).every(
+        (rule) =>
+          rule.access !== 'clout' || balance.clout.levels.some((entry) => entry.id === rule.level),
+      ),
+    { error: 'a clout-gated borough must name a level in clout.levels', path: ['boroughs'] },
   )
   .refine((balance) => balance.rent.lateFees.length === balance.rent.evictAfterMissed - 1, {
     error: 'rent.lateFees needs one fee for each miss before eviction',

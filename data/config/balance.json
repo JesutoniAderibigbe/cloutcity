@@ -88,5 +88,12 @@
     "maxGiftStack": 10
   },
   "rarityTiers": ["common", "medium", "rare"],
-  "premiumPriceTiersUsd": { "tier-1": 2, "tier-2": 5, "tier-3": 10 }
+  "premiumPriceTiersUsd": { "tier-1": 2, "tier-2": 5, "tier-3": 10 },
+  "boroughs": {
+    "queens": { "access": "open" },
+    "brooklyn": { "access": "clout", "level": "local" },
+    "manhattan": { "access": "clout", "level": "scene-regular" },
+    "bronx": { "access": "expanding-soon" },
+    "staten-island": { "access": "expanding-soon" }
+  }
 }

@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import { ORIGIN, PROJECTION_ID } from '../../geo/projection'
 import { GEO_SOURCE_IDS } from '../../geo/sources'
-import { BOROUGHS, BoroughSchema, IdSchema, listOf } from './content'
+import { BOROUGHS, BoroughSchema, CopyKeyRefSchema, IdSchema, listOf } from './content'
 
 /** The NYC extent in WGS84 degrees: camera bounds and a sanity check for every coordinate. */
 export const GeoBoundsSchema = z
@@ -163,3 +163,23 @@ export const AudioManifestSchema = z.strictObject({
   tracks: z.array(AudioTrackSchema),
 })
 export type AudioTrack = z.infer<typeof AudioTrackSchema>
+
+/**
+ * data/boroughs/boroughs.json: borough copy and teasers. Whether a borough is open, gated by
+ * clout or "expanding soon" is balance (data/config/balance.json `boroughs`).
+ */
+export const BoroughsFileSchema = z.strictObject({
+  boroughs: listOf(
+    z.strictObject({
+      id: BoroughSchema,
+      nameKey: CopyKeyRefSchema,
+      /** Why-locked copy for a clout-gated borough; takes {level} and {current}. */
+      lockedKey: CopyKeyRefSchema.optional(),
+      /** "Expanding soon" copy for a borough that is not playable yet. */
+      teaserKey: CopyKeyRefSchema.optional(),
+      /** Landmarks shown as teaser pins on a dimmed borough. */
+      teaserLandmarkIds: z.array(IdSchema),
+    }),
+  ).length(BOROUGHS.length),
+})
+export type BoroughsFile = z.infer<typeof BoroughsFileSchema>

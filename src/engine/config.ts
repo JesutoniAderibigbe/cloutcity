@@ -8,7 +8,8 @@
  */
 import balanceJson from '@data/config/balance.json'
 import itemsJson from '@data/items/items.json'
-import type { BalanceConfig } from '@/lib/data/schemas/config'
+import type { BalanceConfig, BoroughAccessRule } from '@/lib/data/schemas/config'
+import type { Borough } from '@/lib/data/schemas/content'
 import { catalogFromJson, type ItemDef } from './itemCatalog'
 
 /** A housing tier: a key of `rentPerWeek`. */
@@ -27,6 +28,8 @@ export interface EngineConfig {
   readonly clout: BalanceConfig['clout']
   /** Shop, resale and gift-stack rules, plus the cash item catalog (data/items/items.json). */
   readonly items: BalanceConfig['items'] & { readonly catalog: readonly ItemDef[] }
+  /** Who may enter each borough (open, a clout level, or expanding soon). */
+  readonly boroughs: BalanceConfig['boroughs']
   /** Whole in-game dollars a new player starts with. */
   readonly startCash: number
   /** The home a new player starts in. */
@@ -46,6 +49,29 @@ function startHome(id: string): HomeId {
   return id as HomeId
 }
 
+/**
+ * JSON imports widen `access` to string, so the rules are narrowed here. A bad rule throws at
+ * load (fail fast); BalanceConfigSchema checks the same file in data.test.ts.
+ */
+function boroughRules(json: Readonly<Record<Borough, { access: string; level?: string }>>) {
+  const rule = (id: Borough): BoroughAccessRule => {
+    const entry = json[id]
+    if (entry.access === 'open' || entry.access === 'expanding-soon')
+      return { access: entry.access }
+    if (entry.access === 'clout' && entry.level !== undefined) {
+      return { access: 'clout', level: entry.level }
+    }
+    throw new Error(`config/balance.json: boroughs.${id} has an invalid access rule`)
+  }
+  return {
+    queens: rule('queens'),
+    brooklyn: rule('brooklyn'),
+    manhattan: rule('manhattan'),
+    bronx: rule('bronx'),
+    'staten-island': rule('staten-island'),
+  } satisfies BalanceConfig['boroughs']
+}
+
 export const engineConfig: EngineConfig = {
   time: balanceJson.time,
   stats: balanceJson.stats,
@@ -55,6 +81,7 @@ export const engineConfig: EngineConfig = {
   rent: balanceJson.rent,
   clout: balanceJson.clout,
   items: { ...balanceJson.items, catalog: catalogFromJson(itemsJson.items) },
+  boroughs: boroughRules(balanceJson.boroughs),
   startCash: balanceJson.start.cash,
   startHome: startHome(balanceJson.start.home),
 }

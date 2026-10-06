@@ -125,14 +125,14 @@ by a zod schema in `src/lib/data/schemas/` (`src/lib/data/data.test.ts` fails if
 no schema or does not match it, if any other file type appears (only `SOURCES.md` and
 `README.md` are allowed next to data), or if a cross-file reference breaks).
 
-| Folder            | Holds                                                                                                                                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `layout.json`, `copy.json`, `geo.json` (geo build parameters) |
-| `data/copy/`      | `base.json` (every player-facing string) and `packs/*.json` (slang packs)                                                                                                                           |
-| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`: content, with copy keys instead of text (placeholder seeds until their tasks land)                                                     |
-| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                  |
-| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                       |
-| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                   |
+| Folder            | Holds                                                                                                                                                                                                                             |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `layout.json`, `copy.json`, `geo.json` (geo build parameters)                               |
+| `data/copy/`      | `base.json` (every player-facing string) and `packs/*.json` (slang packs)                                                                                                                                                         |
+| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land) |
+| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                |
+| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                     |
+| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                 |
 
 - **Loading.** Server code and scripts import validated data from `src/lib/data/config.ts` and
   `src/lib/data/content.ts`, which parse at import and fail fast with the file name. Client
@@ -163,6 +163,37 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
   `--palette-<token>` variable on `<html>`, and `src/app/globals.css` maps it to the Tailwind
   colour `--color-<token>` (`bg-night-900`, `text-taxi-400`, ...). A new token needs a line in
   both; `src/lib/theme.test.ts` checks they match and that no source file hardcodes a colour.
+
+## Places: boroughs, venues and landmarks
+
+Venues (invented businesses) and landmarks (real places) share one id space. The client reads
+them through `src/lib/world/places.ts` (`mapPlaces()`, `placeAccess()`,
+`placeAccessibleName()`, `boroughRenderState()`); the rules are in `src/engine/boroughs.ts`
+(clout gating from `balance.json` `boroughs`) and `src/engine/places.ts` (opening hours,
+`placeAllows`).
+
+- **Ids are stable.** Events and travel reference places by id, so never rename one; add a new
+  entry instead. Ids are kebab-case and brand-free.
+- **Fields you fill by hand:** `id`, copy keys (`venues.<camelId>.name` / `.blurb`,
+  `landmarks.<camelId>.name` / `.info`), `type` or `category`, `location` (lat/lng), `borough`,
+  `zoneId`, `hours` (venues), `stationId` (station venues), `approach` and `spans` (bridges and
+  off-land landmarks), `interactions` (landmarks). Local x/y are computed with `project()` at
+  load, never stored.
+- **Fields the tests check:** `src/lib/world/places-content.test.ts` checks `borough` and
+  `zoneId` against the S04 borough and zone layers at `approach ?? location` (the failure
+  prints the expected value), that venues are not inside parks and are 50 m apart, that a
+  station venue is within 25 m of its station, and that landmarks off land have an `approach`.
+- **nameMode.** A landmark is `generic` when its real name contains a corporate or sponsor brand
+  or its owner licenses the name or image as commercial IP; civic, park and place names stay
+  `real`. Add the real name to `LANDMARK_REAL_NAMES` in the test. Every landmark ships with
+  `legalReviewed: false`. Memorials are `lookOnly: true` with no `interactions`, plain base copy
+  only, and no slang-pack override.
+- **SOURCES entry.** A landmark needs a row in `data/landmarks/SOURCES.md` (Wikidata id and
+  coordinates, nameMode reasoning). A venue needs a row in `data/venues/SOURCES.md` with the web
+  search for its name; a name that matches a real NYC business is rejected (add the business to
+  `REAL_NYC_BUSINESSES`).
+- **Copy.** Place and borough copy may not use a superlative (the extended list in the test)
+  unless it is computed into a `{rank}` placeholder by `superlative()`.
 
 ## Game state
 
