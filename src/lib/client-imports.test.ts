@@ -23,14 +23,20 @@ function sourceFiles(dir: string): string[] {
     .filter((file) => !isTest(file))
 }
 
-/** Runtime module specifiers in a file: static imports/re-exports (not `import type`) and dynamic imports. */
-function runtimeSpecifiers(code: string): string[] {
+/** Static runtime imports/re-exports in a file (not `import type`): they land in the same chunk. */
+function staticSpecifiers(code: string): string[] {
   const specs: string[] = []
   const staticImport =
     /^[ \t]*(?:import|export)\s+(type\s+)?(?:[\s\S]*?\sfrom\s+)?['"]([^'"]+)['"]/gm
   for (const match of code.matchAll(staticImport)) {
     if (match[1] === undefined && match[2] !== undefined) specs.push(match[2])
   }
+  return specs
+}
+
+/** Runtime module specifiers in a file: static imports/re-exports (not `import type`) and dynamic imports. */
+function runtimeSpecifiers(code: string): string[] {
+  const specs = staticSpecifiers(code)
   for (const match of code.matchAll(/\bimport\(\s*['"]([^'"]+)['"]\s*\)/g)) {
     if (match[1] !== undefined) specs.push(match[1])
   }
@@ -78,6 +84,32 @@ function violations(entries: readonly string[]): string[] {
   return found
 }
 
+/**
+ * The Supabase client (~50 KB gzipped) must load lazily: browser code reaches it only through a
+ * dynamic `import()`, never a static import chain from an entry point.
+ */
+const SUPABASE_PACKAGE = /^@supabase\//
+
+function staticSupabaseImports(entries: readonly string[]): string[] {
+  const found: string[] = []
+  const seen = new Set<string>()
+  const queue = [...entries]
+  while (queue.length > 0) {
+    const file = queue.shift()
+    if (file === undefined || seen.has(file) || !/\.[cm]?[jt]sx?$/.test(file)) continue
+    seen.add(file)
+    for (const spec of staticSpecifiers(readFileSync(file, 'utf8'))) {
+      if (SUPABASE_PACKAGE.test(spec)) {
+        found.push(`${relative(ROOT, file)} statically imports '${spec}'`)
+        continue
+      }
+      const target = resolveLocal(spec, file)
+      if (target !== undefined) queue.push(target)
+    }
+  }
+  return found
+}
+
 const USE_CLIENT = /^\s*(?:\/\/[^\n]*\n|\/\*[\s\S]*?\*\/\s*)*['"]use client['"]/
 
 describe('browser code stays off classic zod (shell JS budget)', () => {
@@ -94,6 +126,21 @@ describe('browser code stays off classic zod (shell JS budget)', () => {
 
   it('no client-reachable module imports zod classic or a classic-zod data loader', () => {
     expect(violations(clientEntries)).toEqual([])
+  })
+
+  it('no client entry point statically reaches @supabase/* (load it with import())', () => {
+    expect(staticSupabaseImports(clientEntries)).toEqual([])
+  })
+
+  it('the Supabase import scanner flags static imports only (self-check)', () => {
+    const code = [
+      "import { createClient } from '@supabase/supabase-js'",
+      "import type { Session } from '@supabase/auth-js'",
+      "const lazy = () => import('@supabase/supabase-js')",
+    ].join('\n')
+    expect(staticSpecifiers(code).filter((spec) => SUPABASE_PACKAGE.test(spec))).toEqual([
+      '@supabase/supabase-js',
+    ])
   })
 
   it('the client place layer (src/lib/world/places.ts) stays off classic zod and geo.ts', () => {
