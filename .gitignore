@@ -1,0 +1,11 @@
+# --- agent orchestration kit ---
+# Local-only working notes: the open-issues tracker and other internal docs
+docs/local/
+# qa-mafia's Markdown reports and their screenshots/videos
+/qa-reports/
+# playwright-cli transient snapshot/console files
+.playwright-cli/
+# Agent worktrees created for parallel subagents
+.claude/worktrees/
+# Per-user Claude Code settings (permissions etc.)
+.claude/settings.local.json
