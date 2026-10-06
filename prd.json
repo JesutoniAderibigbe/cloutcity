@@ -27,7 +27,7 @@
       ],
       "acceptance": "Next.js 16.3.x (App Router) + TypeScript 6.0.x strict + Tailwind 4 builds with the exact versions pinned in CLAUDE.md (three, @react-three/fiber and @react-three/drei pinned without ^); npm scripts dev, build, start, typecheck, lint (ESLint CLI with jsx-a11y and no-console), format:check (Prettier), test (Vitest), e2e (Playwright, specs in tests/e2e) and budget, each with one passing sample; Playwright projects 'mobile-390' (390x844, touch) and 'desktop-1280'; tests/e2e/webgl-smoke.spec.ts proves headless Chromium creates a WebGL2 context, with launch flags documented in README; a shared e2e fixture fails any test on a console warning or error (PERF-1) and provides an axe check that fails on serious or critical violations (A11Y-2); PWA manifest via app/manifest.ts (name 'Clout City: NYC', short name 'Clout City'), icons, installable, locked mobile viewport; bottom tab layout correct at 390px; one overlay layer system (named layers, reserved safe zones for HUD, sheets, toasts and banners) with screenshot and bounding-box tests at 390 and 1280 proving no overlap (UX-1); structured logger in src/lib/log.ts; supabase CLI added as a devDependency and supabase/config.toml initialised (no running stack needed); .gitignore covers env files, build output, test artefacts and the geo download cache.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },

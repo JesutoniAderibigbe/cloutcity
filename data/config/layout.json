@@ -1,0 +1,10 @@
+{
+  "overlay": {
+    "bannerHeightPx": 48,
+    "hudHeightPx": 64,
+    "toastHeightPx": 72,
+    "sheetMaxHeightVh": 40,
+    "sheetMaxWidthPx": 560,
+    "tabBarHeightPx": 64
+  }
+}

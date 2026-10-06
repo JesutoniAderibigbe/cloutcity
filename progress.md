@@ -14,8 +14,7 @@ The loop appends here after each task. Fresh iterations read this first.
 ## Environment (a human fills this in; the loop may set webgl only, per loop step 10)
 Tasks whose `requires` includes an item marked no are blocked with these instructions.
 - network: yes
-- webgl: no (pending S01: becomes yes when tests/e2e/webgl-smoke.spec.ts passes)
-  Unblock: if the smoke fails, follow the README note on Chromium launch flags, then set yes.
+- webgl: yes (S01 webgl-smoke passes with --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader)
 - supabase: no
   Unblock (Docker is already running):
   1. After S01 has landed: `npx supabase start`.
@@ -67,6 +66,15 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 (Versions verified against the npm registry by the orchestrator on 2026-10-06.)
 
 ## Learnings and gotchas
+- e2e serves on port 3100 (E2E_PORT) because 3000 is taken on this machine; reuseExistingServer
+  is on outside CI, so make sure nothing stale is serving on 3100 before trusting a run.
+- SwiftShader always logs "GPU stall due to ReadPixels" at warning level for a visible WebGL
+  canvas; the console guard allowlists exactly that text, warning type only.
+- The console guard waits 2 rAF + consoleSettleMs (250 ms) after each test; errors later than that
+  are not caught by design. Raise consoleSettleMs per spec if a flow has late async work.
+- Playwright 1.63 needed `npx playwright install chromium` (headless shell v1243).
+- log.ts scrubs emails (incl. %40), Bearer/JWT tokens and sensitive URL params in every string;
+  free-text like "code=404" is over-redacted on purpose.
 - Supabase Realtime bills a broadcast to N subscribers as N+1 messages. Keep shards small and
   send intents, not per-frame positions. Presence track() is not for high-frequency data.
 - Supabase anonymous sign-ins: 30 per hour per IP by default (shared Wi-Fi and carrier NAT can
@@ -112,4 +120,13 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 (none yet)
 
 ## Iteration notes
-(none yet)
+- S01 (attempt 1, passed): Next 16.3.8 / React 19.3.0 / TS 6.0.3 / Tailwind 4.3.3 scaffold with
+  pinned three 0.182.0, R3F 9.8.1, drei 10.7.9; ESLint 9 flat config (jsx-a11y, no-console),
+  Prettier, Vitest 5, Playwright 1.63 (mobile-390, desktop-1280); shared e2e fixture with console
+  guard + axe; PWA manifest and icons; bottom tabs; overlay layer system (data/config/layout.json);
+  structured logger with redaction; budget script (136 KB / 180 KB shell JS); supabase/config.toml.
+  Two bug-hunter fix cycles: logger value scrubbing (P1, P3) and console-guard settle window (P2).
+  Gates: 96 unit, 70 e2e, build, budget all green. Placeholder tab/HUD copy and palette tokens
+  are hardcoded: S02 moves them into /data/copy and data/config/theme.json.
+  OPEN-ISSUES: RISK-1 npm audit (dev-only), RISK-2 darwin-only screenshot baselines, RISK-3
+  stats-gl nested three, NOTE-1 port 3000, NOTE-2 blocked install scripts, NOTE-3 allowlist.

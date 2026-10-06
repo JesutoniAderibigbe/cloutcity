@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+
+/* Placeholder night palette (deep indigo, hot pink, taxi yellow). S02 moves the source of truth
+   to data/config/theme.json. */
+@theme {
+  --color-night-950: #0d0a24;
+  --color-night-900: #16113a;
+  --color-night-800: #221a55;
+  --color-night-700: #31277a;
+  --color-pink-400: #ff4fa3;
+  --color-taxi-400: #ffd23f;
+  --color-ink-50: #f6f4ff;
+  --color-ink-300: #b9b3e6;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Lock the app shell to the visual viewport: no page scroll, rubber-band bounce or double-tap
+   zoom. Pinch zoom stays available (WCAG 1.4.4); the 3D canvas claims its own gestures with
+   touch-action: none when it lands (S04a). */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+body {
+  background-color: var(--color-night-950);
+  color: var(--color-ink-50);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
