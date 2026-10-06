@@ -63,6 +63,12 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 (Versions verified against the npm registry by the orchestrator on 2026-10-06.)
 
 ## Learnings and gotchas
+- zod/mini must be imported as a namespace: `import * as z from 'zod/mini'`. `import { z }` makes
+  Turbopack bundle all of zod/mini incl. locales (~92 KB gz). client-imports.test.ts enforces it.
+- Playwright: use page.clock.setFixedTime only; clock.install() fakes rAF and hangs the console
+  guard's settle. Playwright's getByRole does not skip inert content; check for an [inert] ancestor.
+- Onboarding lives in its own store (cloutcity:onboarding v1), separate from the game save, so it
+  survives game-save repair/migration. E2E fixture option `onboarding: 'complete' | 'fresh'`.
 - Client code validates with `zod/mini`; classic zod in the shell costs ~90 KB gz (blew the 180 KB
   budget). Never import `@/lib/data/config` or classic schemas from client-reachable modules
   (src/lib/client-imports.test.ts enforces it). Server/scripts may use classic zod.
@@ -172,3 +178,11 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   repair-instead-of-discard, float carry. Test change by ruling: store.test.ts "repairs a negative
   remainder / a remainder of a whole game minute" now expects repair (was "starts fresh").
   Gates: 446 unit, 76 e2e, build, budget 137.4 KB. Catalog actions have no copy names yet.
+- S05a (attempt 1, passed): welcome card over the scene — neutral year picker (only ≤ Y−19 passes),
+  consent with Terms/Privacy (placeholder routes), audio choice; under-18 → in-voice lock for 24 h,
+  no Supabase; 18+ → local attestation/consent/audio record (never the year); startGuestSession hook
+  (local mode only; S05 adds Supabase); shared form pattern; modal overlay layer + OverlayBackground
+  inert + focus trap; e2e fixture seeds onboarding. Orchestrator fixes: zod/mini namespace imports in
+  src/engine/actions.ts and save.ts. Gates: 502 unit, 210 e2e, build, budget 161.7 KB.
+  OPEN-ISSUES: DEC-9 update, Q-5 re-consent, Q-6 Y−18 ruling, RISK-2 baselines; low: storage log text
+  says "saved game" for onboarding data.

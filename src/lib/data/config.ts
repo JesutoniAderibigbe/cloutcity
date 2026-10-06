@@ -3,6 +3,7 @@ import balanceJson from '@data/config/balance.json'
 import copyJson from '@data/config/copy.json'
 import layoutJson from '@data/config/layout.json'
 import moderationJson from '@data/config/moderation.json'
+import onboardingJson from '@data/config/onboarding.json'
 import perfJson from '@data/config/perf.json'
 import realtimeJson from '@data/config/realtime.json'
 import themeJson from '@data/config/theme.json'
@@ -12,6 +13,7 @@ import {
   CopyConfigSchema,
   LayoutConfigSchema,
   ModerationConfigSchema,
+  OnboardingConfigSchema,
   PerfConfigSchema,
   RealtimeConfigSchema,
   ThemeConfigSchema,
@@ -24,6 +26,11 @@ export const moderation = parseDataFile(
   'config/moderation.json',
   ModerationConfigSchema,
   moderationJson,
+)
+export const onboarding = parseDataFile(
+  'config/onboarding.json',
+  OnboardingConfigSchema,
+  onboardingJson,
 )
 export const perf = parseDataFile('config/perf.json', PerfConfigSchema, perfJson)
 export const realtime = parseDataFile('config/realtime.json', RealtimeConfigSchema, realtimeJson)

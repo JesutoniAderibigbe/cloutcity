@@ -247,3 +247,21 @@ export const CopyConfigSchema = z.strictObject({
   slangPack: z.string().regex(/^[a-z0-9-]+$/),
 })
 export type CopyConfig = z.infer<typeof CopyConfigSchema>
+
+/** The welcome card: the 18+ check, the under-age lock and the consent version (S05a). */
+export const OnboardingConfigSchema = z
+  .strictObject({
+    /** Players must be at least this old. The year picker never shows or hints at it. */
+    minimumAge: positiveInt,
+    /** How long an under-age answer locks the gate on that device. */
+    underAgeLockHours: positiveInt,
+    /** How many years back the year picker goes from the current year. */
+    birthYearSpan: positiveInt,
+    /** Version of the Terms and Privacy Policy a player consents to (an ISO date). */
+    consentVersion: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  })
+  .refine((config) => config.birthYearSpan > config.minimumAge + 1, {
+    error: 'birthYearSpan must reach past minimumAge, or no year in the picker can pass',
+    path: ['birthYearSpan'],
+  })
+export type OnboardingConfig = z.infer<typeof OnboardingConfigSchema>

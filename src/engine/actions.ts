@@ -10,7 +10,7 @@
  *    on the stats before paying), charging passive decay and crossing day/week boundaries.
  * 5. The stat effects land, clamped to 0..stats.max.
  */
-import { z } from 'zod/mini'
+import * as z from 'zod/mini'
 import type { Rollovers } from './clock'
 import type { EngineConfig } from './config'
 import { advanceMinutes, type GameSnapshot } from './game'

@@ -150,7 +150,7 @@
       "requires": [],
       "acceptance": "On first visit one welcome card sits over the already-loading map (the map keeps loading behind it and perf budgets still pass) with a neutral year-of-birth picker (no default, no hint of the threshold), a consent checkbox linking Terms and Privacy, and the audio choice 'Play our music' or 'I'll bring my own'; under 18 shows an in-voice 'come back when you're 18' screen, locks the gate on that device for 24 hours, and creates no Supabase user; 18+ stores attestation (boolean and timestamp, not the birth year), consent version and timestamp, and the audio choice locally; anonymous Supabase sign-in happens only after a passing attestation; the form follows the shared pattern (noValidate, one zod schema, all errors at once inline with aria-invalid and aria-describedby, focus on the first invalid field, errors recomputed on change) (GR-1, GR-2, GR-8); no AudioContext is created and no audio is requested before the audio choice (GR-13); returning players never see the card again; existing e2e specs use a shared fixture that passes the card; Playwright covers the 18+ path, the under-18 path, an empty submit and an error that is fixed.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },

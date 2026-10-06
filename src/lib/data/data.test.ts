@@ -14,6 +14,7 @@ import {
   JOB_IDS,
   LayoutConfigSchema,
   ModerationConfigSchema,
+  OnboardingConfigSchema,
   PerfConfigSchema,
   RealtimeConfigSchema,
   ThemeConfigSchema,
@@ -28,7 +29,7 @@ import {
 } from './schemas/content'
 import { BaseCopySchema, SlangPackSchema } from './schemas/copy'
 import { AudioManifestSchema, GeoBoundsSchema, ZonesFileSchema } from './schemas/world'
-import { balance, perf, realtime, theme } from './config'
+import { balance, onboarding, perf, realtime, theme } from './config'
 import { events, geoBounds, items, jobs, landmarks, premiumItems, venues } from './content'
 import { baseCopy } from '@/lib/copy'
 
@@ -41,6 +42,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/copy.json': CopyConfigSchema,
   'config/layout.json': LayoutConfigSchema,
   'config/moderation.json': ModerationConfigSchema,
+  'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
   'config/realtime.json': RealtimeConfigSchema,
   'config/theme.json': ThemeConfigSchema,
@@ -205,6 +207,24 @@ describe('config/realtime.json and moderation', () => {
     expect(RealtimeConfigSchema.safeParse({ ...valid, shardSize: 0 }).success).toBe(false)
     expect(RealtimeConfigSchema.safeParse({ ...valid, shardSize: 16.5 }).success).toBe(false)
     expect(ModerationConfigSchema.safeParse({ autoHideReports: 0 }).success).toBe(false)
+  })
+})
+
+describe('config/onboarding.json', () => {
+  it('holds the CLAUDE.md age rule: 18+, a 24 h lock on that device', () => {
+    expect(onboarding).toMatchObject({ minimumAge: 18, underAgeLockHours: 24 })
+    expect(onboarding.birthYearSpan).toBeGreaterThan(onboarding.minimumAge + 1)
+  })
+
+  it('rejects a fractional lock, a non-date consent version and a span nobody can pass', () => {
+    const valid = readJson('config/onboarding.json') as Record<string, unknown>
+    const parse = (patch: Record<string, unknown>) =>
+      OnboardingConfigSchema.safeParse({ ...valid, ...patch }).success
+    expect(parse({})).toBe(true)
+    expect(parse({ underAgeLockHours: 0.5 })).toBe(false)
+    expect(parse({ consentVersion: 'v1' })).toBe(false)
+    expect(parse({ birthYearSpan: 19 })).toBe(false)
+    expect(parse({ extra: true })).toBe(false)
   })
 })
 

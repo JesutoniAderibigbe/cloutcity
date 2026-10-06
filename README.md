@@ -45,6 +45,10 @@ Gate order used by the build loop:
   The fixture fails any test that logs a console warning or error or throws an uncaught page
   error (PERF-1), and provides `checkA11y()`, an axe scan that fails on serious or critical
   violations (A11Y-2).
+- The fixture also seeds a completed welcome card before every page load, so specs start like a
+  returning player. Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`; their
+  helpers live in `tests/e2e/fixtures/welcome.ts`. To fake the time use `page.clock.setFixedTime`
+  only: `page.clock.install()` also fakes animation frames and timers and hangs the console guard.
 - Screenshot baselines live in `tests/e2e/__screenshots__/` and are per platform. After an
   intended visual change, review the diff and run `npx playwright test --update-snapshots`.
 
@@ -87,6 +91,32 @@ zones cannot overlap; content that does not fit scrolls inside its own zone. Zon
 `data/config/layout.json`. The bottom tab bar (`src/components/nav/BottomTabs.tsx`) sits in the
 `tabs` zone with safe-area padding.
 
+A modal (the welcome card) goes in `OverlayLayout`'s `modal` slot: a second grid on the top
+layer that places it between the HUD and the tab bar, never over the banner, HUD or tab bar.
+A modal declares itself open with `useModalPresence(open)` (`src/components/overlay/modalState.ts`);
+while one is open, the scene and every zone behind it stay mounted but are inert and dimmed, and
+focus returns to the scene's `<main>` when it closes.
+
+## Welcome card (18+ check, consent, sound)
+
+On first visit `src/components/welcome/WelcomeGate.tsx` shows one card over the loading map: a
+neutral year-of-birth picker (no default, no hint of the threshold), the Terms/Privacy consent
+(`/terms`, `/privacy`, placeholders pending legal review) and the sound choice. The rules are pure
+in `src/engine/ageGate.ts` (New York year; only a birth year at least `minimumAge + 1` back
+passes, since the birthday is unknown); numbers live in `data/config/onboarding.json`.
+
+- **18+:** `src/state/onboarding.ts` stores under `cloutcity:onboarding` the attestation (boolean
+  and timestamp), the consent version and timestamp, and the sound choice. The birth year is
+  never stored, logged or sent. The guest session hook (`src/state/session.ts`) runs only after
+  this; S05 adds the anonymous Supabase sign-in there.
+- **Under 18:** an in-voice screen, and the gate locks on that device for `underAgeLockHours`
+  (setting the clock back keeps it locked). No session starts.
+- Returning players never see the card. A record from a newer build is respected and never
+  overwritten; an invalid one is ignored and the card shows.
+- The form follows the shared pattern (`src/lib/forms/`): one zod/mini schema whose messages are
+  copy keys, `fieldErrors()` for every error at once, `firstInvalid()` for focus.
+- No audio is created or loaded by the card (GR-13): the choice is only recorded.
+
 ## Data, copy and config
 
 Everything players see or the game tunes lives in `/data` as JSON, and every file is validated
@@ -107,7 +137,8 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
   `src/lib/data/content.ts`, which parse at import and fail fast with the file name. Client
   code must not pull in zod's classic build (it costs about 90 KB gz of shell JS): the copy
   layer reads its JSON directly (validated by the tests), and the store validates with
-  `zod/mini`.
+  `zod/mini`. Import it as `import * as z from 'zod/mini'`: the named `{ z }` export defeats
+  Turbopack's tree shaking and ships all of zod/mini with its locales (about 92 KB gz).
 - **Adding content.** Add the entry to the JSON file, add its strings to `data/copy/base.json`
   under the key the entry names (`nameKey`, `titleKey`, ...), and run `npm test`.
 - **Copy.** `copy(key, vars)` from `src/lib/copy.ts` renders a string with the active slang pack

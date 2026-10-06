@@ -9,6 +9,9 @@
     "voice.friendPrompt": "That W deserves witnesses. Tag a friend in?",
     "voice.clubDoor": "Bouncer checked the list, then checked your clout. Not tonight.",
     "voice.lockedHome": "Manhattan loft? On bodega money? Work your way here.",
-    "voice.someoneNearby": "You're not the only one out tonight. {count} people on this block."
+    "voice.someoneNearby": "You're not the only one out tonight. {count} people on this block.",
+    "welcome.intro": "Tap in. Blow up. Three quick things, then the city is yours.",
+    "ageGate.title": "Come back when you're 18.",
+    "ageGate.body": "Clout City is for grown folks only. The city will still be here."
   }
 }

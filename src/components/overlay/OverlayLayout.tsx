@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { OverlayBackground } from './OverlayBackground'
 import {
+  MODAL_GRID_ROW,
   OVERLAY_ZONES,
   ZONE_GRID_ROW,
   layerZIndex,
@@ -15,6 +17,11 @@ interface OverlayLayoutProps {
   readonly children: ReactNode
   /** Content for each named zone. A zone is reserved even when empty. */
   readonly slots: OverlaySlots
+  /**
+   * A modal over everything (the welcome card). It sits between the HUD and the tab bar, and
+   * while it reports itself open (modalState.ts) the scene and zones behind it are inert.
+   */
+  readonly modal?: ReactNode
 }
 
 // Width rules per zone. The sheet and toasts stay readable on desktop instead of spanning
@@ -37,7 +44,7 @@ const ZONE_ARIA: Readonly<Partial<Record<OverlayZone, Record<string, string>>>> 
  * overlap; content that does not fit is clipped to its zone and scrolls inside it. Empty zones
  * let touches fall through to the scene.
  */
-export function OverlayLayout({ children, slots }: OverlayLayoutProps) {
+export function OverlayLayout({ children, slots, modal }: OverlayLayoutProps) {
   const rootStyle = {
     gridTemplateRows: overlayGridTemplateRows(overlayLayout),
     '--overlay-sheet-max-w': `${overlayLayout.sheetMaxWidthPx}px`,
@@ -45,30 +52,51 @@ export function OverlayLayout({ children, slots }: OverlayLayoutProps) {
 
   return (
     <div className="fixed inset-0 overflow-hidden">
-      <main className="absolute inset-0" style={{ zIndex: layerZIndex('scene') }}>
-        {children}
-      </main>
-      <div
-        data-overlay-root=""
-        className="pointer-events-none absolute inset-0 grid grid-cols-1"
-        style={rootStyle}
-      >
-        {OVERLAY_ZONES.map((zone) => (
+      <OverlayBackground>
+        {/* tabIndex -1: focus lands here when a modal closes. */}
+        <main
+          tabIndex={-1}
+          className="absolute inset-0 focus:outline-none"
+          style={{ zIndex: layerZIndex('scene') }}
+        >
+          {children}
+        </main>
+        <div
+          data-overlay-root=""
+          className="pointer-events-none absolute inset-0 grid grid-cols-1"
+          style={rootStyle}
+        >
+          {OVERLAY_ZONES.map((zone) => (
+            <div
+              key={zone}
+              data-overlay-zone={zone}
+              className={`min-h-0 overflow-hidden ${ZONE_CLASS[zone]}`}
+              style={{ gridRow: ZONE_GRID_ROW[zone], zIndex: layerZIndex(zone) }}
+              {...ZONE_ARIA[zone]}
+            >
+              {slots[zone] === undefined ? null : (
+                <div className="pointer-events-auto h-full overflow-y-auto overscroll-contain">
+                  {slots[zone]}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </OverlayBackground>
+      {modal === undefined ? null : (
+        <div
+          data-overlay-modal=""
+          className="pointer-events-none absolute inset-0 grid grid-cols-1"
+          style={{ ...rootStyle, zIndex: layerZIndex('modal') }}
+        >
           <div
-            key={zone}
-            data-overlay-zone={zone}
-            className={`min-h-0 overflow-hidden ${ZONE_CLASS[zone]}`}
-            style={{ gridRow: ZONE_GRID_ROW[zone], zIndex: layerZIndex(zone) }}
-            {...ZONE_ARIA[zone]}
+            className="flex min-h-0 justify-center px-3 py-2"
+            style={{ gridRow: MODAL_GRID_ROW }}
           >
-            {slots[zone] === undefined ? null : (
-              <div className="pointer-events-auto h-full overflow-y-auto overscroll-contain">
-                {slots[zone]}
-              </div>
-            )}
+            {modal}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

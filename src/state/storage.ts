@@ -1,5 +1,5 @@
 import type { PersistStorage, StorageValue } from 'zustand/middleware'
-import { z } from 'zod/mini'
+import * as z from 'zod/mini'
 import { log, type Logger } from '@/lib/log'
 
 /** Where a store persists: `localStorage` in a browser, nothing on the server. */

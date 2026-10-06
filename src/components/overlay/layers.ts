@@ -11,8 +11,19 @@ import type { LayoutConfig } from '@/lib/data/schemas/config'
 export const OVERLAY_ZONES = ['banner', 'hud', 'toast', 'sheet', 'tabs'] as const
 export type OverlayZone = (typeof OVERLAY_ZONES)[number]
 
-/** Stacking order, lowest first. The scene sits underneath every zone. */
-export const OVERLAY_LAYER_ORDER = ['scene', 'hud', 'toast', 'sheet', 'banner', 'tabs'] as const
+/**
+ * Stacking order, lowest first. The scene sits underneath every zone; a modal (the welcome card,
+ * later dialogs) sits above them all, in its own grid (see {@link MODAL_GRID_ROW}).
+ */
+export const OVERLAY_LAYER_ORDER = [
+  'scene',
+  'hud',
+  'toast',
+  'sheet',
+  'banner',
+  'tabs',
+  'modal',
+] as const
 export type OverlayLayer = (typeof OVERLAY_LAYER_ORDER)[number]
 
 export function layerZIndex(layer: OverlayLayer): number {
@@ -31,6 +42,12 @@ export const ZONE_GRID_ROW: Readonly<Record<OverlayZone, number>> = {
   sheet: 6,
   tabs: 7,
 }
+
+/**
+ * Where a modal sits: from the free scene row down to the top of the tab bar (rows 4-6), so it
+ * never covers the banner, HUD or tab bar.
+ */
+export const MODAL_GRID_ROW = `4 / ${ZONE_GRID_ROW.tabs}`
 
 /**
  * Rows: top safe-area inset, banner, HUD, free scene area, toast, sheet, tab bar (which also

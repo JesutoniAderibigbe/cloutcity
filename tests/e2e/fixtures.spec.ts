@@ -1,4 +1,6 @@
+import { completedOnboardingSeed } from './fixtures/onboarding-seed'
 import { expect, test } from './fixtures/test'
+import { storedOnboarding, welcomeDialog } from './fixtures/welcome'
 
 // Self-tests for the shared fixture: a guard that never fires is worse than none.
 
@@ -168,5 +170,24 @@ test('console guard fails on console.error emitted 100 ms after the test body en
       // eslint-disable-next-line no-console -- deliberately provoking the guard
       console.error('fixture self-test error after the body ended')
     }, 100)
+  })
+})
+
+test.describe('onboarding seed (S05a)', () => {
+  test('by default a page starts past the welcome card', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    expect(await storedOnboarding(page)).toEqual(completedOnboardingSeed())
+  })
+
+  test.describe('with onboarding: fresh', () => {
+    test.use({ onboarding: 'fresh' })
+
+    test('the welcome card shows', async ({ page }) => {
+      await page.goto('/')
+      await expect(welcomeDialog(page)).toBeVisible()
+      expect(await storedOnboarding(page)).toBeNull()
+    })
   })
 })

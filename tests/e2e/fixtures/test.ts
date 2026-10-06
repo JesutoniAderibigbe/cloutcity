@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { test as base, expect, type ConsoleMessage } from '@playwright/test'
+import { ONBOARDING_KEY, completedOnboardingSeed } from './onboarding-seed'
 
 /**
  * Shared e2e fixture. Every spec imports `test` and `expect` from here, never from
@@ -7,7 +8,9 @@ import { test as base, expect, type ConsoleMessage } from '@playwright/test'
  *  - a console guard (PERF-1): any console warning or error, or an uncaught page error, fails
  *    the test after it finishes;
  *  - `checkA11y()` (A11Y-2): an axe scan of the current page that fails on serious or critical
- *    violations.
+ *    violations;
+ *  - a completed welcome card (S05a), so specs for other flows start like a returning player.
+ *    Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`.
  */
 
 const FAILING_CONSOLE_TYPES = new Set<ReturnType<ConsoleMessage['type']>>([
@@ -49,6 +52,12 @@ export interface A11yOptions {
 
 interface Fixtures {
   /**
+   * `complete` (default) seeds a passed welcome card before every page load, unless the spec has
+   * already stored its own; `fresh` leaves storage alone so the card shows.
+   */
+  onboarding: 'complete' | 'fresh'
+  onboardingSeed: void
+  /**
    * How long the guard keeps listening after the test body ends, so late async warnings
    * (a failed fetch, an effect after the last assertion) still fail the test. Override with
    * `use: { consoleSettleMs }` in playwright.config.ts or `test.use()`.
@@ -60,6 +69,28 @@ interface Fixtures {
 
 export const test = base.extend<Fixtures>({
   consoleSettleMs: [250, { option: true }],
+
+  onboarding: ['complete', { option: true }],
+
+  onboardingSeed: [
+    async ({ page, onboarding }, use) => {
+      if (onboarding === 'complete') {
+        await page.addInitScript(
+          ({ key, value }) => {
+            // Storage can throw (opaque origins, specs that make it throw on purpose).
+            try {
+              if (localStorage.getItem(key) === null) localStorage.setItem(key, value)
+            } catch {
+              // Nothing to seed: the app shows the card, as it would for that player.
+            }
+          },
+          { key: ONBOARDING_KEY, value: JSON.stringify(completedOnboardingSeed()) },
+        )
+      }
+      await use()
+    },
+    { auto: true },
+  ],
 
   consoleGuard: [
     async ({ page, consoleSettleMs }, use) => {

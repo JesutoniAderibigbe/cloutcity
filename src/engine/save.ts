@@ -9,7 +9,7 @@
  * - v1 (S02): `{ player: { cash } }`.
  * - v2 (S03): adds the personal clock, stats and the clock speed.
  */
-import { z } from 'zod/mini'
+import * as z from 'zod/mini'
 import { isSpeed, realMsPerGameMinute } from './clock'
 import type { EngineConfig } from './config'
 import { initialSnapshot, type GameSnapshot } from './game'

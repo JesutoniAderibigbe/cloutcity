@@ -113,3 +113,43 @@ describe('browser code stays off classic zod (shell JS budget)', () => {
     ])
   })
 })
+
+/**
+ * `import { z } from 'zod/mini'` binds the whole namespace object, which the bundler cannot
+ * tree-shake, so it pulls every zod/mini check into the shell (~92 KB). `import * as z` lets
+ * unused checks drop out. Type-only imports are erased and allowed.
+ */
+const NAMED_Z_FROM_MINI = /^[ \t]*import\s*\{[^}]*\bz\b[^}]*\}\s*from\s*['"]zod\/mini['"]/m
+
+const CLIENT_DIRS = ['components', 'state', 'lib', 'engine', 'scene'] as const
+
+function clientReachableFiles(): string[] {
+  const files: string[] = []
+  for (const dir of CLIENT_DIRS) {
+    const path = join(SRC, dir)
+    if (statSync(path, { throwIfNoEntry: false })?.isDirectory()) files.push(...sourceFiles(path))
+  }
+  // src/app: only client components run in the browser.
+  files.push(
+    ...sourceFiles(join(SRC, 'app')).filter((file) => USE_CLIENT.test(readFileSync(file, 'utf8'))),
+  )
+  return files
+}
+
+describe('browser code imports zod/mini as a namespace (shell JS budget)', () => {
+  it('the named-z matcher sees what it must (self-check)', () => {
+    expect(NAMED_Z_FROM_MINI.test("import { z } from 'zod/mini'")).toBe(true)
+    expect(NAMED_Z_FROM_MINI.test('import { z } from "zod/mini"')).toBe(true)
+    expect(NAMED_Z_FROM_MINI.test("import { safeParse, z } from 'zod/mini'")).toBe(true)
+    expect(NAMED_Z_FROM_MINI.test("import * as z from 'zod/mini'")).toBe(false)
+    expect(NAMED_Z_FROM_MINI.test("import type { z } from 'zod/mini'")).toBe(false)
+    expect(NAMED_Z_FROM_MINI.test("import { z } from 'zod'")).toBe(false)
+  })
+
+  it('no client-reachable module uses `import { z } from "zod/mini"`', () => {
+    const offenders = clientReachableFiles()
+      .filter((file) => NAMED_Z_FROM_MINI.test(readFileSync(file, 'utf8')))
+      .map((file) => relative(ROOT, file))
+    expect(offenders).toEqual([])
+  })
+})

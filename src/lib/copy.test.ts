@@ -6,7 +6,10 @@ import {
   baseCopy,
   copy,
   copyConfig,
+  copyParts,
   createCopy,
+  isCopyKey,
+  splitTemplate,
   findLiteralSuperlatives,
   interpolate,
   placeholdersOf,
@@ -283,5 +286,67 @@ describe('copy() rendering contract', () => {
   it('treats malformed placeholders as non-placeholders (documents current behaviour)', () => {
     // {1x} and { a } are not valid names, so they are neither required nor filled.
     expect(placeholdersOf('{1x} { a } {ok}')).toEqual(['ok'])
+  })
+})
+
+describe('copyParts and splitTemplate', () => {
+  it('splits a template into text and slots in order', () => {
+    expect(splitTemplate('I agree to the {terms} and the {privacy}.')).toEqual([
+      { kind: 'text', text: 'I agree to the ' },
+      { kind: 'slot', name: 'terms' },
+      { kind: 'text', text: ' and the ' },
+      { kind: 'slot', name: 'privacy' },
+      { kind: 'text', text: '.' },
+    ])
+  })
+
+  it('handles leading, trailing, adjacent and absent slots', () => {
+    expect(splitTemplate('{a}{b}')).toEqual([
+      { kind: 'slot', name: 'a' },
+      { kind: 'slot', name: 'b' },
+    ])
+    expect(splitTemplate('plain')).toEqual([{ kind: 'text', text: 'plain' }])
+  })
+
+  it('throws on a malformed placeholder', () => {
+    expect(() => splitTemplate('a { b')).toThrow(/malformed/)
+  })
+
+  it('splits the active-pack consent label around the Terms and Privacy slots', () => {
+    const slots = copyParts('welcome.consent.label').filter((part) => part.kind === 'slot')
+    expect(slots.map((part) => part.name)).toEqual(['terms', 'privacy'])
+  })
+
+  it('isCopyKey knows base keys only', () => {
+    expect(isCopyKey('welcome.title')).toBe(true)
+    expect(isCopyKey('welcome.nope')).toBe(false)
+    expect(isCopyKey('toString')).toBe(false)
+  })
+})
+
+describe('welcome card copy (S05a)', () => {
+  const nyc = createCopy(baseCopy, pack('nyc'))
+  const plain = createCopy(baseCopy, pack('plain'))
+
+  it('carries the in-voice under-age screen in the nyc pack', () => {
+    expect(nyc('ageGate.title')).toBe("Come back when you're 18.")
+    expect(nyc('ageGate.body')).toBe(
+      'Clout City is for grown folks only. The city will still be here.',
+    )
+    expect(plain('ageGate.title')).toBe('You need to be 18 or older to play.')
+  })
+
+  it('gives no hint of the age threshold on the card before submit, in any pack', () => {
+    const cardKeys = Object.keys(baseCopy.strings).filter(
+      (key) => key.startsWith('welcome.') && !key.endsWith('.error'),
+    )
+    for (const render of [nyc, plain]) {
+      for (const key of cardKeys) {
+        if (!isCopyKey(key)) throw new Error(key)
+        const text =
+          key === 'welcome.consent.label' ? render(key, { terms: 'T', privacy: 'P' }) : render(key)
+        expect(text, key).not.toMatch(/18|eighteen|adult|age\b|old enough/i)
+      }
+    }
   })
 })

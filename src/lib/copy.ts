@@ -65,6 +65,36 @@ export function createCopy(base: BaseCopy, pack: SlangPack): CopyFn {
   }
 }
 
+/** True when `value` names a string in base copy. */
+export function isCopyKey(value: string): value is CopyKey {
+  return Object.hasOwn(baseCopy.strings, value)
+}
+
+/** One piece of a template split by {@link copyParts}: literal text, or a named slot. */
+export type CopyPart =
+  | { readonly kind: 'text'; readonly text: string }
+  | { readonly kind: 'slot'; readonly name: string }
+
+/**
+ * Splits a template into text and `{name}` slots, so a component can put an element (a link)
+ * where a placeholder sits without the copy losing its word order. Throws on a malformed
+ * placeholder, like `interpolate`.
+ */
+export function splitTemplate(template: string): CopyPart[] {
+  if (hasMalformedPlaceholder(template)) {
+    throw new Error(`Copy template has a malformed placeholder: "${template}"`)
+  }
+  const parts: CopyPart[] = []
+  let last = 0
+  for (const match of template.matchAll(PLACEHOLDER)) {
+    if (match.index > last) parts.push({ kind: 'text', text: template.slice(last, match.index) })
+    parts.push({ kind: 'slot', name: match[1] ?? '' })
+    last = match.index + match[0].length
+  }
+  if (last < template.length) parts.push({ kind: 'text', text: template.slice(last) })
+  return parts
+}
+
 function activePack(): SlangPack {
   const pack = slangPacks[copyConfig.slangPack]
   if (pack === undefined) {
@@ -75,6 +105,13 @@ function activePack(): SlangPack {
 
 /** Renders a copy string with the active slang pack. */
 export const copy: CopyFn = createCopy(baseCopy, activePack())
+
+/** The active-pack template for `key`, split into text and slots (see {@link splitTemplate}). */
+export function copyParts(key: CopyKey): CopyPart[] {
+  const template = activePack().strings[key] ?? baseCopy.strings[key]
+  if (template === undefined) throw new Error(`Unknown copy key "${key}"`)
+  return splitTemplate(template)
+}
 
 const SUPERLATIVE_DIRECTION: Readonly<Record<SuperlativeKind, 'min' | 'max'>> = {
   cheapest: 'min',

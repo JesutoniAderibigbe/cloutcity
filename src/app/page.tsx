@@ -1,10 +1,12 @@
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
+import { WelcomeGate } from '@/components/welcome/WelcomeGate'
 import { copy } from '@/lib/copy'
 
 export default function HomePage() {
   return (
     <OverlayLayout
+      modal={<WelcomeGate />}
       slots={{
         hud: (
           <header className="flex h-full flex-col justify-center px-4">
