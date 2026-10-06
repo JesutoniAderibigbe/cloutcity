@@ -135,6 +135,8 @@
     "events.stat.energy": "Energy",
     "events.stat.hunger": "Fullness",
     "events.stat.mood": "Mood",
+    "actions.deliCoffee.name": "Deli coffee",
+    "actions.deliCoffee.blurb": "A large coffee from the deli counter. Gives you energy.",
     "jobs.barista.name": "Barista",
     "jobs.retail.name": "Retail",
     "jobs.delivery.name": "Delivery",

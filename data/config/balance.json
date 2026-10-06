@@ -12,7 +12,7 @@
   "stats": {
     "max": 100,
     "start": { "energy": 100, "hunger": 80, "mood": 70 },
-    "decayPerGameHour": { "energy": 3, "hunger": 5, "mood": 2 },
+    "decayPerGameHour": { "energy": 3, "hunger": 6, "mood": 2 },
     "atZero": {
       "energy": { "extraDecayPerGameHour": { "mood": 3 }, "durationMultiplier": 1.5 },
       "hunger": { "extraDecayPerGameHour": { "energy": 3, "mood": 4 }, "durationMultiplier": 1 },
@@ -26,25 +26,31 @@
         "durationMin": 480,
         "cashCost": 0,
         "energyCost": 0,
-        "statEffects": { "energy": 80, "mood": 5 }
+        "statEffects": { "energy": 55, "mood": 5 }
       },
       "nap": {
         "durationMin": 60,
         "cashCost": 0,
         "energyCost": 0,
-        "statEffects": { "energy": 15 }
+        "statEffects": { "energy": 4 }
       },
       "bodega-breakfast": {
         "durationMin": 20,
-        "cashCost": 6,
+        "cashCost": 10,
         "energyCost": 0,
         "statEffects": { "hunger": 40, "mood": 5 }
       },
       "home-meal": {
         "durationMin": 45,
-        "cashCost": 4,
+        "cashCost": 8,
         "energyCost": 5,
         "statEffects": { "hunger": 50 }
+      },
+      "deli-coffee": {
+        "durationMin": 10,
+        "cashCost": 12,
+        "energyCost": 0,
+        "statEffects": { "energy": 20 }
       },
       "walk-in-the-park": {
         "durationMin": 60,
@@ -58,8 +64,11 @@
   "jobs": {
     "shiftHours": 4,
     "hourlyWage": { "barista": 14, "retail": 16, "delivery": 18, "junior-dev": 35 },
-    "energyCostPerShift": { "barista": 15, "retail": 15, "delivery": 25, "junior-dev": 15 },
+    "energyCostPerShift": { "barista": 15, "retail": 25, "delivery": 40, "junior-dev": 15 },
     "requiredCloutLevel": { "junior-dev": "local" }
+  },
+  "housing": {
+    "moveInCost": { "brooklyn-1br": 400, "manhattan-loft": 1000 }
   },
   "rent": {
     "lateFees": [0, 30],

@@ -1,8 +1,9 @@
 /**
- * Schemas for /data/config. This file imports only `zod` (no path aliases, no other modules) so
- * Node can load it directly from `scripts/` with its built-in type stripping.
+ * Schemas for /data/config. This file imports only `zod` and the dependency-free `../homes.ts` (no
+ * path aliases) so Node can load it directly from `scripts/` with its built-in type stripping.
  */
 import { z } from 'zod'
+import { HOME_IDS, lowestRentHome } from '../homes.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
 export const QualityTierSchema = z.enum(QUALITY_TIERS)
@@ -106,7 +107,7 @@ export const RARITY_TIERS = ['common', 'medium', 'rare'] as const
 export const RarityTierSchema = z.enum(RARITY_TIERS)
 export type RarityTier = z.infer<typeof RarityTierSchema>
 
-export const HOME_IDS = ['queens-room', 'brooklyn-1br', 'manhattan-loft'] as const
+export { HOME_IDS }
 export const JOB_IDS = ['barista', 'retail', 'delivery', 'junior-dev'] as const
 
 /** Player needs, 0..stats.max. Hunger is fullness: high is fed, 0 is starving. */
@@ -371,6 +372,15 @@ export const BalanceConfigSchema = z
       requiredCloutLevel: z.partialRecord(z.enum(JOB_IDS), z.string()),
     }),
     /**
+     * Moving home (S12 measures it, S16 spends it). `moveInCost` is the whole dollars a player
+     * needs on top of their rent reserve (rent owed plus this week's rent) to move into a home.
+     * Every home except the lowest-rent one has a cost; the lowest-rent home (where an eviction
+     * lands; on a tie, the first in HOME_IDS, as the engine's cheapestHome) has none.
+     */
+    housing: z.strictObject({
+      moveInCost: z.partialRecord(z.enum(HOME_IDS), dollars),
+    }),
+    /**
      * Missed rent. Each consecutive due date the player cannot pay in full adds that week's
      * rent to what they owe, plus `lateFees[missed - 1]` (0 is a warning). On the
      * `evictAfterMissed`-th miss the player is evicted to the lowest-rent home.
@@ -501,6 +511,16 @@ export const BalanceConfigSchema = z
           rule.access !== 'clout' || balance.clout.levels.some((entry) => entry.id === rule.level),
       ),
     { error: 'a clout-gated borough must name a level in clout.levels', path: ['boroughs'] },
+  )
+  .refine(
+    (balance) => {
+      const cheapest = lowestRentHome(balance.rentPerWeek)
+      return HOME_IDS.every((id) => (id === cheapest) === !(id in balance.housing.moveInCost))
+    },
+    {
+      error: 'housing.moveInCost needs every home except the lowest-rent one, and not that one',
+      path: ['housing', 'moveInCost'],
+    },
   )
   .refine((balance) => balance.rent.lateFees.length === balance.rent.evictAfterMissed - 1, {
     error: 'rent.lateFees needs one fee for each miss before eviction',

@@ -45,6 +45,18 @@ function configWith(
 ): EngineConfig {
   return {
     ...engineConfig,
+    // Pinned (S03 values) so balance tuning (S12 changed hunger decay) cannot move the decay
+    // these tests count.
+    stats: {
+      max: 100,
+      start: { energy: 100, hunger: 80, mood: 70 },
+      decayPerGameHour: { energy: 3, hunger: 5, mood: 2 },
+      atZero: {
+        energy: { extraDecayPerGameHour: { mood: 3 }, durationMultiplier: 1.5 },
+        hunger: { extraDecayPerGameHour: { energy: 3, mood: 4 }, durationMultiplier: 1 },
+        mood: { extraDecayPerGameHour: {}, durationMultiplier: 1.25 },
+      },
+    },
     events: { rollChance: 1, defaultCooldownMin: 1440, maxPendingEffects: 3, ...tuning, catalog },
   }
 }

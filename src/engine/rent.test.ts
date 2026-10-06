@@ -412,7 +412,7 @@ describe('rent escalation config edges', () => {
     expect(kinds(result.rent)).toEqual(['evicted'])
   })
 
-  it('on a tie for the lowest rent the eviction target is the first home in config', () => {
+  it('on a tie for the lowest rent the eviction target is the first home in HOME_IDS order', () => {
     const tied: EngineConfig = {
       ...config,
       rentPerWeek: { 'queens-room': 520, 'brooklyn-1br': 280, 'manhattan-loft': 280 },
