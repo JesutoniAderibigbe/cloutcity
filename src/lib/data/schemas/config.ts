@@ -359,6 +359,14 @@ export const BalanceConfigSchema = z
       minResalePct: percent,
       maxGiftStack: positiveInt,
     }),
+    events: z.strictObject({
+      /** Chance (0..1) that a roll fires an event when one is eligible. */
+      rollChance: z.number().min(0).max(1),
+      /** Game minutes before an event can fire again, unless the event sets its own. */
+      defaultCooldownMin: z.int().nonnegative(),
+      /** Clout and item effects kept in the save until S13 and S10 consume them. */
+      maxPendingEffects: positiveInt,
+    }),
     rarityTiers: z.array(RarityTierSchema).length(RARITY_TIERS.length),
     /** Placeholder USD prices (whole dollars) until a human sets them. */
     premiumPriceTiersUsd: z.record(z.string().regex(/^tier-\d+$/), z.int().positive()),

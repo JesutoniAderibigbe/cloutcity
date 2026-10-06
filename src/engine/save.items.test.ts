@@ -1,6 +1,7 @@
 /** Save v4 (S10): `player.inventory`, its migration from v3 and its repair on load. */
 import { describe, expect, it } from 'vitest'
 import { engineConfig as config } from './config'
+import { initialEventsState } from './events'
 import { emptyInventory, type Inventory } from './items'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
@@ -21,8 +22,8 @@ const valid: Inventory = {
 }
 
 describe('save v4 schema', () => {
-  it('is version 4 and a fresh save has an empty inventory', () => {
-    expect(SAVE_VERSION).toBe(4)
+  it('is version 5 (v4 inventory, then v5 events) and a fresh save has an empty inventory', () => {
+    expect(SAVE_VERSION).toBe(5)
     expect(initialSave(config).player.inventory).toEqual(emptyInventory)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
@@ -90,7 +91,11 @@ describe('save v3 -> v4', () => {
     const migrated = migrateSave(v3, 3, config)
     expect(migrated).toEqual({
       outcome: 'carried',
-      save: { ...v3, player: { ...v3.player, inventory: emptyInventory } },
+      save: {
+        ...v3,
+        player: { ...v3.player, inventory: emptyInventory },
+        events: initialEventsState(),
+      },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)
   })

@@ -3,13 +3,18 @@
  * tests can pass their own; the game passes `engineConfig`, built from data/config/balance.json
  * (validated by BalanceConfigSchema in src/lib/data/data.test.ts).
  *
- * The JSON (balance and the item catalog) is read directly rather than through src/lib/data/config.ts so the engine stays off
- * classic zod and out of the shell JS budget (src/lib/client-imports.test.ts).
+ * The JSON (balance, the item catalog, data/events/events.json validated by EventsFileSchema,
+ * and the landmark and venue lists) is read directly rather than through src/lib/data/config.ts
+ * so the engine stays off classic zod and out of the shell JS budget
+ * (src/lib/client-imports.test.ts).
  */
 import balanceJson from '@data/config/balance.json'
+import eventsJson from '@data/events/events.json'
 import itemsJson from '@data/items/items.json'
+import landmarksJson from '@data/landmarks/landmarks.json'
+import venuesJson from '@data/venues/venues.json'
 import type { BalanceConfig, BoroughAccessRule } from '@/lib/data/schemas/config'
-import type { Borough } from '@/lib/data/schemas/content'
+import type { Borough, GameEvent, LocationCategory } from '@/lib/data/schemas/content'
 import { catalogFromJson, type ItemDef } from './itemCatalog'
 
 /** A housing tier: a key of `rentPerWeek`. */
@@ -34,6 +39,27 @@ export interface EngineConfig {
   readonly startCash: number
   /** The home a new player starts in. */
   readonly startHome: HomeId
+  /** Event tuning plus the event catalog (data/events, validated by EventsFileSchema). */
+  readonly events: BalanceConfig['events'] & { readonly catalog: readonly GameEvent[] }
+  /**
+   * The category of every known place (landmark category or venue type), by id. The engine
+   * judges place rules (memorials, government buildings) on this, never on what a caller says.
+   */
+  readonly places: ReadonlyMap<string, LocationCategory>
+}
+
+/**
+ * Built from whatever landmarks and venues the data holds (validated by LandmarksFileSchema and
+ * VenuesFileSchema in data.test.ts), so new or renamed places need no code change.
+ */
+export function placeCategories(
+  landmarks: readonly { readonly id: string; readonly category: string }[],
+  venues: readonly { readonly id: string; readonly type: string }[],
+): ReadonlyMap<string, LocationCategory> {
+  return new Map<string, LocationCategory>([
+    ...landmarks.map((place) => [place.id, place.category as LocationCategory] as const),
+    ...venues.map((place) => [place.id, place.type as LocationCategory] as const),
+  ])
 }
 
 export function isHomeId(id: unknown, config: EngineConfig): id is HomeId {
@@ -84,4 +110,7 @@ export const engineConfig: EngineConfig = {
   boroughs: boroughRules(balanceJson.boroughs),
   startCash: balanceJson.start.cash,
   startHome: startHome(balanceJson.start.home),
+  // JSON imports widen string unions to `string`; data.test.ts validates the file itself.
+  events: { ...balanceJson.events, catalog: eventsJson.events as readonly GameEvent[] },
+  places: placeCategories(landmarksJson.landmarks, venuesJson.venues),
 }

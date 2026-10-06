@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { engineConfig as config } from './config'
 import { emptyInventory } from './items'
+import { initialEventsState } from './events'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
 const schema = createSaveSchema(config)
 
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(4)
+    expect(SAVE_VERSION).toBe(5)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -31,7 +32,7 @@ describe('save schema', () => {
 })
 
 describe('save migration', () => {
-  it('v1 -> v2 keeps cash and starts the clock and stats fresh', () => {
+  it('v1 -> current keeps cash and starts the clock and stats fresh', () => {
     const migrated = migrateSave({ player: { cash: 420 } }, 1, config)
     expect(migrated.outcome).toBe('carried')
     expect(migrated.save).toEqual({
@@ -83,7 +84,7 @@ describe('save edge cases', () => {
     expect(migrateSave({ player: { cash: 3, name: 'x' } }, 1, config).outcome).toBe('fresh')
   })
 
-  it('v1 -> v2 round-trips through JSON with cash intact', () => {
+  it('v1 -> current round-trips through JSON with cash intact', () => {
     const { save } = migrateSave(JSON.parse('{"player":{"cash":9999}}'), 1, config)
     const parsed = schema.safeParse(JSON.parse(JSON.stringify(save)))
     expect(parsed.success && parsed.data.player.cash).toBe(9999)
@@ -182,6 +183,7 @@ describe('save v3: clout, home and rent', () => {
           rent: { owed: 0, missed: 0 },
           inventory: emptyInventory,
         },
+        events: initialEventsState(),
       },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)
@@ -240,7 +242,9 @@ describe('save v3: clout, home and rent', () => {
 describe('save v3: tampered and edge saves', () => {
   const base = initialSave(config)
   const fromJson = (player: string) =>
-    JSON.parse(`{"clock":{"minute":900,"remainderMs":0},"player":${player},"speed":1}`) as unknown
+    JSON.parse(
+      `{"clock":{"minute":900,"remainderMs":0},"player":${player},"speed":1,"events":{"active":null,"history":{},"pending":[],"rngState":0}}`,
+    ) as unknown
 
   it.each(['__proto__', 'constructor', 'hasOwnProperty', ''])(
     'a home of %j is repaired to the start home',
@@ -315,6 +319,7 @@ describe('save v3: tampered and edge saves', () => {
         inventory: emptyInventory,
       },
       speed: 1,
+      events: initialEventsState(),
     })
   })
 
@@ -324,5 +329,160 @@ describe('save v3: tampered and edge saves', () => {
   ])('v2 -> v3 with %s starts fresh', (_label, player) => {
     const v2 = { clock: { minute: 10, remainderMs: 0 }, player, speed: 1 }
     expect(migrateSave(v2, 2, config)).toEqual({ save: base, outcome: 'fresh' })
+  })
+})
+
+describe('event state in the save (v5)', () => {
+  const base = initialSave(config)
+  const eventId = config.events.catalog[0]?.id ?? 'missing'
+  const source = { type: 'event', eventId, choiceId: 'a' } as const
+  const v4: Record<string, unknown> = { ...base }
+  delete v4.events
+
+  it('v4 -> v5 keeps the clock, player and speed, and starts event state fresh', () => {
+    const progressed = {
+      ...v4,
+      clock: { minute: 4321, remainderMs: 12 },
+      player: { ...base.player, cash: 77, clout: 9 },
+      speed: 2,
+    }
+    expect(migrateSave(progressed, 4, config)).toEqual({
+      save: { ...progressed, events: initialEventsState() },
+      outcome: 'carried',
+    })
+  })
+
+  it('v4 -> v5 repairs fields as a load does, and starts an unusable v4 save fresh', () => {
+    const damaged = {
+      ...v4,
+      clock: { minute: 60, remainderMs: -5 },
+      player: { ...base.player, stats: { energy: 400, hunger: 1, mood: 1 } },
+      speed: 9,
+    }
+    const { save, outcome } = migrateSave(damaged, 4, config)
+    expect(outcome).toBe('carried')
+    expect(save).toMatchObject({ clock: { minute: 60, remainderMs: 0 }, speed: 1 })
+    expect(save.player.stats.energy).toBe(100)
+    expect(migrateSave({ ...damaged, admin: true }, 4, config).outcome).toBe('fresh')
+    expect(migrateSave({ ...damaged, events: initialEventsState() }, 4, config).outcome).toBe(
+      'fresh',
+    )
+    expect(migrateSave({ player: { cash: 1 } }, 4, config).outcome).toBe('fresh')
+  })
+
+  it('a save of every version so far (v1 to v5) loads, carrying its progress', () => {
+    const player = base.player
+    const saves: Record<number, unknown> = {
+      1: { player: { cash: 501 } },
+      2: { clock: base.clock, player: { cash: 502, stats: player.stats }, speed: 1 },
+      3: {
+        clock: base.clock,
+        player: { cash: 503, stats: player.stats, clout: 3, home: player.home, rent: player.rent },
+        speed: 1,
+      },
+      4: { ...v4, player: { ...player, cash: 504 } },
+    }
+    for (const [version, persisted] of Object.entries(saves)) {
+      const migrated = migrateSave(persisted, Number(version), config)
+      expect(migrated.outcome, `v${version}`).toBe('carried')
+      expect(migrated.save.player.cash, `v${version}`).toBe(500 + Number(version))
+      expect(schema.safeParse(migrated.save).success, `v${version}`).toBe(true)
+    }
+    const v5 = { ...base, player: { ...player, cash: 505 } }
+    const loaded = loadSave(JSON.parse(JSON.stringify(v5)), config)
+    expect(loaded.ok && loaded.save.player.cash).toBe(505)
+    expect(loaded.ok && loaded.repaired).toEqual([])
+  })
+
+  it('round-trips an open event, history, pending effects and the generator state', () => {
+    const save = {
+      ...base,
+      events: {
+        active: eventId,
+        history: { [eventId]: 480 },
+        pending: [
+          { kind: 'clout', amount: 3, source },
+          { kind: 'item', itemId: 'tee', op: 'grant', source },
+        ],
+        rngState: 0xffffffff,
+      },
+    }
+    expect(loadSave(JSON.parse(JSON.stringify(save)), config)).toEqual({
+      ok: true,
+      save,
+      repaired: [],
+    })
+    expect(schema.safeParse(save).success).toBe(true)
+  })
+
+  it.each([
+    ['missing', undefined],
+    ['not an object', 'junk'],
+    ['a fractional generator state', { ...initialEventsState(), rngState: 1.5 }],
+    ['a generator state above uint32', { ...initialEventsState(), rngState: 2 ** 32 }],
+    ['a negative history minute', { ...initialEventsState(), history: { [eventId]: -1 } }],
+    ['an unknown pending effect', { ...initialEventsState(), pending: [{ kind: 'drink' }] }],
+    [
+      'more pending effects than allowed',
+      {
+        ...initialEventsState(),
+        pending: Array.from({ length: config.events.maxPendingEffects + 1 }, () => ({
+          kind: 'clout',
+          amount: 1,
+          source,
+        })),
+      },
+    ],
+  ])('resets event state that is %s and keeps the rest', (_label, events) => {
+    const result = loadSave({ ...base, player: { ...base.player, cash: 55 }, events }, config)
+    if (!result.ok) throw new Error('expected a repaired save')
+    expect(result.save.events).toEqual(initialEventsState())
+    expect(result.save.player.cash).toBe(55)
+    expect(result.repaired).toEqual(['events'])
+  })
+
+  it('drops prototype-named history keys from a save without polluting anything', () => {
+    const history = JSON.parse(
+      `{"__proto__": 5, "constructor": 3, "toString": 1, "${eventId}": 7}`,
+    ) as Record<string, number>
+    const result = loadSave({ ...base, events: { ...initialEventsState(), history } }, config)
+    if (!result.ok) throw new Error('expected a repaired save')
+    expect(result.save.events.history).toEqual({ [eventId]: 7 })
+    expect(Object.keys(result.save.events.history)).toEqual([eventId])
+    expect(Object.getPrototypeOf(result.save.events.history)).toBe(Object.prototype)
+    expect(result.repaired).toEqual(['events.history'])
+    expect(({} as Record<string, unknown>).constructor).toBe(Object)
+  })
+
+  it.each([
+    ['an open event that is not a string', { ...initialEventsState(), active: 5 }],
+    ['an extra key', { ...initialEventsState(), cheat: true }],
+    [
+      'a pending clout effect with no source',
+      { ...initialEventsState(), pending: [{ kind: 'clout', amount: 1 }] },
+    ],
+    ['a negative generator state', { ...initialEventsState(), rngState: -1 }],
+  ])('resets event state with %s, keeping clock, cash and stats', (_label, events) => {
+    const progress = {
+      ...base,
+      clock: { minute: 9999, remainderMs: 0 },
+      player: { ...base.player, cash: 42 },
+    }
+    const result = loadSave({ ...progress, events }, config)
+    if (!result.ok) throw new Error('expected a repaired save')
+    expect(result.save).toEqual({ ...progress, events: initialEventsState() })
+    expect(result.repaired).toEqual(['events'])
+  })
+
+  it('drops an open event and history for events no longer in the catalog', () => {
+    const events = {
+      ...initialEventsState(),
+      active: 'retired-event',
+      history: { 'retired-event': 10, [eventId]: 20 },
+    }
+    const result = loadSave({ ...base, events }, config)
+    if (!result.ok) throw new Error('expected a repaired save')
+    expect(result.save.events).toEqual({ ...events, active: null, history: { [eventId]: 20 } })
+    expect(result.repaired).toEqual(['events.active', 'events.history'])
   })
 })
