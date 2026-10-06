@@ -62,7 +62,7 @@
       ],
       "acceptance": "npm run geo:build reproducibly downloads pinned sources (NYC Open Data borough boundaries clipped to shoreline, NYC parks, Neighborhood Tabulation Areas, MTA static GTFS subway shapes and stops; OSM only for a layer no city source provides, kept in its own ODbL file) into a gitignored cache and writes simplified, quantized layers to /data/geo plus play zones (grouped NTAs) to /data/zones; output is deterministic (checksum test: same input gives byte-identical output); raw MTA files are kept unmodified in the cache and derived files are labelled derived; /data/geo/SOURCES.md lists each source URL, retrieval date, license or terms, transformations and required attribution text (MTA: not endorsed, no accuracy claim; OSM ODbL notice if used); one projection module (lat/lng to local metres, fixed origin) is shared by scene and engine; base geo gzipped size is within perf.json geoBaseGzKB; unit tests prove known coordinates land in the correct borough (Times Square in Manhattan, the Unisphere in Queens, Prospect Park in Brooklyn, a Bronx point, St George in Staten Island), an Upper Bay point is in no borough, and every subway station lies on a line.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
@@ -264,7 +264,7 @@
       "requires": [],
       "acceptance": "Four jobs per CLAUDE.md anchors (barista, retail, delivery with higher energy cost, junior dev gated by clout level with why-locked copy) with 4-hour shifts that fast-forward the personal clock; rent due every 7 game days; missed rent escalates to eviction and a move to cheaper housing; housing copy that compares rents is computed from data (GR-11); unit tests.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },

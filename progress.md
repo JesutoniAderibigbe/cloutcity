@@ -63,6 +63,14 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 (Versions verified against the npm registry by the orchestrator on 2026-10-06.)
 
 ## Learnings and gotchas
+- NYC Open Data (Socrata) and nyc.gov return 403 from this machine; geo:build uses NYC DCP's ArcGIS
+  FeatureServer + MTA S3. The download cache lives in .cache/geo (gitignored); copy it between
+  worktrees or run `npm run geo:build` with network. `geo:build -- --check --offline` verifies outputs.
+- MTA GTFS quirks: Q/N/R shapes end ~103 m short of 96 St (terminal extension); Q03/Q04 sit 4–4.5 m
+  off their shapes. NTA QN0151 (Rikers) has BoroName Bronx but CDTA QN01; Marble Hill station 106 is
+  borough manhattan but zone bx08.
+- src/lib/geo uses relative `.ts` imports so Node scripts can load it; src/lib/data/geo.ts (classic
+  zod + all layers) is never imported by client code.
 - zod/mini must be imported as a namespace: `import * as z from 'zod/mini'`. `import { z }` makes
   Turbopack bundle all of zod/mini incl. locales (~92 KB gz). client-imports.test.ts enforces it.
 - Playwright: use page.clock.setFixedTime only; clock.install() fakes rAF and hangs the console
@@ -186,3 +194,11 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   src/engine/actions.ts and save.ts. Gates: 502 unit, 210 e2e, build, budget 161.7 KB.
   OPEN-ISSUES: DEC-9 update, Q-5 re-consent, Q-6 Y−18 ruling, RISK-2 baselines; low: storage log text
   says "saved game" for onboarding data.
+- S04 (attempt 1, passed on lane-b, merged): reproducible geo:build from hash-locked DCP borough/NTA
+  layers + MTA GTFS → derived land, water, parks, subway (29 lines, 496 stations) and 71 CDTA zones;
+  SOURCES.md; ENU projection (cc-enu-v1, origin 40.7/−73.98); base geo 137 KB gz. Bug-hunter: 0
+  product failures. Merge conflicts in data.test.ts and schemas/config.ts resolved (kept both).
+- S11 (attempt 1, passed on lane-c, merged): four shift jobs at the wage anchors, weekly rent with
+  late fees and eviction to the lowest-rent home, clout-level gating helper src/engine/clout.ts, save
+  v3. Bug-hunter: 0 product failures. Copy JSON conflicts with S05a resolved (kept both).
+  OPEN-ISSUES: UX-4 eviction wording, TUNE-2 placeholders.
