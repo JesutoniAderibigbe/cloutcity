@@ -34,6 +34,7 @@ gitignored; later tasks document their variables here.
 | `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                     |
 | `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                      |
 | `npm run budget`                  | Gzipped shell JS of `/` against `data/config/perf.json` (run after `npm run build`)                                  |
+| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                             |
 
 Gate order used by the build loop:
 `npm run format:check && npm run typecheck && npm run lint && npm test && npm run build && npm run e2e && npm run budget`
@@ -94,14 +95,14 @@ by a zod schema in `src/lib/data/schemas/` (`src/lib/data/data.test.ts` fails if
 no schema or does not match it, if any other file type appears (only `SOURCES.md` and
 `README.md` are allowed next to data), or if a cross-file reference breaks).
 
-| Folder            | Holds                                                                                                                                                            |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `layout.json`, `copy.json` |
-| `data/copy/`      | `base.json` (every player-facing string) and `packs/*.json` (slang packs)                                                                                        |
-| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`: content, with copy keys instead of text (placeholder seeds until their tasks land)                  |
-| `data/geo/`       | `bounds.json` (NYC extent); the built geography layers join it in S04                                                                                            |
-| `data/zones/`     | play zones from NTAs                                                                                                                                             |
-| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                |
+| Folder            | Holds                                                                                                                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `layout.json`, `copy.json`, `geo.json` (geo build parameters) |
+| `data/copy/`      | `base.json` (every player-facing string) and `packs/*.json` (slang packs)                                                                                                                           |
+| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`: content, with copy keys instead of text (placeholder seeds until their tasks land)                                                     |
+| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                  |
+| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                       |
+| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                   |
 
 - **Loading.** Server code and scripts import validated data from `src/lib/data/config.ts` and
   `src/lib/data/content.ts`, which parse at import and fail fast with the file name. Client
@@ -170,6 +171,19 @@ structured records with a level, timestamp and correlation id. It redacts sensit
 string value and from the message itself. Dates become ISO strings, Maps
 objects and Sets arrays. `console.*` is a lint error everywhere else.
 
+## Geo data
+
+`npm run geo:build` (`scripts/geo/build.ts`) downloads the sources pinned in
+`scripts/geo/sources.lock.json` (DCP borough boundaries clipped to shoreline and 2020 NTAs, MTA
+subway static GTFS) into `.cache/geo/`, then writes simplified, integer-metre layers to
+`data/geo` and `data/zones`. The output is deterministic: `npm run geo:build -- --check` rebuilds
+in memory and fails if a committed file differs, and `npm test` rebuilds from the cache when it
+is present. `--update` accepts changed upstream files and rewrites the lock; `--offline` never
+touches the network. Parameters live in `data/config/geo.json`; sources, terms, transformations
+and attribution text are in `data/geo/SOURCES.md` (generated). All coordinates use the one
+projection in `src/lib/geo/projection.ts` (lat/lng to local metres, fixed origin), shared by the
+build, the scene and the engine; `src/lib/data/geo.ts` loads the layers for server code and tests.
+
 ## Performance budget
 
 `data/config/perf.json` holds every budget from `CLAUDE.md`, per tier where tiered, plus the
@@ -194,8 +208,8 @@ initialised. Nothing needs a running stack yet; see `progress.md` for when to `n
 ## Ignored paths
 
 `.gitignore` covers env files, build output (`.next/`, `out/`), test artefacts
-(`test-results/`, `playwright-report/`, `coverage/`) and the geo download cache (`.cache/`,
-reserved for the raw NYC Open Data and MTA files `npm run geo:build` downloads in S04).
+(`test-results/`, `playwright-report/`, `coverage/`) and the geo download cache (`.cache/`:
+the raw NYC Open Data and MTA files `npm run geo:build` downloads, kept unmodified).
 
 ## Agent orchestration kit
 

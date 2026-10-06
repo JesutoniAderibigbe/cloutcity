@@ -19,3 +19,5 @@ CLAUDE.md
 .claude/
 qa-reports/
 .cache/
+data/**/*.derived.json
+data/geo/SOURCES.md
