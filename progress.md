@@ -15,12 +15,9 @@ The loop appends here after each task. Fresh iterations read this first.
 Tasks whose `requires` includes an item marked no are blocked with these instructions.
 - network: yes
 - webgl: yes (S01 webgl-smoke passes with --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader)
-- supabase: no
-  Unblock (Docker is already running):
-  1. After S01 has landed: `npx supabase start`.
-  2. Copy API URL, anon key and service_role key from `npx supabase status` into .env.local as
-     NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.
-  3. Set yes.
+- supabase: yes (local stack started 2026-10-06 via `npx supabase start`; .env.local has
+  NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY and
+  MODERATOR_EMAILS. If Docker restarts: `npx supabase start`. imgproxy and pooler are stopped; not needed.)
 - realtime: no
   Unblock: supabase above, then confirm `npx supabase status` lists Realtime and
   `npm run check:realtime` passes (added with S29), then set yes.
