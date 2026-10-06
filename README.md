@@ -35,6 +35,7 @@ gitignored; later tasks document their variables here.
 | `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                      |
 | `npm run budget`                  | Gzipped shell JS of `/` against `data/config/perf.json`, then the boot-path guard (run after `npm run build`)        |
 | `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                             |
+| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)               |
 
 Gate order used by the build loop:
 `npm run format:check && npm run typecheck && npm run lint && npm test && npm run build && npm run e2e && npm run budget`
@@ -133,6 +134,7 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
 | `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                |
 | `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                     |
 | `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                 |
+| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                        |
 
 - **Loading.** Server code and scripts import validated data from `src/lib/data/config.ts` and
   `src/lib/data/content.ts`, which parse at import and fail fast with the file name. Client
@@ -265,8 +267,28 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   In builds with test hooks (`NEXT_PUBLIC_TEST_HOOKS=1`, the e2e build only), set
   `window.__CLOUTCITY_E2E__ = true` before load to get `window.__cloutcityTest.events`
   (`open(id, context)`, `state()`); production builds contain no hook code.
+- **Housing** (`housing.ts`): `canAffordMove(player, home)` is true when cash, less the rent
+  reserve (`rentReserve`: rent owed plus this week's rent for the current home), covers the
+  home's move-in cost (`balance.json` `housing.moveInCost`; the lowest-rent home has none).
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
+
+## Economy simulation
+
+`src/engine/sim/economyBot.ts` plays the solo game for 30 game days on each entry job (barista,
+retail, delivery) with a fixed routine: two shifts a day, two subway rides, meals when hungry,
+deli coffee before a shift when energy is short, sleep at 22:00. It uses the engine's public
+functions only. `src/engine/sim/economy.sim.test.ts` checks the result against the CLAUDE.md
+target feel: the job that ends with the most cash finishes between $800 and $1250, saves $115 to
+$185 in each of weeks 2 to 4, and can afford the move to the Brooklyn 1BR between the game days
+in `balance.json` `target.firstUpgradeGameDay`; no job goes broke, misses rent or misses a
+shift, and every job saves $80 to $230 a week.
+
+The test also writes the result to `data/sim/economy-baseline.derived.json` (per-job results
+and the highest cash, clout and action counts per action, game hour and game day, which S18c
+uses as save-plausibility ceilings) and fails if a later change to the balance moves it. After
+tuning `balance.json` on purpose, run `npm run econ:update`, check the target tests still pass,
+and log the change in the progress.md Tuning log.
 
 ## Logging
 

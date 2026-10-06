@@ -8,6 +8,7 @@
  */
 import type { BaseCopy, SlangPack } from '@/lib/data/schemas/copy'
 import { copyConfig, superlativeWords } from './index'
+import './ns/actions'
 import './ns/ageGate'
 import './ns/app'
 import './ns/boroughs'

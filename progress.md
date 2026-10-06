@@ -148,6 +148,15 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
 (none yet: phase, qa-mafia verdicts, report paths, PR link)
 
 ## Tuning log
+- S12 economy sim (TUNE-3): target missed (barista $372, retail $484, delivery $586/wk; free naps =
+  unlimited energy; barista dominated). Costs-only fix, wages fixed: hunger decay 5→6/h; home-meal
+  $4→$8; bodega-breakfast $6→$10; sleep +80→+55 energy; nap +15→+4 energy; new deli-coffee 10 min $12
+  +20 energy; shift energy retail 15→25, delivery 25→40 (barista 15); housing.moveInCost brooklyn-1br
+  $400, manhattan-loft $1000 (placeholder). Bot: 2 shifts/day, 2 rides/day at $3, deli coffee before
+  shifts, never sleeps at 0 energy, skips work that would not end by 22:00. Result (30 days): retail
+  (best) weeks 2–4 $140/$140/$140, affordable day 13, final $884; barista $112×3, day 14, $752;
+  delivery $106/$114/$106, day 14, $748; min cash $147, no misses or evictions. Baseline:
+  data/sim/economy-baseline.derived.json (npm run econ:update).
 - S03 placeholders (TUNE-1): decay per game hour energy 3, hunger 5, mood 2; start stats 100/80/70;
   at-zero penalties (hunger 0: +3 energy/+4 mood drain per h; energy 0: +3 mood drain, 1.5x duration;
   mood 0: 1.25x duration); catalog sleep 480 min +80 energy +5 mood, nap 60 min +15 energy,
@@ -234,4 +243,10 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   busy state until dismissed. Pending: S12 merge broke 3 tests (events decay, taxi centroid sweep) —
   rebase lane-c/S12 onto dev and fix; S05c next (plan approved, all defaults); hold S05b (177.7 KB)
   and S04a until S05c merges.
+- S12 (passed on lane-c, rebased onto dev as one commit; lane gates on this tree: 1741 unit, 270 e2e,
+  shell 175.7 KB): deterministic 30-day economy bot per entry job, target + exact-baseline drift
+  layers, ±1 sweep robustness, plausibility fixture for S18c, src/engine/housing.ts canAffordMove,
+  shared HOME_IDS tie-break. Fix cycles: bot schedule robustness (midnight wrap), re-tune; integration:
+  event tests pin their stats block, zone-centroid taxi sweep gets a documented 30 s limit.
+  OPEN-ISSUES: TUNE-3 placeholders (Manhattan move-in), mood sits at 0 for the bot most evenings.
 

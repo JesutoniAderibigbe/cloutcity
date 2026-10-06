@@ -243,7 +243,8 @@ test.describe('events: edge cases', () => {
     await page.addInitScript(() => {
       window.__CLOUTCITY_E2E__ = true
     })
-    await page.goto('/')
+    // A held boot-island chunk delays the load event, so do not wait for it.
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
     await expect.poll(() => held, { message: 'the store chunk is requested at boot' }).toBe(true)
     expect(await page.evaluate(() => window.__cloutcityTest?.events)).toBeUndefined()

@@ -30,6 +30,10 @@ export interface EngineConfig {
   /** Whole dollars per rent week, by home. */
   readonly rentPerWeek: BalanceConfig['rentPerWeek']
   readonly rent: BalanceConfig['rent']
+  /** Move-in costs (src/engine/housing.ts). */
+  readonly housing: BalanceConfig['housing']
+  /** Food range and the subway fare, in whole dollars. */
+  readonly costs: BalanceConfig['costs']
   readonly clout: BalanceConfig['clout']
   /** Shop, resale and gift-stack rules, plus the cash item catalog (data/items/items.json). */
   readonly items: BalanceConfig['items'] & { readonly catalog: readonly ItemDef[] }
@@ -107,6 +111,8 @@ export const engineConfig: EngineConfig = {
   jobs: balanceJson.jobs,
   rentPerWeek,
   rent: balanceJson.rent,
+  housing: balanceJson.housing,
+  costs: balanceJson.costs,
   clout: balanceJson.clout,
   items: { ...balanceJson.items, catalog: catalogFromJson(itemsJson.items) },
   boroughs: boroughRules(balanceJson.boroughs),

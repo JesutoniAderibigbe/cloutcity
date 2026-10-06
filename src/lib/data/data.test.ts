@@ -29,6 +29,7 @@ import {
   VenuesFileSchema,
 } from './schemas/content'
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
+import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
   BoroughsFileSchema,
@@ -75,6 +76,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
   'premium/premium.json': PremiumFileSchema,
+  'sim/economy-baseline.derived.json': EconomyBaselineSchema,
   'venues/venues.json': VenuesFileSchema,
   'zones/zone-shapes.derived.json': ZoneShapesFileSchema,
   'zones/zones.derived.json': ZonesFileSchema,
@@ -521,5 +523,17 @@ describe('cross-file references', () => {
         lat > geoBounds.north,
     )
     expect(outside).toEqual([])
+  })
+})
+
+describe('economy baseline (S12, read by S18c)', () => {
+  const file = readJson('sim/economy-baseline.derived.json') as Record<string, unknown>
+
+  it('rejects a best job with no run, a negative ceiling and an unknown field', () => {
+    expect(EconomyBaselineSchema.safeParse(file).success).toBe(true)
+    expect(EconomyBaselineSchema.safeParse({ ...file, bestJob: 'junior-dev' }).success).toBe(false)
+    const cash = { maxGainPerAction: -1, maxGainPerGameDay: 0, maxGainPerGameHour: 0 }
+    expect(EconomyBaselineSchema.safeParse({ ...file, cash }).success).toBe(false)
+    expect(EconomyBaselineSchema.safeParse({ ...file, extra: 1 }).success).toBe(false)
   })
 })

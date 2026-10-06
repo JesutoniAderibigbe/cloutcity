@@ -18,7 +18,8 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "budget": "node scripts/budget.ts && node scripts/shell-guard.ts",
-    "geo:build": "node scripts/geo/build.ts"
+    "geo:build": "node scripts/geo/build.ts",
+    "econ:update": "vitest run src/engine/sim --update"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",
