@@ -253,7 +253,7 @@
       "requires": [],
       "acceptance": "12 clothing and makeup items across 3 rarity tiers and 5 slots plus 3 gift types, all with currency 'cash', price, rarity, sellValue, cloutValue, statEffects; gifts are consumed when used on NPCs or yourself and cannot target another player; inventory and outfit equip; buy and sell with depreciation, prices displayed via the shared money formatter; schema validation and unit tests including insufficient funds.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },

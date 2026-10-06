@@ -202,3 +202,9 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   late fees and eviction to the lowest-rent home, clout-level gating helper src/engine/clout.ts, save
   v3. Bug-hunter: 0 product failures. Copy JSON conflicts with S05a resolved (kept both).
   OPEN-ISSUES: UX-4 eviction wording, TUNE-2 placeholders.
+- S10 (attempt 1, passed on lane-c, merged): 12 wearables (3 rarities, 5 slots) + 3 gifts, cash only;
+  resale floor(price × resalePct) depreciating 5%/game day to a 50% floor; own-once wearables, stacking
+  gifts; effects once per owned copy on first wear; gifts to 'yourself' or a branded NpcId only; save
+  v4 inventory. Bug-hunter: 0 product failures (low: tampered worn:false can re-grant an effect; v3 save
+  carrying inventory starts fresh). No UI yet → S10a. Gates on dev: 1010 unit, 210 e2e, budget 163.9 KB.
+
