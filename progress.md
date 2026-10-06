@@ -37,22 +37,22 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - moderators: MODERATOR_EMAILS in .env.local (comma-separated; default: the user's account)
 
 ## Open rulings (user approved defaults on 2026-10-06 unless marked)
-- Age (user ruling): anyone plays immediately; the age check is asked only at the first gated
-  feature (S17); only the band (under13 / teen / adult) and a timestamp are stored.
-- Content (user ruling): all ages. No alcohol, drugs, sexual content or gambling; mild cartoonish crime.
+- Age (user ruling, from the user's manager): adults only (18+). The welcome card on first open asks a
+  neutral year of birth before play; under 18 sees an in-voice "come back when you're 18" screen,
+  the gate locks on that device for 24 h, and no Supabase user is created. Only an attestation
+  boolean and timestamp are stored, never the birth year.
+- Content (user ruling): nightlife and alcohol as flavour only, never rewarded, required or tied
+  to a stat; no drugs, sexual content or gambling; mild profanity only.
 - Clocks: a personal game clock per player, plus shared real NYC city time for shared features.
-- Strangers: preset emotes, adults only.
+- Strangers: preset emotes only.
 - Realtime vendor: Supabase Realtime behind PresenceTransport, migrating at the cost trigger.
-- Visibility: adult guests visible under generated handles; teens visible to friends only;
-  unknown and under-13 visible to no one; ghost mode for every 13+ player; the user moderates
+- Visibility: guests visible under generated handles; ghost mode for everyone; the user moderates
   via MODERATOR_EMAILS.
 - Music: CC0 only, no radio.
-- CAPTCHA: Turnstile on anonymous sign-in in production only (applies to 13+ only).
+- CAPTCHA: Turnstile on anonymous sign-in in production only.
 - Legal: generic labels for branded landmark names and derived subway artwork; everything stays
   `legalReviewed:false` until legal review.
 - Out-of-scope list in CLAUDE.md stands.
-- Cross-age connections (user ruling 2026-10-06): no friendships, chat, roommates or emotes
-  across age bands (teen with teen, adult with adult).
 - Payments: Stripe test mode only. Real payouts need a Stripe account in a supported country
   (Stripe does not directly support Nigeria-registered businesses; e.g. a US entity via Stripe
   Atlas). Human step, not a loop task.
@@ -83,8 +83,6 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - Headless Chromium renders WebGL in software. Never assert FPS in CI; assert bytes, timings,
   draw calls and triangles.
 - docs/local/ is gitignored: put OPEN-ISSUES pointers into iteration notes.
-- COPPA: nothing may send a persistent identifier (analytics, error reporting, visit counting)
-  before a 13+ answer. Hosting-layer IP logging needs legal review before launch.
 
 ## Lanes (user decision 2026-10-06: two parallel lanes)
 - Lane A (main checkout, `dev`): S02 → S03 → S05a → S05b → S06
@@ -92,24 +90,22 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - S05 waits for both lanes. Phase 2+ lanes are planned at each phase start.
 
 ## Phase user stories (qa-mafia, Mode A, at phase end)
-1. A new visitor on a phone opens the link and sees no age question; accepts Terms, picks audio,
-   lands on the 3D map in Queens, takes or skips the tour, buys a first bodega breakfast, finds a
-   place via the Places panel, and still plays after going offline and reloading.
-2. A player travels by walk, subway and taxi; visits a landmark; is refused then admitted at the
-   club door (music and dancing); buys and sells an item; works a shift; pays rent; sees why
-   Brooklyn and Manhattan are locked. No age question appears at any point.
-3. A player levels up through clout and flexing at a landmark, resolves an all-ages event,
-   completes goals, decorates the apartment, and builds an avatar.
-4. A player taps "Add friends" and gets the age question. Under-13: friendly "not available"
-   messages everywhere and no network calls to Supabase. Teen: picks a handle, invites a teen
-   friend, chats until the 10-message limit, blocks and reports, cannot friend an adult. Adult:
-   saves progress via magic link, shares a card, views /live.
-5. Live city: two adults in two browsers see each other move and exchange emotes; a teen and an
-   adult stranger never see each other; two teen friends see each other with no stranger emotes;
-   an unanswered or under-13 player sees ambient life only; block, mute, report and ghost mode
-   work; going offline degrades to solo; a live event counts down.
-6. Premium: under-13 blocked; a teen acknowledges the parental-consent notice; an adult buys in
-   Stripe test mode, sees it restored on another device, and loses it on refund.
+1. New visitor on a phone: opens the link, passes the 18+ welcome card, picks audio, lands on the
+   3D map in Queens, takes or skips the tour, buys a first bodega breakfast, finds any place via
+   the Places panel, still plays after going offline and reloading. An under-18 answer is refused
+   with the in-voice screen and stays locked on reload.
+2. Player travels by walk, subway and taxi; visits a landmark; is refused then admitted at the
+   club door; buys and sells an item; works a shift; pays rent; sees why Brooklyn and Manhattan
+   are locked.
+3. Player levels up through clout and flexing at a landmark, resolves an event, completes goals,
+   decorates the apartment, builds an avatar in the creator.
+4. Player saves progress via magic link and keeps it; picks a handle; adds a friend by invite;
+   chats until the 10-message limit; blocks and reports; shares a card; views /live.
+5. Two players in two browsers see each other move in the same neighborhood; block, mute,
+   report, ghost mode and emotes work; the city degrades to solo when offline; a live event
+   counts down.
+6. Player browses premium items, buys one in Stripe test mode, sees it restored on another
+   device, and loses it on refund.
 7. Full smoke test of all of the above on mobile-390.
 
 ## Phase reviews

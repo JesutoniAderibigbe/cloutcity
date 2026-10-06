@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-Clout City: NYC is a mobile-first, browser-based, stylised-3D Sims-style life game for all ages, set in a shared, live version of the real New York City (tagline: "Tap In. Blow Up.").
+Clout City: NYC is a mobile-first, browser-based, stylised-3D Sims-style life game for adults (18+), set in a shared, live version of the real New York City (tagline: "Tap In. Blow Up.").
 
 ## Orchestration Model
 
@@ -41,7 +41,7 @@ Orchestration guidance:
 
 ## Product
 **Clout City: NYC** (tagline **"Tap In. Blow Up."**). Use the name and tagline consistently in the app title, PWA manifest, landing page, share cards and store listings.
-- The player is a teen, university student or early-career person trying to **"Make it in New York"**, meaning become famous as an influencer, streamer, artist/DJ or founder/hustler. The game is for all ages; social and live-city features unlock by age band.
+- The player is an adult: a university student, early-career person or hustler (18+) trying to **"Make it in New York"**, meaning become famous as an influencer, streamer, artist/DJ or founder/hustler.
 - Art, copy, characters, invented venues and code are original. The geography and iconic public landmarks are real. Do not copy any existing game.
 - Other real players share the city live.
 
@@ -65,7 +65,7 @@ tests/e2e/        Playwright specs, one per flow.
 tests/integration/  Vitest suites against local Supabase.
 Unit tests sit next to the code as *.test.ts.
 ```
-- **Auth model:** solo play is local-only. A Supabase anonymous session starts only after a 13+ answer to the age check (S17). 13+ players can upgrade to email magic link or Google with progress kept.
+- **Auth model:** a Supabase anonymous session starts after the 18+ attestation. It can be upgraded to email magic link or Google with progress kept.
 - **Data model:** local-first game state that syncs to the server.
 - **Shared presence:** server-authored broadcasts on private zone channels.
 
@@ -94,20 +94,23 @@ Unit tests sit next to the code as *.test.ts.
   - friend boosts, roommate links, referral rewards
   - real-money purchases and entitlements
   - live stats
-  - age band (set server-side from the age answer, lowerable only) and same-band-group checks
+  - age attestation
   - presence and movement broadcasts, handles, and every stat or cosmetic shown to other players
   - save plausibility
 - **Shared live city (realtime).**
-  - **Adults (18+)** join named play *zones* (`/data/zones`, built from NYC Neighborhood Tabulation Areas), split into *shards* of at most `realtime.shardSize` players (config, default 16), each a private topic. A client subscribes only to its current shard. Other zones show cached aggregate counts, never subscriptions.
-  - **Teens (13–17)** never join shards. Their events are fanned out server-side only to accepted same-band friends' personal topics `player:<id>` (capped by `realtime.maxFriendFanout`). Each teen reads only their own personal topic; `join_friends()` gives the initial snapshot.
-  - **Unknown and under-13 players** never connect to realtime and see ambient life only.
-  - **Server-authored broadcasts only.** Clients never insert into `realtime.messages`. Security-definer RPCs (`join_zone`, `join_friends`, `move`, `set_activity`, `leave_zone`, `heartbeat`) validate and rate-limit, write `player_state`, and call `realtime.send(..., private => true)`. Payloads carry ids and enums only, never free text.
-  - **`realtime.messages` RLS:** a shard topic is readable only by adult members; a personal topic only by its owner; no client inserts.
-  - **Wire format.** Players broadcast *movement intents* (`from`, `to`, `mode`, `startedAt`, `durationMs`), not per-frame positions. Clients interpolate. Presence (`track()`) is not used for movement. Online status comes from `player_state.last_seen`, written by a heartbeat RPC every 60 s.
+  - **Interest management.** The city is split into named play *zones* (`/data/zones`, built from NYC Neighborhood Tabulation Areas). Each zone is split into *shards* of at most `realtime.shardSize` players (config, default 16). A client subscribes only to its current shard's private channel. Other zones show cached aggregate counts, never subscriptions.
+  - **Server-authored broadcasts only.**
+    - Clients never insert into `realtime.messages`.
+    - Movement, activity and leave events go out through security-definer RPCs (`join_zone`, `move`, `set_activity`, `leave_zone`, `heartbeat`). These RPCs validate and rate-limit, write `player_state`, and call `realtime.send(..., private => true)`.
+    - Payloads carry ids and enums only, never free text.
+  - **Wire format.** Players broadcast *movement intents* (`from`, `to`, `mode`, `startedAt`, `durationMs`), not per-frame positions. Clients interpolate.
+  - Presence (`track()`) is not used for movement.
+  - Online status comes from `player_state.last_seen`, written by a heartbeat RPC every 60 s.
   - **Transport abstraction.** All realtime code goes through `PresenceTransport` in `src/realtime/`. A move to another transport (e.g. Cloudflare Durable Objects) must touch only that folder and the RPC layer.
   - **What other players can see:** handle, avatar (cosmetics validated server-side), server-accepted clout level, career-path icon, and current venue plus an activity enum.
-  - **What they can never see:** email, real name, real-world location, age band, cash, inventory, friend list, chat.
-  - **The app never requests device geolocation.** **Ghost mode** (every 13+ player) removes a player from snapshots and stops their broadcasts.
+  - **What they can never see:** email, real name, real-world location, cash, inventory, friend list, chat.
+  - **The app never requests device geolocation.**
+  - **Ghost mode** removes a player from snapshots and stops their broadcasts.
 - **Out of scope** (still in force after DEC-4 and DEC-5): no player-to-player transfer of cash or items, no trading, no gifting between players, no group or crew chat, no free-text messaging with non-friends, no voice chat, and no way to raise the chat limit. Do not build these, even partially.
 - Every Supabase table has Row Level Security. That includes policies on `realtime.messages` for every private topic.
 
@@ -167,18 +170,18 @@ Further rules:
 
 ## Non-negotiable product principles
 1. **Instant map start.**
-   - A link lands the player on the 3D map within the perf budgets. No signup, no login wall, no age question.
-   - One welcome card over the loading map asks only for Terms/Privacy consent and the audio choice ("Play our music" / "I'll bring my own").
-   - Solo play is local-only until the player answers the age check (S17) at their first social, live-city or money action.
-   - The "Save your progress" prompt appears only after the first milestone and only for 13+. Guest progress must carry over to the account.
+   - A link lands the player on the 3D map within the budgets above. No signup, no login wall.
+   - The map loads behind a single **welcome card** with three parts: an 18+ year-of-birth check, a Terms/Privacy consent checkbox, and the audio choice.
+   - The guest session starts automatically after that card.
+   - The "Save your progress" prompt appears only after the first milestone. Guest progress must carry over to the account.
 2. **Goal: Make it in New York.** Four career paths (influencer, streamer, artist/DJ, founder/hustler) share one clout ladder: Nobody, Local, Scene Regular, Known, Famous, Icon. The career path is chosen as the "Dream" in the avatar creator. Icon triggers a milestone moment and a prestige option.
-3. **Teen and young-adult voice.** Playful, confident NYC attitude, all-ages clean. Slang goes in flavour text, NPC dialogue, events, notifications and share cards. Buttons, stat names and prices stay plain and clear.
+3. **Young-adult NYC voice.** Playful, confident, grown NYC attitude. Slang goes in flavour text, NPC dialogue, events, notifications and share cards. Buttons, stat names and prices stay plain and clear.
 4. **Friends early and often, with an advantage.** Friend prompts appear after wins, never before. Persistent "Add friends" in the HUD.
    - Advantages: a daily friend boost, a capped per-friend clout bonus, and a roommate rent discount (each roommate pays less; no cash moves between players).
    - Friends are an advantage, not a requirement; solo play stays fully progressable.
    - Cap invite prompts per session. Never scrape contacts.
 5. **The city is shared and honest.**
-   - Adults see real adult players near you, moving live; teens see their friends; everyone sees ambient city life.
+   - You see real players near you, moving live.
    - Every "online", "here now" or "players" number comes from real presence data and is never padded.
    - Ambient pedestrians and NPCs look visibly different from players and are never counted as players (UX-3).
 6. **Sound is the player's choice.**
@@ -196,62 +199,41 @@ Further rules:
 - Gifts are consumed (a money sink): used on NPCs during events or on yourself, never sent to other players.
 - **Grants** (goal rewards, referral rewards, any operator compensation) all go through one grant function. Grants are idempotent, audited, eligibility-targeted, and capped relative to the next progression goal. Granted value never counts toward goal progress.
 
-## Safety rules (all ages, shared world)
-**Content is all-ages.**
-- No alcohol: clubs are about dancing, DJs and music.
-- No drugs, no sexual content, no gambling mechanics.
-- No mocking of any group, no slurs. Profanity stays mild in our copy.
-- Crime stays mild and cartoonish.
+## Safety rules (adults only, shared world)
+**Content.** (User ruling 2026-10-06.)
+- Nightlife and alcohol references are allowed as flavour (clubs, bars, last call). Drinking is never rewarded, required, or tied to a stat boost.
+- No drug references. No sexual content. No real-money gambling mechanics.
+- No mocking of any group. No slurs.
+- Profanity stays mild ("damn" level) in our copy. Crime stays mild and cartoonish.
 
-**Age check timing.**
-- The age check comes only at the first tap of a gated feature, never before solo play or in-game cash purchases.
-- Gated features: appearing to or interacting with other players in the shared city, friend request, invite or share, chat, emotes, account upgrade, and real-money purchase.
-- It uses a neutral year-of-birth picker (no default, no threshold hint). Only the age band (under13, teen, adult) and a timestamp are stored, never the birth year.
-- The server sets the band on the profile. The player can lower it, but raising it requires support.
+**Age.**
+- 18+ only. The welcome card asks year of birth with a neutral picker that has no default and no "18+" hint. The answer is stored only as an attestation boolean plus a timestamp; the year itself is not stored.
+- If the answer is under 18, the player sees an in-voice "come back when you're 18" screen. The gate is locked on that device for 24 h. No Supabase user is ever created for them.
+- The server keeps the attestation and consent version on the profile. Every social, realtime and purchase RPC refuses accounts without it.
 
-**Unknown and under 13.**
-- Solo play only. No Supabase session, no profile, no handle and no realtime connection.
-- The shared city shows ambient life only.
-- No friends, chat, invites, shares, emotes, account upgrade with email, or real-money purchases.
-- No personal data or persistent identifiers are collected (COPPA). Nothing (analytics, error reporting, visit counting) sends a persistent identifier before a 13+ answer.
-
-**13–17.**
-- Friends, friends-only chat (the same fixed 10 per day) and invites or shares, all within the teen band only.
-- In the city they are visible only to accepted friends and see only friends plus ambient life. They never join public shards.
-- No emotes to or from strangers. No contact sharing.
-- A parental-consent notice before any real-money purchase.
-
-**18+.** The full shared city: adult strangers are visible, and preset emotes work with adult strangers.
-
-**No cross-band connections.** Friendships, chat, roommates and emotes exist only within the same band group (teen with teen, adult with adult). A cross-band invite opens the map with a friendly "can't connect" message.
-
-**Server enforcement.** `require_band(min)` and `same_band_group(a, b)` run on every social, realtime and purchase RPC and in the `realtime.messages` RLS policies.
+**Visibility.** Guests appear in the shared city under a generated handle. Every player has ghost mode.
 
 **Chat.**
-- One-to-one between accepted friends only.
+- One-to-one, between accepted friends only.
 - Max **10 text messages per player per day** (New York midnight reset), 140 characters each, enforced server-side and atomically.
 - The limit is fixed at 10 for every player. It is never sold, rewarded, earned, tiered or raised by any feature.
 - Reactions and preset quick-replies are unlimited and do not count.
 - No links, images, phone numbers, emails or social handles in messages. A message rejected by the filter does not use quota.
 
-**Strangers.** Adults only, preset emotes only. No free text or voice with non-friends.
+**Strangers.** Non-friends can interact only through server-rate-limited **preset emotes**: no free text, no voice. (User-approved default.)
 
-**Block, mute, report on every player surface:** map avatar, player card, venue occupant list, friend list, friend requests, chat and emotes.
-- Block hides both ways, server-side.
-- Mute hides that player's avatar and emotes for me, and persists.
+**Block, mute, report on every player surface.** That means: map avatar, player card, venue occupant list, friend list, friend requests, chat and emotes.
+- Block hides both ways, server-side, in snapshots, friend surfaces and chat.
+- Mute hides that player's avatar and emotes for me.
 - Report captures a reason, an optional filtered note and a context snapshot.
 
-**Handles.**
-- Only 13+ players have handles: generated for guests, custom ones filtered server-side for slurs, profanity, reserved/staff names and impersonation.
-- Unique case-insensitively and rate-limited on change.
-- Players always see a live preview; input is never silently rewritten (GR-6).
-- A teen's handle is shown only to accepted friends.
+**Handles** are filtered server-side for slurs, profanity, reserved/staff names and impersonation. They are unique case-insensitively, rate-limited on change, and shown with a live preview, never silently rewritten (GR-6).
 
 **Moderation.**
 - Content auto-hides after `moderation.autoHideReports` distinct reporters.
-- The `/mod` queue is restricted to accounts in `MODERATOR_EMAILS`, checked server-side, and every moderator action is audited.
-- Reports involving teens sort first. Moderators can set a player's band down (teen/under13).
-- A public Code of Conduct lives at `/conduct`.
+- A moderator queue lives at `/mod`, restricted to allowlisted moderator accounts and checked server-side.
+- Every moderator action is audited.
+- A public Code of Conduct sits at `/conduct`.
 
 ## Balance anchors (tunable in /data/config)
 - **Time:** 1 real minute = 10 game minutes of passive time. Actions (shifts, travel, meals, visits) fast-forward the personal clock instantly by their duration, with a short animation; the player never waits in real time for an action to finish. Game day = 24 game hours. Rent due every 7 game days.
@@ -279,6 +261,7 @@ Further rules:
 - Landmark flex: "Brooklyn Bridge at golden hour. The algorithm is about to eat."
 - Friend prompt: "That W deserves witnesses. Tag a friend in?"
 - Club door: "Bouncer checked the list, then checked your clout. Not tonight."
+- Last call: "Last call. Your feet said yes, your rent said go home."
 - Locked home: "Manhattan loft? On bodega money? Work your way here."
 - Someone nearby: "You're not the only one out tonight. 6 people on this block."
 - Welcome: "Welcome to Clout City. Tap in. Blow up."
