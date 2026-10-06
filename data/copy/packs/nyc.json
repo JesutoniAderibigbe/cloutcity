@@ -9,6 +9,14 @@
     "voice.friendPrompt": "That W deserves witnesses. Tag a friend in?",
     "voice.clubDoor": "Bouncer checked the list, then checked your clout. Not tonight.",
     "voice.lockedHome": "Manhattan loft? On bodega money? Work your way here.",
-    "voice.someoneNearby": "You're not the only one out tonight. {count} people on this block."
+    "voice.someoneNearby": "You're not the only one out tonight. {count} people on this block.",
+    "jobs.shift.done": "Shift done. {pay} in the bag.",
+    "jobs.locked.label": "{job} is locked. At {current} clout? Get your name ringing to {level} first.",
+    "housing.rent.ranked": "{home}: {rent} a week. The {rank} rent in the five boroughs.",
+    "rent.paid": "Rent's paid. {rent} gone, roof still yours.",
+    "rent.arrearsPaid": "Back rent cleared: {amount}. Landlord's off your back.",
+    "rent.missed": "Landlord said 'rent' and your wallet said 'not today.' You owe {owed}. Miss {left} more and you're out.",
+    "rent.missedWithFee": "Landlord's adding a {fee} late fee. You owe {owed}. Miss {left} more and the locks change.",
+    "rent.evicted": "Landlord changed the locks. New address: the {home}, {rent} a week. Fresh start."
   }
 }
