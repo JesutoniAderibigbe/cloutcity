@@ -210,4 +210,11 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   gifts; effects once per owned copy on first wear; gifts to 'yourself' or a branded NpcId only; save
   v4 inventory. Bug-hunter: 0 product failures (low: tampered worn:false can re-grant an effect; v3 save
   carrying inventory starts fresh). No UI yet → S10a. Gates on dev: 1010 unit, 210 e2e, budget 163.9 KB.
+- S07 (attempt 1, passed on lane-e, merged): 5 boroughs with config-driven clout gating (Brooklyn at
+  local, Manhattan at scene-regular, Bronx/SI expanding soon); 27 landmarks (Wikidata P625, verified
+  within 1 m by bug-hunter; generic labels for branded names; 9/11 Memorial strict look-only); 24
+  invented venues (corner-halo-deli renamed late-lantern-deli); engine boroughs.ts/places.ts;
+  client-safe src/lib/world/places.ts. 3D render sub-clauses moved into S04c's acceptance (orchestrator
+  note). Gates on dev: 1238 unit, 210 e2e, budget 167.4 KB (copy growth → S05c).
+  OPEN-ISSUES: LEGAL-1 list, STN-1, "Ninth Hour Coffee" flag.
 

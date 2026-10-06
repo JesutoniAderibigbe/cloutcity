@@ -99,7 +99,7 @@
       "requires": [
         "webgl"
       ],
-      "acceptance": "Points placed by real latitude and longitude render as instanced pins, are tappable with an on-screen hit area of at least 44 px and open a place sheet stub; a DOM Places panel lists every place grouped by borough, is fully keyboard navigable, offers the same actions as tapping in 3D and announces selection (A11Y-3); when WebGL is unavailable or the context is lost, the app shows the Places panel and a static stylised fallback and stays playable, and recovers when the context is restored; Playwright taps a point in the canvas (screen coordinates from the test hook) and the same place via the panel, and a WebGL-disabled run completes a place selection; axe passes.",
+      "acceptance": "Points placed by real latitude and longitude render as instanced pins, are tappable with an on-screen hit area of at least 44 px and open a place sheet stub; a DOM Places panel lists every place grouped by borough, is fully keyboard navigable, offers the same actions as tapping in 3D and announces selection (A11Y-3); when WebGL is unavailable or the context is lost, the app shows the Places panel and a static stylised fallback and stays playable, and recovers when the context is restored; Playwright taps a point in the canvas (screen coordinates from the test hook) and the same place via the panel, and a WebGL-disabled run completes a place selection; axe passes; S07 render half (orchestrator note, approved S07 plan): pins come from src/lib/world/places.ts mapPlaces() with landmarks as placeholder markers until S07a/S07b; Bronx and Staten Island land renders dimmed per boroughRenderState with an 'expanding soon' label and teaser pins for bronx-ballpark and staten-island-ferry; the Places panel uses placeAccessibleName; a test hook reports per-borough land style and pin count; Playwright and axe prove locked places' names explain the lock.",
       "review": false,
       "passes": false,
       "blocked": false,
@@ -194,7 +194,7 @@
       "requires": [],
       "acceptance": "Five boroughs in data. Queens, Brooklyn, and Manhattan each have 8 invented venues with original names at plausible real coordinates (bodega, food spot, subway station, park or gym, coffee shop, thrift or boutique, club, job site). Landmarks at real coordinates with category, nameMode, and legalReviewed:false, at minimum: Brooklyn Bridge, Manhattan Bridge, Queensboro Bridge; Flatiron Building, Chrysler Building; Statue of Liberty (viewed from Battery Park), Washington Square Arch; Central Park, the High Line, Prospect Park, Flushing Meadows (Unisphere), Astoria Park; the Queens ballpark and the Brooklyn arena (generic labels); City Hall, Brooklyn Borough Hall, Queens Borough Hall; Grand Central, Penn Station, Jamaica Station; Times Square, DUMBO, Coney Island boardwalk, Flushing Main Street; 9/11 Memorial (memorial category). Landmarks show as placeholder markers in 3D until S07a and S07b. Bronx and Staten Island render as dimmed 'expanding soon' land teasing the Bronx ballpark and the Staten Island Ferry. Brooklyn and Manhattan unlock by clout level, with in-voice why-locked copy that is also in the accessible name. Validation tests: every landmark has a category and nameMode; branded names use generic labels; memorials have no flex, clout, emote, or event hooks; any superlative in venue copy is computed from data. Gating tests.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
