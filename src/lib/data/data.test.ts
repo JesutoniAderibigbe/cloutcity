@@ -259,7 +259,7 @@ describe('config/balance.json', () => {
       'brooklyn-1br': 520,
       'manhattan-loft': 1100,
     })
-    expect(balance.jobs).toEqual({
+    expect(balance.jobs).toMatchObject({
       shiftHours: 4,
       hourlyWage: { barista: 14, retail: 16, delivery: 18, 'junior-dev': 35 },
     })

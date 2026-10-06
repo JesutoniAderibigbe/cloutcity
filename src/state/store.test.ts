@@ -59,7 +59,13 @@ describe('game store persistence', () => {
   it('starts from the balance anchors', () => {
     const { store } = setup()
     const state = store().getState()
-    expect(state.player).toEqual({ cash: 150, stats: { energy: 100, hunger: 80, mood: 70 } })
+    expect(state.player).toEqual({
+      cash: 150,
+      stats: { energy: 100, hunger: 80, mood: 70 },
+      clout: 0,
+      home: 'queens-room',
+      rent: { owed: 0, missed: 0 },
+    })
     expect(state.clock).toEqual({ minute: 480, remainderMs: 0 })
     expect(state.speed).toBe(1)
   })
@@ -151,7 +157,13 @@ describe('game store persistence', () => {
     const local = new MemoryStorage()
     const damaged = {
       clock: { minute: 2000, remainderMs: 'soon' },
-      player: { cash: 777, stats: { energy: 140, hunger: -3, mood: 41.6 } },
+      player: {
+        cash: 777,
+        stats: { energy: 140, hunger: -3, mood: 41.6 },
+        clout: 12,
+        home: 'penthouse',
+        rent: { owed: 280, missed: 1.4 },
+      },
       speed: 3,
     }
     local.setItem(STORE_KEY, JSON.stringify({ state: damaged, version: STORE_VERSION }))
@@ -159,7 +171,13 @@ describe('game store persistence', () => {
     const { clock, player, speed } = store().getState()
     expect({ clock, player, speed }).toEqual({
       clock: { minute: 2000, remainderMs: 0 },
-      player: { cash: 777, stats: { energy: 100, hunger: 0, mood: 42 } },
+      player: {
+        cash: 777,
+        stats: { energy: 100, hunger: 0, mood: 42 },
+        clout: 12,
+        home: 'queens-room',
+        rent: { owed: 280, missed: 1 },
+      },
       speed: 1,
     })
     expect(records.some((r) => r.level === 'info' && /repaired/i.test(r.msg))).toBe(true)
@@ -405,5 +423,147 @@ describe('saving is guarded', () => {
     const { local, store } = setup()
     store().getState().setSpeed(2)
     expect((saved(local!) as { state: PersistedState }).state.speed).toBe(2)
+  })
+})
+
+describe('jobs and rent in the store', () => {
+  it('workShift credits the wage, moves the clock and persists the result', () => {
+    const local = new MemoryStorage()
+    const game = setup(local).store()
+    const result = game.getState().workShift('barista')
+    expect(result.ok && result.wage).toBe(56)
+    expect(game.getState().player.cash).toBe(150 + 56)
+    expect(game.getState().clock.minute).toBe(480 + 240)
+    const after = saved(local) as { state: PersistedState }
+    expect(after.state.player.cash).toBe(206)
+  })
+
+  it('workShift leaves state alone when the job is locked', () => {
+    const game = setup().store()
+    const before = game.getState()
+    const result = game.getState().workShift('junior-dev')
+    expect(result.ok === false && result.error.code).toBe('JOB_LOCKED')
+    expect(game.getState()).toBe(before)
+  })
+
+  it('a v2 save keeps its progress and starts in the start home with nothing owed', () => {
+    const local = new MemoryStorage()
+    const v2 = {
+      clock: { minute: 5000, remainderMs: 0 },
+      player: { cash: 333, stats: { energy: 60, hunger: 50, mood: 40 } },
+      speed: 1,
+    }
+    local.setItem(STORE_KEY, JSON.stringify({ state: v2, version: 2 }))
+    const { player, clock } = setup(local).store().getState()
+    expect(clock.minute).toBe(5000)
+    expect(player).toEqual({
+      ...v2.player,
+      clout: 0,
+      home: 'queens-room',
+      rent: { owed: 0, missed: 0 },
+    })
+    expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
+  })
+
+  it('a rent change alone is a meaningful change that is written', () => {
+    const local = new MemoryStorage()
+    const owing = { ...fresh, player: { ...fresh.player, cash: 0 } }
+    local.setItem(STORE_KEY, JSON.stringify({ state: owing, version: STORE_VERSION }))
+    const game = setup(local).store()
+    // Fast-forward to just before the first rent day, then let it pass.
+    game.setState({ clock: { minute: 7 * 24 * 60 - 1, remainderMs: 0 } })
+    // One game minute of passive time, in two ticks (each tick is capped at maxTickRealMs).
+    game.getState().tick(3000, true)
+    game.getState().tick(3000, true)
+    expect(game.getState().clock.minute).toBe(7 * 24 * 60)
+    const after = saved(local) as { state: PersistedState }
+    expect(after.state.player.rent).toEqual({ owed: 280, missed: 1 })
+  })
+})
+
+describe('jobs and rent in the store: guards', () => {
+  it('a locked job writes nothing to storage', () => {
+    const local = new MemoryStorage()
+    const raw = JSON.stringify({ state: saveOf(150), version: STORE_VERSION })
+    local.setItem(STORE_KEY, raw)
+    const game = setup(local).store()
+    const written = local.getItem(STORE_KEY)
+    expect(game.getState().workShift('junior-dev').ok).toBe(false)
+    expect(local.getItem(STORE_KEY)).toBe(written)
+  })
+
+  it('a shift without enough energy leaves state deep-equal and writes nothing', () => {
+    const local = new MemoryStorage()
+    const tired = {
+      ...fresh,
+      player: { ...fresh.player, stats: { ...fresh.player.stats, energy: 24 } },
+    }
+    local.setItem(STORE_KEY, JSON.stringify({ state: tired, version: STORE_VERSION }))
+    const game = setup(local).store()
+    const before = structuredClone({ clock: game.getState().clock, player: game.getState().player })
+    const written = local.getItem(STORE_KEY)
+    const result = game.getState().workShift('delivery')
+    expect(result.ok === false && result.error.code).toBe('INSUFFICIENT_ENERGY')
+    expect({ clock: game.getState().clock, player: game.getState().player }).toEqual(before)
+    expect(local.getItem(STORE_KEY)).toBe(written)
+  })
+
+  it('an unknown job id changes nothing', () => {
+    const game = setup().store()
+    const before = game.getState()
+    const result = game.getState().workShift('__proto__')
+    expect(result.ok === false && result.error.code).toBe('UNKNOWN_JOB')
+    expect(game.getState()).toBe(before)
+  })
+
+  it('a newer-build save stays byte-identical through shifts and rent', () => {
+    const local = new MemoryStorage()
+    const newer = JSON.stringify({ state: saveOf(5000), version: STORE_VERSION + 1 })
+    local.setItem(STORE_KEY, newer)
+    const game = setup(local).store()
+    // The newer save is not loaded (fresh $150), so a shift across the first rent boundary
+    // both pays a wage and misses rent: two state changes, neither written.
+    game.setState({ clock: { minute: 7 * 24 * 60 - 60, remainderMs: 0 } })
+    const result = game.getState().workShift('barista')
+    expect(result.ok && result.rent.map((event) => event.kind)).toEqual(['missed'])
+    expect(local.getItem(STORE_KEY)).toBe(newer)
+  })
+
+  it.each([
+    ['__proto__', 'queens-room'],
+    ['constructor', 'queens-room'],
+    ['toString', 'queens-room'],
+    ['manhattan-loft', 'manhattan-loft'],
+  ])('a v3 save with home %j loads in %s', (home, expected) => {
+    const local = new MemoryStorage()
+    const raw = `{"state":{"clock":{"minute":900,"remainderMs":0},"player":{"cash":321,"stats":{"energy":50,"hunger":50,"mood":50},"clout":0,"home":${JSON.stringify(home)},"rent":{"owed":0,"missed":0}},"speed":1},"version":${STORE_VERSION}}`
+    local.setItem(STORE_KEY, raw)
+    const { player } = setup(local).store().getState()
+    expect(player.home).toBe(expected)
+    expect(player.cash).toBe(321)
+    expect(Object.getPrototypeOf(player)).toBe(Object.prototype)
+  })
+
+  it('a v3 save with a string missed count keeps its progress and resets the count', () => {
+    const local = new MemoryStorage()
+    const tampered = {
+      ...saveOf(321),
+      player: { ...saveOf(321).player, rent: { owed: 280, missed: '2' } },
+    }
+    local.setItem(STORE_KEY, JSON.stringify({ state: tampered, version: STORE_VERSION }))
+    const { player } = setup(local).store().getState()
+    expect(player.cash).toBe(321)
+    expect(player.rent).toEqual({ owed: 280, missed: 0 })
+  })
+
+  it.each([
+    ['negative owed', { owed: -5, missed: 0 }],
+    ['a missing rent object', undefined],
+  ])('a v3 save with %s is unusable and starts fresh', (_label, rent) => {
+    const local = new MemoryStorage()
+    const tampered = { ...saveOf(321), player: { ...saveOf(321).player, rent } }
+    local.setItem(STORE_KEY, JSON.stringify({ state: tampered, version: STORE_VERSION }))
+    const { player } = setup(local).store().getState()
+    expect(player).toEqual(fresh.player)
   })
 })

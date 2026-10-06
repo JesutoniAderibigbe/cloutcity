@@ -9,17 +9,47 @@
 import balanceJson from '@data/config/balance.json'
 import type { BalanceConfig } from '@/lib/data/schemas/config'
 
+/** A housing tier: a key of `rentPerWeek`. */
+export type HomeId = keyof BalanceConfig['rentPerWeek']
+/** A job: a key of `jobs.hourlyWage`. */
+export type JobId = keyof BalanceConfig['jobs']['hourlyWage']
+
 export interface EngineConfig {
   readonly time: BalanceConfig['time']
   readonly stats: BalanceConfig['stats']
   readonly actions: BalanceConfig['actions']
+  readonly jobs: BalanceConfig['jobs']
+  /** Whole dollars per rent week, by home. */
+  readonly rentPerWeek: BalanceConfig['rentPerWeek']
+  readonly rent: BalanceConfig['rent']
+  readonly clout: BalanceConfig['clout']
   /** Whole in-game dollars a new player starts with. */
   readonly startCash: number
+  /** The home a new player starts in. */
+  readonly startHome: HomeId
+}
+
+export function isHomeId(id: unknown, config: EngineConfig): id is HomeId {
+  return typeof id === 'string' && Object.hasOwn(config.rentPerWeek, id)
+}
+
+const rentPerWeek: BalanceConfig['rentPerWeek'] = balanceJson.rentPerWeek
+
+function startHome(id: string): HomeId {
+  if (!Object.hasOwn(rentPerWeek, id)) {
+    throw new Error(`config/balance.json: start.home "${id}" is not a key of rentPerWeek`)
+  }
+  return id as HomeId
 }
 
 export const engineConfig: EngineConfig = {
   time: balanceJson.time,
   stats: balanceJson.stats,
   actions: balanceJson.actions,
+  jobs: balanceJson.jobs,
+  rentPerWeek,
+  rent: balanceJson.rent,
+  clout: balanceJson.clout,
   startCash: balanceJson.start.cash,
+  startHome: startHome(balanceJson.start.home),
 }
