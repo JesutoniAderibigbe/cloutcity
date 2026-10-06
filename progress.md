@@ -96,10 +96,12 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   draw calls and triangles.
 - docs/local/ is gitignored: put OPEN-ISSUES pointers into iteration notes.
 
-## Lanes (user decision 2026-10-06: two parallel lanes)
-- Lane A (main checkout, `dev`): S02 → S03 → S05a → S05b → S06
-- Lane B (worktree `.claude/worktrees/lane-b`): S04 → S04a → S04b → S04c → S04d → S04e
-- S05 waits for both lanes. Phase 2+ lanes are planned at each phase start.
+## Lanes (user decisions 2026-10-06: up to four parallel lanes)
+- Lane A (main checkout, `dev`, E2E_PORT 3100): S05a → S05b → S06
+- Lane B (worktree lane-b, 3101): S04 → S04a → S04b → S04c → S04d → S04e
+- Lane C (worktree lane-c, 3102, phase 2 ahead): S11 → S10 → S12
+- Lane D (worktree lane-d, 3103, phase 2/3 ahead): S14 → S13 (after S10 merges)
+- S05 waits for lanes A and B. Lane C/D branches merge after the phase 1 PR is opened.
 
 ## Phase user stories (qa-mafia, Mode A, at phase end)
 1. New visitor on a phone: opens the link, passes the 18+ welcome card, picks audio, lands on the
