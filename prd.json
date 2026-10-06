@@ -286,7 +286,7 @@
       "requires": [],
       "acceptance": "A scripted bot plays 30 game days solo with a sensible strategy and ends neither bankrupt nor wildly rich (bounds in test); it saves roughly $150 per week and reaches the first apartment upgrade affordability between game days 10 and 14; any cost tuning needed to hit this is done in /data/config and logged; the bot also records its maximum clout and cash gain per action and per game day into a fixture used by S18c plausibility ceilings; test fails if balance drifts.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
