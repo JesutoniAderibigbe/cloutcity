@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { engineConfig as config } from './config'
+import { emptyInventory } from './items'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
 const schema = createSaveSchema(config)
 
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(3)
+    expect(SAVE_VERSION).toBe(4)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -174,7 +175,13 @@ describe('save v3: clout, home and rent', () => {
       outcome: 'carried',
       save: {
         ...v2,
-        player: { ...v2.player, clout: 0, home: config.startHome, rent: { owed: 0, missed: 0 } },
+        player: {
+          ...v2.player,
+          clout: 0,
+          home: config.startHome,
+          rent: { owed: 0, missed: 0 },
+          inventory: emptyInventory,
+        },
       },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)
@@ -239,7 +246,7 @@ describe('save v3: tampered and edge saves', () => {
     'a home of %j is repaired to the start home',
     (home) => {
       const persisted = fromJson(
-        `{"cash":9,"stats":{"energy":1,"hunger":2,"mood":3},"clout":4,"home":${JSON.stringify(home)},"rent":{"owed":5,"missed":1}}`,
+        `{"cash":9,"stats":{"energy":1,"hunger":2,"mood":3},"clout":4,"home":${JSON.stringify(home)},"rent":{"owed":5,"missed":1},"inventory":{"wearables":[],"gifts":[],"outfit":{}}}`,
       )
       const result = loadSave(persisted, config)
       if (!result.ok) throw new Error('expected a repaired save')
@@ -250,6 +257,7 @@ describe('save v3: tampered and edge saves', () => {
         clout: 4,
         home: config.startHome,
         rent: { owed: 5, missed: 1 },
+        inventory: emptyInventory,
       })
       expect(schema.safeParse(result.save).success).toBe(true)
     },
@@ -304,6 +312,7 @@ describe('save v3: tampered and edge saves', () => {
         clout: 0,
         home: config.startHome,
         rent: { owed: 0, missed: 0 },
+        inventory: emptyInventory,
       },
       speed: 1,
     })

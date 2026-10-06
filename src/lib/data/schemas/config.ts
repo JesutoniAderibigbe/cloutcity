@@ -96,6 +96,8 @@ export const ModerationConfigSchema = z.strictObject({
 export type ModerationConfig = z.infer<typeof ModerationConfigSchema>
 
 const dollars = z.int().nonnegative()
+/** Whole percent, 0..99: resale is always worth less than the price. */
+const percent = z.int().min(0).max(99)
 const MinMaxSchema = z
   .strictObject({ min: dollars, max: dollars })
   .refine((range) => range.min <= range.max, { error: 'min must not exceed max' })
@@ -220,6 +222,20 @@ export const BalanceConfigSchema = z
       shiftsPerDay: positive,
       weeklySavings: dollars,
       firstUpgradeGameDay: MinMaxSchema,
+    }),
+    /**
+     * Shop and resale (S10). Integer percentages keep the money maths exact.
+     * - An item's `sellValue` in data/items is floor(price * resalePct[rarity] / 100).
+     * - A wearable sells for floor(sellValue * max(minResalePct, 100 - days owned *
+     *   depreciationPctPerGameDay) / 100), counting whole game days since it was bought.
+     *   Gifts do not age: they sell for their `sellValue`.
+     * - A player holds at most `maxGiftStack` of each gift.
+     */
+    items: z.strictObject({
+      resalePct: z.strictObject({ common: percent, medium: percent, rare: percent }),
+      depreciationPctPerGameDay: percent,
+      minResalePct: percent,
+      maxGiftStack: positiveInt,
     }),
     rarityTiers: z.array(RarityTierSchema).length(RARITY_TIERS.length),
     /** Placeholder USD prices (whole dollars) until a human sets them. */

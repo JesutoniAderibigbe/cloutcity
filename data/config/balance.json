@@ -81,6 +81,12 @@
     "weeklySavings": 150,
     "firstUpgradeGameDay": { "min": 10, "max": 14 }
   },
+  "items": {
+    "resalePct": { "common": 40, "medium": 50, "rare": 60 },
+    "depreciationPctPerGameDay": 5,
+    "minResalePct": 50,
+    "maxGiftStack": 10
+  },
   "rarityTiers": ["common", "medium", "rare"],
   "premiumPriceTiersUsd": { "tier-1": 2, "tier-2": 5, "tier-3": 10 }
 }

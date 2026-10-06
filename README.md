@@ -141,7 +141,8 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
   `zod/mini`. Import it as `import * as z from 'zod/mini'`: the named `{ z }` export defeats
   Turbopack's tree shaking and ships all of zod/mini with its locales (about 92 KB gz).
 - **Adding content.** Add the entry to the JSON file, add its strings to `data/copy/base.json`
-  under the key the entry names (`nameKey`, `titleKey`, ...), and run `npm test`.
+  under the key the entry names (`nameKey`, `titleKey`, ...), and run `npm test`. An item's
+  `sellValue` must equal `floor(price * resalePct[rarity] / 100)` (`items-data.test.ts`).
 - **Copy.** `copy(key, vars)` from `src/lib/copy.ts` renders a string with the active slang pack
   (`data/config/copy.json` → `slangPack`) layered over base. Swapping the pack id changes the
   text with no code change; a new pack file must also be registered in `slangPacks`. Templates
@@ -190,6 +191,13 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
 - **Actions** (`actions.ts`): validated definitions with a duration, cash and energy cost and
   stat effects; failures return a typed error (`INSUFFICIENT_FUNDS`, `INSUFFICIENT_ENERGY`, ...)
   and change nothing.
+- **Items** (`items.ts`, catalog in `data/items/items.json`): `buyItem`, `sellItem`,
+  `equipItem`, `unequipSlot` and `consumeGift`, with typed errors (`INSUFFICIENT_FUNDS`,
+  `ALREADY_OWNED`, `NOT_OWNED`, `WRONG_SLOT`, ...). Wearables are owned once and worn one per
+  slot (top, bottom, shoes, accessory, face); gifts stack and are consumed on yourself or an
+  NPC (`{ npcId }` with an `npc-` id), never another player. Resale is `sellValue` (data,
+  `floor(price * resalePct[rarity] / 100)`), less `depreciationPctPerGameDay` per game day
+  owned for wearables, never below `minResalePct` (`balance.json` `items`).
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
 
