@@ -49,7 +49,7 @@
       "requires": [],
       "acceptance": "Pure-function game clock (1 real min = 10 game min of passive time, pauses when tab hidden, 1x/2x toggle); actions fast-forward the personal clock instantly by their duration; the engine never reads the real clock (time is injected) and exposes city time (real New York wall-clock time) separately from the personal game clock; energy, hunger, mood decay with penalties at zero; action system with time, money, energy costs and stat effects validated in the engine; save/load with a schema migration test; unit tests for time math, action fast-forward, day and week rollover, insufficient funds, and city time across a DST change.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },

@@ -107,6 +107,43 @@ export type RarityTier = z.infer<typeof RarityTierSchema>
 export const HOME_IDS = ['queens-room', 'brooklyn-1br', 'manhattan-loft'] as const
 export const JOB_IDS = ['barista', 'retail', 'delivery', 'junior-dev'] as const
 
+/** Player needs, 0..stats.max. Hunger is fullness: high is fed, 0 is starving. */
+export const STAT_KEYS = ['energy', 'hunger', 'mood'] as const
+export type StatKey = (typeof STAT_KEYS)[number]
+
+const statPoints = z.int().nonnegative()
+const StatsRecordSchema = z.strictObject({
+  energy: statPoints,
+  hunger: statPoints,
+  mood: statPoints,
+})
+function PartialStatsSchema<T extends z.ZodType<number>>(value: T) {
+  return z.strictObject({
+    energy: value.optional(),
+    hunger: value.optional(),
+    mood: value.optional(),
+  })
+}
+
+/** What happens each game hour a stat sits at zero. */
+const AtZeroSchema = z.strictObject({
+  /** Extra points drained from the other stats per game hour. */
+  extraDecayPerGameHour: PartialStatsSchema(statPoints),
+  /** Action durations are multiplied by this (rounded up); multipliers of several zero stats stack. */
+  durationMultiplier: z.number().min(1),
+})
+
+/** One action: what it costs up front and what it changes once its time has passed. */
+export const ActionDefSchema = z.strictObject({
+  /** Game minutes the personal clock fast-forwards. */
+  durationMin: z.int().nonnegative(),
+  cashCost: dollars,
+  energyCost: statPoints,
+  /** Points added (or removed, if negative) when the action finishes. */
+  statEffects: PartialStatsSchema(z.int()),
+})
+export type ActionDef = z.infer<typeof ActionDefSchema>
+
 /** CLAUDE.md "Balance anchors". Money is whole in-game dollars. */
 export const BalanceConfigSchema = z
   .strictObject({
@@ -114,8 +151,27 @@ export const BalanceConfigSchema = z
       gameMinutesPerRealMinute: positive,
       gameDayHours: positiveInt,
       rentPeriodGameDays: positiveInt,
+      /** The personal clock starts on day 1 at this minute of the day. */
+      startMinuteOfDay: z.int().nonnegative(),
+      /** Passive clock speed multipliers the player can toggle between; 1 must be first. */
+      speeds: z.array(positiveInt).min(1),
+      /** Longest real gap one tick may count, so a stalled or sleeping tab cannot skip time. */
+      maxTickRealMs: positiveInt,
+      /** How often the client clock driver ticks the store. */
+      tickIntervalMs: positiveInt,
     }),
     start: z.strictObject({ cash: dollars, home: z.enum(HOME_IDS) }),
+    stats: z.strictObject({
+      max: positiveInt,
+      start: StatsRecordSchema,
+      decayPerGameHour: StatsRecordSchema,
+      atZero: z.strictObject({ energy: AtZeroSchema, hunger: AtZeroSchema, mood: AtZeroSchema }),
+    }),
+    actions: z.strictObject({
+      /** Longest duration any one action may have, in game minutes. */
+      maxDurationMin: positiveInt,
+      catalog: z.record(z.string().regex(/^[a-z0-9-]+$/), ActionDefSchema),
+    }),
     rentPerWeek: z.strictObject({
       'queens-room': dollars,
       'brooklyn-1br': dollars,
@@ -144,6 +200,34 @@ export const BalanceConfigSchema = z
     error: 'rarityTiers must list each tier once',
     path: ['rarityTiers'],
   })
+  .refine((balance) => balance.time.speeds[0] === 1, {
+    error: 'speeds must start with 1x',
+    path: ['time', 'speeds'],
+  })
+  .refine((balance) => new Set(balance.time.speeds).size === balance.time.speeds.length, {
+    error: 'speeds must not repeat',
+    path: ['time', 'speeds'],
+  })
+  .refine((balance) => balance.time.startMinuteOfDay < balance.time.gameDayHours * 60, {
+    error: 'startMinuteOfDay must fall inside one game day',
+    path: ['time', 'startMinuteOfDay'],
+  })
+  .refine(
+    (balance) =>
+      STAT_KEYS.every((key) => balance.stats.start[key] <= balance.stats.max) &&
+      STAT_KEYS.every((key) => balance.stats.decayPerGameHour[key] <= balance.stats.max),
+    { error: 'start stats and decay must not exceed stats.max', path: ['stats'] },
+  )
+  .refine(
+    (balance) =>
+      Object.values(balance.actions.catalog).every(
+        (action) =>
+          action.durationMin <= balance.actions.maxDurationMin &&
+          action.energyCost <= balance.stats.max &&
+          STAT_KEYS.every((key) => Math.abs(action.statEffects[key] ?? 0) <= balance.stats.max),
+      ),
+    { error: 'an action exceeds maxDurationMin or stats.max', path: ['actions', 'catalog'] },
+  )
 export type BalanceConfig = z.infer<typeof BalanceConfigSchema>
 
 export const LayoutConfigSchema = z.strictObject({

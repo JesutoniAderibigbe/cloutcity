@@ -36,3 +36,74 @@ export function formatCount(count: number): string {
   // `|| 0` turns -0 (e.g. Math.round(-0.4)) into 0.
   return COUNT.format(Math.round(count) || 0)
 }
+
+/** Wall-clock fields of an instant in an IANA time zone. Month is 1-12, hour is 0-23. */
+export interface WallClockParts {
+  readonly year: number
+  readonly month: number
+  readonly day: number
+  readonly hour: number
+  readonly minute: number
+  readonly second: number
+  /** 0 = Sunday … 6 = Saturday, of the local date. */
+  readonly weekday: number
+  /** Minutes the zone is ahead of UTC at that instant (-300 in EST, -240 in EDT). */
+  readonly utcOffsetMinutes: number
+}
+
+const wallClockFormats = new Map<string, Intl.DateTimeFormat>()
+
+function wallClockFormat(timeZone: string): Intl.DateTimeFormat {
+  let format = wallClockFormats.get(timeZone)
+  if (format === undefined) {
+    format = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+    })
+    wallClockFormats.set(timeZone, format)
+  }
+  return format
+}
+
+/**
+ * The wall-clock time in `timeZone` at `epochMs` (time is passed in; nothing here reads the
+ * real clock). Lives here because Intl is allowed only in this module. DST comes from the
+ * runtime's tz database.
+ */
+export function wallClockParts(epochMs: number, timeZone: string): WallClockParts {
+  assertFinite(epochMs, 'Epoch milliseconds')
+  const parts = new Map(
+    wallClockFormat(timeZone)
+      .formatToParts(epochMs)
+      .map((part) => [part.type, part.value]),
+  )
+  const field = (name: 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second') => {
+    const value = Number(parts.get(name))
+    if (!Number.isInteger(value)) throw new RangeError(`No ${name} for ${epochMs} in ${timeZone}`)
+    return value
+  }
+  const year = field('year')
+  const month = field('month')
+  const day = field('day')
+  const hour = field('hour')
+  const minute = field('minute')
+  const second = field('second')
+  const wallAsUtc = Date.UTC(year, month - 1, day, hour, minute, second)
+  const wholeSecondMs = Math.floor(epochMs / 1000) * 1000
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay(),
+    utcOffsetMinutes: Math.round((wallAsUtc - wholeSecondMs) / 60_000),
+  }
+}

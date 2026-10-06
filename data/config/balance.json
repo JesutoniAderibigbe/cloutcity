@@ -1,6 +1,59 @@
 {
-  "time": { "gameMinutesPerRealMinute": 10, "gameDayHours": 24, "rentPeriodGameDays": 7 },
+  "time": {
+    "gameMinutesPerRealMinute": 10,
+    "gameDayHours": 24,
+    "rentPeriodGameDays": 7,
+    "startMinuteOfDay": 480,
+    "speeds": [1, 2],
+    "maxTickRealMs": 5000,
+    "tickIntervalMs": 1000
+  },
   "start": { "cash": 150, "home": "queens-room" },
+  "stats": {
+    "max": 100,
+    "start": { "energy": 100, "hunger": 80, "mood": 70 },
+    "decayPerGameHour": { "energy": 3, "hunger": 5, "mood": 2 },
+    "atZero": {
+      "energy": { "extraDecayPerGameHour": { "mood": 3 }, "durationMultiplier": 1.5 },
+      "hunger": { "extraDecayPerGameHour": { "energy": 3, "mood": 4 }, "durationMultiplier": 1 },
+      "mood": { "extraDecayPerGameHour": {}, "durationMultiplier": 1.25 }
+    }
+  },
+  "actions": {
+    "maxDurationMin": 1440,
+    "catalog": {
+      "sleep": {
+        "durationMin": 480,
+        "cashCost": 0,
+        "energyCost": 0,
+        "statEffects": { "energy": 80, "mood": 5 }
+      },
+      "nap": {
+        "durationMin": 60,
+        "cashCost": 0,
+        "energyCost": 0,
+        "statEffects": { "energy": 15 }
+      },
+      "bodega-breakfast": {
+        "durationMin": 20,
+        "cashCost": 6,
+        "energyCost": 0,
+        "statEffects": { "hunger": 40, "mood": 5 }
+      },
+      "home-meal": {
+        "durationMin": 45,
+        "cashCost": 4,
+        "energyCost": 5,
+        "statEffects": { "hunger": 50 }
+      },
+      "walk-in-the-park": {
+        "durationMin": 60,
+        "cashCost": 0,
+        "energyCost": 10,
+        "statEffects": { "mood": 15 }
+      }
+    }
+  },
   "rentPerWeek": { "queens-room": 280, "brooklyn-1br": 520, "manhattan-loft": 1100 },
   "jobs": {
     "shiftHours": 4,

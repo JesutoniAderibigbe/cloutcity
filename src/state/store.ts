@@ -1,9 +1,10 @@
 /**
  * The player's local-first game state, persisted to localStorage (zustand `persist`).
  *
- * Bump STORE_VERSION on any breaking change to PersistedStateSchema and teach `migrateGameState`
- * the step from the previous version. Saved data is untrusted: it is validated on every load and
- * replaced by a fresh state if it does not fit the schema.
+ * The store holds an engine snapshot and calls the engine (src/engine) for every change; game
+ * rules live there, not here. The save format and its migrations are src/engine/save.ts.
+ * Saved data is untrusted: it is validated on every load and replaced by a fresh state if it
+ * does not fit the schema.
  *
  * Client code: it validates with `zod/mini` (tree-shakable) and reads balance.json directly
  * (validated in src/lib/data/data.test.ts) to keep zod's classic build out of the shell JS.
@@ -12,84 +13,195 @@
  * persisted values must read them after mount to avoid a server/client hydration mismatch.
  */
 import { useStore } from 'zustand'
-import { persist, type PersistStorage } from 'zustand/middleware'
+import { persist, type PersistStorage, type StorageValue } from 'zustand/middleware'
 import { createStore } from 'zustand/vanilla'
-import { z } from 'zod/mini'
-import balanceJson from '@data/config/balance.json'
+import { performAction, type ActionResult } from '@/engine/actions'
+import { isSpeed } from '@/engine/clock'
+import { engineConfig } from '@/engine/config'
+import { tick } from '@/engine/game'
+import {
+  SAVE_VERSION,
+  createSaveSchema,
+  initialSave,
+  loadSave,
+  migrateSave,
+  type SaveState,
+} from '@/engine/save'
 import { log, type Logger } from '@/lib/log'
 import { browserLocalStorage, createSafeJsonStorage } from './storage'
 
 export const STORE_KEY = 'cloutcity:game'
-export const STORE_VERSION = 1
+export const STORE_VERSION = SAVE_VERSION
 
-/** Whole in-game dollars. */
-const CashSchema = z.int().check(z.nonnegative())
-
-export const PersistedStateSchema = z.strictObject({
-  player: z.strictObject({ cash: CashSchema }),
-})
-export type PersistedState = z.infer<typeof PersistedStateSchema>
+export const PersistedStateSchema = createSaveSchema(engineConfig)
+export type PersistedState = SaveState
 
 export interface GameActions {
-  setCash(cash: number): void
+  /** Passive time: real ms since the last tick, while the tab is (or is not) visible. */
+  tick(realElapsedMs: number, visible: boolean): void
+  /** Runs a catalog action; the state changes only when the result is ok. */
+  performAction(actionId: string): ActionResult
+  /** Sets the passive clock speed (one of balance `time.speeds`, i.e. 1x or 2x). */
+  setSpeed(speed: number): void
+  /**
+   * The player's explicit choice to drop a save written by a newer build: starts a fresh game
+   * and lets saving resume. Nothing else ever overwrites that save.
+   */
+  discardNewerSaveAndStartFresh(): void
 }
-export type GameState = PersistedState & GameActions
+
+/** Session-only status, never persisted. */
+export interface GameStatus {
+  /**
+   * True when storage holds a save from a newer build. It is left untouched: nothing is written
+   * (play continues in memory) until `discardNewerSaveAndStartFresh` is called.
+   */
+  readonly newerSavePresent: boolean
+}
+export type GameState = PersistedState & GameActions & GameStatus
 
 export function initialPersistedState(): PersistedState {
-  return { player: { cash: balanceJson.start.cash } }
+  return initialSave(engineConfig)
 }
 
 /**
- * Upgrades a save written by an older STORE_VERSION. No earlier version has shipped, so any
- * older save starts fresh. A save from a newer build is not loaded (the throw leaves the fresh
- * state in place and the save untouched); it is only overwritten if the player then plays on
- * this older build.
+ * Upgrades a save written by an older STORE_VERSION (see src/engine/save.ts). A save from a
+ * newer build is not loaded (the throw leaves the fresh state in place) and is never
+ * overwritten unless the player calls `discardNewerSaveAndStartFresh`.
  */
 export function migrateGameState(
   persisted: unknown,
   version: number,
   logger: Logger = log,
 ): PersistedState {
-  if (version > STORE_VERSION) {
-    throw new Error(`Saved game version ${version} is newer than this build (${STORE_VERSION})`)
-  }
-  logger.info('Starting fresh: saved game predates the current format', {
-    version,
-    persisted: typeof persisted,
-  })
-  return initialPersistedState()
+  const { save, outcome } = migrateSave(persisted, version, engineConfig)
+  logger.info(
+    outcome === 'carried'
+      ? 'Upgraded a saved game to the current format'
+      : 'Starting fresh: saved game predates the current format',
+    { version, persisted: typeof persisted },
+  )
+  return save
 }
 
-/** Validates loaded state before it replaces the in-memory state. */
+/**
+ * Validates loaded state before it replaces the in-memory state. Individually invalid fields
+ * are repaired (src/engine/save.ts `loadSave`); only an unusable save is ignored.
+ */
 export function mergeGameState(
   persisted: unknown,
   current: GameState,
   logger: Logger = log,
 ): GameState {
   if (persisted === undefined) return current
-  const result = PersistedStateSchema.safeParse(persisted)
-  if (!result.success) {
+  const result = loadSave(persisted, engineConfig)
+  if (!result.ok) {
     // A corrupt or tampered save is expected and recoverable: info, not warn.
-    logger.info('Ignoring a saved game that failed validation', {
-      issues: result.error.issues.map((issue) => issue.path.join('.')),
-    })
+    logger.info('Ignoring a saved game that failed validation', { issues: result.issues })
     return current
   }
-  return { ...current, ...result.data }
+  if (result.repaired.length > 0) {
+    logger.info('Repaired out-of-range fields in the saved game', { fields: result.repaired })
+  }
+  return { ...current, ...result.save }
+}
+
+/**
+ * What makes a save worth writing: the version, clock minute, cash, stats and speed. The
+ * sub-minute remainder alone is not, so a visible tab does not write on every tick (a reload
+ * loses at most one game minute's worth of carried real time).
+ */
+function saveSignature(value: StorageValue<unknown> | null): string | undefined {
+  if (value === null) return undefined
+  const state = (value.state ?? {}) as {
+    clock?: { minute?: unknown }
+    player?: unknown
+    speed?: unknown
+  }
+  return JSON.stringify([value.version, state.clock?.minute, state.player, state.speed])
+}
+
+/**
+ * Wraps the persist storage so that (1) a save from a newer build is never overwritten
+ * without the player's explicit choice, and (2) only meaningful changes are written.
+ */
+function guardStorage(inner: PersistStorage<PersistedState>) {
+  let newerSavePresent = false
+  let lastSignature: string | undefined
+
+  const storage: PersistStorage<PersistedState> = {
+    getItem: (name) => {
+      const value = inner.getItem(name)
+      if (value instanceof Promise) return value
+      if (value !== null && (value.version ?? 0) > STORE_VERSION) newerSavePresent = true
+      lastSignature = saveSignature(value)
+      return value
+    },
+    setItem: (name, value) => {
+      if (newerSavePresent) return
+      const signature = saveSignature(value)
+      if (signature === lastSignature) return
+      lastSignature = signature
+      return inner.setItem(name, value)
+    },
+    removeItem: (name) => {
+      if (newerSavePresent) return
+      lastSignature = undefined
+      return inner.removeItem(name)
+    },
+  }
+
+  return {
+    storage,
+    get newerSavePresent() {
+      return newerSavePresent
+    },
+    release() {
+      newerSavePresent = false
+    },
+  }
 }
 
 export function createGameStore(storage: PersistStorage<PersistedState>, logger: Logger = log) {
-  return createStore<GameState>()(
+  const guard = guardStorage(storage)
+  const store = createStore<GameState>()(
     persist(
-      (set) => ({
+      (set, get) => ({
         ...initialPersistedState(),
-        setCash: (cash) => set({ player: { cash: CashSchema.parse(cash) } }),
+        newerSavePresent: false,
+        tick: (realElapsedMs, visible) => {
+          const state = get()
+          const { snapshot } = tick(
+            state,
+            realElapsedMs,
+            { visible, speed: state.speed },
+            engineConfig,
+          )
+          if (snapshot.clock !== state.clock) {
+            set({ clock: snapshot.clock, player: snapshot.player })
+          }
+        },
+        performAction: (actionId) => {
+          const result = performAction(get(), actionId, engineConfig)
+          if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
+          return result
+        },
+        setSpeed: (speed) => {
+          if (!isSpeed(speed, engineConfig))
+            throw new RangeError(`Unsupported clock speed: ${speed}`)
+          set({ speed })
+        },
+        discardNewerSaveAndStartFresh: () => {
+          guard.release()
+          logger.info("Discarding a saved game from a newer build at the player's request")
+          set({ ...initialPersistedState(), newerSavePresent: false })
+        },
       }),
       {
         name: STORE_KEY,
         version: STORE_VERSION,
-        storage,
-        partialize: (state): PersistedState => ({ player: state.player }),
+        storage: guard.storage,
+        partialize: ({ clock, player, speed }): PersistedState => ({ clock, player, speed }),
         migrate: (persisted, version) => migrateGameState(persisted, version, logger),
         merge: (persisted, current) => mergeGameState(persisted, current, logger),
         onRehydrateStorage: () => (_state, error) => {
@@ -102,6 +214,9 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
       },
     ),
   )
+  // Hydration is synchronous, so the guard already knows. This write is blocked by the guard.
+  if (guard.newerSavePresent) store.setState({ newerSavePresent: true })
+  return store
 }
 
 export type GameStore = ReturnType<typeof createGameStore>

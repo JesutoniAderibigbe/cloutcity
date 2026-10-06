@@ -72,6 +72,12 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - Any `Intl` reference, toLocale*/toFixed/toPrecision, or `$`-prefixed template/concat outside
   src/lib/format.ts is a lint error: money and counts go through formatMoney/formatCount.
 - Superlatives in copy only via superlative(kind, subjectId, values) (needs ≥2 distinct ids).
+- src/engine is pure and lint-enforced: no Date/Reflect/self/globalThis/timers/fetch, no Math.random,
+  no dynamic import/require, no imports of state/components/scene/realtime/server/app (any path form).
+  Time is injected; city-time parts come from wallClockParts in src/lib/format.ts.
+- Saves: a newer-build save is never overwritten without discardNewerSaveAndStartFresh(); invalid
+  fields are repaired (speed→1x, remainder→0, stats clamped), only structurally broken saves start
+  fresh; storage is written only on meaningful changes (minute, stats, cash, speed), not every tick.
 - e2e serves on port 3100 (E2E_PORT) because 3000 is taken on this machine; reuseExistingServer
   is on outside CI, so make sure nothing stale is serving on 3100 before trusting a run.
 - SwiftShader always logs "GPU stall due to ReadPixels" at warning level for a visible WebGL
@@ -118,7 +124,11 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 (none yet: phase, qa-mafia verdicts, report paths, PR link)
 
 ## Tuning log
-(none yet)
+- S03 placeholders (TUNE-1): decay per game hour energy 3, hunger 5, mood 2; start stats 100/80/70;
+  at-zero penalties (hunger 0: +3 energy/+4 mood drain per h; energy 0: +3 mood drain, 1.5x duration;
+  mood 0: 1.25x duration); catalog sleep 480 min +80 energy +5 mood, nap 60 min +15 energy,
+  bodega-breakfast 20 min $6 +40 hunger +5 mood, home-meal 45 min $4 5 energy +50 hunger,
+  walk-in-the-park 60 min 10 energy +15 mood.
 
 ## Blocked tasks
 (none yet)
@@ -146,3 +156,12 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   placeholders, integer counts, info-level storage logs). Gates: 253 unit, 76 e2e, build, budget
   137.4 KB. The store is not read by any UI yet (S03/S05 wire it).
   OPEN-ISSUES: DEC-9 zod/mini on client, TUNE-1 placeholder numbers.
+- S03 (attempt 1, passed): pure engine in src/engine (clock with integer-microsecond remainder,
+  1x/2x, hidden pause, 5 s tick cap; calendar + midnight/rent-week rollovers; stats decay per game
+  hour with stacking at-zero penalties; validated actions with typed errors; city time via
+  wallClockParts; save v2 with migrate from v1 and field repair); store actions tick/performAction/
+  setSpeed/discardNewerSaveAndStartFresh; clockDriver (not started by any UI yet — S05 wires it).
+  One fix cycle: purity-lint bypasses, newer-save overwrite guard + meaningful-change-only writes,
+  repair-instead-of-discard, float carry. Test change by ruling: store.test.ts "repairs a negative
+  remainder / a remainder of a whole game minute" now expects repair (was "starts fresh").
+  Gates: 446 unit, 76 e2e, build, budget 137.4 KB. Catalog actions have no copy names yet.

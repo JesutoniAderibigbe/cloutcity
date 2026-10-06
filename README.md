@@ -134,10 +134,32 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
 ## Game state
 
 `src/state/store.ts` is the Zustand store (`useGameStore(selector)`), persisted to localStorage
-under `cloutcity:game` with a schema `version` and a `migrate` step. Loaded state is validated
-and replaced by a fresh state if it does not fit. If localStorage is unavailable (private
+under `cloutcity:game` with a schema `version` and a `migrate` step. Loaded state is validated:
+out-of-range fields are repaired (speed to 1x, remainder to 0, stats clamped and rounded) and
+only a structurally unusable save is replaced by a fresh state. A save from a newer build is
+never overwritten: the store sets `newerSavePresent` and writes nothing until
+`discardNewerSaveAndStartFresh()` is called. Only meaningful changes (minute, cash, stats,
+speed) are written, not every tick. If localStorage is unavailable (private
 browsing, blocked site data, full quota) the store keeps working in memory for the session.
-Bump `STORE_VERSION` and extend `migrateGameState` on any breaking change to the saved shape.
+
+The store holds an engine snapshot and calls the engine for every change (`tick`,
+`performAction`, `setSpeed`); it holds no game rules itself.
+
+- **Engine** (`src/engine/`): pure functions, no React, three, Supabase or store imports, and
+  no real clock or randomness (ESLint enforces it; `src/engine/purity.test.ts` proves it).
+  Every number comes from `data/config/balance.json` (`time`, `stats`, `actions`).
+- **Two clocks.** The personal game clock (`clock.ts`) is whole game minutes since day 1, 00:00.
+  Passive time runs at 10 game minutes per real minute while the tab is visible, at 1x or 2x;
+  actions fast-forward it instantly by their duration. City time (`cityTime.ts`) is the real
+  New York wall clock for an instant the caller passes in. `src/state/clockDriver.ts` is the
+  only code that reads real time for the personal clock, and it pauses while the tab is hidden.
+- **Stats** (`stats.ts`): energy, hunger (fullness) and mood, 0-100, decay at each game hour;
+  a stat at 0 drains the others faster and/or slows actions (`stats.atZero`).
+- **Actions** (`actions.ts`): validated definitions with a duration, cash and energy cost and
+  stat effects; failures return a typed error (`INSUFFICIENT_FUNDS`, `INSUFFICIENT_ENERGY`, ...)
+  and change nothing.
+- **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
+  breaking change to the saved shape.
 
 ## Logging
 

@@ -9,6 +9,7 @@ import type { z } from 'zod'
 import { parseDataFile } from './parse'
 import {
   BalanceConfigSchema,
+  type BalanceConfig,
   CopyConfigSchema,
   JOB_IDS,
   LayoutConfigSchema,
@@ -228,10 +229,11 @@ describe('config/theme.json', () => {
 
 describe('config/balance.json', () => {
   it('holds the CLAUDE.md balance anchors', () => {
-    expect(balance.time).toEqual({
+    expect(balance.time).toMatchObject({
       gameMinutesPerRealMinute: 10,
       gameDayHours: 24,
       rentPeriodGameDays: 7,
+      speeds: [1, 2],
     })
     expect(balance.start).toEqual({ cash: 150, home: 'queens-room' })
     expect(balance.rentPerWeek).toEqual({
@@ -252,6 +254,38 @@ describe('config/balance.json', () => {
     expect(BalanceConfigSchema.safeParse({ ...valid, costs }).success).toBe(false)
     const start = { cash: 150.5, home: 'queens-room' }
     expect(BalanceConfigSchema.safeParse({ ...valid, start }).success).toBe(false)
+  })
+
+  it('rejects clock speeds without 1x, stats above the max and oversized actions', () => {
+    const valid = readJson('config/balance.json') as BalanceConfig
+    const time = (patch: Partial<BalanceConfig['time']>) => ({
+      ...valid,
+      time: { ...valid.time, ...patch },
+    })
+    expect(BalanceConfigSchema.safeParse(time({ speeds: [2, 1] })).success).toBe(false)
+    expect(BalanceConfigSchema.safeParse(time({ speeds: [1, 1] })).success).toBe(false)
+    expect(BalanceConfigSchema.safeParse(time({ startMinuteOfDay: 1440 })).success).toBe(false)
+    const stats = { ...valid.stats, start: { ...valid.stats.start, mood: valid.stats.max + 1 } }
+    expect(BalanceConfigSchema.safeParse({ ...valid, stats }).success).toBe(false)
+    const huge = {
+      durationMin: valid.actions.maxDurationMin + 1,
+      cashCost: 0,
+      energyCost: 0,
+      statEffects: {},
+    }
+    const actions = { ...valid.actions, catalog: { ...valid.actions.catalog, huge } }
+    expect(BalanceConfigSchema.safeParse({ ...valid, actions }).success).toBe(false)
+    const effect = { durationMin: 1, cashCost: 0, energyCost: 0, statEffects: { mood: -101 } }
+    const badEffect = { ...valid.actions, catalog: { effect } }
+    expect(BalanceConfigSchema.safeParse({ ...valid, actions: badEffect }).success).toBe(false)
+  })
+
+  it('food actions cost within the food range', () => {
+    for (const id of ['bodega-breakfast', 'home-meal']) {
+      const cost = balance.actions.catalog[id]?.cashCost
+      expect(cost, id).toBeGreaterThanOrEqual(balance.costs.food.min)
+      expect(cost, id).toBeLessThanOrEqual(balance.costs.food.max)
+    }
   })
 })
 
