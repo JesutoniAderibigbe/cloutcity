@@ -96,12 +96,17 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   draw calls and triangles.
 - docs/local/ is gitignored: put OPEN-ISSUES pointers into iteration notes.
 
-## Lanes (user decisions 2026-10-06: up to four parallel lanes)
-- Lane A (main checkout, `dev`, E2E_PORT 3100): S05a → S05b → S06
-- Lane B (worktree lane-b, 3101): S04 → S04a → S04b → S04c → S04d → S04e
-- Lane C (worktree lane-c, 3102, phase 2 ahead): S11 → S10 → S12
-- Lane D (worktree lane-d, 3103, phase 2/3 ahead): S14 → S13 (after S10 merges)
-- S05 waits for lanes A and B. Lane C/D branches merge after the phase 1 PR is opened.
+## Lanes and slice plan (user decisions 2026-10-06)
+Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
+events), then the rest. Up to six lanes, full testing on every task.
+- Lane A (main, 3100): S05a → S05 (needs S04a) → S06 → S05b
+- Lane B (lane-b, 3101): S04 → S04a → S04c → S04b → S04d
+- Lane C (lane-c, 3102): S11 → S10 → S12
+- Lane D (lane-d, 3103): S14 → S13 (needs S10)
+- Lane E (lane-e, 3104): S07 → S09 → S07a
+- Lane F (lane-f, 3105): S08 (needs S04 merged)
+Slice = S01–S06 minus S04e, plus S07, S07a, S08–S14. After the slice: S04e, S07b, S15, S16, S16a,
+then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
 
 ## Phase user stories (qa-mafia, Mode A, at phase end)
 1. New visitor on a phone: opens the link, passes the 18+ welcome card, picks audio, lands on the
