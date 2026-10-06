@@ -1,16 +1,21 @@
 @import 'tailwindcss';
 
-/* Placeholder night palette (deep indigo, hot pink, taxi yellow). S02 moves the source of truth
-   to data/config/theme.json. */
+/* Night palette. Values live in data/config/theme.json; the root layout writes each token to
+   `--palette-<token>` on <html>, and Tailwind maps it to `--color-<token>` here. `inline` makes
+   utilities use the palette variable directly. src/lib/theme.test.ts keeps this list in sync
+   with theme.json. */
+@theme inline {
+  --color-night-950: var(--palette-night-950);
+  --color-night-900: var(--palette-night-900);
+  --color-night-800: var(--palette-night-800);
+  --color-night-700: var(--palette-night-700);
+  --color-pink-400: var(--palette-pink-400);
+  --color-taxi-400: var(--palette-taxi-400);
+  --color-ink-50: var(--palette-ink-50);
+  --color-ink-300: var(--palette-ink-300);
+}
+
 @theme {
-  --color-night-950: #0d0a24;
-  --color-night-900: #16113a;
-  --color-night-800: #221a55;
-  --color-night-700: #31277a;
-  --color-pink-400: #ff4fa3;
-  --color-taxi-400: #ffd23f;
-  --color-ink-50: #f6f4ff;
-  --color-ink-300: #b9b3e6;
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 

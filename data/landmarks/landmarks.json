@@ -1,0 +1,13 @@
+{
+  "landmarks": [
+    {
+      "id": "brooklyn-bridge",
+      "nameKey": "landmarks.brooklynBridge.name",
+      "category": "bridge",
+      "nameMode": "real",
+      "legalReviewed": false,
+      "borough": "manhattan",
+      "location": { "lat": 40.7061, "lng": -73.9969 }
+    }
+  ]
+}

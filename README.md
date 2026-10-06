@@ -87,6 +87,58 @@ zones cannot overlap; content that does not fit scrolls inside its own zone. Zon
 `data/config/layout.json`. The bottom tab bar (`src/components/nav/BottomTabs.tsx`) sits in the
 `tabs` zone with safe-area padding.
 
+## Data, copy and config
+
+Everything players see or the game tunes lives in `/data` as JSON, and every file is validated
+by a zod schema in `src/lib/data/schemas/` (`src/lib/data/data.test.ts` fails if a `.json`/`.geojson` file has
+no schema or does not match it, if any other file type appears (only `SOURCES.md` and
+`README.md` are allowed next to data), or if a cross-file reference breaks).
+
+| Folder            | Holds                                                                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `layout.json`, `copy.json` |
+| `data/copy/`      | `base.json` (every player-facing string) and `packs/*.json` (slang packs)                                                                                        |
+| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`: content, with copy keys instead of text (placeholder seeds until their tasks land)                  |
+| `data/geo/`       | `bounds.json` (NYC extent); the built geography layers join it in S04                                                                                            |
+| `data/zones/`     | play zones from NTAs                                                                                                                                             |
+| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                |
+
+- **Loading.** Server code and scripts import validated data from `src/lib/data/config.ts` and
+  `src/lib/data/content.ts`, which parse at import and fail fast with the file name. Client
+  code must not pull in zod's classic build (it costs about 90 KB gz of shell JS): the copy
+  layer reads its JSON directly (validated by the tests), and the store validates with
+  `zod/mini`.
+- **Adding content.** Add the entry to the JSON file, add its strings to `data/copy/base.json`
+  under the key the entry names (`nameKey`, `titleKey`, ...), and run `npm test`.
+- **Copy.** `copy(key, vars)` from `src/lib/copy.ts` renders a string with the active slang pack
+  (`data/config/copy.json` → `slangPack`) layered over base. Swapping the pack id changes the
+  text with no code change; a new pack file must also be registered in `slangPacks`. Templates
+  use `{name}` placeholders (a letter, then letters or digits) whose values are strings, so
+  numbers go through the formatters first. Any other brace is rejected by the schema and by
+  `interpolate`.
+  Packs may override only base keys and must keep the same placeholders.
+- **Superlatives (GR-11).** No copy string may contain "cheapest", "biggest", "best", "most" or
+  "fastest" as literal text (`src/lib/copy.test.ts`). Give the string a placeholder and fill it
+  with `superlative(kind, subjectId, values)`, which returns the word only when the data proves
+  it (a unique minimum or maximum) and `null` otherwise.
+- **Numbers (UX-2).** `formatMoney` (whole US dollars, halves rounded away from zero) and
+  `formatCount` (rounded to a whole count, then `Intl.NumberFormat` compact; never `-0`) in
+  `src/lib/format.ts`. Anywhere else under `src/`, ESLint rejects any reference to `Intl`,
+  the `toLocale*String` / `toFixed` / `toPrecision` methods however they are reached, and
+  hand-built dollar amounts (`` `$${x}` ``, `'$' + x`, `$` before a JSX expression).
+- **Theme.** `data/config/theme.json` holds the palette. The root layout writes each token to a
+  `--palette-<token>` variable on `<html>`, and `src/app/globals.css` maps it to the Tailwind
+  colour `--color-<token>` (`bg-night-900`, `text-taxi-400`, ...). A new token needs a line in
+  both; `src/lib/theme.test.ts` checks they match and that no source file hardcodes a colour.
+
+## Game state
+
+`src/state/store.ts` is the Zustand store (`useGameStore(selector)`), persisted to localStorage
+under `cloutcity:game` with a schema `version` and a `migrate` step. Loaded state is validated
+and replaced by a fresh state if it does not fit. If localStorage is unavailable (private
+browsing, blocked site data, full quota) the store keeps working in memory for the session.
+Bump `STORE_VERSION` and extend `migrateGameState` on any breaking change to the saved shape.
+
 ## Logging
 
 Use `src/lib/log.ts` (`log.info(msg, context)`, `log.withCorrelationId(id)`). It writes
@@ -98,9 +150,11 @@ objects and Sets arrays. `console.*` is a lint error everywhere else.
 
 ## Performance budget
 
-`npm run budget` reads `shellJsGzKB` from `data/config/perf.json` (KB = 1000 bytes) and sums the
+`data/config/perf.json` holds every budget from `CLAUDE.md`, per tier where tiered, plus the
+`cc-mid-4g` throttle profile and the FPS step-down rule. `npm run budget` reads `shellJsGzKB`
+through the shared schema (KB = 1000 bytes) and sums the
 gzipped size of every script the prerendered `/` makes a modern browser run (Next.js chunks
-plus inline scripts; `nomodule` polyfills excluded). The other budgets in `CLAUDE.md` join it in
+plus inline scripts; `nomodule` polyfills excluded). Enforcement of the other budgets joins it in
 later tasks.
 
 ## PWA

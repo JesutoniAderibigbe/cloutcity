@@ -1,0 +1,17 @@
+{
+  "time": { "gameMinutesPerRealMinute": 10, "gameDayHours": 24, "rentPeriodGameDays": 7 },
+  "start": { "cash": 150, "home": "queens-room" },
+  "rentPerWeek": { "queens-room": 280, "brooklyn-1br": 520, "manhattan-loft": 1100 },
+  "jobs": {
+    "shiftHours": 4,
+    "hourlyWage": { "barista": 14, "retail": 16, "delivery": 18, "junior-dev": 35 }
+  },
+  "costs": { "food": { "min": 4, "max": 12 }, "subwayFare": 3 },
+  "target": {
+    "shiftsPerDay": 2,
+    "weeklySavings": 150,
+    "firstUpgradeGameDay": { "min": 10, "max": 14 }
+  },
+  "rarityTiers": ["common", "medium", "rare"],
+  "premiumPriceTiersUsd": { "tier-1": 2, "tier-2": 5, "tier-3": 10 }
+}

@@ -1,3 +1,29 @@
 {
-  "shellJsGzKB": 180
+  "shellJsGzKB": 180,
+  "sceneChunkJsGzKB": 350,
+  "totalJsToPlayableGzKB": 550,
+  "baseGeoGzKB": 400,
+  "districtBuildingsGzKB": { "low": 150, "mid": 300, "high": 400 },
+  "totalBytesToPlayableGzKB": { "low": 1200, "mid": 1600, "high": 2000 },
+  "shellInteractiveColdMs": 2500,
+  "playableColdMs": { "low": 6000, "mid": 7000, "high": 8000 },
+  "playableWarmMs": 2500,
+  "drawCallsMax": { "low": 60, "mid": 120, "high": 200 },
+  "trianglesMax": { "low": 150000, "mid": 400000, "high": 800000 },
+  "dprCap": { "low": 1, "mid": 1.5, "high": 2 },
+  "shadows": { "low": "none", "mid": "blob-or-baked", "high": "pcf-directional" },
+  "otherPlayersMax": { "low": 8, "mid": 16, "high": 24 },
+  "otherPlayersStyle": { "low": "billboard", "mid": "model", "high": "model" },
+  "medianFpsMin": { "low": 30, "mid": 45, "high": 55 },
+  "idleFramesMax": 0,
+  "fpsStepDown": { "belowFps": 28, "sustainMs": 3000 },
+  "throttleProfiles": {
+    "cc-mid-4g": {
+      "downloadKbps": 4000,
+      "uploadKbps": 1000,
+      "rttMs": 150,
+      "cpuSlowdown": 4,
+      "viewport": { "width": 390, "height": 844 }
+    }
+  }
 }

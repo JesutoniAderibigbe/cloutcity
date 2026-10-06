@@ -1,0 +1,9 @@
+{
+  "events": [
+    {
+      "id": "placeholder-event",
+      "titleKey": "events.placeholder.title",
+      "bodyKey": "events.placeholder.body"
+    }
+  ]
+}

@@ -1,17 +1,19 @@
 import type { MetadataRoute } from 'next'
+import { copy } from '@/lib/copy'
+import { themeColorHex } from '@/lib/theme'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'Clout City: NYC',
-    short_name: 'Clout City',
-    description: 'Tap In. Blow Up. Make it in New York.',
+    name: copy('app.name'),
+    short_name: copy('app.shortName'),
+    description: copy('app.description'),
     start_url: '/',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#0d0a24',
-    theme_color: '#0d0a24',
+    background_color: themeColorHex(),
+    theme_color: themeColorHex(),
     categories: ['games'],
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

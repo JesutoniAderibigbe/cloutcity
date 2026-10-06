@@ -1,0 +1,160 @@
+import { join } from 'node:path'
+import { ESLint } from 'eslint'
+import { describe, expect, it } from 'vitest'
+import { formatCount, formatMoney } from './format'
+
+const ROOT = join(import.meta.dirname, '../..')
+
+describe('formatMoney', () => {
+  it('shows whole dollars, rounding halves away from zero', () => {
+    expect(formatMoney(150)).toBe('$150')
+    expect(formatMoney(206.57)).toBe('$207')
+    expect(formatMoney(12.49)).toBe('$12')
+    expect(formatMoney(12.5)).toBe('$13')
+    expect(formatMoney(-12.5)).toBe('-$13')
+    expect(formatMoney(1100)).toBe('$1,100')
+  })
+
+  it('never shows a negative zero', () => {
+    expect(formatMoney(-0.4)).toBe('$0')
+    expect(formatMoney(-0)).toBe('$0')
+  })
+
+  it('rejects non-finite values', () => {
+    expect(() => formatMoney(Number.NaN)).toThrow(RangeError)
+    expect(() => formatMoney(Number.POSITIVE_INFINITY)).toThrow(RangeError)
+  })
+})
+
+describe('formatCount', () => {
+  it('uses compact notation', () => {
+    expect(formatCount(6)).toBe('6')
+    expect(formatCount(950)).toBe('950')
+    expect(formatCount(1500)).toBe('1.5K')
+    expect(formatCount(15_274)).toBe('15K')
+    expect(formatCount(1_380_000)).toBe('1.4M')
+    expect(formatCount(15_274_000)).toBe('15M')
+  })
+
+  it('rejects non-finite values', () => {
+    expect(() => formatCount(Number.NaN)).toThrow(RangeError)
+  })
+})
+
+describe('ad-hoc number formatting (UX-2)', () => {
+  const eslint = new ESLint({ cwd: ROOT })
+  const ruleIds = async (code: string, filePath: string) => {
+    const [result] = await eslint.lintText(code, { filePath: join(ROOT, filePath) })
+    return (result?.messages ?? []).map((m) => m.ruleId)
+  }
+
+  it('is a lint error anywhere in src/ except the formatter module', async () => {
+    const samples = [
+      "export const a = new Intl.NumberFormat('en-US').format(1)\n",
+      "export const b = Intl.NumberFormat('en-US').format(1)\n",
+      'export const c = (1234).toLocaleString()\n',
+      'export const d = (12.5).toFixed(0)\n',
+    ]
+    for (const code of samples) {
+      expect(await ruleIds(code, 'src/components/Probe.tsx'), code).toContain(
+        'no-restricted-syntax',
+      )
+      expect(await ruleIds(code, 'src/lib/format.ts'), code).not.toContain('no-restricted-syntax')
+    }
+  }, 30_000)
+
+  it.each([
+    ['destructuring from Intl', 'const { NumberFormat } = Intl\nexport const a = NumberFormat\n'],
+    ['globalThis.Intl', 'export const a = globalThis.Intl.NumberFormat\n'],
+    ['window.Intl', 'export const a = window.Intl.DateTimeFormat\n'],
+    ['computed Intl access', "export const a = Intl['NumberFormat']\n"],
+    ['an Intl alias', 'const I = Intl\nexport const a = I\n'],
+    ['toLocaleString via .call', 'export const a = Number.prototype.toLocaleString.call(5)\n'],
+    ['computed toFixed', "export const a = (5)['toFixed'](0)\n"],
+    ['computed toPrecision in a template', 'export const a = (5)[`toPrecision`](2)\n'],
+    ['destructured toFixed', 'const { toFixed } = Number.prototype\nexport const a = toFixed\n'],
+    ['a "$" template amount', 'const x = 5\nexport const a = `$${x}`\n'],
+    ['a "$" amount inside a template', 'const x = 5\nexport const a = `Rent: $${x}/wk`\n'],
+    ['"$" + value', "const x = 5\nexport const a = '$' + x\n"],
+    [
+      '"$" before a JSX expression',
+      'const x = 5\nexport function A() {\n  return <p>${x}</p>\n}\n',
+    ],
+  ])(
+    'reports %s outside the formatter module',
+    async (_label, code) => {
+      expect(await ruleIds(code, 'src/components/Probe.tsx')).toContain('no-restricted-syntax')
+    },
+    30_000,
+  )
+
+  it.each([
+    ['a plain template', 'const x = 5\nexport const a = `${x} people`\n'],
+    ['a CSS variable template', "const x = 'pink'\nexport const a = `--palette-${x}`\n"],
+    ['string concatenation', "export const a = 'a' + 'b'\n"],
+  ])(
+    'does not report %s',
+    async (_label, code) => {
+      expect(await ruleIds(code, 'src/components/Probe.tsx')).not.toContain('no-restricted-syntax')
+    },
+    30_000,
+  )
+})
+
+describe('formatMoney edge cases', () => {
+  it('rounds every half away from zero (halfExpand), not to even', () => {
+    expect([0.5, 1.5, 2.5, -0.5, -1.5, -2.5].map(formatMoney)).toEqual([
+      '$1',
+      '$2',
+      '$3',
+      '-$1',
+      '-$2',
+      '-$3',
+    ])
+  })
+
+  it('shows large and negative amounts as whole dollars with grouping', () => {
+    expect(formatMoney(1e9)).toBe('$1,000,000,000')
+    expect(formatMoney(-1_000_000)).toBe('-$1,000,000')
+    expect(formatMoney(0)).toBe('$0')
+  })
+
+  it('never shows cents', () => {
+    for (const value of [0.01, 0.99, 12.345, 999.999, -0.01]) {
+      expect(formatMoney(value), String(value)).not.toMatch(/\./)
+    }
+  })
+
+  it('rejects negative infinity', () => {
+    expect(() => formatMoney(Number.NEGATIVE_INFINITY)).toThrow(RangeError)
+  })
+})
+
+describe('formatCount edge cases', () => {
+  it('rolls over to the next unit at the compact rounding boundary', () => {
+    expect(formatCount(999)).toBe('999')
+    expect(formatCount(999_499)).toBe('999K')
+    expect(formatCount(999_950)).toBe('1M')
+    expect(formatCount(99_950)).toBe('100K')
+  })
+
+  it('handles billions and negatives', () => {
+    expect(formatCount(1e9)).toBe('1B')
+    expect(formatCount(-1500)).toBe('-1.5K')
+    expect(formatCount(0)).toBe('0')
+  })
+
+  it('rounds to a whole count first and never shows -0', () => {
+    expect(formatCount(0.4)).toBe('0')
+    expect(formatCount(2.5)).toBe('3')
+    expect(formatCount(6.6)).toBe('7')
+    expect(formatCount(-0.4)).toBe('0')
+    expect(formatCount(-0)).toBe('0')
+    expect(formatCount(999.6)).toBe('1K')
+  })
+
+  it('rejects infinities', () => {
+    expect(() => formatCount(Number.POSITIVE_INFINITY)).toThrow(RangeError)
+    expect(() => formatCount(Number.NEGATIVE_INFINITY)).toThrow(RangeError)
+  })
+})

@@ -9,6 +9,8 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
+import { z } from 'zod'
+import { PerfConfigSchema } from '../src/lib/data/schemas/config.ts'
 
 export interface ScriptRefs {
   /** `src` values of external scripts, in document order, deduplicated. */
@@ -72,12 +74,16 @@ export function checkBudget(name: string, actualBytes: number, limitKB: number):
   return { name, actualKB, limitKB, ok: actualBytes <= limitKB * 1000 }
 }
 
+// Only the field this script enforces is read, through the shared perf.json schema; the whole
+// file is validated by src/lib/data/data.test.ts.
+const ShellLimitSchema = z.object({ shellJsGzKB: PerfConfigSchema.shape.shellJsGzKB })
+
 export function readShellLimit(perf: unknown): number {
-  if (typeof perf === 'object' && perf !== null && 'shellJsGzKB' in perf) {
-    const value = perf.shellJsGzKB
-    if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value
+  const result = ShellLimitSchema.safeParse(perf)
+  if (!result.success) {
+    throw new Error('data/config/perf.json: shellJsGzKB must be a positive number')
   }
-  throw new Error('data/config/perf.json: shellJsGzKB must be a positive number')
+  return result.data.shellJsGzKB
 }
 
 async function main(): Promise<void> {

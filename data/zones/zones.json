@@ -1,0 +1,10 @@
+{
+  "zones": [
+    {
+      "id": "placeholder-queens",
+      "ntaCode": "QN0000",
+      "name": "Placeholder zone",
+      "borough": "queens"
+    }
+  ]
+}

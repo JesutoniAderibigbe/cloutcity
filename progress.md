@@ -66,6 +66,15 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 (Versions verified against the npm registry by the orchestrator on 2026-10-06.)
 
 ## Learnings and gotchas
+- Client code validates with `zod/mini`; classic zod in the shell costs ~90 KB gz (blew the 180 KB
+  budget). Never import `@/lib/data/config` or classic schemas from client-reachable modules
+  (src/lib/client-imports.test.ts enforces it). Server/scripts may use classic zod.
+- Expected storage conditions (private mode, quota, corrupt save) log at `info`; the e2e console
+  guard fails on warnings, so reserve `warn` for real problems.
+- Copy cannot contain literal `{` or `}` (placeholder rule); add an escape if ever needed.
+- Any `Intl` reference, toLocale*/toFixed/toPrecision, or `$`-prefixed template/concat outside
+  src/lib/format.ts is a lint error: money and counts go through formatMoney/formatCount.
+- Superlatives in copy only via superlative(kind, subjectId, values) (needs ≥2 distinct ids).
 - e2e serves on port 3100 (E2E_PORT) because 3000 is taken on this machine; reuseExistingServer
   is on outside CI, so make sure nothing stale is serving on 3100 before trusting a run.
 - SwiftShader always logs "GPU stall due to ReadPixels" at warning level for a visible WebGL
@@ -131,3 +140,12 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   are hardcoded: S02 moves them into /data/copy and data/config/theme.json.
   OPEN-ISSUES: RISK-1 npm audit (dev-only), RISK-2 darwin-only screenshot baselines, RISK-3
   stats-gl nested three, NOTE-1 port 3000, NOTE-2 blocked install scripts, NOTE-3 allowlist.
+- S02 (attempt 1, passed): /data folders with zod schemas (src/lib/data/schemas, loaders in
+  src/lib/data), perf.json with every CLAUDE.md budget (test reads CLAUDE.md), theme.json → CSS
+  vars, realtime/moderation/balance/layout/copy config, placeholder seeds; copy layer with nyc and
+  plain slang packs; formatMoney/formatCount + strict lint rule; superlative scanner and computed
+  superlative(); Zustand store (cloutcity:game v1, migrate, zod/mini merge) with never-throwing
+  storage. One fix cycle (superlative ranks, lint bypasses, all-file-type data check, malformed
+  placeholders, integer counts, info-level storage logs). Gates: 253 unit, 76 e2e, build, budget
+  137.4 KB. The store is not read by any UI yet (S03/S05 wire it).
+  OPEN-ISSUES: DEC-9 zod/mini on client, TUNE-1 placeholder numbers.

@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { copy, type CopyKey } from '@/lib/copy'
 
-// Placeholder labels until S02 moves player-facing copy into /data/copy.
 export const TABS = [
-  { id: 'map', label: 'Map', icon: '🗺️' },
-  { id: 'phone', label: 'Phone', icon: '📱' },
-  { id: 'shop', label: 'Shop', icon: '🛍️' },
-  { id: 'me', label: 'Me', icon: '🙂' },
-] as const
+  { id: 'map', labelKey: 'tabs.map', icon: '🗺️' },
+  { id: 'phone', labelKey: 'tabs.phone', icon: '📱' },
+  { id: 'shop', labelKey: 'tabs.shop', icon: '🛍️' },
+  { id: 'me', labelKey: 'tabs.me', icon: '🙂' },
+] as const satisfies readonly { id: string; labelKey: CopyKey; icon: string }[]
 
 export type TabId = (typeof TABS)[number]['id']
 
@@ -18,7 +18,7 @@ export function BottomTabs() {
 
   return (
     <nav
-      aria-label="Main"
+      aria-label={copy('nav.main')}
       className="h-full border-t border-night-700 bg-night-900/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur"
     >
       <ul className="grid h-full grid-cols-4">
@@ -38,7 +38,7 @@ export function BottomTabs() {
                 <span aria-hidden="true" className="text-xl leading-none">
                   {tab.icon}
                 </span>
-                {tab.label}
+                {copy(tab.labelKey)}
               </button>
             </li>
           )

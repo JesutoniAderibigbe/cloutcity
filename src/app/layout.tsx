@@ -1,16 +1,16 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
+import { copy } from '@/lib/copy'
+import { paletteStyle, themeColorHex } from '@/lib/theme'
 import './globals.css'
 
-const APP_NAME = 'Clout City: NYC'
-const TAGLINE = 'Tap In. Blow Up.'
-const THEME_COLOR = '#0d0a24'
+const APP_NAME = copy('app.name')
 
 export const metadata: Metadata = {
-  title: { default: `${APP_NAME} | ${TAGLINE}`, template: `%s | ${APP_NAME}` },
-  description: `${TAGLINE} Make it in New York.`,
+  title: { default: `${APP_NAME} | ${copy('app.tagline')}`, template: `%s | ${APP_NAME}` },
+  description: copy('app.description'),
   applicationName: APP_NAME,
-  appleWebApp: { capable: true, title: 'Clout City', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: copy('app.shortName'), statusBarStyle: 'black-translucent' },
   formatDetection: { telephone: false },
   icons: { apple: '/icons/apple-touch-icon.png' },
 }
@@ -23,13 +23,13 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: 'cover',
   interactiveWidget: 'resizes-content',
-  themeColor: THEME_COLOR,
+  themeColor: themeColorHex(),
   colorScheme: 'dark',
 }
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" style={paletteStyle()}>
       <body className="antialiased">{children}</body>
     </html>
   )

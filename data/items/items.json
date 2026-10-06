@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "id": "placeholder-tee",
+      "nameKey": "items.placeholderTee.name",
+      "category": "clothing",
+      "rarity": "common",
+      "price": 20,
+      "sellValue": 8,
+      "cloutValue": 1,
+      "statEffects": { "mood": 2 }
+    }
+  ]
+}

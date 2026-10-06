@@ -38,7 +38,7 @@
       "requires": [],
       "acceptance": "/data folders for items, premium, events, jobs, venues, landmarks, geo, zones, audio, config (including config/perf.json with every budget from CLAUDE.md, config/theme.json palette tokens, config/realtime.json) and copy, each validated by a zod schema with a test; central copy file with slang-pack layer (test proves swapping the pack changes rendered text); one shared formatter module: money shown as whole dollars (GR-11) and counts via Intl.NumberFormat notation 'compact' (UX-2); a copy test fails if any copy string uses a superlative (cheapest, biggest, best, most, fastest) as literal text rather than a value computed from data (GR-11); Zustand store with localStorage persistence and schema version (test for persist and rehydrate).",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },

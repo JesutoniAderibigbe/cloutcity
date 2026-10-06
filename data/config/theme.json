@@ -1,0 +1,13 @@
+{
+  "colors": {
+    "night-950": "#0d0a24",
+    "night-900": "#16113a",
+    "night-800": "#221a55",
+    "night-700": "#31277a",
+    "pink-400": "#ff4fa3",
+    "taxi-400": "#ffd23f",
+    "ink-50": "#f6f4ff",
+    "ink-300": "#b9b3e6"
+  },
+  "themeColor": "night-950"
+}

@@ -1,0 +1,11 @@
+{
+  "venues": [
+    {
+      "id": "placeholder-bodega",
+      "nameKey": "venues.placeholderBodega.name",
+      "type": "bodega",
+      "borough": "queens",
+      "location": { "lat": 40.7644, "lng": -73.9235 }
+    }
+  ]
+}

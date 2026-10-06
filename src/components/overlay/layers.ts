@@ -1,4 +1,5 @@
-import layoutConfig from '@data/config/layout.json'
+import { layout } from '@/lib/data/config'
+import type { LayoutConfig } from '@/lib/data/schemas/config'
 
 /**
  * The overlay layer system (UX-1). Every piece of UI drawn over the scene lives in exactly one
@@ -18,16 +19,9 @@ export function layerZIndex(layer: OverlayLayer): number {
   return OVERLAY_LAYER_ORDER.indexOf(layer)
 }
 
-export interface OverlayLayoutConfig {
-  readonly bannerHeightPx: number
-  readonly hudHeightPx: number
-  readonly toastHeightPx: number
-  readonly sheetMaxHeightVh: number
-  readonly sheetMaxWidthPx: number
-  readonly tabBarHeightPx: number
-}
+export type OverlayLayoutConfig = Readonly<LayoutConfig['overlay']>
 
-export const overlayLayout: OverlayLayoutConfig = layoutConfig.overlay
+export const overlayLayout: OverlayLayoutConfig = layout.overlay
 
 /** Grid row for each zone (1-based, matching {@link overlayGridTracks}). */
 export const ZONE_GRID_ROW: Readonly<Record<OverlayZone, number>> = {

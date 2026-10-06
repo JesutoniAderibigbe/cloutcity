@@ -1,0 +1,41 @@
+{
+  "strings": {
+    "app.name": "Clout City: NYC",
+    "app.shortName": "Clout City",
+    "app.tagline": "Tap In. Blow Up.",
+    "app.description": "Tap In. Blow Up. Make it in New York.",
+    "nav.main": "Main",
+    "tabs.map": "Map",
+    "tabs.phone": "Phone",
+    "tabs.shop": "Shop",
+    "tabs.me": "Me",
+    "voice.welcome": "Welcome to Clout City. Tap in. Blow up.",
+    "voice.bodega": "Bacon, egg and cheese. Breakfast is sorted.",
+    "voice.trainDelay": "The train is running late.",
+    "voice.rentDue": "Rent is due.",
+    "voice.cloutUp": "Your clout went up. People are noticing.",
+    "voice.landmarkFlex": "{landmark} looks great right now. Time for a photo.",
+    "voice.friendPrompt": "Nice win. Invite a friend?",
+    "voice.clubDoor": "Your clout is too low to get in tonight.",
+    "voice.lockedHome": "The Manhattan loft is locked. Earn more to move here.",
+    "voice.someoneNearby": "{count} people on this block.",
+    "share.footer": "Tap In. Blow Up. | Clout City: NYC",
+    "items.placeholderTee.name": "Placeholder tee",
+    "premium.placeholderBadge.name": "Placeholder badge",
+    "events.placeholder.title": "Placeholder event",
+    "events.placeholder.body": "Placeholder event text.",
+    "jobs.barista.name": "Barista",
+    "jobs.retail.name": "Retail",
+    "jobs.delivery.name": "Delivery",
+    "jobs.juniorDev.name": "Junior dev",
+    "venues.placeholderBodega.name": "Placeholder Bodega",
+    "landmarks.brooklynBridge.name": "Brooklyn Bridge"
+  },
+  "superlatives": {
+    "cheapest": "cheapest",
+    "biggest": "biggest",
+    "best": "best",
+    "most": "most",
+    "fastest": "fastest"
+  }
+}
