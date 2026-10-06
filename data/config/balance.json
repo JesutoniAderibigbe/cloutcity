@@ -57,7 +57,23 @@
   "rentPerWeek": { "queens-room": 280, "brooklyn-1br": 520, "manhattan-loft": 1100 },
   "jobs": {
     "shiftHours": 4,
-    "hourlyWage": { "barista": 14, "retail": 16, "delivery": 18, "junior-dev": 35 }
+    "hourlyWage": { "barista": 14, "retail": 16, "delivery": 18, "junior-dev": 35 },
+    "energyCostPerShift": { "barista": 15, "retail": 15, "delivery": 25, "junior-dev": 15 },
+    "requiredCloutLevel": { "junior-dev": "local" }
+  },
+  "rent": {
+    "lateFees": [0, 30],
+    "evictAfterMissed": 3
+  },
+  "clout": {
+    "levels": [
+      { "id": "nobody", "minClout": 0 },
+      { "id": "local", "minClout": 100 },
+      { "id": "scene-regular", "minClout": 300 },
+      { "id": "known", "minClout": 800 },
+      { "id": "famous", "minClout": 2000 },
+      { "id": "icon", "minClout": 5000 }
+    ]
   },
   "costs": { "food": { "min": 4, "max": 12 }, "subwayFare": 3 },
   "target": {

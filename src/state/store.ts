@@ -19,6 +19,7 @@ import { performAction, type ActionResult } from '@/engine/actions'
 import { isSpeed } from '@/engine/clock'
 import { engineConfig } from '@/engine/config'
 import { tick } from '@/engine/game'
+import { workShift, type ShiftResult } from '@/engine/jobs'
 import {
   SAVE_VERSION,
   createSaveSchema,
@@ -41,6 +42,8 @@ export interface GameActions {
   tick(realElapsedMs: number, visible: boolean): void
   /** Runs a catalog action; the state changes only when the result is ok. */
   performAction(actionId: string): ActionResult
+  /** Works one shift of a job (rent falling due on the way is charged by the engine). */
+  workShift(jobId: string): ShiftResult
   /** Sets the passive clock speed (one of balance `time.speeds`, i.e. 1x or 2x). */
   setSpeed(speed: number): void
   /**
@@ -107,9 +110,9 @@ export function mergeGameState(
 }
 
 /**
- * What makes a save worth writing: the version, clock minute, cash, stats and speed. The
- * sub-minute remainder alone is not, so a visible tab does not write on every tick (a reload
- * loses at most one game minute's worth of carried real time).
+ * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout,
+ * home, rent) and speed. The sub-minute remainder alone is not, so a visible tab does not write
+ * on every tick (a reload loses at most one game minute's worth of carried real time).
  */
 function saveSignature(value: StorageValue<unknown> | null): string | undefined {
   if (value === null) return undefined
@@ -183,6 +186,11 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         },
         performAction: (actionId) => {
           const result = performAction(get(), actionId, engineConfig)
+          if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
+          return result
+        },
+        workShift: (jobId) => {
+          const result = workShift(get(), jobId, engineConfig)
           if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
           return result
         },

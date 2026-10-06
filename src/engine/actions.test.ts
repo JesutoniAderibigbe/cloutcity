@@ -44,6 +44,7 @@ function snapshotWith(overrides: {
   return {
     clock: { minute: overrides.minute ?? base.clock.minute, remainderMs: 0 },
     player: {
+      ...base.player,
       cash: overrides.cash ?? base.player.cash,
       stats: { ...base.player.stats, ...overrides.stats },
     },
@@ -70,6 +71,7 @@ describe('action fast-forward', () => {
       performAction(snapshotWith({ stats: { hunger: 90 } }), 'breakfast', config),
     )
     expect(result.snapshot.player).toEqual({
+      ...initialSnapshot(config).player,
       cash: 144,
       stats: { energy: 100, hunger: 100, mood: 70 },
     })

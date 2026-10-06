@@ -185,6 +185,35 @@ export const BalanceConfigSchema = z
         delivery: dollars,
         'junior-dev': dollars,
       }),
+      /** Energy points paid up front for one shift (passive decay during the shift is extra). */
+      energyCostPerShift: z.strictObject({
+        barista: statPoints,
+        retail: statPoints,
+        delivery: statPoints,
+        'junior-dev': statPoints,
+      }),
+      /** Jobs locked until the player reaches a clout level (an id in `clout.levels`). */
+      requiredCloutLevel: z.partialRecord(z.enum(JOB_IDS), z.string()),
+    }),
+    /**
+     * Missed rent. Each consecutive due date the player cannot pay in full adds that week's
+     * rent to what they owe, plus `lateFees[missed - 1]` (0 is a warning). On the
+     * `evictAfterMissed`-th miss the player is evicted to the lowest-rent home.
+     */
+    rent: z.strictObject({
+      lateFees: z.array(dollars),
+      evictAfterMissed: positiveInt,
+    }),
+    /** Clout levels, lowest first. A player is at the highest level whose `minClout` they hold. */
+    clout: z.strictObject({
+      levels: z
+        .array(
+          z.strictObject({
+            id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+            minClout: z.int().nonnegative(),
+          }),
+        )
+        .min(1),
     }),
     costs: z.strictObject({ food: MinMaxSchema, subwayFare: dollars }),
     target: z.strictObject({
@@ -227,6 +256,49 @@ export const BalanceConfigSchema = z
           STAT_KEYS.every((key) => Math.abs(action.statEffects[key] ?? 0) <= balance.stats.max),
       ),
     { error: 'an action exceeds maxDurationMin or stats.max', path: ['actions', 'catalog'] },
+  )
+  .refine(
+    (balance) =>
+      Number.isInteger(balance.jobs.shiftHours * 60) &&
+      balance.jobs.shiftHours * 60 <= balance.actions.maxDurationMin &&
+      JOB_IDS.every((id) =>
+        Number.isInteger(balance.jobs.hourlyWage[id] * balance.jobs.shiftHours),
+      ),
+    {
+      error: 'a shift must be whole game minutes within maxDurationMin and pay whole dollars',
+      path: ['jobs', 'shiftHours'],
+    },
+  )
+  .refine(
+    (balance) => JOB_IDS.every((id) => balance.jobs.energyCostPerShift[id] <= balance.stats.max),
+    {
+      error: 'a shift energy cost exceeds stats.max',
+      path: ['jobs', 'energyCostPerShift'],
+    },
+  )
+  .refine(
+    (balance) =>
+      Object.values(balance.jobs.requiredCloutLevel).every((level) =>
+        balance.clout.levels.some((entry) => entry.id === level),
+      ),
+    {
+      error: 'requiredCloutLevel must name a level in clout.levels',
+      path: ['jobs', 'requiredCloutLevel'],
+    },
+  )
+  .refine((balance) => balance.rent.lateFees.length === balance.rent.evictAfterMissed - 1, {
+    error: 'rent.lateFees needs one fee for each miss before eviction',
+    path: ['rent', 'lateFees'],
+  })
+  .refine(
+    ({ clout: { levels } }) =>
+      levels[0]?.minClout === 0 &&
+      levels.every((level, i) => i === 0 || level.minClout > (levels[i - 1]?.minClout ?? 0)) &&
+      new Set(levels.map((level) => level.id)).size === levels.length,
+    {
+      error: 'clout.levels must start at 0, rise strictly and have unique ids',
+      path: ['clout', 'levels'],
+    },
   )
 export type BalanceConfig = z.infer<typeof BalanceConfigSchema>
 
