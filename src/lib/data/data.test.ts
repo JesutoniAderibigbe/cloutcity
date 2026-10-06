@@ -11,6 +11,7 @@ import {
   BalanceConfigSchema,
   type BalanceConfig,
   CopyConfigSchema,
+  GeoConfigSchema,
   JOB_IDS,
   LayoutConfigSchema,
   ModerationConfigSchema,
@@ -28,7 +29,17 @@ import {
   VenuesFileSchema,
 } from './schemas/content'
 import { BaseCopySchema, SlangPackSchema } from './schemas/copy'
-import { AudioManifestSchema, GeoBoundsSchema, ZonesFileSchema } from './schemas/world'
+import {
+  AudioManifestSchema,
+  GeoBoundsSchema,
+  GeoManifestSchema,
+  LandFileSchema,
+  ParksFileSchema,
+  SubwayFileSchema,
+  WaterFileSchema,
+  ZoneShapesFileSchema,
+  ZonesFileSchema,
+} from './schemas/world'
 import { balance, onboarding, perf, realtime, theme } from './config'
 import { events, geoBounds, items, jobs, landmarks, premiumItems, venues } from './content'
 import { baseCopy } from '@/lib/copy'
@@ -40,6 +51,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'audio/manifest.json': AudioManifestSchema,
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,
+  'config/geo.json': GeoConfigSchema,
   'config/layout.json': LayoutConfigSchema,
   'config/moderation.json': ModerationConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
@@ -49,12 +61,18 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'copy/base.json': BaseCopySchema,
   'events/events.json': EventsFileSchema,
   'geo/bounds.json': GeoBoundsSchema,
+  'geo/land.derived.json': LandFileSchema,
+  'geo/manifest.derived.json': GeoManifestSchema,
+  'geo/parks.derived.json': ParksFileSchema,
+  'geo/subway.derived.json': SubwayFileSchema,
+  'geo/water.derived.json': WaterFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
   'premium/premium.json': PremiumFileSchema,
   'venues/venues.json': VenuesFileSchema,
-  'zones/zones.json': ZonesFileSchema,
+  'zones/zone-shapes.derived.json': ZoneShapesFileSchema,
+  'zones/zones.derived.json': ZonesFileSchema,
 }
 
 function schemaFor(file: string): z.ZodType | undefined {
@@ -367,9 +385,32 @@ describe('content schemas', () => {
     expect(AudioManifestSchema.safeParse(http).success).toBe(false)
   })
 
-  it('rejects a zone without a valid NTA code', () => {
-    const zone = { id: 'z', ntaCode: 'Q101', name: 'Z', borough: 'queens' }
-    expect(ZonesFileSchema.safeParse({ zones: [zone] }).success).toBe(false)
+  it('rejects a zone with a bad CDTA or NTA code, no NTAs or a fractional centroid', () => {
+    const file = readJson('zones/zones.derived.json') as { zones: Record<string, unknown>[] }
+    const zone = file.zones[0]
+    const withZone = (patch: Record<string, unknown>) => ({
+      ...file,
+      zones: [{ ...zone, ...patch }],
+    })
+    expect(ZonesFileSchema.safeParse(withZone({})).success).toBe(true)
+    expect(ZonesFileSchema.safeParse(withZone({ cdtaCode: 'QN1' })).success).toBe(false)
+    expect(ZonesFileSchema.safeParse(withZone({ ntaCodes: ['Q101'] })).success).toBe(false)
+    expect(ZonesFileSchema.safeParse(withZone({ ntaCodes: [] })).success).toBe(false)
+    expect(ZonesFileSchema.safeParse(withZone({ centroid: { x: 1.5, y: 0 } })).success).toBe(false)
+  })
+
+  it('rejects a derived geo file that drops its derived flag or names another projection', () => {
+    const file = readJson('geo/water.derived.json') as Record<string, unknown>
+    expect(WaterFileSchema.safeParse(file).success).toBe(true)
+    expect(WaterFileSchema.safeParse({ ...file, derived: false }).success).toBe(false)
+    const projection = { id: 'other', originLat: 40.7, originLng: -73.98 }
+    expect(WaterFileSchema.safeParse({ ...file, projection }).success).toBe(false)
+  })
+
+  it('rejects geo config whose station tolerance is below the simplification error', () => {
+    const valid = readJson('config/geo.json') as Record<string, unknown>
+    expect(GeoConfigSchema.safeParse(valid).success).toBe(true)
+    expect(GeoConfigSchema.safeParse({ ...valid, stationOnLineToleranceM: 8 }).success).toBe(false)
   })
 })
 

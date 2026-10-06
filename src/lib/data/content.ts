@@ -7,7 +7,7 @@ import jobsJson from '@data/jobs/jobs.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
 import premiumJson from '@data/premium/premium.json'
 import venuesJson from '@data/venues/venues.json'
-import zonesJson from '@data/zones/zones.json'
+import zonesJson from '@data/zones/zones.derived.json'
 import { parseDataFile } from './parse'
 import {
   EventsFileSchema,
@@ -34,5 +34,5 @@ export const landmarks = parseDataFile(
   landmarksJson,
 ).landmarks
 export const geoBounds = parseDataFile('geo/bounds.json', GeoBoundsSchema, boundsJson)
-export const zones = parseDataFile('zones/zones.json', ZonesFileSchema, zonesJson).zones
+export const zones = parseDataFile('zones/zones.derived.json', ZonesFileSchema, zonesJson).zones
 export const audioManifest = parseDataFile('audio/manifest.json', AudioManifestSchema, audioJson)

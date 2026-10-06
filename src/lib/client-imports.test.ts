@@ -48,8 +48,11 @@ function resolveLocal(spec: string, from: string): string | undefined {
   return candidates.find((file) => statSync(file, { throwIfNoEntry: false })?.isFile())
 }
 
-/** Modules that pull classic zod into whatever imports them. */
-const FORBIDDEN_LOCAL = /^src\/lib\/data\/(config|content|parse|schemas\/.*)\.ts$/
+/**
+ * Modules that pull classic zod into whatever imports them. geo.ts also inlines ~430 KB of
+ * derived geo JSON; the scene must fetch those layers as static assets instead.
+ */
+const FORBIDDEN_LOCAL = /^src\/lib\/data\/(config|content|geo|parse|schemas\/.*)\.ts$/
 
 function violations(entries: readonly string[]): string[] {
   const found: string[] = []
@@ -91,6 +94,19 @@ describe('browser code stays off classic zod (shell JS budget)', () => {
 
   it('no client-reachable module imports zod classic or a classic-zod data loader', () => {
     expect(violations(clientEntries)).toEqual([])
+  })
+
+  it('the forbidden list covers every classic-zod data loader, geo.ts included', () => {
+    for (const file of [
+      'src/lib/data/config.ts',
+      'src/lib/data/content.ts',
+      'src/lib/data/geo.ts',
+      'src/lib/data/parse.ts',
+      'src/lib/data/schemas/world.ts',
+    ]) {
+      expect(FORBIDDEN_LOCAL.test(file), file).toBe(true)
+    }
+    expect(FORBIDDEN_LOCAL.test('src/lib/data/geometry.ts')).toBe(false)
   })
 
   it('the import scanner sees what it must (self-check)', () => {

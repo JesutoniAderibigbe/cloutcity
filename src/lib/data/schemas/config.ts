@@ -265,3 +265,43 @@ export const OnboardingConfigSchema = z
     path: ['birthYearSpan'],
   })
 export type OnboardingConfig = z.infer<typeof OnboardingConfigSchema>
+
+const metres = z.number().positive()
+
+/**
+ * Parameters of `npm run geo:build` (scripts/geo). Distances in metres, weights and areas in
+ * square metres. Changing any of them changes the committed geo outputs: rebuild them.
+ */
+export const GeoConfigSchema = z
+  .strictObject({
+    /** Output grid: coordinates are rounded to whole metres. */
+    quantumM: z.literal(1),
+    /** Visvalingam minimum triangle area kept on borough shorelines. */
+    landMinWeightM2: metres,
+    landMinRingAreaM2: metres,
+    zoneMinWeightM2: metres,
+    zoneMinRingAreaM2: metres,
+    parkMinRingAreaM2: metres,
+    /** Douglas-Peucker tolerance for subway paths. */
+    subwayToleranceM: metres,
+    /** A shape is dropped when every vertex lies this close to the paths already kept. */
+    subwayDedupCoverM: metres,
+    /** A station must lie this close to a path of one of its own lines. */
+    stationOnLineToleranceM: metres,
+    /** Longest gap a route's path may be extended by to reach its terminal station. */
+    terminalGapMaxM: metres,
+    /** Longest distance a station may be snapped to its nearest borough or zone. */
+    stationAreaFallbackM: metres,
+    /** How far the sea extends beyond data/geo/bounds.json. */
+    waterMarginM: metres,
+  })
+  .refine(
+    (geo) =>
+      geo.stationOnLineToleranceM >
+      geo.subwayToleranceM + geo.subwayDedupCoverM + geo.quantumM / Math.SQRT2,
+    {
+      error: 'stationOnLineToleranceM must exceed simplification plus dedup plus rounding error',
+      path: ['stationOnLineToleranceM'],
+    },
+  )
+export type GeoConfig = z.infer<typeof GeoConfigSchema>
