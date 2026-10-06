@@ -174,7 +174,7 @@
       "review": true,
       "passes": false,
       "blocked": false,
-      "attempts": 0
+      "attempts": 1
     },
     {
       "id": "S06",
@@ -308,7 +308,7 @@
       "requires": [],
       "acceptance": "Data-driven event engine with conditions (time, borough, location, stats, clout, items), weights, and choice outcomes; modal UI in the overlay system; 15 events in the voice of CLAUDE.md including MTA delay, rent hike, free pizza, club promoter offer, viral moment, 2 mild crime events, and at least 2 landmark-tied events; validation tests prove no event can fire at a memorial, no crime event can fire at a government building, and no event rewards or requires drinking or references drugs or sexual content; seeded-random tests.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },

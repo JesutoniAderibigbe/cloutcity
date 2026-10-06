@@ -119,7 +119,7 @@ events), then the rest. Up to six lanes, full testing on every task.
 - Lane A (worktree lane-a, 3100): S05a ✓ → S05b → S05 (needs S04a) → S06 (main checkout is integration-only from now on)
 - Lane B (lane-b, 3101): S04 → S04a → S04c → S04b → S04d
 - Lane C (lane-c, 3102): S11 ✓ → S10 ✓ → S12 → S10a (needs S09)
-- Lane D (lane-d, 3103): S14 → S13 (needs S10)
+- Lane D (lane-d, 3103): S14 ✓ → S05c shell diet (urgent: shell 174.6/180) → S13
 - Lane E (lane-e, 3104): S07 → S09 → S07a
 - Lane F (lane-f, 3105): S08 (needs S04 merged)
 Slice = S01–S06 minus S04e, plus S07, S07a, S08–S14. After the slice: S04e, S07b, S15, S16, S16a,
@@ -217,4 +217,15 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   client-safe src/lib/world/places.ts. 3D render sub-clauses moved into S04c's acceptance (orchestrator
   note). Gates on dev: 1238 unit, 210 e2e, budget 167.4 KB (copy growth → S05c).
   OPEN-ISSUES: LEGAL-1 list, STN-1, "Ninth Hour Coffee" flag.
+- S08 part 1 (engine, merged; S08 not yet passed — part 2 wires the 3D animation after S04a): walk,
+  subway (Dijkstra over real lines, walking legs, transfers), taxi via 23 crossings + road waypoints,
+  water rules (walk refused across water, ends snapped to land within 300 m), rush-hour slowdowns,
+  seeded MTA delay hook, animation timeline. Two edge-case tests updated to the rulings
+  (POINT_NOT_REACHABLE, TRIP_TOO_LONG); the landmark reachability test uses S07 route points.
+- S14 (attempt 1, passed on lane-d, rebased and merged): data-driven events with seeded RNG, 15
+  events, safety resolved from place data by id (nothing at september-11-memorial, no crime at
+  city-hall), lazy EventSheet, save v5 (v4→v5 adds event state; every version v1–v5 loads). One fix
+  cycle (category bypass, newer-save info log). Gates on dev: 1530 unit, 232 e2e, shell 174.6 KB.
+  OPEN-ISSUES: INT-3 two RNG modules (rng.ts vs transit random.ts) still to merge; clout/item event
+  effects stay pending until S13/S10a wire them.
 
