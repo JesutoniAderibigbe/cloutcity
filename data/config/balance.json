@@ -60,6 +60,185 @@
     "hourlyWage": { "barista": 14, "retail": 16, "delivery": 18, "junior-dev": 35 }
   },
   "costs": { "food": { "min": 4, "max": 12 }, "subwayFare": 3 },
+  "transit": {
+    "minTripM": 25,
+    "snapToLandM": 300,
+    "walk": {
+      "speedKmh": 4.8,
+      "detourFactor": 1.3,
+      "energyPerKm": 2,
+      "maxWaterM": 50
+    },
+    "taxi": {
+      "speedKmh": 20,
+      "detourFactor": 1.3,
+      "pickupMin": 5,
+      "baseFare": 3,
+      "perKm": 2,
+      "maxWaterM": 50
+    },
+    "subway": {
+      "speedKmh": 32,
+      "dwellMinPerStop": 0.5,
+      "boardWaitMin": 4,
+      "transferPenaltyMin": 4,
+      "transferWalkMaxM": 300,
+      "accessCandidates": 3,
+      "accessMaxM": 1500,
+      "stationSnapM": 10,
+      "pathJoinM": 5
+    },
+    "crossings": [
+      {
+        "id": "brooklyn-bridge",
+        "a": { "lat": 40.7115, "lng": -74.0035 },
+        "b": { "lat": 40.7, "lng": -73.99 }
+      },
+      {
+        "id": "manhattan-bridge",
+        "a": { "lat": 40.7155, "lng": -73.9945 },
+        "b": { "lat": 40.6995, "lng": -73.987 }
+      },
+      {
+        "id": "williamsburg-bridge",
+        "a": { "lat": 40.7186, "lng": -73.9866 },
+        "b": { "lat": 40.7103, "lng": -73.961 }
+      },
+      {
+        "id": "queensboro-bridge",
+        "a": { "lat": 40.7615, "lng": -73.964 },
+        "b": { "lat": 40.7505, "lng": -73.94 }
+      },
+      {
+        "id": "queens-midtown-tunnel",
+        "a": { "lat": 40.7465, "lng": -73.9745 },
+        "b": { "lat": 40.7415, "lng": -73.949 }
+      },
+      {
+        "id": "hugh-l-carey-tunnel",
+        "a": { "lat": 40.707, "lng": -74.015 },
+        "b": { "lat": 40.688, "lng": -74.0005 }
+      },
+      {
+        "id": "rfk-bridge-manhattan",
+        "a": { "lat": 40.8018, "lng": -73.933 },
+        "b": { "lat": 40.7935, "lng": -73.9215 }
+      },
+      {
+        "id": "rfk-bridge-queens",
+        "a": { "lat": 40.7935, "lng": -73.9215 },
+        "b": { "lat": 40.777, "lng": -73.92 }
+      },
+      {
+        "id": "rfk-bridge-bronx",
+        "a": { "lat": 40.7935, "lng": -73.9215 },
+        "b": { "lat": 40.807, "lng": -73.917 }
+      },
+      {
+        "id": "third-avenue-bridge",
+        "a": { "lat": 40.8045, "lng": -73.934 },
+        "b": { "lat": 40.8095, "lng": -73.929 }
+      },
+      {
+        "id": "macombs-dam-bridge",
+        "a": { "lat": 40.8268, "lng": -73.9378 },
+        "b": { "lat": 40.828, "lng": -73.926 }
+      },
+      {
+        "id": "washington-bridge",
+        "a": { "lat": 40.8475, "lng": -73.933 },
+        "b": { "lat": 40.849, "lng": -73.918 }
+      },
+      {
+        "id": "broadway-bridge",
+        "a": { "lat": 40.8705, "lng": -73.9145 },
+        "b": { "lat": 40.8762, "lng": -73.9105 }
+      },
+      {
+        "id": "whitestone-bridge",
+        "a": { "lat": 40.813, "lng": -73.831 },
+        "b": { "lat": 40.7875, "lng": -73.8225 }
+      },
+      {
+        "id": "throgs-neck-bridge",
+        "a": { "lat": 40.822, "lng": -73.806 },
+        "b": { "lat": 40.786, "lng": -73.79 }
+      },
+      {
+        "id": "verrazzano-narrows-bridge",
+        "a": { "lat": 40.613, "lng": -74.03 },
+        "b": { "lat": 40.6045, "lng": -74.068 }
+      },
+      {
+        "id": "pulaski-bridge",
+        "a": { "lat": 40.731, "lng": -73.952 },
+        "b": { "lat": 40.744, "lng": -73.951 }
+      },
+      {
+        "id": "kosciuszko-bridge",
+        "a": { "lat": 40.7215, "lng": -73.931 },
+        "b": { "lat": 40.732, "lng": -73.92 }
+      },
+      {
+        "id": "marine-parkway-bridge",
+        "a": { "lat": 40.588, "lng": -73.896 },
+        "b": { "lat": 40.567, "lng": -73.885 }
+      },
+      {
+        "id": "cross-bay-bridge-north",
+        "a": { "lat": 40.65, "lng": -73.838 },
+        "b": { "lat": 40.618, "lng": -73.821 }
+      },
+      {
+        "id": "cross-bay-bridge-south",
+        "a": { "lat": 40.6083, "lng": -73.816 },
+        "b": { "lat": 40.586, "lng": -73.817 }
+      },
+      {
+        "id": "roosevelt-island-bridge",
+        "a": { "lat": 40.7615, "lng": -73.9495 },
+        "b": { "lat": 40.7625, "lng": -73.939 }
+      },
+      {
+        "id": "city-island-bridge",
+        "a": { "lat": 40.8545, "lng": -73.7905 },
+        "b": { "lat": 40.858, "lng": -73.799 }
+      }
+    ],
+    "roadWaypoints": [
+      { "id": "bensonhurst", "at": { "lat": 40.62, "lng": -74.0 } },
+      { "id": "staten-island-east-shore", "at": { "lat": 40.615, "lng": -74.08 } },
+      { "id": "far-rockaway", "at": { "lat": 40.596, "lng": -73.77 } },
+      { "id": "rockaway-beach-east", "at": { "lat": 40.5925, "lng": -73.79 } },
+      { "id": "rockaway-beach-west", "at": { "lat": 40.586, "lng": -73.815 } },
+      { "id": "rockaway-park", "at": { "lat": 40.5806, "lng": -73.8358 } },
+      { "id": "neponsit", "at": { "lat": 40.5745, "lng": -73.86 } },
+      { "id": "jacob-riis-park", "at": { "lat": 40.568, "lng": -73.875 } },
+      { "id": "breezy-point", "at": { "lat": 40.5586, "lng": -73.904 } },
+      { "id": "howard-beach-south", "at": { "lat": 40.657, "lng": -73.84 } },
+      { "id": "howard-beach-north", "at": { "lat": 40.665, "lng": -73.84 } },
+      { "id": "pelham-bay-park", "at": { "lat": 40.866, "lng": -73.81 } }
+    ],
+    "rushHour": {
+      "windows": [
+        { "startMin": 420, "endMin": 600 },
+        { "startMin": 960, "endMin": 1140 }
+      ],
+      "subwayDurationMultiplier": 1.3,
+      "subwayMoodDrain": 4,
+      "taxiDurationMultiplier": 1.25
+    },
+    "delay": {
+      "probability": 0.05,
+      "rushProbability": 0.12,
+      "minutes": { "min": 5, "max": 20 },
+      "moodDrain": 3
+    },
+    "animation": {
+      "maxMs": 3000,
+      "msPerGameMinute": 60
+    }
+  },
   "target": {
     "shiftsPerDay": 2,
     "weeklySavings": 150,

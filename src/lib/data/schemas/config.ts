@@ -144,6 +144,116 @@ export const ActionDefSchema = z.strictObject({
 })
 export type ActionDef = z.infer<typeof ActionDefSchema>
 
+const MINUTES_PER_DAY_MAX = 24 * 60
+const LatLngSchema = z.strictObject({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+})
+const probability = z.number().min(0).max(1)
+
+/** A daily window of the personal clock, [startMin, endMin) minutes after midnight. */
+const DayWindowSchema = z
+  .strictObject({
+    startMin: z.int().nonnegative().max(MINUTES_PER_DAY_MAX),
+    endMin: z.int().nonnegative().max(MINUTES_PER_DAY_MAX),
+  })
+  .refine((window) => window.startMin < window.endMin, { error: 'startMin must be before endMin' })
+
+/**
+ * Walk, subway and taxi (S08, src/engine/transit). Distances are local metres from the shared
+ * projection; times are game minutes. The subway fare itself is `costs.subwayFare`.
+ */
+export const TransitConfigSchema = z.strictObject({
+  /** Shorter trips are refused: the player is already there. */
+  minTripM: positive,
+  /**
+   * A trip end off land (a bridge's midspan, a pier) moves to the nearest land within this many
+   * metres; further out it is unreachable.
+   */
+  snapToLandM: z.number().nonnegative(),
+  walk: z.strictObject({
+    speedKmh: positive,
+    /** Street distance over straight-line distance (the grid is not a straight line). */
+    detourFactor: z.number().min(1),
+    /** Energy points drained per km walked (also on the subway's walking legs). */
+    energyPerKm: z.number().nonnegative(),
+    /** A walk whose straight line leaves land for longer than this in one stretch is refused. */
+    maxWaterM: z.number().nonnegative(),
+  }),
+  taxi: z.strictObject({
+    speedKmh: positive,
+    detourFactor: z.number().min(1),
+    /** Wait for the pickup, game minutes. */
+    pickupMin: z.number().nonnegative(),
+    /** Flag drop, whole dollars. */
+    baseFare: dollars,
+    /** Dollars per km driven; the total fare rounds up to whole dollars. */
+    perKm: z.number().nonnegative(),
+    /** A drive leaving land for longer than this in one stretch must use a crossing instead. */
+    maxWaterM: z.number().nonnegative(),
+  }),
+  /**
+   * Bridges and vehicle tunnels the taxi may use across water: one point on land at each end.
+   * Ids are data only (never rendered by S08).
+   */
+  crossings: z.array(
+    z.strictObject({ id: z.string().regex(/^[a-z0-9-]+$/), a: LatLngSchema, b: LatLngSchema }),
+  ),
+  /** Points on land a taxi may also drive through, so a drive can bend around a bay. */
+  roadWaypoints: z.array(
+    z.strictObject({ id: z.string().regex(/^[a-z0-9-]+$/), at: LatLngSchema }),
+  ),
+  subway: z.strictObject({
+    /** In-vehicle speed along the line path. */
+    speedKmh: positive,
+    /** Extra minutes per stop the train makes. */
+    dwellMinPerStop: z.number().nonnegative(),
+    /** Wait on the platform before the first train. */
+    boardWaitMin: z.number().nonnegative(),
+    /** Minutes added for each change of line (walk inside the station and wait). */
+    transferPenaltyMin: z.number().nonnegative(),
+    /** Separate stations this close are linked by a walking transfer. */
+    transferWalkMaxM: z.number().nonnegative(),
+    /** How many of the nearest stations to each end are tried as entry and exit. */
+    accessCandidates: positiveInt,
+    /** Stations further than this are not tried, except the single nearest one. */
+    accessMaxM: positive,
+    /** Stations further than this from every path of a line they list are not on it. */
+    stationSnapM: positive,
+    /**
+     * Consecutive stretches of track drawn for one ride may be this far apart; further apart (a
+     * change between two paths of the line), the drawn path goes through the station.
+     */
+    pathJoinM: z.number().nonnegative(),
+  }),
+  rushHour: z.strictObject({
+    /** By personal clock time of departure. */
+    windows: z.array(DayWindowSchema).min(1),
+    /** In-vehicle and dwell time are multiplied by this in rush hour. */
+    subwayDurationMultiplier: z.number().min(1),
+    /** Mood points drained by a subway trip that departs in rush hour. */
+    subwayMoodDrain: z.int().nonnegative(),
+    /** Taxi driving time is multiplied by this in rush hour (no mood drain). */
+    taxiDurationMultiplier: z.number().min(1),
+  }),
+  /** Random delay on subway trips; the roll uses the injected seeded random source. */
+  delay: z.strictObject({
+    probability,
+    rushProbability: probability,
+    minutes: z
+      .strictObject({ min: z.int().nonnegative(), max: z.int().nonnegative() })
+      .refine((range) => range.min <= range.max, { error: 'min must not exceed max' }),
+    moodDrain: z.int().nonnegative(),
+  }),
+  animation: z.strictObject({
+    /** Longest the travel animation may run, real milliseconds. */
+    maxMs: z.int().nonnegative(),
+    /** Real milliseconds of animation per game minute of travel, before the cap. */
+    msPerGameMinute: z.number().nonnegative(),
+  }),
+})
+export type TransitConfig = z.infer<typeof TransitConfigSchema>
+
 /** CLAUDE.md "Balance anchors". Money is whole in-game dollars. */
 export const BalanceConfigSchema = z
   .strictObject({
@@ -187,6 +297,7 @@ export const BalanceConfigSchema = z
       }),
     }),
     costs: z.strictObject({ food: MinMaxSchema, subwayFare: dollars }),
+    transit: TransitConfigSchema,
     target: z.strictObject({
       shiftsPerDay: positive,
       weeklySavings: dollars,
