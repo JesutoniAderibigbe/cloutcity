@@ -63,6 +63,9 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 (Versions verified against the npm registry by the orchestrator on 2026-10-06.)
 
 ## Learnings and gotchas
+- Six lanes running builds/e2e at once overloaded this 10-core Mac (load avg up to ~85): tests hit
+  5 s timeouts and API calls stalled. Heavy steps (npm test, build, e2e) now go through a shared
+  2-slot queue script (orchestrator scratchpad `heavy.sh`); never raise timeouts to compensate.
 - NYC Open Data (Socrata) and nyc.gov return 403 from this machine; geo:build uses NYC DCP's ArcGIS
   FeatureServer + MTA S3. The download cache lives in .cache/geo (gitignored); copy it between
   worktrees or run `npm run geo:build` with network. `geo:build -- --check --offline` verifies outputs.
