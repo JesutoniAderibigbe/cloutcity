@@ -228,4 +228,10 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   cycle (category bypass, newer-save info log). Gates on dev: 1530 unit, 232 e2e, shell 174.6 KB.
   OPEN-ISSUES: INT-3 two RNG modules (rng.ts vs transit random.ts) still to merge; clout/item event
   effects stay pending until S13/S10a wire them.
+- S09 (passed on lane-e, fast-forwarded onto dev; lane gates on this exact tree: 1667 unit, 270
+  e2e, shell 175.6 KB): place action sheet via openPlace(id), hours, club door + cover, club clout
+  once per club per night (save v6), landmark Visit + flexMultiplier config, memorial info only,
+  busy state until dismissed. Pending: S12 merge broke 3 tests (events decay, taxi centroid sweep) —
+  rebase lane-c/S12 onto dev and fix; S05c next (plan approved, all defaults); hold S05b (177.7 KB)
+  and S04a until S05c merges.
 

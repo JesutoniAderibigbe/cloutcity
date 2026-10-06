@@ -242,7 +242,7 @@
       "requires": [],
       "acceptance": "Tapping a venue or landmark in 3D or choosing it in the Places panel opens the same action sheet filtered by personal time of day and opening hours; closed venues show opening time; the club opens at night with a cover charge, a minimum clout level at the door with in-voice refusal copy, and a clout gain inside; non-memorial landmarks have a Visit action (time cost, mood gain) and a flexMultiplier from config for use by S13; memorials show a respectful info card only; tests.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
