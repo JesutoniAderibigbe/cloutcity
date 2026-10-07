@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { layout } from '@/lib/data/config'
 
 const css = readFileSync(join(import.meta.dirname, 'globals.css'), 'utf8')
-const { hudWideMinWidthPx, hudCompactMaxHeightPx } = layout.overlay
+const { hudWideMinWidthPx, hudCompactMaxHeightPx, hudTinyMaxWidthPx } = layout.overlay
 
 const wide = `(min-width: ${hudWideMinWidthPx}px)`
 const short = `(min-width: ${hudWideMinWidthPx}px) and (max-height: ${hudCompactMaxHeightPx}px)`
@@ -30,6 +30,11 @@ describe('globals.css HUD breakpoints (S05)', () => {
     expect(css.indexOf(shortVariant)).toBeGreaterThan(css.indexOf('@custom-variant hud-wide'))
   })
 
+  it('defines hud-tiny at hudTinyMaxWidthPx, below hud-wide (UI-1)', () => {
+    expect(css).toContain(`@custom-variant hud-tiny (@media (max-width: ${hudTinyMaxWidthPx}px));`)
+    expect(hudTinyMaxWidthPx).toBeLessThan(hudWideMinWidthPx)
+  })
+
   it('switches the HUD row to the compact height under the same query as hud-short', () => {
     const rule = css.slice(css.indexOf(`@media ${short} {`))
     expect(css).toContain(`@media ${short} {`)
@@ -41,8 +46,13 @@ describe('globals.css HUD breakpoints (S05)', () => {
   it('names no other HUD threshold (self-check: the scan sees the media queries)', () => {
     expect(mediaQueries).toContain(short)
     for (const query of mediaQueries) {
-      for (const px of query?.matchAll(/(min-width|max-height): (\d+)px/g) ?? []) {
-        const allowed = px[1] === 'min-width' ? hudWideMinWidthPx : hudCompactMaxHeightPx
+      for (const px of query?.matchAll(/(min-width|max-height|max-width): (\d+)px/g) ?? []) {
+        const allowed =
+          px[1] === 'min-width'
+            ? hudWideMinWidthPx
+            : px[1] === 'max-width'
+              ? hudTinyMaxWidthPx
+              : hudCompactMaxHeightPx
         expect(Number(px[2]), query).toBe(allowed)
       }
     }
