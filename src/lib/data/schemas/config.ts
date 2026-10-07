@@ -15,6 +15,11 @@ import {
 import { BUILDING_DISTRICT_IDS } from '../../geo/sources.ts'
 import { distanceM, project } from '../../geo/projection.ts'
 import { HOME_IDS, lowestRentHome } from '../homes.ts'
+import {
+  LandmarkPaletteRefsSchema,
+  LandmarkTrianglesMaxSchema,
+  LandmarkTrianglesOverrideSchema,
+} from './landmarkModels.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
 export const QualityTierSchema = z.enum(QUALITY_TIERS)
@@ -228,6 +233,15 @@ export const PerfConfigSchema = z
      * geo build counts them (TUNE-7 placeholders). Part of `trianglesMax`, not on top of it.
      */
     buildingTrianglesMax: perTier(positiveInt),
+    /**
+     * Triangles of one landmark model's finest level per tier (outline and windows included), by
+     * landmark category (S07a). Each coarser level may have at most `landmarkLodRatioMax` of the
+     * level above it.
+     */
+    landmarkTrianglesMax: LandmarkTrianglesMaxSchema,
+    /** Per-landmark caps replacing the category caps, by landmark id. */
+    landmarkTrianglesOverride: LandmarkTrianglesOverrideSchema,
+    landmarkLodRatioMax: z.number().gt(0).max(1),
   })
   .refine(
     (perf) =>
@@ -315,6 +329,8 @@ export const ScenePaletteRefsSchema = z.strictObject({
   }),
   /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
   toonRamp: z.array(z.number().gt(0).max(1)).min(2),
+  /** The landmark kit's role palette (S07a). */
+  landmarks: LandmarkPaletteRefsSchema,
 })
 export type ScenePaletteRefs = z.infer<typeof ScenePaletteRefsSchema>
 
@@ -336,6 +352,7 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     ...Object.values(scene.pins),
     ...Object.values(scene.chip),
     ...Object.values(scene.apartment),
+    ...Object.values(scene.landmarks),
   ]
 }
 
@@ -1352,6 +1369,10 @@ export const GeoConfigSchema = z
     districts: z.array(GeoDistrictSchema).min(1),
     buildingTiers: BuildingTiersSchema,
     blocks: BlocksConfigSchema,
+    /** A landmark's fronting LION street must pass this close to its location (S07a). */
+    landmarkFrontMaxM: metres,
+    /** Clear ground kept around a landmark model's footprint (its exclusion rectangle). */
+    landmarkExclusionMarginM: z.number().nonnegative(),
   })
   .refine((geo) => new Set(geo.districts.map((d) => d.id)).size === geo.districts.length, {
     error: 'district ids must be unique',

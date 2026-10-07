@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   BUILDING_OUT_FIELDS,
   LockSchema,
+  PartialLockSchema,
   SOURCE_DEFINITIONS,
   buildingSourceDefinition,
   buildingSourceDefinitions,
@@ -157,6 +158,25 @@ describe('ensureSources', () => {
     expect(same.lock.sources.map((s) => s.retrieved)).toEqual(
       SOURCE_DEFINITIONS.map(() => '2026-10-06'),
     )
+  })
+
+  it('--update from a lock missing a new source keeps the old dates and adds the new one', async () => {
+    await seedCache()
+    const { fetch } = fakeFetch()
+    const partial = { ...lockFor(), sources: lockFor().sources.slice(0, 3) }
+    expect(LockSchema.safeParse(partial).success).toBe(false)
+    expect(PartialLockSchema.safeParse(partial).success).toBe(true)
+    const result = await ensureSources({
+      cacheDir,
+      lock: partial,
+      mode: 'update',
+      today: '2026-10-07',
+      fetch,
+    })
+    expect(result.lock.sources.map((s) => s.retrieved)).toEqual(
+      SOURCE_DEFINITIONS.map((_, i) => (i < 3 ? '2026-01-01' : '2026-10-07')),
+    )
+    expect(LockSchema.safeParse(result.lock).success).toBe(true)
   })
 
   it('--update works without a lock; other modes need one', async () => {

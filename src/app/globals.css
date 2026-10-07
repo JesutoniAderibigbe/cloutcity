@@ -40,6 +40,13 @@
   --color-roof-500: var(--palette-roof-500);
   --color-window-300: var(--palette-window-300);
   --color-block-800: var(--palette-block-800);
+  --color-stone-300: var(--palette-stone-300);
+  --color-brick-500: var(--palette-brick-500);
+  --color-steel-400: var(--palette-steel-400);
+  --color-glass-400: var(--palette-glass-400);
+  --color-roof-600: var(--palette-roof-600);
+  --color-lamp-200: var(--palette-lamp-200);
+  --color-dim-500: var(--palette-dim-500);
 }
 
 @theme {

@@ -33,7 +33,14 @@
     "building-700": "#3a2f7d",
     "roof-500": "#6b5bd6",
     "window-300": "#ffd98a",
-    "block-800": "#2a2263"
+    "block-800": "#2a2263",
+    "stone-300": "#c9c1e6",
+    "brick-500": "#b5576f",
+    "steel-400": "#7c8ad0",
+    "glass-400": "#5aa6d6",
+    "roof-600": "#4a3d94",
+    "lamp-200": "#ffe7a1",
+    "dim-500": "#57527c"
   },
   "themeColor": "night-950",
   "scene": {
@@ -82,6 +89,17 @@
       "blob": "charcoal-900",
       "ambientLight": "cream-100",
       "sunLight": "cream-100"
+    },
+    "landmarks": {
+      "stone": "stone-300",
+      "brick": "brick-500",
+      "steel": "steel-400",
+      "glass": "glass-400",
+      "roof": "roof-600",
+      "accent": "taxi-400",
+      "window": "lamp-200",
+      "outline": "night-950",
+      "dimmed": "dim-500"
     }
   }
 }

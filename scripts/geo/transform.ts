@@ -26,6 +26,7 @@ import {
   type GeoConfig,
   type QualityTier,
 } from '../../src/lib/data/schemas/config.ts'
+import type { LandmarkModel } from '../../src/lib/data/schemas/landmarkModels.ts'
 import { encodePath, encodeRing, type DeltaPolygon } from '../../src/lib/geo/codec.ts'
 import { areaAt, nearestArea, prepareAreas, type PreparedArea } from '../../src/lib/geo/lookup.ts'
 import {
@@ -41,12 +42,13 @@ import {
   project,
   type LocalPoint,
 } from '../../src/lib/geo/projection.ts'
-import { buildingSourceId, type GeoSourceId } from '../../src/lib/geo/sources.ts'
+import { buildingSourceId, type GeoSourceId, type LionSourceId } from '../../src/lib/geo/sources.ts'
 import { blocksFileText, buildBlocks, readDensity } from './blocks.ts'
 import { buildingsFileText, districtTier, readDistrictFootprints } from './buildings.ts'
 import { douglasPeucker } from './douglas-peucker.ts'
 import { readGtfsSubway } from './gtfs.ts'
 import { readLandmarkExclusions } from './landmark-exclusions.ts'
+import { buildLandmarkFrames, type FramePlace } from './landmarks.ts'
 import type { Lock } from './lock.ts'
 import { renderSourcesMd, type TerminalExtension } from './sources-md.ts'
 
@@ -68,8 +70,8 @@ export interface RawGeoInputs {
   readonly density: unknown
   /** Paged source id (`oti-buildings-<district>`) → parsed JSON of each page, in order. */
   readonly buildings: ReadonlyMap<string, readonly unknown[]>
-  /** Parsed data/landmarks/frames.derived.json (S07a), or undefined when it does not exist. */
-  readonly landmarkFrames?: unknown
+  /** Parsed NYC DCP LION GeoJSON, one exact-street query per source. */
+  readonly lion: ReadonlyMap<LionSourceId, unknown>
 }
 
 export interface GeoBuildParams {
@@ -82,6 +84,11 @@ export interface GeoBuildParams {
     readonly ntas: number
     /** Community districts with lot area in the MapPLUTO statistics. */
     readonly communityDistricts: number
+  }
+  /** data/landmarks/models.json and the landmarks.json places they model. */
+  readonly landmarks: {
+    readonly models: readonly LandmarkModel[]
+    readonly places: readonly FramePlace[]
   }
 }
 
@@ -128,6 +135,7 @@ export const OUTPUT_FILES = {
   subway: 'geo/subway.derived.json',
   zones: 'zones/zones.derived.json',
   zoneShapes: 'zones/zone-shapes.derived.json',
+  landmarkFrames: 'landmarks/frames.derived.json',
   manifest: 'geo/manifest.derived.json',
   sources: 'geo/SOURCES.md',
 } as const
@@ -156,11 +164,15 @@ const BASE_FILES: readonly string[] = [
   OUTPUT_FILES.subway,
   OUTPUT_FILES.zones,
   OUTPUT_FILES.zoneShapes,
+  OUTPUT_FILES.landmarkFrames,
 ]
 
 const DCP_NOTICE =
   'Simplified artwork derived from NYC Department of City Planning data; not the original data.'
 const MTA_NOTICE = 'Simplified artwork derived from MTA static GTFS; not the original data.'
+const LION_NOTICE =
+  'Placements derived from NYC Department of City Planning LION street centerlines and ' +
+  'borough boundaries; not the original data.'
 
 const BOROUGH_IDS = {
   Manhattan: 'manhattan',
@@ -611,8 +623,22 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     paths: (routePaths.get(route.routeId) ?? []).map(encodePath),
   }))
 
-  // 6. District buildings, per district and tier.
-  const exclusions = readLandmarkExclusions(raw.landmarkFrames)
+  const dcpBoroughs: GeoSourceId[] = ['dcp-borough-boundaries']
+  const dcpNtas: GeoSourceId[] = ['dcp-nta-2020']
+
+  // 6. Landmark frames, oriented by LION streets and checked against the land just built.
+  const landmarkFrames = buildLandmarkFrames(
+    { lion: raw.lion, ...params.landmarks },
+    landAreas,
+    config,
+  )
+  const landmarkFramesFile = {
+    ...header([...dcpBoroughs, ...landmarkFrames.sources], LION_NOTICE),
+    landmarks: landmarkFrames.frames,
+  }
+
+  // 7. District buildings, per district and tier, clear of every landmark's ground (INT-7).
+  const exclusions = readLandmarkExclusions(landmarkFramesFile)
   const tiered = new Map<string, { group: 'district' | 'blocks'; tier: QualityTier }>()
   const tieredFiles = new Map<string, string>()
   const districtStats: DistrictStat[] = []
@@ -646,7 +672,7 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     }
   }
 
-  // 7. Procedural blocks everywhere else, per tier.
+  // 8. Procedural blocks everywhere else, per tier.
   const density = readDensity(raw.density, expected.communityDistricts)
   const blockInputs = {
     land,
@@ -655,6 +681,7 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     districtZoneIds: new Set(zoneMeta.filter((z) => z.kind === 'district').map((z) => z.id)),
     density,
     districts: config.districts,
+    exclusions,
   }
   const blockStats: BlockStat[] = []
   for (const tier of QUALITY_TIERS) {
@@ -670,9 +697,7 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     blockStats.push({ tier, path, instances: blocks.instances, triangles: blocks.triangles })
   }
 
-  // 8. Files, manifest and SOURCES.md.
-  const dcpBoroughs: GeoSourceId[] = ['dcp-borough-boundaries']
-  const dcpNtas: GeoSourceId[] = ['dcp-nta-2020']
+  // 9. Files, manifest and SOURCES.md.
   const files = new Map<string, string>([
     [OUTPUT_FILES.land, toText({ ...header(dcpBoroughs, DCP_NOTICE), boroughs: land })],
     [OUTPUT_FILES.water, toText({ ...header(dcpBoroughs, DCP_NOTICE), sea })],
@@ -683,6 +708,7 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     ],
     [OUTPUT_FILES.zones, toText({ ...header(dcpNtas, DCP_NOTICE), zones: zoneMeta })],
     [OUTPUT_FILES.zoneShapes, toText({ ...header(dcpNtas, DCP_NOTICE), zones: zoneShapes })],
+    [OUTPUT_FILES.landmarkFrames, toText(landmarkFramesFile)],
     [OUTPUT_FILES.sources, renderSourcesMd(lock, config, terminalExtensions)],
     ...tieredFiles,
   ])

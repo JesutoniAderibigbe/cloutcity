@@ -14,7 +14,12 @@ import {
   FIXTURE_FOOTPRINTS,
 } from './fixtures/buildings'
 import { FIXTURE_PARAMS, fixtureInputs } from './fixtures/synthetic'
-import { buildGeoOutputs, districtFilePath, type GeoBuildResult } from './transform'
+import {
+  insideAnyExclusion,
+  readLandmarkExclusions,
+  type LandmarkExclusion,
+} from './landmark-exclusions'
+import { OUTPUT_FILES, buildGeoOutputs, districtFilePath, type GeoBuildResult } from './transform'
 
 const CENTRE = project(FIXTURE_DISTRICT.center)
 const tiers = FIXTURE_PARAMS.config.buildingTiers
@@ -285,32 +290,55 @@ describe('reading footprint pages', () => {
   })
 })
 
-describe('landmark exclusions (INT-7)', () => {
-  const frames = {
-    frames: [{ id: 'some-landmark', exclusion: FIXTURE_EXCLUSION }, { id: 'no-rect' }],
+describe('landmark exclusions (INT-7, INT-8)', () => {
+  const read = (exclusions: readonly LandmarkExclusion[]) =>
+    readDistrictFootprints(FIXTURE_DISTRICT, FIXTURE_BUILDING_PAGES, FIXTURE_BUILDING_COUNT, {
+      tiers,
+      exclusions,
+    })
+  const centroidOf = (footprint: { readonly rings: readonly (readonly LocalPoint[])[] }) => {
+    const outer = footprint.rings[0] ?? []
+    return {
+      x: outer.reduce((sum, p) => sum + p.x, 0) / outer.length,
+      y: outer.reduce((sum, p) => sum + p.y, 0) / outer.length,
+    }
   }
 
-  it('without data/landmarks/frames.derived.json nothing is excluded', () => {
-    const result = buildGeoOutputs(fixtureInputs(), FIXTURE_PARAMS)
-    for (const tier of QUALITY_TIERS) {
-      expect(massAt(masses(fileOf(result, tier)), -90, -90)).toHaveLength(1)
-      expect(result.districtStats.find((s) => s.tier === tier)?.excluded).toBe(0)
-    }
+  it('reads the exclusion of every entry of landmarks[] in a frames file', () => {
+    const frames = { landmarks: [{ id: 'some-landmark', exclusion: FIXTURE_EXCLUSION }] }
+    expect(readLandmarkExclusions(frames)).toEqual([FIXTURE_EXCLUSION])
   })
 
   it('drops footprints whose centroid falls inside a landmark exclusion rectangle', () => {
-    const result = buildGeoOutputs({ ...fixtureInputs(), landmarkFrames: frames }, FIXTURE_PARAMS)
+    const kept = read([])
+    const excluded = read([FIXTURE_EXCLUSION])
+    expect(kept.excluded).toBe(0)
+    expect(excluded.excluded).toBe(1)
+    expect(excluded.footprints).toHaveLength(kept.footprints.length - 1)
+    expect(
+      excluded.footprints.some((f) => insideAnyExclusion(centroidOf(f), [FIXTURE_EXCLUSION])),
+    ).toBe(false)
+  })
+
+  it('the build excludes the ground of the landmark frames it derives in the same run', () => {
+    const result = buildGeoOutputs(fixtureInputs(), FIXTURE_PARAMS)
+    const rects = readLandmarkExclusions(
+      JSON.parse(result.files.get(OUTPUT_FILES.landmarkFrames) ?? 'null'),
+    )
+    expect(rects.length).toBeGreaterThan(0)
     for (const tier of QUALITY_TIERS) {
-      expect(massAt(masses(fileOf(result, tier)), -90, -90)).toEqual([])
-      expect(result.districtStats.find((s) => s.tier === tier)?.excluded).toBe(1)
+      for (const mass of masses(fileOf(result, tier))) {
+        expect(insideAnyExclusion(centroidOf(mass), rects)).toBe(false)
+      }
     }
-    expect(massAt(masses(fileOf(result, 'high')), 10, 7)).toHaveLength(1)
   })
 
   it('a frames file that does not match fails the build instead of excluding nothing', () => {
-    const broken = { frames: [{ exclusion: { x: 0, y: 0 } }] }
-    expect(() =>
-      buildGeoOutputs({ ...fixtureInputs(), landmarkFrames: broken }, FIXTURE_PARAMS),
-    ).toThrow(/frames\.derived\.json \(INT-7\)/)
+    expect(() => readLandmarkExclusions({ frames: [{ exclusion: FIXTURE_EXCLUSION }] })).toThrow(
+      /frames\.derived\.json \(INT-7\)/,
+    )
+    expect(() => readLandmarkExclusions({ landmarks: [{ exclusion: { x: 0, y: 0 } }] })).toThrow(
+      /INT-7/,
+    )
   })
 })

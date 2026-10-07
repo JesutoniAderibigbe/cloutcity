@@ -1,6 +1,6 @@
 /**
  * `npm run geo:build`: downloads the pinned geo sources into `.cache/geo/` and writes the
- * derived layers to data/geo and data/zones.
+ * derived layers to data/geo, data/zones and data/landmarks.
  *
  *   npm run geo:build                 use the cache, download what is missing (must match lock)
  *   npm run geo:build -- --update     download everything, accept new upstream files, rewrite lock
@@ -19,12 +19,21 @@ import {
   type PerfConfig,
   type QualityTier,
 } from '../../src/lib/data/schemas/config.ts'
-import { FRAMES_PATH } from './landmark-exclusions.ts'
-import { LockSchema, buildingSourceDefinitions, pageFile, type Lock } from './lock.ts'
+import { landmarkModelsFileSchemaFor } from '../../src/lib/data/schemas/landmarkModels.ts'
+import { LION_SOURCE_IDS } from '../../src/lib/geo/sources.ts'
+import type { FramePlace } from './landmarks.ts'
+import {
+  LockSchema,
+  PartialLockSchema,
+  buildingSourceDefinitions,
+  pageFile,
+  type Lock,
+} from './lock.ts'
 import { ensureSources, type SourceMode } from './sources.ts'
 import {
   buildGeoOutputs,
   type GeoBoundsInput,
+  type GeoBuildParams,
   type GeoBuildResult,
   type RawGeoInputs,
 } from './transform.ts'
@@ -55,13 +64,29 @@ const BoundsSchema = z.object({
   north: z.number(),
 })
 
+// Only the fields the frames need; landmarks.json is fully validated by src/lib/data/data.test.ts.
+const PlacesSchema = z.object({
+  landmarks: z.array(
+    z.object({
+      id: z.string(),
+      category: z.string(),
+      location: z.object({ lat: z.number(), lng: z.number() }),
+      spans: z.array(z.string()).optional(),
+    }),
+  ),
+})
+
 const write = (line: string) => process.stdout.write(`${line}\n`)
 
 async function readJson(path: string): Promise<unknown> {
   return JSON.parse(await readFile(path, 'utf8'))
 }
 
-export async function readLock(path = LOCK_PATH): Promise<Lock | undefined> {
+/**
+ * The committed lock. `partial` (for --update) also accepts a lock that lacks some sources or
+ * lists them out of order: update rewrites it in full.
+ */
+export async function readLock(path = LOCK_PATH, partial = false): Promise<Lock | undefined> {
   let json: unknown
   try {
     json = await readJson(path)
@@ -69,7 +94,7 @@ export async function readLock(path = LOCK_PATH): Promise<Lock | undefined> {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error
   }
-  const result = LockSchema.safeParse(json)
+  const result = (partial ? PartialLockSchema : LockSchema).safeParse(json)
   if (!result.success) throw new Error(`Invalid ${path}:\n${z.prettifyError(result.error)}`)
   return result.data
 }
@@ -79,20 +104,21 @@ export const lockText = (lock: Lock) => `${JSON.stringify(lock, null, 2)}\n`
 export async function readBuildParams(): Promise<{
   config: z.infer<typeof GeoConfigSchema>
   bounds: GeoBoundsInput
+  landmarks: GeoBuildParams['landmarks']
 }> {
+  const places: FramePlace[] = PlacesSchema.parse(
+    await readJson(join(DATA, 'landmarks/landmarks.json')),
+  ).landmarks
+  const models = landmarkModelsFileSchemaFor(places).safeParse(
+    await readJson(join(DATA, 'landmarks/models.json')),
+  )
+  if (!models.success) {
+    throw new Error(`Invalid data/landmarks/models.json:\n${z.prettifyError(models.error)}`)
+  }
   return {
     config: GeoConfigSchema.parse(await readJson(join(DATA, 'config/geo.json'))),
     bounds: BoundsSchema.parse(await readJson(join(DATA, 'geo/bounds.json'))),
-  }
-}
-
-/** data/landmarks/frames.derived.json (S07a, INT-7), parsed, or undefined when absent. */
-export async function readLandmarkFrames(): Promise<unknown> {
-  try {
-    return await readJson(join(DATA, FRAMES_PATH))
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
-    throw error
+    landmarks: { models: models.data.models, places },
   }
 }
 
@@ -155,7 +181,7 @@ export async function buildFromSources(
     gtfsZip: raw('mta-gtfs-subway'),
     density: parse(raw('dcp-mappluto-density')),
     buildings,
-    landmarkFrames: await readLandmarkFrames(),
+    lion: new Map(LION_SOURCE_IDS.map((id) => [id, parse(raw(id))])),
   }
   return buildGeoOutputs(inputs, { ...(await readBuildParams()), lock, expected: EXPECTED_COUNTS })
 }
@@ -233,7 +259,7 @@ async function main(): Promise<void> {
   const perf = PerfConfigSchema.parse(await readJson(join(DATA, 'config/perf.json')))
   const { lock, files, pages } = await ensureSources({
     cacheDir: CACHE_DIR,
-    lock: await readLock(),
+    lock: await readLock(LOCK_PATH, mode === 'update'),
     mode,
     today,
     log: write,

@@ -5,6 +5,7 @@ import { GeoConfigSchema } from '../../src/lib/data/schemas/config'
 import { SubwayFileSchema } from '../../src/lib/data/schemas/world'
 import { LockSchema } from './lock'
 import {
+  LION_METADATA_URL,
   MAPPLUTO_DISCLAIMER,
   MTA_ATTRIBUTION,
   NAME_NOT_DOWNLOADED,
@@ -137,5 +138,13 @@ describe('data/geo/SOURCES.md', () => {
         `Line \`${ext.lineId}\` extended ${ext.gapM} m to station \`${ext.stationId}\``,
       )
     }
+  })
+
+  it('documents the LION queries: the data dictionary, the codes used and the frames file', () => {
+    expect(sourcesMd).toContain('### LION street centerlines (landmark frames)')
+    expect(sourcesMd).toContain(LION_METADATA_URL)
+    expect(sourcesMd).toContain('`landmarks/frames.derived.json`')
+    expect(sourcesMd).toMatch(/E entrance\/exit ramp/)
+    expect(sourcesMd).toContain('The Department of City Planning make no representation')
   })
 })

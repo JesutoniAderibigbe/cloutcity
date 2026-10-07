@@ -4,6 +4,7 @@
  * here: they are palette tokens in data/config/theme.json (`scene`).
  */
 import { z } from 'zod'
+import { LandmarkSceneConfigSchema } from './landmarkModels'
 
 const metres = z.number().positive()
 const ratio = z.number().positive()
@@ -258,5 +259,7 @@ export const SceneConfigSchema = z.strictObject({
       liftM: z.number().nonnegative(),
     }),
   }),
+  /** The landmark kit's levels of detail and look per quality tier (S07a). */
+  landmarks: LandmarkSceneConfigSchema,
 })
 export type SceneConfig = z.infer<typeof SceneConfigSchema>

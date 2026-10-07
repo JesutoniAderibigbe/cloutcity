@@ -15,6 +15,7 @@ import { EXPECTED_COUNTS } from './build'
 import { BLOCK_TRIANGLES, cdToCdta, fillChance, readDensity } from './blocks'
 import { FIXTURE_DENSITY, FIXTURE_DISTRICT } from './fixtures/buildings'
 import { FIXTURE_PARAMS, fixtureInputs } from './fixtures/synthetic'
+import { insideAnyExclusion, readLandmarkExclusions } from './landmark-exclusions'
 import { OUTPUT_FILES, blocksFilePath, buildGeoOutputs, type GeoBuildResult } from './transform'
 
 const ROOT = join(import.meta.dirname, '../..')
@@ -145,6 +146,27 @@ describe('blocks on the fixture', () => {
           for (const park of parks.parks) expect(inside(point, park.polygons)).toBe(false)
           const zone = shapes.zones.find((z) => inside(point, z.polygons))
           expect(['qn01', 'bk01']).toContain(zone?.id)
+        }
+      }
+    }
+  })
+
+  it('keeps every block clear of the landmark exclusion rectangles (INT-7)', () => {
+    const rects = readLandmarkExclusions(
+      JSON.parse(result.files.get(OUTPUT_FILES.landmarkFrames) ?? 'null'),
+    )
+    expect(rects.length).toBeGreaterThan(0)
+    for (const tier of QUALITY_TIERS) {
+      const file = blocksOf(result, tier)
+      const reach = (file.sizeM * Math.SQRT2) / 2
+      const grown = rects.map((rect) => ({
+        ...rect,
+        halfLengthM: rect.halfLengthM + reach,
+        halfWidthM: rect.halfWidthM + reach,
+      }))
+      for (const group of file.groups) {
+        for (const point of decodePath(group.p)) {
+          expect(insideAnyExclusion(point, grown)).toBe(false)
         }
       }
     }

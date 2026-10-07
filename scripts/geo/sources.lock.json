@@ -60,6 +60,186 @@
       "retrieved": "2026-10-07",
       "sha256": "4a5d6e01f5df7a6a0e9c423a6ecec98bd4634bc0b858bc9b941bd44fdcd2a4b0",
       "bytes": 8597
+    },
+    {
+      "id": "dcp-lion-5-avenue",
+      "title": "LION street centerline: 5 AVENUE",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%275+AVENUE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-5-avenue.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "f388bc673fd9f39fca44e015cd4c706e23138590cd2a2d8358e3a06930161f41",
+      "bytes": 138332
+    },
+    {
+      "id": "dcp-lion-8-avenue",
+      "title": "LION street centerline: 8 AVENUE",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%278+AVENUE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-8-avenue.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "882dc43027174539e8fe01ab0453644b77d98329c3d7eca03d086522374fa97d",
+      "bytes": 48631
+    },
+    {
+      "id": "dcp-lion-brooklyn-bridge",
+      "title": "LION street centerline: BROOKLYN BRIDGE",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27BROOKLYN+BRIDGE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-brooklyn-bridge.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "ec7b4784e782fa3c9bd3ea0c5162ae6cd0f363bc7900ab702be19124a0af62a2",
+      "bytes": 44983
+    },
+    {
+      "id": "dcp-lion-city-hall-park-greenway",
+      "title": "LION street centerline: CITY HALL PARK GREENWAY",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27CITY+HALL+PARK+GREENWAY%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-city-hall-park-greenway.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "3053a0e71dd6ebaf197d6ede87330aaec1f8af98b1f66ea039ab3429accfdb02",
+      "bytes": 845
+    },
+    {
+      "id": "dcp-lion-ed-koch-queensboro-bridge",
+      "title": "LION street centerline: ED KOCH QUEENSBORO BRIDGE",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27ED+KOCH+QUEENSBORO+BRIDGE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-ed-koch-queensboro-bridge.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "e2c60bddd1e8aa1e53ecdda7ee6ccf0b118666e191d9b3f97d11acf479a7997c",
+      "bytes": 57516
+    },
+    {
+      "id": "dcp-lion-ferry-terminal-viaduct",
+      "title": "LION street centerline: FERRY TERMINAL VIADUCT",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27FERRY+TERMINAL+VIADUCT%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-ferry-terminal-viaduct.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "412dab6ef730681710d51fd3eb26601ee0425f3b81decb983fc1761c223e54af",
+      "bytes": 10531
+    },
+    {
+      "id": "dcp-lion-joralemon-street",
+      "title": "LION street centerline: JORALEMON STREET",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27JORALEMON+STREET%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-joralemon-street.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "740fd36a42a22b89c3f28039f79863c8e539abdc5271eb4d00248438bcf21f40",
+      "bytes": 4951
+    },
+    {
+      "id": "dcp-lion-lexington-avenue",
+      "title": "LION street centerline: LEXINGTON AVENUE",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27LEXINGTON+AVENUE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-lexington-avenue.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "7d7ed6ac9c7fe13d2fd87896641dda688b5e2f7258e2a2ceb6bab3683c52ee53",
+      "bytes": 63440
+    },
+    {
+      "id": "dcp-lion-manhattan-bridge",
+      "title": "LION street centerline: MANHATTAN BRIDGE",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27MANHATTAN+BRIDGE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-manhattan-bridge.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "4c555e93c88a1c20aded461fe2cefc6629c773398d5dee172def06232c763513",
+      "bytes": 49792
+    },
+    {
+      "id": "dcp-lion-queens-boulevard",
+      "title": "LION street centerline: QUEENS BOULEVARD",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27QUEENS+BOULEVARD%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-queens-boulevard.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "d7cf312a0c26144a5e7e625e43b70b89f40e4859683794416c6bd8cd977703c6",
+      "bytes": 296024
+    },
+    {
+      "id": "dcp-lion-sutphin-boulevard",
+      "title": "LION street centerline: SUTPHIN BOULEVARD",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27SUTPHIN+BOULEVARD%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-sutphin-boulevard.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "d371e5bc0c6ba7b47367779c2152bbddf8fd46c73f97ae69dc91576dc0744722",
+      "bytes": 20407
+    },
+    {
+      "id": "dcp-lion-vanderbilt-avenue",
+      "title": "LION street centerline: VANDERBILT AVENUE",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27VANDERBILT+AVENUE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "file": "dcp-lion-vanderbilt-avenue.geojson",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "24a1c143a0d8925f97ce04894472ca57dda0777507c76fffac93d55290063ec6",
+      "bytes": 17610
     }
   ],
   "pagedSources": [

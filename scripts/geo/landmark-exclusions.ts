@@ -1,10 +1,11 @@
 /**
  * INT-7: landmark models (S07a) replace the real building under them, so district footprints
- * whose centroid falls inside a landmark's `exclusion` rectangle are dropped. The rectangles come
- * from data/landmarks/frames.derived.json when it exists; without it nothing is excluded.
+ * whose centroid falls inside a landmark's `exclusion` rectangle are dropped. The rectangles are
+ * the `landmarks[].exclusion` of the frames file (data/landmarks/frames.derived.json), which the
+ * same geo build derives just before the districts (INT-8), so a rebuild never reads a stale file.
  *
- * Only the `exclusion` of each frame is read; the rest of the file belongs to S07a. A file that
- * exists but does not match fails the build rather than silently excluding nothing.
+ * Only the `exclusion` of each frame is read; the rest of the file belongs to S07a. Frames that do
+ * not match fail the build rather than silently excluding nothing.
  */
 import { z } from 'zod'
 import type { LocalPoint } from '../../src/lib/geo/projection.ts'
@@ -21,19 +22,18 @@ export const LandmarkExclusionSchema = z.strictObject({
 export type LandmarkExclusion = z.infer<typeof LandmarkExclusionSchema>
 
 const FramesSchema = z.object({
-  frames: z.array(z.object({ exclusion: LandmarkExclusionSchema.optional() })),
+  landmarks: z.array(z.object({ exclusion: LandmarkExclusionSchema })),
 })
 
 export const FRAMES_PATH = 'landmarks/frames.derived.json'
 
-/** The exclusion rectangles of a parsed frames file, or none when there is no file. */
+/** The exclusion rectangle of every landmark in a frames file. */
 export function readLandmarkExclusions(json: unknown): LandmarkExclusion[] {
-  if (json === undefined) return []
   const result = FramesSchema.safeParse(json)
   if (!result.success) {
     throw new Error(`Invalid data/${FRAMES_PATH} (INT-7):\n${z.prettifyError(result.error)}`)
   }
-  return result.data.frames.flatMap((frame) => (frame.exclusion ? [frame.exclusion] : []))
+  return result.data.landmarks.map((frame) => frame.exclusion)
 }
 
 export function insideExclusion(point: LocalPoint, rect: LandmarkExclusion): boolean {

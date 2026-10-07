@@ -3,7 +3,8 @@
  * per quality tier and borough, rotated to the borough's street grid. A grid point gets a block
  * with a chance set by its community district's floor-area ratio (MapPLUTO), and a height from
  * the district's average floors. Points in a district circle, a park or cemetery, the water, or
- * a joint interest area (airports, big parks) get none.
+ * a joint interest area (airports, big parks) get none, and neither does a block that would touch
+ * a landmark's exclusion rectangle (INT-7).
  *
  * Randomness comes only from src/engine/rng.ts, seeded per tier, borough and grid cell, so a
  * block never moves when an unrelated part of the city changes.
@@ -27,6 +28,7 @@ import {
   type LocalPoint,
 } from '../../src/lib/geo/projection.ts'
 import type { DerivedSourceId } from '../../src/lib/geo/sources.ts'
+import { insideAnyExclusion, type LandmarkExclusion } from './landmark-exclusions.ts'
 
 export const BLOCKS_NOTICE =
   'Procedural artwork whose density follows NYC Department of City Planning MapPLUTO statistics; not the original data.'
@@ -121,6 +123,8 @@ export interface BlocksInputs {
   readonly districtZoneIds: ReadonlySet<string>
   readonly density: ReadonlyMap<string, ZoneDensity>
   readonly districts: readonly GeoDistrict[]
+  /** Landmark grounds (frames.derived.json `landmarks[].exclusion`) no block may touch. */
+  readonly exclusions: readonly LandmarkExclusion[]
 }
 
 export interface BlockGroup {
@@ -142,6 +146,9 @@ export interface TierBlocks {
 type BoroughId = keyof BlocksConfig['gridAngleDeg']
 const isBoroughId = (id: string, config: BlocksConfig): id is BoroughId => id in config.gridAngleDeg
 
+const blockSize = (spacing: number, config: BlocksConfig) =>
+  Math.max(1, Math.round(spacing * config.footprintFraction))
+
 export function buildBlocks(
   inputs: BlocksInputs,
   config: BlocksConfig,
@@ -154,6 +161,15 @@ export function buildBlocks(
   const circles = inputs.districts.map((d) => ({ centre: project(d.center), radiusM: d.radiusM }))
   const inDistrict = (point: LocalPoint) =>
     circles.some((circle) => distanceM(point, circle.centre) <= circle.radiusM)
+  const sizeM = blockSize(spacing, config)
+  // A block touches a rectangle when its centre lies within the rectangle grown by the block's
+  // half diagonal (conservative for every rotation of the block).
+  const reach = (sizeM * Math.SQRT2) / 2
+  const grown = inputs.exclusions.map((rect) => ({
+    ...rect,
+    halfLengthM: rect.halfLengthM + reach,
+    halfWidthM: rect.halfWidthM + reach,
+  }))
 
   const groups: BlockGroup[] = []
   for (const borough of inputs.land) {
@@ -200,6 +216,7 @@ export function buildBlocks(
         const point = { x: Math.round(u * cos - v * sin), y: Math.round(u * sin + v * cos) }
         if (!land.polygons.some(({ rings, bbox }) => pointInPolygon(point, rings, bbox))) continue
         if (inDistrict(point)) continue
+        if (insideAnyExclusion(point, grown)) continue
         if (areaAt(point, parkAreas) !== undefined) continue
         const zone = areaAt(point, zoneAreas)
         if (zone === undefined || !inputs.districtZoneIds.has(zone)) continue
@@ -219,7 +236,7 @@ export function buildBlocks(
   }
   const instances = groups.reduce((sum, group) => sum + group.h.length, 0)
   return {
-    sizeM: Math.max(1, Math.round(spacing * config.footprintFraction)),
+    sizeM,
     groups,
     instances,
     triangles: instances * BLOCK_TRIANGLES,

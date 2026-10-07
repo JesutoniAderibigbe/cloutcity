@@ -12,6 +12,8 @@ import { METRES_PER_DEG_LAT, METRES_PER_DEG_LNG } from '../../src/lib/geo/projec
 import {
   BUILDING_SOURCE_IDS,
   GEO_SOURCE_IDS,
+  LION_SOURCE_IDS,
+  LION_STREETS,
   buildingSourceId,
   type GeoSourceId,
 } from '../../src/lib/geo/sources.ts'
@@ -72,26 +74,29 @@ export const PagedLockEntrySchema = PagedSourceDefinitionSchema.extend({
 })
 export type PagedLockEntry = z.infer<typeof PagedLockEntrySchema>
 
-export const LockSchema = z
-  .strictObject({
-    version: z.literal(1),
-    sources: z.array(LockEntrySchema),
-    /** One per configured district, in BUILDING_SOURCE_IDS order. */
-    pagedSources: z.array(PagedLockEntrySchema),
-  })
-  .refine(
-    (lock) =>
-      lock.sources.length === GEO_SOURCE_IDS.length &&
-      lock.sources.every((entry, index) => entry.id === GEO_SOURCE_IDS[index]),
-    { error: `sources must list ${GEO_SOURCE_IDS.join(', ')} in that order` },
-  )
-  .refine(
-    (lock) => {
-      const order = lock.pagedSources.map((entry) => BUILDING_SOURCE_IDS.indexOf(entry.id))
-      return order.every((index, i) => i === 0 || index > (order[i - 1] ?? -1))
-    },
-    { error: 'pagedSources must be unique and in BUILDING_SOURCE_IDS order' },
-  )
+/**
+ * A lock whose source lists may be incomplete or out of order: what `--update` accepts as the
+ * previous lock, so adding a source keeps the retrieval dates of the ones already pinned.
+ */
+export const PartialLockSchema = z.strictObject({
+  version: z.literal(1),
+  sources: z.array(LockEntrySchema),
+  /** One per configured district, in BUILDING_SOURCE_IDS order. */
+  pagedSources: z.array(PagedLockEntrySchema),
+})
+
+export const LockSchema = PartialLockSchema.refine(
+  (lock) =>
+    lock.sources.length === GEO_SOURCE_IDS.length &&
+    lock.sources.every((entry, index) => entry.id === GEO_SOURCE_IDS[index]),
+  { error: `sources must list ${GEO_SOURCE_IDS.join(', ')} in that order` },
+).refine(
+  (lock) => {
+    const order = lock.pagedSources.map((entry) => BUILDING_SOURCE_IDS.indexOf(entry.id))
+    return order.every((index, i) => i === 0 || index > (order[i - 1] ?? -1))
+  },
+  { error: 'pagedSources must be unique and in BUILDING_SOURCE_IDS order' },
+)
 export type Lock = z.infer<typeof LockSchema>
 
 /** Cache file of one page: `oti-buildings-midtown-p00.geojson`. */
@@ -175,6 +180,35 @@ const PLUTO_STATISTICS = JSON.stringify([
   { statisticType: 'avg', onStatisticField: 'NumFloors', outStatisticFieldName: 'avgFloors' },
 ])
 
+/** ArcGIS item of DCP's LION FeatureServer (the street centerline file, release 26C). */
+export const LION_ITEM_ID = 'db6fdacfc5ff44e7a244e2f798d98a7d'
+/**
+ * Only the fields the frames build reads. Ordered by segment id so the response, and its hash,
+ * stay byte-identical between downloads of the same release.
+ */
+const LION_FIELDS = 'Street,SegmentID,SegmentTyp,RW_TYPE,FeatureTyp'
+
+function lionQueryUrl(street: string): string {
+  const query = new URLSearchParams({
+    where: `Street='${street}'`,
+    outFields: LION_FIELDS,
+    outSR: '4326',
+    orderByFields: 'SegmentID,OBJECTID',
+    f: 'geojson',
+  })
+  return `${ARCGIS}/LION/FeatureServer/0/query?${query.toString()}`
+}
+
+const lionDefinitions = LION_SOURCE_IDS.map((id) => ({
+  id,
+  title: `LION street centerline: ${LION_STREETS[id]}`,
+  publisher: 'NYC Department of City Planning',
+  catalogUrl: `https://www.arcgis.com/home/item.html?id=${LION_ITEM_ID}`,
+  url: lionQueryUrl(LION_STREETS[id]),
+  file: `${id}.geojson`,
+  terms: NYC_OPEN_DATA_TERMS,
+}))
+
 /** In GEO_SOURCE_IDS order. */
 export const SOURCE_DEFINITIONS: readonly SourceDefinition[] = z
   .array(SourceDefinitionSchema)
@@ -224,4 +258,5 @@ export const SOURCE_DEFINITIONS: readonly SourceDefinition[] = z
       file: 'dcp-mappluto-density.json',
       terms: NYC_OPEN_DATA_TERMS,
     },
+    ...lionDefinitions,
   ] satisfies (SourceDefinition & { id: GeoSourceId })[])
