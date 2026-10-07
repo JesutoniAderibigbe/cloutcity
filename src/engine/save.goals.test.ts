@@ -57,8 +57,8 @@ function claimedSave(): SaveState {
 const roundTrip = (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown
 
 describe('save v8', () => {
-  it('is version 9 (S16 after S15), and a fresh save has no visits, goals, grants or prestige', () => {
-    expect(SAVE_VERSION).toBe(9)
+  it('is version 10 (S08 after S16), and a fresh save has no visits, goals, grants or prestige', () => {
+    expect(SAVE_VERSION).toBe(10)
     const fresh = initialSave(config)
     expect(fresh.player.visited).toEqual({})
     expect(fresh.goals).toEqual(initialGoalsState)

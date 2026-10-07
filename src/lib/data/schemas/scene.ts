@@ -186,6 +186,24 @@ export const SceneConfigSchema = z.strictObject({
     /** The camera ends at most this far from the place. */
     maxDistanceM: metres,
   }),
+  /**
+   * Travel (S08): the vehicle the avatar rides in, sized as a multiple of the avatar's height (so
+   * it scales with the camera like the avatar), and the trail drawn behind it (at most
+   * `trailMaxPoints` points, one line; off on the low tier unless `trailOnLow`).
+   */
+  travel: z.strictObject({
+    taxiLengthRatio: z.number().gt(0),
+    trainLengthRatio: z.number().gt(0),
+    vehicleWidthRatio: z.number().gt(0),
+    vehicleHeightRatio: z.number().gt(0),
+    /** A trail point is added each time the traveller moves this much (avatar heights). */
+    trailStepRatio: z.number().gt(0),
+    /** The trail's height above the land top (avatar heights). */
+    trailLiftRatio: z.number().nonnegative(),
+    trailMaxPoints: z.int().min(2).max(64),
+    trailWidthPx: z.number().gt(0),
+    trailOnLow: z.boolean(),
+  }),
   /** "Expanding soon" ground chips on dimmed boroughs, drawn from a runtime atlas. */
   chips: z.strictObject({
     widthM: metres,

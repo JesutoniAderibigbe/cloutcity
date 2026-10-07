@@ -49,8 +49,40 @@ export interface GameSnapshot {
     readonly visited: Visited
     /** Decor placed in the current home and the moves made (src/engine/home.ts). */
     readonly apartment: ApartmentState
+    /**
+     * Where the player is (S08, DEC-22): at home (whichever home they live in now) or at a
+     * place. A place's actions and shop need the player there (src/engine/placeActions.ts);
+     * travel (src/engine/transit/trip.ts) moves them.
+     */
+    readonly location: PlayerLocation
+    /** Transit state (S08): the delay roll's generator, saved so a reload cannot re-roll. */
+    readonly transit: TransitState
   }
 }
+
+/** Where the player is: at home, or at a venue or landmark by id. */
+export type PlayerLocation =
+  { readonly kind: 'home' } | { readonly kind: 'place'; readonly placeId: string }
+
+export const HOME_LOCATION: PlayerLocation = { kind: 'home' }
+
+/** True when the player is at the place with `placeId`. */
+export function isAtPlace(player: Pick<PlayerState, 'location'>, placeId: string): boolean {
+  return player.location.kind === 'place' && player.location.placeId === placeId
+}
+
+/** True when two locations are the same spot. */
+export function sameLocation(a: PlayerLocation, b: PlayerLocation): boolean {
+  if (a.kind === 'home' || b.kind === 'home') return a.kind === b.kind
+  return a.placeId === b.placeId
+}
+
+export interface TransitState {
+  /** uint32 state of the delay-roll generator. */
+  readonly rngState: number
+}
+
+export const initialTransitState: TransitState = { rngState: 0 }
 
 export type PlayerState = GameSnapshot['player']
 
@@ -91,6 +123,8 @@ export function initialSnapshot(config: EngineConfig): GameSnapshot {
       clubNights: {},
       visited: {},
       apartment: initialApartment,
+      location: HOME_LOCATION,
+      transit: initialTransitState,
     },
   }
 }

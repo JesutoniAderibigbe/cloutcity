@@ -12,6 +12,8 @@ import {
   placesButton,
   storedTour,
   targetAction,
+  targetWalk,
+  walkToTarget,
   targetRow,
   targetSheet,
   tourCard,
@@ -71,12 +73,24 @@ test('a new player is led from the welcome card to a first purchase', async ({
   await expectRinged(targetRow(page))
   await targetRow(page).click()
 
-  // 4. Buy: its action is ringed in the place sheet.
+  // 4. Buy: away from the place (S08) the step rings "Walk there" first, with the copy built
+  // from that button's own label; on arrival, in the same step, the action is ringed.
   await expectStep(page, 'buy')
   await expect(targetSheet(page)).toBeVisible()
-  await expectRinged(targetAction(page))
+  await expectRinged(targetWalk(page))
+  await expect(tourCard(page).getByRole('status')).toHaveText(
+    copyText('tour.step.buyAway', {
+      walk: copyText('travel.mode.walk.action'),
+      action: copyText('place.actions.bodegaBreakfast.name'),
+    }),
+  )
   await checkA11y()
+  await walkToTarget(page)
+  await expectRinged(targetAction(page))
+  await expectNotRinged(targetWalk(page))
+  // Walking is free, and no random event greets an arrival during the tour.
   await expect(money(page)).toHaveText('$150')
+  await expect(page.locator('[data-cc-feature="cc-feature:event-sheet"]')).toHaveCount(0)
   await targetAction(page).click()
 
   // 5. Cash: what the purchase did, with the shared money formatter, and the cash ringed.

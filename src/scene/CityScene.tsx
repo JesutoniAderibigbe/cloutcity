@@ -77,6 +77,7 @@ export function CityScene() {
     buildings: Object.fromEntries(
       QUALITY_TIERS.map((tier) => [tier, districtAssets(tier)]),
     ) as SceneProps['buildings'],
+    travelAnimation: balance.transit.animation,
     overlayRows,
     freeRow: FREE_SCENE_GRID_ROW,
     copy: {

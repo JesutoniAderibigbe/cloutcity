@@ -82,6 +82,8 @@ describe('game store persistence', () => {
       clubNights: {},
       visited: {},
       apartment: initialApartment,
+      location: { kind: 'home' },
+      transit: { rngState: 0 },
     })
     expect(state.lastLevelUp).toBeNull()
     expect(state.clock).toEqual({ minute: 480, remainderMs: 0 })
@@ -211,6 +213,8 @@ describe('game store persistence', () => {
         clubNights: {},
         visited: {},
         apartment: initialApartment,
+        location: { kind: 'home' },
+        transit: { rngState: 0 },
       },
       speed: 1,
     })
@@ -501,6 +505,8 @@ describe('jobs and rent in the store', () => {
       clubNights: {},
       visited: {},
       apartment: initialApartment,
+      location: { kind: 'home' },
+      transit: { rngState: 0 },
     })
     expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
@@ -654,6 +660,8 @@ describe('items in the store', () => {
     delete v3player.flex
     delete v3player.visited
     delete v3player.apartment
+    delete v3player.location
+    delete v3player.transit
     const v3: Record<string, unknown> = { ...fresh, player: v3player }
     delete v3.events
     delete v3.goals

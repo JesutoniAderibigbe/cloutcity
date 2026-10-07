@@ -35,6 +35,8 @@ const ALLOWED_FILES: readonly RegExp[] = [
   /^data\/config\/copy\.json$/,
   /^src\/lib\/(log|format|placeholders|perfMarks)\.ts$/,
   /^src\/state\/(placeSheet|placesPanel|mapPlayable|hudPanel|iconMoment)\.ts$/,
+  // The trip on screen (S08): the place slot shows its progress card. Types only from the engine.
+  /^src\/state\/trip\.ts$/,
   // The HUD's Places button (S04c): the way into the Places panel must not wait for a chunk.
   /^src\/components\/places\/PlacesButton\.tsx$/,
   /^src\/components\/audio\/soundSheet\.ts$/,
@@ -57,7 +59,7 @@ const ALLOWED_PACKAGES = /^(react|react-dom|next|zustand)(\/|$)/
 
 /** Never in the shell, named so a failure says why. */
 const DENIED_FILES: readonly RegExp[] = [
-  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session|gameClock|clockDriver|guestSession|playerHome|dayClock|hudView|tour|quality)\.ts$/,
+  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session|gameClock|clockDriver|guestSession|playerHome|dayClock|hudView|tour|quality|tripDriver|transitWorld|geoSource|travelTestHook)\.ts$/,
   /^src\/lib\/supabase\//,
   /^src\/lib\/audio\//,
   /^src\/components\/audio\/(SoundControl|SoundSettingsSheet)\.tsx$/,

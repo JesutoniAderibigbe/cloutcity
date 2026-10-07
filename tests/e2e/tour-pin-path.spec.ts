@@ -7,6 +7,7 @@ import {
   expectStep,
   money,
   targetAction,
+  walkToTarget,
   targetSheet,
   tourConfig,
   tourNext,
@@ -65,6 +66,7 @@ test('a tap on the place pin skips to the purchase step', async ({ page }, testI
 
   await expectStep(page, 'buy')
   await expect(targetSheet(page)).toBeVisible()
+  await walkToTarget(page)
   await expectRinged(targetAction(page))
   await targetAction(page).click()
   await expectStep(page, 'cash')

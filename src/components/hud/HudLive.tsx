@@ -5,7 +5,8 @@
  * clock, its speed, clout with the goal line (the Goals button, S15), and the three stats. Each
  * cell subscribes to the slice of the save it shows, so a passing game minute re-renders the
  * clock and the stats, not the clout cell. It also starts the game clock (Q12), tells the Icon
- * moment mount when the moment is due, and tells the 3D map which home the player lives in.
+ * moment mount when the moment is due, and tells the 3D map which home the player lives in and
+ * where they stand.
  *
  * It renders a fragment of grid cells in the HudFrame grid (hudLayout.ts), box for box the same
  * as HudSkeleton.
@@ -26,6 +27,7 @@ import { clockView, nextSpeed, statsView } from '@/state/hudView'
 import { setIconMomentPending } from '@/state/iconMoment'
 import { onboardingStore } from '@/state/onboarding'
 import { setPlayerHome } from '@/state/playerHome'
+import { setPlayerSpot, useTripClockMinute } from '@/state/trip'
 import { gameStore, useGameStore } from '@/state/store'
 import { CloutMeter } from './CloutMeter'
 import { HUD_CELL } from './hudLayout'
@@ -53,6 +55,7 @@ function useHudEffects() {
   const icon = useGameStore((state) => state.goals.icon)
   const home = useGameStore((state) => state.player.home)
   const minuteOfDay = useGameStore((state) => state.clock.minute % minutesPerDay(engineConfig))
+  const location = useGameStore((state) => state.player.location)
 
   // Passive time runs once the welcome card is complete; one driver however often this mounts.
   useEffect(() => startGameClock({ game: gameStore, onboarding: onboardingStore }), [])
@@ -62,6 +65,7 @@ function useHudEffects() {
   }, [icon])
 
   useEffect(() => setPlayerHome(home), [home])
+  useEffect(() => setPlayerSpot(location), [location])
 
   useEffect(() => setMinuteOfDay(minuteOfDay), [minuteOfDay])
 
@@ -86,8 +90,10 @@ function MoneyCell() {
 }
 
 function ClockCell() {
-  const minute = useGameStore((state) => state.clock.minute)
-  const view = clockView(minute, engineConfig)
+  const saved = useGameStore((state) => state.clock.minute)
+  // The trip is already in the save (S08); the clock counts up through it while it animates.
+  const travelling = useTripClockMinute()
+  const view = clockView(travelling ?? saved, engineConfig)
   return (
     <div data-hud-cell="clock" className={HUD_CELL.clock}>
       <p className="flex flex-col leading-tight">

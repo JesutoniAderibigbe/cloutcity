@@ -51,6 +51,26 @@ export const targetSheet = (page: Page): Locator =>
 export const targetAction = (page: Page): Locator =>
   targetSheet(page).locator(`[data-place-action="${tourConfig.actionId}"]`)
 
+/** The target sheet's "Walk there" row (S08: a new player starts at home). */
+export const targetWalk = (page: Page): Locator =>
+  targetSheet(page).locator('[data-trip-mode="walk"]')
+
+/**
+ * The purchase step's first half (S08): walk to the place from its sheet and land there. The
+ * trip is in the save as soon as it starts; the hook lands its animation at once.
+ */
+export async function walkToTarget(page: Page): Promise<void> {
+  await expectStep(page, 'buy')
+  await expect(targetWalk(page)).toBeEnabled()
+  await targetWalk(page).click()
+  await page.evaluate(() => window.__cloutcityTest?.travel?.skip())
+  await expect(
+    page.locator(`[data-place-sheet="${tourConfig.placeId}"][data-player-here]`),
+  ).toBeVisible()
+  // Still the same step: the purchase is the way on.
+  await expectStep(page, 'buy')
+}
+
 export const money = (page: Page): Locator =>
   page.locator('[data-overlay-zone="hud"] [data-hud-value="money"]')
 
@@ -68,7 +88,7 @@ export async function buyThroughPlaces(page: Page): Promise<void> {
   await placesButton(page).click()
   await expectStep(page, 'pick')
   await targetRow(page).click()
-  await expectStep(page, 'buy')
+  await walkToTarget(page)
   await targetAction(page).click()
   await expectStep(page, 'cash')
 }

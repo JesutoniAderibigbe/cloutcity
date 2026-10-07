@@ -34,7 +34,8 @@
  *
  * Clout (S13): every bot earns the first paycheck's clout. With the `flex` option the bot also
  * flexes once a day at that place, after the second shift, when it has the energy for it and
- * the flex ends by bedtime; it goes through `performPlaceAction`, so every place rule applies.
+ * the flex ends by bedtime; it goes through `performPlaceAction`, so every place rule applies
+ * (standing at the place: the bot's rides are fixed fares, not S08 trips).
  * Clout is measured as the player's total (src/engine/clout.ts `totalClout`), and gains are
  * attributed to the ledger sources of the entries each step wrote.
  *
@@ -319,7 +320,9 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   function flex(place: Place): void {
     const def = flexAction(config)
     if (snapshot.player.stats.energy < def.energyCost || !fitsBefore(def, at(BED_HOUR))) return
-    const result = performPlaceAction(snapshot, place, 'flex', config)
+    // The bot's rides are fixed fares, not trips: it stands at the place it flexes at (DEC-22).
+    const there = atPlaceNow(snapshot, place.id)
+    const result = performPlaceAction(there, place, 'flex', config)
     if (!result.ok) return
     record(result, true)
     flexes += 1
@@ -407,4 +410,8 @@ function requireAction(actionId: string, config: EngineConfig): ActionDef {
   const def = findAction(actionId, config)
   if (def === undefined) throw new Error(`actions.catalog has no "${actionId}" (the bot needs it)`)
   return def
+}
+
+function atPlaceNow(snapshot: GameSnapshot, placeId: string): GameSnapshot {
+  return { ...snapshot, player: { ...snapshot.player, location: { kind: 'place', placeId } } }
 }

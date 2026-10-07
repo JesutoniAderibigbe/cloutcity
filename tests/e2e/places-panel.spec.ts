@@ -48,12 +48,16 @@ test.describe('Places panel', () => {
     const groupNames = boroughs.map((b) => copyText(b.nameKey))
     await expect(dialog.getByRole('heading', { level: 3 })).toHaveText(groupNames)
 
-    // Every place is a native, enabled button, in data order within its borough.
+    // Home first (S08: the way back from anywhere, and a new player is there), then every place,
+    // each a native, enabled button, in data order within its borough.
     const buttons = dialog.locator('[data-place-button]')
-    await expect(buttons).toHaveCount(places.length)
-    const expectedOrder = boroughs.flatMap((b) =>
-      places.filter((place) => place.borough === b.id).map((place) => place.id),
-    )
+    await expect(buttons).toHaveCount(places.length + 1)
+    const expectedOrder = [
+      'home',
+      ...boroughs.flatMap((b) =>
+        places.filter((place) => place.borough === b.id).map((place) => place.id),
+      ),
+    ]
     expect(
       await buttons.evaluateAll((els) => els.map((el) => el.getAttribute('data-place-button'))),
     ).toEqual(expectedOrder)
@@ -68,6 +72,14 @@ test.describe('Places panel', () => {
     const current = levelName(balance.clout.levels[0]?.id ?? 'nobody')
     await expect(dialog.locator('[data-place-button="glowmatic"]')).toHaveAccessibleName(
       placeName('glowmatic'),
+    )
+    const home = copyText('travel.panel.home', { home: copyText('housing.queensRoom.name') })
+    await expect(dialog.locator('[data-place-button="home"]')).toHaveAccessibleName(
+      copyText('travel.panel.hereLabel', { name: home }),
+    )
+    await expect(dialog.locator('[data-place-button="home"]')).toHaveAttribute(
+      'data-player-here',
+      '',
     )
     for (const [id, borough, key] of [
       ['brooklyn-bridge', 'brooklyn', 'boroughs.brooklyn.locked'],
@@ -110,11 +122,13 @@ test.describe('Places panel', () => {
     const dialog = panel(page)
     await expect(dialog.getByRole('heading', { level: 2 })).toBeFocused()
 
-    // Tab through: the Close button, then the first borough's first place.
+    // Tab through: the Close button, Home (S08), then the first borough's first place.
     await page.keyboard.press('Tab')
     await expect(
       dialog.getByRole('button', { name: copyText('places.panel.closeLabel') }),
     ).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(dialog.locator('[data-place-button="home"]')).toBeFocused()
     await page.keyboard.press('Tab')
     const first = places.find((place) => place.borough === boroughs[0]?.id)
     if (first === undefined) throw new Error('no place in the first borough')

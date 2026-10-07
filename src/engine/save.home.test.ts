@@ -52,6 +52,8 @@ function preV9(save: SaveState = base): Record<string, unknown> & {
   delete oldInventory.decor
   const player: Record<string, unknown> = { ...save.player, inventory: oldInventory }
   delete player.apartment
+  delete player.location
+  delete player.transit
   return { ...save, player }
 }
 
@@ -67,8 +69,8 @@ const withPlayer = (patch: Record<string, unknown>) => ({
 })
 
 describe('save v9', () => {
-  it('is version 9; a fresh save owns no decor, places nothing and has moved nowhere', () => {
-    expect(SAVE_VERSION).toBe(9)
+  it('is version 10; a fresh save owns no decor, places nothing and has moved nowhere', () => {
+    expect(SAVE_VERSION).toBe(10)
     const fresh = initialSave(config)
     expect(fresh.player.inventory.decor).toEqual([])
     expect(fresh.player.apartment).toEqual(initialApartment)

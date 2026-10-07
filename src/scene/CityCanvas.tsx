@@ -16,11 +16,13 @@
  * and, after the first frame drawn again, the recovery.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { Group } from 'three'
 import { addAfterEffect, Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
 import { PLAYABLE_MARK, perfMark } from '@/lib/perfMarks'
 import { usePlayerHome } from '@/state/playerHome'
 import { useSceneFocus } from '@/state/sceneFocus'
+import { usePlayerSpot } from '@/state/trip'
 import { useActiveTier } from '@/state/quality'
 import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
@@ -37,6 +39,7 @@ import { TierSettingsContext, type ActiveTierSettings } from './quality/tierSett
 import { yieldToMain } from './schedule'
 import { SunLight } from './SunLight'
 import { TestHooks } from './testHooks'
+import { TravelAnimator } from './travel/TravelAnimator'
 import type { SceneProps } from './types'
 
 perfMark('cc:3d:chunk')
@@ -54,7 +57,14 @@ const GL = {
 
 export interface CityCanvasProps extends Pick<
   SceneProps,
-  'palette' | 'config' | 'homesLocal' | 'startHome' | 'boundsLocal' | 'quality' | 'buildings'
+  | 'palette'
+  | 'config'
+  | 'homesLocal'
+  | 'startHome'
+  | 'boundsLocal'
+  | 'quality'
+  | 'buildings'
+  | 'travelAnimation'
 > {
   /**
    * The downloaded geo body, validated here before the canvas mounts; null while it downloads
@@ -164,6 +174,7 @@ function CityScene3D({
   boundsLocal,
   quality,
   buildings,
+  travelAnimation,
   label,
   expandingSoon,
   landmarkNames,
@@ -176,8 +187,11 @@ function CityScene3D({
   // While the apartment has the screen (S16) the map draws nothing and is hidden.
   const hidden = useSceneFocus() === 'room'
   const placedRef = useRef(false)
-  // The camera starts over the player's home and the avatar stands there (S05).
+  // The camera starts over the player's home and the avatar stands there (S05); after a trip
+  // (S08) the avatar stands at the place's pin.
   const home = homesLocal[usePlayerHome() ?? startHome]
+  const spot = usePlayerSpot()
+  const avatarRef = useRef<Group | null>(null)
   const cityRef = useRef<CityObjects | null>(null)
   const buildingsRef = useRef<BuildingsHandle | null>(null)
   const landmarksRef = useRef<LandmarksHandle | null>(null)
@@ -237,6 +251,12 @@ function CityScene3D({
       setBuilt(null)
     }
   }, [parsed, palette, config, expandingSoon])
+  const placeId = spot?.kind === 'place' ? spot.placeId : null
+  const rest = useMemo(() => {
+    if (placeId === null || built === null || built instanceof Error) return home
+    const ground = built.pins.groundOf(placeId)
+    return ground === null ? home : { x: ground.x, y: -ground.z }
+  }, [placeId, built, home])
   if (built instanceof Error) throw built
 
   const { camera, lights } = config
@@ -272,7 +292,7 @@ function CityScene3D({
             lights={lights}
             shadowMapSizePx={shadows ? settings.shadowMapSizePx : 0}
           />
-          <CameraRig camera={camera} start={home} bounds={boundsLocal} groundY={groundY} />
+          <CameraRig camera={camera} start={rest} bounds={boundsLocal} groundY={groundY} />
           <FreeRowFraming />
           <City
             city={built}
@@ -307,7 +327,8 @@ function CityScene3D({
             handleRef={landmarksRef}
           />
           <PlayerAvatar
-            at={home}
+            at={rest}
+            groupRef={avatarRef}
             groundY={groundY}
             color={palette.player}
             toonRamp={palette.toonRamp}
@@ -315,6 +336,16 @@ function CityScene3D({
             onPlaced={() => {
               placedRef.current = true
             }}
+          />
+          <TravelAnimator
+            avatarRef={avatarRef}
+            groundY={groundY}
+            palette={palette.travel}
+            config={config.travel}
+            avatar={config.avatar}
+            animation={travelAnimation}
+            enabled={cityReady && !hidden}
+            trail={tier !== 'low' || config.travel.trailOnLow}
           />
           <PlayableMark readyRef={readyRef} placedRef={placedRef} />
           {/* The apartment has the screen: nothing to measure, no frames forced. */}

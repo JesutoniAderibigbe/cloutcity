@@ -25,6 +25,8 @@ function legacyPlayer(): Record<string, unknown> {
   delete player.flex
   delete player.visited
   delete player.apartment
+  delete player.location
+  delete player.transit
   return player
 }
 
@@ -36,6 +38,8 @@ function legacyV7Player(): Record<string, unknown> {
   }
   delete player.visited
   delete player.apartment
+  delete player.location
+  delete player.transit
   return player
 }
 
@@ -57,7 +61,7 @@ const S15_FIELDS = {
 
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(9)
+    expect(SAVE_VERSION).toBe(10)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -236,6 +240,8 @@ describe('save v3: clout, home and rent', () => {
           clubNights: {},
           visited: {},
           apartment: initialApartment,
+          location: { kind: 'home' },
+          transit: { rngState: 0 },
         },
         events: initialEventsState(),
         ...S15_FIELDS,
@@ -325,6 +331,8 @@ describe('save v3: tampered and edge saves', () => {
         clubNights: {},
         visited: {},
         apartment: initialApartment,
+        location: { kind: 'home' },
+        transit: { rngState: 0 },
       })
       expect(schema.safeParse(result.save).success).toBe(true)
     },
@@ -384,6 +392,8 @@ describe('save v3: tampered and edge saves', () => {
         clubNights: {},
         visited: {},
         apartment: initialApartment,
+        location: { kind: 'home' },
+        transit: { rngState: 0 },
       },
       speed: 1,
       events: initialEventsState(),
@@ -428,6 +438,8 @@ describe('event state in the save (v5)', () => {
           visited: {},
           inventory: emptyInventory,
           apartment: initialApartment,
+          location: { kind: 'home' },
+          transit: { rngState: 0 },
         },
         events: initialEventsState(),
         ...S15_FIELDS,
@@ -607,6 +619,8 @@ describe('club nights in the save (v6)', () => {
           visited: {},
           inventory: emptyInventory,
           apartment: initialApartment,
+          location: { kind: 'home' },
+          transit: { rngState: 0 },
         },
         // 120 earned clout holds Local: the migration derives that goal at the save's minute.
         ...S15_FIELDS,

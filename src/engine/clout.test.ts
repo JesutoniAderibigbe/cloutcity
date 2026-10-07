@@ -27,9 +27,12 @@ import { engineConfig as config } from './config'
 import { initialSnapshot, type GameSnapshot } from './game'
 import { buyItem, equipItem, isWearable, sellItem, shopItems, unequipSlot } from './items'
 import { workShift } from './jobs'
-import { performPlaceAction, placeActions } from './placeActions'
 import { createRng } from './rng'
-import { withClout } from './test-support'
+import {
+  performPlaceActionHere as performPlaceAction,
+  placeActionsHere as placeActions,
+  withClout,
+} from './test-support'
 import { venues } from '@/lib/data/content'
 import type { Venue } from '@/lib/data/schemas/content'
 

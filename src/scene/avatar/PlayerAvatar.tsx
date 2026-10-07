@@ -1,12 +1,13 @@
 'use client'
 
 /**
- * The player's avatar placeholder at their home (S05). It stands on the land top and rescales
+ * The player's avatar placeholder where they stand: home (S05) or a place after a trip (S08). It stands on the land top and rescales
  * with the camera distance on every controls change, then requests one frame: the map renders
  * on demand, so the avatar never adds idle frames.
  */
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
+import type { Group } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { LocalPoint } from '@/lib/geo/projection'
 import { toScene } from '../geo/coords'
@@ -22,6 +23,8 @@ interface PlayerAvatarProps {
   readonly avatar: AvatarConfig
   /** Called once the avatar stands at its home (the map is playable from its next frame). */
   readonly onPlaced?: () => void
+  /** Receives the avatar's group, which a trip moves along its route (S08). */
+  readonly groupRef?: RefObject<Group | null>
 }
 
 export function PlayerAvatar({
@@ -31,12 +34,21 @@ export function PlayerAvatar({
   toonRamp,
   avatar,
   onPlaced,
+  groupRef,
 }: PlayerAvatarProps) {
   const built = useMemo(() => buildAvatar(color, toonRamp, avatar), [color, toonRamp, avatar])
   const controls = useThree((state) => state.controls)
   const invalidate = useThree((state) => state.invalidate)
 
   useEffect(() => () => built.dispose(), [built])
+
+  useEffect(() => {
+    if (groupRef === undefined) return
+    groupRef.current = built.group
+    return () => {
+      if (groupRef.current === built.group) groupRef.current = null
+    }
+  }, [built, groupRef])
 
   useEffect(() => {
     toScene(at, groundY, built.group.position)

@@ -116,9 +116,13 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     const { engineConfig } = await import('@/engine/config')
     const { initialSnapshot } = await import('@/engine/game')
     const { performPlaceAction, placeActions } = await import('@/engine/placeActions')
-    const { playerWithClout } = await import('@/engine/test-support')
+    const { atPlace, playerWithClout } = await import('@/engine/test-support')
 
     const ids = [...venues, ...landmarks].map((place) => place.id)
+    // The home card (S08) renders from the same chunk.
+    expect(renderToStaticMarkup(createElement(PlaceSheet, { placeId: 'home' }))).toContain(
+      'data-place-sheet="home"',
+    )
     for (const placeId of ids) {
       expect(renderToStaticMarkup(createElement(PlaceSheet, { placeId }))).toContain(
         `data-place-sheet="${placeId}"`,
@@ -143,7 +147,9 @@ describe('feature copy renders with only its own namespaces loaded', () => {
       if (place === undefined) throw new Error(`no place ${placeId}`)
       for (const minute of minutes) {
         for (const player of players) {
-          const snapshot = { clock: { minute, remainderMs: 0 }, player }
+          // Standing there (DEC-22), so every other rule is reached; away is checked below.
+          const snapshot = atPlace({ clock: { minute, remainderMs: 0 }, player }, placeId)
+          copyFns.placeBlockReason({ code: 'away' }, place)
           const view = placeActions(place, snapshot, engineConfig)
           if (view.kind === 'look-only') continue
           copyFns.placeHoursLine(view.hours)

@@ -4,7 +4,7 @@ import { subway } from '@/lib/data/geo'
 import { decodePath } from '@/lib/geo/codec'
 import { distanceToPolyline } from '@/lib/geo/polygon'
 import { distanceM, project, type LocalPoint } from '@/lib/geo/projection'
-import { createSeededRng } from '../random'
+import { createRng } from '../rng'
 import { crossesWater, isOnLand, longestWaterRunM } from './land'
 import { measurePath } from './polyline'
 import {
@@ -449,14 +449,14 @@ describe('trip ends off land', () => {
 
 describe('drawn subway paths', () => {
   it('stay on the line and match the ride distance on 200 seeded random station pairs', () => {
-    const rng = createSeededRng(55)
+    const rng = createRng(55)
     const paths = new Map(
       subway.lines.map((line) => [line.id, line.paths.map((p) => decodePath(p))] as const),
     )
     let checked = 0
     for (let i = 0; i < 200; i++) {
-      const a = network.stations[Math.floor(rng() * network.stations.length)]
-      const b = network.stations[Math.floor(rng() * network.stations.length)]
+      const a = network.stations[Math.floor(rng.next() * network.stations.length)]
+      const b = network.stations[Math.floor(rng.next() * network.stations.length)]
       if (a === undefined || b === undefined || distanceM(a, b) < 1000) continue
       const result = planTrip(a, b, 'subway', at(NOON))
       if (!result.ok) continue

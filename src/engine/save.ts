@@ -22,6 +22,8 @@
  * - v9 (S16): adds `player.inventory.decor` (owned decor, its colour variant, `prestigeKept`)
  *   and `player.apartment` (decor placed in the current home's slots, and the move log). An
  *   older save starts with no decor, nothing placed and an empty move log.
+ * - v10 (S08): adds `player.location` (at home, or at a place by id) and `player.transit` (the
+ *   delay roll's generator state). An older save starts at home with a fresh generator.
  */
 import * as z from 'zod/mini'
 import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
@@ -44,9 +46,13 @@ import { initialEventsState, type EventsState, type PendingEffect } from './even
 import {
   initialFlexState,
   initialSnapshot,
+  HOME_LOCATION,
+  initialTransitState,
   type ClubNights,
   type FlexState,
   type GameSnapshot,
+  type PlayerLocation,
+  type TransitState,
   type Visited,
 } from './game'
 import { initialGoalsState, syncGoals, victoryGoal, type GoalsState } from './goals'
@@ -80,7 +86,7 @@ import {
 import { initialPrestigeState, type PrestigeRun, type PrestigeState } from './prestige'
 import { initialRent } from './rent'
 
-export const SAVE_VERSION = 9
+export const SAVE_VERSION = 10
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
@@ -402,6 +408,19 @@ function apartmentIssue(
   return null
 }
 
+/** Home, or a place the config knows (any venue or landmark, memorials included). */
+function locationSchema(config: EngineConfig) {
+  return z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('home') }),
+    z.strictObject({
+      kind: z.literal('place'),
+      placeId: z.string().check(z.refine((id) => config.places.has(id), 'Unknown place')),
+    }),
+  ])
+}
+
+const TransitStateSchema = z.strictObject({ rngState: Uint32Schema })
+
 /** Landmarks the config knows (memorials have no Visit), each first visited at a whole minute. */
 function isVisitablePlace(id: string, config: EngineConfig): boolean {
   const category = config.places.get(id)
@@ -574,6 +593,8 @@ export function createSaveSchema(config: EngineConfig) {
       clubNights: clubNightsSchema(config),
       visited: visitedSchema(config),
       apartment: apartmentSchema(config),
+      location: locationSchema(config),
+      transit: TransitStateSchema,
     }),
     speed: z.number().check(z.refine((speed) => isSpeed(speed, config), 'Unsupported speed')),
     events: eventsStateSchema(config),
@@ -964,6 +985,31 @@ function repairApartment(
   }
 }
 
+/**
+ * The player's location from an untrusted save: anything that is not home or a place the config
+ * knows (a place removed between builds, a tampered id) puts the player at home.
+ */
+function repairLocation(
+  raw: unknown,
+  config: EngineConfig,
+): { readonly location: PlayerLocation; readonly repaired: boolean } {
+  const parsed = locationSchema(config).safeParse(raw)
+  return parsed.success
+    ? { location: parsed.data, repaired: false }
+    : { location: HOME_LOCATION, repaired: true }
+}
+
+/** Transit state from an untrusted save: a generator state that is not a uint32 starts over. */
+function repairTransit(raw: unknown): {
+  readonly transit: TransitState
+  readonly repaired: boolean
+} {
+  const parsed = TransitStateSchema.safeParse(raw)
+  if (parsed.success) return { transit: parsed.data, repaired: false }
+  const rngState = Uint32Schema.safeParse(recordOf(raw).rngState)
+  return { transit: { rngState: rngState.success ? rngState.data : 0 }, repaired: true }
+}
+
 /** First visits from an untrusted save: unknown places, memorials and bad minutes are dropped. */
 function repairVisited(
   raw: unknown,
@@ -1129,6 +1175,10 @@ const LoadableSaveSchema = z.strictObject({
     visited: z.optional(z.unknown()),
     // Repairable: unusable placements and moves are dropped (`repairApartment`); a v8 save has none.
     apartment: z.optional(z.unknown()),
+    // Repairable: an unknown place means home (`repairLocation`); a v9 save has none.
+    location: z.optional(z.unknown()),
+    // Repairable: a generator state that is not a uint32 starts over; a v9 save has none.
+    transit: z.optional(z.unknown()),
   }),
   speed: z.unknown(),
   // Repairable: a missing or unusable event state starts over (`repairEvents`).
@@ -1234,6 +1284,8 @@ export type LoadResult =
  *   Icon without the earned clout for it drops to the level below (`capPeakToEarned`);
  * - unusable flexes are dropped (see `repairFlex`);
  * - unusable first visits are dropped (see `repairVisited`);
+ * - a location that is not home or a known place becomes home (see `repairLocation`), and a
+ *   transit generator state that is not a uint32 starts over (see `repairTransit`);
  * - an inconsistent grant log, goals or prestige keep what is usable (see `repairGrants`,
  *   `repairGoals`, `repairPrestige`). Which rewards were claimed is never stored on its own:
  *   it is the grant log's keys plus the clout ledger's grant references, so no repair can
@@ -1248,7 +1300,7 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   }
   const { clock, player, speed, events } = parsed.data
   const repaired: string[] = []
-  // Fields a v7 or v8 save does not have yet are filled in, not reported as repairs.
+  // Fields a v7 to v9 save does not have yet are filled in, not reported as repairs.
   const present = (value: unknown) => value !== undefined
   const orFresh = (value: unknown, fresh: unknown) => (value === undefined ? fresh : value)
 
@@ -1327,6 +1379,17 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   )
   if (visitedRepaired && present(player.visited)) repaired.push('player.visited')
 
+  const { location, repaired: locationRepaired } = repairLocation(
+    orFresh(player.location, HOME_LOCATION),
+    config,
+  )
+  if (locationRepaired && present(player.location)) repaired.push('player.location')
+
+  const { transit, repaired: transitRepaired } = repairTransit(
+    orFresh(player.transit, initialTransitState),
+  )
+  if (transitRepaired && present(player.transit)) repaired.push('player.transit')
+
   const raw = parsed.data
   const { grants, repaired: grantsRepaired } = repairGrants(
     orFresh(raw.grants, initialGrantsState),
@@ -1366,6 +1429,8 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
         clubNights,
         visited,
         apartment,
+        location,
+        transit,
       },
       speed: validSpeed,
       events: repairEvents(events, config, repaired),
@@ -1485,7 +1550,8 @@ function loadV6(raw: unknown, config: EngineConfig): LoadResult | null {
  * club nights. A v6 save keeps everything, its clout carried into the ledger (`upgradeV6`).
  * Every step goes through the v6 form, so v2 to v5 saves get the v6 upgrade too. A v7 save keeps
  * everything and starts with no recorded visits, no grants and no prestige. A v7 or v8 save
- * starts with no decor, nothing placed and an empty move log. Every older save
+ * starts with no decor, nothing placed and an empty move log. A v7 to v9 save starts at home
+ * with a fresh transit generator. Every older save
  * then gets its goals derived from what it holds, at its current minute (`syncGoals`): a save
  * already at Icon starts with an unacknowledged Icon moment. Anything older or malformed
  * starts fresh. A save from a newer build throws `NewerSaveError`: it is
@@ -1556,9 +1622,9 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
     }
   }
   if (version === 6) loaded = loadV6(persisted, config)
-  // A v7 or v8 save is the current structure without the S15 (v7) or S16 fields, which
-  // `loadSave` fills in.
-  if (version === 7 || version === 8) loaded = loadSave(persisted, config)
+  // A v7 to v9 save is the current structure without the S15 (v7), S16 (v8) or S08 (v9)
+  // fields, which `loadSave` fills in.
+  if (version === 7 || version === 8 || version === 9) loaded = loadSave(persisted, config)
   if (loaded?.ok === true) {
     return { save: syncGoals(loaded.save, config).save, outcome: 'carried' }
   }
