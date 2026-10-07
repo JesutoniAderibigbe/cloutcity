@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { minutesPerDay } from '@/engine/clock'
+import { engineConfig } from '@/engine/config'
 import type { EventContext } from '@/engine/events'
+import { nextRentDueDay } from '@/engine/rent'
 import { createLogger, type LogRecord } from '@/lib/log'
 import { toNpcId } from '@/engine/items'
 import { createSafeJsonStorage } from './storage'
@@ -801,5 +804,57 @@ describe('events in the store', () => {
     const after = game.getState().events.rngState
     expect(after).not.toBe(before)
     expect((saved(local) as { state: PersistedState }).state.events.rngState).toBe(after)
+  })
+
+  // BUG-1: rent that falls due while an event is open must still reach the rent notice.
+  describe('rent during an event', () => {
+    const DAY = minutesPerDay(engineConfig)
+
+    /** A broke store a few minutes before the midnight that opens the next rent day. */
+    function brokeBeforeRentDay(minutesBefore: number) {
+      const game = setup().store()
+      const { clock, player } = game.getState()
+      const due = nextRentDueDay(clock.minute, engineConfig)
+      game.setState({
+        clock: { ...clock, minute: (due - 1) * DAY - minutesBefore },
+        player: { ...player, cash: 0 },
+      })
+      return { game, due }
+    }
+
+    it('a choice whose time crosses a rent day records the rent event', () => {
+      const { game, due } = brokeBeforeRentDay(1)
+      expect(game.getState().openEvent('bodega-cat', bodega).ok).toBe(true)
+      const result = game.getState().chooseEventOption('scratch')
+      if (!result.ok) throw new Error(`refused: ${result.error.code}`)
+      expect(result.rent.map((event) => event.kind)).toEqual(['missed'])
+      expect(game.getState().lastRentEvent).toMatchObject({ kind: 'missed', day: due })
+      expect(game.getState().lastRentEvent).toBe(result.rent.at(-1))
+      expect(game.getState().player.rent.missed).toBe(1)
+    })
+
+    it('a choice that crosses no rent day keeps the earlier notice', () => {
+      const { game } = brokeBeforeRentDay(1)
+      game.getState().advanceMinutes(1)
+      const earlier = game.getState().lastRentEvent
+      expect(earlier).not.toBeNull()
+      expect(game.getState().openEvent('bodega-cat', bodega).ok).toBe(true)
+      const result = game.getState().chooseEventOption('scratch')
+      expect(result.ok && result.rent).toEqual([])
+      expect(game.getState().lastRentEvent).toBe(earlier)
+    })
+
+    it('the clock ticking past a rent day while an event is open records the rent event', () => {
+      const { game, due } = brokeBeforeRentDay(1)
+      expect(game.getState().openEvent('bodega-cat', bodega).ok).toBe(true)
+      // Capped real-time ticks until the clock passes the midnight that opens the rent day.
+      const midnight = (due - 1) * DAY
+      for (let guard = 0; game.getState().clock.minute <= midnight && guard < 100; guard += 1) {
+        game.getState().tick(engineConfig.time.maxTickRealMs, true)
+      }
+      expect(game.getState().clock.minute).toBeGreaterThan(midnight)
+      expect(game.getState().events.active).toBe('bodega-cat')
+      expect(game.getState().lastRentEvent).toMatchObject({ kind: 'missed', day: due })
+    })
   })
 })

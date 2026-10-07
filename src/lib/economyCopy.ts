@@ -139,3 +139,14 @@ export function rentNotice(event: RentEvent, options: EconomyCopyOptions = {}): 
       })
   }
 }
+
+/** "You live in the Queens room." */
+export function homeLine(homeId: HomeId, options: EconomyCopyOptions = {}): string {
+  const { copy = activeCopy } = options
+  return copy('rent.home', { home: homeName(homeId, options) })
+}
+
+/** What the player owes in back rent and fees right now, or that they owe nothing. */
+export function rentOwedLine(owed: number, { copy = activeCopy }: EconomyCopyOptions = {}) {
+  return owed > 0 ? copy('rent.owed', { owed: formatMoney(owed) }) : copy('rent.square')
+}

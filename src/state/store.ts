@@ -27,7 +27,7 @@ import {
   type EventOutcome,
   type OpenResult,
 } from '@/engine/events'
-import { tick } from '@/engine/game'
+import { advanceMinutes, tick } from '@/engine/game'
 import {
   buyItem,
   equipItem,
@@ -38,8 +38,14 @@ import {
   type ItemResult,
 } from '@/engine/items'
 import { workShift, type ShiftResult } from '@/engine/jobs'
-import { performPlaceAction, type PlaceActionResult } from '@/engine/placeActions'
+import {
+  buyAtShop,
+  performPlaceAction,
+  type PlaceActionResult,
+  type ShopBuyResult,
+} from '@/engine/placeActions'
 import type { Place } from '@/engine/places'
+import type { RentEvent } from '@/engine/rent'
 import {
   NewerSaveError,
   SAVE_VERSION,
@@ -67,6 +73,11 @@ export interface GameActions {
   workShift(jobId: string): ShiftResult
   /** Buys one of a shop item for its price in cash. */
   buyItem(itemId: string): ReturnType<typeof buyItem>
+  /**
+   * Buys one item at a place's shop: the engine checks the place has a shop that is open to
+   * the player now, then the usual buy rules.
+   */
+  buyAtShop(place: Place, itemId: string): ShopBuyResult
   /** Sells one owned item at its current resale value (a worn item is taken off). */
   sellItem(itemId: string): ReturnType<typeof sellItem>
   /** Wears an owned wearable in its slot. */
@@ -80,6 +91,11 @@ export interface GameActions {
    * hours, club door, job lock, funds and energy; the state changes only when the result is ok.
    */
   performPlaceAction(place: Place, actionId: string): PlaceActionResult
+  /**
+   * Fast-forwards the personal clock by whole game minutes (decay and rent apply). Used by the
+   * e2e hook; no player-facing control waits without an action yet.
+   */
+  advanceMinutes(minutes: number): void
   /** Sets the passive clock speed (one of balance `time.speeds`, i.e. 1x or 2x). */
   setSpeed(speed: number): void
   /**
@@ -110,6 +126,11 @@ export interface GameStatus {
   readonly newerSavePresent: boolean
   /** What the last event choice did, shown in the event sheet until dismissed. */
   readonly eventOutcome: EventOutcome | null
+  /**
+   * The last rent charge, miss or collection this session, for the rent panel. Session-only:
+   * a reload starts with none (the save keeps what is owed, not the notice).
+   */
+  readonly lastRentEvent: RentEvent | null
 }
 export type GameState = PersistedState & GameActions & GameStatus
 
@@ -223,6 +244,11 @@ function guardStorage(inner: PersistStorage<PersistedState>) {
   }
 }
 
+/** The last rent event of an advance, or the current one when the advance had none. */
+function latestRent(events: readonly RentEvent[], current: RentEvent | null): RentEvent | null {
+  return events.at(-1) ?? current
+}
+
 export function createGameStore(storage: PersistStorage<PersistedState>, logger: Logger = log) {
   const guard = guardStorage(storage)
   const store = createStore<GameState>()(
@@ -231,30 +257,54 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         ...initialPersistedState(),
         newerSavePresent: false,
         eventOutcome: null,
+        lastRentEvent: null,
         tick: (realElapsedMs, visible) => {
           const state = get()
-          const { snapshot } = tick(
+          const { snapshot, rent } = tick(
             state,
             realElapsedMs,
             { visible, speed: state.speed },
             engineConfig,
           )
           if (snapshot.clock !== state.clock) {
-            set({ clock: snapshot.clock, player: snapshot.player })
+            set({
+              clock: snapshot.clock,
+              player: snapshot.player,
+              lastRentEvent: latestRent(rent, state.lastRentEvent),
+            })
           }
         },
         performAction: (actionId) => {
-          const result = performAction(get(), actionId, engineConfig)
-          if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
+          const state = get()
+          const result = performAction(state, actionId, engineConfig)
+          if (result.ok) {
+            set({
+              clock: result.snapshot.clock,
+              player: result.snapshot.player,
+              lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+            })
+          }
           return result
         },
         workShift: (jobId) => {
-          const result = workShift(get(), jobId, engineConfig)
-          if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
+          const state = get()
+          const result = workShift(state, jobId, engineConfig)
+          if (result.ok) {
+            set({
+              clock: result.snapshot.clock,
+              player: result.snapshot.player,
+              lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+            })
+          }
           return result
         },
         buyItem: (itemId) => {
           const result = buyItem(get(), itemId, engineConfig)
+          if (result.ok) set({ player: result.snapshot.player })
+          return result
+        },
+        buyAtShop: (place, itemId) => {
+          const result = buyAtShop(get(), place, itemId, engineConfig)
           if (result.ok) set({ player: result.snapshot.player })
           return result
         },
@@ -279,9 +329,25 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
           return result
         },
         performPlaceAction: (place, actionId) => {
-          const result = performPlaceAction(get(), place, actionId, engineConfig)
-          if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
+          const state = get()
+          const result = performPlaceAction(state, place, actionId, engineConfig)
+          if (result.ok) {
+            set({
+              clock: result.snapshot.clock,
+              player: result.snapshot.player,
+              lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+            })
+          }
           return result
+        },
+        advanceMinutes: (minutes) => {
+          const state = get()
+          const { snapshot, rent } = advanceMinutes(state, minutes, engineConfig)
+          set({
+            clock: snapshot.clock,
+            player: snapshot.player,
+            lastRentEvent: latestRent(rent, state.lastRentEvent),
+          })
         },
         setSpeed: (speed) => {
           if (!isSpeed(speed, engineConfig))
@@ -309,6 +375,7 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
               player: result.snapshot.player,
               events: result.events,
               eventOutcome: result.outcome,
+              lastRentEvent: latestRent(result.rent, state.lastRentEvent),
             })
           }
           return result
@@ -317,7 +384,12 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         discardNewerSaveAndStartFresh: () => {
           guard.release()
           logger.info("Discarding a saved game from a newer build at the player's request")
-          set({ ...initialPersistedState(), newerSavePresent: false, eventOutcome: null })
+          set({
+            ...initialPersistedState(),
+            newerSavePresent: false,
+            eventOutcome: null,
+            lastRentEvent: null,
+          })
         },
       }),
       {

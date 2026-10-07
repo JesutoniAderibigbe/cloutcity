@@ -577,6 +577,12 @@ export const LayoutConfigSchema = z.strictObject({
     sheetMaxHeightVh: positive,
     sheetMaxWidthPx: positive,
     tabBarHeightPx: positive,
+    /**
+     * After a sheet or panel action, pointer taps on its actions are ignored this long (ms), so
+     * the second tap of a drifting double tap cannot land on the row or button that replaced
+     * the one tapped. Keyboard activations are not delayed.
+     */
+    actionCooldownMs: positiveInt,
   }),
 })
 export type LayoutConfig = z.infer<typeof LayoutConfigSchema>

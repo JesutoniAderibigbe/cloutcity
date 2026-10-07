@@ -21,6 +21,7 @@
 import { calendar, type Rollovers } from './clock'
 import { engineConfig, type EngineConfig } from './config'
 import { advanceMinutes, type GameSnapshot } from './game'
+import type { RentEvent } from './rent'
 import { createRng, mixSeed, type Rng } from './rng'
 import { STAT_KEYS, applyStatChanges, type StatKey } from './stats'
 import type {
@@ -105,6 +106,8 @@ export type ChooseResult =
       readonly snapshot: GameSnapshot
       readonly events: EventsState
       readonly outcome: EventOutcome
+      /** Rent charged, missed or collected while the choice's time passed, in order. */
+      readonly rent: readonly RentEvent[]
     }
   | { readonly ok: false; readonly error: EventError }
 
@@ -417,5 +420,6 @@ export function chooseEventOption(
       durationMin: advanced.minutes,
       rollovers: advanced.rollovers,
     },
+    rent: advanced.rent,
   }
 }
