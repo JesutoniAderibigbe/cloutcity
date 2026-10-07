@@ -72,6 +72,7 @@ const PRIVATE_TABLES = [
   'sanctions',
   'save_history',
   'save_quarantine',
+  'save_revisions',
 ]
 
 /** The moderator actions (S18b): the /mod server routes call them with the service role. */

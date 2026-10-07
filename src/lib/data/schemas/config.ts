@@ -301,6 +301,11 @@ export const SyncConfigSchema = z
     keepaliveMaxBytes: positiveInt.max(KEEPALIVE_LIMIT_BYTES),
     /** Accepted saves the server keeps per player, and quarantined (rejected) ones. */
     historyKeep: positiveInt,
+    /**
+     * Revisions per player the revision ledger keeps (when each was accepted, and its credits:
+     * a few numbers a row), oldest pruned. "Keep this device" from a trimmed revision uses it.
+     */
+    revisionLedgerKeep: positiveInt,
     quarantineKeep: positiveInt,
     plausibility: z.strictObject({
       /** The economy fixture's maxima are multiplied by this before they act as ceilings. */

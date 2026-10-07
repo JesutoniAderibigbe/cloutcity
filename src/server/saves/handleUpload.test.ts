@@ -49,6 +49,7 @@ function fakeBackend(record: Partial<PlayerRecord> | null = {}) {
     userIdFor: vi.fn(async (token: string) => (token === 'good' ? USER : null)),
     load: vi.fn(async () => player),
     saveAt: vi.fn(async (_user: string, revision: number) => history.get(revision) ?? null),
+    ledgerAt: vi.fn(async () => null),
     consumeOverride: vi.fn(async () =>
       ++overrides > sync.plausibility.overrideMaxPerHour
         ? ('rate-limited' as const)

@@ -358,7 +358,7 @@ isOneToOne: true
 { Args: { "p_handle": string }; Returns: string
                            },
 "commit_save":
-{ Args: { "p_avatar": Json,"p_burst_credit_minutes": number,"p_career_path": string,"p_client_saved_at": string,"p_data": Json,"p_device_id": string,"p_expected_revision": number,"p_grants": Json,"p_history_keep": number,"p_max_per_minute": number,"p_min_interval_ms": number,"p_pace_credit_cash": number,"p_pace_credit_clout": number,"p_public_level": string,"p_same_run": boolean,"p_save_version": number,"p_user_id": string }; Returns: {
+{ Args: { "p_avatar": Json,"p_burst_credit_minutes": number,"p_career_path": string,"p_client_saved_at": string,"p_data": Json,"p_device_id": string,"p_expected_revision": number,"p_grants": Json,"p_history_keep": number,"p_ledger_keep": number,"p_max_per_minute": number,"p_min_interval_ms": number,"p_pace_credit_cash": number,"p_pace_credit_clout": number,"p_public_level": string,"p_same_run": boolean,"p_save_version": number,"p_user_id": string }; Returns: {
               "saved_at": string,"saved_revision": number
             }[]
                            },
@@ -427,6 +427,11 @@ isOneToOne: true
                            },
 "quarantine_save":
 { Args: { "p_base_revision": number,"p_data": Json,"p_device_id": string,"p_findings": (string)[],"p_max_per_minute": number,"p_quarantine_keep": number,"p_save_version": number,"p_user_id": string }; Returns: undefined
+                           },
+"revision_at":
+{ Args: { "p_revision": number,"p_user_id": string }; Returns: {
+              "accepted_at": string,"burst_credit_minutes": number,"pace_credit_cash": number,"pace_credit_clout": number
+            }[]
                            },
 "save_at_revision":
 { Args: { "p_revision": number,"p_user_id": string }; Returns: {

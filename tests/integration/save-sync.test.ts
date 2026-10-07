@@ -10,6 +10,7 @@ import { grant } from '@/engine/grants'
 import { SAVE_VERSION, initialSave, type SaveState } from '@/engine/save'
 import { playerWithClout } from '@/engine/test-support'
 import { createLogger } from '@/lib/log'
+import type { Json } from '@/lib/supabase/database.types'
 import type { UploadReply } from '@/lib/sync/protocol'
 import { serverCeilings } from '@/server/saves/ceilings'
 import { handleUpload } from '@/server/saves/handleUpload'
@@ -269,6 +270,7 @@ describe('POST /api/save against the real database', () => {
       p_min_interval_ms: 0,
       p_max_per_minute: 10,
       p_history_keep: 5,
+      p_ledger_keep: 5000,
     })
     expectRpcError(error, 'attestation_required', 'PT403')
   })
@@ -295,6 +297,7 @@ describe('what clients can and cannot do', () => {
       p_min_interval_ms: 0,
       p_max_per_minute: 10,
       p_history_keep: 5,
+      p_ledger_keep: 5000,
     })
     expect(commit.error).not.toBeNull()
     const quarantine = await guest.client.rpc('quarantine_save', {
@@ -519,5 +522,53 @@ describe('set_audio_settings is rate limited', () => {
       p_updated_at: new Date().toISOString(),
     })
     expectRpcError(error, 'rate_limited', 'PT429')
+  })
+})
+
+describe('the revision ledger (N3)', () => {
+  it('commit_save keeps a row per accepted revision, pruned at the cap', async () => {
+    const guest = await newAttestedGuest()
+    const service = serviceClient()
+    for (let revision = 0; revision < 5; revision++) {
+      const { error } = await service.rpc('commit_save', {
+        p_user_id: guest.id,
+        p_expected_revision: revision,
+        p_save_version: SAVE_VERSION,
+        p_data: initialSave(config) as unknown as Json,
+        p_device_id: crypto.randomUUID(),
+        p_client_saved_at: null as unknown as string,
+        p_public_level: 'nobody',
+        p_career_path: null as unknown as string,
+        p_same_run: true,
+        p_avatar: {},
+        p_grants: [],
+        p_burst_credit_minutes: revision,
+        p_pace_credit_cash: 10 * revision,
+        p_pace_credit_clout: revision,
+        p_min_interval_ms: 0,
+        p_max_per_minute: 100,
+        p_history_keep: 2,
+        p_ledger_keep: 3,
+      })
+      expect(error, `revision ${revision + 1}`).toBeNull()
+    }
+    const rows = await sql<{ revision: number; burst: number; cash: number }[]>`
+      select revision::int as revision, burst_credit_minutes as burst, pace_credit_cash as cash
+      from private.save_revisions where user_id = ${guest.id} order by revision
+    `
+    expect(rows).toEqual([
+      { revision: 3, burst: 2, cash: 20 },
+      { revision: 4, burst: 3, cash: 30 },
+      { revision: 5, burst: 4, cash: 40 },
+    ])
+    const [history] = await sql<{ count: number }[]>`
+      select count(*)::int as count from private.save_history where user_id = ${guest.id}
+    `
+    expect(history?.count).toBe(2)
+    const { data, error } = await service.rpc('revision_at', { p_user_id: guest.id, p_revision: 3 })
+    expect(error).toBeNull()
+    expect(data?.[0]).toMatchObject({ burst_credit_minutes: 2, pace_credit_cash: 20 })
+    const denied = await guest.client.rpc('revision_at', { p_user_id: guest.id, p_revision: 3 })
+    expect(denied.error).not.toBeNull()
   })
 })

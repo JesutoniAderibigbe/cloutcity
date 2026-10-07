@@ -8,6 +8,7 @@
   "maxSaveBytes": 262144,
   "keepaliveMaxBytes": 61440,
   "historyKeep": 5,
+  "revisionLedgerKeep": 5000,
   "quarantineKeep": 5,
   "plausibility": {
     "margin": 1.5,

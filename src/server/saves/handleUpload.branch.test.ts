@@ -17,6 +17,7 @@ import {
   handleUpload,
   type CommitArgs,
   type HistorySave,
+  type LedgerRevision,
   type PlayerRecord,
   type SaveBackend,
   type StoredSave,
@@ -32,7 +33,22 @@ function liveBackend(start: StoredSave, ageMinutes: number, grantKeys: string[] 
   let save: StoredSave = start
   let now = NOW
   const history = new Map<number, HistorySave>()
-  history.set(start.revision, {
+  // Like the revision ledger: every accepted revision, never trimmed here.
+  const ledger = new Map<number, LedgerRevision>()
+  const remember = (revision: number, entry: HistorySave) => {
+    history.set(revision, entry)
+    ledger.set(revision, {
+      acceptedAt: entry.acceptedAt,
+      burstCreditMinutes: entry.burstCreditMinutes,
+      paceCredit: entry.paceCredit,
+    })
+    // Like commit_save, the full history keeps only the newest sync.json historyKeep saves.
+    for (const old of [...history.keys()].sort((a, b) => a - b)) {
+      if (history.size <= sync.historyKeep) break
+      history.delete(old)
+    }
+  }
+  remember(start.revision, {
     saveVersion: start.saveVersion,
     data: start.data,
     acceptedAt: start.acceptedAt ?? new Date(NOW).toISOString(),
@@ -50,6 +66,7 @@ function liveBackend(start: StoredSave, ageMinutes: number, grantKeys: string[] 
       entitledItemIds: [],
     })),
     saveAt: vi.fn(async (_u: string, revision: number) => history.get(revision) ?? null),
+    ledgerAt: vi.fn(async (_u: string, revision: number) => ledger.get(revision) ?? null),
     consumeOverride: vi.fn(async () => 'ok' as const),
     commit: vi.fn(async (args: CommitArgs) => {
       commits.push(args)
@@ -64,7 +81,7 @@ function liveBackend(start: StoredSave, ageMinutes: number, grantKeys: string[] 
         paceCredit: args.paceCredit,
       }
       // Like commit_save, the history row keeps the credits the save was stored with (F2).
-      history.set(save.revision, {
+      remember(save.revision, {
         saveVersion: args.saveVersion,
         data: args.data,
         acceptedAt,
@@ -390,11 +407,11 @@ describe('an honest kept game behind the account (N1-N3)', () => {
     expect(live.commits).toEqual([])
   })
 
-  it('without the shared save, taps are bounded by the time since the account save (N3)', async () => {
+  it('override 0 (a revision no ledger knows): lenient by design, bounded by the account age', async () => {
     const { stored, mine, keys } = scenario()
     const live = liveBackend(stored, 3 * 60, keys)
-    // The account save was accepted a minute ago with 5 minutes of burst: 6 minutes of taps.
-    const busy = { ...mine, actions: 6 * serverCeilings().actionsPerRealMinute + 10 }
+    // The account is three hours old, with 5 minutes of burst on its save: 185 minutes of taps.
+    const busy = { ...mine, actions: 185 * serverCeilings().actionsPerRealMinute + 10 }
     const result = await handleUpload(
       {
         authorization: 'Bearer x',
@@ -407,5 +424,111 @@ describe('an honest kept game behind the account (N1-N3)', () => {
     )
     expect(result.status).toBe(422)
     expect(findingsOf(live.backend)).toContain('action-rate')
+  })
+})
+
+describe('keep this device from a revision the history trimmed: the revision ledger (N3)', () => {
+  /** Both devices synced revision 10; then device X uploads six more times (the history keeps five). */
+  async function trimmed() {
+    const base = initialSave(config)
+    const shared: SaveState = { ...base, actions: 20, clock: { minute: 1440, remainderMs: 0 } }
+    const live = liveBackend(
+      {
+        revision: 10,
+        saveVersion: SAVE_VERSION,
+        data: shared,
+        acceptedAt: new Date(NOW).toISOString(),
+        deviceId: DEVICE,
+        burstCreditMinutes: 5,
+        paceCredit: serverCeilings().paceCreditCap,
+      },
+      24 * 60,
+    )
+    let save = shared
+    for (let revision = 10; revision < 16; revision++) {
+      live.tick(60_000)
+      save = { ...save, clock: { ...save.clock, minute: save.clock.minute + 10 } }
+      const result = await handleUpload(
+        { authorization: 'Bearer x', bodyText: body(save, { baseRevision: revision }) },
+        live.backend,
+        serverCeilings(),
+        live.now(),
+        logger,
+      )
+      expect(result.status).toBe(200)
+    }
+    expect(await live.backend.saveAt(USER, 10)).toBeNull()
+    expect(await live.backend.ledgerAt(USER, 10)).not.toBeNull()
+    return { live, shared }
+  }
+
+  it('an honest device that played three game days offline keeps its game: accepted', async () => {
+    const { live, shared } = await trimmed()
+    // Three hours of real play since revision 10: 120 taps, three game days, a little cash.
+    live.tick(3 * 3_600_000)
+    const offline: SaveState = {
+      ...shared,
+      actions: shared.actions + 120,
+      clock: { ...shared.clock, minute: shared.clock.minute + 3 * 1440 },
+      player: { ...shared.player, cash: shared.player.cash + 150 },
+    }
+    const result = await handleUpload(
+      {
+        authorization: 'Bearer x',
+        bodyText: body(offline, { baseRevision: 16, overrideFromRevision: 10 }),
+      },
+      live.backend,
+      serverCeilings(),
+      live.now(),
+      logger,
+    )
+    expect(result).toMatchObject({ status: 200, body: { ok: true, revision: 17 } })
+  })
+
+  it("a branch forged from the oldest revision gets no more than that revision's time and credit", async () => {
+    const { live, shared } = await trimmed()
+    live.tick(3 * 3_600_000)
+    const minutes = 3 * 60 + 6 + 5 // since revision 10, plus its burst credit
+    const ceilings = serverCeilings()
+    const tooManyTaps: SaveState = {
+      ...shared,
+      actions: shared.actions + Math.ceil(minutes * ceilings.actionsPerRealMinute) + 1,
+    }
+    const taps = await handleUpload(
+      {
+        authorization: 'Bearer x',
+        bodyText: body(tooManyTaps, { baseRevision: 16, overrideFromRevision: 10 }),
+      },
+      live.backend,
+      ceilings,
+      live.now(),
+      logger,
+    )
+    expect(taps.status).toBe(422)
+    const greedy: SaveState = {
+      ...shared,
+      actions: shared.actions + 10,
+      player: {
+        ...shared.player,
+        cash:
+          shared.player.cash +
+          // The whole run's taps at honest pace (the branch is a whole run), plus the credit.
+          Math.ceil(
+            ceilings.paceCreditCap.cash + ceilings.pacePerTap.cash * (shared.actions + 10),
+          ) +
+          1,
+      },
+    }
+    const cash = await handleUpload(
+      {
+        authorization: 'Bearer x',
+        bodyText: body(greedy, { baseRevision: 16, overrideFromRevision: 10 }),
+      },
+      live.backend,
+      ceilings,
+      live.now(),
+      logger,
+    )
+    expect(cash.status).toBe(422)
   })
 })

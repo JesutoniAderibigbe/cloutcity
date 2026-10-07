@@ -11,9 +11,10 @@
  *    checked against the save both devices last shared (`save_at_revision`, from the history,
  *    with its stored credits) rather than the other device's, as a branch (grants the other
  *    branch claimed too are not a replay). If the history no longer keeps it, the upload is
- *    checked as a whole run against the real time since the current save was accepted, the
- *    current credits and the current save's prestige and run; first-upload rules apply only to an
- *    account with no save. A kept game from before the account's last prestige is refused with
+ *    checked as a whole run against the real time since that revision was accepted and its
+ *    credits (from the untrimmed revision ledger), or for a revision the ledger does not know,
+ *    since the account was created with the current credits; and against the current save's
+ *    prestige and run. First-upload rules apply only to an account with no save. A kept game from before the account's last prestige is refused with
  *    409 `branch-behind` (its badges would be lost; the device offers the account's game). It is
  *    stored on top of the current head, which stays in the history.
  * 6. Save plausibility (src/engine/plausibility.ts `checkUpload`): a rejected save goes to
@@ -81,6 +82,13 @@ export interface PlayerRecord {
   readonly entitledItemIds: readonly string[]
 }
 
+/** A revision the revision ledger keeps (`revision_at`). */
+export interface LedgerRevision {
+  readonly acceptedAt: string
+  readonly burstCreditMinutes: number
+  readonly paceCredit: CashClout
+}
+
 export interface CommitArgs {
   readonly userId: string
   readonly expectedRevision: number
@@ -121,6 +129,8 @@ export interface SaveBackend {
   load(userId: string): Promise<PlayerRecord | null>
   /** The save the history keeps at `revision`, or null once it has been trimmed. */
   saveAt(userId: string, revision: number): Promise<HistorySave | null>
+  /** A revision the ledger keeps: when it was accepted and its credits, or null. */
+  ledgerAt(userId: string, revision: number): Promise<LedgerRevision | null>
   /** Counts a "keep this device" upload against the player's hourly limit. */
   consumeOverride(userId: string): Promise<'ok' | 'rate-limited'>
   commit(args: CommitArgs): Promise<CommitOutcome>
@@ -229,6 +239,8 @@ export async function handleUpload(
   let burst = stored?.burstCreditMinutes ?? ceilings.burstRealMinutes
   let pace: CashClout | null = stored?.paceCredit ?? null
   let head: SaveState | undefined
+  /** Where a branch without its shared save is measured from (epoch ms). */
+  let branchFrom: number | null = null
   if (override !== null) {
     if (stored === null || override >= stored.revision) {
       return reply(400, { ok: false, code: 'invalid' })
@@ -254,6 +266,18 @@ export async function handleUpload(
         return reply(409, { ok: false, code: 'version', serverVersion: SAVE_VERSION })
       }
       head = current ?? undefined
+      // The full save is trimmed, but the revision ledger knows when it was accepted and its
+      // credits: the branch is measured from there, exactly. A revision the ledger does not know
+      // (0: never synced) is measured from the account's creation with the current credits,
+      // lenient by design (overrides are rate limited, earnings capped by the credit).
+      const revision = override === 0 ? null : await backend.ledgerAt(userId, override)
+      if (revision !== null) {
+        branchFrom = Date.parse(revision.acceptedAt)
+        burst = revision.burstCreditMinutes
+        pace = revision.paceCredit
+      } else {
+        branchFrom = Date.parse(player.createdAt)
+      }
     }
   }
   const prev = previousSave(base)
@@ -267,16 +291,8 @@ export async function handleUpload(
     prev,
     body.save,
     {
-      // A branch without its shared save is measured from the account's save (N3): the real time
-      // since it was accepted, plus the burst credit it carries.
-      realMinutesSinceAccept:
-        Math.max(
-          0,
-          nowMs -
-            (head !== undefined && stored?.acceptedAt != null
-              ? Date.parse(stored.acceptedAt)
-              : acceptedAtMs),
-        ) / 60_000,
+      // A branch without its shared save: from its revision (ledger) or the account's creation.
+      realMinutesSinceAccept: Math.max(0, nowMs - (branchFrom ?? acceptedAtMs)) / 60_000,
       burstCreditMinutes: burst,
       paceCredit: pace,
       accountAgeMinutes,

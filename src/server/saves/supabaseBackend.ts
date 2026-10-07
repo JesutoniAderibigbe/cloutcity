@@ -92,6 +92,22 @@ export function supabaseSaveBackend(client: ServiceClient): SaveBackend {
           }
     },
 
+    async ledgerAt(userId, revision) {
+      const { data, error } = await client.rpc('revision_at', {
+        p_user_id: userId,
+        p_revision: revision,
+      })
+      if (error !== null) throw new BackendError('revision_at', error)
+      const [row] = data
+      return row === undefined
+        ? null
+        : {
+            acceptedAt: row.accepted_at,
+            burstCreditMinutes: row.burst_credit_minutes,
+            paceCredit: { cash: row.pace_credit_cash, clout: row.pace_credit_clout },
+          }
+    },
+
     async consumeOverride(userId) {
       const { error } = await client.rpc('consume_save_override', {
         p_user_id: userId,
@@ -122,6 +138,7 @@ export function supabaseSaveBackend(client: ServiceClient): SaveBackend {
         p_min_interval_ms: sync.minUploadIntervalMs,
         p_max_per_minute: sync.maxUploadsPerMinute,
         p_history_keep: sync.historyKeep,
+        p_ledger_keep: sync.revisionLedgerKeep,
       })
       if (error !== null) {
         if (error.message === 'revision_conflict') return { ok: false, code: 'conflict' }
