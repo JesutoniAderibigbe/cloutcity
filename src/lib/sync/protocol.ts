@@ -57,6 +57,11 @@ export type UploadReply =
   /** The save failed plausibility; it was kept aside and not stored. */
   | { readonly ok: false; readonly code: 'rejected' }
   | { readonly ok: false; readonly code: 'rate-limited'; readonly retryAfterMs: number }
+  /**
+   * "Keep this device" with a game from before the account's last prestige: it cannot replace
+   * the account's game (its badges would be lost). Not retried: the device offers the account's.
+   */
+  | { readonly ok: false; readonly code: 'branch-behind' }
   /** The save format differs from the server's: one side needs a newer build. */
   | { readonly ok: false; readonly code: 'version'; readonly serverVersion: number }
   | {

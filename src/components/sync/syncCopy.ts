@@ -14,7 +14,13 @@ export function syncLabel(status: SyncStatus): string {
 }
 
 /** Statuses the player hears about when sync moves into or out of them (not routine saves). */
-const NOTABLE: ReadonlySet<SyncStatus> = new Set(['offline', 'paused', 'conflict', 'update'])
+const NOTABLE: ReadonlySet<SyncStatus> = new Set([
+  'offline',
+  'paused',
+  'conflict',
+  'update',
+  'behind',
+])
 
 /** True when a change from `from` to `to` is worth a polite announcement. */
 export function announces(from: SyncStatus, to: SyncStatus): boolean {

@@ -325,8 +325,9 @@ export interface UploadContext {
   /**
    * The account's current save, when `prev` is not it: a "keep this device" branch whose shared
    * save the history no longer keeps (`prev` null). The upload is then checked as a whole run
-   * against real time (`realMinutesSinceAccept` is the account's age) and the credits carried,
-   * and its forward-only fields (prestige, run, grant sequence) against this save.
+   * against the real time since this save was accepted plus the burst credit carried, the pace
+   * credit carried, and its forward-only fields (prestige, run) against this save; the
+   * prestige-run clout check counts from this save too.
    */
   readonly head?: SaveState
 }
@@ -413,6 +414,8 @@ interface Window {
   readonly realMinutes: number
   /** Taps counted since `base` (same run), or null for a fresh run. */
   readonly actions: number | null
+  /** What finished runs count from: `prev`, or the account's save for a branch without it. */
+  readonly runsFrom: SaveState | null
   /**
    * The counted taps the window's earnings must fit: `actions`, or for a run that started inside
    * a real-time window (a prestige since `prev`) every tap of that run; null when nothing bounds
@@ -482,6 +485,7 @@ export function checkUpload(
     realTime: !ctx.firstUpload,
     realMinutes: Math.max(0, ctx.realMinutesSinceAccept) + credit,
     actions: base === null ? null : save.actions - base.actions,
+    runsFrom: prev ?? ctx.head ?? null,
     earningTaps:
       base !== null ? save.actions - base.actions : !ctx.firstUpload ? save.actions : null,
   }
@@ -897,14 +901,15 @@ function checkGrants(
 
 /**
  * Check 8 for a branch checked without its shared save: the fields that only move forward on
- * every device (prestige, the run, the grant sequence) are not behind the account's save.
+ * every device (prestige and the run) are not behind the account's save.
  */
 function forwardRegressed(head: SaveState, save: SaveState): boolean {
+  // Not the grant sequence: each device numbers its own claims, and the server's grant keys stop
+  // a reward the account already received from being claimed again.
   return (
     save.prestige.count < head.prestige.count ||
     head.prestige.history.some((entry, i) => !sameJson(entry, save.prestige.history[i])) ||
-    save.goals.run < head.goals.run ||
-    save.grants.nextSeq < head.grants.nextSeq
+    save.goals.run < head.goals.run
   )
 }
 
@@ -1027,15 +1032,16 @@ function checkCloutRate(
   const carried = gain('legacy') + gain('repair')
   if (carried > (prev === null ? dayBudget : 0)) findings.push('clout-rate')
 
-  if (window.realTime && prev !== null) {
+  const from = window.runsFrom
+  if (window.realTime && from !== null) {
     const taps = ceilings.actionsPerRealMinute * window.realMinutes
-    const runs = save.prestige.history.length - prev.prestige.history.length
+    const runs = save.prestige.history.length - from.prestige.history.length
     const earnedOnly = earnedOnlyLevel(config)
     if (runs > 0 && earnedOnly !== null) {
       // Each finished run reached Icon on earned clout: from where the previous save stood for
       // the first, from nothing for the others.
       const needed =
-        Math.max(0, earnedOnly.minClout - goalClout(prev.player, config)) +
+        Math.max(0, earnedOnly.minClout - goalClout(from.player, config)) +
         (runs - 1) * earnedOnly.minClout
       const perTap = Math.max(...RATED_SOURCES.map((source) => ceilings.clout[source].perAction))
       if (needed > perTap * taps) findings.push('clout-rate')

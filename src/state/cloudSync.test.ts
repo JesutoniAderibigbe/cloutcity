@@ -697,3 +697,25 @@ describe('cloud save sync: after a refused save (H2)', () => {
     sync.stop()
   })
 })
+
+describe('cloud save sync: a kept game behind the account (N2)', () => {
+  it('stops with "behind", never retries, and offers the account game', async () => {
+    const theirs = { ...played(), actions: 9 }
+    const s = setup({ cloud: row(theirs, 4, 'other-device'), local: played() })
+    s.replies.push(() => ({ status: 409, reply: { ok: false, code: 'branch-behind' } }))
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.status.getState().controls?.resolveConflict('keep-local')
+    await settle()
+    expect(s.status.getState().status).toBe('behind')
+    const sent = s.uploads.length
+    s.game.getState().performAction('nap')
+    await s.advance(syncJson.rejectedRetryMs * 2)
+    expect(s.uploads).toHaveLength(sent)
+    s.status.getState().controls?.useCloud()
+    await settle()
+    expect(persistedOf(s.game.getState())).toEqual(theirs)
+    expect(s.status.getState().status).toBe('synced')
+    sync.stop()
+  })
+})

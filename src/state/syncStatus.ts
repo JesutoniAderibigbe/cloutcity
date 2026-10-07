@@ -10,6 +10,8 @@
  *  - `paused`: the server refused the save (or the session); retried later.
  *  - `conflict`: the account holds different progress; the player picks one.
  *  - `update`: the account's save is from a newer build.
+ *  - `behind`: the player kept this device's game, but it is from before the account's last
+ *    prestige, so it cannot replace the account's game; the account's game is offered.
  */
 import { createStore } from 'zustand/vanilla'
 import { useStore } from 'zustand'
@@ -22,6 +24,7 @@ export const SYNC_STATUSES = [
   'paused',
   'conflict',
   'update',
+  'behind',
 ] as const
 export type SyncStatus = (typeof SYNC_STATUSES)[number]
 

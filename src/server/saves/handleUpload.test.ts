@@ -355,11 +355,11 @@ describe('keep this device (H2): checked against the save both devices shared', 
     expect(refused.status).toBe(422)
   })
 
-  it('without the shared save, a kept game behind the account in grants is refused (forward-only)', async () => {
-    const { backend, quarantined } = setup(false)
+  it('without the shared save, a kept game behind the account in grants is accepted (N1)', async () => {
+    const { backend, commits } = setup(false)
     const result = await upload(backend, body(mine(), { baseRevision: 3, overrideFromRevision: 2 }))
-    expect(result.status).toBe(422)
-    expect(quarantined[0]?.findings).toContain('regressed')
+    expect(result.status).toBe(200)
+    expect(commits[0]?.grants).toEqual([])
   })
 
   it('"keep this device" is rate limited per hour (429)', async () => {

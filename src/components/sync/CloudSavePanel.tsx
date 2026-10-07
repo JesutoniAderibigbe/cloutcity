@@ -62,7 +62,7 @@ export function CloudSavePanel() {
           {copy('sync.sheet.retry')}
         </button>
       ) : null}
-      {controls !== null && status === 'paused' && rejected ? (
+      {controls !== null && ((status === 'paused' && rejected) || status === 'behind') ? (
         <button
           type="button"
           data-sync-use-cloud=""

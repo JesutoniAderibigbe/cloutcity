@@ -1210,3 +1210,45 @@ describe('honest-pace credit across prestige (probe)', () => {
     expect(gained).toBeLessThanOrEqual(ceilings.pacePerTap.cash * taps + 1)
   })
 })
+
+describe('a branch without its shared save (N3)', () => {
+  const { after } = prestiged()
+
+  it('finished runs since the account save need the clout for them, counted from that save', () => {
+    // The account's save: run 1, nothing earned. The upload claims a whole finished run on top.
+    const head = initialSave(config)
+    const verdict = check(null, after, {
+      head,
+      realMinutesSinceAccept: 0,
+      burstCreditMinutes: 0,
+      serverGrantKeys: [],
+      branch: true,
+    })
+    expect(verdict.findings).toContain('clout-rate')
+    // Counted from a save already in that run, no finished run needs clout.
+    const atIcon = check(null, after, {
+      head: after,
+      realMinutesSinceAccept: 0,
+      burstCreditMinutes: 0,
+      serverGrantKeys: [],
+      branch: true,
+    })
+    expect(atIcon.findings).not.toContain('clout-rate')
+  })
+
+  it('the grant sequence is not forward-only: each device numbers its own claims (N1)', () => {
+    const { next } = aroundClaim()
+    const fresh = initialSave(config)
+    const verdict = check(
+      null,
+      { ...fresh, actions: 1 },
+      {
+        head: next,
+        realMinutesSinceAccept: 1,
+        serverGrantKeys: serverKeys(next),
+        branch: true,
+      },
+    )
+    expect(verdict.findings).not.toContain('regressed')
+  })
+})

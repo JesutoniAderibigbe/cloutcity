@@ -113,6 +113,7 @@ const ReplySchema = z.union([
       'attestation-required',
       'invalid',
       'too-large',
+      'branch-behind',
       'unavailable',
     ]),
   }),
@@ -280,7 +281,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
   let pausedUntil = 0
   /** When the server last accepted an upload from this page (its rate limit counts from it). */
   let acceptedAt = Number.NEGATIVE_INFINITY
-  let blocked: 'conflict' | 'update' | null = null
+  let blocked: 'conflict' | 'update' | 'behind' | null = null
   let conflict: CloudCopy | null = null
   const cleanups: (() => void)[] = []
 
@@ -517,6 +518,14 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
         // The panel then offers the account's game as a way out (never taken on its own).
         status.setState({ rejected: true })
         pause(SYNC.rejectedRetryMs)
+        return
+      case 'branch-behind':
+        // This device's game is from before the account's last prestige: it cannot replace the
+        // account's. No retry: the panel explains and offers the account's game (useCloud).
+        logger.info("Kept this device's game, but it is behind the account in prestige")
+        blocked = 'behind'
+        writeMeta({ overrideFrom: null })
+        setStatus('behind')
         return
       case 'unauthenticated':
       case 'attestation-required':

@@ -393,9 +393,11 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   panel on phones) shows the status; a conflict asks the player which save to keep. Keeping this
   device's game is checked against the save both devices last shared (`save_at_revision` from the
   history, with the credits it was stored with), not the other device's; if the history no longer
-  keeps it, as a whole run against the account's age, the current credits and the current save's
-  forward-only fields. Overrides are limited to `sync.plausibility.overrideMaxPerHour` an hour.
-  After a refused save the panel offers the cloud game. Server code
+  keeps it, as a whole run against the real time since the account's save was accepted (plus its
+  burst credit), the current credits, and the account's prestige and run. A kept game from before
+  the account's last prestige cannot replace it (409 `branch-behind`; the panel offers the
+  account's game). Grant keys on the server stop a kept game from claiming a reward again.
+  Overrides are limited to `sync.plausibility.overrideMaxPerHour` an hour. After a refused save the panel offers the cloud game. Server code
   lives in `src/server/` behind `import 'server-only'`; `src/server/server-boundary.test.ts`
   proves browser code never reaches it.
 

@@ -5,6 +5,9 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 import { engineConfig as config } from '@/engine/config'
+import { playerWithClout } from '@/engine/test-support'
+import { grant } from '@/engine/grants'
+import { syncGoals } from '@/engine/goals'
 import { findCloutLevel } from '@/engine/clout'
 import { SAVE_VERSION, initialSave, type SaveState } from '@/engine/save'
 import { sync } from '@/lib/data/config'
@@ -25,7 +28,7 @@ const DEVICE = '00000000-0000-4000-8000-0000000000d1'
 const logger = createLogger({ sink: () => {} })
 
 /** A backend that behaves like commit_save: it stores what it accepts, credits included. */
-function liveBackend(start: StoredSave, ageMinutes: number) {
+function liveBackend(start: StoredSave, ageMinutes: number, grantKeys: string[] = []) {
   let save: StoredSave = start
   let now = NOW
   const history = new Map<number, HistorySave>()
@@ -43,7 +46,7 @@ function liveBackend(start: StoredSave, ageMinutes: number) {
       attested: true,
       createdAt: new Date(NOW - ageMinutes * 60_000).toISOString(),
       save,
-      grantKeys: [],
+      grantKeys,
       entitledItemIds: [],
     })),
     saveAt: vi.fn(async (_u: string, revision: number) => history.get(revision) ?? null),
@@ -217,5 +220,192 @@ describe('keep this device is no bypass (F1, F2)', () => {
     if (icon === undefined) throw new Error('no icon')
     const perMinute = sync.plausibility.publicCloutPerRealMinute
     expect((icon.minClout - c.itemCloutMax) / perMinute).toBeGreaterThanOrEqual(60)
+  })
+})
+
+/**
+ * Device X (the account's save) reached Local and claimed its reward. Device Y never synced (or
+ * its shared save was trimmed): it played the same start offline, a few honest taps, no claim.
+ * (Bug-hunter fix cycle 4 repro.)
+ */
+function scenario() {
+  const fresh = initialSave(config)
+  const local = syncGoals(
+    { ...fresh, player: playerWithClout(fresh.player, 150, config) },
+    config,
+  ).save
+  const claimed = grant(
+    local,
+    { kind: 'goal_reward', goalId: 'reach-local', reward: { cash: 50, clout: 15 } },
+    NOW,
+    config,
+  )
+  if (!claimed.ok) throw new Error(claimed.error.code)
+  const headSave: SaveState = { ...claimed.save, actions: 40 }
+  const stored: StoredSave = {
+    revision: 12,
+    saveVersion: SAVE_VERSION,
+    data: headSave,
+    acceptedAt: new Date(NOW - 60_000).toISOString(),
+    deviceId: DEVICE,
+    burstCreditMinutes: 5,
+    paceCredit: serverCeilings().paceCreditCap,
+  }
+  const mine: SaveState = {
+    ...fresh,
+    actions: 10,
+    clock: { ...fresh.clock, minute: fresh.clock.minute + 120 },
+    player: { ...fresh.player, cash: fresh.player.cash + 20 },
+  }
+  return { stored, mine, keys: claimed.save.grants.log.map((record) => record.key) }
+}
+
+const findingsOf = (backend: SaveBackend) =>
+  (backend.quarantine as unknown as { mock: { calls: { findings: string[] }[][] } }).mock.calls.at(
+    -1,
+  )?.[0]?.findings
+
+describe('an honest kept game behind the account (N1-N3)', () => {
+  it.each([0, 7])(
+    'Y keeps its own game (overrideFromRevision %i, not in the history): accepted',
+    async (override) => {
+      const { stored, mine, keys } = scenario()
+      const live = liveBackend(stored, 3 * 60, keys)
+      const result = await handleUpload(
+        {
+          authorization: 'Bearer x',
+          bodyText: body(mine, { baseRevision: 12, overrideFromRevision: override }),
+        },
+        live.backend,
+        serverCeilings(),
+        live.now(),
+        logger,
+      )
+      expect({ status: result.status, findings: findingsOf(live.backend) }).toEqual({
+        status: 200,
+        findings: undefined,
+      })
+    },
+  )
+
+  it('the same kept game with a shared save the history keeps: accepted (control)', async () => {
+    const { stored, mine, keys } = scenario()
+    const live = liveBackend(stored, 3 * 60, keys)
+    const fresh = initialSave(config)
+    vi.mocked(live.backend.saveAt).mockImplementation(async (_u: string, r: number) =>
+      r === 7
+        ? {
+            saveVersion: SAVE_VERSION,
+            data: fresh,
+            acceptedAt: new Date(NOW - 30 * 60_000).toISOString(),
+            burstCreditMinutes: 5,
+            paceCredit: serverCeilings().paceCreditCap,
+          }
+        : null,
+    )
+    const result = await handleUpload(
+      {
+        authorization: 'Bearer x',
+        bodyText: body(mine, { baseRevision: 12, overrideFromRevision: 7 }),
+      },
+      live.backend,
+      serverCeilings(),
+      live.now(),
+      logger,
+    )
+    expect(result.status).toBe(200)
+  })
+
+  it('a kept branch cannot claim again a reward the account already received', async () => {
+    const { stored, mine, keys } = scenario()
+    const live = liveBackend(stored, 3 * 60, keys)
+    const kept = await handleUpload(
+      {
+        authorization: 'Bearer x',
+        bodyText: body(mine, { baseRevision: 12, overrideFromRevision: 0 }),
+      },
+      live.backend,
+      serverCeilings(),
+      live.now(),
+      logger,
+    )
+    expect(kept.status).toBe(200)
+    // Back on the kept game, the player claims the Local reward the account already received.
+    const reached = syncGoals(
+      { ...mine, player: playerWithClout(mine.player, 150, config) },
+      config,
+    ).save
+    const again = grant(
+      reached,
+      { kind: 'goal_reward', goalId: 'reach-local', reward: { cash: 50, clout: 15 } },
+      NOW,
+      config,
+    )
+    if (!again.ok) throw new Error(again.error.code)
+    live.tick(60_000)
+    const replay = await handleUpload(
+      {
+        authorization: 'Bearer x',
+        bodyText: body({ ...again.save, actions: mine.actions + 1 }, { baseRevision: 13 }),
+      },
+      live.backend,
+      serverCeilings(),
+      live.now(),
+      logger,
+    )
+    expect(replay.status).toBe(422)
+    expect(findingsOf(live.backend)).toContain('grant-replayed')
+  })
+
+  it("a kept game from before the account's last prestige is refused plainly (N2)", async () => {
+    const { stored, mine, keys } = scenario()
+    const head = stored.data as SaveState
+    const prestigedHead: SaveState = {
+      ...head,
+      goals: {
+        ...head.goals,
+        run: 2,
+        achieved: {},
+        icon: { reachedAt: null, acknowledged: false },
+      },
+      prestige: {
+        count: 1,
+        badges: ['prestige-1'],
+        history: [{ run: 1, endedAt: head.clock.minute, issuedAtMs: NOW, badge: 'prestige-1' }],
+      },
+    }
+    const live = liveBackend({ ...stored, data: prestigedHead }, 3 * 60, keys)
+    const result = await handleUpload(
+      {
+        authorization: 'Bearer x',
+        bodyText: body(mine, { baseRevision: 12, overrideFromRevision: 0 }),
+      },
+      live.backend,
+      serverCeilings(),
+      live.now(),
+      logger,
+    )
+    expect(result).toEqual({ status: 409, body: { ok: false, code: 'branch-behind' } })
+    expect(live.backend.quarantine).not.toHaveBeenCalled()
+    expect(live.commits).toEqual([])
+  })
+
+  it('without the shared save, taps are bounded by the time since the account save (N3)', async () => {
+    const { stored, mine, keys } = scenario()
+    const live = liveBackend(stored, 3 * 60, keys)
+    // The account save was accepted a minute ago with 5 minutes of burst: 6 minutes of taps.
+    const busy = { ...mine, actions: 6 * serverCeilings().actionsPerRealMinute + 10 }
+    const result = await handleUpload(
+      {
+        authorization: 'Bearer x',
+        bodyText: body(busy, { baseRevision: 12, overrideFromRevision: 0 }),
+      },
+      live.backend,
+      serverCeilings(),
+      live.now(),
+      logger,
+    )
+    expect(result.status).toBe(422)
+    expect(findingsOf(live.backend)).toContain('action-rate')
   })
 })

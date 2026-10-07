@@ -13,6 +13,7 @@ const SHADE: Readonly<Record<SyncStatus, string>> = {
   paused: 'text-pink-400',
   conflict: 'text-pink-400',
   update: 'text-pink-400',
+  behind: 'text-pink-400',
 }
 
 /**

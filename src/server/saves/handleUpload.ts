@@ -11,8 +11,10 @@
  *    checked against the save both devices last shared (`save_at_revision`, from the history,
  *    with its stored credits) rather than the other device's, as a branch (grants the other
  *    branch claimed too are not a replay). If the history no longer keeps it, the upload is
- *    checked as a whole run against the account's age, the current credits and the current
- *    save's forward-only fields; first-upload rules apply only to an account with no save. It is
+ *    checked as a whole run against the real time since the current save was accepted, the
+ *    current credits and the current save's prestige and run; first-upload rules apply only to an
+ *    account with no save. A kept game from before the account's last prestige is refused with
+ *    409 `branch-behind` (its badges would be lost; the device offers the account's game). It is
  *    stored on top of the current head, which stays in the history.
  * 6. Save plausibility (src/engine/plausibility.ts `checkUpload`): a rejected save goes to
  *    `quarantine_save` (422); otherwise `commit_save` stores it with its repairs, the new grant
@@ -170,6 +172,15 @@ function previousSave(
   return loaded.save
 }
 
+/** True when `kept` is from before `current`'s last prestige (or an earlier run). */
+function behindInRuns(kept: SaveState, current: SaveState): boolean {
+  return (
+    kept.prestige.count < current.prestige.count ||
+    kept.prestige.history.length < current.prestige.history.length ||
+    kept.goals.run < current.goals.run
+  )
+}
+
 export async function handleUpload(
   request: UploadRequest,
   backend: SaveBackend,
@@ -225,6 +236,13 @@ export async function handleUpload(
     if ((await backend.consumeOverride(userId)) === 'rate-limited') {
       return reply(429, { ok: false, code: 'rate-limited', retryAfterMs: 3_600_000 })
     }
+    // A kept game from before the account's last prestige cannot replace it: its badges would be
+    // lost, and the run's rewards, already given, could never be claimed on it again (N2).
+    const current = previousSave(stored)
+    const kept = loadSave(body.save, engineConfig)
+    if (current !== null && current !== 'newer' && kept.ok && behindInRuns(kept.save, current)) {
+      return reply(409, { ok: false, code: 'branch-behind' })
+    }
     const ancestor = await backend.saveAt(userId, override)
     if (ancestor !== null) {
       base = ancestor
@@ -232,7 +250,6 @@ export async function handleUpload(
       pace = ancestor.paceCredit
     } else {
       base = null
-      const current = previousSave(stored)
       if (current === 'newer') {
         return reply(409, { ok: false, code: 'version', serverVersion: SAVE_VERSION })
       }
@@ -250,10 +267,16 @@ export async function handleUpload(
     prev,
     body.save,
     {
-      // A branch without its shared save is a whole run: every real minute since the account
-      // was created.
+      // A branch without its shared save is measured from the account's save (N3): the real time
+      // since it was accepted, plus the burst credit it carries.
       realMinutesSinceAccept:
-        head !== undefined ? accountAgeMinutes : Math.max(0, nowMs - acceptedAtMs) / 60_000,
+        Math.max(
+          0,
+          nowMs -
+            (head !== undefined && stored?.acceptedAt != null
+              ? Date.parse(stored.acceptedAt)
+              : acceptedAtMs),
+        ) / 60_000,
       burstCreditMinutes: burst,
       paceCredit: pace,
       accountAgeMinutes,
