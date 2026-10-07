@@ -6,7 +6,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { engineConfig as config } from '@/engine/config'
 import { syncGoals } from '@/engine/goals'
-import { grant, toServerGrantRow, type GrantRecord } from '@/engine/grants'
+import { grant, toServerGrantRow, type GrantRecord, type ServerGrantRow } from '@/engine/grants'
 import { initialSave } from '@/engine/save'
 import { playerWithClout } from '@/engine/test-support'
 import { newAttestedGuest, serviceClient, type Guest } from './helpers'
@@ -29,6 +29,16 @@ function localRecords(): readonly GrantRecord[] {
   return save.grants.log
 }
 
+/**
+ * The row without SEC-8's `clout_cap`, which S18c part 2's migration adds (with
+ * unique(user_id, idempotency_key)); insert `toServerGrantRow` rows whole once it lands.
+ */
+function currentColumns(row: ServerGrantRow): Omit<ServerGrantRow, 'clout_cap'> {
+  return Object.fromEntries(
+    Object.entries(row).filter(([column]) => column !== 'clout_cap'),
+  ) as Omit<ServerGrantRow, 'clout_cap'>
+}
+
 describe('toServerGrantRow against the real grants table', () => {
   const service = serviceClient()
   let a: Guest
@@ -40,7 +50,7 @@ describe('toServerGrantRow against the real grants table', () => {
   })
 
   it('inserts cash, clout and badge grants as rows the owner reads back', async () => {
-    const rows = records.map((record) => toServerGrantRow(record, a.id))
+    const rows = records.map((record) => currentColumns(toServerGrantRow(record, a.id)))
     const { error } = await service.from('grants').insert(rows)
     expect(error).toBeNull()
     const { data, error: readError } = await a.client
@@ -67,9 +77,9 @@ describe('toServerGrantRow against the real grants table', () => {
   it('the same key twice is refused for one user, but another user can hold it', async () => {
     const [first] = records
     if (first === undefined) throw new Error('no record')
-    const again = await service.from('grants').insert(toServerGrantRow(first, a.id))
+    const again = await service.from('grants').insert(currentColumns(toServerGrantRow(first, a.id)))
     expect(again.error?.code).toBe('23505')
-    const other = await service.from('grants').insert(toServerGrantRow(first, b.id))
+    const other = await service.from('grants').insert(currentColumns(toServerGrantRow(first, b.id)))
     expect(other.error).toBeNull()
   })
 })

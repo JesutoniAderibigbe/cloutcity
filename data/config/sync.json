@@ -1,0 +1,13 @@
+{
+  "debounceMs": 10000,
+  "maxWaitMs": 60000,
+  "retry": { "baseMs": 2000, "maxMs": 300000 },
+  "rejectedRetryMs": 900000,
+  "minUploadIntervalMs": 5000,
+  "maxUploadsPerMinute": 12,
+  "maxSaveBytes": 262144,
+  "keepaliveMaxBytes": 61440,
+  "historyKeep": 5,
+  "quarantineKeep": 5,
+  "plausibility": { "margin": 1.5, "maxActionsPerRealMinute": 40, "burstRealMinutes": 5 }
+}
