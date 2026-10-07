@@ -1,5 +1,6 @@
 /** Schemas for /data/geo, /data/zones and /data/audio. */
 import { z } from 'zod'
+import { AUDIO_CHANNELS, AUDIO_SOURCE_TYPES } from '../../audio/channels'
 import { ORIGIN, PROJECTION_ID } from '../../geo/projection'
 import { GEO_SOURCE_IDS } from '../../geo/sources'
 import { BOROUGHS, BoroughSchema, CopyKeyRefSchema, IdSchema, listOf } from './content'
@@ -147,22 +148,103 @@ export const GeoManifestSchema = z.strictObject({
 })
 export type GeoManifest = z.infer<typeof GeoManifestSchema>
 
-export const AUDIO_CHANNELS = ['music', 'sfx', 'ambience', 'voice'] as const
+export { AUDIO_CHANNELS }
 
-/** Music is CC0 only (no radio); every track records where it came from. */
-export const AudioTrackSchema = z.strictObject({
-  id: IdSchema,
-  channel: z.enum(AUDIO_CHANNELS),
-  /** Path under public/, e.g. `/audio/music/loop-1.ogg`. */
-  file: z.string().regex(/^\/audio\/[a-z0-9/_-]+\.(?:ogg|mp3|m4a|webm)$/),
-  license: z.literal('CC0-1.0'),
-  sourceUrl: z.url({ protocol: /^https$/ }),
-})
-export const AudioManifestSchema = z.strictObject({
-  channels: z.array(z.enum(AUDIO_CHANNELS)).length(AUDIO_CHANNELS.length),
-  tracks: z.array(AudioTrackSchema),
-})
+const AUDIO_FILE = /^\/audio\/[a-z0-9/_-]+\.(?:webm|m4a)$/
+const EXTENSION_OF_TYPE: Readonly<Record<(typeof AUDIO_SOURCE_TYPES)[number], string>> = {
+  'audio/webm; codecs=opus': '.webm',
+  'audio/mp4; codecs=mp4a.40.2': '.m4a',
+}
+
+/** One encoding of a track, served from our own origin under /audio/ (no streams, no radio). */
+export const AudioSourceSchema = z
+  .strictObject({
+    /** Path under public/, e.g. `/audio/music/lofi-loop.webm`. */
+    file: z.string().regex(AUDIO_FILE),
+    type: z.enum(AUDIO_SOURCE_TYPES),
+    bytes: z.int().positive(),
+    sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  })
+  .refine((source) => source.file.endsWith(EXTENSION_OF_TYPE[source.type]), {
+    error: 'file extension must match type',
+    path: ['file'],
+  })
+
+/**
+ * One sound, as `npm run audio:build` wrote it. Everything is CC0 only (no radio, user ruling)
+ * and records where it came from; data/audio/SOURCES.md has the full provenance.
+ */
+export const AudioTrackSchema = z
+  .strictObject({
+    id: IdSchema,
+    channel: z.enum(AUDIO_CHANNELS),
+    /** "Title by Artist" shown while it plays. Required for music. */
+    titleKey: CopyKeyRefSchema.optional(),
+    /** Encodings in the order the runtime tries them (Opus first, AAC for Safari). */
+    sources: z.array(AudioSourceSchema).min(1),
+    durationMs: z.int().positive(),
+    loop: z.boolean(),
+    loopStartMs: z.int().nonnegative().optional(),
+    loopEndMs: z.int().positive().optional(),
+    /** Extra gain applied on playback, after loudness normalisation. */
+    gainDb: z.number().min(-24).max(6),
+    license: z.literal('CC0-1.0'),
+    sourceUrl: z.url({ protocol: /^https$/ }),
+    author: z.string().min(1),
+    retrievedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  })
+  .refine((track) => track.channel !== 'music' || track.titleKey !== undefined, {
+    error: 'music needs a titleKey',
+    path: ['titleKey'],
+  })
+  .refine(
+    (track) => track.loop || (track.loopStartMs === undefined && track.loopEndMs === undefined),
+    { error: 'loop points need loop: true', path: ['loopStartMs'] },
+  )
+  .refine(
+    ({ loopStartMs = 0, loopEndMs, durationMs }) =>
+      loopEndMs === undefined
+        ? loopStartMs < durationMs
+        : loopStartMs < loopEndMs && loopEndMs <= durationMs,
+    { error: 'loop points must fall inside the track, start before end', path: ['loopEndMs'] },
+  )
 export type AudioTrack = z.infer<typeof AudioTrackSchema>
+
+export const AudioManifestSchema = z
+  .strictObject({
+    version: z.literal(2),
+    channels: z.array(z.enum(AUDIO_CHANNELS)).length(AUDIO_CHANNELS.length),
+    tracks: listOf(AudioTrackSchema),
+    /** Play order per looping channel: music rotates, ambience loops its first track. */
+    playlists: z.strictObject({
+      music: z.array(IdSchema).min(1),
+      ambience: z.array(IdSchema).min(1),
+    }),
+    /** The track each sound-effect id plays. */
+    sfx: z.strictObject({ 'ui-tap': IdSchema, purchase: IdSchema, 'clout-up': IdSchema }),
+  })
+  .refine((manifest) => new Set(manifest.channels).size === AUDIO_CHANNELS.length, {
+    error: 'channels must list each channel once',
+    path: ['channels'],
+  })
+  .superRefine((manifest, ctx) => {
+    const channelOf = new Map(manifest.tracks.map((track) => [track.id, track.channel]))
+    const expect = (ids: readonly string[], channel: string, path: (string | number)[]) => {
+      ids.forEach((id, index) => {
+        if (channelOf.get(id) !== channel) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `${id} is not a ${channel} track`,
+            path: [...path, index],
+          })
+        }
+      })
+    }
+    expect(manifest.playlists.music, 'music', ['playlists', 'music'])
+    expect(manifest.playlists.ambience, 'ambience', ['playlists', 'ambience'])
+    expect(Object.values(manifest.sfx), 'sfx', ['sfx'])
+  })
+export type AudioManifest = z.infer<typeof AudioManifestSchema>
 
 /**
  * data/boroughs/boroughs.json: borough copy and teasers. Whether a borough is open, gated by

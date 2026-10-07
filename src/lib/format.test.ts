@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
-import { formatCount, formatMoney } from './format'
+import { formatCount, formatMoney, formatPercent } from './format'
 
 const ROOT = join(import.meta.dirname, '../..')
 
@@ -156,5 +156,18 @@ describe('formatCount edge cases', () => {
   it('rejects infinities', () => {
     expect(() => formatCount(Number.POSITIVE_INFINITY)).toThrow(RangeError)
     expect(() => formatCount(Number.NEGATIVE_INFINITY)).toThrow(RangeError)
+  })
+})
+
+describe('formatPercent', () => {
+  it('formats whole-percent slider values', () => {
+    expect(formatPercent(0)).toBe('0%')
+    expect(formatPercent(80)).toBe('80%')
+    expect(formatPercent(100)).toBe('100%')
+    expect(formatPercent(12.4)).toBe('12%')
+  })
+
+  it('rejects non-finite values', () => {
+    expect(() => formatPercent(Number.NaN)).toThrow(RangeError)
   })
 })

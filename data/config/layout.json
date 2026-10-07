@@ -7,6 +7,7 @@
     "sheetMaxWidthPx": 560,
     "tabBarHeightPx": 64,
     "freeSceneMinHeightPx": 52,
+    "toastMs": 6000,
     "loadingRevealDelayMs": 300
   }
 }

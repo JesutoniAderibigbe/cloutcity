@@ -34,7 +34,8 @@ const ALLOWED_FILES: readonly RegExp[] = [
   /^data\/copy\/superlatives\.json$/,
   /^data\/config\/copy\.json$/,
   /^src\/lib\/(log|format|placeholders)\.ts$/,
-  /^src\/state\/placeSheet\.ts$/,
+  /^src\/state\/(placeSheet|mapPlayable)\.ts$/,
+  /^src\/components\/audio\/soundSheet\.ts$/,
   // The 3D map's thin mount: WebGL probe, geo download, status and error boundary. The canvas
   // and everything three-based load through its next/dynamic import (the 3D chunk).
   /^src\/scene\/(CitySceneClient|SceneErrorBoundary)\.tsx$/,
@@ -46,7 +47,9 @@ const ALLOWED_PACKAGES = /^(react|react-dom|next|zustand)(\/|$)/
 
 /** Never in the shell, named so a failure says why. */
 const DENIED_FILES: readonly RegExp[] = [
-  /^src\/state\/(store|onboarding|audioSettings|storage|session)\.ts$/,
+  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session)\.ts$/,
+  /^src\/lib\/audio\//,
+  /^src\/components\/audio\/(SoundControl|SoundSettingsSheet)\.tsx$/,
   /^src\/engine\//,
   /^src\/lib\/world\//,
   /^src\/lib\/(shopCopy|economyCopy)\.ts$/,
@@ -60,7 +63,7 @@ const DENIED_FILES: readonly RegExp[] = [
   /^src\/scene\/geo\/(?!load\.ts$)/,
   new RegExp(`^src/lib/copy/ns/(?!(${BOOT})\\.ts$)`),
   new RegExp(`^data/copy/(?!(${BOOT})/|superlatives\\.json$)`),
-  /^data\/(events|items|venues|landmarks|boroughs|jobs|premium|geo|zones)\//,
+  /^data\/(events|items|venues|landmarks|boroughs|jobs|premium|geo|zones|audio)\//,
 ]
 
 const DENIED_PACKAGES = /^zod(\/|$)/
@@ -93,6 +96,8 @@ describe('shell boundary of / (S05c)', () => {
         'src/components/places/PlaceSheetMount.tsx',
         'src/components/welcome/WelcomeMount.tsx',
         'src/scene/CitySceneClient.tsx',
+        'src/components/audio/SoundControlMount.tsx',
+        'src/components/audio/SoundSheetMount.tsx',
         'src/lib/copy/index.ts',
         'src/lib/copy/ns/app.ts',
         'data/copy/tabs/base.json',
@@ -116,6 +121,11 @@ describe('shell boundary of / (S05c)', () => {
       'src/scene/City.tsx',
       'src/state/store.ts',
       'src/state/onboarding.ts',
+      'src/components/audio/SoundControl.tsx',
+      'src/components/audio/SoundSettingsSheet.tsx',
+      'src/state/audioSettings.ts',
+      'src/lib/audio/unlock.ts',
+      'src/lib/audio/runtime.ts',
     ]) {
       expect(existsSync(join(ROOT, path)), path).toBe(true)
       expect(shellPaths, path).not.toContain(path)
@@ -136,6 +146,10 @@ describe('shell boundary of / (S05c)', () => {
           at('src/components/places/PlaceSheet.tsx'),
           at('src/scene/CityCanvas.tsx'),
           at('src/scene/geo/schema.ts'),
+          at('src/state/audioSettings.ts'),
+          at('src/lib/audio/runtime.ts'),
+          at('src/lib/copy/ns/audio.ts'),
+          at('src/components/audio/SoundControl.tsx'),
           at('src/components/overlay/lazyIsland.tsx'),
           at('src/scene/geo/load.ts'),
           at('src/lib/copy/ns/tabs.ts'),
@@ -152,6 +166,10 @@ describe('shell boundary of / (S05c)', () => {
       'src/components/places/PlaceSheet.tsx (denied)',
       'src/scene/CityCanvas.tsx (denied)',
       'src/scene/geo/schema.ts (denied)',
+      'src/state/audioSettings.ts (denied)',
+      'src/lib/audio/runtime.ts (denied)',
+      'src/lib/copy/ns/audio.ts (denied)',
+      'src/components/audio/SoundControl.tsx (denied)',
       'package zod/mini',
       'package zod',
       'package three',

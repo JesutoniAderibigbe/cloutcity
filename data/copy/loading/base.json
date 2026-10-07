@@ -3,6 +3,10 @@
     "loading.welcome": "Loading the welcome card",
     "loading.event": "Loading the event",
     "loading.place": "Loading this place",
+    "loading.sound": "Loading the sound controls",
+    "loading.soundSettings": "Loading sound settings",
+    "loading.clout": "Loading your clout",
+    "loading.levelUp": "Loading the level-up message",
     "loading.failed": "That didn't load. Check your connection and try again.",
     "loading.retry": "Try again"
   }

@@ -1,4 +1,5 @@
 import { calendar, minutesPerDay } from '@/engine/clock'
+import { cloutLevel, itemClout, legacyCloutState, playerLevel, totalClout } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import { placeActions } from '@/engine/placeActions'
 import { findPlace } from '@/lib/world/places'
@@ -19,11 +20,19 @@ export interface PlaceTestHook {
   close(): void
   /** Moves the personal clock forward to the next `minuteOfDay` (0..1439). */
   setTimeOfDay(minuteOfDay: number): void
+  /**
+   * Sets the player's total clout to `clout`: the ledger becomes one legacy entry (less the
+   * clout their wearables already carry), and the level it lands on counts as reached, so no
+   * level-up is reported for it.
+   */
   setClout(clout: number): void
   setCash(cash: number): void
   state(): {
     readonly cash: number
+    /** Total clout (src/engine/clout.ts `totalClout`). */
     readonly clout: number
+    /** The current clout level id. */
+    readonly level: string
     readonly minute: number
     readonly minuteOfDay: number
     readonly stats: { readonly energy: number; readonly hunger: number; readonly mood: number }
@@ -73,7 +82,13 @@ export function installPlaceTestHook(): void {
     setClout: (clout) => {
       wholeNonNegative(clout, 'clout')
       const { player } = gameStore.getState()
-      gameStore.setState({ player: { ...player, clout } })
+      const earned = Math.max(0, clout - itemClout(player, engineConfig))
+      const peak = cloutLevel(clout, engineConfig).index
+      const ledger = {
+        ...legacyCloutState(earned, peak),
+        firstPaycheckPaid: player.clout.firstPaycheckPaid,
+      }
+      gameStore.setState({ player: { ...player, clout: ledger } })
     },
     setCash: (cash) => {
       wholeNonNegative(cash, 'cash')
@@ -84,7 +99,8 @@ export function installPlaceTestHook(): void {
       const { player, clock } = gameStore.getState()
       return {
         cash: player.cash,
-        clout: player.clout,
+        clout: totalClout(player, engineConfig),
+        level: playerLevel(player, engineConfig).id,
         minute: clock.minute,
         minuteOfDay: calendar(clock.minute, engineConfig).minuteOfDay,
         stats: player.stats,
@@ -100,7 +116,7 @@ export function installPlaceTestHook(): void {
         durationMin: action.def.durationMin,
         cashCost: action.def.cashCost,
         mood: action.def.statEffects.mood ?? 0,
-        cloutGain: action.kind === 'club-night' ? action.cloutGain : 0,
+        cloutGain: action.kind === 'club-night' || action.kind === 'flex' ? action.cloutGain : 0,
         blocked: action.block?.code ?? null,
       }))
     },

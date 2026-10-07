@@ -82,7 +82,29 @@
       { "id": "known", "minClout": 800 },
       { "id": "famous", "minClout": 2000 },
       { "id": "icon", "minClout": 5000 }
-    ]
+    ],
+    "sources": { "firstPaycheck": 10 },
+    "flex": {
+      "durationMin": 30,
+      "energyCost": 10,
+      "cashCost": 0,
+      "baseClout": 4,
+      "maxPerGameDay": 3,
+      "venueTypes": ["boutique"],
+      "viral": {
+        "baseChance": 0.05,
+        "perStylePoint": 0.005,
+        "maxChance": 0.4,
+        "cloutMultiplier": 5
+      }
+    },
+    "style": {
+      "pctPerPoint": 2,
+      "maxBonusPct": 50,
+      "appliesTo": ["flex", "event", "paycheck"]
+    },
+    "ledger": { "maxEntries": 100 },
+    "caps": { "byCurrency": { "usd": 200 } }
   },
   "costs": { "food": { "min": 4, "max": 12 }, "subwayFare": 3 },
   "transit": {

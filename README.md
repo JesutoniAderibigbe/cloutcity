@@ -25,19 +25,20 @@ gitignored; later tasks document their variables here.
 
 ## Scripts
 
-| Script                            | What it does                                                                                                                                                     |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                                          |
-| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                                                      |
-| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                                             |
-| `npm run format:check` / `format` | Prettier check / write                                                                                                                                           |
-| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                                                 |
-| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                                                     |
-| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                                                         |
-| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                                                                  |
-| `npm run budget`                  | Gzipped shell JS of `/` and the lazy 3D chunk against `data/config/perf.json` and no test hooks in `.next`, then the boot-path guard (run after `npm run build`) |
-| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                         |
-| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                           |
+| Script                            | What it does                                                                                                                        |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                             |
+| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                         |
+| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                |
+| `npm run format:check` / `format` | Prettier check / write                                                                                                              |
+| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                    |
+| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                        |
+| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                            |
+| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                                     |
+| `npm run budget`                  | Gzipped shell JS of `/` and the lazy 3D chunk against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
+| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                            |
+| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies             |
+| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                              |
 
 Gate order used by the build loop:
 `npm run format:check && npm run typecheck && npm run lint && npm test && npm run test:integration && npm run build && npm run e2e && npm run budget`
@@ -129,7 +130,54 @@ passes, since the birthday is unknown); numbers live in `data/config/onboarding.
   overwritten; an invalid one is ignored and the card shows.
 - The form follows the shared pattern (`src/lib/forms/`): one zod/mini schema whose messages are
   copy keys, `fieldErrors()` for every error at once, `firstInvalid()` for focus.
-- No audio is created or loaded by the card (GR-13): the choice is only recorded.
+- Picking a sound option does nothing audible. Submitting a passing card is the deliberate tap
+  that turns sound on (GR-13, see Audio); under-age and invalid submits never do.
+
+## Audio
+
+Four channels (music, sfx, ambience, voice) under a master, each with its own volume
+(`src/lib/audio/mixer.ts`, pure; defaults, slider step, ramps and per-tier loading in
+`data/config/audio.json`).
+
+- **No sound before the choice (GR-13).** The only `AudioContext` is created in
+  `src/lib/audio/unlock.ts`, synchronously inside the welcome card's submit or a tap on the HUD
+  sound control or the sound settings. Returning players hear nothing until they tap "Tap for
+  sound". No other gesture, and no document-level listener, ever starts audio.
+- **Mixing with the player's music app.** Before the context exists, Safari's
+  `navigator.audioSession.type` is set to `'ambient'` (mixes with other audio; the silent switch
+  mutes it). Everything plays through AudioBuffers: no `<audio>`/`<video>` elements and no
+  `navigator.mediaSession`, so Android Chrome takes no audio focus and our sounds never take
+  over lock-screen controls.
+- **"My own music"** is the welcome card's sound choice in the onboarding store
+  (`audioChoice: 'own'`), changed only through `src/lib/audio/controls.ts` (the HUD toggle and
+  the settings checkbox). It mutes our music only and skips fetching it; sfx and ambience keep
+  playing. Volumes persist under `cloutcity:audio` (`src/state/audioSettings.ts`; S18c syncs
+  them, newest `updatedAt` wins). `src/lib/audio/no-override.test.ts` enforces all of this.
+- **Lazy.** The runtime (`src/lib/audio/runtime.ts`: graph, music rotation with crossfades,
+  ambience loop, sfx) loads with a plain `import()` after the tap and once the map is playable
+  (`src/state/mapPlayable.ts`). `playSfx(id)` from `src/lib/audio/sfx.ts` is safe to call any
+  time (ids `ui-tap`, `purchase`, `clout-up`). The HUD sound control, with the zod-backed
+  audio settings and onboarding stores, is a boot island (`SoundControlMount`, eager); the
+  settings sheet is a feature island in the sheet zone, loaded on the first gear tap
+  (`SoundSheetMount`). Neither is in the shell, and neither is the audio copy (`audio.*`, a
+  feature namespace in `data/copy/audio/`).
+- **Recovery.** Music start/stop is a generation-keyed state machine: the latest "My own music"
+  choice always wins, however fast it is toggled. If no music file loads, or the runtime chunk
+  does not arrive (offline), the sound control says "… · Tap to retry" and a tap retries. A
+  closed AudioContext is replaced by a fresh one on the next tap.
+- **Assets.** CC0 only, self-hosted, listed in `data/audio/SOURCES.md`. `npm run audio:build`
+  (needs ffmpeg) downloads the originals pinned in `scripts/audio/sources.json` into
+  `.cache/audio/` (sha256-checked), then excerpts, loudness-normalises, bakes loop crossfades and
+  encodes Opus/WebM plus AAC/.m4a into `public/audio/`, writing `data/audio/manifest.json`. The
+  build is deterministic; `npm run audio:build -- --check` (offline, no ffmpeg) verifies the
+  committed files, the manifest and SOURCES.md agree. To add a sound: pin it in
+  `sources.json`, add its row to SOURCES.md (and a `audio.track.*` "Title by Artist" copy key
+  for music), then rebuild.
+- **e2e hook.** Test builds (`NEXT_PUBLIC_TEST_HOOKS=1`, built into `.next-e2e`) load
+  `src/lib/audio/testHook.ts` from the runtime and expose `window.__cloutcityTest.audio`
+  (context state, live and target gains, what is playing, sfx count);
+  `tests/e2e/fixtures/audio.ts` wraps it with the audio probe. Production builds drop it
+  (`scripts/shell-guard.ts` checks).
 
 ## Data, copy and config
 
@@ -337,7 +385,10 @@ KB = 1000 bytes) checks:
   loads); the script fails if the manifest is missing or lists no lazy JS.
 
 Draw calls, triangles and idle frames at the default view are asserted by
-`tests/e2e/city-scene.spec.ts`. Enforcement of the other budgets joins in later tasks.
+`tests/e2e/city-scene.spec.ts`. Enforcement of the other budgets joins in later tasks. Audio has its own budgets
+(`audioLazyGzKB` per tier for the first music track, the ambience and the tier's preloaded sfx,
+per encoding; `audioFileMaxKB`), checked by `src/lib/data/data.test.ts`; `audioRuntimeJsGzKB` is
+measured by hand until the budget script covers its lazy chunk.
 
 **Shell diet (S05c, DEC-11).** The shell of `/` carries only the boot path: the layout, overlay
 system, HUD, tab bar, the copy core with its boot namespaces, and the island mounts. Everything
@@ -345,8 +396,10 @@ else loads through `lazyIsland` (`src/components/overlay/lazyIsland.tsx`):
 
 - **Boot islands** (`eager: true`) start loading as soon as the shell runs: the welcome card with
   its zod/mini form and onboarding store (its loading card keeps the page inert, so the 18+ gate
-  fails closed) and the event-sheet host with the game store, engine, save and catalogs.
-- **Feature islands** load on first render: the event sheet UI, the place sheet, and later the
+  fails closed), the event-sheet host with the game store, engine, save and catalogs, and the
+  HUD sound control with the audio settings store.
+- **Feature islands** load on first render: the event sheet UI, the place sheet, the sound
+  settings sheet, and later the
   shop, panels and transit planner. Each shows a loading status in its own overlay zone (the
   skeleton appears after `layout.json` `overlay.loadingRevealDelayMs`) and, if its chunk fails,
   a retry there. Each feature root renders `data-cc-feature="cc-feature:<id>"`.
@@ -441,7 +494,8 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
 
 `.gitignore` covers env files, build output (`.next/`, `.next-e2e/` for the e2e build, `out/`), test artefacts
 (`test-results/`, `playwright-report/`, `coverage/`) and the geo download cache (`.cache/`:
-the raw NYC Open Data and MTA files `npm run geo:build` downloads, kept unmodified).
+the raw NYC Open Data and MTA files `npm run geo:build` downloads, and the audio originals
+`npm run audio:build` downloads, kept unmodified).
 
 ## Agent orchestration kit
 

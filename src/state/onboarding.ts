@@ -21,7 +21,7 @@ import { isLocked, lockUntil, type AgeGateConfig } from '@/engine/ageGate'
 import type { OnboardingConfig } from '@/lib/data/schemas/config'
 import { AUDIO_CHOICES, type AudioChoice } from '@/lib/forms/welcome'
 import { log, type Logger } from '@/lib/log'
-import { browserLocalStorage, createSafeJsonStorage } from './storage'
+import { browserLocalStorage, createSafeJsonStorage, guardNewerVersion } from './storage'
 
 export const ONBOARDING_KEY = 'cloutcity:onboarding'
 export const ONBOARDING_VERSION = 1
@@ -110,22 +110,6 @@ export function readNewerRecord(persisted: unknown): OnboardingRecord | null {
   return null
 }
 
-/** Blocks every write while storage holds a record from a newer build. */
-function guardStorage(inner: PersistStorage<PersistedOnboarding>) {
-  let newerPresent = false
-  const storage: PersistStorage<PersistedOnboarding> = {
-    getItem: (name) => {
-      const value = inner.getItem(name)
-      if (value instanceof Promise) return value
-      if (value !== null && (value.version ?? 0) > ONBOARDING_VERSION) newerPresent = true
-      return value
-    },
-    setItem: (name, value) => (newerPresent ? undefined : inner.setItem(name, value)),
-    removeItem: (name) => (newerPresent ? undefined : inner.removeItem(name)),
-  }
-  return storage
-}
-
 export function createOnboardingStore(
   storage: PersistStorage<PersistedOnboarding>,
   config: AgeGateConfig = onboardingConfig,
@@ -167,7 +151,7 @@ export function createOnboardingStore(
       {
         name: ONBOARDING_KEY,
         version: ONBOARDING_VERSION,
-        storage: guardStorage(storage),
+        storage: guardNewerVersion(storage, ONBOARDING_VERSION),
         partialize: ({ record }): PersistedOnboarding => ({ record: record ?? null }),
         migrate: (persisted, version): PersistedOnboarding => {
           if (version > ONBOARDING_VERSION) {

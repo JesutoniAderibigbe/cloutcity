@@ -57,7 +57,7 @@ export function formatDuration(
       })
 }
 
-/** The action's name: "Coffee", "Work a Barista shift", "Go in", "Visit". */
+/** The action's name: "Coffee", "Work a Barista shift", "Go in", "Visit", "Flex". */
 export function placeActionName(action: PlaceAction, options: PlaceActionCopyOptions = {}) {
   const { copy = activeCopy } = options
   switch (action.kind) {
@@ -67,6 +67,8 @@ export function placeActionName(action: PlaceAction, options: PlaceActionCopyOpt
       return copy('place.actions.clubNight.name')
     case 'visit':
       return copy('place.actions.visit.name')
+    case 'flex':
+      return copy('clout.flex.name')
     case 'consume':
       return copy(
         requireKey(`place.actions.${camelSegment(action.id)}.name`, `action ${action.id}`),
@@ -98,6 +100,13 @@ export function placeActionDetails(
   options: PlaceActionCopyOptions = {},
 ): string {
   const { copy = activeCopy, config = engineConfig } = options
+  if (action.kind === 'flex') {
+    return copy('clout.flex.details', {
+      duration: formatDuration(effectiveDuration(action.def, snapshot, config), options),
+      energy: formatCount(action.def.energyCost),
+      count: formatCount(action.cloutGain),
+    })
+  }
   const cost =
     action.kind === 'club-night'
       ? copy('place.cost.cover', { price: formatMoney(action.coverCharge) })
@@ -134,6 +143,10 @@ export function placeBlockReason(
       })
     case 'job-locked':
       return jobLockedLabel(block.lock, options)
+    case 'flexed-here-today':
+      return copy('clout.flex.blocked.here')
+    case 'flex-daily-limit':
+      return copy('clout.flex.blocked.daily', { count: formatCount(block.max) })
     case 'funds':
       return copy('place.blocked.funds', {
         required: formatMoney(block.required),
@@ -199,6 +212,12 @@ export function placeActionDone(
         : copy('place.done.clubNight', { effects })
     case 'visit':
       return copy('place.done.visit', { place: placeName(place, options), effects })
+    case 'flex': {
+      const count = formatCount(result.cloutGained)
+      return result.flex?.viral === true
+        ? copy('clout.flex.viral', { count })
+        : copy('clout.flex.normal', { place: placeName(place, options), count })
+    }
     case 'consume':
       return copy('place.done.consume', { effects })
   }

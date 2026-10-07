@@ -11,6 +11,7 @@
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useState } from 'react'
 import { log } from '@/lib/log'
+import { markMapPlayable } from '@/state/mapPlayable'
 import { loadGeoBase, type GeoLoadFailure } from './geo/load'
 import { SCENE_FAILED_MESSAGE, SceneErrorBoundary } from './SceneErrorBoundary'
 import type { SceneFailure, SceneProps, SceneStatus } from './types'
@@ -70,6 +71,12 @@ export function CitySceneClient(props: SceneProps) {
       : state.status === 'starting' && state.drawn
         ? 'ready'
         : 'loading'
+  // Drawn or failed, the map is as playable as it gets (on failure the Places panel takes
+  // over), so audio may start loading (src/state/mapPlayable.ts).
+  useEffect(() => {
+    if (status !== 'loading') markMapPlayable()
+  }, [status])
+
   const message =
     state.status === 'error'
       ? state.failure === 'device'

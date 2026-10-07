@@ -16,6 +16,8 @@ const MONEY = new Intl.NumberFormat('en-US', {
 
 const COUNT = new Intl.NumberFormat('en-US', { notation: 'compact' })
 
+const PERCENT = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 0 })
+
 function assertFinite(value: number, what: string): void {
   if (!Number.isFinite(value)) throw new RangeError(`${what} must be a finite number: ${value}`)
 }
@@ -35,6 +37,12 @@ export function formatCount(count: number): string {
   assertFinite(count, 'Count')
   // `|| 0` turns -0 (e.g. Math.round(-0.4)) into 0.
   return COUNT.format(Math.round(count) || 0)
+}
+
+/** A whole-percent value (a volume slider, 0-100): `80` → `"80%"`. */
+export function formatPercent(percent: number): string {
+  assertFinite(percent, 'Percent')
+  return PERCENT.format(percent / 100)
 }
 
 /** Wall-clock fields of an instant in an IANA time zone. Month is 1-12, hour is 0-23. */

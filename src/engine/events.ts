@@ -13,13 +13,15 @@
  * - a place is judged by its category in the place data, not the caller's word, and nothing
  *   fires at a place id the data does not know.
  *
- * Choice effects: cash, stats and time apply now (cash first, then the clock fast-forwards with
- * passive decay, then stat changes land, as for actions). Clout (S13) and item (S10) effects
- * have no system to land in yet, so they are kept as typed pending effects in the save, each
- * with its source, for those systems to consume.
+ * Choice effects: cash, stats, time and clout apply now (cash first, then the clock
+ * fast-forwards with passive decay, then stat changes land, as for actions, then clout is
+ * recorded in the clout ledger as one `event` entry, scaled by the outfit's style when it is a
+ * gain). Item effects have no system to land in yet, so they are kept as typed pending effects
+ * in the save, each with its source, for that system to consume.
  */
 import { calendar, type Rollovers } from './clock'
 import { engineConfig, type EngineConfig } from './config'
+import { recordClout, totalClout, type LevelUp } from './clout'
 import { advanceMinutes, type GameSnapshot } from './game'
 import { createRng, mixSeed, type Rng } from './rng'
 import { STAT_KEYS, applyStatChanges, type StatKey } from './stats'
@@ -45,28 +47,24 @@ export interface EventContext {
    * category from place data (`EngineConfig.places`) and ignores this value.
    */
   readonly locationCategory: LocationCategory | null
-  /** Clout points. S13 supplies them; 0 until then. */
-  readonly clout: number
   /** Ids of items the player owns. S10 supplies them; empty until then. */
   readonly itemIds: readonly string[]
 }
 
-/** Where a pending effect came from, so S13's ledger can record its source. */
+/** Where a pending effect came from, so the system that consumes it can record its source. */
 export interface EventEffectSource {
   readonly type: 'event'
   readonly eventId: string
   readonly choiceId: string
 }
 
-/** An effect waiting for its system: clout for S13, items for S10. */
-export type PendingEffect =
-  | { readonly kind: 'clout'; readonly amount: number; readonly source: EventEffectSource }
-  | {
-      readonly kind: 'item'
-      readonly itemId: string
-      readonly op: 'grant' | 'consume'
-      readonly source: EventEffectSource
-    }
+/** An item effect waiting for the system that grants or consumes it (S10a). */
+export interface PendingEffect {
+  readonly kind: 'item'
+  readonly itemId: string
+  readonly op: 'grant' | 'consume'
+  readonly source: EventEffectSource
+}
 
 export interface EventsState {
   /** The open event's id, or null. Only one event is open at a time. */
@@ -97,6 +95,11 @@ export interface EventOutcome {
   /** Game minutes the clock moved. */
   readonly durationMin: number
   readonly rollovers: Rollovers
+  /**
+   * Clout actually applied (style-scaled when a gain, clamped when a loss would take earned
+   * clout below 0); 0 when the choice has no clout effect.
+   */
+  readonly cloutApplied: number
 }
 
 export type ChooseResult =
@@ -105,6 +108,8 @@ export type ChooseResult =
       readonly snapshot: GameSnapshot
       readonly events: EventsState
       readonly outcome: EventOutcome
+      /** Set when the choice's clout lifted the player to a new level. */
+      readonly levelUp: LevelUp | null
     }
   | { readonly ok: false; readonly error: EventError }
 
@@ -217,7 +222,7 @@ export function conditionsHold(
     if (!STAT_KEYS.every((key) => inRange(current[key], stats[key]))) return false
   }
   if (!inRange(snapshot.player.cash, cash)) return false
-  if (!inRange(context.clout, clout)) return false
+  if (clout !== undefined && !inRange(totalClout(snapshot.player, config), clout)) return false
   if (items !== undefined) {
     const owns = (id: string) => context.itemIds.includes(id)
     if (items.anyOf !== undefined && !items.anyOf.some(owns)) return false
@@ -365,6 +370,7 @@ export function chooseEventOption(
   }
 
   let cashDelta = 0
+  let cloutDelta = 0
   let minutes = 0
   const statChanges: Record<StatKey, number> = { energy: 0, hunger: 0, mood: 0 }
   const pending: PendingEffect[] = []
@@ -381,7 +387,7 @@ export function chooseEventOption(
         minutes += effect.minutes
         break
       case 'clout':
-        pending.push({ kind: 'clout', amount: effect.amount, source })
+        cloutDelta += effect.amount
         break
       case 'item':
         pending.push({ kind: 'item', itemId: effect.itemId, op: effect.op, source })
@@ -401,9 +407,15 @@ export function chooseEventOption(
       stats: applyStatChanges(advanced.snapshot.player.stats, statChanges, config),
     },
   }
+  const record = recordClout(
+    finished,
+    { source: 'event', amount: cloutDelta, ref: { eventId: event.id, choiceId } },
+    config,
+  )
   return {
     ok: true,
-    snapshot: finished,
+    snapshot: { ...finished, player: record.player },
+    levelUp: record.levelUp,
     events: {
       ...events,
       active: null,
@@ -416,6 +428,7 @@ export function chooseEventOption(
       effects: choice.effects,
       durationMin: advanced.minutes,
       rollovers: advanced.rollovers,
+      cloutApplied: record.entry?.amount ?? 0,
     },
   }
 }

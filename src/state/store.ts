@@ -17,6 +17,7 @@ import { persist, type PersistStorage, type StorageValue } from 'zustand/middlew
 import { createStore } from 'zustand/vanilla'
 import { performAction, type ActionResult } from '@/engine/actions'
 import { isSpeed } from '@/engine/clock'
+import type { LevelUp } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import {
   chooseEventOption,
@@ -94,6 +95,8 @@ export interface GameActions {
   chooseEventOption(choiceId: string): ChooseResult
   /** Closes the outcome screen of the last event. */
   dismissEventOutcome(): void
+  /** Clears the last level-up (the level-up toast closed). */
+  dismissLevelUp(): void
   /**
    * The player's explicit choice to drop a save written by a newer build: starts a fresh game
    * and lets saving resume. Nothing else ever overwrites that save.
@@ -110,6 +113,11 @@ export interface GameStatus {
   readonly newerSavePresent: boolean
   /** What the last event choice did, shown in the event sheet until dismissed. */
   readonly eventOutcome: EventOutcome | null
+  /**
+   * The last level-up, shown as a toast until dismissed. Session-only: never saved and not
+   * part of the save signature, so a reload never replays it.
+   */
+  readonly lastLevelUp: LevelUp | null
 }
 export type GameState = PersistedState & GameActions & GameStatus
 
@@ -160,8 +168,8 @@ export function mergeGameState(
 }
 
 /**
- * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout,
- * home, rent, inventory), speed and event state. The sub-minute remainder alone is not, so a
+ * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout
+ * ledger, flex state, home, rent, inventory, club nights), speed and event state. The sub-minute remainder alone is not, so a
  * visible tab does not write on every tick (a reload loses at most one game minute's worth of
  * carried real time).
  */
@@ -223,6 +231,11 @@ function guardStorage(inner: PersistStorage<PersistedState>) {
   }
 }
 
+/** A new level-up replaces the one showing; no level-up leaves the toast as it is. */
+function levelUpPatch(levelUp: LevelUp | null): Partial<GameStatus> {
+  return levelUp === null ? {} : { lastLevelUp: levelUp }
+}
+
 export function createGameStore(storage: PersistStorage<PersistedState>, logger: Logger = log) {
   const guard = guardStorage(storage)
   const store = createStore<GameState>()(
@@ -231,6 +244,7 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         ...initialPersistedState(),
         newerSavePresent: false,
         eventOutcome: null,
+        lastLevelUp: null,
         tick: (realElapsedMs, visible) => {
           const state = get()
           const { snapshot } = tick(
@@ -250,17 +264,23 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         },
         workShift: (jobId) => {
           const result = workShift(get(), jobId, engineConfig)
-          if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
+          if (result.ok) {
+            set({
+              clock: result.snapshot.clock,
+              player: result.snapshot.player,
+              ...levelUpPatch(result.levelUp),
+            })
+          }
           return result
         },
         buyItem: (itemId) => {
           const result = buyItem(get(), itemId, engineConfig)
-          if (result.ok) set({ player: result.snapshot.player })
+          if (result.ok) set({ player: result.snapshot.player, ...levelUpPatch(result.levelUp) })
           return result
         },
         sellItem: (itemId) => {
           const result = sellItem(get(), itemId, engineConfig)
-          if (result.ok) set({ player: result.snapshot.player })
+          if (result.ok) set({ player: result.snapshot.player, ...levelUpPatch(result.levelUp) })
           return result
         },
         equipItem: (itemId, slot) => {
@@ -280,7 +300,13 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         },
         performPlaceAction: (place, actionId) => {
           const result = performPlaceAction(get(), place, actionId, engineConfig)
-          if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
+          if (result.ok) {
+            set({
+              clock: result.snapshot.clock,
+              player: result.snapshot.player,
+              ...levelUpPatch(result.levelUp),
+            })
+          }
           return result
         },
         setSpeed: (speed) => {
@@ -309,15 +335,22 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
               player: result.snapshot.player,
               events: result.events,
               eventOutcome: result.outcome,
+              ...levelUpPatch(result.levelUp),
             })
           }
           return result
         },
         dismissEventOutcome: () => set({ eventOutcome: null }),
+        dismissLevelUp: () => set({ lastLevelUp: null }),
         discardNewerSaveAndStartFresh: () => {
           guard.release()
           logger.info("Discarding a saved game from a newer build at the player's request")
-          set({ ...initialPersistedState(), newerSavePresent: false, eventOutcome: null })
+          set({
+            ...initialPersistedState(),
+            newerSavePresent: false,
+            eventOutcome: null,
+            lastLevelUp: null,
+          })
         },
       }),
       {

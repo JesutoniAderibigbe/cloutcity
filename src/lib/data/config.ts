@@ -1,4 +1,5 @@
 /** Validated /data/config. Import config from here, never the JSON directly. */
+import audioJson from '@data/config/audio.json'
 import balanceJson from '@data/config/balance.json'
 import copyJson from '@data/config/copy.json'
 import layoutJson from '@data/config/layout.json'
@@ -10,6 +11,7 @@ import sceneJson from '@data/config/scene.json'
 import themeJson from '@data/config/theme.json'
 import { parseDataFile } from './parse'
 import {
+  AudioConfigSchema,
   BalanceConfigSchema,
   CopyConfigSchema,
   LayoutConfigSchema,
@@ -21,6 +23,7 @@ import {
 } from './schemas/config'
 import { SceneConfigSchema } from './schemas/scene'
 
+export const audio = parseDataFile('config/audio.json', AudioConfigSchema, audioJson)
 export const balance = parseDataFile('config/balance.json', BalanceConfigSchema, balanceJson)
 export const copyConfig = parseDataFile('config/copy.json', CopyConfigSchema, copyJson)
 export const layout = parseDataFile('config/layout.json', LayoutConfigSchema, layoutJson)

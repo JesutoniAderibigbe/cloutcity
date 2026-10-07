@@ -4,7 +4,7 @@ import { copy, type CopyKey } from '@/lib/copy'
 import { useModalPresence } from './modalState'
 
 /** Where a lazy island renders: an overlay zone, or the modal layer. */
-export type IslandZone = 'sheet' | 'modal'
+export type IslandZone = 'hud' | 'toast' | 'sheet' | 'modal'
 
 interface ZoneStateProps {
   readonly zone: IslandZone
@@ -13,10 +13,24 @@ interface ZoneStateProps {
 }
 
 // The modal layer sits in a grid cell that ignores touches; its card takes them back.
+// The HUD and toast zones are one short row: their states stay a single compact line.
 const CARD: Readonly<Record<IslandZone, string>> = {
+  hud: 'flex items-center gap-2',
+  toast:
+    'mx-2 flex items-center gap-2 rounded-2xl border border-night-700 bg-night-900/95 px-3 py-1 shadow-lg backdrop-blur',
   sheet: 'm-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur',
   modal:
     'pointer-events-auto w-full max-w-[var(--overlay-sheet-max-w)] self-center rounded-3xl border border-night-700 bg-night-900 p-5 shadow-2xl',
+}
+
+const COMPACT: ReadonlySet<IslandZone> = new Set(['hud', 'toast'])
+
+// The HUD row has no room for the sentence beside the title: it stays for screen readers only.
+const FAILED_TEXT: Readonly<Record<IslandZone, string>> = {
+  hud: 'sr-only',
+  toast: 'min-w-0 flex-1 text-xs leading-tight text-ink-50',
+  sheet: 'text-sm text-ink-50',
+  modal: 'text-sm text-ink-50',
 }
 
 /** A modal placeholder keeps the page behind it inert: the gate fails closed while it loads. */
@@ -40,11 +54,18 @@ export function ZoneLoading({ zone, labelKey }: ZoneStateProps) {
       className={CARD[zone]}
     >
       <ModalPresence zone={zone} />
-      <div aria-hidden="true" className="cc-reveal flex flex-col gap-2">
-        <div className="h-4 w-1/2 rounded-full bg-night-700 motion-safe:animate-pulse" />
-        <div className="h-3 w-5/6 rounded-full bg-night-800 motion-safe:animate-pulse" />
-        <div className="h-11 w-full rounded-xl bg-night-800 motion-safe:animate-pulse" />
-      </div>
+      {COMPACT.has(zone) ? (
+        <div aria-hidden="true" className="cc-reveal flex flex-col items-end gap-1">
+          <div className="h-3 w-16 rounded-full bg-night-700 motion-safe:animate-pulse" />
+          <div className="h-2 w-28 rounded-full bg-night-800 motion-safe:animate-pulse" />
+        </div>
+      ) : (
+        <div aria-hidden="true" className="cc-reveal flex flex-col gap-2">
+          <div className="h-4 w-1/2 rounded-full bg-night-700 motion-safe:animate-pulse" />
+          <div className="h-3 w-5/6 rounded-full bg-night-800 motion-safe:animate-pulse" />
+          <div className="h-11 w-full rounded-xl bg-night-800 motion-safe:animate-pulse" />
+        </div>
+      )}
     </div>
   )
 }
@@ -58,9 +79,12 @@ export function ZoneLoadFailed({
   readonly onRetry: () => void
 }) {
   return (
-    <div data-zone-error={zone} className={`${CARD[zone]} flex flex-col gap-2`}>
+    <div
+      data-zone-error={zone}
+      className={COMPACT.has(zone) ? CARD[zone] : `${CARD[zone]} flex flex-col gap-2`}
+    >
       <ModalPresence zone={zone} />
-      <p className="text-sm text-ink-50">{copy('loading.failed')}</p>
+      <p className={FAILED_TEXT[zone]}>{copy('loading.failed')}</p>
       <button
         type="button"
         onClick={onRetry}

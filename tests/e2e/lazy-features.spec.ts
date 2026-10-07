@@ -14,7 +14,6 @@ const BODEGA: EventContext = {
   borough: 'queens',
   locationId: null,
   locationCategory: 'bodega',
-  clout: 0,
   itemIds: [],
 }
 

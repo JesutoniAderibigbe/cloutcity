@@ -27,10 +27,12 @@ interface ItemBase {
   /** Whole dollars it sells back for on the day it is bought; always below `price`. */
   readonly sellValue: number
   /**
-   * Clout the item is worth while the player owns (or wears) it. S13 scores it; buying and
-   * selling never changes `player.clout` by itself.
+   * Clout the item is worth while the player owns (or wears) it. It is computed from what is
+   * owned (src/engine/clout.ts `itemClout`), never accumulated, so a sold item stops counting.
    */
   readonly cloutValue: number
+  /** Style points while worn; the outfit's total multiplies clout gains (src/engine/clout.ts). */
+  readonly styleValue: number
   readonly statEffects: StatChanges
 }
 
@@ -75,7 +77,7 @@ function narrow(raw: RawItem, index: number): ItemDef {
     throw new Error(`data/items/items.json: items[${index}].${field} does not fit the engine`)
   }
   const { id, nameKey, descriptionKey, category, slot, rarity, currency } = raw
-  const { price, sellValue, cloutValue, statEffects } = raw
+  const { price, sellValue, cloutValue, styleValue, statEffects } = raw
   if (typeof id !== 'string') return fail('id')
   if (typeof nameKey !== 'string') return fail('nameKey')
   if (typeof descriptionKey !== 'string') return fail('descriptionKey')
@@ -85,6 +87,7 @@ function narrow(raw: RawItem, index: number): ItemDef {
   if (!isDollars(price) || price < 1) return fail('price')
   if (!isDollars(sellValue) || sellValue >= price) return fail('sellValue')
   if (!isDollars(cloutValue)) return fail('cloutValue')
+  if (!isDollars(styleValue) || (category === 'gift' && styleValue !== 0)) return fail('styleValue')
   if (typeof statEffects !== 'object' || statEffects === null) return fail('statEffects')
   const effects: Partial<Record<(typeof STAT_KEYS)[number], number>> = {}
   for (const [key, value] of Object.entries(statEffects)) {
@@ -102,6 +105,7 @@ function narrow(raw: RawItem, index: number): ItemDef {
     price,
     sellValue,
     cloutValue,
+    styleValue,
     statEffects: effects,
   } as const
   if (category === 'clothing' || category === 'makeup') {

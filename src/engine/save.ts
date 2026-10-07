@@ -13,12 +13,32 @@
  * - v5 (S14): adds `events` (open event, cooldown history, pending clout/item effects, random
  *   generator state).
  * - v6 (S09): adds `player.clubNights` (the night each club last paid out clout).
+ * - v7 (S13): `player.clout` becomes the clout ledger (src/engine/clout.ts) and `player.flex`
+ *   is added; event clout no longer waits in `events.pending` (it lands at once).
  */
 import * as z from 'zod/mini'
+import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
 import { calendar, isSpeed, realMsPerGameMinute } from './clock'
+import {
+  appendClout,
+  cloutLevel,
+  cloutSums,
+  currencyOf,
+  initialCloutState,
+  itemClout,
+  legacyCloutState,
+  type CloutEntry,
+  type CloutState,
+} from './clout'
 import { isHomeId, type EngineConfig } from './config'
-import { initialEventsState, type EventsState } from './events'
-import { initialSnapshot, type ClubNights, type GameSnapshot } from './game'
+import { initialEventsState, type EventsState, type PendingEffect } from './events'
+import {
+  initialFlexState,
+  initialSnapshot,
+  type ClubNights,
+  type FlexState,
+  type GameSnapshot,
+} from './game'
 import {
   ITEM_SLOTS,
   emptyInventory,
@@ -31,7 +51,7 @@ import {
 } from './items'
 import { initialRent } from './rent'
 
-export const SAVE_VERSION = 6
+export const SAVE_VERSION = 7
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
@@ -40,7 +60,10 @@ export interface SaveState extends GameSnapshot {
 }
 
 const CashSchema = z.int().check(z.gte(0))
-const CloutSchema = z.int().check(z.gte(0))
+/** A v3 to v6 save's clout: one whole number. */
+const LegacyCloutSchema = z.int().check(z.gte(0))
+const WholeSchema = z.int().check(z.gte(0))
+const Uint32Schema = z.int().check(z.gte(0), z.lte(0xffffffff))
 
 const EffectSourceSchema = z.strictObject({
   type: z.literal('event'),
@@ -48,15 +71,111 @@ const EffectSourceSchema = z.strictObject({
   choiceId: z.string(),
 })
 
-const PendingEffectSchema = z.discriminatedUnion('kind', [
+const ItemPendingEffectSchema = z.strictObject({
+  kind: z.literal('item'),
+  itemId: z.string(),
+  op: z.enum(['grant', 'consume']),
+  source: EffectSourceSchema,
+})
+
+/** v5 and v6 kept event clout pending too; v7 applies it at once. */
+const PendingEffectV6Schema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('clout'), amount: z.int(), source: EffectSourceSchema }),
-  z.strictObject({
-    kind: z.literal('item'),
-    itemId: z.string(),
-    op: z.enum(['grant', 'consume']),
-    source: EffectSourceSchema,
-  }),
+  ItemPendingEffectSchema,
 ])
+
+const CLOUT_REF_SCHEMAS = {
+  paycheck: z.strictObject({ jobId: z.string() }),
+  flex: z.strictObject({
+    placeId: z.string(),
+    viral: z.boolean(),
+    placeMultiplier: z.number().check(z.gt(0)),
+    styleScore: WholeSchema,
+    base: z.int().check(z.gte(1)),
+  }),
+  club: z.strictObject({ venueId: z.string(), night: WholeSchema }),
+  event: z.strictObject({ eventId: z.string(), choiceId: z.string() }),
+  grant: z.strictObject({ grantKey: z.string() }),
+  legacy: z.strictObject({}),
+  repair: z.strictObject({}),
+  item: z.strictObject({ itemId: z.string(), op: z.enum(['buy', 'sell', 'grant', 'consume']) }),
+  premium: z.strictObject({ itemId: z.string(), op: z.enum(['grant', 'revoke']) }),
+} as const satisfies Record<CloutSourceId, z.ZodMiniType>
+
+function cloutEntrySchema<S extends CloutSourceId>(source: S) {
+  return z.strictObject({
+    seq: z.int().check(z.gte(1)),
+    at: WholeSchema,
+    amount: z.int(),
+    currency: z.literal(currencyOf(source)),
+    source: z.literal(source),
+    ref: CLOUT_REF_SCHEMAS[source],
+  })
+}
+
+/** One clout ledger entry; the currency must be the one its source uses. */
+const CloutEntrySchema = z.discriminatedUnion('source', [
+  cloutEntrySchema('paycheck'),
+  cloutEntrySchema('flex'),
+  cloutEntrySchema('club'),
+  cloutEntrySchema('event'),
+  cloutEntrySchema('grant'),
+  cloutEntrySchema('legacy'),
+  cloutEntrySchema('repair'),
+  cloutEntrySchema('item'),
+  cloutEntrySchema('premium'),
+])
+
+const CompactedSchema = z.strictObject({
+  entries: WholeSchema,
+  bySource: z.partialRecord(z.enum(CLOUT_SOURCES), z.int()),
+})
+
+/** The structure of `player.clout`; cross-field rules are in `cloutIssue`. */
+function cloutStateSchema(config: EngineConfig) {
+  return z.strictObject({
+    ledger: z.array(CloutEntrySchema).check(z.maxLength(config.clout.ledger.maxEntries)),
+    compacted: CompactedSchema,
+    nextSeq: z.int().check(z.gte(1)),
+    peakLevel: z.int().check(z.gte(0), z.lte(config.clout.levels.length - 1)),
+    firstPaycheckPaid: z.boolean(),
+  })
+}
+
+/**
+ * Why a structurally valid clout state is inconsistent, or null: entries out of order or not
+ * below `nextSeq`, an entry recorded after `nowMinute`, a sum that is not a safe integer, or
+ * earned or premium clout below 0.
+ */
+function cloutIssue(state: CloutState, nowMinute: number) {
+  let lastSeq = 0
+  for (const entry of state.ledger) {
+    if (entry.seq <= lastSeq) return 'ledger out of order'
+    if (entry.at > nowMinute) return 'clout recorded in the future'
+    lastSeq = entry.seq
+  }
+  if (state.nextSeq <= lastSeq) return 'nextSeq behind the ledger'
+  const sums = cloutSums(state)
+  const values = [sums.earned, sums.premium, ...Object.values(sums.bySource)]
+  if (!values.every(Number.isSafeInteger)) return 'clout sum out of range'
+  if (sums.earned < 0 || sums.premium < 0) return 'negative clout'
+  return null
+}
+
+/** Places the config knows, each flexed on a day no later than today. */
+function flexStateSchema(config: EngineConfig) {
+  return z.strictObject({
+    rngState: Uint32Schema,
+    byPlace: z
+      .record(z.string(), WholeSchema)
+      .check(
+        z.refine(
+          (byPlace) => Object.keys(byPlace).every((id) => config.places.has(id)),
+          'Unknown place',
+        ),
+      ),
+  })
+}
 
 /** A club's night key: the game day the night opened on (0 for day 1 before the club opens). */
 const NightKeySchema = z.int().check(z.gte(0))
@@ -77,8 +196,18 @@ function eventsStateSchema(config: EngineConfig) {
   return z.strictObject({
     active: z.nullable(z.string()),
     history: z.record(z.string(), z.int().check(z.gte(0))),
-    pending: z.array(PendingEffectSchema).check(z.maxLength(config.events.maxPendingEffects)),
-    rngState: z.int().check(z.gte(0), z.lte(0xffffffff)),
+    pending: z.array(ItemPendingEffectSchema).check(z.maxLength(config.events.maxPendingEffects)),
+    rngState: Uint32Schema,
+  })
+}
+
+/** v5 and v6 event state: pending effects may still hold clout. */
+function eventsStateV6Schema(config: EngineConfig) {
+  return z.strictObject({
+    active: z.nullable(z.string()),
+    history: z.record(z.string(), z.int().check(z.gte(0))),
+    pending: z.array(PendingEffectV6Schema).check(z.maxLength(config.events.maxPendingEffects)),
+    rngState: Uint32Schema,
   })
 }
 
@@ -151,7 +280,8 @@ export function createSaveSchema(config: EngineConfig) {
     player: z.strictObject({
       cash: CashSchema,
       stats: z.strictObject({ energy: stat, hunger: stat, mood: stat }),
-      clout: CloutSchema,
+      clout: cloutStateSchema(config),
+      flex: flexStateSchema(config),
       home: z.string().check(z.refine((home) => isHomeId(home, config), 'Unknown home')),
       rent: z.strictObject({
         owed: CashSchema,
@@ -175,7 +305,153 @@ export function createSaveSchema(config: EngineConfig) {
         ),
       { message: 'A club night in the future', path: ['player', 'clubNights'] },
     ),
+    z.refine((value) => cloutIssue(value.player.clout as CloutState, value.clock.minute) === null, {
+      message: 'Inconsistent clout ledger',
+      path: ['player', 'clout'],
+    }),
+    z.refine(
+      (value) =>
+        Object.values(value.player.flex.byPlace).every(
+          (day) => day <= calendar(value.clock.minute, config).day,
+        ),
+      { message: 'A flex in the future', path: ['player', 'flex'] },
+    ),
   )
+}
+
+/** Own keys of a plain object, or an empty object for anything else. */
+function recordOf(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {}
+}
+
+/**
+ * The clout ledger from an untrusted save, keeping everything usable: entries that do not fit
+ * their source's shape, were recorded after `nowMinute` or break the `seq` order are dropped;
+ * folded totals keep the known sources with whole values; `nextSeq` moves past the last entry;
+ * a `peakLevel` outside the levels is clamped (a non-number becomes the current level, so no
+ * level-up replays); a non-boolean `firstPaycheckPaid` becomes true (never paid twice). Earned
+ * clout below 0 gets a `repair` entry back to 0; premium clout below 0 is folded back to 0.
+ * Totals that sum past a safe integer keep no entries or folded totals at all.
+ * `repaired` is false when the state was already valid.
+ */
+function repairClout(
+  raw: unknown,
+  nowMinute: number,
+  inventory: Inventory,
+  config: EngineConfig,
+): { readonly clout: CloutState; readonly repaired: boolean } {
+  const parsed = cloutStateSchema(config).safeParse(raw)
+  if (parsed.success && cloutIssue(parsed.data as CloutState, nowMinute) === null) {
+    return { clout: parsed.data as CloutState, repaired: false }
+  }
+  const source = recordOf(raw)
+
+  const kept: CloutEntry[] = []
+  for (const value of Array.isArray(source.ledger) ? source.ledger : []) {
+    const entry = CloutEntrySchema.safeParse(value)
+    if (!entry.success || entry.data.at > nowMinute) continue
+    if (entry.data.seq <= (kept.at(-1)?.seq ?? 0)) continue
+    kept.push(entry.data as CloutEntry)
+  }
+  const overflow = Math.max(0, kept.length - config.clout.ledger.maxEntries)
+
+  const rawCompacted = recordOf(source.compacted)
+  const rawBySource = recordOf(rawCompacted.bySource)
+  const bySource: Partial<Record<CloutSourceId, number>> = {}
+  for (const id of CLOUT_SOURCES) {
+    const value = Object.hasOwn(rawBySource, id) ? rawBySource[id] : undefined
+    if (typeof value === 'number' && Number.isSafeInteger(value)) bySource[id] = value
+  }
+  for (const entry of kept.slice(0, overflow)) {
+    bySource[entry.source] = (bySource[entry.source] ?? 0) + entry.amount
+  }
+  const rawEntries = rawCompacted.entries
+  const entries =
+    (typeof rawEntries === 'number' && Number.isSafeInteger(rawEntries) && rawEntries >= 0
+      ? rawEntries
+      : 0) + overflow
+
+  const ledger = kept.slice(overflow)
+  const lastSeq = kept.at(-1)?.seq ?? 0
+  const rawNext = source.nextSeq
+  const nextSeq =
+    typeof rawNext === 'number' && Number.isSafeInteger(rawNext) && rawNext > lastSeq
+      ? rawNext
+      : lastSeq + 1
+
+  let clout: CloutState = {
+    ledger,
+    compacted: { entries, bySource },
+    nextSeq,
+    peakLevel: 0,
+    firstPaycheckPaid:
+      typeof source.firstPaycheckPaid === 'boolean' ? source.firstPaycheckPaid : true,
+  }
+  let sums = cloutSums(clout)
+  // Each kept value is a safe integer, but tampered totals can still sum past one: such a
+  // ledger is unusable, so nothing of it is kept (and no repair entry can overflow either).
+  if (![sums.earned, sums.premium, ...Object.values(sums.bySource)].every(Number.isSafeInteger)) {
+    clout = { ...clout, ledger: [], compacted: initialCloutState.compacted }
+    sums = cloutSums(clout)
+  }
+  if (sums.premium < 0) {
+    const premium = (clout.compacted.bySource.premium ?? 0) - sums.premium
+    clout = {
+      ...clout,
+      compacted: { ...clout.compacted, bySource: { ...clout.compacted.bySource, premium } },
+    }
+  }
+  if (sums.earned < 0) {
+    const change = { source: 'repair', amount: -sums.earned, ref: {} } as const
+    clout = appendClout(clout, change, nowMinute, config).state
+  }
+
+  const top = config.clout.levels.length - 1
+  const rawPeak = source.peakLevel
+  const peakLevel =
+    typeof rawPeak === 'number' && Number.isFinite(rawPeak)
+      ? Math.min(top, Math.max(0, Math.round(rawPeak)))
+      : currentLevelIndex(clout, inventory, config)
+  return { clout: { ...clout, peakLevel }, repaired: true }
+}
+
+/** The level a clout state and inventory add up to (premium capped). */
+function currentLevelIndex(clout: CloutState, inventory: Inventory, config: EngineConfig) {
+  const sums = cloutSums(clout)
+  const premium = Math.min(sums.premium, config.clout.caps.byCurrency.usd)
+  return cloutLevel(sums.earned + premium + itemClout({ inventory }, config), config).index
+}
+
+/**
+ * Flex state from an untrusted save: flexes at places the config does not know or on a day
+ * after today are dropped, and a generator state that is not a uint32 starts over at 0.
+ */
+function repairFlex(
+  raw: unknown,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly flex: FlexState; readonly repaired: boolean } {
+  const today = calendar(nowMinute, config).day
+  const parsed = flexStateSchema(config).safeParse(raw)
+  if (parsed.success && Object.values(parsed.data.byPlace).every((day) => day <= today)) {
+    return { flex: parsed.data, repaired: false }
+  }
+  const source = recordOf(raw)
+  const rngState = Uint32Schema.safeParse(source.rngState)
+  const entries = Object.entries(recordOf(source.byPlace))
+  const kept = entries.filter(
+    (entry): entry is [string, number] =>
+      config.places.has(entry[0]) &&
+      Number.isSafeInteger(entry[1]) &&
+      (entry[1] as number) >= 0 &&
+      (entry[1] as number) <= today,
+  )
+  return {
+    flex: { rngState: rngState.success ? rngState.data : 0, byPlace: Object.fromEntries(kept) },
+    repaired: true,
+  }
 }
 
 /**
@@ -275,7 +551,10 @@ const LoadableSaveSchema = z.strictObject({
   player: z.strictObject({
     cash: CashSchema,
     stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
-    clout: CloutSchema,
+    // Repairable: unusable entries are dropped (`repairClout`).
+    clout: z.unknown(),
+    // Repairable: unusable flexes are dropped (`repairFlex`).
+    flex: z.optional(z.unknown()),
     home: z.unknown(),
     rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
     inventory: z.unknown(),
@@ -287,13 +566,30 @@ const LoadableSaveSchema = z.strictObject({
   events: z.optional(z.unknown()),
 })
 
+/** A v6 save's structure (S09): clout is one number, no flex state yet. */
+const LoadableSaveV6Schema = z.strictObject({
+  clock: z.strictObject({ minute: z.int().check(z.gte(0)), remainderMs: z.unknown() }),
+  player: z.strictObject({
+    cash: CashSchema,
+    stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
+    clout: LegacyCloutSchema,
+    home: z.unknown(),
+    rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
+    inventory: z.unknown(),
+    clubNights: z.optional(z.unknown()),
+  }),
+  speed: z.unknown(),
+  events: z.optional(z.unknown()),
+})
+type LoadableSaveV6 = z.infer<typeof LoadableSaveV6Schema>
+
 /** A v5 save's structure (S14): no club nights yet. */
 const LoadableSaveV5Schema = z.strictObject({
   clock: z.strictObject({ minute: z.int().check(z.gte(0)), remainderMs: z.unknown() }),
   player: z.strictObject({
     cash: CashSchema,
     stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
-    clout: CloutSchema,
+    clout: LegacyCloutSchema,
     home: z.unknown(),
     rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
     inventory: z.unknown(),
@@ -308,7 +604,7 @@ const LoadableSaveV4Schema = z.strictObject({
   player: z.strictObject({
     cash: CashSchema,
     stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
-    clout: CloutSchema,
+    clout: LegacyCloutSchema,
     home: z.unknown(),
     rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
     inventory: z.unknown(),
@@ -322,7 +618,7 @@ const LoadableSaveV3Schema = z.strictObject({
   player: z.strictObject({
     cash: CashSchema,
     stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
-    clout: CloutSchema,
+    clout: LegacyCloutSchema,
     home: z.unknown(),
     rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
   }),
@@ -359,7 +655,9 @@ export type LoadResult =
  *   (a non-number becomes 0);
  * - an inconsistent or malformed inventory keeps what is usable (see `repairInventory`);
  * - unusable event state starts over (see `repairEvents`);
- * - unusable club-night entries are dropped (see `repairClubNights`).
+ * - unusable club-night entries are dropped (see `repairClubNights`);
+ * - an inconsistent clout ledger keeps what is usable (see `repairClout`);
+ * - unusable flexes are dropped (see `repairFlex`).
  * Only a structurally unusable save (missing objects, unknown keys, cash or minute of the wrong
  * type or range) fails, and the caller starts fresh.
  */
@@ -416,6 +714,17 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   )
   if (nightsRepaired) repaired.push('player.clubNights')
 
+  const { clout, repaired: cloutRepaired } = repairClout(
+    player.clout,
+    clock.minute,
+    inventory,
+    config,
+  )
+  if (cloutRepaired) repaired.push('player.clout')
+
+  const { flex, repaired: flexRepaired } = repairFlex(player.flex, clock.minute, config)
+  if (flexRepaired) repaired.push('player.flex')
+
   return {
     ok: true,
     save: {
@@ -423,7 +732,8 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
       player: {
         cash: player.cash,
         stats,
-        clout: player.clout,
+        clout,
+        flex,
         home,
         rent: { owed: player.rent.owed, missed },
         inventory,
@@ -483,19 +793,62 @@ export interface Migration {
 }
 
 /**
+ * A v6 save's clout and events in v7 form:
+ * - its clout number becomes one folded `legacy` entry (`legacyCloutState`);
+ * - event clout still pending is drained into the ledger as `event` entries at face value (no
+ *   style; a loss is clamped at 0 earned), and only item effects stay pending;
+ * - `peakLevel` is the level the result adds up to with the wearables owned, so no level-up
+ *   is reported for progress made before the ledger; the first paycheck is still to come;
+ * - flex state starts fresh.
+ * Event state that does not fit the v6 schema is passed on as is (`repairEvents` resets it).
+ */
+function upgradeV6(v6: LoadableSaveV6, config: EngineConfig) {
+  const { clock, player } = v6
+  const { inventory } = repairInventory(player.inventory, clock.minute, config)
+  let clout = legacyCloutState(player.clout, 0)
+  let events: unknown = v6.events
+  const parsedEvents = eventsStateV6Schema(config).safeParse(v6.events)
+  if (parsedEvents.success) {
+    const items: PendingEffect[] = []
+    for (const effect of parsedEvents.data.pending) {
+      if (effect.kind === 'item') {
+        items.push(effect)
+        continue
+      }
+      const ref = { eventId: effect.source.eventId, choiceId: effect.source.choiceId }
+      const change = { source: 'event', amount: effect.amount, ref } as const
+      clout = appendClout(clout, change, clock.minute, config).state
+    }
+    events = { ...parsedEvents.data, pending: items }
+  }
+  clout = { ...clout, peakLevel: currentLevelIndex(clout, inventory, config) }
+  return { ...v6, player: { ...player, clout, flex: initialFlexState, inventory }, events }
+}
+
+/** Loads a save in v6 form (v2 to v5 saves are brought to it first) as the current version. */
+function loadV6(raw: unknown, config: EngineConfig): LoadResult | null {
+  const v6 = LoadableSaveV6Schema.safeParse(raw)
+  if (!v6.success) return null
+  return loadSave(upgradeV6(v6.data, config), config)
+}
+
+/**
  * Upgrades a save written by an older SAVE_VERSION. A v1 save keeps its cash and starts the
  * new clock and stats fresh. A v2 save keeps everything and starts with no clout, the start
  * home and no rent owed. A v3 save keeps everything and starts with no items. A v4 save keeps
  * everything and starts with fresh event state. A v5 save keeps everything and starts with no
- * club nights. Anything older or malformed starts fresh. A
- * save from a newer build throws `NewerSaveError`: it is not loaded, and not overwritten unless
- * the player plays on.
+ * club nights. A v6 save keeps everything, its clout carried into the ledger (`upgradeV6`).
+ * Every step goes through the v6 form, so v2 to v5 saves get the v6 upgrade too. Anything
+ * older or malformed starts fresh. A save from a newer build throws `NewerSaveError`: it is
+ * not loaded, and not overwritten unless the player plays on.
  */
 export function migrateSave(persisted: unknown, version: number, config: EngineConfig): Migration {
   if (version > SAVE_VERSION) {
     throw new NewerSaveError(version)
   }
   const fresh = initialSave(config)
+  const freshEvents = initialEventsState()
+  let loaded: LoadResult | null = null
   if (version === 1) {
     const v1 = SaveV1Schema.safeParse(persisted)
     if (v1.success) {
@@ -508,7 +861,7 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
   if (version === 2) {
     const v2 = LoadableSaveV2Schema.safeParse(persisted)
     if (v2.success) {
-      const loaded = loadSave(
+      loaded = loadV6(
         {
           ...v2.data,
           player: {
@@ -519,43 +872,41 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
             inventory: emptyInventory,
             clubNights: {},
           },
-          events: fresh.events,
+          events: freshEvents,
         },
         config,
       )
-      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
     }
   }
   if (version === 3) {
     const v3 = LoadableSaveV3Schema.safeParse(persisted)
     if (v3.success) {
-      const loaded = loadSave(
+      loaded = loadV6(
         {
           ...v3.data,
           player: { ...v3.data.player, inventory: emptyInventory, clubNights: {} },
-          events: fresh.events,
+          events: freshEvents,
         },
         config,
       )
-      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
     }
   }
   if (version === 4) {
     const v4 = LoadableSaveV4Schema.safeParse(persisted)
     if (v4.success) {
-      const loaded = loadSave(
-        { ...v4.data, player: { ...v4.data.player, clubNights: {} }, events: fresh.events },
+      loaded = loadV6(
+        { ...v4.data, player: { ...v4.data.player, clubNights: {} }, events: freshEvents },
         config,
       )
-      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
     }
   }
   if (version === 5) {
     const v5 = LoadableSaveV5Schema.safeParse(persisted)
     if (v5.success) {
-      const loaded = loadSave({ ...v5.data, player: { ...v5.data.player, clubNights: {} } }, config)
-      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
+      loaded = loadV6({ ...v5.data, player: { ...v5.data.player, clubNights: {} } }, config)
     }
   }
+  if (version === 6) loaded = loadV6(persisted, config)
+  if (loaded?.ok === true) return { save: loaded.save, outcome: 'carried' }
   return { save: fresh, outcome: 'fresh' }
 }

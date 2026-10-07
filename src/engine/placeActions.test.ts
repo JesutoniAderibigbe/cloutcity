@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Landmark, Venue } from '@/lib/data/schemas/content'
-import { applyCloutGain } from './clout'
+import { totalClout } from './clout'
 import { engineConfig, type EngineConfig } from './config'
 import { initialSnapshot, type GameSnapshot } from './game'
 import {
@@ -12,6 +12,7 @@ import {
   type PlaceAction,
   type PlaceView,
 } from './placeActions'
+import { withClout } from './test-support'
 
 /** Fixed numbers so these tests do not move when balance.json is tuned (S12). */
 const config: EngineConfig = {
@@ -47,6 +48,7 @@ const config: EngineConfig = {
     requiredCloutLevel: { 'junior-dev': 'local' },
   },
   clout: {
+    ...engineConfig.clout,
     levels: [
       { id: 'nobody', minClout: 0 },
       { id: 'local', minClout: 100 },
@@ -110,15 +112,15 @@ function snapshotWith(
   } = {},
 ): GameSnapshot {
   const base = initialSnapshot(config)
-  return {
+  const snapshot = {
     clock: { minute: overrides.minute ?? at('12:00'), remainderMs: 0 },
     player: {
       ...base.player,
       cash: overrides.cash ?? base.player.cash,
-      clout: overrides.clout ?? 0,
       stats: { ...base.player.stats, ...overrides.stats },
     },
   }
+  return withClout(snapshot, overrides.clout ?? 0, config)
 }
 
 const placeBase = {
@@ -195,7 +197,7 @@ describe('placeActions: action sets by venue type', () => {
     ['gym', {}, ['workout']],
     ['park', {}, ['walk-in-the-park']],
     ['thrift', { jobIds: ['retail'] }, ['shift-retail']],
-    ['boutique', { jobIds: ['retail'] }, ['shift-retail']],
+    ['boutique', { jobIds: ['retail'] }, ['shift-retail', 'flex']],
     ['job-site', { jobIds: ['delivery'] }, ['shift-delivery']],
     ['job-site', { jobIds: ['junior-dev'] }, ['shift-junior-dev']],
     ['subway-station', {}, []],
@@ -438,7 +440,7 @@ describe('performPlaceAction', () => {
     const result = performPlaceAction(before, club, 'club-night', config)
     if (!result.ok) throw new Error(result.error.code)
     expect(result.snapshot.player.cash).toBe(35)
-    expect(result.snapshot.player.clout).toBe(110)
+    expect(totalClout(result.snapshot.player, config)).toBe(110)
     expect(result.cloutGained).toBe(10)
     expect(result.snapshot.clock.minute).toBe(before.clock.minute + 120)
   })
@@ -501,20 +503,6 @@ describe('performPlaceAction', () => {
   })
 })
 
-describe('applyCloutGain', () => {
-  it('adds a whole, non-negative gain', () => {
-    expect(applyCloutGain({ clout: 5 }, { kind: 'clout', amount: 10, source: 'club' })).toEqual({
-      clout: 15,
-    })
-  })
-
-  it.each([-1, 1.5, Number.NaN])('rejects %s', (amount) => {
-    expect(() => applyCloutGain({ clout: 0 }, { kind: 'clout', amount, source: 'club' })).toThrow(
-      RangeError,
-    )
-  })
-})
-
 describe('club clout at most once per game night (orchestrator ruling, S09)', () => {
   const lateHours = { open: '22:00', close: '04:00' } as const
 
@@ -554,7 +542,7 @@ describe('club clout at most once per game night (orchestrator ruling, S09)', ()
     })
     const second = enter(later)
     expect(second.cloutGained).toBe(0)
-    expect(second.snapshot.player.clout).toBe(later.player.clout)
+    expect(totalClout(second.snapshot.player, config)).toBe(totalClout(later.player, config))
     expect(second.snapshot.player.cash).toBe(later.player.cash - 15)
     expect(second.snapshot.clock.minute).toBe(later.clock.minute + 120)
     expect(second.snapshot.player.clubNights).toEqual({ 'probe-club': 5 })

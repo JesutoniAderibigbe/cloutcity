@@ -20,7 +20,10 @@ import { z } from 'zod'
 import { PerfConfigSchema } from '../src/lib/data/schemas/config.ts'
 import { extractScripts, gzipBytes, staticFilePath } from './budget.ts'
 
-/** Window properties the e2e test hooks install (src/components/{events,places}, src/scene/testHooks.tsx). */
+/**
+ * Window properties the e2e test hooks install (src/components/{events,places}/*TestHook.ts,
+ * src/scene/testHooks.tsx, src/lib/audio/testHook.ts).
+ */
 export const TEST_HOOK_MARKERS = ['__cloutcityTest', '__cloutcityPlaces'] as const
 
 const MARKER = /cc-feature:[a-z0-9]+(?:-[a-z0-9]+)*/g

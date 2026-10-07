@@ -13,6 +13,7 @@ import {
   type WelcomeField,
   type WelcomeValues,
 } from '@/lib/forms/welcome'
+import { unlockAudioFromGesture } from '@/lib/audio/unlock'
 import { onboardingConfig, onboardingStore } from '@/state/onboarding'
 import { startGuestSession } from '@/state/session'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -89,7 +90,8 @@ function ConsentLabel() {
  * schema, are recomputed on every change and appear together after the first submit.
  *
  * The birth year lives only in this component's state: it is never stored, logged or sent.
- * Nothing here creates an AudioContext or loads audio (GR-13); the choice is only recorded.
+ * Picking a sound option does nothing audible; submitting a passing card is the deliberate tap
+ * that turns sound on (GR-13), with music muted from the start under "I'll bring my own".
  */
 export function WelcomeCard({ titleId, introId }: WelcomeCardProps) {
   // Client-only (the gate renders nothing on the server), so reading the clock here is safe.
@@ -134,7 +136,10 @@ export function WelcomeCard({ titleId, introId }: WelcomeCardProps) {
       consentVersion: onboardingConfig.consentVersion,
       audioChoice: parsed.data.audio,
     }
-    if (onboarding.completeAdult(choice, nowMs)) startGuestSession()
+    if (!onboarding.completeAdult(choice, nowMs)) return
+    // Synchronously, still inside the submit gesture: Safari only starts audio there.
+    unlockAudioFromGesture()
+    startGuestSession()
   }
 
   return (

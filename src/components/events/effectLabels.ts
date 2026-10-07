@@ -39,3 +39,18 @@ export function effectLabel(effect: EventEffect): string {
 export function effectsSummary(effects: readonly EventEffect[]): string {
   return effects.map(effectLabel).join(', ')
 }
+
+/**
+ * A resolved choice's effects as they landed: its clout effects become one effect carrying
+ * the clout actually applied (style-scaled, or clamped at 0), or none when nothing applied.
+ */
+export function appliedEffects(
+  effects: readonly EventEffect[],
+  cloutApplied: number,
+): EventEffect[] {
+  const first = effects.findIndex((effect) => effect.kind === 'clout')
+  return effects.flatMap((effect, i): EventEffect[] => {
+    if (effect.kind !== 'clout') return [effect]
+    return i === first && cloutApplied !== 0 ? [{ kind: 'clout', amount: cloutApplied }] : []
+  })
+}
