@@ -47,6 +47,10 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: 'retain-on-failure',
     launchOptions: { args: WEBGL_LAUNCH_ARGS },
+    // The production build registers a service worker (S04e) that precaches the app: left on,
+    // every spec would fetch the whole precache and could be served from it. Specs that test
+    // offline support opt in with `test.use({ serviceWorkers: 'allow' })`.
+    serviceWorkers: 'block',
   },
   projects: [
     {

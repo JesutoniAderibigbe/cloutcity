@@ -23,11 +23,17 @@ function noisyChunk(seed: number): string {
 }
 
 /** Limits every fake project gets unless a test overrides them. */
-const DEFAULT_PERF = { shellJsGzKB: 180, sceneChunkJsGzKB: 350 }
+const DEFAULT_PERF = {
+  shellJsGzKB: 180,
+  sceneChunkJsGzKB: 350,
+  serviceWorkerGzKB: 15,
+  precacheGzKB: 1000,
+}
 
 /**
- * A fake project: one shell chunk referenced from the prerendered `/` and one lazy 3D chunk
- * listed in the route's react-loadable-manifest.json (the format Next 16 / Turbopack writes).
+ * A fake project: one shell chunk referenced from the prerendered `/`, one lazy 3D chunk
+ * listed in the route's react-loadable-manifest.json (the format Next 16 / Turbopack writes) and
+ * a service worker precaching the shell chunk and `/`.
  */
 function fakeProject(perf: Record<string, unknown>, withBuild = true): string {
   const root = mkdtempSync(join(tmpdir(), 'budget-'))
@@ -42,6 +48,12 @@ function fakeProject(perf: Record<string, unknown>, withBuild = true): string {
     writeFileSync(
       join(root, '.next/server/app/index.html'),
       '<html><body><script src="/_next/static/chunks/main.js" async=""></script><script>self.__next_f=[]</script></body></html>',
+    )
+    // The service worker (S04e), precaching the shell chunk and the prerendered `/`.
+    mkdirSync(join(root, '.next/server/app/serwist'), { recursive: true })
+    writeFileSync(
+      join(root, '.next/server/app/serwist/sw.js.body'),
+      'var m=[{url:"/_next/static/chunks/main.js",revision:null},{url:"/",revision:"r"}];',
     )
     writeFileSync(
       join(root, '.next/server/app/page/react-loadable-manifest.json'),

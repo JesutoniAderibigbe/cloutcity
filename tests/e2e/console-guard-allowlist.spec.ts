@@ -15,3 +15,15 @@ test('the allowlisted note still fails the test when logged as an error (PERF-1)
     console.error(text)
   }, NOTE)
 })
+
+// Playwright's blocked-registration stand-in (S04e) is ignored only as that exact warning.
+test('the blocked service worker warning still fails the test when logged as an error', async ({
+  page,
+}) => {
+  test.fail()
+  await page.goto('/')
+  await page.evaluate(() => {
+    // eslint-disable-next-line no-console -- deliberately provoking the guard
+    console.error('Service Worker registration blocked by Playwright')
+  })
+})

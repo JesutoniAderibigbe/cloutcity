@@ -79,6 +79,14 @@ export const PerfConfigSchema = z.strictObject({
   audioFileMaxKB: positive,
   /** The lazily loaded audio runtime chunk (src/lib/audio/runtime.ts). */
   audioRuntimeJsGzKB: positive,
+  /** The service worker script, /serwist/sw.js (S04e). Read by `npm run budget`. */
+  serviceWorkerGzKB: positive,
+  /**
+   * Everything the service worker precaches on install (static JS/CSS/SVG/fonts, icons, pages,
+   * base geo, the fallback map), gzipped. Fetched in the background after the map is playable,
+   * so it is not part of `totalBytesToPlayableGzKB`. Read by `npm run budget`.
+   */
+  precacheGzKB: positive,
 })
 export type PerfConfig = z.infer<typeof PerfConfigSchema>
 
@@ -835,6 +843,15 @@ export const BalanceConfigSchema = z
   )
 export type BalanceConfig = z.infer<typeof BalanceConfigSchema>
 
+/**
+ * data/config/offline.json (S04e): when the service worker registers. It waits for the map to be
+ * playable, then for the browser to be idle, but no longer than `idleTimeoutMs`.
+ */
+export const OfflineConfigSchema = z.strictObject({
+  registration: z.strictObject({ idleTimeoutMs: positiveInt }),
+})
+export type OfflineConfig = z.infer<typeof OfflineConfigSchema>
+
 export const LayoutConfigSchema = z.strictObject({
   overlay: z
     .strictObject({
@@ -920,7 +937,7 @@ export const OnboardingConfigSchema = z
 export type OnboardingConfig = z.infer<typeof OnboardingConfigSchema>
 
 /** The kinds of notice a new player may see (GR-9): each surface tags itself `data-cc-notice`. */
-export const NOTICE_KINDS = ['tour', 'level-up', 'goals-ready', 'event', 'icon'] as const
+export const NOTICE_KINDS = ['tour', 'level-up', 'goals-ready', 'event', 'icon', 'update'] as const
 
 /**
  * The first-run tour (S06): coach marks over the live map that walk a new player through one
