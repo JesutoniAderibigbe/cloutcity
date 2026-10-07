@@ -6,6 +6,7 @@ import layoutJson from '@data/config/layout.json'
 import moderationJson from '@data/config/moderation.json'
 import onboardingJson from '@data/config/onboarding.json'
 import perfJson from '@data/config/perf.json'
+import progressionJson from '@data/config/progression.json'
 import realtimeJson from '@data/config/realtime.json'
 import sceneJson from '@data/config/scene.json'
 import themeJson from '@data/config/theme.json'
@@ -19,6 +20,7 @@ import {
   OnboardingConfigSchema,
   PerfConfigSchema,
   RealtimeConfigSchema,
+  createProgressionConfigSchema,
   ThemeConfigSchema,
 } from './schemas/config'
 import { SceneConfigSchema } from './schemas/scene'
@@ -38,6 +40,11 @@ export const onboarding = parseDataFile(
   onboardingJson,
 )
 export const perf = parseDataFile('config/perf.json', PerfConfigSchema, perfJson)
+export const progression = parseDataFile(
+  'config/progression.json',
+  createProgressionConfigSchema(balance.clout.levels),
+  progressionJson,
+)
 export const realtime = parseDataFile('config/realtime.json', RealtimeConfigSchema, realtimeJson)
 export const theme = parseDataFile('config/theme.json', ThemeConfigSchema, themeJson)
 export const scene = parseDataFile('config/scene.json', SceneConfigSchema, sceneJson)

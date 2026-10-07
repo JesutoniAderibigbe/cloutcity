@@ -7,7 +7,7 @@ import { closeHudPanel, openHudPanel, useHudPanel, type HudPanel } from '@/state
 import '@/lib/copy/ns/hud'
 
 /** Icon paths (24×24, stroked): a bag for the inventory, a house for rent. */
-const ICONS: Readonly<Record<HudPanel, string>> = {
+const ICONS: Readonly<Record<(typeof BUTTONS)[number]['panel'], string>> = {
   inventory: 'M6 8h12l-1 12H7L6 8Zm3 0V6a3 3 0 0 1 6 0v2',
   rent: 'M4 11 12 4l8 7M6 9.5V20h12V9.5M10 20v-5h4v5',
 }

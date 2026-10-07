@@ -39,10 +39,19 @@ export interface GameSnapshot {
      * `clubNightKey`): clout is earned at most once per club per game night.
      */
     readonly clubNights: ClubNights
+    /**
+     * The personal-clock minute each landmark was first visited (src/engine/placeActions.ts,
+     * the Visit action): the first-landmark-visit goal reads it. Memorials offer no Visit, so
+     * they never appear here.
+     */
+    readonly visited: Visited
   }
 }
 
 export type PlayerState = GameSnapshot['player']
+
+/** Landmark id → the personal-clock minute of its first visit. */
+export type Visited = Readonly<Record<string, number>>
 
 /** Club venue id → the game day its last clout-paying night opened on. */
 export type ClubNights = Readonly<Record<string, number>>
@@ -76,6 +85,7 @@ export function initialSnapshot(config: EngineConfig): GameSnapshot {
       rent: initialRent,
       inventory: emptyInventory,
       clubNights: {},
+      visited: {},
     },
   }
 }

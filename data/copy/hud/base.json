@@ -6,6 +6,9 @@
     "hud.clout.progressLabel": "Clout: {level}, {count} of {target} to {next}",
     "hud.clout.maxLabel": "Clout: {level}, {count}. Top level reached.",
     "hud.inventory": "Inventory",
-    "hud.rent": "Rent"
+    "hud.rent": "Rent",
+    "hud.goals": "Goals",
+    "hud.goalsReady": "Goals, {count} rewards ready",
+    "hud.goalsReadyOne": "Goals, 1 reward ready"
   }
 }

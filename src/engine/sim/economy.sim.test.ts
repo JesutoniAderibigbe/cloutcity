@@ -15,6 +15,7 @@ import { landmarks } from '@/lib/data/content'
 import { cloutCeilings, cloutLevel, findCloutLevel } from '../clout'
 import { engineConfig, type EngineConfig, type HomeId, type JobId } from '../config'
 import { initialSnapshot } from '../game'
+import { grantCeilings } from '../grants'
 import { jobIds, jobLock, shiftWage } from '../jobs'
 import type { Place } from '../places'
 import { homeIds, rentFor } from '../rent'
@@ -387,5 +388,49 @@ describe('economy simulation: the bot copes with every tuned key moved by one', 
       expect(report.shiftsWorked + report.shiftsMissed, jobId).toBe(DAYS * target.shiftsPerDay)
       expect(report.minCash, jobId).toBeGreaterThanOrEqual(0)
     }
+  })
+})
+
+describe('economy simulation: claiming every goal reward (S15, ECON-1)', () => {
+  const claimAll = (jobId: JobId, flex?: { readonly place: Place }) =>
+    runEconomyBot(
+      { jobId, days: DAYS, upgradeTo, claimAll: true, ...(flex ? { flex } : {}) },
+      config,
+    )
+  const claimed = [
+    ...entryJobs.map((jobId) => claimAll(jobId)),
+    claimAll('barista', { place: flexPlace }),
+  ]
+  const byRun = claimed.map(
+    (report, i) => [i === entryJobs.length ? 'flex' : report.jobId, report] as const,
+  )
+
+  it.each(byRun)('%s: rewards are claimed, and only within their caps', (_, report) => {
+    expect(report.grants.count).toBeGreaterThan(0)
+    expect(report.goalsReachedDay['first-paycheck']).toBe(1)
+    const ceilings = grantCeilings(config)
+    expect(report.grants.cash).toBeLessThanOrEqual(ceilings.perRun.cash)
+    expect(report.grants.clout).toBeLessThanOrEqual(ceilings.perRun.clout)
+  })
+
+  it.each(byRun)('%s: never goes broke or rich, and misses no rent', (_, report) => {
+    expect(report.minCash).toBeGreaterThanOrEqual(0)
+    expect(report.missedOrEvicted).toBe(0)
+    expect(report.finalCash).toBeLessThanOrEqual(BEST_FINAL_CASH.max)
+  })
+
+  it.each(byRun)('%s: the first upgrade never comes before the target window', (_, report) => {
+    expect(report.firstAffordableDay).not.toBeNull()
+    expect(report.firstAffordableDay).toBeGreaterThanOrEqual(target.firstUpgradeGameDay.min)
+  })
+
+  it('granted clout never moves goal progress: levels are reached on the same days', () => {
+    const flexClaim = byRun.at(-1)?.[1]
+    expect(flexClaim?.goalsReachedDay['reach-local']).toBe(flexReport.levelReachedDay.local)
+  })
+
+  it('is off by default: the plain runs (and the committed baseline) are unchanged', () => {
+    expect(reports.every((report) => report.grants.count === 0)).toBe(true)
+    expect(baselineJson(reports)).toBe(committedBaseline)
   })
 })

@@ -15,8 +15,8 @@
  * Reasons are checked in this order: the borough is locked, the place is closed on the
  * personal clock, the club door refuses, the job is locked, today's flexes are used up, then
  * funds and energy. `performPlaceAction` re-checks all of them, so a stale UI cannot run
- * something the rules refuse. Every clout gate reads the player's total clout
- * (src/engine/clout.ts `totalClout`), item clout included.
+ * something the rules refuse. Every clout gate reads the player's level clout
+ * (src/engine/clout.ts `levelClout`: the total, item clout included, with Icon earned only).
  */
 import type { Hours, Venue } from '@/lib/data/schemas/content'
 import { applyAction, findAction, type ActionDef, type ActionError } from './actions'
@@ -28,7 +28,7 @@ import {
   recordClout,
   scaledGain,
   styleScore,
-  totalClout,
+  levelClout,
   type LevelUp,
 } from './clout'
 import type { EngineConfig, JobId } from './config'
@@ -333,7 +333,7 @@ export function placeActions(
   config: EngineConfig,
 ): PlaceView {
   if (!isVenue(place) && place.category === 'memorial') return { kind: 'look-only' }
-  const access = boroughAccess(place.borough, totalClout(snapshot.player, config), config)
+  const access = boroughAccess(place.borough, levelClout(snapshot.player, config), config)
   const hours = placeHoursNow(place, snapshot, config)
   const unblocked = isVenue(place)
     ? venueActions(place, snapshot, config)
@@ -447,7 +447,7 @@ export function performPlaceAction(
   if (action.kind !== 'club-night' || action.cloutEarnedTonight) {
     return {
       ok: true,
-      snapshot: result.snapshot,
+      snapshot: action.kind === 'visit' ? withVisit(result.snapshot, place.id) : result.snapshot,
       action,
       durationMin: result.durationMin,
       rollovers: result.rollovers,
@@ -488,6 +488,19 @@ export function performPlaceAction(
   }
 }
 
+/**
+ * Records the first visit to a landmark at the minute the visit ended; later visits keep the
+ * first minute (the first-landmark-visit goal, src/engine/goals.ts).
+ */
+function withVisit(snapshot: GameSnapshot, placeId: string): GameSnapshot {
+  const { player } = snapshot
+  if (Object.hasOwn(player.visited, placeId)) return snapshot
+  return {
+    ...snapshot,
+    player: { ...player, visited: { ...player.visited, [placeId]: snapshot.clock.minute } },
+  }
+}
+
 /** Venue types that run a shop (S10a): they sell every item in `shopItems`. */
 export const SHOP_VENUE_TYPES = ['boutique', 'thrift'] as const
 
@@ -505,7 +518,7 @@ export function shopBlock(
   snapshot: GameSnapshot,
   config: EngineConfig,
 ): PlaceActionBlock | null {
-  const access = boroughAccess(place.borough, totalClout(snapshot.player, config), config)
+  const access = boroughAccess(place.borough, levelClout(snapshot.player, config), config)
   if (access.status !== 'open') return { code: 'borough-locked', access }
   const hours = placeHoursNow(place, snapshot, config)
   if (hours.status === 'closed') return { code: 'closed', opensAt: hours.opensAt }

@@ -197,9 +197,10 @@ test.describe('events', () => {
 
 // src/state/store.ts STORE_KEY. Not imported: Playwright's loader cannot load the store's JSON imports.
 const STORE_KEY = 'cloutcity:game'
-// src/engine/save.ts SAVE_VERSION (v5 adds event state, v6 club nights, v7 the clout ledger), not
-// imported for the same reason.
-const SAVE_VERSION = 7
+// src/engine/save.ts SAVE_VERSION (v5 adds event state, v6 club nights, v7 the clout ledger, v8
+// goals, grants and prestige), not imported for the same reason. A seeded save without the v8
+// fields loads with them fresh.
+const SAVE_VERSION = 8
 
 /** True when a click at the centre of the sheet zone lands outside every overlay zone. */
 function sheetPassesThrough(page: Page) {

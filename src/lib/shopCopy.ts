@@ -87,6 +87,12 @@ export function sellLabel(itemId: string, amount: number, options: ShopCopyOptio
   return copy('shop.sell.label', { item: itemName(itemId, options), price: formatMoney(amount) })
 }
 
+/** A kept look's Sell button name: why the shop will not buy it (A11Y-2). */
+export function keptSellLabel(itemId: string, options: ShopCopyOptions = {}) {
+  const { copy = activeCopy } = options
+  return copy('inventory.sell.keptLabel', { item: itemName(itemId, options) })
+}
+
 export function soldNotice(itemId: string, amount: number, options: ShopCopyOptions = {}) {
   const { copy = activeCopy } = options
   return copy('shop.sell.done', { item: itemName(itemId, options), price: formatMoney(amount) })
@@ -180,6 +186,8 @@ export function itemErrorText(error: ItemError, options: ShopCopyOptions = {}): 
       })
     case 'ALREADY_OWNED':
       return alreadyOwnedLabel(error.itemId, options)
+    case 'PRESTIGE_KEPT':
+      return keptSellLabel(error.itemId, options)
     case 'STACK_FULL':
       return findItem(error.itemId, config) === undefined
         ? copy('shop.error.failed')

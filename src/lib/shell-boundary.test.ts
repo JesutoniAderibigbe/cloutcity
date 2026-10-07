@@ -34,7 +34,7 @@ const ALLOWED_FILES: readonly RegExp[] = [
   /^data\/copy\/superlatives\.json$/,
   /^data\/config\/copy\.json$/,
   /^src\/lib\/(log|format|placeholders)\.ts$/,
-  /^src\/state\/(placeSheet|mapPlayable|hudPanel)\.ts$/,
+  /^src\/state\/(placeSheet|mapPlayable|hudPanel|iconMoment)\.ts$/,
   /^src\/components\/audio\/soundSheet\.ts$/,
   // The 3D map's thin mount: WebGL probe, geo download, status and error boundary. The canvas
   // and everything three-based load through its next/dynamic import (the 3D chunk).
@@ -52,11 +52,13 @@ const DENIED_FILES: readonly RegExp[] = [
   /^src\/components\/audio\/(SoundControl|SoundSettingsSheet)\.tsx$/,
   /^src\/engine\//,
   /^src\/lib\/world\//,
-  /^src\/lib\/(shopCopy|economyCopy)\.ts$/,
+  /^src\/lib\/(shopCopy|economyCopy|goalsCopy)\.ts$/,
+  /^src\/lib\/share\//,
   /^src\/lib\/forms\//,
   /^src\/components\/events\/(EventSheet|EventSheetHost|effectLabels|eventTestHook)\.tsx?$/,
   /^src\/components\/places\/(PlaceSheet|ShopSection|placeTestHook)\.tsx?$/,
-  /^src\/components\/hud\/(HudPanelButtons|InventoryPanel|RentPanel|PanelDialog|hudTestHook)\.tsx?$/,
+  /^src\/components\/hud\/(HudPanelButtons|InventoryPanel|RentPanel|GoalsPanel|PanelDialog|hudTestHook)\.tsx?$/,
+  /^src\/components\/goals\/IconMoment\.tsx$/,
   /^src\/components\/welcome\/(WelcomeGate|WelcomeCard|AgeLockNotice)\.tsx$/,
   /^src\/lib\/copy\/all\.ts$/,
   /^src\/scene\/(CityCanvas|City|materials|testHooks)\.tsx?$/,
@@ -99,6 +101,8 @@ describe('shell boundary of / (S05c)', () => {
         'src/scene/CitySceneClient.tsx',
         'src/components/audio/SoundControlMount.tsx',
         'src/components/audio/SoundSheetMount.tsx',
+        'src/components/goals/IconMomentMount.tsx',
+        'src/state/iconMoment.ts',
         'src/lib/copy/index.ts',
         'src/lib/copy/ns/app.ts',
         'data/copy/tabs/base.json',
@@ -127,6 +131,11 @@ describe('shell boundary of / (S05c)', () => {
       'src/state/audioSettings.ts',
       'src/lib/audio/unlock.ts',
       'src/lib/audio/runtime.ts',
+      'src/components/hud/GoalsPanel.tsx',
+      'src/components/goals/IconMoment.tsx',
+      'src/lib/goalsCopy.ts',
+      'src/lib/share/shareMoment.ts',
+      'src/engine/goals.ts',
     ]) {
       expect(existsSync(join(ROOT, path)), path).toBe(true)
       expect(shellPaths, path).not.toContain(path)

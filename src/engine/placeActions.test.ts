@@ -435,6 +435,35 @@ describe('performPlaceAction', () => {
     expect(result.cloutGained).toBe(0)
   })
 
+  it('a first visit records the landmark at the minute it ended; later visits keep it (S15)', () => {
+    const before = snapshotWith({ minute: at('10:00') })
+    expect(before.player.visited).toEqual({})
+    const first = performPlaceAction(before, bridge, 'visit', config)
+    if (!first.ok) throw new Error(first.error.code)
+    const ended = first.snapshot.clock.minute
+    expect(first.snapshot.player.visited).toEqual({ 'probe-bridge': ended })
+    const again = performPlaceAction(first.snapshot, bridge, 'visit', config)
+    if (!again.ok) throw new Error(again.error.code)
+    expect(again.snapshot.player.visited).toEqual({ 'probe-bridge': ended })
+    const park2 = performPlaceAction(again.snapshot, park, 'visit', config)
+    if (!park2.ok) throw new Error(park2.error.code)
+    expect(Object.keys(park2.snapshot.player.visited).sort()).toEqual([
+      'probe-bridge',
+      'probe-park',
+    ])
+  })
+
+  it('no other action records a visit, and a memorial never does (it has no Visit)', () => {
+    const before = snapshotWith({ minute: at('12:00') })
+    const flexed = performPlaceAction(before, bridge, 'flex', config)
+    if (!flexed.ok) throw new Error(flexed.error.code)
+    expect(flexed.snapshot.player.visited).toEqual({})
+    for (const id of ['visit', 'flex', 'look']) {
+      const refused = performPlaceAction(before, memorial, id, config)
+      expect(refused.ok).toBe(false)
+    }
+  })
+
   it('a club night pays the cover, moves the clock and adds the clout gain', () => {
     const before = snapshotWith({ minute: at('23:00'), clout: 100, cash: 50 })
     const result = performPlaceAction(before, club, 'club-night', config)

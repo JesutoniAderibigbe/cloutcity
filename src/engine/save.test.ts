@@ -4,20 +4,47 @@ import { engineConfig as config } from './config'
 import { emptyInventory } from './items'
 import { initialEventsState } from './events'
 import { initialFlexState } from './game'
+import { initialGoalsState } from './goals'
+import { initialGrantsState } from './grants'
+import { initialPrestigeState } from './prestige'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
 const schema = createSaveSchema(config)
 
-/** A v3 to v6 player: clout was one number and there was no flex state. */
+/** A v3 to v6 player: clout was one number and there was no flex state or visits (v8). */
 function legacyPlayer(): Record<string, unknown> {
   const player: Record<string, unknown> = { ...initialSave(config).player, clout: 0 }
   delete player.flex
+  delete player.visited
   return player
 }
 
+/** A v7 player: everything but the first visits (v8). */
+function legacyV7Player(): Record<string, unknown> {
+  const player: Record<string, unknown> = { ...initialSave(config).player }
+  delete player.visited
+  return player
+}
+
+/** A save before v8: no goals, grants or prestige. */
+function legacyBase(): Record<string, unknown> {
+  const save: Record<string, unknown> = { ...initialSave(config) }
+  delete save.goals
+  delete save.grants
+  delete save.prestige
+  return save
+}
+
+/** What a migration adds for S15 (v8): no visits, fresh grants and prestige, goals as given. */
+const S15_FIELDS = {
+  goals: initialGoalsState,
+  grants: initialGrantsState,
+  prestige: initialPrestigeState,
+} as const
+
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(7)
+    expect(SAVE_VERSION).toBe(8)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -194,8 +221,10 @@ describe('save v3: clout, home and rent', () => {
           rent: { owed: 0, missed: 0 },
           inventory: emptyInventory,
           clubNights: {},
+          visited: {},
         },
         events: initialEventsState(),
+        ...S15_FIELDS,
       },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)
@@ -280,6 +309,7 @@ describe('save v3: tampered and edge saves', () => {
         rent: { owed: 5, missed: 1 },
         inventory: emptyInventory,
         clubNights: {},
+        visited: {},
       })
       expect(schema.safeParse(result.save).success).toBe(true)
     },
@@ -337,9 +367,11 @@ describe('save v3: tampered and edge saves', () => {
         rent: { owed: 0, missed: 0 },
         inventory: emptyInventory,
         clubNights: {},
+        visited: {},
       },
       speed: 1,
       events: initialEventsState(),
+      ...S15_FIELDS,
     })
   })
 
@@ -359,7 +391,7 @@ describe('event state in the save (v5)', () => {
   // A v4 save has neither event state nor club nights (v6), and clout is a number (v7).
   const v4Player = legacyPlayer()
   delete v4Player.clubNights
-  const v4: Record<string, unknown> = { ...base, player: v4Player }
+  const v4: Record<string, unknown> = { ...legacyBase(), player: v4Player }
   delete v4.events
 
   it('v4 -> v5 keeps the clock, player and speed, and starts event state fresh', () => {
@@ -377,8 +409,10 @@ describe('event state in the save (v5)', () => {
           clout: legacyCloutState(9, 0),
           flex: initialFlexState,
           clubNights: {},
+          visited: {},
         },
         events: initialEventsState(),
+        ...S15_FIELDS,
       },
       outcome: 'carried',
     })
@@ -402,7 +436,7 @@ describe('event state in the save (v5)', () => {
     expect(migrateSave({ player: { cash: 1 } }, 4, config).outcome).toBe('fresh')
   })
 
-  it('a save of every version so far (v1 to v7) loads, carrying its progress', () => {
+  it('a save of every version so far (v1 to v8) loads, carrying its progress', () => {
     const player = v4Player
     const saves: Record<number, unknown> = {
       1: { player: { cash: 501 } },
@@ -413,8 +447,9 @@ describe('event state in the save (v5)', () => {
         speed: 1,
       },
       4: { ...v4, player: { ...player, cash: 504 } },
-      5: { ...base, player: { ...player, cash: 505 } },
-      6: { ...base, player: { ...legacyPlayer(), cash: 506 } },
+      5: { ...legacyBase(), player: { ...player, cash: 505 } },
+      6: { ...legacyBase(), player: { ...legacyPlayer(), cash: 506 } },
+      7: { ...legacyBase(), player: { ...legacyV7Player(), cash: 507 } },
     }
     for (const [version, persisted] of Object.entries(saves)) {
       const migrated = migrateSave(persisted, Number(version), config)
@@ -422,9 +457,9 @@ describe('event state in the save (v5)', () => {
       expect(migrated.save.player.cash, `v${version}`).toBe(500 + Number(version))
       expect(schema.safeParse(migrated.save).success, `v${version}`).toBe(true)
     }
-    const v7 = { ...base, player: { ...base.player, cash: 507 } }
-    const loaded = loadSave(JSON.parse(JSON.stringify(v7)), config)
-    expect(loaded.ok && loaded.save.player.cash).toBe(507)
+    const v8 = { ...base, player: { ...base.player, cash: 508 } }
+    const loaded = loadSave(JSON.parse(JSON.stringify(v8)), config)
+    expect(loaded.ok && loaded.save.player.cash).toBe(508)
     expect(loaded.ok && loaded.repaired).toEqual([])
   })
 
@@ -531,7 +566,7 @@ describe('club nights in the save (v6)', () => {
   const clubId = Object.keys(config.place.clubs)[0] ?? 'missing'
   const v5Player = legacyPlayer()
   delete v5Player.clubNights
-  const v5 = { ...base, player: v5Player }
+  const v5 = { ...legacyBase(), player: v5Player }
 
   it('a fresh save has no club nights', () => {
     expect(base.player.clubNights).toEqual({})
@@ -551,7 +586,11 @@ describe('club nights in the save (v6)', () => {
           clout: legacyCloutState(120, 1),
           flex: initialFlexState,
           clubNights: {},
+          visited: {},
         },
+        // 120 earned clout holds Local: the migration derives that goal at the save's minute.
+        ...S15_FIELDS,
+        goals: { ...initialGoalsState, achieved: { 'reach-local': 9000 } },
       },
       outcome: 'carried',
     })

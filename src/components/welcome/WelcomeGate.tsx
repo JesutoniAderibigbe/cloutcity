@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { useModalPresence } from '@/components/overlay/modalState'
+import { trapTab } from '@/components/overlay/trapTab'
 import { deriveGateStatus, type GateStatus } from '@/engine/ageGate'
 import { onboardingStore } from '@/state/onboarding'
 import { startGuestSession } from '@/state/session'
@@ -12,33 +13,6 @@ const gateStatus = (): GateStatus => deriveGateStatus(onboardingStore.getState()
 // The server cannot know what this device stored; render nothing until the client reads it,
 // so a returning player never sees the card flash.
 const serverGateStatus = (): GateStatus => 'pending'
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-
-/**
- * Keeps Tab and Shift+Tab inside the dialog. The rest of the page is inert, but without this
- * focus would leave for the browser's own UI after the last control.
- */
-function trapTab(dialog: HTMLElement, event: KeyboardEvent) {
-  if (event.key !== 'Tab') return
-  const focusables = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE))
-  const first = focusables[0]
-  const last = focusables.at(-1)
-  if (first === undefined || last === undefined) {
-    event.preventDefault()
-    return
-  }
-  const active = document.activeElement
-  const inside = focusables.some((element) => element === active)
-  if (event.shiftKey && (active === first || !inside)) {
-    event.preventDefault()
-    last.focus()
-  } else if (!event.shiftKey && active === last) {
-    event.preventDefault()
-    first.focus()
-  }
-}
 
 /**
  * The first-visit welcome card (S05a), over the already-loading map. It shows until this
