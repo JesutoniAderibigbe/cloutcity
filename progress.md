@@ -113,6 +113,15 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   draw calls and triangles.
 - docs/local/ is gitignored: put OPEN-ISSUES pointers into iteration notes.
 
+- Shell diet (S05c): the shell of / carries only the boot path (≤ shellJsGzKB − shellHeadroomGzKB, 160 KB);
+  features load via lazyIsland with their own copy namespace (data/copy/<ns>/), registered by
+  importing src/lib/copy/ns/<ns>.ts. copy() throws CopyNamespaceNotLoadedError for an unloaded
+  namespace. Tests/server import @/lib/copy/all. Test hooks need NEXT_PUBLIC_TEST_HOOKS=1 (e2e build).
+- The page is inert from the first byte until the modal island settles (boot hold); e2e waits via
+  waitForWelcomeGate().
+- Auto-mode may deny `git rebase` in lanes: integrate by committing the lane and merging dev into it
+  (non-destructive), then fast-forward dev.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.
@@ -249,4 +258,10 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   shared HOME_IDS tie-break. Fix cycles: bot schedule robustness (midnight wrap), re-tune; integration:
   event tests pin their stats block, zone-centroid taxi sweep gets a documented 30 s limit.
   OPEN-ISSUES: TUNE-3 placeholders (Manhattan move-in), mood sits at 0 for the bot most evenings.
+- S05c (attempt 1, passed): shell of / 175.6 → 141.1 KB gz via boot islands (welcome + onboarding +
+  zod/mini; store + engine + catalogs + event host ≈46 KB eager), lazy EventSheet/PlaceSheet with
+  in-zone loading and retry, copy split per namespace, shell-boundary.test + scripts/shell-guard.ts
+  (20 KB headroom). Integrated by merging dev into the lane (rebase denied by auto mode). Bug-hunter:
+  18+ gate now fail-closed from the first byte (boot hold), whole-id marker matching, per-feature
+  namespace coverage test. Dev gates: unit 1884, e2e 291 + 1 load flake (FLAKE-1, 30/30 in isolation).
 

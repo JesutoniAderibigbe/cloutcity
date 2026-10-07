@@ -172,7 +172,7 @@
       "requires": [],
       "acceptance": "The shell JS for / (npm run budget) contains only the boot path: layout, overlay shell, HUD, welcome card, persisted store and the engine modules the HUD needs; every other feature UI (event sheet, shop, place action sheet, panels, transit planner) and its data (event catalog, item catalog, transit network) loads via next/dynamic or a lazy loader on first use; player-facing copy is split into a small boot namespace bundled with the shell and per-feature namespaces loaded with their feature chunk through the existing copy() API (missing-namespace access is a typed error in tests, never a silent raw key); a test enumerates the shell chunks and fails if any feature module or feature copy namespace is reachable from the shell entry; the shell is at most perf.json shellJsGzKB minus 20 KB headroom after all merged slice tasks; first use of each lazy feature shows a loading state within the overlay system and no console warnings; existing tests stay green.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
