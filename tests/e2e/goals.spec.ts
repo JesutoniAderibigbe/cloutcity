@@ -333,6 +333,7 @@ test.describe('goals: double claims, open events, small screens', () => {
 
   test('at 844x390 the panel fits the screen and its list scrolls to the last goal', async ({
     page,
+    checkA11y,
   }) => {
     await page.setViewportSize({ width: 844, height: 390 })
     await seed(page, 0, [])
@@ -349,5 +350,11 @@ test.describe('goals: double claims, open events, small screens', () => {
     // The title and Close stay in view while the body scrolls.
     await expect(dialog.getByRole('heading', { name: 'Goals' })).toBeInViewport()
     await expect(dialog.getByRole('button', { name: /^Close/ })).toBeInViewport()
+    // The scrolling body is a named region a keyboard can focus and scroll (UI-6).
+    const body = dialog.getByRole('region', { name: 'Goals' })
+    await expect(body).toHaveAttribute('tabindex', '0')
+    await body.focus()
+    await expect(body).toBeFocused()
+    await checkA11y()
   })
 })
