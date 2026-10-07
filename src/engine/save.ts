@@ -8,24 +8,142 @@
  * History:
  * - v1 (S02): `{ player: { cash } }`.
  * - v2 (S03): adds the personal clock, stats and the clock speed.
+ * - v3 (S11): adds `player.clout`, `player.home` and `player.rent` (owed, missed).
+ * - v4 (S10): adds `player.inventory` (owned wearables, gift stacks, outfit).
+ * - v5 (S14): adds `events` (open event, cooldown history, pending clout/item effects, random
+ *   generator state).
+ * - v6 (S09): adds `player.clubNights` (the night each club last paid out clout).
  */
-import { z } from 'zod/mini'
-import { isSpeed, realMsPerGameMinute } from './clock'
-import type { EngineConfig } from './config'
-import { initialSnapshot, type GameSnapshot } from './game'
+import * as z from 'zod/mini'
+import { calendar, isSpeed, realMsPerGameMinute } from './clock'
+import { isHomeId, type EngineConfig } from './config'
+import { initialEventsState, type EventsState } from './events'
+import { initialSnapshot, type ClubNights, type GameSnapshot } from './game'
+import {
+  ITEM_SLOTS,
+  emptyInventory,
+  findItem,
+  isGift,
+  isWearable,
+  type GiftStack,
+  type Inventory,
+  type OwnedWearable,
+} from './items'
+import { initialRent } from './rent'
 
-export const SAVE_VERSION = 2
+export const SAVE_VERSION = 6
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
   readonly speed: number
+  readonly events: EventsState
 }
 
 const CashSchema = z.int().check(z.gte(0))
+const CloutSchema = z.int().check(z.gte(0))
+
+const EffectSourceSchema = z.strictObject({
+  type: z.literal('event'),
+  eventId: z.string(),
+  choiceId: z.string(),
+})
+
+const PendingEffectSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('clout'), amount: z.int(), source: EffectSourceSchema }),
+  z.strictObject({
+    kind: z.literal('item'),
+    itemId: z.string(),
+    op: z.enum(['grant', 'consume']),
+    source: EffectSourceSchema,
+  }),
+])
+
+/** A club's night key: the game day the night opened on (0 for day 1 before the club opens). */
+const NightKeySchema = z.int().check(z.gte(0))
+
+/** Only configured clubs, each with a night that opened no later than today. */
+function clubNightsSchema(config: EngineConfig) {
+  return z
+    .record(z.string(), NightKeySchema)
+    .check(
+      z.refine(
+        (nights) => Object.keys(nights).every((id) => Object.hasOwn(config.place.clubs, id)),
+        'Unknown club',
+      ),
+    )
+}
+
+function eventsStateSchema(config: EngineConfig) {
+  return z.strictObject({
+    active: z.nullable(z.string()),
+    history: z.record(z.string(), z.int().check(z.gte(0))),
+    pending: z.array(PendingEffectSchema).check(z.maxLength(config.events.maxPendingEffects)),
+    rngState: z.int().check(z.gte(0), z.lte(0xffffffff)),
+  })
+}
+
+const knownWearable = (config: EngineConfig) => (id: string) => {
+  const item = findItem(id, config)
+  return item !== undefined && isWearable(item)
+}
+const knownGift = (config: EngineConfig) => (id: string) => {
+  const item = findItem(id, config)
+  return item !== undefined && isGift(item)
+}
+
+/** The structure of `player.inventory`; cross-field rules are in `inventoryIssue`. */
+function inventorySchema(config: EngineConfig) {
+  return z.strictObject({
+    wearables: z.array(
+      z.strictObject({
+        itemId: z.string().check(z.refine(knownWearable(config), 'Unknown wearable')),
+        acquiredMinute: z.int().check(z.gte(0)),
+        worn: z.boolean(),
+      }),
+    ),
+    gifts: z.array(
+      z.strictObject({
+        itemId: z.string().check(z.refine(knownGift(config), 'Unknown gift')),
+        count: z.int().check(z.gte(1), z.lte(config.items.maxGiftStack)),
+      }),
+    ),
+    outfit: z.strictObject(
+      Object.fromEntries(ITEM_SLOTS.map((slot) => [slot, z.optional(z.string())])) as Record<
+        (typeof ITEM_SLOTS)[number],
+        z.ZodMiniOptional<z.ZodMiniString>
+      >,
+    ),
+  })
+}
+
+/**
+ * Why a structurally valid inventory is inconsistent, or null: a duplicate wearable or gift,
+ * a wearable bought after `nowMinute`, or an outfit slot holding something not owned or not
+ * for that slot.
+ */
+function inventoryIssue(inventory: Inventory, nowMinute: number, config: EngineConfig) {
+  const wearableIds = inventory.wearables.map((owned) => owned.itemId)
+  if (new Set(wearableIds).size !== wearableIds.length) return 'duplicate wearable'
+  const giftIds = inventory.gifts.map((stack) => stack.itemId)
+  if (new Set(giftIds).size !== giftIds.length) return 'duplicate gift'
+  if (inventory.wearables.some((owned) => owned.acquiredMinute > nowMinute)) {
+    return 'wearable bought in the future'
+  }
+  for (const slot of ITEM_SLOTS) {
+    const itemId = inventory.outfit[slot]
+    if (itemId === undefined) continue
+    const item = findItem(itemId, config)
+    if (!wearableIds.includes(itemId) || item === undefined || !isWearable(item)) {
+      return 'outfit holds an item not owned'
+    }
+    if (item.slot !== slot) return 'outfit item in the wrong slot'
+  }
+  return null
+}
 
 export function createSaveSchema(config: EngineConfig) {
   const stat = z.int().check(z.gte(0), z.lte(config.stats.max))
-  return z.strictObject({
+  const save = z.strictObject({
     clock: z.strictObject({
       minute: z.int().check(z.gte(0)),
       remainderMs: z.number().check(z.gte(0), z.lt(realMsPerGameMinute(config))),
@@ -33,9 +151,119 @@ export function createSaveSchema(config: EngineConfig) {
     player: z.strictObject({
       cash: CashSchema,
       stats: z.strictObject({ energy: stat, hunger: stat, mood: stat }),
+      clout: CloutSchema,
+      home: z.string().check(z.refine((home) => isHomeId(home, config), 'Unknown home')),
+      rent: z.strictObject({
+        owed: CashSchema,
+        missed: z.int().check(z.gte(0), z.lt(config.rent.evictAfterMissed)),
+      }),
+      inventory: inventorySchema(config),
+      clubNights: clubNightsSchema(config),
     }),
     speed: z.number().check(z.refine((speed) => isSpeed(speed, config), 'Unsupported speed')),
+    events: eventsStateSchema(config),
   })
+  return save.check(
+    z.refine(
+      (value) => inventoryIssue(value.player.inventory, value.clock.minute, config) === null,
+      { message: 'Inconsistent inventory', path: ['player', 'inventory'] },
+    ),
+    z.refine(
+      (value) =>
+        Object.values(value.player.clubNights).every(
+          (night) => night <= calendar(value.clock.minute, config).day,
+        ),
+      { message: 'A club night in the future', path: ['player', 'clubNights'] },
+    ),
+  )
+}
+
+/**
+ * Club nights from an untrusted save: entries for clubs the config does not have, keys that
+ * are not own string keys, and nights that are not whole numbers in 0..today are dropped (so
+ * a damaged entry can only let a club pay out once more, never block it for good).
+ */
+function repairClubNights(
+  raw: unknown,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly clubNights: ClubNights; readonly repaired: boolean } {
+  const today = calendar(nowMinute, config).day
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    return { clubNights: {}, repaired: true }
+  }
+  const entries = Object.entries(raw as Record<string, unknown>)
+  const kept = entries.filter(
+    (entry): entry is [string, number] =>
+      Object.hasOwn(config.place.clubs, entry[0]) &&
+      Number.isSafeInteger(entry[1]) &&
+      (entry[1] as number) >= 0 &&
+      (entry[1] as number) <= today,
+  )
+  return { clubNights: Object.fromEntries(kept), repaired: kept.length !== entries.length }
+}
+
+/**
+ * The player's inventory from an untrusted save, keeping everything usable: unknown or
+ * duplicate items are dropped, a purchase minute that is not a whole number in
+ * 0..`nowMinute` is clamped (a non-number becomes `nowMinute`), a non-boolean `worn` becomes
+ * true (so stat effects never land twice), gift counts are rounded and clamped to
+ * 1..maxGiftStack (0 drops the stack), and outfit slots that do not hold an owned item for that
+ * slot are emptied. `repaired` is false when the inventory was already valid.
+ */
+function repairInventory(
+  raw: unknown,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly inventory: Inventory; readonly repaired: boolean } {
+  const parsed = inventorySchema(config).safeParse(raw)
+  if (parsed.success && inventoryIssue(parsed.data, nowMinute, config) === null) {
+    return { inventory: parsed.data, repaired: false }
+  }
+
+  const record = (value: unknown): Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {}
+  const list = (value: unknown): readonly unknown[] => (Array.isArray(value) ? value : [])
+  const source = record(raw)
+
+  const wearables: OwnedWearable[] = []
+  for (const entry of list(source.wearables).map(record)) {
+    const { itemId, acquiredMinute, worn } = entry
+    if (typeof itemId !== 'string' || !knownWearable(config)(itemId)) continue
+    if (wearables.some((owned) => owned.itemId === itemId)) continue
+    const minute =
+      typeof acquiredMinute === 'number' && Number.isFinite(acquiredMinute)
+        ? Math.min(nowMinute, Math.max(0, Math.round(acquiredMinute)))
+        : nowMinute
+    wearables.push({
+      itemId,
+      acquiredMinute: minute,
+      worn: typeof worn === 'boolean' ? worn : true,
+    })
+  }
+
+  const gifts: GiftStack[] = []
+  for (const entry of list(source.gifts).map(record)) {
+    const { itemId, count } = entry
+    if (typeof itemId !== 'string' || !knownGift(config)(itemId)) continue
+    if (gifts.some((stack) => stack.itemId === itemId)) continue
+    if (typeof count !== 'number' || !Number.isFinite(count)) continue
+    const fixed = Math.min(config.items.maxGiftStack, Math.round(count))
+    if (fixed >= 1) gifts.push({ itemId, count: fixed })
+  }
+
+  const rawOutfit = record(source.outfit)
+  const outfit: Partial<Record<(typeof ITEM_SLOTS)[number], string>> = {}
+  for (const slot of ITEM_SLOTS) {
+    const itemId = Object.hasOwn(rawOutfit, slot) ? rawOutfit[slot] : undefined
+    if (typeof itemId !== 'string') continue
+    const item = findItem(itemId, config)
+    const owned = wearables.some((entry) => entry.itemId === itemId)
+    if (owned && item !== undefined && isWearable(item) && item.slot === slot) outfit[slot] = itemId
+  }
+  return { inventory: { wearables, gifts, outfit }, repaired: true }
 }
 
 /**
@@ -43,6 +271,66 @@ export function createSaveSchema(config: EngineConfig) {
  * repaired one by one (see `loadSave`) are only type-checked loosely here.
  */
 const LoadableSaveSchema = z.strictObject({
+  clock: z.strictObject({ minute: z.int().check(z.gte(0)), remainderMs: z.unknown() }),
+  player: z.strictObject({
+    cash: CashSchema,
+    stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
+    clout: CloutSchema,
+    home: z.unknown(),
+    rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
+    inventory: z.unknown(),
+    // Repairable: unusable entries are dropped (`repairClubNights`).
+    clubNights: z.optional(z.unknown()),
+  }),
+  speed: z.unknown(),
+  // Repairable: a missing or unusable event state starts over (`repairEvents`).
+  events: z.optional(z.unknown()),
+})
+
+/** A v5 save's structure (S14): no club nights yet. */
+const LoadableSaveV5Schema = z.strictObject({
+  clock: z.strictObject({ minute: z.int().check(z.gte(0)), remainderMs: z.unknown() }),
+  player: z.strictObject({
+    cash: CashSchema,
+    stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
+    clout: CloutSchema,
+    home: z.unknown(),
+    rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
+    inventory: z.unknown(),
+  }),
+  speed: z.unknown(),
+  events: z.optional(z.unknown()),
+})
+
+/** A v4 save's structure (S10): no event state yet. */
+const LoadableSaveV4Schema = z.strictObject({
+  clock: z.strictObject({ minute: z.int().check(z.gte(0)), remainderMs: z.unknown() }),
+  player: z.strictObject({
+    cash: CashSchema,
+    stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
+    clout: CloutSchema,
+    home: z.unknown(),
+    rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
+    inventory: z.unknown(),
+  }),
+  speed: z.unknown(),
+})
+
+/** A v3 save's structure (S11): no inventory yet. */
+const LoadableSaveV3Schema = z.strictObject({
+  clock: z.strictObject({ minute: z.int().check(z.gte(0)), remainderMs: z.unknown() }),
+  player: z.strictObject({
+    cash: CashSchema,
+    stats: z.strictObject({ energy: z.number(), hunger: z.number(), mood: z.number() }),
+    clout: CloutSchema,
+    home: z.unknown(),
+    rent: z.strictObject({ owed: CashSchema, missed: z.unknown() }),
+  }),
+  speed: z.unknown(),
+})
+
+/** A v2 save's structure (S03): no clout, home or rent yet. */
+const LoadableSaveV2Schema = z.strictObject({
   clock: z.strictObject({ minute: z.int().check(z.gte(0)), remainderMs: z.unknown() }),
   player: z.strictObject({
     cash: CashSchema,
@@ -65,7 +353,13 @@ export type LoadResult =
  * the player's progress:
  * - a speed the config does not offer becomes 1x;
  * - a remainder outside [0, one game minute) or not a finite number becomes 0;
- * - a stat outside 0..stats.max is clamped, and a fractional stat is rounded.
+ * - a stat outside 0..stats.max is clamped, and a fractional stat is rounded;
+ * - a home the config does not offer becomes the start home;
+ * - a missed-rent count that is not a whole number in 0..evictAfterMissed-1 is clamped
+ *   (a non-number becomes 0);
+ * - an inconsistent or malformed inventory keeps what is usable (see `repairInventory`);
+ * - unusable event state starts over (see `repairEvents`);
+ * - unusable club-night entries are dropped (see `repairClubNights`).
  * Only a structurally unusable save (missing objects, unknown keys, cash or minute of the wrong
  * type or range) fails, and the caller starts fresh.
  */
@@ -74,7 +368,7 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   if (!parsed.success) {
     return { ok: false, issues: parsed.error.issues.map((issue) => issue.path.join('.')) }
   }
-  const { clock, player, speed } = parsed.data
+  const { clock, player, speed, events } = parsed.data
   const repaired: string[] = []
 
   const inRange = (value: unknown): value is number =>
@@ -98,21 +392,88 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   }
   const stats = { energy: stat('energy'), hunger: stat('hunger'), mood: stat('mood') }
 
+  const home = isHomeId(player.home, config) ? player.home : config.startHome
+  if (home !== player.home) repaired.push('player.home')
+
+  const rawMissed = player.rent.missed
+  const missed =
+    typeof rawMissed === 'number' && Number.isFinite(rawMissed)
+      ? Math.min(config.rent.evictAfterMissed - 1, Math.max(0, Math.round(rawMissed)))
+      : 0
+  if (missed !== rawMissed) repaired.push('player.rent.missed')
+
+  const { inventory, repaired: inventoryRepaired } = repairInventory(
+    player.inventory,
+    clock.minute,
+    config,
+  )
+  if (inventoryRepaired) repaired.push('player.inventory')
+
+  const { clubNights, repaired: nightsRepaired } = repairClubNights(
+    player.clubNights,
+    clock.minute,
+    config,
+  )
+  if (nightsRepaired) repaired.push('player.clubNights')
+
   return {
     ok: true,
     save: {
       clock: { minute: clock.minute, remainderMs },
-      player: { cash: player.cash, stats },
+      player: {
+        cash: player.cash,
+        stats,
+        clout: player.clout,
+        home,
+        rent: { owed: player.rent.owed, missed },
+        inventory,
+        clubNights,
+      },
       speed: validSpeed,
+      events: repairEvents(events, config, repaired),
     },
     repaired,
   }
 }
 
+/**
+ * Event state is replaced by a fresh one when it does not fit the schema. Otherwise an open
+ * event or a history entry for an event no longer in the catalog (content changed between
+ * builds) is dropped, so a removed event can never be stuck open.
+ */
+function repairEvents(value: unknown, config: EngineConfig, repaired: string[]): EventsState {
+  const parsed = eventsStateSchema(config).safeParse(value)
+  if (!parsed.success) {
+    repaired.push('events')
+    return initialEventsState()
+  }
+  const known = new Set(config.events.catalog.map((event) => event.id))
+  const { active, history, pending, rngState } = parsed.data
+  const keptActive = active !== null && known.has(active) ? active : null
+  if (keptActive !== active) repaired.push('events.active')
+  const keptHistory = Object.fromEntries(Object.entries(history).filter(([id]) => known.has(id)))
+  if (Object.keys(keptHistory).length !== Object.keys(history).length) {
+    repaired.push('events.history')
+  }
+  return { active: keptActive, history: keptHistory, pending, rngState }
+}
+
 const SaveV1Schema = z.strictObject({ player: z.strictObject({ cash: CashSchema }) })
 
 export function initialSave(config: EngineConfig): SaveState {
-  return { ...initialSnapshot(config), speed: config.time.speeds[0] ?? 1 }
+  return {
+    ...initialSnapshot(config),
+    speed: config.time.speeds[0] ?? 1,
+    events: initialEventsState(),
+  }
+}
+
+/** A save written by a newer build: expected (an older tab or a rollback), not a failure. */
+export class NewerSaveError extends Error {
+  constructor(readonly version: number) {
+    super(`Saved game version ${version} is newer than this build (${SAVE_VERSION})`)
+    this.name = 'NewerSaveError'
+  }
 }
 
 export interface Migration {
@@ -123,12 +484,16 @@ export interface Migration {
 
 /**
  * Upgrades a save written by an older SAVE_VERSION. A v1 save keeps its cash and starts the
- * new clock and stats fresh. Anything older or malformed starts fresh. A save from a newer
- * build throws: it is not loaded, and not overwritten unless the player plays on.
+ * new clock and stats fresh. A v2 save keeps everything and starts with no clout, the start
+ * home and no rent owed. A v3 save keeps everything and starts with no items. A v4 save keeps
+ * everything and starts with fresh event state. A v5 save keeps everything and starts with no
+ * club nights. Anything older or malformed starts fresh. A
+ * save from a newer build throws `NewerSaveError`: it is not loaded, and not overwritten unless
+ * the player plays on.
  */
 export function migrateSave(persisted: unknown, version: number, config: EngineConfig): Migration {
   if (version > SAVE_VERSION) {
-    throw new Error(`Saved game version ${version} is newer than this build (${SAVE_VERSION})`)
+    throw new NewerSaveError(version)
   }
   const fresh = initialSave(config)
   if (version === 1) {
@@ -138,6 +503,58 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
         save: { ...fresh, player: { ...fresh.player, cash: v1.data.player.cash } },
         outcome: 'carried',
       }
+    }
+  }
+  if (version === 2) {
+    const v2 = LoadableSaveV2Schema.safeParse(persisted)
+    if (v2.success) {
+      const loaded = loadSave(
+        {
+          ...v2.data,
+          player: {
+            ...v2.data.player,
+            clout: 0,
+            home: config.startHome,
+            rent: initialRent,
+            inventory: emptyInventory,
+            clubNights: {},
+          },
+          events: fresh.events,
+        },
+        config,
+      )
+      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
+    }
+  }
+  if (version === 3) {
+    const v3 = LoadableSaveV3Schema.safeParse(persisted)
+    if (v3.success) {
+      const loaded = loadSave(
+        {
+          ...v3.data,
+          player: { ...v3.data.player, inventory: emptyInventory, clubNights: {} },
+          events: fresh.events,
+        },
+        config,
+      )
+      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
+    }
+  }
+  if (version === 4) {
+    const v4 = LoadableSaveV4Schema.safeParse(persisted)
+    if (v4.success) {
+      const loaded = loadSave(
+        { ...v4.data, player: { ...v4.data.player, clubNights: {} }, events: fresh.events },
+        config,
+      )
+      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
+    }
+  }
+  if (version === 5) {
+    const v5 = LoadableSaveV5Schema.safeParse(persisted)
+    if (v5.success) {
+      const loaded = loadSave({ ...v5.data, player: { ...v5.data.player, clubNights: {} } }, config)
+      if (loaded.ok) return { save: loaded.save, outcome: 'carried' }
     }
   }
   return { save: fresh, outcome: 'fresh' }

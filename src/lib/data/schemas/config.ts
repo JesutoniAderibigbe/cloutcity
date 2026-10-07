@@ -1,8 +1,9 @@
 /**
- * Schemas for /data/config. This file imports only `zod` (no path aliases, no other modules) so
- * Node can load it directly from `scripts/` with its built-in type stripping.
+ * Schemas for /data/config. This file imports only `zod` and the dependency-free `../homes.ts` (no
+ * path aliases) so Node can load it directly from `scripts/` with its built-in type stripping.
  */
 import { z } from 'zod'
+import { HOME_IDS, lowestRentHome } from '../homes.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
 export const QualityTierSchema = z.enum(QUALITY_TIERS)
@@ -32,6 +33,11 @@ export const ThrottleProfileSchema = z.strictObject({
 export const PerfConfigSchema = z.strictObject({
   /** Shell JS of route `/`, before the 3D chunk. Read by `npm run budget`. */
   shellJsGzKB: positive,
+  /**
+   * Room the shell keeps below `shellJsGzKB` for features still to land (S05c): the shell may
+   * use at most shellJsGzKB minus this. Read by scripts/shell-guard.ts.
+   */
+  shellHeadroomGzKB: z.number().nonnegative(),
   sceneChunkJsGzKB: positive,
   totalJsToPlayableGzKB: positive,
   baseGeoGzKB: positive,
@@ -153,6 +159,8 @@ export const ModerationConfigSchema = z.strictObject({
 export type ModerationConfig = z.infer<typeof ModerationConfigSchema>
 
 const dollars = z.int().nonnegative()
+/** Whole percent, 0..99: resale is always worth less than the price. */
+const percent = z.int().min(0).max(99)
 const MinMaxSchema = z
   .strictObject({ min: dollars, max: dollars })
   .refine((range) => range.min <= range.max, { error: 'min must not exceed max' })
@@ -161,7 +169,7 @@ export const RARITY_TIERS = ['common', 'medium', 'rare'] as const
 export const RarityTierSchema = z.enum(RARITY_TIERS)
 export type RarityTier = z.infer<typeof RarityTierSchema>
 
-export const HOME_IDS = ['queens-room', 'brooklyn-1br', 'manhattan-loft'] as const
+export { HOME_IDS }
 export const JOB_IDS = ['barista', 'retail', 'delivery', 'junior-dev'] as const
 
 /** Player needs, 0..stats.max. Hunger is fullness: high is fed, 0 is starving. */
@@ -200,6 +208,179 @@ export const ActionDefSchema = z.strictObject({
   statEffects: PartialStatsSchema(z.int()),
 })
 export type ActionDef = z.infer<typeof ActionDefSchema>
+
+/**
+ * Who may enter a borough: always (`open`), from a clout level (`clout`, a `clout.levels` id),
+ * or nobody yet (`expanding-soon`, shown as dimmed teaser land).
+ */
+export const BoroughAccessRuleSchema = z.discriminatedUnion('access', [
+  z.strictObject({ access: z.literal('open') }),
+  z.strictObject({ access: z.literal('clout'), level: z.string() }),
+  z.strictObject({ access: z.literal('expanding-soon') }),
+])
+export type BoroughAccessRule = z.infer<typeof BoroughAccessRuleSchema>
+
+const MINUTES_PER_DAY_MAX = 24 * 60
+const LatLngSchema = z.strictObject({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+})
+const probability = z.number().min(0).max(1)
+
+/** A daily window of the personal clock, [startMin, endMin) minutes after midnight. */
+const DayWindowSchema = z
+  .strictObject({
+    startMin: z.int().nonnegative().max(MINUTES_PER_DAY_MAX),
+    endMin: z.int().nonnegative().max(MINUTES_PER_DAY_MAX),
+  })
+  .refine((window) => window.startMin < window.endMin, { error: 'startMin must be before endMin' })
+
+/**
+ * Walk, subway and taxi (S08, src/engine/transit). Distances are local metres from the shared
+ * projection; times are game minutes. The subway fare itself is `costs.subwayFare`.
+ */
+export const TransitConfigSchema = z.strictObject({
+  /** Shorter trips are refused: the player is already there. */
+  minTripM: positive,
+  /**
+   * A trip end off land (a bridge's midspan, a pier) moves to the nearest land within this many
+   * metres; further out it is unreachable.
+   */
+  snapToLandM: z.number().nonnegative(),
+  walk: z.strictObject({
+    speedKmh: positive,
+    /** Street distance over straight-line distance (the grid is not a straight line). */
+    detourFactor: z.number().min(1),
+    /** Energy points drained per km walked (also on the subway's walking legs). */
+    energyPerKm: z.number().nonnegative(),
+    /** A walk whose straight line leaves land for longer than this in one stretch is refused. */
+    maxWaterM: z.number().nonnegative(),
+  }),
+  taxi: z.strictObject({
+    speedKmh: positive,
+    detourFactor: z.number().min(1),
+    /** Wait for the pickup, game minutes. */
+    pickupMin: z.number().nonnegative(),
+    /** Flag drop, whole dollars. */
+    baseFare: dollars,
+    /** Dollars per km driven; the total fare rounds up to whole dollars. */
+    perKm: z.number().nonnegative(),
+    /** A drive leaving land for longer than this in one stretch must use a crossing instead. */
+    maxWaterM: z.number().nonnegative(),
+  }),
+  /**
+   * Bridges and vehicle tunnels the taxi may use across water: one point on land at each end.
+   * Ids are data only (never rendered by S08).
+   */
+  crossings: z.array(
+    z.strictObject({ id: z.string().regex(/^[a-z0-9-]+$/), a: LatLngSchema, b: LatLngSchema }),
+  ),
+  /** Points on land a taxi may also drive through, so a drive can bend around a bay. */
+  roadWaypoints: z.array(
+    z.strictObject({ id: z.string().regex(/^[a-z0-9-]+$/), at: LatLngSchema }),
+  ),
+  subway: z.strictObject({
+    /** In-vehicle speed along the line path. */
+    speedKmh: positive,
+    /** Extra minutes per stop the train makes. */
+    dwellMinPerStop: z.number().nonnegative(),
+    /** Wait on the platform before the first train. */
+    boardWaitMin: z.number().nonnegative(),
+    /** Minutes added for each change of line (walk inside the station and wait). */
+    transferPenaltyMin: z.number().nonnegative(),
+    /** Separate stations this close are linked by a walking transfer. */
+    transferWalkMaxM: z.number().nonnegative(),
+    /** How many of the nearest stations to each end are tried as entry and exit. */
+    accessCandidates: positiveInt,
+    /** Stations further than this are not tried, except the single nearest one. */
+    accessMaxM: positive,
+    /** Stations further than this from every path of a line they list are not on it. */
+    stationSnapM: positive,
+    /**
+     * Consecutive stretches of track drawn for one ride may be this far apart; further apart (a
+     * change between two paths of the line), the drawn path goes through the station.
+     */
+    pathJoinM: z.number().nonnegative(),
+  }),
+  rushHour: z.strictObject({
+    /** By personal clock time of departure. */
+    windows: z.array(DayWindowSchema).min(1),
+    /** In-vehicle and dwell time are multiplied by this in rush hour. */
+    subwayDurationMultiplier: z.number().min(1),
+    /** Mood points drained by a subway trip that departs in rush hour. */
+    subwayMoodDrain: z.int().nonnegative(),
+    /** Taxi driving time is multiplied by this in rush hour (no mood drain). */
+    taxiDurationMultiplier: z.number().min(1),
+  }),
+  /** Random delay on subway trips; the roll uses the injected seeded random source. */
+  delay: z.strictObject({
+    probability,
+    rushProbability: probability,
+    minutes: z
+      .strictObject({ min: z.int().nonnegative(), max: z.int().nonnegative() })
+      .refine((range) => range.min <= range.max, { error: 'min must not exceed max' }),
+    moodDrain: z.int().nonnegative(),
+  }),
+  animation: z.strictObject({
+    /** Longest the travel animation may run, real milliseconds. */
+    maxMs: z.int().nonnegative(),
+    /** Real milliseconds of animation per game minute of travel, before the cap. */
+    msPerGameMinute: z.number().nonnegative(),
+  }),
+})
+export type TransitConfig = z.infer<typeof TransitConfigSchema>
+
+const KEBAB_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const COPY_KEY = /^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)+$/
+
+/**
+ * A club's door and what a night inside does (S09). The door refuses anyone below
+ * `minCloutLevel` (a `clout.levels` id) with the in-voice `refusalKey` copy; inside, the cover
+ * is paid up front, the night lasts `durationMin` and ends with `moodGain` and `cloutGain`.
+ */
+export const ClubRuleSchema = z.strictObject({
+  coverCharge: dollars,
+  minCloutLevel: z.string().regex(KEBAB_ID),
+  refusalKey: z.string().regex(COPY_KEY),
+  durationMin: positiveInt,
+  energyCost: statPoints,
+  // Positive so a repeat entry (no clout) still says what the night gave.
+  moodGain: positiveInt,
+  cloutGain: positiveInt,
+})
+export type ClubRule = z.infer<typeof ClubRuleSchema>
+
+/**
+ * What a player can do at a place (S09, src/engine/placeActions.ts). Ids of venues, venue
+ * types and landmarks are checked against data/venues and data/landmarks in
+ * src/lib/world/placeActions-content.test.ts (this file cannot import the content schemas).
+ */
+export const PlaceConfigSchema = z.strictObject({
+  /**
+   * Actions offered at each venue type, by id: a key of `actions.catalog` or of `actions`
+   * below. Shifts come from a venue's `jobIds` and the club night from `clubs`, not from here.
+   */
+  venueActions: z.record(z.string().regex(KEBAB_ID), z.array(z.string().regex(KEBAB_ID))),
+  /** Actions only places offer (a coffee, a meal out), shaped like `actions.catalog`. */
+  actions: z.record(z.string().regex(KEBAB_ID), ActionDefSchema),
+  /** Door and night rules for every club venue, by venue id. */
+  clubs: z.record(z.string().regex(KEBAB_ID), ClubRuleSchema),
+  /** The Visit action at any landmark that allows `visit` (never a memorial). */
+  visit: z.strictObject({
+    durationMin: positiveInt,
+    energyCost: statPoints,
+    moodGain: positiveInt,
+  }),
+  /**
+   * How much a flex at a landmark counts (read by S13), by landmark id; others get `default`.
+   * Landmarks that do not allow `flex` (memorials included) have no multiplier at all.
+   */
+  flexMultiplier: z.strictObject({
+    default: positive,
+    byLandmark: z.record(z.string().regex(KEBAB_ID), positive),
+  }),
+})
+export type PlaceConfig = z.infer<typeof PlaceConfigSchema>
 
 /** CLAUDE.md "Balance anchors". Money is whole in-game dollars. */
 export const BalanceConfigSchema = z
@@ -242,16 +423,87 @@ export const BalanceConfigSchema = z
         delivery: dollars,
         'junior-dev': dollars,
       }),
+      /** Energy points paid up front for one shift (passive decay during the shift is extra). */
+      energyCostPerShift: z.strictObject({
+        barista: statPoints,
+        retail: statPoints,
+        delivery: statPoints,
+        'junior-dev': statPoints,
+      }),
+      /** Jobs locked until the player reaches a clout level (an id in `clout.levels`). */
+      requiredCloutLevel: z.partialRecord(z.enum(JOB_IDS), z.string()),
+    }),
+    /**
+     * Moving home (S12 measures it, S16 spends it). `moveInCost` is the whole dollars a player
+     * needs on top of their rent reserve (rent owed plus this week's rent) to move into a home.
+     * Every home except the lowest-rent one has a cost; the lowest-rent home (where an eviction
+     * lands; on a tie, the first in HOME_IDS, as the engine's cheapestHome) has none.
+     */
+    housing: z.strictObject({
+      moveInCost: z.partialRecord(z.enum(HOME_IDS), dollars),
+    }),
+    /**
+     * Missed rent. Each consecutive due date the player cannot pay in full adds that week's
+     * rent to what they owe, plus `lateFees[missed - 1]` (0 is a warning). On the
+     * `evictAfterMissed`-th miss the player is evicted to the lowest-rent home.
+     */
+    rent: z.strictObject({
+      lateFees: z.array(dollars),
+      evictAfterMissed: positiveInt,
+    }),
+    /** Clout levels, lowest first. A player is at the highest level whose `minClout` they hold. */
+    clout: z.strictObject({
+      levels: z
+        .array(
+          z.strictObject({
+            id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+            minClout: z.int().nonnegative(),
+          }),
+        )
+        .min(1),
     }),
     costs: z.strictObject({ food: MinMaxSchema, subwayFare: dollars }),
+    transit: TransitConfigSchema,
     target: z.strictObject({
       shiftsPerDay: positive,
       weeklySavings: dollars,
       firstUpgradeGameDay: MinMaxSchema,
     }),
+    /**
+     * Shop and resale (S10). Integer percentages keep the money maths exact.
+     * - An item's `sellValue` in data/items is floor(price * resalePct[rarity] / 100).
+     * - A wearable sells for floor(sellValue * max(minResalePct, 100 - days owned *
+     *   depreciationPctPerGameDay) / 100), counting whole game days since it was bought.
+     *   Gifts do not age: they sell for their `sellValue`.
+     * - A player holds at most `maxGiftStack` of each gift.
+     */
+    items: z.strictObject({
+      resalePct: z.strictObject({ common: percent, medium: percent, rare: percent }),
+      depreciationPctPerGameDay: percent,
+      minResalePct: percent,
+      maxGiftStack: positiveInt,
+    }),
+    events: z.strictObject({
+      /** Chance (0..1) that a roll fires an event when one is eligible. */
+      rollChance: z.number().min(0).max(1),
+      /** Game minutes before an event can fire again, unless the event sets its own. */
+      defaultCooldownMin: z.int().nonnegative(),
+      /** Clout and item effects kept in the save until S13 and S10 consume them. */
+      maxPendingEffects: positiveInt,
+    }),
     rarityTiers: z.array(RarityTierSchema).length(RARITY_TIERS.length),
     /** Placeholder USD prices (whole dollars) until a human sets them. */
     premiumPriceTiersUsd: z.record(z.string().regex(/^tier-\d+$/), z.int().positive()),
+    /** Borough gating, keyed by borough id (the ids of BOROUGHS in schemas/content.ts). */
+    boroughs: z.strictObject({
+      queens: BoroughAccessRuleSchema,
+      brooklyn: BoroughAccessRuleSchema,
+      manhattan: BoroughAccessRuleSchema,
+      bronx: BoroughAccessRuleSchema,
+      'staten-island': BoroughAccessRuleSchema,
+    }),
+    /** Place actions, club doors, landmark visits and flex multipliers (S09). */
+    place: PlaceConfigSchema,
   })
   .refine((balance) => new Set(balance.rarityTiers).size === RARITY_TIERS.length, {
     error: 'rarityTiers must list each tier once',
@@ -285,6 +537,118 @@ export const BalanceConfigSchema = z
       ),
     { error: 'an action exceeds maxDurationMin or stats.max', path: ['actions', 'catalog'] },
   )
+  .refine(
+    (balance) =>
+      Number.isInteger(balance.jobs.shiftHours * 60) &&
+      balance.jobs.shiftHours * 60 <= balance.actions.maxDurationMin &&
+      JOB_IDS.every((id) =>
+        Number.isInteger(balance.jobs.hourlyWage[id] * balance.jobs.shiftHours),
+      ),
+    {
+      error: 'a shift must be whole game minutes within maxDurationMin and pay whole dollars',
+      path: ['jobs', 'shiftHours'],
+    },
+  )
+  .refine(
+    (balance) => JOB_IDS.every((id) => balance.jobs.energyCostPerShift[id] <= balance.stats.max),
+    {
+      error: 'a shift energy cost exceeds stats.max',
+      path: ['jobs', 'energyCostPerShift'],
+    },
+  )
+  .refine(
+    (balance) =>
+      Object.values(balance.jobs.requiredCloutLevel).every((level) =>
+        balance.clout.levels.some((entry) => entry.id === level),
+      ),
+    {
+      error: 'requiredCloutLevel must name a level in clout.levels',
+      path: ['jobs', 'requiredCloutLevel'],
+    },
+  )
+  .refine(
+    (balance) =>
+      Object.values(balance.boroughs).every(
+        (rule) =>
+          rule.access !== 'clout' || balance.clout.levels.some((entry) => entry.id === rule.level),
+      ),
+    { error: 'a clout-gated borough must name a level in clout.levels', path: ['boroughs'] },
+  )
+  .refine(
+    (balance) => {
+      const cheapest = lowestRentHome(balance.rentPerWeek)
+      return HOME_IDS.every((id) => (id === cheapest) === !(id in balance.housing.moveInCost))
+    },
+    {
+      error: 'housing.moveInCost needs every home except the lowest-rent one, and not that one',
+      path: ['housing', 'moveInCost'],
+    },
+  )
+  .refine((balance) => balance.rent.lateFees.length === balance.rent.evictAfterMissed - 1, {
+    error: 'rent.lateFees needs one fee for each miss before eviction',
+    path: ['rent', 'lateFees'],
+  })
+  .refine(
+    ({ clout: { levels } }) =>
+      levels[0]?.minClout === 0 &&
+      levels.every((level, i) => i === 0 || level.minClout > (levels[i - 1]?.minClout ?? 0)) &&
+      new Set(levels.map((level) => level.id)).size === levels.length,
+    {
+      error: 'clout.levels must start at 0, rise strictly and have unique ids',
+      path: ['clout', 'levels'],
+    },
+  )
+  .refine(
+    ({ actions, place }) =>
+      Object.values(place.venueActions).every((ids) =>
+        ids.every((id) => Object.hasOwn(actions.catalog, id) || Object.hasOwn(place.actions, id)),
+      ),
+    {
+      error: 'place.venueActions must name actions in actions.catalog or place.actions',
+      path: ['place', 'venueActions'],
+    },
+  )
+  .refine(
+    ({ actions, place }) =>
+      Object.keys(place.actions).every((id) => !Object.hasOwn(actions.catalog, id)),
+    { error: 'place.actions must not reuse an actions.catalog id', path: ['place', 'actions'] },
+  )
+  .refine(
+    ({ actions, stats, place }) =>
+      [
+        ...Object.values(place.actions).map((action) => ({
+          durationMin: action.durationMin,
+          energyCost: action.energyCost,
+          effects: STAT_KEYS.map((key) => action.statEffects[key] ?? 0),
+        })),
+        ...Object.values(place.clubs).map((club) => ({
+          durationMin: club.durationMin,
+          energyCost: club.energyCost,
+          effects: [club.moodGain],
+        })),
+        {
+          durationMin: place.visit.durationMin,
+          energyCost: place.visit.energyCost,
+          effects: [place.visit.moodGain],
+        },
+      ].every(
+        (action) =>
+          action.durationMin <= actions.maxDurationMin &&
+          action.energyCost <= stats.max &&
+          action.effects.every((effect) => Math.abs(effect) <= stats.max),
+      ),
+    { error: 'a place action exceeds maxDurationMin or stats.max', path: ['place'] },
+  )
+  .refine(
+    ({ clout, place }) =>
+      Object.values(place.clubs).every((club) =>
+        clout.levels.some((level) => level.id === club.minCloutLevel),
+      ),
+    {
+      error: 'place.clubs minCloutLevel must name a level in clout.levels',
+      path: ['place', 'clubs'],
+    },
+  )
 export type BalanceConfig = z.infer<typeof BalanceConfigSchema>
 
 export const LayoutConfigSchema = z.strictObject({
@@ -300,15 +664,54 @@ export const LayoutConfigSchema = z.strictObject({
      * attribution with its 44 px credits link always fits (banner, toast and sheet shrink first).
      */
     freeSceneMinHeightPx: z.number().min(44),
+    /**
+     * A lazily loaded feature's loading skeleton stays invisible this long, so a fast load never
+     * flashes a placeholder (its status is announced at once).
+     */
+    loadingRevealDelayMs: z.int().nonnegative(),
   }),
 })
 export type LayoutConfig = z.infer<typeof LayoutConfigSchema>
 
-export const CopyConfigSchema = z.strictObject({
-  /** Active slang pack id (a file in data/copy/packs). Swapping it needs no code change. */
-  slangPack: z.string().regex(/^[a-z0-9-]+$/),
-})
+const PACK_ID = /^[a-z0-9-]+$/
+
+export const CopyConfigSchema = z
+  .strictObject({
+    /** Active slang pack id. Swapping it needs no code change. */
+    slangPack: z.string().regex(PACK_ID),
+    /**
+     * Every slang pack. A pack overrides a namespace with data/copy/<namespace>/<pack>.json;
+     * a namespace it does not override has no file for it.
+     */
+    packs: z.array(z.string().regex(PACK_ID)).min(1),
+  })
+  .refine((config) => config.packs.includes(config.slangPack), {
+    error: 'slangPack must be one of packs',
+    path: ['slangPack'],
+  })
+  .refine((config) => new Set(config.packs).size === config.packs.length, {
+    error: 'packs must not repeat',
+    path: ['packs'],
+  })
 export type CopyConfig = z.infer<typeof CopyConfigSchema>
+
+/** The welcome card: the 18+ check, the under-age lock and the consent version (S05a). */
+export const OnboardingConfigSchema = z
+  .strictObject({
+    /** Players must be at least this old. The year picker never shows or hints at it. */
+    minimumAge: positiveInt,
+    /** How long an under-age answer locks the gate on that device. */
+    underAgeLockHours: positiveInt,
+    /** How many years back the year picker goes from the current year. */
+    birthYearSpan: positiveInt,
+    /** Version of the Terms and Privacy Policy a player consents to (an ISO date). */
+    consentVersion: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  })
+  .refine((config) => config.birthYearSpan > config.minimumAge + 1, {
+    error: 'birthYearSpan must reach past minimumAge, or no year in the picker can pass',
+    path: ['birthYearSpan'],
+  })
+export type OnboardingConfig = z.infer<typeof OnboardingConfigSchema>
 
 const metres = z.number().positive()
 

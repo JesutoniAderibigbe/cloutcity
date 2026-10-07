@@ -103,12 +103,4 @@ describe('budget CLI', () => {
     writeFileSync(join(empty, '.next/server/app/page/react-loadable-manifest.json'), '{}')
     expect(runBudget(empty).status).toBe(1)
   })
-
-  it('exits non-zero when a static chunk contains the test-hook marker', () => {
-    const root = fakeProject({})
-    writeFileSync(join(root, '.next/static/chunks/leak.js'), 'window.__CLOUTCITY_TEST__={}')
-    const result = runBudget(root)
-    expect(result.stdout).toMatch(/^FAIL Test hooks .*chunks\/leak\.js/m)
-    expect(result.status).toBe(1)
-  })
 })

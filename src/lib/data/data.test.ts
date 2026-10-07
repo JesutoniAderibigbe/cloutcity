@@ -15,6 +15,7 @@ import {
   JOB_IDS,
   LayoutConfigSchema,
   ModerationConfigSchema,
+  OnboardingConfigSchema,
   PerfConfigSchema,
   RealtimeConfigSchema,
   ThemeConfigSchema,
@@ -27,10 +28,12 @@ import {
   PremiumFileSchema,
   VenuesFileSchema,
 } from './schemas/content'
-import { BaseCopySchema, SlangPackSchema } from './schemas/copy'
+import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
 import { SceneConfigSchema } from './schemas/scene'
+import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
+  BoroughsFileSchema,
   GeoBoundsSchema,
   GeoManifestSchema,
   LandFileSchema,
@@ -40,25 +43,30 @@ import {
   ZoneShapesFileSchema,
   ZonesFileSchema,
 } from './schemas/world'
-import { balance, perf, realtime, theme } from './config'
+import { balance, onboarding, perf, realtime, theme } from './config'
 import { events, geoBounds, items, jobs, landmarks, premiumItems, venues } from './content'
-import { baseCopy } from '@/lib/copy'
+import { baseCopy } from '@/lib/copy/all'
 
 const DATA = join(import.meta.dirname, '../../../data')
 
-/** The schema for each data file. Files under copy/packs/ all use SlangPackSchema. */
+/**
+ * The schema for each data file. Copy files are matched by pattern in `schemaFor`: each
+ * copy/<ns>/base.json is a NamespaceBaseSchema, any other copy/<ns>/<pack>.json a SlangPackSchema.
+ */
 const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'audio/manifest.json': AudioManifestSchema,
+  'boroughs/boroughs.json': BoroughsFileSchema,
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,
   'config/geo.json': GeoConfigSchema,
   'config/layout.json': LayoutConfigSchema,
   'config/moderation.json': ModerationConfigSchema,
+  'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
   'config/realtime.json': RealtimeConfigSchema,
   'config/scene.json': SceneConfigSchema,
   'config/theme.json': ThemeConfigSchema,
-  'copy/base.json': BaseCopySchema,
+  'copy/superlatives.json': SuperlativesSchema,
   'events/events.json': EventsFileSchema,
   'geo/bounds.json': GeoBoundsSchema,
   'geo/land.derived.json': LandFileSchema,
@@ -70,13 +78,16 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
   'premium/premium.json': PremiumFileSchema,
+  'sim/economy-baseline.derived.json': EconomyBaselineSchema,
   'venues/venues.json': VenuesFileSchema,
   'zones/zone-shapes.derived.json': ZoneShapesFileSchema,
   'zones/zones.derived.json': ZonesFileSchema,
 }
 
 function schemaFor(file: string): z.ZodType | undefined {
-  return file.startsWith('copy/packs/') ? SlangPackSchema : SCHEMAS[file]
+  if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
+  if (/^copy\/[\w-]+\/[\w-]+\.json$/.test(file)) return SlangPackSchema
+  return SCHEMAS[file]
 }
 
 /** Extensions the data loaders parse. Every file with one of these needs a schema. */
@@ -124,6 +135,7 @@ describe('/data files', () => {
     'geo',
     'zones',
     'audio',
+    'boroughs',
     'config',
     'copy',
   ])('/data/%s has at least one data file', (folder) => {
@@ -171,6 +183,8 @@ describe('config/perf.json', () => {
   it('holds every budget from CLAUDE.md "Performance budgets"', () => {
     expect(perf).toEqual({
       shellJsGzKB: 180,
+      // S05c: the shell keeps 20 KB of the budget free for features still to land.
+      shellHeadroomGzKB: 20,
       sceneChunkJsGzKB: 350,
       totalJsToPlayableGzKB: 550,
       baseGeoGzKB: 400,
@@ -228,6 +242,24 @@ describe('config/realtime.json and moderation', () => {
   })
 })
 
+describe('config/onboarding.json', () => {
+  it('holds the CLAUDE.md age rule: 18+, a 24 h lock on that device', () => {
+    expect(onboarding).toMatchObject({ minimumAge: 18, underAgeLockHours: 24 })
+    expect(onboarding.birthYearSpan).toBeGreaterThan(onboarding.minimumAge + 1)
+  })
+
+  it('rejects a fractional lock, a non-date consent version and a span nobody can pass', () => {
+    const valid = readJson('config/onboarding.json') as Record<string, unknown>
+    const parse = (patch: Record<string, unknown>) =>
+      OnboardingConfigSchema.safeParse({ ...valid, ...patch }).success
+    expect(parse({})).toBe(true)
+    expect(parse({ underAgeLockHours: 0.5 })).toBe(false)
+    expect(parse({ consentVersion: 'v1' })).toBe(false)
+    expect(parse({ birthYearSpan: 19 })).toBe(false)
+    expect(parse({ extra: true })).toBe(false)
+  })
+})
+
 describe('config/theme.json', () => {
   it('has the night palette: deep indigo, hot pink, taxi yellow and neutrals', () => {
     expect(Object.keys(theme.colors)).toEqual(
@@ -261,7 +293,7 @@ describe('config/balance.json', () => {
       'brooklyn-1br': 520,
       'manhattan-loft': 1100,
     })
-    expect(balance.jobs).toEqual({
+    expect(balance.jobs).toMatchObject({
       shiftHours: 4,
       hourlyWage: { barista: 14, retail: 16, delivery: 18, 'junior-dev': 35 },
     })
@@ -300,6 +332,48 @@ describe('config/balance.json', () => {
     expect(BalanceConfigSchema.safeParse({ ...valid, actions: badEffect }).success).toBe(false)
   })
 
+  it('rejects a borough rule with an unknown clout level, a missing borough or bad access', () => {
+    const valid = readJson('config/balance.json') as BalanceConfig
+    const boroughs = (patch: Record<string, unknown>) => ({
+      ...valid,
+      boroughs: { ...valid.boroughs, ...patch },
+    })
+    expect(BalanceConfigSchema.safeParse(boroughs({})).success).toBe(true)
+    const mayor = { brooklyn: { access: 'clout', level: 'mayor' } }
+    expect(BalanceConfigSchema.safeParse(boroughs(mayor)).success).toBe(false)
+    expect(BalanceConfigSchema.safeParse(boroughs({ queens: { access: 'clout' } })).success).toBe(
+      false,
+    )
+    expect(BalanceConfigSchema.safeParse(boroughs({ queens: { access: 'vip' } })).success).toBe(
+      false,
+    )
+    const withoutBronx: Partial<BalanceConfig['boroughs']> = { ...valid.boroughs }
+    delete withoutBronx.bronx
+    expect(BalanceConfigSchema.safeParse({ ...valid, boroughs: withoutBronx }).success).toBe(false)
+  })
+
+  it('rejects venue hours that never open and a station venue without its station', () => {
+    const file = readJson('venues/venues.json') as { venues: Record<string, unknown>[] }
+    const withVenue = (index: number, patch: Record<string, unknown>) => ({
+      venues: [{ ...file.venues[index], ...patch }],
+    })
+    const station = file.venues.findIndex((venue) => venue.type === 'subway-station')
+    const shop = file.venues.findIndex((venue) => venue.type === 'coffee-shop')
+    expect(VenuesFileSchema.safeParse(withVenue(shop, {})).success).toBe(true)
+    const same = { hours: { open: '09:00', close: '09:00' } }
+    expect(VenuesFileSchema.safeParse(withVenue(shop, same)).success).toBe(false)
+    const late = { hours: { open: '24:00', close: '09:00' } }
+    expect(VenuesFileSchema.safeParse(withVenue(shop, late)).success).toBe(false)
+    expect(VenuesFileSchema.safeParse(withVenue(shop, { price: 5 })).success).toBe(false)
+    expect(VenuesFileSchema.safeParse(withVenue(shop, { jobIds: ['dj'] })).success).toBe(false)
+    expect(VenuesFileSchema.safeParse(withVenue(station, { stationId: undefined })).success).toBe(
+      false,
+    )
+    expect(VenuesFileSchema.safeParse(withVenue(station, { jobIds: ['retail'] })).success).toBe(
+      false,
+    )
+  })
+
   it('food actions cost within the food range', () => {
     for (const id of ['bodega-breakfast', 'home-meal']) {
       const cost = balance.actions.catalog[id]?.cashCost
@@ -313,8 +387,11 @@ describe('content schemas', () => {
   const item = {
     id: 'tee',
     nameKey: 'items.tee.name',
+    descriptionKey: 'items.tee.description',
     category: 'clothing',
+    slot: 'top',
     rarity: 'common',
+    currency: 'cash',
     price: 20,
     sellValue: 8,
     cloutValue: 1,
@@ -399,17 +476,35 @@ describe('content schemas', () => {
 describe('cross-file references', () => {
   const copyKeys = new Set(Object.keys(baseCopy.strings))
 
-  it('every copy key named by content exists in data/copy/base.json', () => {
-    const refs = [
-      ...items.map((entry) => entry.nameKey),
-      ...premiumItems.map((entry) => entry.nameKey),
-      ...events.flatMap((entry) => [entry.titleKey, entry.bodyKey]),
-      ...jobs.map((entry) => entry.nameKey),
-      ...venues.map((entry) => entry.nameKey),
-      ...landmarks.map((entry) => entry.nameKey),
-    ]
+  // Each content file's keys live in the one namespace its consumer loads (S05c): events in
+  // `events` (EventSheet), items in `items` (shopCopy), places in `venues` and `landmarks`
+  // (world/places), and so on. A key elsewhere would render as CopyNamespaceNotLoadedError.
+  const refsByNamespace: Readonly<Record<string, readonly string[]>> = {
+    items: items.flatMap((entry) => [entry.nameKey, entry.descriptionKey]),
+    premium: premiumItems.map((entry) => entry.nameKey),
+    events: events.flatMap((entry) => [
+      entry.titleKey,
+      entry.bodyKey,
+      ...entry.choices.flatMap((choice) => [choice.labelKey, choice.resultKey]),
+    ]),
+    jobs: jobs.map((entry) => entry.nameKey),
+    venues: venues.flatMap((entry) => [entry.nameKey, entry.blurbKey]),
+    landmarks: landmarks.flatMap((entry) => [entry.nameKey, entry.infoKey]),
+    club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
+  }
+
+  it('every copy key named by content exists in data/copy', () => {
+    const refs = Object.values(refsByNamespace).flat()
     expect(refs.filter((key) => !copyKeys.has(key))).toEqual([])
   })
+
+  it.each(Object.entries(refsByNamespace))(
+    'content keys for %s live in that copy namespace',
+    (namespace, refs) => {
+      expect(refs.length).toBeGreaterThan(0)
+      expect(refs.filter((key) => !key.startsWith(`${namespace}.`))).toEqual([])
+    },
+  )
 
   it('jobs and balance wages list the same job ids', () => {
     expect(jobs.map((job) => job.id).sort()).toEqual([...JOB_IDS].sort())
@@ -430,5 +525,17 @@ describe('cross-file references', () => {
         lat > geoBounds.north,
     )
     expect(outside).toEqual([])
+  })
+})
+
+describe('economy baseline (S12, read by S18c)', () => {
+  const file = readJson('sim/economy-baseline.derived.json') as Record<string, unknown>
+
+  it('rejects a best job with no run, a negative ceiling and an unknown field', () => {
+    expect(EconomyBaselineSchema.safeParse(file).success).toBe(true)
+    expect(EconomyBaselineSchema.safeParse({ ...file, bestJob: 'junior-dev' }).success).toBe(false)
+    const cash = { maxGainPerAction: -1, maxGainPerGameDay: 0, maxGainPerGameHour: 0 }
+    expect(EconomyBaselineSchema.safeParse({ ...file, cash }).success).toBe(false)
+    expect(EconomyBaselineSchema.safeParse({ ...file, extra: 1 }).success).toBe(false)
   })
 })

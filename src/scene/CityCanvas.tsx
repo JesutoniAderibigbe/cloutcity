@@ -67,7 +67,12 @@ export default function CityCanvas({
   const geo = parsed.geo
 
   return (
-    <div role="img" aria-label={label} className="absolute inset-0">
+    <div
+      role="img"
+      aria-label={label}
+      data-cc-feature="cc-feature:city-scene"
+      className="absolute inset-0"
+    >
       <Canvas
         frameloop="demand"
         dpr={[1, dprCap]}

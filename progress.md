@@ -63,6 +63,23 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 (Versions verified against the npm registry by the orchestrator on 2026-10-06.)
 
 ## Learnings and gotchas
+- Six lanes running builds/e2e at once overloaded this 10-core Mac (load avg up to ~85): tests hit
+  5 s timeouts and API calls stalled. Heavy steps (npm test, build, e2e) now go through a shared
+  2-slot queue script (orchestrator scratchpad `heavy.sh`); never raise timeouts to compensate.
+- NYC Open Data (Socrata) and nyc.gov return 403 from this machine; geo:build uses NYC DCP's ArcGIS
+  FeatureServer + MTA S3. The download cache lives in .cache/geo (gitignored); copy it between
+  worktrees or run `npm run geo:build` with network. `geo:build -- --check --offline` verifies outputs.
+- MTA GTFS quirks: Q/N/R shapes end ~103 m short of 96 St (terminal extension); Q03/Q04 sit 4–4.5 m
+  off their shapes. NTA QN0151 (Rikers) has BoroName Bronx but CDTA QN01; Marble Hill station 106 is
+  borough manhattan but zone bx08.
+- src/lib/geo uses relative `.ts` imports so Node scripts can load it; src/lib/data/geo.ts (classic
+  zod + all layers) is never imported by client code.
+- zod/mini must be imported as a namespace: `import * as z from 'zod/mini'`. `import { z }` makes
+  Turbopack bundle all of zod/mini incl. locales (~92 KB gz). client-imports.test.ts enforces it.
+- Playwright: use page.clock.setFixedTime only; clock.install() fakes rAF and hangs the console
+  guard's settle. Playwright's getByRole does not skip inert content; check for an [inert] ancestor.
+- Onboarding lives in its own store (cloutcity:onboarding v1), separate from the game save, so it
+  survives game-save repair/migration. E2E fixture option `onboarding: 'complete' | 'fresh'`.
 - Client code validates with `zod/mini`; classic zod in the shell costs ~90 KB gz (blew the 180 KB
   budget). Never import `@/lib/data/config` or classic schemas from client-reachable modules
   (src/lib/client-imports.test.ts enforces it). Server/scripts may use classic zod.
@@ -96,13 +113,28 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   draw calls and triangles.
 - docs/local/ is gitignored: put OPEN-ISSUES pointers into iteration notes.
 
+- Shell diet (S05c): the shell of / carries only the boot path (≤ shellJsGzKB − shellHeadroomGzKB, 160 KB);
+  features load via lazyIsland with their own copy namespace (data/copy/<ns>/), registered by
+  importing src/lib/copy/ns/<ns>.ts. copy() throws CopyNamespaceNotLoadedError for an unloaded
+  namespace. Tests/server import @/lib/copy/all. Test hooks need NEXT_PUBLIC_TEST_HOOKS=1 (e2e build).
+- The page is inert from the first byte until the modal island settles (boot hold); e2e waits via
+  waitForWelcomeGate().
+- Auto-mode may deny `git rebase` in lanes: integrate by committing the lane and merging dev into it
+  (non-destructive), then fast-forward dev.
+
+- Supabase (S18): stock default privileges are wide open; migration 1 revokes them, so every table and
+  RPC needs an explicit GRANT (catalog test catches gaps). Client RPCs start with
+  `v_uid := private.require_attestation();` or carry `@attestation-exempt: <reason>` (update EXEMPT in
+  catalog.test.ts). SQLSTATE PTxyz → HTTP xyz; supabase-js returns {code, message}. One local stack is
+  shared by all checkouts: `db reset` affects every lane. `npm run test:integration` needs it running.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.
-- Lane A (main, 3100): S05a → S05 (needs S04a) → S06 → S05b
+- Lane A (worktree lane-a, 3100): S05a ✓ → S05b → S05 (needs S04a) → S06 (main checkout is integration-only from now on)
 - Lane B (lane-b, 3101): S04 → S04a → S04c → S04b → S04d
-- Lane C (lane-c, 3102): S11 → S10 → S12
-- Lane D (lane-d, 3103): S14 → S13 (needs S10)
+- Lane C (lane-c, 3102): S11 ✓ → S10 ✓ → S12 → S10a (needs S09)
+- Lane D (lane-d, 3103): S14 ✓ → S05c shell diet (urgent: shell 174.6/180) → S13
 - Lane E (lane-e, 3104): S07 → S09 → S07a
 - Lane F (lane-f, 3105): S08 (needs S04 merged)
 Slice = S01–S06 minus S04e, plus S07, S07a, S08–S14. After the slice: S04e, S07b, S15, S16, S16a,
@@ -131,6 +163,15 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
 (none yet: phase, qa-mafia verdicts, report paths, PR link)
 
 ## Tuning log
+- S12 economy sim (TUNE-3): target missed (barista $372, retail $484, delivery $586/wk; free naps =
+  unlimited energy; barista dominated). Costs-only fix, wages fixed: hunger decay 5→6/h; home-meal
+  $4→$8; bodega-breakfast $6→$10; sleep +80→+55 energy; nap +15→+4 energy; new deli-coffee 10 min $12
+  +20 energy; shift energy retail 15→25, delivery 25→40 (barista 15); housing.moveInCost brooklyn-1br
+  $400, manhattan-loft $1000 (placeholder). Bot: 2 shifts/day, 2 rides/day at $3, deli coffee before
+  shifts, never sleeps at 0 energy, skips work that would not end by 22:00. Result (30 days): retail
+  (best) weeks 2–4 $140/$140/$140, affordable day 13, final $884; barista $112×3, day 14, $752;
+  delivery $106/$114/$106, day 14, $748; min cash $147, no misses or evictions. Baseline:
+  data/sim/economy-baseline.derived.json (npm run econ:update).
 - S03 placeholders (TUNE-1): decay per game hour energy 3, hunger 5, mood 2; start stats 100/80/70;
   at-zero penalties (hunger 0: +3 energy/+4 mood drain per h; energy 0: +3 mood drain, 1.5x duration;
   mood 0: 1.25x duration); catalog sleep 480 min +80 energy +5 mood, nap 60 min +15 energy,
@@ -172,3 +213,66 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   repair-instead-of-discard, float carry. Test change by ruling: store.test.ts "repairs a negative
   remainder / a remainder of a whole game minute" now expects repair (was "starts fresh").
   Gates: 446 unit, 76 e2e, build, budget 137.4 KB. Catalog actions have no copy names yet.
+- S05a (attempt 1, passed): welcome card over the scene — neutral year picker (only ≤ Y−19 passes),
+  consent with Terms/Privacy (placeholder routes), audio choice; under-18 → in-voice lock for 24 h,
+  no Supabase; 18+ → local attestation/consent/audio record (never the year); startGuestSession hook
+  (local mode only; S05 adds Supabase); shared form pattern; modal overlay layer + OverlayBackground
+  inert + focus trap; e2e fixture seeds onboarding. Orchestrator fixes: zod/mini namespace imports in
+  src/engine/actions.ts and save.ts. Gates: 502 unit, 210 e2e, build, budget 161.7 KB.
+  OPEN-ISSUES: DEC-9 update, Q-5 re-consent, Q-6 Y−18 ruling, RISK-2 baselines; low: storage log text
+  says "saved game" for onboarding data.
+- S04 (attempt 1, passed on lane-b, merged): reproducible geo:build from hash-locked DCP borough/NTA
+  layers + MTA GTFS → derived land, water, parks, subway (29 lines, 496 stations) and 71 CDTA zones;
+  SOURCES.md; ENU projection (cc-enu-v1, origin 40.7/−73.98); base geo 137 KB gz. Bug-hunter: 0
+  product failures. Merge conflicts in data.test.ts and schemas/config.ts resolved (kept both).
+- S11 (attempt 1, passed on lane-c, merged): four shift jobs at the wage anchors, weekly rent with
+  late fees and eviction to the lowest-rent home, clout-level gating helper src/engine/clout.ts, save
+  v3. Bug-hunter: 0 product failures. Copy JSON conflicts with S05a resolved (kept both).
+  OPEN-ISSUES: UX-4 eviction wording, TUNE-2 placeholders.
+- S10 (attempt 1, passed on lane-c, merged): 12 wearables (3 rarities, 5 slots) + 3 gifts, cash only;
+  resale floor(price × resalePct) depreciating 5%/game day to a 50% floor; own-once wearables, stacking
+  gifts; effects once per owned copy on first wear; gifts to 'yourself' or a branded NpcId only; save
+  v4 inventory. Bug-hunter: 0 product failures (low: tampered worn:false can re-grant an effect; v3 save
+  carrying inventory starts fresh). No UI yet → S10a. Gates on dev: 1010 unit, 210 e2e, budget 163.9 KB.
+- S07 (attempt 1, passed on lane-e, merged): 5 boroughs with config-driven clout gating (Brooklyn at
+  local, Manhattan at scene-regular, Bronx/SI expanding soon); 27 landmarks (Wikidata P625, verified
+  within 1 m by bug-hunter; generic labels for branded names; 9/11 Memorial strict look-only); 24
+  invented venues (corner-halo-deli renamed late-lantern-deli); engine boroughs.ts/places.ts;
+  client-safe src/lib/world/places.ts. 3D render sub-clauses moved into S04c's acceptance (orchestrator
+  note). Gates on dev: 1238 unit, 210 e2e, budget 167.4 KB (copy growth → S05c).
+  OPEN-ISSUES: LEGAL-1 list, STN-1, "Ninth Hour Coffee" flag.
+- S08 part 1 (engine, merged; S08 not yet passed — part 2 wires the 3D animation after S04a): walk,
+  subway (Dijkstra over real lines, walking legs, transfers), taxi via 23 crossings + road waypoints,
+  water rules (walk refused across water, ends snapped to land within 300 m), rush-hour slowdowns,
+  seeded MTA delay hook, animation timeline. Two edge-case tests updated to the rulings
+  (POINT_NOT_REACHABLE, TRIP_TOO_LONG); the landmark reachability test uses S07 route points.
+- S14 (attempt 1, passed on lane-d, rebased and merged): data-driven events with seeded RNG, 15
+  events, safety resolved from place data by id (nothing at september-11-memorial, no crime at
+  city-hall), lazy EventSheet, save v5 (v4→v5 adds event state; every version v1–v5 loads). One fix
+  cycle (category bypass, newer-save info log). Gates on dev: 1530 unit, 232 e2e, shell 174.6 KB.
+  OPEN-ISSUES: INT-3 two RNG modules (rng.ts vs transit random.ts) still to merge; clout/item event
+  effects stay pending until S13/S10a wire them.
+- S09 (passed on lane-e, fast-forwarded onto dev; lane gates on this exact tree: 1667 unit, 270
+  e2e, shell 175.6 KB): place action sheet via openPlace(id), hours, club door + cover, club clout
+  once per club per night (save v6), landmark Visit + flexMultiplier config, memorial info only,
+  busy state until dismissed. Pending: S12 merge broke 3 tests (events decay, taxi centroid sweep) —
+  rebase lane-c/S12 onto dev and fix; S05c next (plan approved, all defaults); hold S05b (177.7 KB)
+  and S04a until S05c merges.
+- S12 (passed on lane-c, rebased onto dev as one commit; lane gates on this tree: 1741 unit, 270 e2e,
+  shell 175.7 KB): deterministic 30-day economy bot per entry job, target + exact-baseline drift
+  layers, ±1 sweep robustness, plausibility fixture for S18c, src/engine/housing.ts canAffordMove,
+  shared HOME_IDS tie-break. Fix cycles: bot schedule robustness (midnight wrap), re-tune; integration:
+  event tests pin their stats block, zone-centroid taxi sweep gets a documented 30 s limit.
+  OPEN-ISSUES: TUNE-3 placeholders (Manhattan move-in), mood sits at 0 for the bot most evenings.
+- S05c (attempt 1, passed): shell of / 175.6 → 141.1 KB gz via boot islands (welcome + onboarding +
+  zod/mini; store + engine + catalogs + event host ≈46 KB eager), lazy EventSheet/PlaceSheet with
+  in-zone loading and retry, copy split per namespace, shell-boundary.test + scripts/shell-guard.ts
+  (20 KB headroom). Integrated by merging dev into the lane (rebase denied by auto mode). Bug-hunter:
+  18+ gate now fail-closed from the first byte (boot hold), whole-id marker matching, per-feature
+  namespace coverage test. Dev gates: unit 1884, e2e 291 + 1 load flake (FLAKE-1, 30/30 in isolation).
+- S18 (attempt 1, passed): ten tables with RLS and explicit grants, profile trigger + attest_and_consent,
+  private.require_attestation gate + catalog default-deny scan, send_friend_boost one per sender per NY
+  day, service-role-only money tables (livemode=false), Vitest integration harness. Bug-hunter: gate
+  scanner hardened against comments/strings, exposed-schema guard, 17 security probes (124 integration
+  tests). Follow-ups SEC-4..8 in OPEN-ISSUES. Dev gates: unit 1895, integration 124, e2e 292.
+

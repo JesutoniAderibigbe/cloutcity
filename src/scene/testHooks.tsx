@@ -2,10 +2,10 @@
 
 /**
  * Test-mode hook for the e2e suite: camera state and renderer counters on
- * `window.__CLOUTCITY_TEST__.scene`. Only builds with NEXT_PUBLIC_TEST_HOOKS=1 (inlined at build
+ * `window.__cloutcityTest.scene`. Only builds with NEXT_PUBLIC_TEST_HOOKS=1 (inlined at build
  * time; the e2e build sets it and writes to its own distDir). In every other build the effect
- * body is dead code and is removed, so the hook never ships: `npm run budget` fails if the
- * marker reaches `.next`.
+ * body is dead code and is removed, so the hook never ships: `npm run budget` (shell-guard)
+ * fails if `__cloutcityTest` reaches `.next`.
  */
 import { useEffect, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
@@ -42,7 +42,11 @@ export interface SceneTestHook {
 
 declare global {
   interface Window {
-    __CLOUTCITY_TEST__?: { scene?: SceneTestHook }
+    __cloutcityTest?: CloutcityTestHooks
+  }
+  /** One property per feature hook (merged with src/components/events/eventTestHook.ts). */
+  interface CloutcityTestHooks {
+    scene?: SceneTestHook
   }
 }
 
@@ -76,9 +80,9 @@ export function TestHooks({ readyRef }: { readonly readyRef: RefObject<boolean> 
       },
       renderInfo: () => ({ calls: gl.info.render.calls, triangles: gl.info.render.triangles }),
     }
-    window.__CLOUTCITY_TEST__ = { ...window.__CLOUTCITY_TEST__, scene: hook }
+    window.__cloutcityTest = { ...window.__cloutcityTest, scene: hook }
     return () => {
-      delete window.__CLOUTCITY_TEST__?.scene
+      delete window.__cloutcityTest?.scene
     }
   }, [gl, camera, controls, get, readyRef])
 

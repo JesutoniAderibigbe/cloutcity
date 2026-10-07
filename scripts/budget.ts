@@ -7,12 +7,11 @@
  * - 3D chunk JS: the files of the lazy `next/dynamic` scene import, read from the route's
  *   react-loadable-manifest.json (minus any file the shell already loads), gzipped, against
  *   `sceneChunkJsGzKB`.
- * - No test hooks: no static chunk may contain the e2e test-hook marker (the e2e build writes
- *   to its own distDir, `.next-e2e`; see src/scene/testHooks.tsx).
  *
+ * scripts/shell-guard.ts runs next and checks the boot path and that no test hook ships.
  * Run after `npm run build`. Sizes use KB = 1000 bytes, the stricter reading of the budget.
  */
-import { readdir, readFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { z } from 'zod'
@@ -130,24 +129,6 @@ export function sceneChunkFiles(manifest: unknown, shellScripts: readonly string
   return [...files].sort()
 }
 
-/** Marks the e2e-only scene test hook (src/scene/testHooks.tsx); never in a shipped build. */
-export const TEST_HOOK_MARKER = '__CLOUTCITY_TEST__'
-
-/** Static JS files (relative to `static/`) that contain the test-hook marker. */
-export async function filesWithTestHooks(distDir: string): Promise<string[]> {
-  const staticDir = join(distDir, 'static')
-  const entries = await readdir(staticDir, { recursive: true, withFileTypes: true })
-  const found: string[] = []
-  for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith('.js')) continue
-    const file = join(entry.parentPath, entry.name)
-    if ((await readFile(file, 'utf8')).includes(TEST_HOOK_MARKER)) {
-      found.push(file.slice(staticDir.length + 1))
-    }
-  }
-  return found.sort()
-}
-
 function report(result: BudgetResult, detail: string): string {
   const status = result.ok ? 'PASS' : 'FAIL'
   return `${status} ${result.name}: ${result.actualKB} KB gz (limit ${result.limitKB} KB)\n  ${detail}`
@@ -190,20 +171,15 @@ async function main(): Promise<void> {
   for (const file of sceneFiles) sceneBytes += gzipBytes(await readFile(join(distDir, file)))
   const scene = checkBudget('3D chunk JS (lazy)', sceneBytes, sceneLimitKB)
 
-  const leaks = await filesWithTestHooks(distDir)
-
   const lines = [
     report(
       shell,
       `${external.length} chunks: ${(externalBytes / 1000).toFixed(1)} KB gz; inline: ${(inlineBytes / 1000).toFixed(1)} KB gz`,
     ),
     report(scene, `${sceneFiles.length} chunks: ${sceneFiles.join(', ')}`),
-    leaks.length === 0
-      ? 'PASS No test hooks in .next/static'
-      : `FAIL Test hooks (${TEST_HOOK_MARKER}) in .next/static: ${leaks.join(', ')}`,
   ]
   process.stdout.write(`${lines.join('\n')}\n`)
-  if (!shell.ok || !scene.ok || leaks.length > 0) process.exitCode = 1
+  if (!shell.ok || !scene.ok) process.exitCode = 1
 }
 
 if (import.meta.main) {

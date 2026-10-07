@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { copy } from '@/lib/copy'
+import '@/lib/copy/all'
 
 // MTA terms (data/geo/SOURCES.md): never imply endorsement or that the data is accurate.
 describe('map attribution copy', () => {

@@ -25,19 +25,22 @@ gitignored; later tasks document their variables here.
 
 ## Scripts
 
-| Script                            | What it does                                                                                                                            |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                 |
-| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                             |
-| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                    |
-| `npm run format:check` / `format` | Prettier check / write                                                                                                                  |
-| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                        |
-| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                                         |
-| `npm run budget`                  | Gzipped shell JS of `/` and the lazy 3D chunk against `data/config/perf.json`, and no test hooks in `.next` (run after `npm run build`) |
-| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                |
+| Script                            | What it does                                                                                                                                                     |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                                          |
+| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                                                      |
+| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                                             |
+| `npm run format:check` / `format` | Prettier check / write                                                                                                                                           |
+| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                                                 |
+| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                                                     |
+| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                                                         |
+| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                                                                  |
+| `npm run budget`                  | Gzipped shell JS of `/` and the lazy 3D chunk against `data/config/perf.json` and no test hooks in `.next`, then the boot-path guard (run after `npm run build`) |
+| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                         |
+| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                           |
 
 Gate order used by the build loop:
-`npm run format:check && npm run typecheck && npm run lint && npm test && npm run build && npm run e2e && npm run budget`
+`npm run format:check && npm run typecheck && npm run lint && npm test && npm run test:integration && npm run build && npm run e2e && npm run budget`
 
 ## End-to-end tests
 
@@ -52,6 +55,10 @@ Gate order used by the build loop:
   also matched as JSON) and optionally an exact `count`. Matching messages are let through, but
   every entry must appear, and anything else still fails. Wrap two or more entries as
   `[[a, b], { scope: 'test' }]` (Playwright reads a bare two-entry array as a fixture tuple).
+- The fixture also seeds a completed welcome card before every page load, so specs start like a
+  returning player. Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`; their
+  helpers live in `tests/e2e/fixtures/welcome.ts`. To fake the time use `page.clock.setFixedTime`
+  only: `page.clock.install()` also fakes animation frames and timers and hangs the console guard.
 - Screenshot baselines live in `tests/e2e/__screenshots__/` and are per platform. After an
   intended visual change, review the diff and run `npx playwright test --update-snapshots`.
 
@@ -97,6 +104,33 @@ link); on short viewports banner, toast and sheet shrink first. Zone sizes live 
 `data/config/layout.json`. The bottom tab bar (`src/components/nav/BottomTabs.tsx`) sits in the
 `tabs` zone with safe-area padding.
 
+A modal (the welcome card) goes in `OverlayLayout`'s `modal` slot: a second grid on the top
+layer that places it between the HUD and the tab bar, never over the banner, HUD or tab bar.
+A modal declares itself open with `useModalPresence(open)` (`src/components/overlay/modalState.ts`);
+while one is open, the scene and every zone behind it stay mounted but are inert and dimmed, and
+focus returns to the scene's `<main>` when it closes.
+
+## Welcome card (18+ check, consent, sound)
+
+On first visit `src/components/welcome/WelcomeGate.tsx` shows one card over the loading map: a
+neutral year-of-birth picker (no default, no hint of the threshold), the Terms/Privacy consent
+(`/terms`, `/privacy`, placeholders pending legal review) and the sound choice. The rules are pure
+in `src/engine/ageGate.ts` (New York year; only a birth year at least `minimumAge + 1` back
+passes, since the birthday is unknown); numbers live in `data/config/onboarding.json`.
+
+- **18+:** `src/state/onboarding.ts` stores under `cloutcity:onboarding` the attestation (boolean
+  and timestamp), the consent version and timestamp, and the sound choice. The birth year is
+  never stored, logged or sent. The guest session hook (`src/state/session.ts`) runs only after
+  this; S05 adds the anonymous Supabase sign-in there, then records these answers on the server
+  profile with `attest_and_consent` (see Local Supabase).
+- **Under 18:** an in-voice screen, and the gate locks on that device for `underAgeLockHours`
+  (setting the clock back keeps it locked). No session starts.
+- Returning players never see the card. A record from a newer build is respected and never
+  overwritten; an invalid one is ignored and the card shows.
+- The form follows the shared pattern (`src/lib/forms/`): one zod/mini schema whose messages are
+  copy keys, `fieldErrors()` for every error at once, `firstInvalid()` for focus.
+- No audio is created or loaded by the card (GR-13): the choice is only recorded.
+
 ## Data, copy and config
 
 Everything players see or the game tunes lives in `/data` as JSON, and every file is validated
@@ -104,31 +138,51 @@ by a zod schema in `src/lib/data/schemas/` (`src/lib/data/data.test.ts` fails if
 no schema or does not match it, if any other file type appears (only `SOURCES.md` and
 `README.md` are allowed next to data), or if a cross-file reference breaks).
 
-| Folder            | Holds                                                                                                                                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `layout.json`, `copy.json`, `geo.json` (geo build parameters) |
-| `data/copy/`      | `base.json` (every player-facing string) and `packs/*.json` (slang packs)                                                                                                                           |
-| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`: content, with copy keys instead of text (placeholder seeds until their tasks land)                                                     |
-| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                  |
-| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                       |
-| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                   |
+| Folder            | Holds                                                                                                                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings) |
+| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                             |
+| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                            |
+| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                           |
+| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                |
+| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                            |
+| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                   |
 
 - **Loading.** Server code and scripts import validated data from `src/lib/data/config.ts` and
   `src/lib/data/content.ts`, which parse at import and fail fast with the file name. Client
   code must not pull in zod's classic build (it costs about 90 KB gz of shell JS): the copy
-  layer reads its JSON directly (validated by the tests), and the store validates with
-  `zod/mini`.
-- **Adding content.** Add the entry to the JSON file, add its strings to `data/copy/base.json`
-  under the key the entry names (`nameKey`, `titleKey`, ...), and run `npm test`.
-- **Copy.** `copy(key, vars)` from `src/lib/copy.ts` renders a string with the active slang pack
-  (`data/config/copy.json` → `slangPack`) layered over base. Swapping the pack id changes the
-  text with no code change; a new pack file must also be registered in `slangPacks`. Templates
-  use `{name}` placeholders (a letter, then letters or digits) whose values are strings, so
-  numbers go through the formatters first. Any other brace is rejected by the schema and by
-  `interpolate`.
-  Packs may override only base keys and must keep the same placeholders.
+  layer reads its JSON directly (validated by the tests), and the stores validate with
+  `zod/mini`. Import it as `import * as z from 'zod/mini'`: the named `{ z }` export defeats
+  Turbopack's tree shaking and ships all of zod/mini with its locales (about 92 KB gz).
+- **Adding content.** Add the entry to the JSON file, add its strings to its namespace's
+  `data/copy/<ns>/base.json` (events in `events`, items in `items`, ...) under the key the entry names (`nameKey`, `titleKey`, ...), and run `npm test`. An item's
+  `sellValue` must equal `floor(price * resalePct[rarity] / 100)` (`items-data.test.ts`).
+- **Copy.** `copy(key, vars)` from `src/lib/copy` renders a string with the active slang pack
+  (`data/config/copy.json` → `slangPack`, one of `packs`) layered over base. Swapping the pack id
+  changes the text with no code change. Strings are split by namespace, the first key segment
+  (`events.mtaDelay.title` → `events`), so the shell ships only the boot namespaces (`app`,
+  `nav`, `tabs`, `loading`) and every other namespace ships with the feature that renders it
+  (DEC-11):
+  - A module that renders a namespace imports `@/lib/copy/ns/<ns>` (after its other imports).
+    Rendering a key whose namespace is not loaded throws `CopyNamespaceNotLoadedError`, never the
+    raw key; `src/lib/copy/key-usage.test.ts` fails if a module names a key its imports do not load.
+  - **New namespace:** create `data/copy/<ns>/base.json` (`{ "strings": { "<ns>.…": "…" } }`), add
+    `src/lib/copy/ns/<ns>.ts` (copy an existing one: it imports the files and calls
+    `registerCopy`), add it to `src/lib/copy/keys.ts` (the `CopyKey` type) and `all.ts`.
+    `src/lib/copy/files.test.ts` checks all of this against the disk.
+  - **Pack overrides:** `data/copy/<ns>/<pack>.json` (`{ "id": "<pack>", "strings": {…} }`) for
+    a pack listed in `copy.json`, registered in the namespace module. A **new pack** is a new id
+    in `packs` plus a file in each namespace it overrides.
+  - Only the core may add a boot namespace (it costs shell bytes; `npm run budget` and
+    `src/lib/shell-boundary.test.ts` enforce the boot path). Tests and server code that need every
+    string import `src/lib/copy/all.ts`.
+    Templates
+    use `{name}` placeholders (a letter, then letters or digits) whose values are strings, so
+    numbers go through the formatters first. Any other brace is rejected by the schema and by
+    `interpolate`.
+    Packs may override only base keys and must keep the same placeholders.
 - **Superlatives (GR-11).** No copy string may contain "cheapest", "biggest", "best", "most" or
-  "fastest" as literal text (`src/lib/copy.test.ts`). Give the string a placeholder and fill it
+  "fastest" as literal text (`src/lib/copy/copy.test.ts`). Give the string a placeholder and fill it
   with `superlative(kind, subjectId, values)`, which returns the word only when the data proves
   it (a unique minimum or maximum) and `null` otherwise.
 - **Numbers (UX-2).** `formatMoney` (whole US dollars, halves rounded away from zero) and
@@ -141,6 +195,37 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
   colour `--color-<token>` (`bg-night-900`, `text-taxi-400`, ...). A new token needs a line in
   both; `src/lib/theme.test.ts` checks they match and that no source file hardcodes a colour.
 
+## Places: boroughs, venues and landmarks
+
+Venues (invented businesses) and landmarks (real places) share one id space. The client reads
+them through `src/lib/world/places.ts` (`mapPlaces()`, `placeAccess()`,
+`placeAccessibleName()`, `boroughRenderState()`); the rules are in `src/engine/boroughs.ts`
+(clout gating from `balance.json` `boroughs`) and `src/engine/places.ts` (opening hours,
+`placeAllows`).
+
+- **Ids are stable.** Events and travel reference places by id, so never rename one; add a new
+  entry instead. Ids are kebab-case and brand-free.
+- **Fields you fill by hand:** `id`, copy keys (`venues.<camelId>.name` / `.blurb`,
+  `landmarks.<camelId>.name` / `.info`), `type` or `category`, `location` (lat/lng), `borough`,
+  `zoneId`, `hours` (venues), `stationId` (station venues), `approach` and `spans` (bridges and
+  off-land landmarks), `interactions` (landmarks). Local x/y are computed with `project()` at
+  load, never stored.
+- **Fields the tests check:** `src/lib/world/places-content.test.ts` checks `borough` and
+  `zoneId` against the S04 borough and zone layers at `approach ?? location` (the failure
+  prints the expected value), that venues are not inside parks and are 50 m apart, that a
+  station venue is within 25 m of its station, and that landmarks off land have an `approach`.
+- **nameMode.** A landmark is `generic` when its real name contains a corporate or sponsor brand
+  or its owner licenses the name or image as commercial IP; civic, park and place names stay
+  `real`. Add the real name to `LANDMARK_REAL_NAMES` in the test. Every landmark ships with
+  `legalReviewed: false`. Memorials are `lookOnly: true` with no `interactions`, plain base copy
+  only, and no slang-pack override.
+- **SOURCES entry.** A landmark needs a row in `data/landmarks/SOURCES.md` (Wikidata id and
+  coordinates, nameMode reasoning). A venue needs a row in `data/venues/SOURCES.md` with the web
+  search for its name; a name that matches a real NYC business is rejected (add the business to
+  `REAL_NYC_BUSINESSES`).
+- **Copy.** Place and borough copy may not use a superlative (the extended list in the test)
+  unless it is computed into a `{rank}` placeholder by `superlative()`.
+
 ## Game state
 
 `src/state/store.ts` is the Zustand store (`useGameStore(selector)`), persisted to localStorage
@@ -149,15 +234,17 @@ out-of-range fields are repaired (speed to 1x, remainder to 0, stats clamped and
 only a structurally unusable save is replaced by a fresh state. A save from a newer build is
 never overwritten: the store sets `newerSavePresent` and writes nothing until
 `discardNewerSaveAndStartFresh()` is called. Only meaningful changes (minute, cash, stats,
-speed) are written, not every tick. If localStorage is unavailable (private
+speed, event state) are written, not every tick. If localStorage is unavailable (private
 browsing, blocked site data, full quota) the store keeps working in memory for the session.
 
 The store holds an engine snapshot and calls the engine for every change (`tick`,
 `performAction`, `setSpeed`); it holds no game rules itself.
 
 - **Engine** (`src/engine/`): pure functions, no React, three, Supabase or store imports, and
-  no real clock or randomness (ESLint enforces it; `src/engine/purity.test.ts` proves it).
-  Every number comes from `data/config/balance.json` (`time`, `stats`, `actions`).
+  no real clock or `Math.random` (ESLint enforces it; `src/engine/purity.test.ts` proves it).
+  Randomness comes from the seeded generator in `rng.ts` (mulberry32), whose state the save
+  keeps. Every number comes from `data/config/balance.json` (`time`, `stats`, `actions`,
+  `events`).
 - **Two clocks.** The personal game clock (`clock.ts`) is whole game minutes since day 1, 00:00.
   Passive time runs at 10 game minutes per real minute while the tab is visible, at 1x or 2x;
   actions fast-forward it instantly by their duration. City time (`cityTime.ts`) is the real
@@ -168,8 +255,52 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
 - **Actions** (`actions.ts`): validated definitions with a duration, cash and energy cost and
   stat effects; failures return a typed error (`INSUFFICIENT_FUNDS`, `INSUFFICIENT_ENERGY`, ...)
   and change nothing.
+- **Items** (`items.ts`, catalog in `data/items/items.json`): `buyItem`, `sellItem`,
+  `equipItem`, `unequipSlot` and `consumeGift`, with typed errors (`INSUFFICIENT_FUNDS`,
+  `ALREADY_OWNED`, `NOT_OWNED`, `WRONG_SLOT`, ...). Wearables are owned once and worn one per
+  slot (top, bottom, shoes, accessory, face); gifts stack and are consumed on yourself or an
+  NPC (`{ npcId }` with an `npc-` id), never another player. Resale is `sellValue` (data,
+  `floor(price * resalePct[rarity] / 100)`), less `depreciationPctPerGameDay` per game day
+  owned for wearables, never below `minResalePct` (`balance.json` `items`).
+- **Events** (`events.ts`, data in `data/events/events.json`): each event lists conditions
+  (personal-clock `hours`, `minDay`, `boroughs`, `locationIds`/`locationCategories`, `stats`,
+  `cash`, `clout`, `items`), a `weight`, an optional `cooldownMin` or `once`, and two or three
+  choices whose `effects` are `cash`, `stat`, `time`, `clout` or `item`. Cash, stats and time
+  apply at once; clout and items are kept as typed pending effects (with their source) in the
+  save (v5) until the clout ledger (S13) and inventory (S10) consume them. `rollForEvent(context)` in the store rolls with
+  `events.rollChance`; the open event shows in `src/components/events/EventSheet.tsx`, loaded
+  on first use by `EventSheetHost.tsx`, a boot island that `EventSheetMount.tsx` starts loading
+  when the shell runs (DEC-11; the overlay sheet zone, modal). The engine refuses every event at a memorial and every crime
+  event at a government building whatever the data says. To add an event: add it to
+  `events.json` with `titleKey`, `bodyKey` and per-choice `labelKey`/`resultKey`, add the
+  plain strings to `data/copy/events/base.json` and the NYC voice to `data/copy/events/nyc.json`, and
+  run `npm test` (`src/lib/data/events.test.ts` checks keys, places, items and scans the copy
+  for drinking, drug, sexual, gambling and strong-profanity words; a human still reads it).
+  In builds with test hooks (`NEXT_PUBLIC_TEST_HOOKS=1`, the e2e build only), set
+  `window.__CLOUTCITY_E2E__ = true` before load to get `window.__cloutcityTest.events`
+  (`open(id, context)`, `state()`); production builds contain no hook code.
+- **Housing** (`housing.ts`): `canAffordMove(player, home)` is true when cash, less the rent
+  reserve (`rentReserve`: rent owed plus this week's rent for the current home), covers the
+  home's move-in cost (`balance.json` `housing.moveInCost`; the lowest-rent home has none).
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
+
+## Economy simulation
+
+`src/engine/sim/economyBot.ts` plays the solo game for 30 game days on each entry job (barista,
+retail, delivery) with a fixed routine: two shifts a day, two subway rides, meals when hungry,
+deli coffee before a shift when energy is short, sleep at 22:00. It uses the engine's public
+functions only. `src/engine/sim/economy.sim.test.ts` checks the result against the CLAUDE.md
+target feel: the job that ends with the most cash finishes between $800 and $1250, saves $115 to
+$185 in each of weeks 2 to 4, and can afford the move to the Brooklyn 1BR between the game days
+in `balance.json` `target.firstUpgradeGameDay`; no job goes broke, misses rent or misses a
+shift, and every job saves $80 to $230 a week.
+
+The test also writes the result to `data/sim/economy-baseline.derived.json` (per-job results
+and the highest cash, clout and action counts per action, game hour and game day, which S18c
+uses as save-plausibility ceilings) and fails if a later change to the balance moves it. After
+tuning `balance.json` on purpose, run `npm run econ:update`, check the target tests still pass,
+and log the change in the progress.md Tuning log.
 
 ## Logging
 
@@ -203,11 +334,27 @@ KB = 1000 bytes) checks:
   (Next.js chunks plus inline scripts; `nomodule` polyfills excluded);
 - `sceneChunkJsGzKB`: the lazy 3D chunk, i.e. the files of the `next/dynamic` scene import listed
   in `.next/server/app/page/react-loadable-manifest.json` (minus any file the shell already
-  loads); the script fails if the manifest is missing or lists no lazy JS;
-- that no file in `.next/static` contains the e2e test-hook marker `__CLOUTCITY_TEST__`.
+  loads); the script fails if the manifest is missing or lists no lazy JS.
 
 Draw calls, triangles and idle frames at the default view are asserted by
 `tests/e2e/city-scene.spec.ts`. Enforcement of the other budgets joins in later tasks.
+
+**Shell diet (S05c, DEC-11).** The shell of `/` carries only the boot path: the layout, overlay
+system, HUD, tab bar, the copy core with its boot namespaces, and the island mounts. Everything
+else loads through `lazyIsland` (`src/components/overlay/lazyIsland.tsx`):
+
+- **Boot islands** (`eager: true`) start loading as soon as the shell runs: the welcome card with
+  its zod/mini form and onboarding store (its loading card keeps the page inert, so the 18+ gate
+  fails closed) and the event-sheet host with the game store, engine, save and catalogs.
+- **Feature islands** load on first render: the event sheet UI, the place sheet, and later the
+  shop, panels and transit planner. Each shows a loading status in its own overlay zone (the
+  skeleton appears after `layout.json` `overlay.loadingRevealDelayMs`) and, if its chunk fails,
+  a retry there. Each feature root renders `data-cc-feature="cc-feature:<id>"`.
+
+`npm run budget` then runs `scripts/shell-guard.ts`: no shell chunk may contain a feature marker,
+a key of a non-boot copy namespace or zod, no static chunk may contain an e2e test hook, and the
+shell must stay at or under `shellJsGzKB - shellHeadroomGzKB` (20 KB kept for features still to
+land). `src/lib/shell-boundary.test.ts` checks the same boot path on the source import graph.
 
 ## 3D city scene
 
@@ -239,8 +386,8 @@ It is about a dozen draw calls at the default view.
   (`map.error.device` or `map.error.load`) over the static background and log exactly one
   structured warning; the shell keeps working. `SceneErrorBoundary` only catches unexpected
   renderer errors.
-- **Test hooks.** With `NEXT_PUBLIC_TEST_HOOKS=1` at build time, `window.__CLOUTCITY_TEST__.scene`
-  exposes `ready`, `frames()`, `camera()` and `renderInfo()` (`src/scene/testHooks.tsx`). The e2e
+- **Test hooks.** With `NEXT_PUBLIC_TEST_HOOKS=1` at build time, `window.__cloutcityTest.scene`
+  exposes `ready`, `frames()`, `pendingFrames()`, `camera()` and `renderInfo()` (`src/scene/testHooks.tsx`). The e2e
   web server sets it and builds into `.next-e2e` (`NEXT_DIST_DIR`, read by `next.config.ts`), so
   the hook never reaches `.next`; in every other build its code is removed as dead code.
 
@@ -253,8 +400,42 @@ double-tap zoom in CSS but keeps pinch zoom (WCAG 1.4.4).
 
 ## Local Supabase
 
-The Supabase CLI is a devDependency (`npx supabase ...`) and `supabase/config.toml` is
-initialised. Nothing needs a running stack yet; see `progress.md` for when to `npx supabase start`.
+The Supabase CLI is a devDependency (`npx supabase ...`); Docker must be running.
+
+```bash
+npx supabase start              # first run pulls the images; prints URLs and local keys
+npx supabase db reset --local   # re-applies supabase/migrations and supabase/seed.sql
+npm run test:integration        # Vitest suites in tests/integration against the local stack
+npm run db:types                # regenerates src/lib/supabase/database.types.ts after a migration
+```
+
+- **Shared stack.** The stack is named after `project_id` in `supabase/config.toml`, so every
+  checkout and worktree of this repo talks to the same containers and database. `db reset` wipes
+  it for all of them; `supabase stop && supabase start` is needed after editing `config.toml`.
+- **Integration tests** read the URLs and keys from `npx supabase status -o json` (no env file
+  needed; `SUPABASE_API_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and
+  `SUPABASE_DB_URL` override them). They fail fast if the stack is down or the newest local
+  migration is not applied. They never reset the database: each test signs in fresh guests.
+  `tests/integration/types.test.ts` fails when `database.types.ts` is stale.
+- **Privileges are explicit.** The first migration revokes Supabase's default grants: a new
+  table or function in `public` is closed to `anon` and `authenticated` until a migration grants
+  it. Clients only ever get `SELECT` on rows they own or are a party to; every write is a
+  security-definer RPC or the service role. Server helpers live in the unexposed `private`
+  schema. Every function sets `search_path = ''` and uses schema-qualified names.
+- **Attestation gate.** A profile row is created (unattested) with each auth user. After
+  `signInAnonymously()` the client calls `attest_and_consent` with
+  `toAttestationArgs(record)` from `src/lib/supabase/attestation.ts` (the welcome card's
+  record, never the birth year). Every client RPC must start with
+  `v_uid := private.require_attestation();` or carry
+  `comment on function ... is '@attestation-exempt: <reason>'`; `tests/integration/catalog.test.ts`
+  enforces this and calls every gated RPC as an unattested guest.
+- **RPC errors** raise SQLSTATE `PTxyz` (PostgREST answers HTTP `xyz`) with a machine-code message
+  (`RPC_ERRORS` in `attestation.ts`; `parseRpcError()` reads it).
+- **Browser bundle.** `@supabase/supabase-js` may reach browser code only through a dynamic
+  `import()`; `src/lib/client-imports.test.ts` fails on a static import chain from a client entry.
+- **Production** (set in the Supabase dashboard, not `config.toml`): enable anonymous sign-ins,
+  set the anonymous sign-in rate limit per IP (locally raised to 1000/h for tests) and turn on
+  Turnstile under Auth > Bot and Abuse Protection (CAPTCHA). The local stack has no CAPTCHA.
 
 ## Ignored paths
 

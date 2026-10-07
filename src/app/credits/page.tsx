@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { copy, type CopyKey } from '@/lib/copy'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/credits'
 
 export const metadata: Metadata = { title: copy('credits.title') }
 

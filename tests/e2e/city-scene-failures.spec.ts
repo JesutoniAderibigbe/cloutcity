@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect, test, type ExpectedConsoleMessage } from './fixtures/test'
@@ -10,11 +10,18 @@ import { expect, test, type ExpectedConsoleMessage } from './fixtures/test'
 const ROOT = join(import.meta.dirname, '../..')
 const readJson = <T>(file: string): T => JSON.parse(readFileSync(join(ROOT, file), 'utf8')) as T
 
-/** A copy string as players see it: the active slang pack over base (src/lib/copy.ts). */
+/**
+ * A copy string as players see it: the active slang pack over base, both from the key's
+ * namespace directory (src/lib/copy).
+ */
 function copyText(key: string): string {
   const { slangPack } = readJson<{ slangPack: string }>('data/config/copy.json')
-  const pack = readJson<{ strings: Record<string, string> }>(`data/copy/packs/${slangPack}.json`)
-  const base = readJson<{ strings: Record<string, string> }>('data/copy/base.json')
+  const dir = `data/copy/${key.split('.')[0]}`
+  const packFile = join(ROOT, dir, `${slangPack}.json`)
+  const pack = existsSync(packFile)
+    ? readJson<{ strings: Record<string, string> }>(`${dir}/${slangPack}.json`)
+    : { strings: {} as Record<string, string> }
+  const base = readJson<{ strings: Record<string, string> }>(`${dir}/base.json`)
   const text = pack.strings[key] ?? base.strings[key]
   if (text === undefined) throw new Error(`no copy for ${key}`)
   return text

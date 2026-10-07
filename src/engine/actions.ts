@@ -7,13 +7,15 @@
  * 2. Funds, then energy, are checked against the up-front costs; nothing changes on failure.
  * 3. Cash and energy costs are paid.
  * 4. The clock fast-forwards by the duration (times the at-zero slowdown, rounded up, judged
- *    on the stats before paying), charging passive decay and crossing day/week boundaries.
+ *    on the stats before paying), charging passive decay and rent (src/engine/rent.ts) and
+ *    crossing day/week boundaries.
  * 5. The stat effects land, clamped to 0..stats.max.
  */
-import { z } from 'zod/mini'
+import * as z from 'zod/mini'
 import type { Rollovers } from './clock'
 import type { EngineConfig } from './config'
 import { advanceMinutes, type GameSnapshot } from './game'
+import type { RentEvent } from './rent'
 import { applyStatChanges, durationMultiplier, type StatChanges } from './stats'
 
 export interface ActionDef {
@@ -40,6 +42,8 @@ export type ActionResult =
       /** Game minutes the clock moved (after any slowdown). */
       readonly durationMin: number
       readonly rollovers: Rollovers
+      /** Rent charged, missed or collected while the clock moved. */
+      readonly rent: readonly RentEvent[]
     }
   | { readonly ok: false; readonly error: ActionError }
 
@@ -109,6 +113,7 @@ export function applyAction(
   const paid: GameSnapshot = {
     ...snapshot,
     player: {
+      ...snapshot.player,
       cash: cash - def.cashCost,
       stats: applyStatChanges(stats, { energy: -def.energyCost }, config),
     },
@@ -126,6 +131,7 @@ export function applyAction(
     },
     durationMin,
     rollovers: advanced.rollovers,
+    rent: advanced.rent,
   }
 }
 

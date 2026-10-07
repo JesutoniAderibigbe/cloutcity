@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test'
+import { completedOnboardingSeed } from './fixtures/onboarding-seed'
 import { expect, test } from './fixtures/test'
+import { storedOnboarding, welcomeDialog } from './fixtures/welcome'
 
 // Self-tests for the shared fixture: a guard that never fires is worse than none.
 
@@ -311,6 +313,25 @@ test.describe('console guard expectedConsole (PERF-1)', () => {
         // eslint-disable-next-line no-console -- reproducing a log.ts record
         console.warn({ level: 'warn', msg: 'probe record' })
       })
+    })
+  })
+})
+
+test.describe('onboarding seed (S05a)', () => {
+  test('by default a page starts past the welcome card', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    expect(await storedOnboarding(page)).toEqual(completedOnboardingSeed())
+  })
+
+  test.describe('with onboarding: fresh', () => {
+    test.use({ onboarding: 'fresh' })
+
+    test('the welcome card shows', async ({ page }) => {
+      await page.goto('/')
+      await expect(welcomeDialog(page)).toBeVisible()
+      expect(await storedOnboarding(page)).toBeNull()
     })
   })
 })

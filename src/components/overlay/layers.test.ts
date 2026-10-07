@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  FREE_SCENE_GRID_ROW,
+  MODAL_GRID_ROW,
   OVERLAY_LAYER_ORDER,
   OVERLAY_ZONES,
   ZONE_GRID_ROW,
@@ -40,5 +42,15 @@ describe('overlay layers', () => {
     for (const layer of OVERLAY_LAYER_ORDER.filter((l) => l !== 'scene')) {
       expect(layerZIndex(layer)).toBeGreaterThan(layerZIndex('scene'))
     }
+  })
+
+  it('stacks a modal above every zone, between the HUD and the tab bar', () => {
+    for (const layer of OVERLAY_LAYER_ORDER.filter((l) => l !== 'modal')) {
+      expect(layerZIndex('modal')).toBeGreaterThan(layerZIndex(layer))
+    }
+    const [start, end] = MODAL_GRID_ROW.split(' / ').map(Number)
+    expect(start).toBe(ZONE_GRID_ROW.hud + 1)
+    expect(start).toBe(FREE_SCENE_GRID_ROW)
+    expect(end).toBe(ZONE_GRID_ROW.tabs)
   })
 })

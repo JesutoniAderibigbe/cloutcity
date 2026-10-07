@@ -49,7 +49,7 @@ interface CameraState {
 }
 
 async function waitForScene(page: Page): Promise<void> {
-  await page.waitForFunction(() => window.__CLOUTCITY_TEST__?.scene?.ready === true, null, {
+  await page.waitForFunction(() => window.__cloutcityTest?.scene?.ready === true, null, {
     timeout: READY_TIMEOUT_MS,
   })
   await expect(page.locator('[data-scene-root]')).toHaveAttribute('data-scene-status', 'ready')
@@ -62,16 +62,16 @@ async function waitForScene(page: Page): Promise<void> {
  * it returns as soon as the last requested frame has drawn.
  */
 async function settle(page: Page): Promise<void> {
-  await page.waitForFunction(() => window.__CLOUTCITY_TEST__?.scene?.pendingFrames() === 0, null, {
+  await page.waitForFunction(() => window.__cloutcityTest?.scene?.pendingFrames() === 0, null, {
     polling: 'raf',
     timeout: READY_TIMEOUT_MS,
   })
 }
 
-const frames = (page: Page) => page.evaluate(() => window.__CLOUTCITY_TEST__?.scene?.frames() ?? -1)
+const frames = (page: Page) => page.evaluate(() => window.__cloutcityTest?.scene?.frames() ?? -1)
 
 async function camera(page: Page): Promise<CameraState> {
-  const state = await page.evaluate(() => window.__CLOUTCITY_TEST__?.scene?.camera() ?? null)
+  const state = await page.evaluate(() => window.__cloutcityTest?.scene?.camera() ?? null)
   if (state === null) throw new Error('camera state is not available')
   return state
 }
@@ -85,6 +85,33 @@ async function freeArea(page: Page): Promise<{ top: number; bottom: number; cent
   const top = hud.y + hud.height
   const bottom = toast.y
   return { top, bottom, centre: { x: viewport.width / 2, y: (top + bottom) / 2 } }
+}
+
+/**
+ * Many wheel steps at `point`, dispatched on the canvas in one go. Each `page.mouse.wheel` waits
+ * for its input ack, which waits for a software-rendered (SwiftShader) frame of the zoomed-out
+ * city, so 30 real steps take most of the test timeout when workers share the CPU. The camera
+ * rig handles these events exactly like real ones (MapControls listens for `wheel` on the
+ * canvas); each spec still drives a real wheel step first.
+ */
+async function wheelBurst(page: Page, point: Point, deltaY: number, count: number) {
+  await page.locator('[data-scene-root] canvas').evaluate(
+    (canvas, { x, y, delta, n }) => {
+      for (let i = 0; i < n; i++) {
+        canvas.dispatchEvent(
+          new WheelEvent('wheel', {
+            deltaY: delta,
+            deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+            clientX: x,
+            clientY: y,
+            bubbles: true,
+            cancelable: true,
+          }),
+        )
+      }
+    },
+    { x: point.x, y: point.y, delta: deltaY, n: count },
+  )
 }
 
 function expectInsideLimits(state: CameraState): void {
@@ -104,15 +131,22 @@ function expectInsideLimits(state: CameraState): void {
 
 test.describe('3D city scene', () => {
   test('the shell is interactive before the 3D chunk and geo arrive', async ({ page }) => {
-    // Hold the lazy 3D chunk (the files of the dynamic import, from the e2e build's
-    // react-loadable-manifest.json) and the geo body until released.
+    // Hold the 3D chunk and the geo body until released. The 3D chunk is the file of the
+    // dynamic import (e2e build's react-loadable-manifest.json) that renders the scene's
+    // feature marker; the import's other files are shared with the welcome boot island (zod/mini)
+    // and must load, or the page stays inert behind the welcome loading card.
     const manifest = readJson<Record<string, { files: string[] }>>(
       `${E2E_DIST_DIR}/server/app/page/react-loadable-manifest.json`,
     )
     const lazyChunks = new Set(
-      Object.values(manifest).flatMap((entry) => entry.files.map((file) => `/_next/${file}`)),
+      Object.values(manifest)
+        .flatMap((entry) => entry.files)
+        .filter((file) =>
+          readFileSync(join(ROOT, E2E_DIST_DIR, file), 'utf8').includes('cc-feature:city-scene'),
+        )
+        .map((file) => `/_next/${file}`),
     )
-    expect(lazyChunks.size).toBeGreaterThan(0)
+    expect(lazyChunks.size).toBe(1)
     const held: Route[] = []
     let release = false
     const hold = async (route: Route) => {
@@ -148,7 +182,7 @@ test.describe('3D city scene', () => {
   }) => {
     await page.goto('/')
     await waitForScene(page)
-    const info = await page.evaluate(() => window.__CLOUTCITY_TEST__?.scene?.renderInfo())
+    const info = await page.evaluate(() => window.__cloutcityTest?.scene?.renderInfo())
     test.info().annotations.push({ type: 'default-view', description: JSON.stringify(info) })
     expect(info?.calls).toBeGreaterThanOrEqual(MIN_CALLS)
     expect(info?.calls).toBeLessThanOrEqual(perf.drawCallsMax.mid)
@@ -342,13 +376,13 @@ test.describe('3D city scene', () => {
 
     // Zoom-to-cursor re-anchors the target after each clamped step, so the distance converges
     // on the limit over repeated events rather than landing on it at the first overshoot.
-    for (let i = 0; i < 30; i++) await page.mouse.wheel(0, 2000)
+    await wheelBurst(page, centre, 2000, 30)
     await expect
       .poll(async () => (await camera(page)).distance)
       .toBeCloseTo(scene.camera.maxDistanceM, -1)
     expectInsideLimits(await camera(page))
 
-    for (let i = 0; i < 30; i++) await page.mouse.wheel(0, -2000)
+    await wheelBurst(page, centre, -2000, 30)
     await expect
       .poll(async () => (await camera(page)).distance)
       .toBeCloseTo(scene.camera.minDistanceM, 0)
@@ -400,7 +434,7 @@ function expectNearFollowsDistance(state: CameraState): void {
 }
 
 async function expectWithinMidBudget(page: Page, view: string): Promise<void> {
-  const info = await page.evaluate(() => window.__CLOUTCITY_TEST__?.scene?.renderInfo())
+  const info = await page.evaluate(() => window.__cloutcityTest?.scene?.renderInfo())
   test.info().annotations.push({ type: view, description: JSON.stringify(info) })
   expect(info?.calls, `${view}: draw calls`).toBeLessThanOrEqual(perf.drawCallsMax.mid)
   expect(info?.triangles, `${view}: triangles`).toBeLessThanOrEqual(perf.trianglesMax.mid)
@@ -417,7 +451,7 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
     const { centre } = await freeArea(page)
 
     await page.mouse.move(centre.x, centre.y)
-    for (let i = 0; i < 30; i++) await page.mouse.wheel(0, 2000)
+    await wheelBurst(page, centre, 2000, 30)
     await settle(page)
     const out = await camera(page)
     expect(out.distance).toBeCloseTo(scene.camera.maxDistanceM, -1)

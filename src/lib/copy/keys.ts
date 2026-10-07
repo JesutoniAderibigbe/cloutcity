@@ -1,0 +1,32 @@
+/**
+ * Every copy key, as a type only: the union of each namespace's base keys. Type imports are
+ * erased, so this costs no bundle bytes; the strings load with their namespace module.
+ */
+export type CopyKey =
+  | keyof (typeof import('@data/copy/actions/base.json'))['strings']
+  | keyof (typeof import('@data/copy/ageGate/base.json'))['strings']
+  | keyof (typeof import('@data/copy/app/base.json'))['strings']
+  | keyof (typeof import('@data/copy/boroughs/base.json'))['strings']
+  | keyof (typeof import('@data/copy/clout/base.json'))['strings']
+  | keyof (typeof import('@data/copy/club/base.json'))['strings']
+  | keyof (typeof import('@data/copy/credits/base.json'))['strings']
+  | keyof (typeof import('@data/copy/events/base.json'))['strings']
+  | keyof (typeof import('@data/copy/housing/base.json'))['strings']
+  | keyof (typeof import('@data/copy/inventory/base.json'))['strings']
+  | keyof (typeof import('@data/copy/items/base.json'))['strings']
+  | keyof (typeof import('@data/copy/jobs/base.json'))['strings']
+  | keyof (typeof import('@data/copy/landmarks/base.json'))['strings']
+  | keyof (typeof import('@data/copy/legal/base.json'))['strings']
+  | keyof (typeof import('@data/copy/loading/base.json'))['strings']
+  | keyof (typeof import('@data/copy/map/base.json'))['strings']
+  | keyof (typeof import('@data/copy/nav/base.json'))['strings']
+  | keyof (typeof import('@data/copy/place/base.json'))['strings']
+  | keyof (typeof import('@data/copy/places/base.json'))['strings']
+  | keyof (typeof import('@data/copy/premium/base.json'))['strings']
+  | keyof (typeof import('@data/copy/rent/base.json'))['strings']
+  | keyof (typeof import('@data/copy/share/base.json'))['strings']
+  | keyof (typeof import('@data/copy/shop/base.json'))['strings']
+  | keyof (typeof import('@data/copy/tabs/base.json'))['strings']
+  | keyof (typeof import('@data/copy/venues/base.json'))['strings']
+  | keyof (typeof import('@data/copy/voice/base.json'))['strings']
+  | keyof (typeof import('@data/copy/welcome/base.json'))['strings']

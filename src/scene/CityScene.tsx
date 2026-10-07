@@ -9,6 +9,9 @@ import {
   overlayLayout,
 } from '@/components/overlay/layers'
 import { copy } from '@/lib/copy'
+// The map copy renders here on the server and reaches the client as props, so the map
+// namespace never ships in the shell (DEC-11).
+import '@/lib/copy/ns/map'
 import { perf, scene } from '@/lib/data/config'
 import { geoBounds } from '@/lib/data/content'
 import { geoVersion } from '@/lib/data/geo'

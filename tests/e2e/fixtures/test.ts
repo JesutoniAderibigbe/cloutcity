@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
-import { test as base, expect, type ConsoleMessage } from '@playwright/test'
+import { test as base, expect, type ConsoleMessage, type Page } from '@playwright/test'
+import { ONBOARDING_KEY, completedOnboardingSeed } from './onboarding-seed'
 
 /**
  * Shared e2e fixture. Every spec imports `test` and `expect` from here, never from
@@ -8,7 +9,9 @@ import { test as base, expect, type ConsoleMessage } from '@playwright/test'
  *    the test after it finishes, unless the test lists it in `expectedConsole` (and then it must
  *    appear);
  *  - `checkA11y()` (A11Y-2): an axe scan of the current page that fails on serious or critical
- *    violations.
+ *    violations;
+ *  - a completed welcome card (S05a), so specs for other flows start like a returning player.
+ *    Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`.
  */
 
 const FAILING_CONSOLE_TYPES = new Set<ReturnType<ConsoleMessage['type']>>([
@@ -79,6 +82,12 @@ export interface A11yOptions {
 
 interface Fixtures {
   /**
+   * `complete` (default) seeds a passed welcome card before every page load, unless the spec has
+   * already stored its own; `fresh` leaves storage alone so the card shows.
+   */
+  onboarding: 'complete' | 'fresh'
+  onboardingSeed: void
+  /**
    * How long the guard keeps listening after the test body ends, so late async warnings
    * (a failed fetch, an effect after the last assertion) still fail the test. Override with
    * `use: { consoleSettleMs }` in playwright.config.ts or `test.use()`.
@@ -92,6 +101,12 @@ interface Fixtures {
    * may be written `[entry]`).
    */
   expectedConsole: readonly ExpectedConsoleMessage[]
+  /**
+   * Console errors a spec causes on purpose, matched against the message text (errors only).
+   * Only for a failure the test itself injects, such as a request it aborts: Chromium reports
+   * that as "Failed to load resource". Set with `test.use()` around that test alone.
+   */
+  injectedConsoleErrors: readonly RegExp[]
   consoleGuard: void
   checkA11y: (options?: A11yOptions) => Promise<void>
 }
@@ -100,8 +115,32 @@ export const test = base.extend<Fixtures>({
   consoleSettleMs: [250, { option: true }],
   expectedConsole: [[], { option: true }],
 
+  injectedConsoleErrors: [[], { option: true }],
+
+  onboarding: ['complete', { option: true }],
+
+  onboardingSeed: [
+    async ({ page, onboarding }, use) => {
+      if (onboarding === 'complete') {
+        await page.addInitScript(
+          ({ key, value }) => {
+            // Storage can throw (opaque origins, specs that make it throw on purpose).
+            try {
+              if (localStorage.getItem(key) === null) localStorage.setItem(key, value)
+            } catch {
+              // Nothing to seed: the app shows the card, as it would for that player.
+            }
+          },
+          { key: ONBOARDING_KEY, value: JSON.stringify(completedOnboardingSeed()) },
+        )
+      }
+      await use()
+    },
+    { auto: true },
+  ],
+
   consoleGuard: [
-    async ({ page, consoleSettleMs, expectedConsole }, use) => {
+    async ({ page, consoleSettleMs, expectedConsole, injectedConsoleErrors }, use) => {
       const problems: string[] = []
       // Messages checked against `expectedConsole` once the test ends (their JSON arguments are
       // read asynchronously, so they are collected as promises while the page is open).
@@ -109,6 +148,12 @@ export const test = base.extend<Fixtures>({
       page.on('console', (message) => {
         if (!FAILING_CONSOLE_TYPES.has(message.type())) return
         if (isIgnored(message)) return
+        if (
+          message.type() === 'error' &&
+          injectedConsoleErrors.some((pattern) => pattern.test(message.text()))
+        ) {
+          return
+        }
         const { url, lineNumber } = message.location()
         const report = `console.${message.type()}: ${message.text()} (${url}:${lineNumber})`
         if (expectedConsole.length === 0) {
@@ -180,5 +225,21 @@ export const test = base.extend<Fixtures>({
     })
   },
 })
+
+/**
+ * Waits until the welcome boot island has loaded and decided (S05c): until then the page is
+ * inert behind its loading card, so keyboard and hit-testing steps must wait for this. Clicks
+ * wait on their own (Playwright retries until the target receives the click).
+ */
+export async function waitForWelcomeGate(page: Page): Promise<void> {
+  await page.locator('[data-welcome-gate]').waitFor({ state: 'attached' })
+  // The marker commits before the loading card's modal presence is released (a later effect),
+  // so for a closed gate also wait for the page to leave `inert`: a focus() in between is lost.
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-welcome-dialog]') !== null ||
+      document.querySelector('[data-overlay-background]:not([inert])') !== null,
+  )
+}
 
 export { expect }
