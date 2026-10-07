@@ -1,21 +1,25 @@
 'use client'
 
 import { setSoundSheetOpen } from '@/components/audio/soundSheet'
+import { syncLabel } from '@/components/sync/syncCopy'
 import { copy } from '@/lib/copy'
 import { closeHudPanel, openHudPanel } from '@/state/hudPanel'
+import { useSyncStatus } from '@/state/syncStatus'
 import { PANEL_BUTTON, PanelDialog } from './PanelDialog'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/hud'
 
 /**
  * The HUD's More panel (S05, Q3): on phones and landscape phones the HUD has no room for
- * Inventory, Rent and the sound settings gear, so they live here. Each opens its own sheet in
+ * Inventory, Rent, the cloud save chip (S18c) and the sound settings gear, so they live here. Each opens its own sheet in
  * place of this one; Escape or Close returns focus to the More button.
  */
 export function MorePanel() {
+  const { status } = useSyncStatus()
   const items = [
     { key: 'inventory', label: copy('hud.inventory'), open: () => openHudPanel('inventory') },
     { key: 'rent', label: copy('hud.rent'), open: () => openHudPanel('rent') },
+    { key: 'cloud', label: syncLabel(status), open: () => openHudPanel('cloud') },
     {
       key: 'sound',
       label: copy('hud.soundSettings'),

@@ -21,7 +21,7 @@ async function ready(page: Page) {
 // src/state/store.ts STORE_KEY and src/engine/save.ts SAVE_VERSION, not imported: Playwright's
 // loader cannot load the store's JSON imports.
 const STORE_KEY = 'cloutcity:game'
-const SAVE_VERSION = 8
+const SAVE_VERSION = 9
 const NOON = 12 * 60
 const TEE = 'bodega-graphic-tee'
 

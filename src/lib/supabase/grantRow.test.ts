@@ -13,17 +13,11 @@ import type { Database } from './database.types'
 
 type GrantInsert = Database['public']['Tables']['grants']['Insert']
 type GrantColumns = keyof Database['public']['Tables']['grants']['Row']
-/**
- * The row less `clout_cap`: SEC-8's column arrives with S18c part 2's migration, which
- * regenerates database.types.ts; drop this Omit (and `PENDING_COLUMNS`) then.
- */
-type CurrentRow = Omit<ServerGrantRow, 'clout_cap'>
-const PENDING_COLUMNS = ['clout_cap'] as const
 
 describe('toServerGrantRow vs the S18 grants columns', () => {
   it('is assignable to an insert, column for column', () => {
-    expectTypeOf<CurrentRow>().toExtend<GrantInsert>()
-    expectTypeOf<keyof CurrentRow>().toExtend<GrantColumns>()
+    expectTypeOf<ServerGrantRow>().toExtend<GrantInsert>()
+    expectTypeOf<keyof ServerGrantRow>().toExtend<GrantColumns>()
   })
 
   it('fills every column the table requires, and only real columns', () => {
@@ -48,12 +42,13 @@ describe('toServerGrantRow vs the S18 grants columns', () => {
       'clout_amount',
       'item_id',
       'cap_amount',
+      'clout_cap',
       'eligibility',
       'reason',
       'issued_by',
       'campaign_id',
     ]
-    expect(Object.keys(row).sort()).toEqual([...columns, ...PENDING_COLUMNS].sort())
+    expect(Object.keys(row).sort()).toEqual([...columns].sort())
     // The table's checks: cash within its cap, amounts non-negative, a non-empty reason.
     expect(row.cash_amount).toBeLessThanOrEqual(row.cap_amount)
     expect(row.clout_amount).toBeGreaterThanOrEqual(0)

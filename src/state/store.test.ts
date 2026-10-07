@@ -95,6 +95,7 @@ describe('game store persistence', () => {
     expect(after.state.player.cash).toBe(START_CASH - BODEGA)
     expect(after.state.clock.minute).toBe(500)
     expect(Object.keys(after.state).sort()).toEqual([
+      'actions',
       'clock',
       'events',
       'goals',
@@ -292,9 +293,9 @@ describe('storage unavailable', () => {
     const game = createGameStore(storage, logger)
     game.getState().performAction('bodega-breakfast')
     expect(game.getState().player.cash).toBe(START_CASH - BODEGA)
-    const { clock, player, speed, events, goals, grants, prestige } = game.getState()
+    const { clock, player, speed, events, goals, grants, prestige, actions } = game.getState()
     expect(storage.getItem(STORE_KEY)).toEqual({
-      state: { clock, player, speed, events, goals, grants, prestige },
+      state: { clock, player, speed, events, goals, grants, prestige, actions },
       version: STORE_VERSION,
     })
   })
@@ -653,6 +654,7 @@ describe('items in the store', () => {
     delete v3.goals
     delete v3.grants
     delete v3.prestige
+    delete v3.actions
     local.setItem(STORE_KEY, JSON.stringify({ state: v3, version: 3 }))
     const game = setup(local).store()
     expect(game.getState().player.cash).toBe(321)
@@ -903,5 +905,18 @@ describe('level-ups in the store', () => {
     game.getState().dismissLevelUp()
     expect(game.getState().lastLevelUp).toBeNull()
     expect(setup(local).store().getState().lastLevelUp).toBeNull()
+  })
+})
+
+describe('the action count (S18c)', () => {
+  it('counts each state-changing tap, not passive time or a refused action', () => {
+    const game = setup().store()
+    expect(game.getState().actions).toBe(0)
+    game.getState().performAction('bodega-breakfast')
+    expect(game.getState().actions).toBe(1)
+    game.getState().tick(60_000, true)
+    expect(game.getState().actions).toBe(1)
+    game.getState().performAction('no-such-action')
+    expect(game.getState().actions).toBe(1)
   })
 })

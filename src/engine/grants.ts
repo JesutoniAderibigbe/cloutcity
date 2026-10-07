@@ -7,7 +7,8 @@
  * - **Audited.** Every grant appends one record to `grants.log`: what was asked for, the cap,
  *   what was applied, the eligibility rule it passed, the personal-clock minute and the real
  *   time it was issued (injected by the caller), and `sync: 'local'`. Without a session grants
- *   are local only; S18c re-validates each record (`toServerGrantRow`) once a session exists.
+ *   are local only; S18c re-validates each record (`toServerGrantRow`) once a session exists,
+ *   and the device then marks it `synced` (`markGrantsSynced`).
  * - **Eligibility-targeted.** A goal reward needs the goal reached this run, available (not
  *   coming soon), unclaimed, and no event open.
  * - **Capped** relative to the next progression goal (ECON-1), from config: clout at most
@@ -69,8 +70,11 @@ export interface GrantRecord {
   readonly issuedAtMs: number
   readonly issuedBy: 'system'
   readonly campaignId: null
-  /** `local` until S18c re-validates it on the server. */
-  readonly sync: 'local'
+  /**
+   * `local` until the server accepts it (S18c), then `synced`. Device bookkeeping only: the
+   * server's checks ignore it.
+   */
+  readonly sync: 'local' | 'synced'
 }
 
 export interface GrantsState {
@@ -348,6 +352,21 @@ export function grant<S extends GrantSnapshot>(
     record,
     replayed: false,
     levelUp,
+  }
+}
+
+/**
+ * Marks the records the server holds (`keys`) as `synced`. Pure; records already synced, or not
+ * named, are left as they are, and an unchanged log returns the same state.
+ */
+export function markGrantsSynced(grants: GrantsState, keys: Iterable<string>): GrantsState {
+  const held = new Set(keys)
+  if (!grants.log.some((record) => record.sync === 'local' && held.has(record.key))) return grants
+  return {
+    ...grants,
+    log: grants.log.map((record) =>
+      record.sync === 'local' && held.has(record.key) ? { ...record, sync: 'synced' } : record,
+    ),
   }
 }
 

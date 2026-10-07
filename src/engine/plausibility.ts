@@ -23,18 +23,24 @@
  *    records; a re-claimed, forged or mismatched grant rejects. Valid new records are returned
  *    to insert (`grantsToInsert`).
  * 8. monotonic fields: the clock, run, sequence numbers, prestige history and badges never go
- *    back; within a run neither do the first paycheck, club nights, today's flexes, visits or
- *    event cooldowns; else reject.
- * 9. clout rate: per source, what the window added is within the per-entry, per-game-day and
- *    per-real-minute ceilings, and the ledger grew by no more entries than taps fit the time;
- *    else reject.
- * 10. cash flow: cash is at most the previous cash plus the income ceilings, valid grants and
- *    what was sold, less what was bought (items, a move); else reject.
- * 11. public level: the level others see is capped by what the account's age allows.
+ *    back; within a run neither do the action count, the first paycheck, club nights, today's
+ *    flexes, visits or event cooldowns; else reject.
+ * 9. pace (DEC-19): the taps the window counted (`SaveState.actions`, and the clout entries it
+ *    wrote) fit the real time at the tap rate, and the clock moved no further than passive time
+ *    at the fastest speed plus the longest action per counted tap; else reject.
+ * 10. clout rate: per source, what the window added is within the per-entry and per-game-day
+ *    ceilings and at most one entry's worth per counted tap; else reject.
+ * 11. cash flow: cash is at most the previous cash plus the income ceilings (per game day, and
+ *    one action's worth per counted tap), valid grants and what was sold, less what was bought
+ *    (items, a move); else reject.
+ * 12. public level: the level others see is capped by what the account's age allows.
  *
  * Real time only ever tightens a check of an upload that has a previous save: the first upload
  * (which may carry offline play from before the account existed) is never rejected for real-time
- * reasons; its public level is capped by the account's age instead.
+ * reasons; its public level is capped by the account's age instead. The real time a window may
+ * use is the time since the last accept plus a burst credit the server carries from upload to
+ * upload (a token bucket of at most `burstRealMinutes`): what one upload's slack did not use is
+ * all the next one gets, so uploading often never adds slack.
  *
  * Ceilings are `max(fixture x margin, theoretical)` (`plausibilityCeilings`): the economy bot's
  * fixture (data/sim, passed in as data) shows what normal play reaches, the theoretical ceilings
@@ -58,7 +64,7 @@ import {
   type CloutState,
 } from './clout'
 import type { EngineConfig, GoalDef } from './config'
-import { initialGoalsState, victoryGoal } from './goals'
+import { victoryGoal } from './goals'
 import {
   goalGrantKey,
   goalReward,
@@ -69,17 +75,19 @@ import {
 } from './grants'
 import { moveInCost } from './housing'
 import { findItem, isPrestigeKept, type Inventory } from './items'
-import { isJobId, jobIds, shiftWage } from './jobs'
+import { jobIds, shiftWage } from './jobs'
 import { rentFor } from './rent'
+import { applyRepairs, type Repair } from './repairs'
 import { createSaveSchema, type SaveState } from './save'
+
+export { applyRepairs, type Repair } from './repairs'
 
 const MINUTES_PER_HOUR = 60
 
-/** What one source can give: per action, per game day and per real minute. */
+/** What one source can give: per action (a counted tap) and per game day. */
 export interface RateCeiling {
   readonly perAction: number
   readonly perGameDay: number
-  readonly perRealMinute: number
 }
 
 /** Clout sources earned by play, checked against rate ceilings. */
@@ -151,27 +159,28 @@ export interface PlausibilityCeilings {
   readonly premiumCap: number
   /** Taps per real minute; each writes at most one clout ledger entry. */
   readonly actionsPerRealMinute: number
-  /** Real minutes added to every real-time window (an upload lags the play it carries). */
+  /** The most burst credit (real minutes) a window can carry (an upload lags the play it carries). */
   readonly burstRealMinutes: number
+  /** Game minutes passive time adds per real minute at the fastest clock speed. */
+  readonly passiveGameMinutesPerRealMinute: number
+  /** The most game minutes one counted tap can move the clock. */
+  readonly maxActionGameMinutes: number
 }
 
 /**
- * The ceilings `checkUpload` uses: for each term, max(fixture x margin, theoretical). A
- * per-real-minute ceiling is the per-action one times the taps a real minute holds.
+ * The ceilings `checkUpload` uses: for each term, max(fixture x margin, theoretical). Real time
+ * bounds the taps (`actionsPerRealMinute`) and passive time; earnings follow from the taps.
  */
 export function plausibilityCeilings(
   config: EngineConfig,
   fixture: PlausibilityFixture,
   sync: Pick<SyncConfig, 'plausibility'>,
 ): PlausibilityCeilings {
-  const { margin, maxActionsPerRealMinute, burstRealMinutes } = sync.plausibility
+  const { margin, maxActionsPerRealMinute, burstRealMinutes, maxActionGameMinutes } =
+    sync.plausibility
   const theory = cloutCeilings(config)
   const cash = cashCeilings(config)
-  const rate = (perAction: number, perGameDay: number): RateCeiling => ({
-    perAction,
-    perGameDay,
-    perRealMinute: perAction * maxActionsPerRealMinute,
-  })
+  const rate = (perAction: number, perGameDay: number): RateCeiling => ({ perAction, perGameDay })
   const cloutRate = (source: RatedSource): RateCeiling => {
     const ceiling = theory.bySource[source] ?? { perAction: 0, perGameDay: 0 }
     const seen = fixture.clout.sources[source]
@@ -202,6 +211,9 @@ export function plausibilityCeilings(
     premiumCap: theory.premiumCap,
     actionsPerRealMinute: maxActionsPerRealMinute,
     burstRealMinutes,
+    passiveGameMinutesPerRealMinute:
+      config.time.gameMinutesPerRealMinute * Math.max(...config.time.speeds),
+    maxActionGameMinutes,
   }
 }
 
@@ -209,6 +221,11 @@ export function plausibilityCeilings(
 export interface UploadContext {
   /** Real minutes since the server accepted the previous save. */
   readonly realMinutesSinceAccept: number
+  /**
+   * Burst credit (real minutes) the server carried from the last accept (`Verdict`'s
+   * `burstCreditMinutes`); clamped to 0..`burstRealMinutes`.
+   */
+  readonly burstCreditMinutes: number
   /** Real minutes since the account was created. */
   readonly accountAgeMinutes: number
   /** Grant keys the server already holds for this player (`goal:<id>:r<run>`). */
@@ -218,16 +235,6 @@ export interface UploadContext {
   /** True for the player's first upload: never rejected for real-time reasons. */
   readonly firstUpload: boolean
 }
-
-/** A change `applyRepairs` makes to an uploaded save. */
-export type Repair =
-  /** `victory` drops the Icon moment with it. */
-  | { readonly kind: 'drop-goal'; readonly goalId: string; readonly victory: boolean }
-  | { readonly kind: 'drop-badge'; readonly badge: string }
-  | { readonly kind: 'mark-kept'; readonly itemId: string }
-  | { readonly kind: 'set-peak'; readonly peakLevel: number }
-  /** Premium clout of one item, or (null) premium folded in from earlier runs. */
-  | { readonly kind: 'drop-premium'; readonly itemId: string | null }
 
 /** Why a verdict is what it is. Reject codes are listed in `REJECTING`. */
 export type Finding =
@@ -245,6 +252,7 @@ export type Finding =
   | 'regressed'
   | 'clout-rate'
   | 'action-rate'
+  | 'clock-advance'
   | 'cash-flow'
   | 'public-level-capped'
 
@@ -257,6 +265,7 @@ const REJECTING: ReadonlySet<Finding> = new Set<Finding>([
   'regressed',
   'clout-rate',
   'action-rate',
+  'clock-advance',
   'cash-flow',
 ])
 
@@ -264,9 +273,12 @@ const REJECTING: ReadonlySet<Finding> = new Set<Finding>([
 export interface PublicView {
   readonly level_id: string
   readonly level_index: number
-  /** This run's first paycheck job (until S16a's career paths), or null. */
+  /**
+   * The career path the player chose, or null: always null until S16a adds it to the save
+   * (DEC-20). commit_save keeps the stored path when this is null within the same run (DEC-19).
+   */
   readonly career_path: string | null
-  /** Worn wearable ids, sorted. */
+  /** Worn wearables and the premium items the server holds an entitlement for, sorted. */
   readonly cosmetics: readonly string[]
 }
 
@@ -280,64 +292,13 @@ export interface Verdict {
   readonly publicView: PublicView | null
   /** New grant records to insert (`toServerGrantRow`), or none when rejected. */
   readonly grantsToInsert: readonly GrantRecord[]
-}
-
-/** Applies `repairs` to `save`. Pure and idempotent: applying them twice changes nothing more. */
-export function applyRepairs(save: SaveState, repairs: readonly Repair[]): SaveState {
-  return repairs.reduce(applyRepair, save)
-}
-
-function applyRepair(save: SaveState, repair: Repair): SaveState {
-  const { player } = save
-  switch (repair.kind) {
-    case 'drop-goal': {
-      if (!Object.hasOwn(save.goals.achieved, repair.goalId)) return save
-      const achieved = Object.fromEntries(
-        Object.entries(save.goals.achieved).filter(([id]) => id !== repair.goalId),
-      )
-      // The Icon moment belongs to the victory goal: it goes with it.
-      const icon = repair.victory ? initialGoalsState.icon : save.goals.icon
-      return { ...save, goals: { ...save.goals, achieved, icon } }
-    }
-    case 'drop-badge':
-      if (!save.prestige.badges.includes(repair.badge)) return save
-      return {
-        ...save,
-        prestige: {
-          ...save.prestige,
-          badges: save.prestige.badges.filter((badge) => badge !== repair.badge),
-        },
-      }
-    case 'mark-kept': {
-      const wearables = player.inventory.wearables.map((owned) =>
-        owned.itemId === repair.itemId && !isPrestigeKept(owned)
-          ? { ...owned, worn: true, prestigeKept: true as const }
-          : owned,
-      )
-      return { ...save, player: { ...player, inventory: { ...player.inventory, wearables } } }
-    }
-    case 'set-peak':
-      return {
-        ...save,
-        player: { ...player, clout: { ...player.clout, peakLevel: repair.peakLevel } },
-      }
-    case 'drop-premium': {
-      const { clout } = player
-      if (repair.itemId === null) {
-        const bySource = Object.fromEntries(
-          Object.entries(clout.compacted.bySource).filter(([source]) => source !== 'premium'),
-        )
-        return {
-          ...save,
-          player: { ...player, clout: { ...clout, compacted: { ...clout.compacted, bySource } } },
-        }
-      }
-      const ledger = clout.ledger.filter(
-        (entry) => entry.source !== 'premium' || entry.ref.itemId !== repair.itemId,
-      )
-      return { ...save, player: { ...player, clout: { ...clout, ledger } } }
-    }
-  }
+  /** True when the upload is in the same run as the previous save. */
+  readonly sameRun: boolean
+  /**
+   * The burst credit to carry to the next upload (see the module comment), or null when the
+   * upload is rejected: nothing is stored, so the credit stays as it was.
+   */
+  readonly burstCreditMinutes: number | null
 }
 
 /** The window an upload covers, and what it is compared against. */
@@ -349,8 +310,10 @@ interface Window {
   readonly fromMinute: number
   /** True when real time may reject: there is a previous save and this is not the first upload. */
   readonly realTime: boolean
-  /** Real minutes the window may hold, burst slack included. */
+  /** Real minutes the window may hold, burst credit included. */
   readonly realMinutes: number
+  /** Taps counted since `base` (same run), or null for a fresh run. */
+  readonly actions: number | null
 }
 
 /** Game days the span from `from` to `to` touches (a part day counts as a whole one). */
@@ -406,12 +369,14 @@ export function checkUpload(
 
   const sameRun = prev !== null && prev.prestige.history.length === save.prestige.history.length
   const base = sameRun ? prev : null
+  const credit = Math.min(ceilings.burstRealMinutes, Math.max(0, ctx.burstCreditMinutes))
   const window: Window = {
     prev,
     base,
     fromMinute: base === null ? runStart(save) : base.clock.minute,
     realTime: prev !== null && !ctx.firstUpload,
-    realMinutes: Math.max(0, ctx.realMinutesSinceAccept) + ceilings.burstRealMinutes,
+    realMinutes: Math.max(0, ctx.realMinutesSinceAccept) + credit,
+    actions: base === null ? null : save.actions - base.actions,
   }
 
   repair(checkGoals(save, base, ceilings, config), 'goal-without-fact')
@@ -429,6 +394,8 @@ export function checkUpload(
   const grants = checkGrants(save, window, ctx, ceilings, config)
   for (const finding of grants.findings) find(finding)
   if (prev !== null && regressed(prev, save, sameRun, config)) find('regressed')
+  const pace = checkPace(save, window, ceilings)
+  for (const finding of pace.findings) find(finding)
   for (const finding of checkCloutRate(save, window, ceilings, config)) find(finding)
   if (!cashFlows(save, window, grants.cash, ceilings, config)) find('cash-flow')
 
@@ -446,23 +413,44 @@ export function checkUpload(
     publicView: {
       level_id: shown?.id ?? level.id,
       level_index: Math.min(level.index, cap),
-      career_path:
-        careerPath(save.player.clout, config) ??
-        (base === null ? null : careerPath(base.player.clout, config)),
-      cosmetics: [...new Set(Object.values(save.player.inventory.outfit))].sort(),
+      career_path: null,
+      cosmetics: publicCosmetics(save, ctx),
     },
     grantsToInsert: grants.insert,
+    sameRun,
+    burstCreditMinutes: window.realTime
+      ? Math.min(ceilings.burstRealMinutes, Math.max(0, window.realMinutes - pace.usedMinutes))
+      : ceilings.burstRealMinutes,
   }
 }
 
 function rejected(findings: readonly Finding[], repairs: readonly Repair[] = []): Verdict {
-  return { outcome: 'reject', repairs, findings, save: null, publicView: null, grantsToInsert: [] }
+  return {
+    outcome: 'reject',
+    repairs,
+    findings,
+    save: null,
+    publicView: null,
+    grantsToInsert: [],
+    sameRun: false,
+    burstCreditMinutes: null,
+  }
 }
 
-/** The job of this run's first paycheck, while the ledger still holds its entry. */
-function careerPath(clout: CloutState, config: EngineConfig): string | null {
-  const entry = clout.ledger.find((item) => item.source === 'paycheck')
-  return entry?.source === 'paycheck' && isJobId(entry.ref.jobId, config) ? entry.ref.jobId : null
+/**
+ * The cosmetics other players may see: the worn wearables (cash-shop items the save owns, kept
+ * looks included) and the premium items the save holds that the server has an entitlement for.
+ */
+function publicCosmetics(save: SaveState, ctx: UploadContext): string[] {
+  const entitled = new Set(ctx.entitledItemIds)
+  const premium = new Map<string, boolean>()
+  for (const entry of save.player.clout.ledger) {
+    if (entry.source === 'premium') premium.set(entry.ref.itemId, entry.ref.op === 'grant')
+  }
+  const held = [...premium].filter(([itemId, owned]) => owned && entitled.has(itemId))
+  return [
+    ...new Set([...Object.values(save.player.inventory.outfit), ...held.map(([itemId]) => itemId)]),
+  ].sort()
 }
 
 /** Ledger entries written after `base` (the whole ledger for a fresh run). */
@@ -749,7 +737,10 @@ function checkGrants(
   for (const record of save.grants.log) {
     const earlier = before.get(record.key)
     if (earlier !== undefined) {
-      if (!sameJson(earlier, record)) findings.push('grant-invalid')
+      // `sync` is the device's bookkeeping (markGrantsSynced), not part of the grant.
+      if (!sameJson({ ...earlier, sync: null }, { ...record, sync: null })) {
+        findings.push('grant-invalid')
+      }
       continue
     }
     if (server.has(record.key)) {
@@ -803,6 +794,7 @@ function regressed(prev: SaveState, save: SaveState, sameRun: boolean, config: E
     return true
   }
   if (!sameRun) return false
+  if (save.actions < prev.actions) return true
   const today = calendar(save.clock.minute, config).day
   // Entries for places or events a newer build no longer has are dropped on load: only what the
   // config still knows must carry over.
@@ -829,7 +821,39 @@ function regressed(prev: SaveState, save: SaveState, sameRun: boolean, config: E
   )
 }
 
-/** Check 9: what each source added in the window, against the ceilings. */
+/**
+ * Check 9 (DEC-19): the taps and clock movement the window claims, against its real time. Returns
+ * the real minutes the upload needed (at least), for the burst credit.
+ */
+function checkPace(
+  save: SaveState,
+  window: Window,
+  ceilings: PlausibilityCeilings,
+): { readonly findings: Finding[]; readonly usedMinutes: number } {
+  const { prev } = window
+  if (!window.realTime || prev === null) return { findings: [], usedMinutes: 0 }
+  const findings: Finding[] = []
+  const tapRate = ceilings.actionsPerRealMinute
+  const entries = save.player.clout.nextSeq - prev.player.clout.nextSeq
+  const counted = window.actions ?? save.actions
+  const tapMinutes = Math.max(0, counted, entries) / tapRate
+  if (tapMinutes > window.realMinutes) findings.push('action-rate')
+  // A fresh run in the window: the taps the previous run made after `prev` are counted nowhere,
+  // so they are allowed for at the tap rate over the whole window.
+  const clockTaps =
+    window.actions === null
+      ? save.actions + tapRate * window.realMinutes
+      : Math.max(0, window.actions)
+  const passive = Math.max(
+    0,
+    save.clock.minute - prev.clock.minute - clockTaps * ceilings.maxActionGameMinutes,
+  )
+  const clockMinutes = passive / ceilings.passiveGameMinutesPerRealMinute
+  if (clockMinutes > window.realMinutes) findings.push('clock-advance')
+  return { findings, usedMinutes: Math.max(tapMinutes, clockMinutes) }
+}
+
+/** Check 10: what each source added in the window, against the ceilings. */
 function checkCloutRate(
   save: SaveState,
   window: Window,
@@ -855,7 +879,8 @@ function checkCloutRate(
     if (source === 'paycheck') {
       bound = base?.player.clout.firstPaycheckPaid === true ? 0 : Math.min(bound, ceiling.perAction)
     }
-    if (window.realTime) bound = Math.min(bound, ceiling.perRealMinute * window.realMinutes)
+    // Each counted tap writes at most one entry of a source.
+    if (window.actions !== null) bound = Math.min(bound, ceiling.perAction * window.actions)
     if (gain(source) > bound) findings.push('clout-rate')
   }
   // Legacy and repair clout come only from loading an old or damaged save, never from play.
@@ -864,7 +889,6 @@ function checkCloutRate(
 
   if (window.realTime && prev !== null) {
     const taps = ceilings.actionsPerRealMinute * window.realMinutes
-    if (save.player.clout.nextSeq - prev.player.clout.nextSeq > taps) findings.push('action-rate')
     const runs = save.prestige.history.length - prev.prestige.history.length
     const earnedOnly = earnedOnlyLevel(config)
     if (runs > 0 && earnedOnly !== null) {
@@ -912,9 +936,10 @@ function itemTrade(
 }
 
 /**
- * Check 10: cash now is at most the starting cash (the base's, or a fresh run's), plus play
- * income within the ceilings, plus this window's valid grants and what was sold, less what was
- * bought and any move into a dearer home. Rent and other costs only lower the real figure.
+ * Check 11: cash now is at most the starting cash (the base's, or a fresh run's), plus play
+ * income within the ceilings (per game day, and one action's worth per counted tap), plus this
+ * window's valid grants and what was sold, less what was bought and any move into a dearer home.
+ * Rent and other costs only lower the real figure.
  */
 function cashFlows(
   save: SaveState,
@@ -931,7 +956,9 @@ function cashFlows(
   }
   const days = daysSpanned(window.fromMinute, save.clock.minute, config)
   let income = ceilings.cash.perGameDay * days
-  if (window.realTime) income = Math.min(income, ceilings.cash.perRealMinute * window.realMinutes)
+  if (window.actions !== null) {
+    income = Math.min(income, ceilings.cash.perAction * Math.max(0, window.actions))
+  }
   const trade = itemTrade(start.inventory, save.player.inventory, config)
   const home = save.player.home
   const moved =
@@ -942,7 +969,7 @@ function cashFlows(
 }
 
 /**
- * Check 11: the highest level an account this old can show. Every real minute of its age is
+ * Check 12: the highest level an account this old can show. Every real minute of its age is
  * worth the most clout a tap can earn, at the tap rate; grants, every wearable and capped premium
  * come on top; Icon also needs that earned budget to cover it (DEC-13).
  */

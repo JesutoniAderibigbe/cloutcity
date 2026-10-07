@@ -39,6 +39,7 @@ const TAP_MS = 4000
 
 const ctx = (patch: Partial<UploadContext> = {}): UploadContext => ({
   realMinutesSinceAccept: 1,
+  burstCreditMinutes: sync.plausibility.burstRealMinutes,
   accountAgeMinutes: 24 * 60,
   serverGrantKeys: [],
   entitledItemIds: [],
@@ -57,8 +58,11 @@ type Draft<T> = T extends readonly (infer U)[]
     : T
 const clone = (save: SaveState): Draft<SaveState> => structuredClone(save) as Draft<SaveState>
 
-/** A bot step as the save the store would hold. */
-function asSave(step: BotStep): SaveState {
+/**
+ * A bot step as the save the store would hold, with the taps the store would have counted so far
+ * (`actions`: every action, shift or ride, and every claim).
+ */
+function asSave(step: BotStep, actions: number): SaveState {
   return {
     ...step.snapshot,
     speed: 1,
@@ -66,6 +70,7 @@ function asSave(step: BotStep): SaveState {
     goals: step.goals,
     grants: step.grants,
     prestige: step.prestige,
+    actions,
   }
 }
 
@@ -84,6 +89,8 @@ const queensBallpark = (() => {
 function play(flex: boolean): Played[] {
   const steps: Played[] = []
   let minute = initialSave(config).clock.minute
+  let taps = 0
+  let claims = 0
   runEconomyBot(
     {
       jobId: flex ? 'barista' : 'retail',
@@ -94,8 +101,11 @@ function play(flex: boolean): Played[] {
       onStep: (step) => {
         const moved = step.snapshot.clock.minute - minute
         minute = step.snapshot.clock.minute
+        if (step.counted) taps += 1
+        taps += step.grants.log.length - claims
+        claims = step.grants.log.length
         steps.push({
-          save: asSave(step),
+          save: asSave(step, taps),
           realMs: step.counted ? TAP_MS : moved * realMsPerGameMinute(config),
         })
       },
@@ -116,11 +126,13 @@ function replay(steps: readonly Played[], every: number) {
   let prev: SaveState | null = null
   const server = new Set<string>()
   let sinceAccept = 0
+  let credit = 0
   let age = 0
   const verdicts: { verdict: Verdict; upload: SaveState }[] = []
   const upload = (save: SaveState, first: boolean) => {
     const verdict = check(prev, save, {
       realMinutesSinceAccept: sinceAccept / 60_000,
+      burstCreditMinutes: credit,
       accountAgeMinutes: age / 60_000,
       serverGrantKeys: [...server],
       firstUpload: first,
@@ -129,6 +141,7 @@ function replay(steps: readonly Played[], every: number) {
     if (verdict.save !== null) {
       prev = verdict.save
       sinceAccept = 0
+      credit = verdict.burstCreditMinutes ?? credit
       for (const record of verdict.grantsToInsert) server.add(record.key)
     }
   }
@@ -170,16 +183,17 @@ describe('normal play is never flagged (false-positive guard)', () => {
     expect(last.player.clout.ledger.some((entry) => entry.source === 'flex')).toBe(true)
   })
 
-  it('the public view carries the first paycheck job and the outfit', () => {
+  it('the public view carries the level and the outfit; no career path until S16a (DEC-20)', () => {
     const last = economySteps.at(-1)?.save
     if (last === undefined) throw new Error('no steps')
     const verdict = check(null, last, { firstUpload: true })
     expect(verdict.publicView).toEqual({
       level_id: 'nobody',
       level_index: 0,
-      career_path: 'retail',
+      career_path: null,
       cosmetics: [],
     })
+    expect(verdict.sameRun).toBe(false)
   })
 })
 
@@ -658,8 +672,9 @@ describe('ceilings', () => {
     })
   })
 
-  it('every term is max(fixture x margin, theoretical), per real minute at the tap rate', () => {
-    const { margin, maxActionsPerRealMinute } = sync.plausibility
+  it('every term is max(fixture x margin, theoretical); real time bounds taps and passive time', () => {
+    const { margin, maxActionsPerRealMinute, maxActionGameMinutes, burstRealMinutes } =
+      sync.plausibility
     const theory = cloutCeilings(config)
     for (const source of ['paycheck', 'flex', 'club', 'event'] as const) {
       const ceiling = ceilings.clout[source]
@@ -667,8 +682,14 @@ describe('ceilings', () => {
       expect(ceiling.perAction).toBeGreaterThanOrEqual(
         (baseline.clout.sources[source] ?? 0) * margin,
       )
-      expect(ceiling.perRealMinute).toBe(ceiling.perAction * maxActionsPerRealMinute)
     }
+    expect(ceilings).toMatchObject({
+      actionsPerRealMinute: maxActionsPerRealMinute,
+      burstRealMinutes,
+      maxActionGameMinutes,
+      passiveGameMinutesPerRealMinute:
+        config.time.gameMinutesPerRealMinute * Math.max(...config.time.speeds),
+    })
     expect(ceilings.cash.perAction).toBe(Math.max(baseline.cash.maxGainPerAction * margin, 140, 30))
     expect(ceilings.cash.perGameDay).toBe(Math.max(baseline.cash.maxGainPerGameDay * margin, 900))
     expect(ceilings.grants).toEqual(grantCeilings(config))
@@ -733,5 +754,141 @@ describe('ceilings', () => {
     }
     const bytes = new TextEncoder().encode(JSON.stringify(big)).length
     expect(bytes).toBeLessThan(sync.maxSaveBytes)
+  })
+})
+
+describe('pace (DEC-19)', () => {
+  const prev = lateRun()
+  const keys = serverKeys(prev)
+  const tapRate = sync.plausibility.maxActionsPerRealMinute
+
+  it('counted taps beyond what the real time holds reject', () => {
+    const next = later(prev)
+    next.actions += tapRate * 7
+    const verdict = check(prev, next, { serverGrantKeys: keys, realMinutesSinceAccept: 1 })
+    expect(verdict.findings).toEqual(['action-rate'])
+    expect(verdict.burstCreditMinutes).toBeNull()
+  })
+
+  it('an action count that goes back within a run rejects', () => {
+    const next = later(prev)
+    next.actions -= 1
+    expect(check(prev, next, { serverGrantKeys: keys }).findings).toContain('regressed')
+  })
+
+  it('a clock jump no taps explain rejects; the same jump with taps for it is accepted', () => {
+    const jump = 3 * 1440
+    const next = later(prev, jump)
+    const verdict = check(prev, next, { serverGrantKeys: keys, realMinutesSinceAccept: 1 })
+    expect(verdict.findings).toContain('clock-advance')
+    // Three taps of a game day each explain the jump (rent and decay aside, which the clock
+    // check does not look at).
+    next.actions += 3
+    const explained = check(prev, next, { serverGrantKeys: keys, realMinutesSinceAccept: 1 })
+    expect(explained.findings).not.toContain('clock-advance')
+  })
+
+  it('passive time at the fastest speed is allowed for the real time', () => {
+    const rate = ceilings.passiveGameMinutesPerRealMinute
+    const fits = check(prev, later(prev, 10 * rate), {
+      serverGrantKeys: keys,
+      realMinutesSinceAccept: 10,
+      burstCreditMinutes: 0,
+    })
+    expect(fits.findings).toEqual([])
+    const over = check(prev, later(prev, 11 * rate), {
+      serverGrantKeys: keys,
+      realMinutesSinceAccept: 10,
+      burstCreditMinutes: 0,
+    })
+    expect(over.findings).toEqual(['clock-advance'])
+  })
+
+  it('earnings need counted taps: cash a shift pays, with no tap counted, rejects', () => {
+    const next = later(prev)
+    next.player.cash += 10
+    expect(check(prev, next, { serverGrantKeys: keys }).findings).toEqual(['cash-flow'])
+    next.actions += 1
+    expect(check(prev, next, { serverGrantKeys: keys }).findings).toEqual([])
+  })
+})
+
+describe('burst credit (DEC-19, a token bucket)', () => {
+  const prev = lateRun()
+  const keys = serverKeys(prev)
+  const burst = sync.plausibility.burstRealMinutes
+  const tapRate = sync.plausibility.maxActionsPerRealMinute
+
+  it('starts full on the first upload and refills with real time', () => {
+    expect(check(null, prev, { firstUpload: true }).burstCreditMinutes).toBe(burst)
+    const idle = check(prev, later(prev), {
+      serverGrantKeys: keys,
+      realMinutesSinceAccept: 60,
+      burstCreditMinutes: 0,
+    })
+    expect(idle.burstCreditMinutes).toBe(burst)
+  })
+
+  it('what one upload used is gone for the next: frequent uploads never add slack', () => {
+    // Each upload a minute after the last claims two minutes of taps: the first uses the credit
+    // up, and the bucket never refills faster than real time.
+    let base: SaveState = prev
+    let credit = burst
+    const findings: string[][] = []
+    for (let i = 0; i < 8; i++) {
+      const next = later(base)
+      next.actions += tapRate * 2
+      const verdict = check(base, next, {
+        serverGrantKeys: keys,
+        realMinutesSinceAccept: 1,
+        burstCreditMinutes: credit,
+      })
+      findings.push([...verdict.findings])
+      if (verdict.save === null) break
+      base = verdict.save
+      credit = verdict.burstCreditMinutes ?? credit
+    }
+    // 1 + 5 credit = 6 minutes: two minutes each spends one minute of credit per upload.
+    expect(findings.slice(0, 5)).toEqual([[], [], [], [], []])
+    expect(findings.at(-1)).toEqual(['action-rate'])
+  })
+})
+
+describe('the public projection', () => {
+  const premium = 'premium-probe'
+
+  it('shows a premium cosmetic only while the server holds its entitlement', () => {
+    const base = initialSave(config)
+    const ledger = [
+      {
+        seq: 1,
+        at: 0,
+        amount: 10,
+        currency: 'usd',
+        source: 'premium',
+        ref: { itemId: premium, op: 'grant' },
+      },
+    ]
+    const save = {
+      ...base,
+      player: {
+        ...base.player,
+        clout: { ...base.player.clout, ledger, nextSeq: 2 },
+      },
+    }
+    const without = check(null, save, { firstUpload: true })
+    expect(without.publicView?.cosmetics).toEqual([])
+    const entitled = check(null, save, { firstUpload: true, entitledItemIds: [premium] })
+    expect(entitled.publicView?.cosmetics).toEqual([premium])
+  })
+
+  it("a grant record's sync mark is the device's bookkeeping, not part of the grant", () => {
+    const { prev, next } = aroundClaim()
+    const accepted = check(prev, next, { realMinutesSinceAccept: 1 })
+    expect(accepted.outcome).toBe('accept')
+    const synced = clone(later(next))
+    synced.grants.log = synced.grants.log.map((record) => ({ ...record, sync: 'synced' }))
+    const verdict = check(next, synced, { serverGrantKeys: serverKeys(next) })
+    expect(verdict.findings).toEqual([])
   })
 })

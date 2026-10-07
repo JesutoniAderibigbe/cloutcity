@@ -138,13 +138,13 @@ isOneToOne: false
                   ]
                 },"grants": {
                   Row: {
-                    "applied_at": string | null,"campaign_id": string | null,"cap_amount": number,"cash_amount": number,"clout_amount": number,"created_at": string,"eligibility": NonNullable<Json>,"id": string,"idempotency_key": string,"issued_by": string,"item_id": string | null,"kind": string,"reason": string,"user_id": string
+                    "applied_at": string | null,"campaign_id": string | null,"cap_amount": number,"cash_amount": number,"clout_amount": number,"clout_cap": number,"created_at": string,"eligibility": NonNullable<Json>,"id": string,"idempotency_key": string,"issued_by": string,"item_id": string | null,"kind": string,"reason": string,"user_id": string
                   }
                   Insert: {
-                    "applied_at"?: string | null,"campaign_id"?: string | null,"cap_amount": number,"cash_amount"?: number,"clout_amount"?: number,"created_at"?: string,"eligibility": NonNullable<Json>,"id"?: string,"idempotency_key": string,"issued_by": string,"item_id"?: string | null,"kind": string,"reason": string,"user_id": string
+                    "applied_at"?: string | null,"campaign_id"?: string | null,"cap_amount": number,"cash_amount"?: number,"clout_amount"?: number,"clout_cap": number,"created_at"?: string,"eligibility": NonNullable<Json>,"id"?: string,"idempotency_key": string,"issued_by": string,"item_id"?: string | null,"kind": string,"reason": string,"user_id": string
                   }
                   Update: {
-                    "applied_at"?: string | null,"campaign_id"?: string | null,"cap_amount"?: number,"cash_amount"?: number,"clout_amount"?: number,"created_at"?: string,"eligibility"?: NonNullable<Json>,"id"?: string,"idempotency_key"?: string,"issued_by"?: string,"item_id"?: string | null,"kind"?: string,"reason"?: string,"user_id"?: string
+                    "applied_at"?: string | null,"campaign_id"?: string | null,"cap_amount"?: number,"cash_amount"?: number,"clout_amount"?: number,"clout_cap"?: number,"created_at"?: string,"eligibility"?: NonNullable<Json>,"id"?: string,"idempotency_key"?: string,"issued_by"?: string,"item_id"?: string | null,"kind"?: string,"reason"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -214,13 +214,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "attestation_recorded_at": string | null,"attested": boolean,"attested_at": string | null,"audio_choice": string | null,"avatar": NonNullable<Json>,"career_path": string | null,"consent_version": string | null,"consented_at": string | null,"created_at": string,"handle": string | null,"id": string,"public_level": string,"updated_at": string
+                    "attestation_recorded_at": string | null,"attested": boolean,"attested_at": string | null,"audio_choice": string | null,"audio_settings": Json | null,"audio_settings_updated_at": string | null,"avatar": NonNullable<Json>,"career_path": string | null,"consent_version": string | null,"consented_at": string | null,"created_at": string,"handle": string | null,"id": string,"public_level": string,"updated_at": string
                   }
                   Insert: {
-                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"handle"?: string | null,"id": string,"public_level"?: string,"updated_at"?: string
+                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"audio_settings"?: Json | null,"audio_settings_updated_at"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"handle"?: string | null,"id": string,"public_level"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"handle"?: string | null,"id"?: string,"public_level"?: string,"updated_at"?: string
+                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"audio_settings"?: Json | null,"audio_settings_updated_at"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"handle"?: string | null,"id"?: string,"public_level"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -296,13 +296,13 @@ isOneToOne: false
                   ]
                 },"saves": {
                   Row: {
-                    "client_saved_at": string | null,"created_at": string,"data": NonNullable<Json>,"flag_reason": string | null,"flagged_at": string | null,"revision": number,"save_version": number,"updated_at": string,"user_id": string
+                    "accepted_at": string | null,"burst_credit_minutes": number,"client_saved_at": string | null,"created_at": string,"data": NonNullable<Json>,"flag_reason": string | null,"flagged_at": string | null,"last_device_id": string | null,"rate_window_count": number,"rate_window_started_at": string | null,"revision": number,"save_version": number,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "client_saved_at"?: string | null,"created_at"?: string,"data": NonNullable<Json>,"flag_reason"?: string | null,"flagged_at"?: string | null,"revision"?: number,"save_version": number,"updated_at"?: string,"user_id": string
+                    "accepted_at"?: string | null,"burst_credit_minutes"?: number,"client_saved_at"?: string | null,"created_at"?: string,"data": NonNullable<Json>,"flag_reason"?: string | null,"flagged_at"?: string | null,"last_device_id"?: string | null,"rate_window_count"?: number,"rate_window_started_at"?: string | null,"revision"?: number,"save_version": number,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "client_saved_at"?: string | null,"created_at"?: string,"data"?: NonNullable<Json>,"flag_reason"?: string | null,"flagged_at"?: string | null,"revision"?: number,"save_version"?: number,"updated_at"?: string,"user_id"?: string
+                    "accepted_at"?: string | null,"burst_credit_minutes"?: number,"client_saved_at"?: string | null,"created_at"?: string,"data"?: NonNullable<Json>,"flag_reason"?: string | null,"flagged_at"?: string | null,"last_device_id"?: string | null,"rate_window_count"?: number,"rate_window_started_at"?: string | null,"revision"?: number,"save_version"?: number,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -331,6 +331,8 @@ isOneToOne: true
 "attested": boolean,
 "attested_at": string | null,
 "audio_choice": string | null,
+"audio_settings": Json | null,
+"audio_settings_updated_at": string | null,
 "avatar": NonNullable<Json>,
 "career_path": string | null,
 "consent_version": string | null,
@@ -354,6 +356,11 @@ isOneToOne: true
                            },
 "check_handle":
 { Args: { "p_handle": string }; Returns: string
+                           },
+"commit_save":
+{ Args: { "p_avatar": Json,"p_burst_credit_minutes": number,"p_career_path": string,"p_client_saved_at": string,"p_data": Json,"p_device_id": string,"p_expected_revision": number,"p_grants": Json,"p_history_keep": number,"p_max_per_minute": number,"p_min_interval_ms": number,"p_public_level": string,"p_same_run": boolean,"p_save_version": number,"p_user_id": string }; Returns: {
+              "saved_at": string,"saved_revision": number
+            }[]
                            },
 "get_my_profile":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -415,6 +422,9 @@ isOneToOne: true
 "mute_player":
 { Args: { "p_target": string }; Returns: undefined
                            },
+"quarantine_save":
+{ Args: { "p_base_revision": number,"p_data": Json,"p_device_id": string,"p_findings": (string)[],"p_max_per_minute": number,"p_quarantine_keep": number,"p_save_version": number,"p_user_id": string }; Returns: undefined
+                           },
 "send_friend_boost":
 { Args: { "p_to": string }; Returns: {
               "boost_id": number,"ny_day": string
@@ -422,6 +432,11 @@ isOneToOne: true
                            },
 "set_audio_choice":
 { Args: { "p_choice": string }; Returns: undefined
+                           },
+"set_audio_settings":
+{ Args: { "p_updated_at": string,"p_volumes": Json }; Returns: {
+              "updated_at": string,"volumes": Json
+            }[]
                            },
 "set_handle":
 { Args: { "p_handle": string }; Returns: {

@@ -1,0 +1,25 @@
+{
+  "strings": {
+    "sync.status.local": "Saved on this phone",
+    "sync.status.syncing": "Saving to your account",
+    "sync.status.synced": "Saved to your account",
+    "sync.status.offline": "Offline. Saved on this phone",
+    "sync.status.paused": "Account save paused",
+    "sync.status.conflict": "Two saves found",
+    "sync.status.update": "Update the game to save",
+    "sync.label": "Cloud save: {status}",
+    "sync.sheet.title": "Cloud save",
+    "sync.sheet.local": "Your progress lives on this phone. It saves to your account once you're online.",
+    "sync.sheet.synced": "Your progress is saved to your account.",
+    "sync.sheet.syncing": "Saving your progress to your account.",
+    "sync.sheet.offline": "No connection. Keep playing: your progress is saved on this phone and goes to your account when you're back online.",
+    "sync.sheet.paused": "Your account save is paused because the server could not accept this save. Keep playing on this phone; we'll try again later.",
+    "sync.sheet.update": "Your account has a save from a newer version of the game. Reload to update, then it saves again.",
+    "sync.sheet.conflict": "This phone and your account have different progress. Pick the one to keep. The other is replaced.",
+    "sync.sheet.keepLocal": "Keep this phone's progress",
+    "sync.sheet.useCloud": "Use the account save",
+    "sync.sheet.retry": "Try again now",
+    "sync.sheet.close": "Close",
+    "sync.announce": "Cloud save: {status}"
+  }
+}

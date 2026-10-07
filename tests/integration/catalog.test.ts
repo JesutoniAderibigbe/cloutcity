@@ -30,7 +30,7 @@ const CLIENT_READABLE_TABLES = [
 const SERVICE_ONLY_TABLES = ['handles']
 
 /** Functions allowed to skip the gate, each with a stated reason in its comment. */
-const EXEMPT = ['attest_and_consent', 'set_audio_choice']
+const EXEMPT = ['attest_and_consent', 'set_audio_choice', 'set_audio_settings']
 
 /**
  * Client RPCs allowed to skip the standing gate (S18b), each tagged `@standing-exempt: <reason>`
@@ -49,6 +49,7 @@ const STANDING_EXEMPT = [
   'list_my_mutes',
   'list_my_reports',
   'set_audio_choice',
+  'set_audio_settings',
   'submit_appeal',
   'submit_report',
 ]
@@ -69,6 +70,8 @@ const PRIVATE_TABLES = [
   'reporter_stats',
   'reports',
   'sanctions',
+  'save_history',
+  'save_quarantine',
 ]
 
 /** The moderator actions (S18b): the /mod server routes call them with the service role. */
@@ -387,6 +390,22 @@ describe('functions', () => {
 })
 
 describe('service-only functions', () => {
+  it('commit_save and quarantine_save (S18c) are executable by the service role only', async () => {
+    const rows = await sql<{ name: string; anon: boolean; auth: boolean; service: boolean }[]>`
+      select p.proname as name,
+        has_function_privilege('anon', p.oid, 'execute') as anon,
+        has_function_privilege('authenticated', p.oid, 'execute') as auth,
+        has_function_privilege('service_role', p.oid, 'execute') as service
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname in ('commit_save', 'quarantine_save')
+      order by 1
+    `
+    expect(rows).toEqual([
+      { name: 'commit_save', anon: false, auth: false, service: true },
+      { name: 'quarantine_save', anon: false, auth: false, service: true },
+    ])
+  })
+
   it('moderator_reset_handle is reachable only through the audited mod_reset_handle (NOTE-15)', async () => {
     const [row] = await sql<{ anon: boolean; auth: boolean; service: boolean }[]>`
       select

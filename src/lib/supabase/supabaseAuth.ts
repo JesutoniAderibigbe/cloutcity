@@ -68,6 +68,14 @@ function clientFor(env: SupabaseEnv): SupabaseClient<Database> {
   return cached.client
 }
 
+/**
+ * The client `connectAnonymous` signed in with, or undefined before it has run on this page
+ * (S18c: cloud sync uses the same session; it loads with this chunk).
+ */
+export function cachedSupabaseClient(): SupabaseClient<Database> | undefined {
+  return cached?.client
+}
+
 /** Reuses or starts the anonymous session, then records the attestation. Never throws. */
 export async function connectAnonymous(
   env: SupabaseEnv,

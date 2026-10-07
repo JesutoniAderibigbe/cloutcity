@@ -307,8 +307,13 @@ export const SyncConfigSchema = z
       margin: z.number().min(1),
       /** Taps a person can make in one real minute (each writes at most one clout entry). */
       maxActionsPerRealMinute: positiveInt,
-      /** Real minutes of slack on every real-time window (uploads lag the play they carry). */
+      /**
+       * The most real minutes of slack a window can carry (a token bucket the server keeps per
+       * player, DEC-19): uploads lag the play they carry.
+       */
       burstRealMinutes: positive,
+      /** The most game minutes one counted tap can move the personal clock (DEC-19). */
+      maxActionGameMinutes: positiveInt,
     }),
   })
   .refine((sync) => sync.debounceMs <= sync.maxWaitMs, {

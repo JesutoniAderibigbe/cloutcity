@@ -1,7 +1,7 @@
 /**
  * Opt-in e2e against the local Supabase stack (S05): `npm run e2e:supabase` runs only the
  * `*.supabase.spec.ts` specs, on their own port and build directory, with the stack's URL and
- * anon key from `supabase status`. The stack is shared by every checkout: these specs only sign
+ * anon key (and, for the server's cloud saves, its service-role key) from `supabase status`. The stack is shared by every checkout: these specs only sign
  * in anonymously and never reset it. Fails fast, with the fix, when the stack is not running.
  */
 import { execFileSync } from 'node:child_process'
@@ -13,8 +13,8 @@ const PORT = Number(process.env.E2E_SUPABASE_PORT ?? 3110)
 const BASE_URL = `http://localhost:${PORT}`
 export const E2E_SUPABASE_DIST_DIR = '.next-e2e-supabase'
 
-/** API_URL and ANON_KEY of the running local stack. */
-function localStack(): { url: string; anonKey: string } {
+/** API_URL, ANON_KEY and SERVICE_ROLE_KEY of the running local stack. */
+function localStack(): { url: string; anonKey: string; serviceRoleKey: string } {
   let output: string
   try {
     output = execFileSync(
@@ -31,12 +31,13 @@ function localStack(): { url: string; anonKey: string } {
   const value = (name: string) => output.match(new RegExp(`^${name}="?([^"\\n]*)"?$`, 'm'))?.[1]
   const url = value('API_URL')
   const anonKey = value('ANON_KEY')
-  if (typeof url !== 'string' || url === '' || typeof anonKey !== 'string' || anonKey === '') {
+  const serviceRoleKey = value('SERVICE_ROLE_KEY')
+  if (!url || !anonKey || !serviceRoleKey) {
     throw new Error(
-      '`supabase status` reported no API_URL or ANON_KEY; is the stack fully started?',
+      '`supabase status` reported no API_URL, ANON_KEY or SERVICE_ROLE_KEY; is the stack fully started?',
     )
   }
-  return { url, anonKey }
+  return { url, anonKey, serviceRoleKey }
 }
 
 const stack = localStack()
@@ -56,6 +57,8 @@ export default defineConfig({
       NEXT_DIST_DIR: E2E_SUPABASE_DIST_DIR,
       NEXT_PUBLIC_SUPABASE_URL: stack.url,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: stack.anonKey,
+      // Server-only (S18c, POST /api/save): never a NEXT_PUBLIC_ variable.
+      SUPABASE_SERVICE_ROLE_KEY: stack.serviceRoleKey,
     },
   },
 })
