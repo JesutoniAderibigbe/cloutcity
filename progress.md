@@ -134,6 +134,9 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - Day/night (DEC-15): city lighting follows the personal game clock; task S04f added after S04d to the
   playable slice. DEC-16: the interface theme also follows day/night (S04g, after S04f).
 
+- Only one browser (e2e/playwright) suite runs machine-wide at a time (heavy.sh takes an `e2e` lock):
+  two parallel suites starved SwiftShader and failed 61 timing tests in a 31-minute run.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.
@@ -310,4 +313,11 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   ScenePlaceholder removed; one `__cloutcityTest` hook global; expectedConsole + injectedConsoleErrors).
   Specs wait for waitForMapSettled where they time other features. Dev gates: unit 2205, e2e 484 + 2
   load-timeout gesture loops (6/6 alone, FLAKE-4), shell 145.8 KB, 3D 268.3 KB.
+- S15 (attempt 1, passed): data-driven goals (progression.json) with manual claims through one
+  idempotent, audited, eligibility-checked grant function capped against the next goal (ECON-1:
+  granted clout never counts toward goals), Icon victory modal with share fallback and two-step
+  prestige, save v8. Rulings: DEC-13 Icon is earned (top level needs goal clout); DEC-14 prestige keeps
+  outfits as looks only (0 clout/style/sell). Bug-hunter: HUD title at 390, double-claim/farming
+  probes, prestige run 2 badge. Lane gates: unit 2376, integration 126, e2e 506 + 12 load timeouts
+  (12/12 on re-run), shell 146.1 KB. Follow-ups: UX-8/11, SEC-9/10.
 

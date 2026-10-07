@@ -343,7 +343,7 @@
       "requires": [],
       "acceptance": "Goals screen (first paycheck, first outfit, first landmark visit, first club night, first friend, level thresholds) with rewards and progress; every reward goes through one grant function that is idempotent (grant key), audited (grant log), eligibility-targeted and capped relative to the next progression goal from config, and granted value never counts toward goal progress (ECON-1, tests); reaching Icon shows a victory screen with a share hook and a prestige option (restart progress, keep cosmetics and premium items, earn a prestige badge; rules in config); tests; for players without a session, grants are local only and are re-validated by S18c when a session exists.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
