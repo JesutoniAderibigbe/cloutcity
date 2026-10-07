@@ -6,7 +6,11 @@ import { useModalOpen } from '@/components/overlay/modalState'
 import { copy } from '@/lib/copy'
 import { log } from '@/lib/log'
 import { offlineConfig } from '@/lib/offline/config'
-import { startOfflineSupport, type OfflineSupportHandle } from '@/lib/offline/serviceWorker'
+import {
+  startOfflineSupport,
+  type OfflineSupportHandle,
+  type UpdateId,
+} from '@/lib/offline/serviceWorker'
 import { readDeviceSignals, startTierWarm } from '@/lib/offline/tierWarm'
 import { updateNoticeShown } from '@/lib/offline/updateNotice'
 import { qualityStore, selectActiveTier } from '@/state/quality'
@@ -29,12 +33,14 @@ function whenIdle(timeoutMs: number, run: () => void): () => void {
  * Offline support (S04e), loaded once the map is playable: registers the service worker when the
  * browser is idle, has it warm the quality tier's district assets once it is active (and again
  * when the tier changes; skipped under data saver and on low memory), and shows the update notice
- * in the banner zone when a new build is waiting. The notice never covers a modal (the welcome
+ * in the banner zone when a new build is waiting (or another tab already applied it, F2); "Later"
+ * puts off that build only (F6). The notice never covers a modal (the welcome
  * card, the Icon moment) or the first-run tour (GR-9); it waits until they are gone.
  */
 export function OfflineSupport() {
-  const [waiting, setWaiting] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
+  // The newest build on offer and the one put off, by worker id (F6).
+  const [update, setUpdate] = useState<UpdateId | null>(null)
+  const [dismissed, setDismissed] = useState<UpdateId | null>(null)
   const handle = useRef<OfflineSupportHandle | null>(null)
   const modalOpen = useModalOpen()
   const touring = useStore(tourStore, (state) => state.record?.status === 'active')
@@ -45,8 +51,8 @@ export function OfflineSupport() {
     const cancel = whenIdle(offlineConfig.registration.idleTimeoutMs, () => {
       void startOfflineSupport({
         production: process.env.NODE_ENV === 'production',
-        onUpdateWaiting: () => {
-          if (active) setWaiting(true)
+        onUpdate: (id) => {
+          if (active) setUpdate((shown) => (shown === null || id > shown ? id : shown))
         },
       }).then((started) => {
         handle.current = started
@@ -71,7 +77,7 @@ export function OfflineSupport() {
     }
   }, [])
 
-  if (!updateNoticeShown({ waiting, dismissed, modalOpen, touring })) return null
+  if (!updateNoticeShown({ update, dismissed, modalOpen, touring })) return null
 
   return (
     <div
@@ -89,7 +95,7 @@ export function OfflineSupport() {
       </button>
       <button
         type="button"
-        onClick={() => setDismissed(true)}
+        onClick={() => setDismissed(update)}
         className="min-h-11 shrink-0 rounded-xl bg-raised px-3 font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         {copy('offline.update.dismiss')}

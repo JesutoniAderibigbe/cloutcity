@@ -235,6 +235,52 @@ test.describe('service worker', () => {
     await expect(updateNotice(page)).toHaveCount(0)
   })
 
+  test('an update applied in another tab leaves this tab a working Update button (F2)', async ({
+    page,
+    context,
+  }) => {
+    const shipNewBuild = await installOlderBuild(context)
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForActiveWorker(page)
+    await shipNewBuild()
+    await reloadControlled(page)
+    const other = await context.newPage()
+    await other.goto('/')
+    await waitForWelcomeGate(other)
+    await other.waitForFunction(() => navigator.serviceWorker.controller !== null)
+
+    await updateToWaitingWorker(page)
+    const here = updateNotice(page)
+    const there = updateNotice(other)
+    await expect(here).toBeVisible()
+    await expect(there).toBeVisible()
+    const action = copyText('offline.update.action')
+    await Promise.all([
+      other.waitForEvent('load'),
+      there.getByRole('button', { name: action }).click(),
+    ])
+    await waitForWelcomeGate(other)
+
+    // This tab: the worker it was offered now controls it from the other tab's tap. The notice
+    // stays, and Update reloads it into the new build instead of doing nothing.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          async () => ((await navigator.serviceWorker.getRegistration())?.waiting ?? null) === null,
+        ),
+      )
+      .toBe(true)
+    await expect(here).toBeVisible()
+    await Promise.all([
+      page.waitForEvent('load'),
+      here.getByRole('button', { name: action }).click(),
+    ])
+    await waitForWelcomeGate(page)
+    await expect(updateNotice(page)).toHaveCount(0)
+    await other.close()
+  })
+
   test('the update notice can be put off', async ({ page, context }) => {
     const shipNewBuild = await installOlderBuild(context)
     await page.goto('/')
