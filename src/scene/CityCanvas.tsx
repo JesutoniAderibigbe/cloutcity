@@ -9,7 +9,7 @@
  * browser restores the context, so the canvas is never remounted; this only reports the loss
  * and, after the first frame drawn again, the recovery.
  */
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
 import { usePlayerHome } from '@/state/playerHome'
@@ -19,6 +19,7 @@ import { FreeRowFraming } from './camera/FreeRowFraming'
 import { nearFar } from './camera/limits'
 import { City, type CityObjects } from './City'
 import { landTopY } from './geo/buildLand'
+import type { ModelTier } from './models/types'
 import type { GeoLoadFailure } from './geo/load'
 import { safeParseGeoBase } from './geo/schema'
 import { TestHooks } from './testHooks'
@@ -27,6 +28,10 @@ import type { SceneProps } from './types'
 // R3F turns a boolean `shadows` into PCFSoftShadowMap, which three 0.182 deprecates with a
 // console warning; an object leaves the type explicit (and shadows off until S04b's tiers).
 const SHADOWS = { enabled: false, type: PCFShadowMap }
+
+// Quality tiers arrive with S04b; until then the map draws models at the mid tier, matching the
+// mid DPR cap CityScene passes.
+const MODEL_TIER: ModelTier = 'mid'
 
 const GL = {
   antialias: true,
@@ -37,7 +42,7 @@ const GL = {
 
 export interface CityCanvasProps extends Pick<
   SceneProps,
-  'palette' | 'config' | 'homesLocal' | 'startHome' | 'boundsLocal' | 'dprCap'
+  'palette' | 'config' | 'homesLocal' | 'startHome' | 'boundsLocal' | 'dprCap' | 'playerModel'
 > {
   /** The downloaded geo body, validated here before the canvas mounts. */
   readonly geoBody: unknown
@@ -102,6 +107,7 @@ export default function CityCanvas({
   startHome,
   boundsLocal,
   dprCap,
+  playerModel,
   label,
   expandingSoon,
   onReady,
@@ -109,6 +115,8 @@ export default function CityCanvas({
   onContextRestored,
 }: CityCanvasProps) {
   const readyRef = useRef(false)
+  // Hand-made models stay off the playable path: they start loading once the city has drawn.
+  const [drawn, setDrawn] = useState(false)
   // The camera starts over the player's home and the avatar stands there (S05).
   const home = homesLocal[usePlayerHome() ?? startHome]
   const cityRef = useRef<CityObjects | null>(null)
@@ -158,6 +166,7 @@ export default function CityCanvas({
           cityRef={cityRef}
           onReady={() => {
             readyRef.current = true
+            setDrawn(true)
             onReady()
           }}
         />
@@ -167,6 +176,10 @@ export default function CityCanvas({
           color={palette.player}
           toonRamp={palette.toonRamp}
           avatar={config.avatar}
+          model={playerModel}
+          models={config.models}
+          tier={MODEL_TIER}
+          loadModel={drawn}
         />
         <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
         <TestHooks readyRef={readyRef} cityRef={cityRef} />

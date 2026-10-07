@@ -144,6 +144,7 @@ export function CitySceneClient(props: SceneProps) {
             startHome={props.startHome}
             boundsLocal={props.boundsLocal}
             dprCap={props.dprCap}
+            playerModel={props.playerModel}
             label={copy.label}
             expandingSoon={copy.expandingSoon}
             onReady={onReady}

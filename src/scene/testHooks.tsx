@@ -42,6 +42,8 @@ export interface ScenePlayerState {
   readonly sizeM: number
   /** Its feet on screen, in CSS pixels from the viewport's top left. */
   readonly screen: { readonly x: number; readonly y: number }
+  /** True once the hand-made avatar (S04h) has replaced the capsule placeholder. */
+  readonly model: boolean
 }
 
 /** A pin as the test sees it: where to tap, in client (viewport) CSS pixels. */
@@ -133,7 +135,9 @@ export function TestHooks({
         const feet = avatar.getWorldPosition(new Vector3())
         const ndc = feet.clone().project(camera)
         const rect = gl.domElement.getBoundingClientRect()
+        const capsule = avatar.getObjectByName(`${PLAYER_AVATAR_NAME}-body`)
         return {
+          model: capsule !== undefined && !capsule.visible,
           local: { x: feet.x, y: -feet.z },
           groundY: feet.y,
           sizeM: avatar.scale.y,

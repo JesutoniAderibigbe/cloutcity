@@ -8,14 +8,18 @@
  *   react-loadable-manifest.json (minus any file the shell already loads), gzipped, against
  *   `sceneChunkJsGzKB`.
  *
+ * - Hand-made models (S04h): bytes per tier and load phase from data/assets/manifest.json, and
+ *   the model loader kept out of the shell JS (scripts/budget-models.ts).
+ *
  * scripts/shell-guard.ts runs next and checks the boot path and that no test hook ships.
  * Run after `npm run build`. Sizes use KB = 1000 bytes, the stricter reading of the budget.
  */
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { z } from 'zod'
 import { PerfConfigSchema } from '../src/lib/data/schemas/config.ts'
+import { loaderLeaks, modelBudgetLines } from './budget-models.ts'
 
 export interface ScriptRefs {
   /** `src` values of external scripts, in document order, deduplicated. */
@@ -152,9 +156,13 @@ async function main(): Promise<void> {
   if (external.length === 0) throw new Error('No external scripts found for /: unexpected build')
 
   let externalBytes = 0
+  const shellCode = new Map<string, string>()
   for (const src of external) {
-    externalBytes += gzipBytes(await readFile(staticFilePath(src, distDir)))
+    const code = await readFile(staticFilePath(src, distDir))
+    externalBytes += gzipBytes(code)
+    shellCode.set(src, code.toString('utf8'))
   }
+  shellCode.set('(inline)', inline.join('\n'))
   const inlineBytes = gzipBytes(inline.join('\n'))
   const shell = checkBudget('Shell JS (/)', externalBytes + inlineBytes, limitKB)
 
@@ -178,8 +186,29 @@ async function main(): Promise<void> {
     ),
     report(scene, `${sceneFiles.length} chunks: ${sceneFiles.join(', ')}`),
   ]
+  const readJson = async (file: string): Promise<unknown> =>
+    JSON.parse(await readFile(join(root, file), 'utf8'))
+  const models = modelBudgetLines(
+    await readJson('data/assets/manifest.json'),
+    perf,
+    await readJson('data/config/scene.json'),
+    shellCode,
+  )
+  lines.push(...models.map((line) => line.text))
+  // The model runtime's own lazy chunk(s): loaded once the map has drawn, so outside both the
+  // shell and the 3D chunk budgets; reported so its growth stays visible.
+  const chunkDir = join(distDir, 'static/chunks')
+  const chunks = new Map<string, string>()
+  for (const name of await readdir(chunkDir)) {
+    if (name.endsWith('.js')) chunks.set(name, await readFile(join(chunkDir, name), 'utf8'))
+  }
+  const runtime = loaderLeaks(chunks)
+  const runtimeBytes = runtime.reduce((sum, name) => sum + gzipBytes(chunks.get(name) ?? ''), 0)
+  lines.push(
+    `INFO Model runtime JS (lazy, after the map draws): ${(runtimeBytes / 1000).toFixed(1)} KB gz in ${runtime.length} chunks`,
+  )
   process.stdout.write(`${lines.join('\n')}\n`)
-  if (!shell.ok || !scene.ok) process.exitCode = 1
+  if (!shell.ok || !scene.ok || models.some((line) => !line.ok)) process.exitCode = 1
 }
 
 if (import.meta.main) {

@@ -223,6 +223,28 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
 - **To add a model:** add it to the catalog (and its `models.name.*` copy key in
   `data/copy/models/base.json`), run `npm run assets:build -- --update` once, then
   `npm run assets:build`, and check the printed colour report and cap pressure.
+- **Runtime** (`src/scene/models`). Models load only in lazy chunks, through three's own
+  `GLTFLoader` with its bundled `MeshoptDecoder` (never drei's `useGLTF`). A page-wide cache
+  holds each decoded file while any component uses it and keeps up to
+  `scene.json models.cacheMaxEntries` idle ones (least recently used are disposed). Every model
+  draws with one shared material per canvas (`models.shading`: lit = Standard on mid/high,
+  Lambert on low; or toon) and its baked vertex colours. `ModelInstances` draws every placement
+  of a static model as one InstancedMesh; `_SLOT` recolours make one colour-buffer variant.
+  `AvatarModel` binds a head and a body to one skeleton and poses them with the rig's clips; it
+  holds a continuous frame lease only while `animate` is true, so an idle map still draws zero
+  frames. The night glow (`_EMISSIVE`) is not wired into the runtime material yet: it waits for
+  the S04f night-glow contract (`patchNightGlow`). Until then only the showcase previews it, with
+  an additive unlit twin (`src/app/dev/models/GlowPreview.tsx`, to delete once wired).
+- **Player avatar** (S05). The capsule placeholder shows at once; the hand-made avatar
+  (`scene.json models.player`) starts loading after the city has drawn and replaces it. The
+  capsule stays while loading, on failure, below `minDeviceMemoryGB` and on `capsuleTiers`.
+- **Showcase** (`/dev/models`, test builds only: `NEXT_PUBLIC_TEST_HOOKS=1`, otherwise 404).
+  Review scenes from `data/assets/showcase.json`: `?view=avatars|street|room|catalog`,
+  `&time=day|golden|night`, `&tier=low|mid|high`, `&chrome=0` for clean screenshots;
+  `window.__cloutcityTest.showcase.ready` turns true once every model has drawn.
+- **Budget.** `npm run budget` prints model bytes per tier and load phase from the manifest,
+  fails if the playable-path models alone break `totalBytesToPlayableGzKB`, and fails if the
+  glTF loader reaches the shell JS. Model credits are on /credits.
 
 ## Data, copy and config
 

@@ -122,7 +122,14 @@
       "dayIntensity": 0,
       "nightIntensity": 1.2
     },
-    "cacheMaxEntries": 48
+    "cacheMaxEntries": 48,
+    "player": {
+      "head": "head-female-c",
+      "body": "body-female-c",
+      "clip": "idle",
+      "minDeviceMemoryGB": 2,
+      "capsuleTiers": ["low"]
+    }
   },
   "fallback": {
     "metresPerUnit": 20,

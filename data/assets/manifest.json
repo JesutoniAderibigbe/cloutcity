@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "2f59d8d46a436cef",
+  "assetVersion": "670e4e7e64e22ef1",
   "models": [
     {
       "id": "taxi",
@@ -1635,24 +1635,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-a.low.407652ac.glb",
-          "sha256": "407652aca672a7b66a399da04d0d64f10c4fc2f8f79d6b368797bace7510f95f",
-          "bytes": 9120,
-          "gzBytes": 5366,
+          "file": "/models/head-female-a.low.3206d5e9.glb",
+          "sha256": "3206d5e992074114d8c1effb99d7dabde70c70dcf5e6d6f61a5432f85f301f27",
+          "bytes": 9104,
+          "gzBytes": 5368,
           "triangles": 256
         },
         "mid": {
-          "file": "/models/head-female-a.high.ff89bf17.glb",
-          "sha256": "ff89bf1700e8a6d52acd29bfd23a6fcdda999cd412de35d7e5ec94b103b141ba",
-          "bytes": 9576,
-          "gzBytes": 5761,
+          "file": "/models/head-female-a.high.e7c06f36.glb",
+          "sha256": "e7c06f36f257b55ddc049476d777ba7a1dba88c4a8ff7a8148e676ab808168a9",
+          "bytes": 9556,
+          "gzBytes": 5769,
           "triangles": 298
         },
         "high": {
-          "file": "/models/head-female-a.high.ff89bf17.glb",
-          "sha256": "ff89bf1700e8a6d52acd29bfd23a6fcdda999cd412de35d7e5ec94b103b141ba",
-          "bytes": 9576,
-          "gzBytes": 5761,
+          "file": "/models/head-female-a.high.e7c06f36.glb",
+          "sha256": "e7c06f36f257b55ddc049476d777ba7a1dba88c4a8ff7a8148e676ab808168a9",
+          "bytes": 9556,
+          "gzBytes": 5769,
           "triangles": 298
         }
       }
@@ -1985,24 +1985,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-f.low.d7d452bc.glb",
-          "sha256": "d7d452bc6d4b4ec704db86508c253a09795042129c2b6d802a6cf0c37187e947",
-          "bytes": 9968,
-          "gzBytes": 6063,
+          "file": "/models/head-female-f.low.c86b62df.glb",
+          "sha256": "c86b62df96e89cd2058b8b79a4769e47e064e66b09dc1d697bca1185c4b6d4ad",
+          "bytes": 9924,
+          "gzBytes": 6032,
           "triangles": 223
         },
         "mid": {
-          "file": "/models/head-female-f.high.808d9620.glb",
-          "sha256": "808d96204353bcd51c174f7e22aa484d662bd23a61e674fe9bd6bfd0d81b64f4",
-          "bytes": 10912,
-          "gzBytes": 6716,
+          "file": "/models/head-female-f.high.df3a6c04.glb",
+          "sha256": "df3a6c04de6f3f1f18f591ed9c60a0b18b43fecccae0a4e25a4cba5c35407bda",
+          "bytes": 10876,
+          "gzBytes": 6687,
           "triangles": 288
         },
         "high": {
-          "file": "/models/head-female-f.high.808d9620.glb",
-          "sha256": "808d96204353bcd51c174f7e22aa484d662bd23a61e674fe9bd6bfd0d81b64f4",
-          "bytes": 10912,
-          "gzBytes": 6716,
+          "file": "/models/head-female-f.high.df3a6c04.glb",
+          "sha256": "df3a6c04de6f3f1f18f591ed9c60a0b18b43fecccae0a4e25a4cba5c35407bda",
+          "bytes": 10876,
+          "gzBytes": 6687,
           "triangles": 288
         }
       }
@@ -2055,24 +2055,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-a.low.ff53c2be.glb",
-          "sha256": "ff53c2be9c1c1a2d64db6c3bf43e32b2bcbf881116cd9c1617b7c8dae68c1ec2",
-          "bytes": 9152,
-          "gzBytes": 5200,
+          "file": "/models/head-male-a.low.4e68a11c.glb",
+          "sha256": "4e68a11ce15cbc4747645066a9005735229bd31a37f79295325472df41c15d70",
+          "bytes": 9124,
+          "gzBytes": 5196,
           "triangles": 232
         },
         "mid": {
-          "file": "/models/head-male-a.high.33d8b116.glb",
-          "sha256": "33d8b116ac15ac9914233b5e2a269ad934568a859dc23e4eec2950ea2991b260",
-          "bytes": 9648,
-          "gzBytes": 5627,
+          "file": "/models/head-male-a.high.4bb7b1ba.glb",
+          "sha256": "4bb7b1ba951a3a93538280d1c06a5772718baf39d9b39e451c078ea4b99041f5",
+          "bytes": 9644,
+          "gzBytes": 5636,
           "triangles": 273
         },
         "high": {
-          "file": "/models/head-male-a.high.33d8b116.glb",
-          "sha256": "33d8b116ac15ac9914233b5e2a269ad934568a859dc23e4eec2950ea2991b260",
-          "bytes": 9648,
-          "gzBytes": 5627,
+          "file": "/models/head-male-a.high.4bb7b1ba.glb",
+          "sha256": "4bb7b1ba951a3a93538280d1c06a5772718baf39d9b39e451c078ea4b99041f5",
+          "bytes": 9644,
+          "gzBytes": 5636,
           "triangles": 273
         }
       }
@@ -2125,24 +2125,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-b.low.2ad64b0e.glb",
-          "sha256": "2ad64b0eac04be741ef602091d39740fee9b9a6ed78dc73e1769ba6c4b0bfefa",
+          "file": "/models/head-male-b.low.77a1b9af.glb",
+          "sha256": "77a1b9afd56c7a06f27609a14b27007049234fb09c9321f821561ba15168cb5b",
           "bytes": 10616,
-          "gzBytes": 6301,
+          "gzBytes": 6297,
           "triangles": 245
         },
         "mid": {
-          "file": "/models/head-male-b.high.ffabbb3c.glb",
-          "sha256": "ffabbb3c7333ca215e2387be53e3841cc27549a11e8c206ce7cafb696d2ebb72",
-          "bytes": 11000,
-          "gzBytes": 6483,
+          "file": "/models/head-male-b.high.17faa50d.glb",
+          "sha256": "17faa50d91a0cac4ac218d947a738e573d59351274c75f83c9837d1722ab27c0",
+          "bytes": 10996,
+          "gzBytes": 6479,
           "triangles": 288
         },
         "high": {
-          "file": "/models/head-male-b.high.ffabbb3c.glb",
-          "sha256": "ffabbb3c7333ca215e2387be53e3841cc27549a11e8c206ce7cafb696d2ebb72",
-          "bytes": 11000,
-          "gzBytes": 6483,
+          "file": "/models/head-male-b.high.17faa50d.glb",
+          "sha256": "17faa50d91a0cac4ac218d947a738e573d59351274c75f83c9837d1722ab27c0",
+          "bytes": 10996,
+          "gzBytes": 6479,
           "triangles": 288
         }
       }
@@ -2335,24 +2335,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-e.low.0aaad289.glb",
-          "sha256": "0aaad289710cdf0e97a773c7ab9042c590e8e85d05bbff45ed304f3fdbb3e1f7",
-          "bytes": 9948,
-          "gzBytes": 5802,
+          "file": "/models/head-male-e.low.0c394814.glb",
+          "sha256": "0c39481418918cb85ced7c3e9e3e55fa49c53c63312329ffcadbe5adada5a12a",
+          "bytes": 10020,
+          "gzBytes": 5860,
           "triangles": 237
         },
         "mid": {
-          "file": "/models/head-male-e.high.f3510273.glb",
-          "sha256": "f3510273b34a3fc18a7e43f26463807a44bf0aa0cf53a0e2c6f6bb9039d33e57",
-          "bytes": 10592,
-          "gzBytes": 6354,
+          "file": "/models/head-male-e.high.02bbcfe3.glb",
+          "sha256": "02bbcfe3e701d7638d083d69cd242ea97a72148fa72a7132f8bd9caea24a28a7",
+          "bytes": 10724,
+          "gzBytes": 6466,
           "triangles": 288
         },
         "high": {
-          "file": "/models/head-male-e.high.f3510273.glb",
-          "sha256": "f3510273b34a3fc18a7e43f26463807a44bf0aa0cf53a0e2c6f6bb9039d33e57",
-          "bytes": 10592,
-          "gzBytes": 6354,
+          "file": "/models/head-male-e.high.02bbcfe3.glb",
+          "sha256": "02bbcfe3e701d7638d083d69cd242ea97a72148fa72a7132f8bd9caea24a28a7",
+          "bytes": 10724,
+          "gzBytes": 6466,
           "triangles": 288
         }
       }

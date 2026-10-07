@@ -3,12 +3,13 @@
  * checks the exit code, so a budget that cannot fail is caught.
  */
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 
 const SCRIPT = join(import.meta.dirname, 'budget.ts')
+const REPO = join(import.meta.dirname, '..')
 const dirs: string[] = []
 
 afterEach(() => {
@@ -23,7 +24,11 @@ function noisyChunk(seed: number): string {
 }
 
 /** Limits every fake project gets unless a test overrides them. */
-const DEFAULT_PERF = { shellJsGzKB: 180, sceneChunkJsGzKB: 350 }
+const DEFAULT_PERF = {
+  shellJsGzKB: 180,
+  sceneChunkJsGzKB: 350,
+  totalBytesToPlayableGzKB: { low: 1200, mid: 1600, high: 2000 },
+}
 
 /**
  * A fake project: one shell chunk referenced from the prerendered `/` and one lazy 3D chunk
@@ -34,6 +39,10 @@ function fakeProject(perf: Record<string, unknown>, withBuild = true): string {
   dirs.push(root)
   mkdirSync(join(root, 'data/config'), { recursive: true })
   writeFileSync(join(root, 'data/config/perf.json'), JSON.stringify({ ...DEFAULT_PERF, ...perf }))
+  // The model lines read the real manifest and the player's avatar parts.
+  mkdirSync(join(root, 'data/assets'), { recursive: true })
+  copyFileSync(join(REPO, 'data/config/scene.json'), join(root, 'data/config/scene.json'))
+  copyFileSync(join(REPO, 'data/assets/manifest.json'), join(root, 'data/assets/manifest.json'))
   if (withBuild) {
     mkdirSync(join(root, '.next/server/app/page'), { recursive: true })
     mkdirSync(join(root, '.next/static/chunks'), { recursive: true })
@@ -102,5 +111,17 @@ describe('budget CLI', () => {
     const empty = fakeProject({})
     writeFileSync(join(empty, '.next/server/app/page/react-loadable-manifest.json'), '{}')
     expect(runBudget(empty).status).toBe(1)
+  })
+
+  it('prints the model lines and fails when the glTF loader reaches the shell', () => {
+    const clean = runBudget(fakeProject({}))
+    expect(clean.stdout).toMatch(/^PASS Models on the playable path \(low\)/m)
+    expect(clean.stdout).toMatch(/^PASS Model loader stays out of the shell JS/m)
+
+    const leaky = fakeProject({})
+    writeFileSync(join(leaky, '.next/static/chunks/main.js'), 'x="EXT_meshopt_compression"')
+    const result = runBudget(leaky)
+    expect(result.stdout).toMatch(/^FAIL Model loader reached the shell JS/m)
+    expect(result.status).toBe(1)
   })
 })

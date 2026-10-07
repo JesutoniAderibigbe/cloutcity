@@ -32,6 +32,8 @@ export function avatarSize(distance: number, avatar: AvatarConfig): number {
 
 export interface AvatarObjects {
   readonly group: Group
+  /** Shows or hides the capsule placeholder (hidden while the hand-made avatar stands in). */
+  setCapsuleVisible(visible: boolean): void
   /** Sets the avatar's height in metres. */
   setHeight(heightM: number): void
   dispose(): void
@@ -81,6 +83,9 @@ export function buildAvatar(
 
   return {
     group,
+    setCapsuleVisible(visible) {
+      bodyMesh.visible = visible
+    },
     setHeight(heightM) {
       group.scale.setScalar(heightM)
     },

@@ -16,12 +16,23 @@ import { balance, perf, scene } from '@/lib/data/config'
 import { geoBounds, homes } from '@/lib/data/content'
 import { geoVersion } from '@/lib/data/geo'
 import { HOME_IDS } from '@/lib/data/homes'
+import { modelRef } from '@/lib/data/models'
 import { project } from '@/lib/geo/projection'
 import { scenePalette } from '@/lib/theme'
 import { boundsToLocal } from './camera/limits'
 import { CitySceneClient } from './CitySceneClient'
 import { MapAttribution } from './MapAttribution'
 import type { SceneProps } from './types'
+
+/** The player's avatar parts from scene.json `models.player`, fitted by the head's top. */
+function playerModel(): SceneProps['playerModel'] {
+  const head = modelRef(scene.models.player.head)
+  if (head.bounds === undefined) throw new Error(`Avatar head ${head.id} has no bounds`)
+  return {
+    parts: { rig: modelRef('avatar-rig'), head, body: modelRef(scene.models.player.body) },
+    heightM: head.bounds.max[1],
+  }
+}
 
 export function CityScene() {
   const overlayRows = overlayGridTemplateRows(overlayLayout)
@@ -37,6 +48,7 @@ export function CityScene() {
     boundsLocal: boundsToLocal(geoBounds),
     // Quality tiers arrive with S04b; until then every device gets the mid tier's cap.
     dprCap: perf.dprCap.mid,
+    playerModel: playerModel(),
     overlayRows,
     freeRow: FREE_SCENE_GRID_ROW,
     copy: {

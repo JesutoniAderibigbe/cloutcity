@@ -5,6 +5,7 @@
 import type { HomeIdLiteral } from '@/lib/data/homes'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
+import type { PlayerModel } from './avatar/PlayerAvatar'
 import type { LocalBounds } from './camera/limits'
 import type { BoroughId } from './geo/schema'
 
@@ -67,6 +68,8 @@ export interface SceneProps {
   /** data/geo/bounds.json in local metres: the camera target never leaves it. */
   readonly boundsLocal: LocalBounds
   readonly dprCap: number
+  /** The player's hand-made avatar (S04h/S05), shown once loaded over the capsule placeholder. */
+  readonly playerModel: PlayerModel
   /** The overlay grid rows (src/components/overlay/layers.ts), for the scene's own status row. */
   readonly overlayRows: string
   /** The free scene row of that grid (no overlay zone covers it). */
