@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useSyncExternalStore } from 'react'
+import { useHydrated } from '@/components/overlay/useHydrated'
 
 // DEC-11: the shell carries only the boot path. The event sheet, and the store, engine and
 // zod/mini it needs (nothing else in the shell uses them yet), load in their own chunk after
@@ -12,17 +12,6 @@ const EventSheet = dynamic(() => import('./EventSheet').then((module) => module.
   ssr: false,
   loading: () => null,
 })
-
-const noSubscribe = () => () => {}
-
-/** False during the server render and hydration, true after: the store is browser-only state. */
-function useHydrated(): boolean {
-  return useSyncExternalStore(
-    noSubscribe,
-    () => true,
-    () => false,
-  )
-}
 
 /** The sheet zone's event slot: nothing on the server, the lazily loaded sheet in the browser. */
 export function EventSheetMount() {

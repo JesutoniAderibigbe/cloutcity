@@ -6,20 +6,40 @@
  *   a shift for each of their `jobIds`, and, for clubs, a night inside (`place.clubs`).
  * - Landmarks that allow `visit` offer a Visit (`place.visit`). Memorials offer nothing: they
  *   are look-only (`placeAllows` refuses every hook), so the sheet shows an info card only.
+ * - Landmarks that allow `flex`, and venues of a type in `clout.flex.venueTypes`, offer a Flex
+ *   (src/engine/flex.ts).
  *
  * Every action is listed even when it cannot be done right now, with a typed reason, so the UI
  * can say why (and put it in the accessible name). A club pays out clout at most once per
- * game night (`clubNightKey`); later entries the same night still cost the cover and time. Reasons are checked in this order: the
- * borough is locked, the place is closed on the personal clock, the club door refuses, the job
- * is locked, then funds and energy. `performPlaceAction` re-checks all of them, so a stale UI
- * cannot run something the rules refuse.
+ * game night (`clubNightKey`); later entries the same night still cost the cover and time.
+ * Reasons are checked in this order: the borough is locked, the place is closed on the
+ * personal clock, the club door refuses, the job is locked, today's flexes are used up, then
+ * funds and energy. `performPlaceAction` re-checks all of them, so a stale UI cannot run
+ * something the rules refuse. Every clout gate reads the player's total clout
+ * (src/engine/clout.ts `totalClout`), item clout included.
  */
 import type { Hours, Venue } from '@/lib/data/schemas/content'
 import { applyAction, findAction, type ActionDef, type ActionError } from './actions'
 import { boroughAccess, type BoroughAccess } from './boroughs'
 import { calendar, type Rollovers } from './clock'
-import { applyCloutGain, cloutLevel, findCloutLevel } from './clout'
+import {
+  findCloutLevel,
+  playerLevel,
+  recordClout,
+  scaledGain,
+  styleScore,
+  totalClout,
+  type LevelUp,
+} from './clout'
 import type { EngineConfig, JobId } from './config'
+import {
+  flexAction,
+  flexBase,
+  flexLimit,
+  flexPlaceMultiplier,
+  performFlex,
+  viralChance,
+} from './flex'
 import type { GameSnapshot } from './game'
 import { isJobId, jobLock, shiftAction, shiftWage, workShift, type JobLock } from './jobs'
 import { isOpenAt, minuteOf, placeAllows, type Place } from './places'
@@ -42,11 +62,15 @@ export type PlaceActionBlock =
       readonly refusalKey: string
     }
   | { readonly code: 'job-locked'; readonly lock: JobLock }
+  /** Already flexed at this place today. */
+  | { readonly code: 'flexed-here-today' }
+  /** Already flexed `max` times today. */
+  | { readonly code: 'flex-daily-limit'; readonly max: number }
   | { readonly code: 'funds'; readonly required: number; readonly available: number }
   | { readonly code: 'energy'; readonly required: number; readonly available: number }
 
 interface PlaceActionBase {
-  /** Unique within a place: an action id, `shift-<jobId>`, `club-night` or `visit`. */
+  /** Unique within a place: an action id, `shift-<jobId>`, `club-night`, `visit` or `flex`. */
   readonly id: string
   /** Up-front costs, base duration and the stat effects when it ends. */
   readonly def: ActionDef
@@ -65,7 +89,10 @@ export type PlaceAction =
   | (PlaceActionBase & {
       readonly kind: 'club-night'
       readonly coverCharge: number
-      /** Clout this entry earns: the club's gain, or 0 once it has paid out tonight. */
+      /**
+       * Clout this entry earns: exactly the club's configured gain (style never multiplies
+       * nightlife clout), or 0 once it has paid out tonight.
+       */
       readonly cloutGain: number
       /** True when this club already paid out clout tonight. */
       readonly cloutEarnedTonight: boolean
@@ -73,6 +100,17 @@ export type PlaceAction =
       readonly nightKey: number
     })
   | (PlaceActionBase & { readonly kind: 'visit' })
+  /** Post a fit here for clout (src/engine/flex.ts). */
+  | (PlaceActionBase & {
+      readonly kind: 'flex'
+      readonly placeMultiplier: number
+      /** Clout a flex earns now if it does not go viral (place and style applied). */
+      readonly cloutGain: number
+      /** Clout it earns if it goes viral. */
+      readonly viralCloutGain: number
+      /** The chance (0..1) it goes viral. */
+      readonly viralChance: number
+    })
 
 /** Opening hours on the personal clock right now. Times are `HH:MM`. */
 export type PlaceHoursNow =
@@ -149,7 +187,7 @@ function doorBlock(
   if (required === undefined) {
     throw new Error(`place.clubs.${venueId}: unknown clout level "${rule.minCloutLevel}"`)
   }
-  const current = cloutLevel(snapshot.player.clout, config)
+  const current = playerLevel(snapshot.player, config)
   if (current.index >= required.index) return null
   return {
     code: 'door',
@@ -207,6 +245,42 @@ function venueActions(
       },
     })
   }
+  const flex = flexOffer(venue, snapshot, config)
+  if (flex !== null) list.push(flex)
+  return list
+}
+
+/** The Flex action at `place`, or null where the player cannot flex. */
+function flexOffer(
+  place: Place,
+  snapshot: GameSnapshot,
+  config: EngineConfig,
+): Unblocked<PlaceAction> | null {
+  const placeMultiplier = flexPlaceMultiplier(place, config)
+  if (placeMultiplier === null) return null
+  const { player } = snapshot
+  const gain = (viral: boolean) =>
+    scaledGain(flexBase(viral, config), 'flex', placeMultiplier, player, config)
+  return {
+    kind: 'flex',
+    id: 'flex',
+    def: flexAction(config),
+    placeMultiplier,
+    cloutGain: gain(false),
+    viralCloutGain: gain(true),
+    viralChance: viralChance(styleScore(player, config), placeMultiplier, config),
+  }
+}
+
+/** A landmark's actions: Visit and Flex where it allows them (a memorial allows neither). */
+function landmarkActions(
+  place: Place,
+  snapshot: GameSnapshot,
+  config: EngineConfig,
+): Unblocked<PlaceAction>[] {
+  const list: Unblocked<PlaceAction>[] = placeAllows(place, 'visit') ? [visitAction(config)] : []
+  const flex = flexOffer(place, snapshot, config)
+  if (flex !== null) list.push(flex)
   return list
 }
 
@@ -237,6 +311,10 @@ function blockFor(
     const lock = jobLock(snapshot.player, action.jobId, config)
     if (lock !== null) return { code: 'job-locked', lock }
   }
+  if (action.kind === 'flex') {
+    const limit = flexLimit(place.id, snapshot, config)
+    if (limit !== null) return limit
+  }
   const { cash, stats } = snapshot.player
   if (cash < action.def.cashCost) {
     return { code: 'funds', required: action.def.cashCost, available: cash }
@@ -254,13 +332,11 @@ export function placeActions(
   config: EngineConfig,
 ): PlaceView {
   if (!isVenue(place) && place.category === 'memorial') return { kind: 'look-only' }
-  const access = boroughAccess(place.borough, snapshot.player.clout, config)
+  const access = boroughAccess(place.borough, totalClout(snapshot.player, config), config)
   const hours = placeHoursNow(place, snapshot, config)
   const unblocked = isVenue(place)
     ? venueActions(place, snapshot, config)
-    : placeAllows(place, 'visit')
-      ? [visitAction(config)]
-      : []
+    : landmarkActions(place, snapshot, config)
   const actions = unblocked.map(
     (action) =>
       ({
@@ -271,18 +347,7 @@ export function placeActions(
   return { kind: 'actions', access, hours, actions }
 }
 
-/**
- * How much a flex at `place` counts, for S13: the landmark's configured multiplier or the
- * default. Null where flexing is not allowed (venues, memorials, landmarks without `flex`).
- */
-export function flexMultiplier(place: Place, config: EngineConfig): number | null {
-  if (isVenue(place) || !placeAllows(place, 'flex')) return null
-  const { byLandmark } = config.place.flexMultiplier
-  return (
-    (Object.hasOwn(byLandmark, place.id) ? byLandmark[place.id] : undefined) ??
-    config.place.flexMultiplier.default
-  )
-}
+export { flexMultiplier } from './flex'
 
 export type PlaceActionError =
   | { readonly code: 'LOOK_ONLY' }
@@ -303,6 +368,10 @@ export type PlaceActionResult =
       readonly wage: number
       /** Clout the action earned (0 otherwise). */
       readonly cloutGained: number
+      /** How a flex went (null for every other action). */
+      readonly flex: { readonly viral: boolean; readonly chance: number } | null
+      /** Set when the clout gained lifted the player to a new level. */
+      readonly levelUp: LevelUp | null
       /** The stat effects applied when the action ended. */
       readonly statEffects: StatChanges
     }
@@ -331,7 +400,7 @@ export function performPlaceAction(
       }
       return { ok: false, error: { code: 'ACTION_FAILED', cause: error } }
     }
-    const { snapshot: next, durationMin, rollovers, rent, wage } = result
+    const { snapshot: next, durationMin, rollovers, rent, wage, cloutGained, levelUp } = result
     return {
       ok: true,
       snapshot: next,
@@ -340,34 +409,80 @@ export function performPlaceAction(
       rollovers,
       rent,
       wage,
-      cloutGained: 0,
+      cloutGained,
+      flex: null,
+      levelUp,
+      statEffects: action.def.statEffects,
+    }
+  }
+
+  if (action.kind === 'flex') {
+    const result = performFlex(snapshot, place, config)
+    if (!result.ok) {
+      // placeActions offered the flex and checked its limits, so only an action error remains.
+      const { error } = result
+      if (error.code === 'FLEX_NOT_ALLOWED' || error.code === 'FLEX_LIMIT') {
+        throw new Error(`performFlex refused a flex placeActions allowed: ${error.code}`)
+      }
+      return { ok: false, error: { code: 'ACTION_FAILED', cause: error } }
+    }
+    return {
+      ok: true,
+      snapshot: result.snapshot,
+      action,
+      durationMin: result.durationMin,
+      rollovers: result.rollovers,
+      rent: result.rent,
+      wage: 0,
+      cloutGained: result.cloutGained,
+      flex: { viral: result.viral, chance: result.chance },
+      levelUp: result.levelUp,
       statEffects: action.def.statEffects,
     }
   }
 
   const result = applyAction(snapshot, action.def, config)
   if (!result.ok) return { ok: false, error: { code: 'ACTION_FAILED', cause: result.error } }
-  const cloutGained = action.kind === 'club-night' ? action.cloutGain : 0
+  if (action.kind !== 'club-night' || action.cloutEarnedTonight) {
+    return {
+      ok: true,
+      snapshot: result.snapshot,
+      action,
+      durationMin: result.durationMin,
+      rollovers: result.rollovers,
+      rent: result.rent,
+      wage: 0,
+      cloutGained: 0,
+      flex: null,
+      levelUp: null,
+      statEffects: action.def.statEffects,
+    }
+  }
   const { player } = result.snapshot
-  const next =
-    action.kind === 'club-night' && cloutGained > 0
-      ? {
-          ...result.snapshot,
-          player: {
-            ...applyCloutGain(player, { kind: 'clout', amount: cloutGained, source: 'club' }),
-            clubNights: { ...player.clubNights, [place.id]: action.nightKey },
-          },
-        }
-      : result.snapshot
+  const entered: GameSnapshot = {
+    ...result.snapshot,
+    player: { ...player, clubNights: { ...player.clubNights, [place.id]: action.nightKey } },
+  }
+  const record = recordClout(
+    entered,
+    {
+      source: 'club',
+      amount: clubRule(place.id, config).cloutGain,
+      ref: { venueId: place.id, night: action.nightKey },
+    },
+    config,
+  )
   return {
     ok: true,
-    snapshot: next,
+    snapshot: { ...entered, player: record.player },
     action,
     durationMin: result.durationMin,
     rollovers: result.rollovers,
     rent: result.rent,
     wage: 0,
-    cloutGained,
+    cloutGained: record.entry?.amount ?? 0,
+    flex: null,
+    levelUp: record.levelUp,
     statEffects: action.def.statEffects,
   }
 }

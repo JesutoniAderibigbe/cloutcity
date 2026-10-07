@@ -1,7 +1,9 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { totalClout } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
+import { playerWithClout } from '@/engine/test-support'
 import { findPlace } from '@/lib/world/places'
 import { createLogger } from '@/lib/log'
 import { closePlace, openPlace, placeSheetStore } from './placeSheet'
@@ -103,7 +105,7 @@ describe('game store performPlaceAction: repeated activation', () => {
     const night = Math.floor(clock.minute / perDay) * perDay + 23 * 60
     game.setState({
       clock: { ...clock, minute: night > clock.minute ? night : night + perDay },
-      player: { ...player, clout: 100, cash: rule.coverCharge },
+      player: { ...playerWithClout(player, 100, engineConfig), cash: rule.coverCharge },
     })
     const first = game.getState().performPlaceAction(glowmatic, 'club-night')
     const afterFirst = game.getState()
@@ -113,7 +115,7 @@ describe('game store performPlaceAction: repeated activation', () => {
       ok: false,
       error: { code: 'BLOCKED', block: { code: 'funds' } },
     })
-    expect(game.getState().player.clout).toBe(100 + rule.cloutGain)
+    expect(totalClout(game.getState().player, engineConfig)).toBe(100 + rule.cloutGain)
     expect(game.getState().player.cash).toBe(afterFirst.player.cash)
     expect(game.getState().clock).toBe(afterFirst.clock)
   })

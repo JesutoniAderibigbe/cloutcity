@@ -141,6 +141,13 @@
     "place.done.clubNight": "You're in. The room clocked your fit. {effects}.",
     "club.door.refused": "Bouncer checked the list, then checked your clout. Not tonight. Come back at {level}. You're {current}.",
     "club.door.refusedVip": "Bouncer didn't even look up. This door is {level} only, and you're {current}. Not tonight.",
-    "place.done.clubNightRepeat": "Back again? You already made your name here tonight, so no extra clout. {effects}."
+    "place.done.clubNightRepeat": "Back again? You already made your name here tonight, so no extra clout. {effects}.",
+    "clout.flex.normal": "{place} at golden hour. The algorithm is about to eat. +{count} clout",
+    "clout.flex.viral": "Gone viral. The whole city's reposting. +{count} clout",
+    "clout.levelUp.local": "Your name's starting to ring. Brooklyn noticed.",
+    "clout.levelUp.sceneRegular": "Scene Regular. The doors know your face, and Manhattan's calling.",
+    "clout.levelUp.known": "Known. People say your name before you walk in.",
+    "clout.levelUp.famous": "Famous. Strangers are filming you on the subway.",
+    "clout.levelUp.icon": "Icon. You made it in New York. The skyline's got competition."
   }
 }

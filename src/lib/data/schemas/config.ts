@@ -3,6 +3,7 @@
  * path aliases) so Node can load it directly from `scripts/` with its built-in type stripping.
  */
 import { z } from 'zod'
+import { STYLED_SOURCES } from '../cloutSources.ts'
 import { HOME_IDS, lowestRentHome } from '../homes.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
@@ -320,6 +321,87 @@ export const PlaceConfigSchema = z.strictObject({
 })
 export type PlaceConfig = z.infer<typeof PlaceConfigSchema>
 
+/**
+ * Clout (S13, src/engine/clout.ts): levels, how flexing and style work, the ledger and the
+ * premium cap. Venue types in `flex.venueTypes` are checked against the content schema in
+ * src/lib/world/placeActions-content.test.ts (this file cannot import the content schemas).
+ */
+export const CloutConfigSchema = z
+  .strictObject({
+    /** Lowest first. A player is at the highest level whose `minClout` they hold. */
+    levels: z
+      .array(
+        z.strictObject({
+          id: z.string().regex(KEBAB_ID),
+          minClout: z.int().nonnegative(),
+        }),
+      )
+      .min(1),
+    /** One-off gains: the first paycheck ever earned. */
+    sources: z.strictObject({ firstPaycheck: positiveInt }),
+    /**
+     * The Flex action: at a landmark that allows it (its `place.flexMultiplier`) or a venue of
+     * one of `venueTypes` (the default multiplier; never `club`). Once per place per game day, at most
+     * `maxPerGameDay` a day. A flex goes viral when one seeded draw falls below
+     * min(maxChance, (baseChance + style score * perStylePoint) * place multiplier); a viral
+     * flex earns `baseClout * cloutMultiplier`.
+     */
+    flex: z.strictObject({
+      durationMin: positiveInt,
+      energyCost: statPoints,
+      cashCost: dollars,
+      baseClout: positiveInt,
+      maxPerGameDay: positiveInt,
+      venueTypes: z.array(z.string().regex(KEBAB_ID)),
+      viral: z.strictObject({
+        baseChance: probability,
+        perStylePoint: probability,
+        maxChance: probability,
+        cloutMultiplier: z.int().min(1),
+      }),
+    }),
+    /**
+     * The outfit's style score (the `styleValue` of every worn item) multiplies positive gains
+     * from `appliesTo` by 100 + min(maxBonusPct, score * pctPerPoint) percent. `club` cannot be
+     * listed (STYLED_SOURCES): club clout is exactly the configured value.
+     */
+    style: z.strictObject({
+      pctPerPoint: z.int().nonnegative(),
+      maxBonusPct: z.int().nonnegative(),
+      appliesTo: z.array(z.enum(STYLED_SOURCES)),
+    }),
+    /** Entries kept one by one; older ones fold into per-source totals. */
+    ledger: z.strictObject({ maxEntries: positiveInt }),
+    /** The most clout a currency other than in-game cash can add (premium items: `usd`). */
+    caps: z.strictObject({ byCurrency: z.strictObject({ usd: z.int().nonnegative() }) }),
+  })
+  .refine(
+    ({ levels }) =>
+      levels[0]?.minClout === 0 &&
+      levels.every((level, i) => i === 0 || level.minClout > (levels[i - 1]?.minClout ?? 0)) &&
+      new Set(levels.map((level) => level.id)).size === levels.length,
+    { error: 'clout.levels must start at 0, rise strictly and have unique ids', path: ['levels'] },
+  )
+  .refine(({ levels, caps }) => caps.byCurrency.usd < (levels.at(-1)?.minClout ?? 0), {
+    error:
+      'caps.byCurrency.usd must stay below the top level, so premium clout alone never reaches it',
+    path: ['caps', 'byCurrency', 'usd'],
+  })
+  .refine(({ style }) => new Set(style.appliesTo).size === style.appliesTo.length, {
+    error: 'style.appliesTo must not repeat a source',
+    path: ['style', 'appliesTo'],
+  })
+  .refine(({ flex }) => !flex.venueTypes.includes('club'), {
+    // Nightlife is flavour only: a club pays its configured clout and nothing more.
+    error: 'flex.venueTypes must not include club',
+    path: ['flex', 'venueTypes'],
+  })
+  .refine(({ flex }) => flex.viral.baseChance <= flex.viral.maxChance, {
+    error: 'flex.viral.baseChance must not exceed maxChance',
+    path: ['flex', 'viral'],
+  })
+export type CloutConfig = z.infer<typeof CloutConfigSchema>
+
 /** CLAUDE.md "Balance anchors". Money is whole in-game dollars. */
 export const BalanceConfigSchema = z
   .strictObject({
@@ -389,17 +471,8 @@ export const BalanceConfigSchema = z
       lateFees: z.array(dollars),
       evictAfterMissed: positiveInt,
     }),
-    /** Clout levels, lowest first. A player is at the highest level whose `minClout` they hold. */
-    clout: z.strictObject({
-      levels: z
-        .array(
-          z.strictObject({
-            id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-            minClout: z.int().nonnegative(),
-          }),
-        )
-        .min(1),
-    }),
+    /** Clout (S13, src/engine/clout.ts). Every number here is a TUNE-4 placeholder. */
+    clout: CloutConfigSchema,
     costs: z.strictObject({ food: MinMaxSchema, subwayFare: dollars }),
     transit: TransitConfigSchema,
     target: z.strictObject({
@@ -527,14 +600,9 @@ export const BalanceConfigSchema = z
     path: ['rent', 'lateFees'],
   })
   .refine(
-    ({ clout: { levels } }) =>
-      levels[0]?.minClout === 0 &&
-      levels.every((level, i) => i === 0 || level.minClout > (levels[i - 1]?.minClout ?? 0)) &&
-      new Set(levels.map((level) => level.id)).size === levels.length,
-    {
-      error: 'clout.levels must start at 0, rise strictly and have unique ids',
-      path: ['clout', 'levels'],
-    },
+    ({ actions, stats, clout }) =>
+      clout.flex.durationMin <= actions.maxDurationMin && clout.flex.energyCost <= stats.max,
+    { error: 'clout.flex exceeds maxDurationMin or stats.max', path: ['clout', 'flex'] },
   )
   .refine(
     ({ actions, place }) =>
@@ -594,6 +662,8 @@ export const LayoutConfigSchema = z.strictObject({
     bannerHeightPx: positive,
     hudHeightPx: positive,
     toastHeightPx: positive,
+    /** How long a toast (the level-up message) shows before it closes itself. */
+    toastMs: positiveInt,
     sheetMaxHeightVh: positive,
     sheetMaxWidthPx: positive,
     tabBarHeightPx: positive,

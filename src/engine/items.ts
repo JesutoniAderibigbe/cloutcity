@@ -16,9 +16,13 @@
  *   with it is the caller's (the event's) outcome.
  * - Gifts target the player or an NPC, never another player: `GiftTarget` has no way to name a
  *   player, and an NPC id must carry the `npc-` prefix, which no player id can match.
- * - Clout: items carry `cloutValue`, but nothing here changes `player.clout`. S13 scores clout
- *   from what is owned or worn right now, so a sold item stops counting.
+ * - Clout: a wearable's `cloutValue` counts while it is owned (src/engine/clout.ts
+ *   `itemClout`, computed from the inventory), so a sold item stops counting and a buy/sell
+ *   loop earns nothing. Buying and selling a wearable write an `item` audit entry to the clout
+ *   ledger; a purchase that lifts the player to a new level reports it (`levelUp`). Wearing
+ *   changes the outfit's style score, never clout itself.
  */
+import { recordClout, type LevelUp } from './clout'
 import type { EngineConfig } from './config'
 import type { GameSnapshot } from './game'
 import {
@@ -148,7 +152,7 @@ export function buyItem(
   snapshot: GameSnapshot,
   itemId: string,
   config: EngineConfig,
-): ItemResult<{ readonly price: number }> {
+): ItemResult<{ readonly price: number; readonly levelUp: LevelUp | null }> {
   const item = findItem(itemId, config)
   if (item === undefined) return { ok: false, error: { code: 'UNKNOWN_ITEM', itemId } }
   if (!isWearable(item) && !isGift(item)) {
@@ -174,7 +178,29 @@ export function buyItem(
       error: { code: 'INSUFFICIENT_FUNDS', required: item.price, available: cash },
     }
   }
-  return { ok: true, snapshot: withInventory(snapshot, next, cash - item.price), price: item.price }
+  const bought = withInventory(snapshot, next, cash - item.price)
+  if (!isWearable(item)) return { ok: true, snapshot: bought, price: item.price, levelUp: null }
+  const record = auditItem(bought, item, 'buy', config)
+  return { ok: true, snapshot: record.snapshot, price: item.price, levelUp: record.levelUp }
+}
+
+/**
+ * Writes the clout ledger's audit entry for a wearable changing hands (no entry for an item
+ * worth no clout) and reports a level-up the new inventory reached.
+ */
+function auditItem(
+  snapshot: GameSnapshot,
+  item: WearableDef,
+  op: 'buy' | 'sell',
+  config: EngineConfig,
+): { readonly snapshot: GameSnapshot; readonly levelUp: LevelUp | null } {
+  const amount = op === 'buy' ? item.cloutValue : -item.cloutValue
+  const record = recordClout(
+    snapshot,
+    { source: 'item', amount, ref: { itemId: item.id, op } },
+    config,
+  )
+  return { snapshot: { ...snapshot, player: record.player }, levelUp: record.levelUp }
 }
 
 function setGiftCount(gifts: readonly GiftStack[], itemId: string, count: number) {
@@ -195,7 +221,7 @@ export function sellItem(
   snapshot: GameSnapshot,
   itemId: string,
   config: EngineConfig,
-): ItemResult<{ readonly amount: number }> {
+): ItemResult<{ readonly amount: number; readonly levelUp: LevelUp | null }> {
   const item = findItem(itemId, config)
   if (item === undefined) return { ok: false, error: { code: 'UNKNOWN_ITEM', itemId } }
   const { cash, inventory } = snapshot.player
@@ -208,13 +234,14 @@ export function sellItem(
       wearables: inventory.wearables.filter((entry) => entry.itemId !== itemId),
       outfit: withoutItem(inventory.outfit, itemId),
     }
-    return { ok: true, snapshot: withInventory(snapshot, next, cash + amount), amount }
+    const sold = auditItem(withInventory(snapshot, next, cash + amount), item, 'sell', config)
+    return { ok: true, snapshot: sold.snapshot, amount, levelUp: sold.levelUp }
   }
   const count = giftCount(inventory, itemId)
   if (count === 0) return { ok: false, error: { code: 'NOT_OWNED', itemId } }
   const amount = resaleValue(item, snapshot.clock.minute, snapshot.clock.minute, config)
   const next = { ...inventory, gifts: setGiftCount(inventory.gifts, itemId, count - 1) }
-  return { ok: true, snapshot: withInventory(snapshot, next, cash + amount), amount }
+  return { ok: true, snapshot: withInventory(snapshot, next, cash + amount), amount, levelUp: null }
 }
 
 /**

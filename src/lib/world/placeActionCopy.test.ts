@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
 import { initialSnapshot, type GameSnapshot } from '@/engine/game'
+import { withClout } from '@/engine/test-support'
 import { performPlaceAction, placeActions, type PlaceAction } from '@/engine/placeActions'
 import { baseCopy, createCopy, slangPacks } from '@/lib/copy'
 import { formatMoney } from '@/lib/format'
@@ -9,6 +10,7 @@ import {
   placeActionAccessibleName,
   placeActionDetails,
   placeActionDone,
+  placeActionName,
   placeBlockReason,
   placeHoursLine,
 } from './placeActionCopy'
@@ -23,10 +25,11 @@ function snapshotAt(
 ): GameSnapshot {
   const [h = 0, m = 0] = clock.split(':').map(Number)
   const base = initialSnapshot(engineConfig)
-  return {
+  const snapshot = {
     clock: { minute: h * 60 + m, remainderMs: 0 },
-    player: { ...base.player, clout: overrides.clout ?? 0, cash: overrides.cash ?? 150 },
+    player: { ...base.player, cash: overrides.cash ?? 150 },
   }
+  return withClout(snapshot, overrides.clout ?? 0, engineConfig)
 }
 
 function place(id: string) {
@@ -168,6 +171,52 @@ describe('a repeat club entry the same night (orchestrator ruling, S09)', () => 
     const action = actionAt('glowmatic', 'club-night', repeat.snapshot)
     expect(placeActionDetails(action, repeat.snapshot, plain)).toMatch(
       /cover, \+\d+ mood, clout already earned here tonight$/,
+    )
+  })
+})
+
+describe('flex copy (S13)', () => {
+  const { flex } = engineConfig.clout
+
+  it('the button is plain: "Flex", its time, energy and clout', () => {
+    const action = actionAt('queens-ballpark', 'flex', snapshotAt('12:00'))
+    expect(placeActionName(action, plain)).toBe('Flex')
+    expect(placeActionDetails(action, snapshotAt('12:00'), plain)).toBe(
+      `${flex.durationMin} min, ${flex.energyCost} energy, +${Math.floor(flex.baseClout * 1.25)} clout`,
+    )
+  })
+
+  it('a used-up flex names why in the accessible name', () => {
+    const snapshot = snapshotAt('12:00')
+    const done = performPlaceAction(snapshot, place('queens-ballpark'), 'flex', engineConfig)
+    if (!done.ok) throw new Error(done.error.code)
+    const again = actionAt('queens-ballpark', 'flex', done.snapshot)
+    expect(placeActionAccessibleName(again, place('queens-ballpark'), done.snapshot, plain)).toBe(
+      `Flex: ${placeActionDetails(again, done.snapshot, plain)}. You already flexed here today. Try another spot.`,
+    )
+    expect(
+      placeBlockReason(
+        { code: 'flex-daily-limit', max: flex.maxPerGameDay },
+        place('dumbo'),
+        plain,
+      ),
+    ).toBe(`You've flexed ${flex.maxPerGameDay} times today, the daily limit. Come back tomorrow.`)
+  })
+
+  it('the result is in voice, viral or not, with the clout earned', () => {
+    const snapshot = snapshotAt('12:00')
+    const done = performPlaceAction(snapshot, place('queens-ballpark'), 'flex', engineConfig)
+    if (!done.ok) throw new Error(done.error.code)
+    const text = placeActionDone(done, place('queens-ballpark'), nyc)
+    expect(text).toMatch(
+      done.flex?.viral === true
+        ? /^Gone viral\. The whole city's reposting\. \+\d+ clout$/
+        : /^.+ at golden hour\. The algorithm is about to eat\. \+\d+ clout$/,
+    )
+    expect(text).toContain(`+${done.cloutGained} clout`)
+    const viral = { ...done, flex: { viral: true, chance: 0.1 } }
+    expect(placeActionDone(viral, place('queens-ballpark'), plain)).toBe(
+      `Your flex went viral: +${done.cloutGained} clout.`,
     )
   })
 })

@@ -1,7 +1,9 @@
 /** Save v4 (S10): `player.inventory`, its migration from v3 and its repair on load. */
 import { describe, expect, it } from 'vitest'
+import { legacyCloutState } from './clout'
 import { engineConfig as config } from './config'
 import { initialEventsState } from './events'
+import { initialFlexState } from './game'
 import { emptyInventory, type Inventory } from './items'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
@@ -22,8 +24,8 @@ const valid: Inventory = {
 }
 
 describe('save v4 schema', () => {
-  it('is version 6 (v4 inventory, v5 events, v6 club nights) and a fresh save has an empty inventory', () => {
-    expect(SAVE_VERSION).toBe(6)
+  it('is version 7 (v4 inventory, v5 events, v6 club nights, v7 clout ledger) and a fresh save has an empty inventory', () => {
+    expect(SAVE_VERSION).toBe(7)
     expect(initialSave(config).player.inventory).toEqual(emptyInventory)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
@@ -93,7 +95,13 @@ describe('save v3 -> v4', () => {
       outcome: 'carried',
       save: {
         ...v3,
-        player: { ...v3.player, inventory: emptyInventory, clubNights: {} },
+        player: {
+          ...v3.player,
+          clout: legacyCloutState(7, 0),
+          flex: initialFlexState,
+          inventory: emptyInventory,
+          clubNights: {},
+        },
         events: initialEventsState(),
       },
     })

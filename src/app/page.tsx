@@ -1,4 +1,6 @@
 import { EventSheetMount } from '@/components/events/EventSheetMount'
+import { CloutHudMount } from '@/components/hud/CloutHudMount'
+import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
@@ -11,13 +13,15 @@ export default function HomePage() {
       modal={<WelcomeGate />}
       slots={{
         hud: (
-          <header className="flex h-full flex-col justify-center px-4">
+          <header className="relative flex h-full flex-col justify-center px-4">
             <h1 className="text-lg font-extrabold tracking-tight text-pink-400">
               {copy('app.name')}
             </h1>
             <p className="text-xs text-ink-300">{copy('app.tagline')}</p>
+            <CloutHudMount />
           </header>
         ),
+        toast: <LevelUpToastMount />,
         sheet: (
           <>
             <EventSheetMount />

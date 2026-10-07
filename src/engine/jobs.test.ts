@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { calendar } from './clock'
-import { cloutLevel, findCloutLevel } from './clout'
+import { cloutLevel, findCloutLevel, totalClout } from './clout'
 import { engineConfig, type EngineConfig, type JobId } from './config'
 import { initialSnapshot, type GameSnapshot } from './game'
 import { isJobId, jobIds, jobLock, shiftAction, shiftWage, workShift } from './jobs'
+import { withClout } from './test-support'
 
 /** Fixed numbers so these tests do not move when balance.json is tuned. */
 const config: EngineConfig = {
@@ -26,6 +27,7 @@ const config: EngineConfig = {
     requiredCloutLevel: { 'junior-dev': 'local' },
   },
   clout: {
+    ...engineConfig.clout,
     levels: [
       { id: 'nobody', minClout: 0 },
       { id: 'local', minClout: 100 },
@@ -43,15 +45,15 @@ function snapshotWith(overrides: {
   stats?: Partial<GameSnapshot['player']['stats']>
 }): GameSnapshot {
   const base = initialSnapshot(config)
-  return {
+  const snapshot = {
     clock: { minute: overrides.minute ?? base.clock.minute, remainderMs: 0 },
     player: {
       ...base.player,
       cash: overrides.cash ?? base.player.cash,
-      clout: overrides.clout ?? base.player.clout,
       stats: { ...base.player.stats, ...overrides.stats },
     },
   }
+  return overrides.clout === undefined ? snapshot : withClout(snapshot, overrides.clout, config)
 }
 
 function expectOk(result: ReturnType<typeof workShift>) {
@@ -203,6 +205,7 @@ describe('clout levels', () => {
   })
 
   it('a new player starts at the lowest shipped level, Nobody', () => {
-    expect(cloutLevel(initialSnapshot(engineConfig).player.clout, engineConfig).id).toBe('nobody')
+    const fresh = initialSnapshot(engineConfig).player
+    expect(cloutLevel(totalClout(fresh, engineConfig), engineConfig).id).toBe('nobody')
   })
 })
