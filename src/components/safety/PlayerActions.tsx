@@ -262,7 +262,7 @@ export function PlayerActions({
           aria-disabled={busy ? true : undefined}
           onClick={props.onClick}
           className={`${SAFETY_BUTTON} w-full ${
-            action === 'report' ? 'bg-pink-400 text-night-950' : 'bg-night-800 text-ink-50'
+            action === 'report' ? 'bg-taxi text-on-taxi' : 'bg-raised text-fg'
           }`}
         >
           {props.label}
@@ -309,7 +309,7 @@ export function PlayerActions({
             aria-controls={listId}
             aria-label={copy('safety.actions.menuLabel', { handle })}
             onClick={() => setMenuOpen((open) => !open)}
-            className={`${SAFETY_BUTTON} self-start bg-night-800 text-ink-50`}
+            className={`${SAFETY_BUTTON} self-start bg-raised text-fg`}
           >
             {copy('safety.actions.menu')}
           </button>
@@ -319,7 +319,7 @@ export function PlayerActions({
         actions
       )}
       {error === null ? null : (
-        <p role="alert" className="text-sm font-semibold text-pink-400">
+        <p role="alert" className="text-sm font-semibold text-danger">
           {error}
         </p>
       )}

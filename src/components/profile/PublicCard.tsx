@@ -40,33 +40,33 @@ export function PublicCard({ profile }: { readonly profile: MyProfile }) {
     <section
       data-me-card=""
       aria-labelledby="me-card-title"
-      className="flex flex-col gap-2 rounded-xl bg-night-800 p-3"
+      className="flex flex-col gap-2 rounded-xl bg-raised p-3"
     >
-      <h3 id="me-card-title" className="text-sm font-bold text-ink-300">
+      <h3 id="me-card-title" className="text-sm font-bold text-muted">
         {copy('profile.card.title')}
       </h3>
       <div className="flex items-center gap-3">
         <span
           aria-hidden="true"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-pink-400 bg-night-950 text-lg font-extrabold text-taxi-400"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-taxi bg-canvas text-lg font-extrabold text-taxi-ink"
         >
           {handle.charAt(0).toUpperCase()}
         </span>
         <div className="min-w-0">
-          <p data-me-handle="" className="truncate text-lg font-extrabold text-ink-50">
+          <p data-me-handle="" className="truncate text-lg font-extrabold text-fg">
             {copy('profile.card.handle', { handle })}
           </p>
-          <p className="text-sm text-ink-300">
+          <p className="text-sm text-muted">
             {copy('profile.card.level', { level: levelName(profile.public_level) })}
           </p>
-          <p className="text-sm text-ink-300">
+          <p className="text-sm text-muted">
             {dreamKey === undefined
               ? copy('profile.card.noDream')
               : copy('profile.card.dream', { dream: copy(dreamKey) })}
           </p>
         </div>
       </div>
-      <p className="text-xs text-ink-300">{copy('profile.card.privacy')}</p>
+      <p className="text-xs text-muted">{copy('profile.card.privacy')}</p>
     </section>
   )
 }

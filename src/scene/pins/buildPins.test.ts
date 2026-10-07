@@ -19,8 +19,14 @@ import {
   PIN_HEAD,
   PIN_LOOKS,
   buildBadgePinGeometry,
+  pinGlow,
   pinLook,
 } from './buildPins'
+import {
+  NIGHT_GLOW_ATTRIBUTE,
+  createDayNightUniforms,
+  nightGlowSource,
+} from '../lighting/nightGlow'
 
 const palette = scenePalette()
 const top = landTopY(sceneConfig.land)
@@ -186,13 +192,13 @@ describe('dimmed boroughs', () => {
     expect(chipAnchor([])).toBeNull()
   })
 
-  it('dims land and parks of dimmed boroughs only, towards the background', () => {
+  it('dims land and parks of dimmed boroughs only, towards the haze', () => {
     const ramp2 = new DataTexture(new Uint8Array([255]), 1, 1, RedFormat)
     const fakeAtlas = ramp2
     const materials = createCityMaterials(palette, sceneConfig, fakeAtlas, new Set(['bronx']))
     const t = sceneConfig.dimmed.towardBackground
     expect(materials.land.bronx.color.getHex()).toBe(
-      dimmedColor(palette.land.bronx, palette.background, t).getHex(),
+      dimmedColor(palette.land.bronx, palette.haze, t).getHex(),
     )
     expect(materials.land.queens.color.getHex()).toBe(new Color(palette.land.queens).getHex())
     expect(materials.parkDimmed.color.getHex()).not.toBe(materials.park.color.getHex())
@@ -207,5 +213,52 @@ describe('dimmed boroughs', () => {
     expect(bronxParks.length + otherParks.length).toBe(polygonsOfKind(parks.parks, 'park').length)
     expect(bronxParks.length).toBeGreaterThan(0)
     materials.dispose()
+  })
+})
+
+describe('pin night glow (S04f)', () => {
+  const glowing = () => {
+    const uniforms = createDayNightUniforms()
+    return buildPins(placesLayer.pins, palette, sceneConfig, top, ramp, uniforms.uNightGlow)
+  }
+
+  it('lifts every normal pin by a share of its own colour, never a memorial or teaser pin', () => {
+    const lift = sceneConfig.pins.nightGlow
+    const out = new Color()
+    for (const pin of placesLayer.pins) {
+      const glow = pinGlow(pin, palette, lift, out)
+      if (pin.style === 'normal') {
+        expect(glow.getHex()).toBe(new Color(pinColor(pin, palette)).multiplyScalar(lift).getHex())
+      } else {
+        expect(glow.getHex()).toBe(0)
+      }
+    }
+    expect(placesLayer.pins.some((pin) => pin.style === 'memorial')).toBe(true)
+  })
+
+  it('writes the glow per instance on the shared, patched pin material', () => {
+    const pins = glowing()
+    const out = new Color()
+    for (const look of PIN_LOOKS) {
+      const instanced = mesh(pins.group, `pins-${look}`)
+      expect(nightGlowSource(instanced.material as never)).toBe('attribute')
+      const attribute = instanced.geometry.getAttribute(NIGHT_GLOW_ATTRIBUTE)
+      const list = placesLayer.pins.filter((pin) => pinLook(pin) === look)
+      list.forEach((pin, i) => {
+        const expected = pinGlow(pin, palette, sceneConfig.pins.nightGlow, out)
+        expect([attribute.getX(i), attribute.getY(i), attribute.getZ(i)]).toEqual(
+          expected.toArray().map((value) => Math.fround(value)),
+        )
+      })
+    }
+    pins.dispose()
+  })
+
+  it('stays unpatched without the shared uniform', () => {
+    const pins = build()
+    const instanced = mesh(pins.group, 'pins-venue')
+    expect(nightGlowSource(instanced.material as never)).toBeUndefined()
+    expect(instanced.geometry.getAttribute(NIGHT_GLOW_ATTRIBUTE)).toBeUndefined()
+    pins.dispose()
   })
 })

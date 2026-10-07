@@ -15,7 +15,7 @@ import { Group, type Texture } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { DistrictAssets } from '@/lib/data/districts'
 import type { QualityTier } from '@/lib/data/schemas/config'
-import type { SceneConfig } from '@/lib/data/schemas/scene'
+import type { CitySceneConfig } from '@/lib/data/schemas/scene'
 import { log } from '@/lib/log'
 import type { BoroughId } from '../geo/schema'
 import { dimmedColor } from '../materials'
@@ -39,7 +39,7 @@ export interface BuildingsHandle {
 interface BuildingsProps {
   readonly assets: Readonly<Record<QualityTier, DistrictAssets>>
   readonly palette: ScenePalette
-  readonly config: SceneConfig
+  readonly config: CitySceneConfig
   readonly groundY: number
   /** The city's shared toon ramp. */
   readonly gradientMap: Texture
@@ -125,7 +125,7 @@ export function Buildings({
       },
       blockColors: {
         block: palette.buildings.block,
-        dimmed: `#${dimmedColor(palette.buildings.block, palette.background, config.dimmed.towardBackground).getHexString()}`,
+        dimmed: `#${dimmedColor(palette.buildings.block, palette.haze, config.dimmed.towardBackground).getHexString()}`,
         jitter: config.buildings.wallJitter,
       },
       dimmedBoroughs,

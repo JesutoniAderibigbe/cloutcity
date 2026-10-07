@@ -2,7 +2,7 @@
  * Every material of the base city, created once per scene and disposed with it. All toon
  * materials share one gradient ramp texture (the sticker look), so tones step identically on
  * every layer. "Expanding soon" boroughs (S04c) get dimmed land and park colours: the palette
- * colour mixed towards the background.
+ * colour mixed towards the fixed haze (not the sky, which changes with the time of day).
  */
 import { Color, MeshBasicMaterial, MeshToonMaterial } from 'three'
 import type { DataTexture, Texture } from 'three'
@@ -41,7 +41,7 @@ export function createCityMaterials(
 ): CityMaterials {
   const gradientMap = createToonRamp(palette.toonRamp)
   const toon = (color: string | Color) => new MeshToonMaterial({ color, gradientMap })
-  const dim = (hex: string) => dimmedColor(hex, palette.background, config.dimmed.towardBackground)
+  const dim = (hex: string) => dimmedColor(hex, palette.haze, config.dimmed.towardBackground)
   // Parks lie just above the land top: the offset wins the depth test without a visible gap.
   const ground = (color: string | Color) =>
     new MeshToonMaterial({

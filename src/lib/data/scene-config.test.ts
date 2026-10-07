@@ -35,11 +35,8 @@ describe('config/scene.json', () => {
     expect(SceneConfigSchema.safeParse(withAvatar({ minHeightM: 999 })).success).toBe(false)
   })
 
-  it('rejects a start distance outside the zoom limits, an inverted angle range or a flat sun', () => {
-    const valid = readJson('config/scene.json') as {
-      camera: Record<string, unknown>
-      lights: Record<string, unknown>
-    }
+  it('rejects a start distance outside the zoom limits or an inverted angle range', () => {
+    const valid = readJson('config/scene.json') as { camera: Record<string, unknown> }
     expect(SceneConfigSchema.safeParse(valid).success).toBe(true)
     const withCamera = (camera: Record<string, unknown>) => ({
       ...valid,
@@ -54,8 +51,47 @@ describe('config/scene.json', () => {
       SceneConfigSchema.safeParse(withCamera({ polarDeg: { default: 48, min: 12, max: 95 } }))
         .success,
     ).toBe(false)
-    const flatSun = { ...valid, lights: { ...valid.lights, sunDirection: { x: 1, y: 0, z: 0 } } }
-    expect(SceneConfigSchema.safeParse(flatSun).success).toBe(false)
+  })
+})
+
+describe('scene.json dayNight (S04f)', () => {
+  type Keyframe = { id: string; atMinute: number; holdMinutes: number; ui: string }
+  const valid = readJson('config/scene.json') as {
+    dayNight: { quantizeMinutes: number; keyframes: Keyframe[] }
+  }
+  const withDayNight = (patch: Record<string, unknown>) => ({
+    ...valid,
+    dayNight: { ...valid.dayNight, ...patch },
+  })
+  const keyframes = valid.dayNight.keyframes
+  const patchKeyframe = (index: number, patch: Partial<Keyframe>) =>
+    keyframes.map((keyframe, i) => (i === index ? { ...keyframe, ...patch } : keyframe))
+
+  it('accepts the shipped cycle: six keyframes in clock order, the UI flipping twice', () => {
+    expect(SceneConfigSchema.safeParse(valid).success).toBe(true)
+    expect(keyframes.map((keyframe) => keyframe.id)).toEqual([
+      'dawn',
+      'morning',
+      'day',
+      'golden',
+      'dusk',
+      'night',
+    ])
+  })
+
+  it('rejects keyframes out of order, a hold into the next keyframe and a step that splits a day', () => {
+    const swapped = [keyframes[1], keyframes[0], ...keyframes.slice(2)]
+    expect(SceneConfigSchema.safeParse(withDayNight({ keyframes: swapped })).success).toBe(false)
+    const late = patchKeyframe(1, { atMinute: (keyframes[2]?.atMinute ?? 0) + 1 })
+    expect(SceneConfigSchema.safeParse(withDayNight({ keyframes: late })).success).toBe(false)
+    const longHold = patchKeyframe(2, { holdMinutes: 2000 })
+    expect(SceneConfigSchema.safeParse(withDayNight({ keyframes: longHold })).success).toBe(false)
+    expect(SceneConfigSchema.safeParse(withDayNight({ quantizeMinutes: 7 })).success).toBe(false)
+  })
+
+  it('rejects a UI that switches theme more than once each way', () => {
+    const flicker = patchKeyframe(2, { ui: 'night' })
+    expect(SceneConfigSchema.safeParse(withDayNight({ keyframes: flicker })).success).toBe(false)
   })
 })
 
@@ -78,9 +114,11 @@ describe('theme.json scene palette', () => {
 
   it('resolves every scene token to its hex on the server', () => {
     const palette = scenePalette()
-    expect(palette.water).toBe(theme.colors[theme.scene.water])
-    expect(palette.land.queens).toBe(theme.colors[theme.scene.land.queens])
-    expect(palette.subwayLines).toEqual(theme.scene.subwayLines.map((t) => theme.colors[t]))
+    const world: Record<string, string> = { ...theme.world, ...theme.models }
+    expect(palette.water).toBe(world[theme.scene.water])
+    expect(palette.land.queens).toBe(world[theme.scene.land.queens])
+    expect(palette.haze).toBe(world[theme.scene.haze])
+    expect(palette.subwayLines).toEqual(theme.scene.subwayLines.map((t) => world[t]))
     expect(palette.toonRamp).toEqual(theme.scene.toonRamp)
   })
 })

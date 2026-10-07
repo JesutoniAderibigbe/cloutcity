@@ -134,7 +134,7 @@ export function ReportForm({
     const key = shown[field]
     if (key === undefined) return null
     return (
-      <p id={errorId(field)} className="text-sm font-semibold text-pink-400">
+      <p id={errorId(field)} className="text-sm font-semibold text-danger">
         {copy(key)}
       </p>
     )
@@ -150,13 +150,13 @@ export function ReportForm({
         ref={titleRef}
         id={`${id}-title`}
         tabIndex={-1}
-        className="text-base font-extrabold text-pink-400 focus:outline-none"
+        className="text-base font-extrabold text-taxi-ink focus:outline-none"
       >
         {copy(kind === 'handle' ? 'safety.report.titleHandle' : 'safety.report.title', { handle })}
       </h3>
       <form noValidate onSubmit={onSubmit} className="flex flex-col gap-3">
         <fieldset role="radiogroup" className="flex flex-col" {...invalid('reason')}>
-          <legend className="text-sm font-semibold text-ink-50">
+          <legend className="text-sm font-semibold text-fg">
             {copy('safety.report.reasonLegend')}
           </legend>
           {reasons.map((reason, index) => (
@@ -168,9 +168,9 @@ export function ReportForm({
                 value={reason}
                 checked={values.reason === reason}
                 onChange={() => update({ reason })}
-                className="h-6 w-6 shrink-0 accent-[var(--color-taxi-400)]"
+                className="h-6 w-6 shrink-0 accent-taxi"
               />
-              <span className="text-sm text-ink-50">{copy(reportReasonKey(reason))}</span>
+              <span className="text-sm text-fg">{copy(reportReasonKey(reason))}</span>
             </label>
           ))}
           {fieldError('reason')}
@@ -179,7 +179,7 @@ export function ReportForm({
         {values.reason === 'self_harm' ? <CrisisPanel /> : null}
 
         <div className="flex flex-col gap-1">
-          <label htmlFor={`${id}-note`} className="text-sm font-semibold text-ink-50">
+          <label htmlFor={`${id}-note`} className="text-sm font-semibold text-fg">
             {copy('safety.report.noteLabel')}
           </label>
           <textarea
@@ -197,15 +197,15 @@ export function ReportForm({
             ]
               .filter((part) => part !== null)
               .join(' ')}
-            className="w-full rounded-xl border border-night-700 bg-night-950 px-3 py-2 text-base text-ink-50 focus-visible:outline-2 focus-visible:outline-taxi-400"
+            className="w-full rounded-xl border border-line bg-canvas px-3 py-2 text-base text-fg focus-visible:outline-2 focus-visible:outline-focus"
           />
-          <p id={`${id}-note-hint`} className="text-xs text-ink-300">
+          <p id={`${id}-note-hint`} className="text-xs text-muted">
             {copy('safety.report.noteHint', { max: formatCount(max) })}
           </p>
           <p
             id={`${id}-note-count`}
             data-note-count={charCount(values.note)}
-            className={`text-xs ${charCount(values.note) > max ? 'font-semibold text-pink-400' : 'text-ink-300'}`}
+            className={`text-xs ${charCount(values.note) > max ? 'font-semibold text-danger' : 'text-muted'}`}
           >
             {copy('safety.report.counter', {
               count: formatCount(charCount(values.note)),
@@ -221,13 +221,13 @@ export function ReportForm({
             name="alsoBlock"
             checked={alsoBlock}
             onChange={(event) => setAlsoBlock(event.target.checked)}
-            className="h-6 w-6 shrink-0 accent-[var(--color-taxi-400)]"
+            className="h-6 w-6 shrink-0 accent-taxi"
           />
-          <span className="text-sm text-ink-50">{copy('safety.report.alsoBlock', { handle })}</span>
+          <span className="text-sm text-fg">{copy('safety.report.alsoBlock', { handle })}</span>
         </label>
 
-        <p className="text-xs text-ink-300">{copy('safety.report.private', { handle })}</p>
-        <p className="text-xs text-ink-300">
+        <p className="text-xs text-muted">{copy('safety.report.private', { handle })}</p>
+        <p className="text-xs text-muted">
           {copyParts('safety.report.conduct').map((part, index) =>
             part.kind === 'text' ? (
               part.text
@@ -237,7 +237,7 @@ export function ReportForm({
                 href="/conduct"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-taxi-400 underline underline-offset-2"
+                className="font-semibold text-taxi-ink underline underline-offset-2"
               >
                 {copy('safety.report.conductLink')}
               </a>
@@ -246,7 +246,7 @@ export function ReportForm({
         </p>
 
         {formError === null ? null : (
-          <p role="alert" className="text-sm font-semibold text-pink-400">
+          <p role="alert" className="text-sm font-semibold text-danger">
             {formError}
           </p>
         )}
@@ -254,15 +254,11 @@ export function ReportForm({
           <button
             type="submit"
             aria-disabled={sending ? true : undefined}
-            className={`${SAFETY_BUTTON} bg-pink-400 text-night-950`}
+            className={`${SAFETY_BUTTON} bg-taxi text-on-taxi`}
           >
             {sending ? copy('safety.report.sending') : copy('safety.report.submit')}
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className={`${SAFETY_BUTTON} bg-night-800 text-ink-50`}
-          >
+          <button type="button" onClick={onCancel} className={`${SAFETY_BUTTON} bg-raised text-fg`}>
             {copy('safety.report.cancel')}
           </button>
         </div>

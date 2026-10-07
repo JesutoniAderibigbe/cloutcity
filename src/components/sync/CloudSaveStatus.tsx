@@ -6,14 +6,14 @@ import { useSyncStatus, type SyncStatus } from '@/state/syncStatus'
 import { announces, syncLabel, syncStatusText } from './syncCopy'
 
 const SHADE: Readonly<Record<SyncStatus, string>> = {
-  local: 'text-ink-300',
-  syncing: 'text-taxi-400',
-  synced: 'text-ink-50',
-  offline: 'text-ink-300',
-  paused: 'text-pink-400',
-  conflict: 'text-pink-400',
-  update: 'text-pink-400',
-  behind: 'text-pink-400',
+  local: 'text-muted',
+  syncing: 'text-taxi-ink',
+  synced: 'text-fg',
+  offline: 'text-muted',
+  paused: 'text-taxi-ink',
+  conflict: 'text-taxi-ink',
+  update: 'text-taxi-ink',
+  behind: 'text-taxi-ink',
 }
 
 /**
@@ -53,7 +53,7 @@ export function CloudSaveStatus({
         title={label}
         aria-expanded={open === 'cloud'}
         onClick={onToggle}
-        className={`${className} ${open === 'cloud' ? 'bg-pink-400 text-night-950' : `bg-night-800 ${SHADE[status]}`}`}
+        className={`${className} ${open === 'cloud' ? 'bg-taxi text-on-taxi' : `bg-raised ${SHADE[status]}`}`}
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
           <path d="M7 18a5 5 0 0 1-.9-9.92A6 6 0 0 1 17.6 7.1 4.5 4.5 0 0 1 17.5 18H7z" />

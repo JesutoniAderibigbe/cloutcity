@@ -106,7 +106,7 @@ export function buildFallbackSvg(input: FallbackMapInput): string {
   const dimmed = new Set(
     places.boroughs.filter((borough) => borough.render === 'dimmed').map((b) => b.id),
   )
-  const dim = (hex: string) => mixHex(hex, palette.background, config.dimmed.towardBackground)
+  const dim = (hex: string) => mixHex(hex, palette.haze, config.dimmed.towardBackground)
   const shape = (polygons: readonly Polygon[], minArea: number) =>
     pathData(polygons, minArea, fallback.toleranceM, unit)
 

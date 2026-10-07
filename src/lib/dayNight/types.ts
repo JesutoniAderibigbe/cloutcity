@@ -26,6 +26,8 @@ export interface KeyframeColors<C = string> {
   readonly hemisphereGround: C
   /** Multiplier for unlit materials (water, lines, labels) so they darken with the scene. */
   readonly unlitTint: C
+  /** The harbour's colour: blue-grey by day, dark navy at night. */
+  readonly water: C
 }
 
 /** Where the sun stands: azimuth clockwise from north (−z) towards east (+x), elevation up. */
@@ -67,6 +69,9 @@ export interface ThemeDayNight {
   readonly colors: Readonly<Record<string, string>>
   readonly sky: Readonly<Record<KeyframeId, KeyframeColors<string>>>
 }
+
+/** Every keyframe's colour slots, resolved to hex. */
+export type SkyColors = Readonly<Partial<Record<KeyframeId, KeyframeColors<string>>>>
 
 /** A keyframe with its colours resolved to hex. */
 export interface DayNightKeyframe extends SceneKeyframe {

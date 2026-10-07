@@ -27,9 +27,9 @@ import '@/lib/copy/ns/mod'
 import '@/lib/copy/ns/safety'
 
 const BUTTON =
-  'min-h-11 min-w-11 rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
+  'min-h-11 min-w-11 rounded-xl px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 const INPUT =
-  'min-h-11 w-full rounded-xl border border-night-700 bg-night-950 px-3 text-base text-ink-50 focus-visible:outline-2 focus-visible:outline-taxi-400'
+  'min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-base text-fg focus-visible:outline-2 focus-visible:outline-focus'
 
 const reasonName = (reason: string): string =>
   (REPORT_REASONS as readonly string[]).includes(reason)
@@ -91,12 +91,12 @@ function SignIn() {
 
   return (
     <section aria-labelledby={`${id}-title`} className="flex flex-col gap-3">
-      <h2 id={`${id}-title`} className="text-xl font-bold text-ink-50">
+      <h2 id={`${id}-title`} className="text-xl font-bold text-fg">
         {copy('mod.signIn.title')}
       </h2>
-      <p className="text-sm text-ink-300">{copy('mod.signIn.intro')}</p>
+      <p className="text-sm text-muted">{copy('mod.signIn.intro')}</p>
       <form noValidate onSubmit={onSubmit} className="flex flex-col gap-2">
-        <label htmlFor={`${id}-email`} className="text-sm font-semibold text-ink-50">
+        <label htmlFor={`${id}-email`} className="text-sm font-semibold text-fg">
           {copy('mod.signIn.email')}
         </label>
         <input
@@ -111,19 +111,19 @@ function SignIn() {
           className={INPUT}
         />
         {invalid ? (
-          <p id={`${id}-error`} className="text-sm font-semibold text-pink-400">
+          <p id={`${id}-error`} className="text-sm font-semibold text-danger">
             {copy('mod.signIn.invalid')}
           </p>
         ) : null}
-        <button type="submit" className={`${BUTTON} self-start bg-taxi-400 text-night-950`}>
+        <button type="submit" className={`${BUTTON} self-start bg-taxi text-on-taxi`}>
           {state === 'sending' ? copy('mod.signIn.sending') : copy('mod.signIn.submit')}
         </button>
       </form>
-      <p role="status" className="text-sm text-taxi-400">
+      <p role="status" className="text-sm text-taxi-ink">
         {state === 'sent' ? copy('mod.signIn.sent') : null}
       </p>
       {state === 'failed' ? (
-        <p role="alert" className="text-sm font-semibold text-pink-400">
+        <p role="alert" className="text-sm font-semibold text-danger">
           {copy('mod.signIn.failed')}
         </p>
       ) : null}
@@ -201,12 +201,12 @@ function ActionForm({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="flex flex-col gap-2 rounded-xl bg-night-800 p-3"
+      className="flex flex-col gap-2 rounded-xl bg-raised p-3"
     >
-      <h3 id={`${id}-title`} className="font-bold text-ink-50">
+      <h3 id={`${id}-title`} className="font-bold text-fg">
         {copy('mod.action.title')}
       </h3>
-      <label htmlFor={`${id}-reason`} className="text-sm font-semibold text-ink-50">
+      <label htmlFor={`${id}-reason`} className="text-sm font-semibold text-fg">
         {copy('mod.action.reason')}
       </label>
       <select
@@ -222,7 +222,7 @@ function ActionForm({
           </option>
         ))}
       </select>
-      <label htmlFor={`${id}-days`} className="text-sm font-semibold text-ink-50">
+      <label htmlFor={`${id}-days`} className="text-sm font-semibold text-fg">
         {copy('mod.action.days')}
       </label>
       <input
@@ -235,7 +235,7 @@ function ActionForm({
         onChange={(event) => setDays(event.target.value)}
         className={INPUT}
       />
-      <label htmlFor={`${id}-note`} className="text-sm font-semibold text-ink-50">
+      <label htmlFor={`${id}-note`} className="text-sm font-semibold text-fg">
         {copy('mod.action.note')}
       </label>
       <textarea
@@ -244,9 +244,9 @@ function ActionForm({
         maxLength={500}
         value={note}
         onChange={(event) => setNote(event.target.value)}
-        className="w-full rounded-xl border border-night-700 bg-night-950 px-3 py-2 text-base text-ink-50"
+        className="w-full rounded-xl border border-line bg-canvas px-3 py-2 text-base text-fg"
       />
-      <label className="flex min-h-11 items-center gap-3 text-sm text-ink-50">
+      <label className="flex min-h-11 items-center gap-3 text-sm text-fg">
         <input
           type="checkbox"
           checked={abusive}
@@ -263,14 +263,14 @@ function ActionForm({
             data-mod-action={action}
             aria-disabled={busy ? true : undefined}
             onClick={() => void act(action)}
-            className={`${BUTTON} ${action === 'ban' || action === 'suspend' ? 'bg-pink-400 text-night-950' : 'bg-night-950 text-ink-50'}`}
+            className={`${BUTTON} ${action === 'ban' || action === 'suspend' ? 'bg-taxi text-on-taxi' : 'bg-canvas text-fg'}`}
           >
             {actionName(action)}
           </button>
         ))}
       </div>
       {error === null ? null : (
-        <p role="alert" data-mod-error="" className="text-sm font-semibold text-pink-400">
+        <p role="alert" data-mod-error="" className="text-sm font-semibold text-danger">
           {error}
         </p>
       )}
@@ -296,18 +296,14 @@ function CaseView({
       aria-labelledby="mod-case-title"
       className="flex flex-col gap-3"
     >
-      <button
-        type="button"
-        onClick={onBack}
-        className={`${BUTTON} self-start bg-night-800 text-ink-50`}
-      >
+      <button type="button" onClick={onBack} className={`${BUTTON} self-start bg-raised text-fg`}>
         {copy('mod.case.back')}
       </button>
-      <h2 id="mod-case-title" className="text-xl font-bold text-ink-50">
+      <h2 id="mod-case-title" className="text-xl font-bold text-fg">
         {copy('mod.case.title', { handle })}
       </h2>
       {detail.profile === null ? null : (
-        <p className="text-sm text-ink-300">
+        <p className="text-sm text-muted">
           {copy('mod.case.profile', {
             level: detail.profile.public_level,
             dream: detail.profile.career_path ?? '-',
@@ -315,16 +311,16 @@ function CaseView({
           })}
         </p>
       )}
-      <p className="text-sm text-ink-300">
+      <p className="text-sm text-muted">
         {copy('mod.queue.standing', { standing: detail.standing })}
       </p>
-      <h3 className="font-bold text-ink-50">{copy('mod.case.reports')}</h3>
+      <h3 className="font-bold text-fg">{copy('mod.case.reports')}</h3>
       <ul className="flex flex-col gap-2">
         {detail.reports.map((report) => (
           <li
             key={report.report_id}
             data-mod-report={report.status}
-            className="rounded-xl bg-night-800 p-2 text-sm text-ink-50"
+            className="rounded-xl bg-raised p-2 text-sm text-fg"
           >
             <p className="font-semibold">
               {copy('mod.case.report', {
@@ -334,7 +330,7 @@ function CaseView({
                 date: formatDate(report.created_at),
               })}
             </p>
-            <p className="text-ink-300">
+            <p className="text-muted">
               {copy(report.trusted ? 'mod.case.trusted' : 'mod.case.untrusted')}
               {report.brigade ? `, ${copy('mod.queue.brigade')}` : ''}
               {report.legal_hold ? `, ${copy('mod.case.legalHold')}` : ''}
@@ -344,7 +340,7 @@ function CaseView({
                 ? copy('mod.case.noNote')
                 : copy('mod.case.note', { note: report.note })}
             </p>
-            <p className="text-ink-300">
+            <p className="text-muted">
               {copy('mod.case.snapshot', {
                 handle: String(report.snapshot.handle ?? '-'),
                 level: String(report.snapshot.public_level ?? '-'),
@@ -353,11 +349,11 @@ function CaseView({
           </li>
         ))}
       </ul>
-      <h3 className="font-bold text-ink-50">{copy('mod.case.sanctions')}</h3>
+      <h3 className="font-bold text-fg">{copy('mod.case.sanctions')}</h3>
       {detail.sanctions.length === 0 ? (
-        <p className="text-sm text-ink-300">{copy('mod.case.noSanctions')}</p>
+        <p className="text-sm text-muted">{copy('mod.case.noSanctions')}</p>
       ) : (
-        <ul className="flex flex-col gap-1 text-sm text-ink-50">
+        <ul className="flex flex-col gap-1 text-sm text-fg">
           {detail.sanctions.map((sanction) => (
             <li key={`${sanction.kind}-${sanction.starts_at}`}>
               {copy('mod.case.sanction', {
@@ -369,11 +365,11 @@ function CaseView({
           ))}
         </ul>
       )}
-      <h3 className="font-bold text-ink-50">{copy('mod.case.audit')}</h3>
+      <h3 className="font-bold text-fg">{copy('mod.case.audit')}</h3>
       {detail.audit.length === 0 ? (
-        <p className="text-sm text-ink-300">{copy('mod.case.noAudit')}</p>
+        <p className="text-sm text-muted">{copy('mod.case.noAudit')}</p>
       ) : (
-        <ul className="flex flex-col gap-1 text-sm text-ink-50">
+        <ul className="flex flex-col gap-1 text-sm text-fg">
           {detail.audit.map((row) => (
             <li key={`${row.action}-${row.created_at}`}>
               {copy('mod.case.auditRow', { action: row.action, date: formatDate(row.created_at) })}
@@ -398,18 +394,18 @@ function QueueView({
   return (
     <div className="flex flex-col gap-4">
       <section aria-labelledby="mod-queue-title" className="flex flex-col gap-2">
-        <h2 id="mod-queue-title" className="text-xl font-bold text-ink-50">
+        <h2 id="mod-queue-title" className="text-xl font-bold text-fg">
           {copy('mod.queue.title')}
         </h2>
         {queue.cases.length === 0 ? (
-          <p className="text-sm text-ink-300">{copy('mod.queue.empty')}</p>
+          <p className="text-sm text-muted">{copy('mod.queue.empty')}</p>
         ) : (
           <ol className="flex flex-col gap-2">
             {queue.cases.map((item) => (
               <li
                 key={item.case_id}
                 data-mod-queue-case={item.case_id}
-                className="flex flex-col gap-1 rounded-xl bg-night-800 p-3 text-sm text-ink-50"
+                className="flex flex-col gap-1 rounded-xl bg-raised p-3 text-sm text-fg"
               >
                 <p className="font-bold">
                   {copy('mod.queue.case', {
@@ -428,23 +424,23 @@ function QueueView({
                   })}
                 </p>
                 {item.brigade ? (
-                  <p data-mod-brigade="" className="font-semibold text-pink-400">
+                  <p data-mod-brigade="" className="font-semibold text-danger">
                     {copy('mod.queue.brigade')}
                   </p>
                 ) : null}
                 {item.held ? (
-                  <p className="text-taxi-400">{copy('mod.queue.trustedHold')}</p>
+                  <p className="text-taxi-ink">{copy('mod.queue.trustedHold')}</p>
                 ) : null}
-                <p className="text-ink-300">
+                <p className="text-muted">
                   {copy('mod.queue.oldest', { date: formatDate(item.oldest_at) })}
                 </p>
-                <p className="text-ink-300">
+                <p className="text-muted">
                   {copy('mod.queue.standing', { standing: item.standing })}
                 </p>
                 <button
                   type="button"
                   onClick={() => onOpen(item.case_id)}
-                  className={`${BUTTON} self-start bg-taxi-400 text-night-950`}
+                  className={`${BUTTON} self-start bg-taxi text-on-taxi`}
                 >
                   {copy('mod.queue.open')}
                 </button>
@@ -454,17 +450,17 @@ function QueueView({
         )}
       </section>
       <section aria-labelledby="mod-appeals-title" className="flex flex-col gap-2">
-        <h2 id="mod-appeals-title" className="text-xl font-bold text-ink-50">
+        <h2 id="mod-appeals-title" className="text-xl font-bold text-fg">
           {copy('mod.appeals.title')}
         </h2>
         {queue.appeals.length === 0 ? (
-          <p className="text-sm text-ink-300">{copy('mod.appeals.empty')}</p>
+          <p className="text-sm text-muted">{copy('mod.appeals.empty')}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {queue.appeals.map((appeal) => (
               <li
                 key={appeal.appeal_id}
-                className="flex flex-col gap-1 rounded-xl bg-night-800 p-3 text-sm text-ink-50"
+                className="flex flex-col gap-1 rounded-xl bg-raised p-3 text-sm text-fg"
               >
                 <p className="font-bold">
                   {copy('mod.appeals.item', {
@@ -478,14 +474,14 @@ function QueueView({
                   <button
                     type="button"
                     onClick={() => onAppeal(appeal.appeal_id, false)}
-                    className={`${BUTTON} bg-night-950 text-ink-50`}
+                    className={`${BUTTON} bg-canvas text-fg`}
                   >
                     {copy('mod.appeals.uphold')}
                   </button>
                   <button
                     type="button"
                     onClick={() => onAppeal(appeal.appeal_id, true)}
-                    className={`${BUTTON} bg-taxi-400 text-night-950`}
+                    className={`${BUTTON} bg-taxi text-on-taxi`}
                   >
                     {copy('mod.appeals.overturn')}
                   </button>
@@ -590,28 +586,28 @@ function Console({
         <button
           type="button"
           onClick={() => void showQueue()}
-          className={`${BUTTON} bg-night-800 text-ink-50`}
+          className={`${BUTTON} bg-raised text-fg`}
         >
           {copy('mod.refresh')}
         </button>
-        <button type="button" onClick={onSignOut} className={`${BUTTON} bg-night-800 text-ink-50`}>
+        <button type="button" onClick={onSignOut} className={`${BUTTON} bg-raised text-fg`}>
           {copy('mod.signOut')}
         </button>
       </div>
-      <p role="status" data-mod-status="" className="min-h-5 text-sm text-taxi-400">
+      <p role="status" data-mod-status="" className="min-h-5 text-sm text-taxi-ink">
         {status}
       </p>
       {loaded.state === 'loading' ? (
-        <p className="text-sm text-ink-300">{copy('mod.loading')}</p>
+        <p className="text-sm text-muted">{copy('mod.loading')}</p>
       ) : loaded.state === 'failed' ? (
         <div className="flex flex-col items-start gap-2">
-          <p role="alert" data-mod-failed="" className="text-sm font-semibold text-pink-400">
+          <p role="alert" data-mod-failed="" className="text-sm font-semibold text-danger">
             {loaded.text}
           </p>
           <button
             type="button"
             onClick={() => void showQueue()}
-            className={`${BUTTON} bg-night-800 text-ink-50`}
+            className={`${BUTTON} bg-raised text-fg`}
           >
             {copy('mod.retry')}
           </button>
@@ -660,11 +656,11 @@ export function ModConsole() {
   return (
     <main className="h-full overflow-y-auto overscroll-contain px-4 py-6">
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
-        <h1 className="text-3xl font-extrabold tracking-tight text-pink-400">
+        <h1 className="text-3xl font-extrabold tracking-tight text-taxi-ink">
           {copy('mod.title')}
         </h1>
         {session.state === 'loading' ? (
-          <p className="text-sm text-ink-300">{copy('mod.loading')}</p>
+          <p className="text-sm text-muted">{copy('mod.loading')}</p>
         ) : session.state === 'signed-out' ? (
           <SignIn />
         ) : (

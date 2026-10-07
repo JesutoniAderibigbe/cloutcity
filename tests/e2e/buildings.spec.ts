@@ -56,7 +56,7 @@ test('the map is playable before any building loads, then the nearby districts a
   expect(state.blocks.status).toBe('ready')
   expect(state.blocks.drawn).toBeLessThan(state.blocks.total)
   expect(state.windows).toBe(scene.buildings.windows.low)
-  // Daylight until S04f's rig drives the shared night glow.
+  // A new game starts at 08:00 (S04f): daylight, so the shared night glow is off.
   expect(state.nightGlow).toBe(0)
 })
 

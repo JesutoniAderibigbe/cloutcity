@@ -14,13 +14,14 @@ import { copy } from '@/lib/copy'
 import '@/lib/copy/ns/map'
 import { balance, perf, scene } from '@/lib/data/config'
 import { QUALITY_TIERS, type QualityTier } from '@/lib/data/schemas/config'
+import { citySceneConfig } from '@/lib/data/schemas/scene'
 import { geoBounds, homes } from '@/lib/data/content'
 import { districtAssets } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
 import { HOME_IDS } from '@/lib/data/homes'
 import { modelRef } from '@/lib/data/models'
 import { project } from '@/lib/geo/projection'
-import { scenePalette } from '@/lib/theme'
+import { scenePalette, skyColors } from '@/lib/theme'
 import { landmarksLayer } from '@/lib/world/landmarksLayer'
 import { mapPlaces, placeName } from '@/lib/world/places'
 import { ApartmentMount } from './apartment/ApartmentMount'
@@ -78,7 +79,8 @@ export function CityScene() {
     geoUrl: `/geo/base?v=${geoVersion}`,
     fallbackUrl: `/geo/fallback?v=${geoVersion}`,
     palette: scenePalette(),
-    config: scene,
+    skyColors: skyColors(),
+    config: citySceneConfig(scene),
     homesLocal: Object.fromEntries(
       HOME_IDS.map((id) => [id, project(homes[id].location)]),
     ) as SceneProps['homesLocal'],

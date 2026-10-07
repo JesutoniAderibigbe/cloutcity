@@ -48,33 +48,29 @@ export function BlockConfirm({
       ref={ref}
       data-block-confirm=""
       aria-labelledby={titleId}
-      className="flex flex-col gap-2 rounded-xl border border-pink-400 bg-night-950 p-3"
+      className="flex flex-col gap-2 rounded-xl border border-taxi bg-canvas p-3"
     >
       <h3
         id={titleId}
         tabIndex={-1}
-        className="text-base font-extrabold text-pink-400 focus:outline-none"
+        className="text-base font-extrabold text-taxi-ink focus:outline-none"
       >
         {copy('safety.block.title', { handle })}
       </h3>
-      <p className="text-sm text-ink-50">{copy('safety.block.body')}</p>
-      <p className="text-sm font-semibold text-ink-50">{copy('safety.block.ends')}</p>
-      <p className="text-sm text-ink-300">{copy('safety.block.private')}</p>
+      <p className="text-sm text-fg">{copy('safety.block.body')}</p>
+      <p className="text-sm font-semibold text-fg">{copy('safety.block.ends')}</p>
+      <p className="text-sm text-muted">{copy('safety.block.private')}</p>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={onConfirm}
           aria-disabled={busy ? true : undefined}
           aria-label={copy('safety.actions.blockLabel', { handle })}
-          className={`${SAFETY_BUTTON} bg-pink-400 text-night-950`}
+          className={`${SAFETY_BUTTON} bg-taxi text-on-taxi`}
         >
           {copy('safety.block.confirm')}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className={`${SAFETY_BUTTON} bg-night-800 text-ink-50`}
-        >
+        <button type="button" onClick={onCancel} className={`${SAFETY_BUTTON} bg-raised text-fg`}>
           {copy('safety.block.cancel')}
         </button>
       </div>

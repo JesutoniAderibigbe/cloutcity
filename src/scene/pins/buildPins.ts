@@ -10,6 +10,7 @@ import {
   ConeGeometry,
   CylinderGeometry,
   Group,
+  InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
   Mesh,
@@ -20,11 +21,12 @@ import {
   RingGeometry,
   Vector3,
 } from 'three'
-import type { BufferGeometry, Camera, Texture } from 'three'
+import type { BufferGeometry, Camera, IUniform, Texture } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import { LAY_FLAT_X } from '../geo/coords'
 import type { GeoPin, PinKind } from '../geo/schema'
+import { NIGHT_GLOW_ATTRIBUTE, patchNightGlow } from '../lighting/nightGlow'
 import type { ScenePalette } from '../types'
 import type { ScreenPin } from './pick'
 
@@ -125,12 +127,31 @@ const _scale = new Vector3()
 const _identity = new Quaternion()
 const _head = new Vector3()
 
+/**
+ * How much a pin glows at full night (S04f): a share of its own colour, so it stays readable
+ * and tappable in the dark. Memorial (muted) and teaser pins never glow.
+ */
+export function pinGlow(
+  pin: Pick<GeoPin, 'kind' | 'style'>,
+  palette: ScenePalette,
+  lift: number,
+  out: Color,
+): Color {
+  if (pin.style !== 'normal') return out.setScalar(0)
+  return out.set(pinColor(pin, palette)).multiplyScalar(lift)
+}
+
+/**
+ * `nightGlow`: the shared night-glow uniform (src/scene/lighting/nightGlow.ts). Each pin's glow
+ * is a per-instance `_emissive` attribute, so a muted pin in the same draw call stays unlit.
+ */
 export function buildPins(
   pins: readonly GeoPin[],
   palette: ScenePalette,
   config: Pick<SceneConfig, 'pins'>,
   groundY: number,
   gradientMap: Texture,
+  nightGlow?: IUniform<number>,
 ): PinObjects {
   const settings = config.pins
   const group = new Group()
@@ -148,6 +169,7 @@ export function buildPins(
 
   // White base colour: the instance colour carries each pin's style.
   const material = new MeshToonMaterial({ color: new Color(1, 1, 1), gradientMap })
+  if (nightGlow !== undefined) patchNightGlow(material, 'attribute', { uniform: nightGlow })
   const geometries = {
     venue: buildVenuePinGeometry(settings.radialSegments),
     landmark: buildLandmarkPinGeometry(),
@@ -162,6 +184,13 @@ export function buildPins(
     mesh.name = `pins-${look}`
     list.forEach((pin, i) => mesh.setColorAt(i, color.set(pinColor(pin, palette))))
     if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
+    if (nightGlow !== undefined) {
+      const glow = new Float32Array(Math.max(1, list.length) * 3)
+      list.forEach((pin, i) =>
+        pinGlow(pin, palette, settings.nightGlow, color).toArray(glow, i * 3),
+      )
+      geometries[look].setAttribute(NIGHT_GLOW_ATTRIBUTE, new InstancedBufferAttribute(glow, 3))
+    }
     meshes[look] = mesh
     group.add(mesh)
   }

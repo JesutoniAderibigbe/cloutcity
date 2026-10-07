@@ -44,15 +44,15 @@ export function MapAttribution({
       >
         <details
           data-map-attribution=""
-          className="pointer-events-auto relative text-[11px] leading-snug text-ink-300"
+          className="pointer-events-auto relative text-[11px] leading-snug text-muted"
         >
-          <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-end gap-1 rounded-lg bg-night-950/90 px-3 font-semibold text-ink-50 focus-visible:outline-2 focus-visible:outline-taxi-400 [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-end gap-1 rounded-lg glass px-3 font-semibold text-fg focus-visible:outline-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden">
             <span aria-hidden="true">ⓘ</span>
             {toggle}
           </summary>
           {/* Opens to the left of the chip, on the same bottom line, so it fits the shortest free
               row (one 44 px target tall) and never reaches into another zone. */}
-          <div className="absolute right-full bottom-0 mr-1 flex w-max max-w-[calc(100vw-7.5rem)] items-center gap-2 rounded-lg bg-night-950/90 py-0.5 pr-0.5 pl-2">
+          <div className="absolute right-full bottom-0 mr-1 flex w-max max-w-[calc(100vw-7.5rem)] items-center gap-2 rounded-lg glass py-0.5 pr-0.5 pl-2">
             <p className="map-attribution-full">
               {nyc}
               <br />
@@ -63,7 +63,7 @@ export function MapAttribution({
             <p className="map-attribution-compact">{compact}</p>
             <a
               href="/credits"
-              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md px-2 font-semibold text-ink-50 underline focus-visible:outline-2 focus-visible:outline-taxi-400"
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md px-2 font-semibold text-fg underline focus-visible:outline-2 focus-visible:outline-focus"
             >
               {credits}
             </a>

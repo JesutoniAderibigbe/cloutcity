@@ -324,10 +324,35 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
   `src/lib/format.ts`. Anywhere else under `src/`, ESLint rejects any reference to `Intl`,
   the `toLocale*String` / `toFixed` / `toPrecision` methods however they are reached, and
   hand-built dollar amounts (`` `$${x}` ``, `'$' + x`, `$` before a JSX expression).
-- **Theme.** `data/config/theme.json` holds the palette. The root layout writes each token to a
-  `--palette-<token>` variable on `<html>`, and `src/app/globals.css` maps it to the Tailwind
-  colour `--color-<token>` (`bg-night-900`, `text-taxi-400`, ...). A new token needs a line in
-  both; `src/lib/theme.test.ts` checks they match and that no source file hardcodes a colour.
+- **Theme.** `data/config/theme.json` holds the palettes (DEC-26 real-world colours): `colors`
+  (the DOM palette: interface colours and item swatch colours), `ui` (the interface's semantic
+  colours for `day` and `night`, the cross-fade and the glass settings), `themeColor`, `world`
+  (3D-only colours: land, haze, subway ribbons, room surfaces, keyframe skies), `sky` (each
+  day/night keyframe's colour slots), `scene` (the city's colour roles, as `world` or `models`
+  tokens) and `models` (the hand-made models' materials).
+- **Interface theme (S04g).** Light frosted cards by day, dark glass by night, taxi yellow the one
+  accent. The stock Tailwind palette is removed (`--color-*: initial` in `src/app/globals.css`):
+  components use only the semantic colours `canvas`, `glass` (the `glass` utility), `surface`,
+  `raised`, `pressed`, `track`, `scrim`, `line`, `line-strong`, `fg`, `muted`, `taxi`, `on-taxi`,
+  `taxi-ink` (accent-coloured text), `danger`, `success`, `focus` and `meter`. The root layout
+  writes both themes as `--ui-day-*` / `--ui-night-*` on `<html data-theme="day">`; the HUD island
+  (`src/components/hud/ThemeSync.ts`) switches `data-theme` on the scene's keyframes, cross-fades
+  over `ui.crossFadeMs` (instant under reduced motion), updates `<meta name="theme-color">`, and
+  sets `data-glass="blur"` only on mid/high tiers without data saver or reduced transparency
+  (PERF-2). Legal pages and credits show the last theme the game stored. `src/lib/theme.test.ts`
+  keeps the CSS in sync with theme.json, `theme.contrast.test.ts` checks WCAG 2.2 AA for both
+  palettes, and `theme.palette-ban.test.ts` fails any raw palette class in the DOM UI.
+- **Day and night (S04f).** The city's light follows the personal game clock: `scene.json`
+  `dayNight` holds six keyframes (dawn, morning, day, golden, dusk, night) with their minute, hold,
+  sun pose and intensities, the fog and the room scales; their colours are `theme.json` `sky`.
+  `src/lib/dayNight` blends them (pure; smoothstep in linear light, quantised to
+  `quantizeMinutes`, stepped under reduced motion). The HUD island writes the minute of day to
+  `src/state/dayClock.ts`; in the 3D chunk `src/scene/lighting/DayNightRig.tsx` owns the
+  background, fog, hemisphere, ambient and sun (all mounted from the first frame, so no shader
+  recompiles with the time), redraws only when the lighting key changes, and writes the shared
+  `uNightGlow` uniform that lit windows, landmark windows, pins and model emissive read
+  (`src/scene/lighting/nightGlow.ts`; memorials never glow). `perf.json` `programsMax` caps the
+  shader programs per tier.
 
 ## Places: boroughs, venues and landmarks
 
@@ -675,8 +700,9 @@ camera starts over it).
   (`src/scene/landmarks/source.ts`) is where Blender models (DEC-25) take over per landmark.
   Modelled landmarks' pins are badges lifted over the model (`liftM`).
 - **Config.** Camera start, zoom/tilt/turn limits, layer heights, line widths, marker and chip
-  sizes and lights live in `data/config/scene.json`; scene colours are palette tokens in the
-  `scene` block of `data/config/theme.json` (resolved to hex on the server). Toon shading uses one
+  sizes, the shadow and the day/night keyframes live in `data/config/scene.json`; scene colours
+  are world tokens in the `scene` block of `data/config/theme.json` (resolved to hex on the
+  server). Toon shading uses one
   shared gradient ramp (`toonRamp`).
 - **Camera.** three's `MapControls` (`src/scene/camera/CameraRig.tsx`): one finger or left drag
   pans, pinch or wheel zooms towards the pointer, two fingers or right drag rotate and tilt; the

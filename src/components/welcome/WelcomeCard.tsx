@@ -41,7 +41,7 @@ const LEGAL_LINK: Readonly<Record<string, { href: string; label: CopyKey }>> = {
 }
 
 // Native controls styled in place (GR-8): nothing is layered over them.
-const CHOICE_INPUT = 'h-6 w-6 shrink-0 accent-[var(--color-taxi-400)]'
+const CHOICE_INPUT = 'h-6 w-6 shrink-0 accent-taxi-ink'
 const CHOICE_LABEL = 'flex min-h-11 cursor-pointer gap-3 py-2.5'
 
 function invalidProps(field: WelcomeField, errors: FieldErrors<WelcomeField>) {
@@ -54,7 +54,7 @@ function FieldError({ field, errors }: { field: WelcomeField; errors: FieldError
   const key = errors[field]
   if (key === undefined) return null
   return (
-    <p id={ERROR_ID[field]} className="mt-1 text-sm font-semibold text-pink-400">
+    <p id={ERROR_ID[field]} className="mt-1 text-sm font-semibold text-danger">
       {copy(key)}
     </p>
   )
@@ -73,7 +73,7 @@ function ConsentLabel() {
             href={link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-taxi-400 underline underline-offset-2"
+            className="font-semibold text-taxi-ink underline underline-offset-2"
           >
             {copy(link.label)}
             <span className="sr-only"> {copy('welcome.newTab')}</span>
@@ -149,18 +149,18 @@ export function WelcomeCard({ titleId, introId }: WelcomeCardProps) {
           ref={title}
           id={titleId}
           tabIndex={-1}
-          className="text-2xl font-extrabold tracking-tight text-pink-400 focus:outline-none"
+          className="text-2xl font-extrabold tracking-tight text-fg focus:outline-none"
         >
           {copy('welcome.title')}
         </h2>
-        <p id={introId} className="text-sm text-ink-300">
+        <p id={introId} className="text-sm text-muted">
           {copy('welcome.intro')}
         </p>
       </header>
 
       <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="welcome-birth-year" className="text-sm font-semibold text-ink-50">
+          <label htmlFor="welcome-birth-year" className="text-sm font-semibold text-fg">
             {copy('welcome.birthYear.label')}
           </label>
           <select
@@ -169,7 +169,7 @@ export function WelcomeCard({ titleId, introId }: WelcomeCardProps) {
             name="birthYear"
             value={values.birthYear}
             onChange={(event) => update({ birthYear: event.target.value })}
-            className="min-h-11 w-full rounded-xl border border-night-700 bg-night-950 px-3 text-base text-ink-50 focus-visible:outline-2 focus-visible:outline-taxi-400"
+            className="min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-base text-fg focus-visible:outline-2 focus-visible:outline-focus"
             {...invalidProps('birthYear', shown)}
           >
             <option value="">{copy('welcome.birthYear.placeholder')}</option>
@@ -183,7 +183,7 @@ export function WelcomeCard({ titleId, introId }: WelcomeCardProps) {
         </div>
 
         <div>
-          <label className={`${CHOICE_LABEL} items-start text-sm text-ink-50`}>
+          <label className={`${CHOICE_LABEL} items-start text-sm text-fg`}>
             <input
               ref={consent}
               id="welcome-consent"
@@ -200,11 +200,9 @@ export function WelcomeCard({ titleId, introId }: WelcomeCardProps) {
         </div>
 
         <fieldset role="radiogroup" className="flex flex-col" {...invalidProps('audio', shown)}>
-          <legend className="text-sm font-semibold text-ink-50">
-            {copy('welcome.audio.legend')}
-          </legend>
+          <legend className="text-sm font-semibold text-fg">{copy('welcome.audio.legend')}</legend>
           {AUDIO_CHOICES.map((choice, index) => (
-            <label key={choice} className={`${CHOICE_LABEL} items-center text-base text-ink-50`}>
+            <label key={choice} className={`${CHOICE_LABEL} items-center text-base text-fg`}>
               <input
                 ref={index === 0 ? firstAudio : undefined}
                 type="radio"
@@ -222,7 +220,7 @@ export function WelcomeCard({ titleId, introId }: WelcomeCardProps) {
 
         <button
           type="submit"
-          className="min-h-11 rounded-full bg-taxi-400 px-6 text-base font-extrabold text-night-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-50"
+          className="min-h-11 rounded-full bg-taxi px-6 text-base font-extrabold text-on-taxi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           {copy('welcome.submit')}
         </button>

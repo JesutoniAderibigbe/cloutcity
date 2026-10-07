@@ -28,17 +28,17 @@ export function CloudSavePanel() {
       feature="cc-feature:cloud-save-panel"
       onClose={closeHudPanel}
     >
-      <p data-sync-status-line="" className="text-sm font-semibold text-taxi-400">
+      <p data-sync-status-line="" className="text-sm font-semibold text-taxi-ink">
         {syncStatusText(status)}
       </p>
-      <p className="text-sm text-ink-50">{copy(`sync.sheet.${status}`)}</p>
+      <p className="text-sm text-fg">{copy(`sync.sheet.${status}`)}</p>
       {controls !== null && status === 'conflict' ? (
         <div className="flex flex-col gap-1.5">
           <button
             type="button"
             data-sync-choice="keep-local"
             onClick={act(() => controls.resolveConflict('keep-local'))}
-            className={`${PANEL_BUTTON} bg-pink-400 text-night-950`}
+            className={`${PANEL_BUTTON} bg-taxi text-on-taxi`}
           >
             {copy('sync.sheet.keepLocal')}
           </button>
@@ -46,7 +46,7 @@ export function CloudSavePanel() {
             type="button"
             data-sync-choice="use-cloud"
             onClick={act(() => controls.resolveConflict('use-cloud'))}
-            className={`${PANEL_BUTTON} bg-night-800 text-ink-50`}
+            className={`${PANEL_BUTTON} bg-raised text-fg`}
           >
             {copy('sync.sheet.useCloud')}
           </button>
@@ -57,7 +57,7 @@ export function CloudSavePanel() {
           type="button"
           data-sync-retry=""
           onClick={act(controls.retryNow)}
-          className={`${PANEL_BUTTON} bg-night-800 text-ink-50`}
+          className={`${PANEL_BUTTON} bg-raised text-fg`}
         >
           {copy('sync.sheet.retry')}
         </button>
@@ -67,7 +67,7 @@ export function CloudSavePanel() {
           type="button"
           data-sync-use-cloud=""
           onClick={act(controls.useCloud)}
-          className={`${PANEL_BUTTON} bg-night-800 text-ink-50`}
+          className={`${PANEL_BUTTON} bg-raised text-fg`}
         >
           {copy('sync.sheet.useCloudGame')}
         </button>

@@ -34,6 +34,7 @@ export type CopyKey =
   | keyof (typeof import('@data/copy/profile/base.json'))['strings']
   | keyof (typeof import('@data/copy/rent/base.json'))['strings']
   | keyof (typeof import('@data/copy/safety/base.json'))['strings']
+  | keyof (typeof import('@data/copy/settings/base.json'))['strings']
   | keyof (typeof import('@data/copy/share/base.json'))['strings']
   | keyof (typeof import('@data/copy/shop/base.json'))['strings']
   | keyof (typeof import('@data/copy/sync/base.json'))['strings']

@@ -6,6 +6,7 @@ import {
   type KeyframeColors,
   type SceneKeyframe,
   type SceneDayNight,
+  type SkyColors,
   type ThemeDayNight,
 } from './types'
 
@@ -19,6 +20,7 @@ const COLOR_SLOTS = [
   'hemisphereSky',
   'hemisphereGround',
   'unlitTint',
+  'water',
 ] as const satisfies readonly (keyof KeyframeColors)[]
 
 function fail(message: string): never {
@@ -31,6 +33,31 @@ function fail(message: string): never {
  * out of clock order, a hold that runs into the next keyframe, an unknown token.
  */
 export function resolveDayNight(scene: SceneDayNight, theme: ThemeDayNight): DayNightModel {
+  return withSkyColors(scene, resolveSkyColors(theme))
+}
+
+/** theme.json's sky tokens per keyframe, resolved to lowercase hex. */
+export function resolveSkyColors(theme: ThemeDayNight): SkyColors {
+  const tokenHex = (token: string): string => {
+    const hex = theme.colors[token]
+    if (hex === undefined) fail(`unknown colour token "${token}"`)
+    if (!HEX.test(hex)) fail(`colour token "${token}" is not #rrggbb: "${hex}"`)
+    return hex.toLowerCase()
+  }
+  return Object.fromEntries(
+    DAY_NIGHT_KEYFRAME_IDS.flatMap((id) => {
+      const tokens = theme.sky[id] as KeyframeColors<string> | undefined
+      if (tokens === undefined) return []
+      return [[id, Object.fromEntries(COLOR_SLOTS.map((slot) => [slot, tokenHex(tokens[slot])]))]]
+    }),
+  ) as SkyColors
+}
+
+/**
+ * The model from scene.json `dayNight` and already resolved sky colours (the 3D chunk gets the
+ * colours from the server, the keyframes with the scene config), with the same checks.
+ */
+export function withSkyColors(scene: SceneDayNight, sky: SkyColors): DayNightModel {
   const { keyframes, quantizeMinutes, minSunElevationDeg } = scene
   if (!Number.isInteger(quantizeMinutes) || quantizeMinutes < 1) {
     fail(`quantizeMinutes must be a positive integer, got ${quantizeMinutes}`)
@@ -70,22 +97,15 @@ export function resolveDayNight(scene: SceneDayNight, theme: ThemeDayNight): Day
     }
   })
 
-  const tokenHex = (token: string): string => {
-    const hex = theme.colors[token]
-    if (hex === undefined) fail(`unknown colour token "${token}"`)
-    if (!HEX.test(hex)) fail(`colour token "${token}" is not #rrggbb: "${hex}"`)
-    return hex.toLowerCase()
-  }
-
   return {
     quantizeMinutes,
     minSunElevationDeg,
     keyframes: keyframes.map((keyframe) => {
-      const tokens = theme.sky[keyframe.id] as KeyframeColors<string> | undefined
-      if (tokens === undefined) fail(`theme has no sky colours for keyframe "${keyframe.id}"`)
-      const colors = Object.fromEntries(
-        COLOR_SLOTS.map((slot) => [slot, tokenHex(tokens[slot])]),
-      ) as unknown as KeyframeColors<string>
+      const colors = sky[keyframe.id] as KeyframeColors<string> | undefined
+      if (colors === undefined) fail(`theme has no sky colours for keyframe "${keyframe.id}"`)
+      for (const slot of COLOR_SLOTS) {
+        if (!HEX.test(colors[slot] ?? '')) fail(`keyframe "${keyframe.id}" ${slot} is not #rrggbb`)
+      }
       return { ...keyframe, colors }
     }),
   }

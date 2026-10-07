@@ -135,7 +135,7 @@ function NoticeDialog({
       <Link
         key={index}
         href="/conduct"
-        className="font-semibold text-taxi-400 underline underline-offset-2"
+        className="font-semibold text-taxi-ink underline underline-offset-2"
       >
         {copy('safety.report.conductLink')}
       </Link>
@@ -151,16 +151,16 @@ function NoticeDialog({
       aria-describedby={bodyId}
       data-account-notice={notice.kind}
       data-cc-feature="cc-feature:account-notices"
-      className="pointer-events-auto m-auto flex max-h-full w-full max-w-md flex-col gap-3 overflow-y-auto rounded-2xl border border-pink-400 bg-night-900 p-4 shadow-xl"
+      className="pointer-events-auto m-auto flex max-h-full w-full max-w-md flex-col gap-3 overflow-y-auto rounded-2xl border border-taxi glass p-4 shadow-xl"
     >
       <h2
         id={titleId}
         tabIndex={-1}
-        className="text-xl font-extrabold text-pink-400 focus:outline-none"
+        className="text-xl font-extrabold text-taxi-ink focus:outline-none"
       >
         {copy(step === 'appeal' ? 'safety.notice.appealTitle' : 'safety.notice.title')}
       </h2>
-      <div id={bodyId} className="flex flex-col gap-1 text-sm text-ink-50">
+      <div id={bodyId} className="flex flex-col gap-1 text-sm text-fg">
         <p>{copy(noticeKey(notice.kind))}</p>
         {notice.reason === null ? null : (
           <p>{copy('safety.notice.reason', { reason: copy(reportReasonKey(notice.reason)) })}</p>
@@ -168,11 +168,11 @@ function NoticeDialog({
         {notice.endsAt === null ? null : (
           <p>{copy('safety.notice.until', { date: formatDate(notice.endsAt) })}</p>
         )}
-        <p className="text-ink-300">{conduct}</p>
+        <p className="text-muted">{conduct}</p>
       </div>
       {step === 'appeal' ? (
         <form noValidate onSubmit={submitAppeal} className="flex flex-col gap-2">
-          <label htmlFor={appealId} className="text-sm font-semibold text-ink-50">
+          <label htmlFor={appealId} className="text-sm font-semibold text-fg">
             {copy('safety.notice.appealLabel')}
           </label>
           <textarea
@@ -185,15 +185,15 @@ function NoticeDialog({
             }}
             aria-invalid={shownError === undefined ? undefined : true}
             aria-describedby={`${appealId}-hint${shownError === undefined ? '' : ` ${appealId}-error`}`}
-            className="w-full rounded-xl border border-night-700 bg-night-950 px-3 py-2 text-base text-ink-50 focus-visible:outline-2 focus-visible:outline-taxi-400"
+            className="w-full rounded-xl border border-line bg-canvas px-3 py-2 text-base text-fg focus-visible:outline-2 focus-visible:outline-focus"
           />
-          <p id={`${appealId}-hint`} className="text-xs text-ink-300">
+          <p id={`${appealId}-hint`} className="text-xs text-muted">
             {copy('safety.notice.appealHint', {
               max: formatCount(moderationConfig.appealMaxChars),
             })}
           </p>
           {shownError === undefined ? null : (
-            <p id={`${appealId}-error`} className="text-sm font-semibold text-pink-400">
+            <p id={`${appealId}-error`} className="text-sm font-semibold text-danger">
               {copy(shownError)}
             </p>
           )}
@@ -201,14 +201,14 @@ function NoticeDialog({
             <button
               type="submit"
               aria-disabled={busy ? true : undefined}
-              className={`${SAFETY_BUTTON} bg-taxi-400 text-night-950`}
+              className={`${SAFETY_BUTTON} bg-taxi text-on-taxi`}
             >
               {busy ? copy('safety.notice.appealSending') : copy('safety.notice.appealSubmit')}
             </button>
             <button
               type="button"
               onClick={() => setStep('notice')}
-              className={`${SAFETY_BUTTON} bg-night-800 text-ink-50`}
+              className={`${SAFETY_BUTTON} bg-raised text-fg`}
             >
               {copy('safety.notice.appealCancel')}
             </button>
@@ -220,7 +220,7 @@ function NoticeDialog({
             type="button"
             onClick={() => void acknowledge()}
             aria-disabled={busy ? true : undefined}
-            className={`${SAFETY_BUTTON} bg-taxi-400 text-night-950`}
+            className={`${SAFETY_BUTTON} bg-taxi text-on-taxi`}
           >
             {copy('safety.notice.ok')}
           </button>
@@ -228,18 +228,18 @@ function NoticeDialog({
             <button
               type="button"
               onClick={() => setStep('appeal')}
-              className={`${SAFETY_BUTTON} bg-night-800 text-ink-50`}
+              className={`${SAFETY_BUTTON} bg-raised text-fg`}
             >
               {copy('safety.notice.appeal')}
             </button>
           ) : null}
         </div>
       )}
-      <p role="status" className="min-h-5 text-sm text-taxi-400">
+      <p role="status" className="min-h-5 text-sm text-taxi-ink">
         {sent ? copy('safety.notice.appealSent') : null}
       </p>
       {error === null ? null : (
-        <p role="alert" className="text-sm font-semibold text-pink-400">
+        <p role="alert" className="text-sm font-semibold text-danger">
           {error}
         </p>
       )}

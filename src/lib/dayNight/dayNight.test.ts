@@ -3,6 +3,8 @@ import {
   DEFAULT_DAY_NIGHT_MODEL as MODEL,
   DEFAULT_SCENE_DAY_NIGHT,
   DEFAULT_THEME_DAY_NIGHT,
+} from './fixture'
+import {
   lightingAt,
   lightingKey,
   minuteOfDay,

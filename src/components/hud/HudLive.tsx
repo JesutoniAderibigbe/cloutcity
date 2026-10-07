@@ -5,8 +5,8 @@
  * clock, its speed, clout with the goal line (the Goals button, S15), and the three stats. Each
  * cell subscribes to the slice of the save it shows, so a passing game minute re-renders the
  * clock and the stats, not the clout cell. It also starts the game clock (Q12), tells the Icon
- * moment mount when the moment is due, and tells the 3D map which home the player lives in and
- * where they stand.
+ * moment mount when the moment is due, tells the 3D map which home the player lives in and
+ * where they stand, and switches the interface theme with the clock (S04g, ThemeSync.ts).
  *
  * It renders a fragment of grid cells in the HudFrame grid (hudLayout.ts), box for box the same
  * as HudSkeleton.
@@ -29,13 +29,21 @@ import { onboardingStore } from '@/state/onboarding'
 import { setPlayerHome } from '@/state/playerHome'
 import { setPlayerSpot, useTripClockMinute } from '@/state/trip'
 import { gameStore, useGameStore } from '@/state/store'
+import type { UiThemeClock } from '@/lib/dayNight/uiSchedule'
 import { CloutMeter } from './CloutMeter'
 import { HUD_CELL } from './hudLayout'
+import { useThemeSync } from './ThemeSync'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/hud'
 
-export function HudLive() {
+export interface HudLiveProps {
+  /** The interface theme's keyframes and colours (S04g), from the server (src/lib/theme.ts). */
+  readonly themeClock: UiThemeClock
+}
+
+export function HudLive({ themeClock }: HudLiveProps) {
   useHudEffects()
+  useThemeSync(themeClock)
   return (
     <>
       <MoneyCell />
@@ -81,7 +89,7 @@ function MoneyCell() {
   const money = formatMoney(cash)
   return (
     <div data-hud-cell="money" className={HUD_CELL.money}>
-      <p className="truncate text-lg leading-tight font-extrabold text-taxi-400">
+      <p className="truncate text-lg leading-tight font-extrabold text-taxi-ink">
         <span className="sr-only">{copy('hud.cash')} </span>
         <span data-hud-value="money">{money}</span>
       </p>
@@ -97,13 +105,10 @@ function ClockCell() {
   return (
     <div data-hud-cell="clock" className={HUD_CELL.clock}>
       <p className="flex flex-col leading-tight">
-        <span data-hud-value="day" className="text-[11px] font-bold text-ink-300">
+        <span data-hud-value="day" className="text-[11px] font-bold text-muted">
           {copy('hud.day', { day: formatCount(view.day) })}
         </span>{' '}
-        <span
-          data-hud-value="time"
-          className="text-sm font-extrabold whitespace-nowrap text-ink-50"
-        >
+        <span data-hud-value="time" className="text-sm font-extrabold whitespace-nowrap text-fg">
           {view.time}
         </span>
       </p>
@@ -123,7 +128,7 @@ function SpeedCell() {
         data-hud-speed={speed}
         aria-label={copy('hud.speed.label', { speed: value })}
         onClick={() => setSpeed(next)}
-        className="flex h-11 w-11 items-center justify-center rounded-xl bg-night-800 text-sm font-extrabold text-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400"
+        className="flex h-11 w-11 items-center justify-center rounded-xl bg-raised text-sm font-extrabold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         {copy('hud.speed.value', { speed: value })}
       </button>
@@ -172,14 +177,14 @@ function CloutCell() {
         aria-expanded={open === 'goals'}
         aria-label={label}
         onClick={() => (open === 'goals' ? closeHudPanel() : openHudPanel('goals'))}
-        className={`absolute inset-0 flex items-start gap-1 rounded-xl px-2 pt-1.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-taxi-400 ${
-          open === 'goals' ? 'bg-pink-400/25' : 'bg-night-800'
+        className={`absolute inset-0 flex items-start gap-1 rounded-xl px-2 pt-1.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
+          open === 'goals' ? 'bg-taxi/25' : 'bg-raised'
         }`}
       >
         <svg
           aria-hidden="true"
           viewBox="0 0 24 24"
-          className="h-3.5 w-3.5 shrink-0 fill-none stroke-pink-400 stroke-2"
+          className="h-3.5 w-3.5 shrink-0 fill-none stroke-taxi-ink stroke-2"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
@@ -188,7 +193,7 @@ function CloutCell() {
         <span
           aria-hidden="true"
           data-hud-goal-line=""
-          className="min-w-0 truncate text-xs leading-3.5 font-extrabold text-pink-400"
+          className="min-w-0 truncate text-xs leading-3.5 font-extrabold text-taxi-ink"
         >
           {goal}
         </span>
@@ -196,7 +201,7 @@ function CloutCell() {
           <span
             aria-hidden="true"
             data-cc-notice="goals-ready"
-            className="ml-auto min-w-4 shrink-0 rounded-full bg-taxi-400 px-1 text-center text-[10px] leading-3.5 font-bold text-night-950"
+            className="ml-auto min-w-4 shrink-0 rounded-full bg-taxi px-1 text-center text-[10px] leading-3.5 font-bold text-on-taxi"
           >
             {formatCount(ready)}
           </span>
@@ -228,9 +233,9 @@ const STAT_ICON: Readonly<Record<StatKey, string>> = {
 }
 
 const STAT_BAR: Readonly<Record<StatKey, string>> = {
-  energy: 'bg-taxi-400',
-  hunger: 'bg-orange-400',
-  mood: 'bg-pink-400',
+  energy: 'bg-meter',
+  hunger: 'bg-meter',
+  mood: 'bg-meter',
 }
 
 /**
@@ -259,12 +264,12 @@ function StatsCell() {
           >
             <span aria-hidden="true" className="flex items-baseline gap-1 text-[11px] leading-none">
               <span className="hud-wide:hidden hud-short:inline">{STAT_ICON[id]}</span>
-              <span className="hidden truncate font-bold text-ink-300 hud-wide:inline hud-short:hidden">
+              <span className="hidden truncate font-bold text-muted hud-wide:inline hud-short:hidden">
                 {name}
               </span>
-              <span className="ml-auto font-bold text-ink-50">{formatCount(value)}</span>
+              <span className="ml-auto font-bold text-fg">{formatCount(value)}</span>
             </span>
-            <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-night-800">
+            <span aria-hidden="true" className="h-1.5 overflow-hidden rounded-full bg-raised">
               <span
                 className={`block h-full rounded-full ${STAT_BAR[id]}`}
                 style={{ width: `${(value / max) * 100}%` }}

@@ -7,7 +7,7 @@ import { copy } from '@/lib/copy'
 import '@/lib/copy/ns/place'
 
 export const PANEL_BUTTON =
-  'min-h-11 min-w-11 rounded-xl px-3 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
+  'min-h-11 min-w-11 rounded-xl px-3 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 /** Short screens (the sheet zone is tiny): a tighter frame for a scrolling panel. */
 const SHORT_SCREEN_FRAME =
@@ -72,7 +72,7 @@ export function PanelDialog({
       aria-labelledby={titleId}
       data-hud-panel-dialog={panel}
       data-cc-feature={feature}
-      className={`m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg ${
+      className={`m-2 flex flex-col gap-2 rounded-2xl border border-line glass p-3 shadow-lg ${
         scrollBody ? `max-h-[calc(100%-1rem)] min-h-0 ${SHORT_SCREEN_FRAME}` : ''
       }`}
     >
@@ -80,7 +80,7 @@ export function PanelDialog({
         <h2
           id={titleId}
           tabIndex={-1}
-          className="text-base leading-tight font-extrabold text-pink-400 focus:outline-none"
+          className="text-base leading-tight font-extrabold text-fg focus:outline-none"
         >
           {title}
         </h2>
@@ -88,7 +88,7 @@ export function PanelDialog({
           type="button"
           onClick={onClose}
           aria-label={copy('place.sheet.closeLabel', { place: title })}
-          className={`${PANEL_BUTTON} shrink-0 bg-night-800 text-center text-ink-50`}
+          className={`${PANEL_BUTTON} shrink-0 bg-raised text-center text-fg`}
         >
           {copy('place.sheet.close')}
         </button>
@@ -109,7 +109,7 @@ export function PanelDialog({
 /** The panel's live result line: what the last action did, in voice. */
 export function PanelStatus({ text }: { readonly text: string | null }) {
   return (
-    <p role="status" className="min-h-5 text-sm font-semibold text-taxi-400">
+    <p role="status" className="min-h-5 text-sm font-semibold text-taxi-ink">
       {text}
     </p>
   )

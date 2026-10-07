@@ -48,13 +48,13 @@ function NotConnected({ session }: { readonly session: GuestSessionState }) {
     <section
       data-me-offline={session.reason ?? session.status}
       aria-labelledby="me-offline-title"
-      className="flex flex-col gap-1 rounded-xl bg-night-800 p-3"
+      className="flex flex-col gap-1 rounded-xl bg-raised p-3"
     >
-      <h3 id="me-offline-title" className="font-bold text-ink-50">
+      <h3 id="me-offline-title" className="font-bold text-fg">
         {copy('profile.offline.title')}
       </h3>
-      <p className="text-sm text-ink-300">{copy(offlineReasonKey(session))}</p>
-      <p className="text-sm text-ink-300">{copy('profile.offline.hidden')}</p>
+      <p className="text-sm text-muted">{copy(offlineReasonKey(session))}</p>
+      <p className="text-sm text-muted">{copy('profile.offline.hidden')}</p>
     </section>
   )
 }
@@ -90,7 +90,7 @@ function OnlineProfile() {
 
   if (load.state === 'loading') {
     return (
-      <p role="status" className="text-sm text-ink-300">
+      <p role="status" className="text-sm text-muted">
         {copy('profile.load.loading')}
       </p>
     )
@@ -98,7 +98,7 @@ function OnlineProfile() {
   if (load.state === 'failed') {
     return (
       <div className="flex flex-col items-start gap-2">
-        <p role="alert" className="text-sm font-semibold text-pink-400">
+        <p role="alert" className="text-sm font-semibold text-danger">
           {copy('profile.load.failed')}
         </p>
         <button
@@ -107,7 +107,7 @@ function OnlineProfile() {
             setLoad({ state: 'loading' })
             setAttempt((value) => value + 1)
           }}
-          className={`${PANEL_BUTTON} bg-night-800 text-ink-50`}
+          className={`${PANEL_BUTTON} bg-raised text-fg`}
         >
           {copy('profile.load.retry')}
         </button>
@@ -125,7 +125,7 @@ function OnlineProfile() {
 
 function ConductLink() {
   return (
-    <p className="text-sm text-ink-300">
+    <p className="text-sm text-muted">
       {copyParts('profile.conduct.text').map((part, index) =>
         part.kind === 'text' ? (
           part.text
@@ -133,7 +133,7 @@ function ConductLink() {
           <Link
             key={index}
             href="/conduct"
-            className="font-semibold text-taxi-400 underline underline-offset-2"
+            className="font-semibold text-taxi-ink underline underline-offset-2"
           >
             {copy('profile.conduct.link')}
           </Link>

@@ -52,7 +52,7 @@ export function installSafetyTestHook(): void {
       if (zone === null) throw new Error('the sheet zone is not rendered')
       host = document.createElement('div')
       host.dataset.safetyHarness = ''
-      host.className = 'm-2 rounded-2xl border border-night-700 bg-night-900/95 p-3'
+      host.className = 'm-2 rounded-2xl border border-line glass p-3'
       zone.append(host)
       root = createRoot(host)
       root.render(

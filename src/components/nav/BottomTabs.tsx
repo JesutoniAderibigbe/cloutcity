@@ -36,7 +36,7 @@ export function BottomTabs() {
   return (
     <nav
       aria-label={copy('nav.main')}
-      className="h-full border-t border-night-700 bg-night-900/95 pb-[env(safe-area-inset-bottom,0px)]"
+      className="h-full border-t border-line glass pb-[env(safe-area-inset-bottom,0px)]"
     >
       <ul className="grid h-full grid-cols-4">
         {TABS.map((tab) => {
@@ -49,8 +49,8 @@ export function BottomTabs() {
                 data-hud-panel={tab.id === 'me' ? 'me' : undefined}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() => choose(tab.id)}
-                className={`flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-semibold focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-taxi-400 ${
-                  isActive ? 'text-taxi-400' : 'text-ink-300'
+                className={`flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-semibold focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${
+                  isActive ? 'text-taxi-ink' : 'text-muted'
                 }`}
               >
                 <span aria-hidden="true" className="text-xl leading-none">

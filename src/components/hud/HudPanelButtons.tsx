@@ -23,7 +23,7 @@ const BUTTONS = [
 ] as const satisfies readonly { panel: HudPanel; labelKey: CopyKey; icon: string }[]
 
 const BUTTON =
-  'min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
+  'min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 const toggle = (panel: HudPanel, open: HudPanel | null) =>
   open === panel ? closeHudPanel() : openHudPanel(panel)
@@ -41,8 +41,7 @@ export function HudPanelButtons() {
   const open = useHudPanel()
   const modalOpen = useModalOpen()
   if (modalOpen) return null
-  const shade = (panel: HudPanel) =>
-    open === panel ? 'bg-pink-400 text-night-950' : 'bg-night-800 text-ink-50'
+  const shade = (panel: HudPanel) => (open === panel ? 'bg-taxi text-on-taxi' : 'bg-raised text-fg')
   return (
     <div data-cc-feature="cc-feature:hud-panel-buttons" className="flex shrink-0 gap-1">
       {BUTTONS.map(({ panel, labelKey, icon }) => (

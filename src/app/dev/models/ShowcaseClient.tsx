@@ -25,7 +25,7 @@ export function ShowcaseClient({
       {status !== 'ready' && (
         <p
           role="status"
-          className="absolute right-2 bottom-2 rounded bg-black/60 px-2 py-1 text-xs text-white"
+          className="absolute right-2 bottom-2 rounded glass px-2 py-1 text-xs text-fg"
         >
           {status === 'error' ? error : loading}
         </p>

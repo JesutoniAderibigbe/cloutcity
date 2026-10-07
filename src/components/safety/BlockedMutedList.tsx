@@ -35,11 +35,11 @@ function PlayerList({
   const headingId = `me-${kind}-title`
   return (
     <div className="flex flex-col gap-1">
-      <h4 id={headingId} className="text-sm font-bold text-ink-50">
+      <h4 id={headingId} className="text-sm font-bold text-fg">
         {copy(kind === 'blocked' ? 'safety.list.blocked' : 'safety.list.muted')}
       </h4>
       {players.length === 0 ? (
-        <p className="text-sm text-ink-300">
+        <p className="text-sm text-muted">
           {copy(kind === 'blocked' ? 'safety.list.noneBlocked' : 'safety.list.noneMuted')}
         </p>
       ) : (
@@ -50,9 +50,9 @@ function PlayerList({
               <li
                 key={player.playerId}
                 data-safety-listed={kind}
-                className="flex items-center justify-between gap-2 rounded-xl bg-night-800 px-3 py-1"
+                className="flex items-center justify-between gap-2 rounded-xl bg-raised px-3 py-1"
               >
-                <span className="min-w-0 truncate text-ink-50">@{handle}</span>
+                <span className="min-w-0 truncate text-fg">@{handle}</span>
                 <button
                   type="button"
                   onClick={() => onUndo(player)}
@@ -63,7 +63,7 @@ function PlayerList({
                       : 'safety.actions.unmuteLabel',
                     { handle },
                   )}
-                  className={`${PANEL_BUTTON} shrink-0 bg-night-950 text-ink-50`}
+                  className={`${PANEL_BUTTON} shrink-0 bg-canvas text-fg`}
                 >
                   {copy(kind === 'blocked' ? 'safety.actions.unblock' : 'safety.actions.unmute')}
                 </button>
@@ -132,17 +132,17 @@ export function BlockedMutedList({ api }: { readonly api: SafetyApi }) {
 
   return (
     <section data-safety-lists="" aria-labelledby="me-safety-title" className="flex flex-col gap-2">
-      <h3 id="me-safety-title" className="font-bold text-ink-50">
+      <h3 id="me-safety-title" className="font-bold text-fg">
         {copy('safety.list.title')}
       </h3>
-      <p className="text-sm text-ink-300">{copy('safety.list.explain')}</p>
+      <p className="text-sm text-muted">{copy('safety.list.explain')}</p>
       {lists.state === 'loading' ? (
-        <p role="status" className="text-sm text-ink-300">
+        <p role="status" className="text-sm text-muted">
           {copy('safety.list.loading')}
         </p>
       ) : lists.state === 'failed' ? (
         <div className="flex flex-col items-start gap-2">
-          <p role="alert" className="text-sm font-semibold text-pink-400">
+          <p role="alert" className="text-sm font-semibold text-danger">
             {copy('safety.list.failed')}
           </p>
           <button
@@ -151,7 +151,7 @@ export function BlockedMutedList({ api }: { readonly api: SafetyApi }) {
               setLists({ state: 'loading' })
               setAttempt((value) => value + 1)
             }}
-            className={`${PANEL_BUTTON} bg-night-800 text-ink-50`}
+            className={`${PANEL_BUTTON} bg-raised text-fg`}
           >
             {copy('safety.list.retry')}
           </button>

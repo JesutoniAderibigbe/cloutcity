@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { copy, copyParts, type CopyKey } from '@/lib/copy'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/legal'
+import { StoredTheme } from './StoredTheme'
 
 /** A link a paragraph's `{slot}` placeholder stands for. */
 export interface LegalLink {
@@ -24,7 +25,7 @@ interface LegalPageProps {
   readonly links?: Readonly<Record<string, LegalLink>>
 }
 
-const LINK_CLASS = 'font-semibold text-taxi-400 underline underline-offset-2'
+const LINK_CLASS = 'font-semibold text-taxi-ink underline underline-offset-2'
 
 /** A copy string with its `{slot}` placeholders replaced by links. */
 function LinkedText({
@@ -54,29 +55,30 @@ function LinkedText({
 export function LegalPage({ titleKey, paragraphKeys, sections = [], links = {} }: LegalPageProps) {
   return (
     <main className="h-full overflow-y-auto overscroll-contain px-4 py-8">
+      <StoredTheme />
       <article className="mx-auto flex max-w-prose flex-col gap-4">
         <p
           role="note"
-          className="rounded-xl border border-taxi-400 px-3 py-2 text-sm font-semibold text-taxi-400"
+          className="rounded-xl border border-taxi px-3 py-2 text-sm font-semibold text-taxi-ink"
         >
           {copy('legal.placeholderNotice')}
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-pink-400">{copy(titleKey)}</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-fg">{copy(titleKey)}</h1>
         {paragraphKeys.map((key) => (
-          <p key={key} className="text-ink-50">
+          <p key={key} className="text-fg">
             <LinkedText textKey={key} links={links} />
           </p>
         ))}
         {sections.map((section) => (
           <section key={section.headingKey} className="flex flex-col gap-2">
-            <h2 className="text-xl font-bold text-ink-50">{copy(section.headingKey)}</h2>
+            <h2 className="text-xl font-bold text-fg">{copy(section.headingKey)}</h2>
             {(section.paragraphKeys ?? []).map((key) => (
-              <p key={key} className="text-ink-50">
+              <p key={key} className="text-fg">
                 <LinkedText textKey={key} links={links} />
               </p>
             ))}
             {section.listKeys === undefined ? null : (
-              <ul className="flex list-disc flex-col gap-1 pl-5 text-ink-50">
+              <ul className="flex list-disc flex-col gap-1 pl-5 text-fg">
                 {section.listKeys.map((key) => (
                   <li key={key}>
                     <LinkedText textKey={key} links={links} />
@@ -88,7 +90,7 @@ export function LegalPage({ titleKey, paragraphKeys, sections = [], links = {} }
         ))}
         <Link
           href="/"
-          className="flex min-h-11 items-center self-start font-semibold text-taxi-400 underline underline-offset-2"
+          className="flex min-h-11 items-center self-start font-semibold text-taxi-ink underline underline-offset-2"
         >
           {copy('legal.back')}
         </Link>

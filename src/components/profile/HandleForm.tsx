@@ -150,17 +150,17 @@ export function HandleForm({
 
   return (
     <section aria-labelledby={`${inputId}-title`} className="flex flex-col gap-2">
-      <h3 id={`${inputId}-title`} className="font-bold text-ink-50">
+      <h3 id={`${inputId}-title`} className="font-bold text-fg">
         {copy('profile.handle.title')}
       </h3>
       {profile.handle_generated ? (
-        <p className="text-sm text-ink-300">{copy('profile.handle.generated')}</p>
+        <p className="text-sm text-muted">{copy('profile.handle.generated')}</p>
       ) : null}
-      <p data-handle-allowance="" className="text-sm text-ink-300">
+      <p data-handle-allowance="" className="text-sm text-muted">
         {allowanceText(profile)}
       </p>
       <form noValidate onSubmit={onSubmit} className="flex flex-col gap-2">
-        <label htmlFor={inputId} className="text-sm font-semibold text-ink-50">
+        <label htmlFor={inputId} className="text-sm font-semibold text-fg">
           {copy('profile.handle.label')}
         </label>
         <input
@@ -175,9 +175,9 @@ export function HandleForm({
           onChange={(event) => update(event.target.value)}
           aria-describedby={describedBy}
           aria-invalid={shownError === null ? undefined : true}
-          className="min-h-11 w-full rounded-xl border border-night-700 bg-night-950 px-3 text-base text-ink-50 focus-visible:outline-2 focus-visible:outline-taxi-400"
+          className="min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-base text-fg focus-visible:outline-2 focus-visible:outline-focus"
         />
-        <p id={hintId} className="text-xs text-ink-300">
+        <p id={hintId} className="text-xs text-muted">
           {copy('profile.handle.hint', {
             min: formatCount(handlesConfig.minLength),
             max: formatCount(handlesConfig.maxLength),
@@ -185,20 +185,20 @@ export function HandleForm({
         </p>
         {raw === '' ? null : (
           <div id={previewId} data-handle-preview={preview} className="text-sm">
-            <p className="font-semibold text-taxi-400">
+            <p className="font-semibold text-taxi-ink">
               {copy('profile.handle.preview', { handle: preview })}
             </p>
             {preview === raw ? null : (
-              <p className="text-ink-300">{copy('profile.handle.previewChanged')}</p>
+              <p className="text-muted">{copy('profile.handle.previewChanged')}</p>
             )}
           </div>
         )}
         {shownError === null ? null : (
-          <p id={errorId} data-handle-error="" className="text-sm font-semibold text-pink-400">
+          <p id={errorId} data-handle-error="" className="text-sm font-semibold text-danger">
             {copy(shownError.key, shownError.vars)}
           </p>
         )}
-        <p role="status" className="min-h-5 text-sm text-ink-300">
+        <p role="status" className="min-h-5 text-sm text-muted">
           {checking
             ? copy('profile.handle.checking', { handle: preview })
             : answer?.state === 'available'
@@ -208,7 +208,7 @@ export function HandleForm({
         <button
           type="submit"
           aria-disabled={saving ? true : undefined}
-          className={`${PANEL_BUTTON} self-start bg-taxi-400 text-night-950`}
+          className={`${PANEL_BUTTON} self-start bg-taxi text-on-taxi`}
         >
           {saving ? copy('profile.handle.saving') : copy('profile.handle.save')}
         </button>

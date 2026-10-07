@@ -15,13 +15,13 @@ export function CrisisPanel() {
     <section
       data-crisis-panel=""
       aria-labelledby="crisis-panel-title"
-      className="flex flex-col gap-1 rounded-xl border-2 border-taxi-400 bg-night-950 p-3"
+      className="flex flex-col gap-1 rounded-xl border-2 border-taxi bg-canvas p-3"
     >
-      <h4 id="crisis-panel-title" className="font-extrabold text-taxi-400">
+      <h4 id="crisis-panel-title" className="font-extrabold text-taxi-ink">
         {copy('safety.crisis.title')}
       </h4>
-      <p className="text-sm text-ink-50">{copy('safety.crisis.body')}</p>
-      <ul className="flex list-disc flex-col gap-1 pl-5 text-sm font-semibold text-ink-50">
+      <p className="text-sm text-fg">{copy('safety.crisis.body')}</p>
+      <ul className="flex list-disc flex-col gap-1 pl-5 text-sm font-semibold text-fg">
         <li>{copy('safety.crisis.988')}</li>
         <li>{copy('safety.crisis.911')}</li>
         <li>{copy('safety.crisis.outsideUs')}</li>

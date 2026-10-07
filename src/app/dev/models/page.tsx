@@ -52,7 +52,7 @@ export default async function ModelShowcasePage({
         error={copy('models.showcase.error')}
       />
       {params.chrome !== '0' && (
-        <nav className="absolute top-2 left-2 flex flex-col gap-1 rounded-lg bg-black/60 p-2 text-xs text-white">
+        <nav className="absolute top-2 left-2 flex flex-col gap-1 rounded-lg glass p-2 text-xs text-fg">
           {rows.map((row) => (
             <div key={row.key} className="flex flex-wrap items-center gap-1">
               <span className="font-semibold">{row.label}</span>
@@ -61,7 +61,7 @@ export default async function ModelShowcasePage({
                   key={value}
                   href={href({ [row.key]: value })}
                   aria-current={value === row.current ? 'page' : undefined}
-                  className="inline-flex min-h-11 items-center rounded px-2 underline aria-[current=page]:bg-white/20 aria-[current=page]:no-underline"
+                  className="inline-flex min-h-11 items-center rounded px-2 underline aria-[current=page]:bg-pressed aria-[current=page]:no-underline"
                 >
                   {copy(`models.showcase.${row.key}.${value}` as Parameters<typeof copy>[0])}
                 </Link>

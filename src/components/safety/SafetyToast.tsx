@@ -74,9 +74,9 @@ function ToastView({ toast }: { readonly toast: Toast }) {
       ref={ref}
       data-safety-toast=""
       data-cc-feature="cc-feature:safety-toast"
-      className="mx-2 flex items-center gap-2 rounded-2xl border border-taxi-400 bg-night-900/95 px-3 py-1 shadow-lg backdrop-blur"
+      className="mx-2 flex items-center gap-2 rounded-2xl border border-taxi glass px-3 py-1 shadow-lg"
     >
-      <p className="min-w-0 flex-1 text-xs leading-tight text-ink-50">{toast.text}</p>
+      <p className="min-w-0 flex-1 text-xs leading-tight text-fg">{toast.text}</p>
       {toast.undo !== null && undoOpen ? (
         <button
           type="button"
@@ -86,7 +86,7 @@ function ToastView({ toast }: { readonly toast: Toast }) {
             toast.undo?.run()
             setUndoOpen(false)
           }}
-          className={`${SAFETY_BUTTON} shrink-0 bg-taxi-400 text-night-950`}
+          className={`${SAFETY_BUTTON} shrink-0 bg-taxi text-on-taxi`}
         >
           {copy('safety.toast.undo')}
         </button>
@@ -95,7 +95,7 @@ function ToastView({ toast }: { readonly toast: Toast }) {
         type="button"
         aria-label={copy('safety.toast.closeLabel')}
         onClick={() => dismissSafetyToast(toast.id)}
-        className={`${SAFETY_BUTTON} shrink-0 bg-night-800 text-ink-50`}
+        className={`${SAFETY_BUTTON} shrink-0 bg-raised text-fg`}
       >
         {copy('safety.toast.close')}
       </button>

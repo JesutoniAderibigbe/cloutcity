@@ -24,10 +24,10 @@ import { PANEL_BUTTON, PanelDialog, PanelStatus } from './PanelDialog'
 import '@/lib/copy/ns/goals'
 
 const STATUS_CLASS: Readonly<Record<GoalView['status'], string>> = {
-  'coming-soon': 'text-ink-300',
-  'in-progress': 'text-ink-300',
-  done: 'text-taxi-400',
-  claimed: 'text-pink-400',
+  'coming-soon': 'text-muted',
+  'in-progress': 'text-muted',
+  done: 'text-taxi-ink',
+  claimed: 'text-success',
 }
 
 /**
@@ -82,13 +82,13 @@ export function GoalsPanel() {
       onClose={closeHudPanel}
       scrollBody
     >
-      <p className="text-sm text-ink-50">{copy('goals.intro')}</p>
-      <p data-goals-note="" className="text-xs text-ink-300">
+      <p className="text-sm text-fg">{copy('goals.intro')}</p>
+      <p data-goals-note="" className="text-xs text-muted">
         {copy('goals.note')}
       </p>
       {prestige.badges.length === 0 ? null : (
         <section aria-label={copy('goals.badges.heading')} className="flex flex-col gap-1">
-          <h3 className="text-xs font-bold text-ink-300 uppercase">
+          <h3 className="text-xs font-bold text-muted uppercase">
             {copy('goals.badges.heading')}{' '}
             <span className="font-semibold normal-case">
               {copy('goals.run', { run: formatCount(goals.run) })}
@@ -99,7 +99,7 @@ export function GoalsPanel() {
               <li
                 key={badge}
                 data-badge={badge}
-                className="rounded-full bg-pink-400 px-2 py-0.5 text-xs font-bold text-night-950"
+                className="rounded-full bg-taxi px-2 py-0.5 text-xs font-bold text-on-taxi"
               >
                 {badgeName(badge)}
               </li>
@@ -115,24 +115,24 @@ export function GoalsPanel() {
               key={view.id}
               data-goal={view.id}
               data-goal-status={view.status}
-              className="flex flex-col gap-1 rounded-xl bg-night-950/60 p-2"
+              className="flex flex-col gap-1 rounded-xl bg-canvas/60 p-2"
             >
               <div className="flex items-baseline justify-between gap-2">
-                <p className="font-semibold text-ink-50">{goalName(view.id)}</p>
+                <p className="font-semibold text-fg">{goalName(view.id)}</p>
                 <span className={`shrink-0 text-xs font-bold ${STATUS_CLASS[view.status]}`}>
                   {goalStatusText(view)}
                 </span>
               </div>
-              <p className="text-xs text-ink-300">{goalHint(view.id)}</p>
+              <p className="text-xs text-muted">{goalHint(view.id)}</p>
               <progress
                 aria-label={goalProgressLabel(view)}
                 max={view.progress.target}
                 value={view.progress.current}
-                className="h-2 w-full appearance-none overflow-hidden rounded-full bg-night-800 [&::-moz-progress-bar]:bg-pink-400 [&::-webkit-progress-bar]:bg-night-800 [&::-webkit-progress-value]:bg-pink-400"
+                className="h-2 w-full appearance-none overflow-hidden rounded-full bg-track [&::-moz-progress-bar]:bg-meter [&::-webkit-progress-bar]:bg-track [&::-webkit-progress-value]:bg-meter"
               />
-              <p className="text-xs text-ink-50">{rewardLine(view)}</p>
+              <p className="text-xs text-fg">{rewardLine(view)}</p>
               {view.capped && view.status === 'done' ? (
-                <p data-goal-capped="" className="text-xs text-taxi-400">
+                <p data-goal-capped="" className="text-xs text-taxi-ink">
                   {copy('goals.capped')}
                 </p>
               ) : null}
@@ -145,8 +145,8 @@ export function GoalsPanel() {
                   onClick={(event) => act(event, view.id, () => claim(view))}
                   className={`${PANEL_BUTTON} self-start text-sm ${
                     view.claimable
-                      ? 'bg-pink-400 text-night-950'
-                      : 'cursor-not-allowed bg-night-800 text-ink-300'
+                      ? 'bg-taxi text-on-taxi'
+                      : 'cursor-not-allowed bg-raised text-muted'
                   }`}
                 >
                   {button.text}
