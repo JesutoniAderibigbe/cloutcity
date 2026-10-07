@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { engineConfig } from '@/engine/config'
-import { giftCount, isWearable, shopItems, type GiftDef, type WearableDef } from '@/engine/items'
+import { giftCount, isDecor, isWearable, shopItems, type ShopItemDef } from '@/engine/items'
 import { shopBlock } from '@/engine/placeActions'
 import type { Place } from '@/engine/places'
 import { ignoreKeyRepeat } from '@/components/overlay/useActionGuard'
@@ -30,17 +30,16 @@ const BUTTON =
  * which re-runs them on every buy.
  */
 function buyBlockReason(
-  item: WearableDef | GiftDef,
+  item: ShopItemDef,
   place: Place,
   state: Pick<GameState, 'clock' | 'player'>,
 ): string | null {
   const block = shopBlock(place, state, engineConfig)
   if (block !== null) return placeBlockReason(block, place)
   const { inventory, cash } = state.player
-  if (isWearable(item)) {
-    if (inventory.wearables.some((owned) => owned.itemId === item.id)) {
-      return alreadyOwnedLabel(item.id)
-    }
+  if (isWearable(item) || isDecor(item)) {
+    const owned = isWearable(item) ? inventory.wearables : inventory.decor
+    if (owned.some((entry) => entry.itemId === item.id)) return alreadyOwnedLabel(item.id)
   } else {
     const max = engineConfig.items.maxGiftStack
     if (giftCount(inventory, item.id) >= max) return stackFullLabel(item.id, max)

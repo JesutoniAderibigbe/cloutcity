@@ -309,7 +309,21 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   slot (top, bottom, shoes, accessory, face); gifts stack and are consumed on yourself or an
   NPC (`{ npcId }` with an `npc-` id), never another player. Resale is `sellValue` (data,
   `floor(price * resalePct[rarity] / 100)`), less `depreciationPctPerGameDay` per game day
-  owned for wearables, never below `minResalePct` (`balance.json` `items`).
+  owned for wearables and decor, never below `minResalePct` (`balance.json` `items`). Decor is
+  owned once and sells back out of its slot; selling a wearable or decor kept through prestige
+  is refused (`PRESTIGE_KEPT`).
+- **Apartment** (`home.ts`, slots in `data/homes/interiors.json`, numbers in `balance.json`
+  `home`): decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface,
+  `homeScore`, and at least two colour `variants`, each a palette token and a `colors.*` copy
+  name) is placed in a slot of its kind in the current home (`placeDecor`, `removeDecor`,
+  `setDecorVariant`). Home score is the home's `baseScore` plus placed decor's `homeScore`; home
+  clout is that score capped at `maxClout` and counts toward total, goal and level clout.
+  `moveHome` is instant and refused, in order, for the current home, a home in a borough the
+  level has not opened (`HOME_BOROUGHS` in `src/lib/data/homes.ts`) and a move the player cannot
+  afford (`canAffordMove`); it pays the move-in cost, keeps decor in slots the new home shares and
+  logs the move (`apartment.moveLog`). To add decor: add the item with its `decor` block to
+  `items.json` (cloutValue and styleValue 0, no stat effects), its name and description to
+  `data/copy/items/`, any new colour name to `data/copy/colors/`, and run `npm test`.
 - **Events** (`events.ts`, data in `data/events/events.json`): each event lists conditions
   (personal-clock `hours`, `minDay`, `boroughs`, `locationIds`/`locationCategories`, `stats`,
   `cash`, `clout`, `items`), a `weight`, an optional `cooldownMin` or `once`, and two or three
@@ -334,7 +348,7 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   `data/config/progression.json`): goals are facts read from the save (first paycheck, outfit,
   landmark visit, club night, one per clout level; first friend is coming soon), recorded by
   `syncGoals` after every state-changing store action. Level goals read goal clout (earned minus
-  granted, plus items, never premium), so granted value never counts toward a goal (ECON-1).
+  granted, plus items and home, never premium), so granted value never counts toward a goal (ECON-1).
   Icon is earned: every clout level reads total clout except Icon (the victory goal's level),
   which also needs goal clout at its threshold, so the Icon level-up and the victory screen land
   together and grants or premium clout never reach Icon (`levelClout` in `clout.ts`).

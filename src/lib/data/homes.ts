@@ -12,3 +12,15 @@ export function lowestRentHome(
 ): HomeIdLiteral {
   return HOME_IDS.reduce((lowest, id) => (rentPerWeek[id] < rentPerWeek[lowest] ? id : lowest))
 }
+
+/**
+ * The borough each home is in (S16): moving into a home needs its borough open to the player
+ * (src/engine/home.ts `homeLock`, through the borough rules in src/engine/boroughs.ts). Kept here,
+ * beside HOME_IDS, so the engine needs no home content file; S05's data/homes/homes.json places
+ * each home on the map in the same borough.
+ */
+export const HOME_BOROUGHS = {
+  'queens-room': 'queens',
+  'brooklyn-1br': 'brooklyn',
+  'manhattan-loft': 'manhattan',
+} as const satisfies Readonly<Record<HomeIdLiteral, string>>

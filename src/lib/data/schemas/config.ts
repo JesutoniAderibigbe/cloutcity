@@ -86,6 +86,8 @@ const HEX_COLOR = /^#[0-9a-f]{6}$/i
 const TOKEN_NAME = /^[a-z]+-\d{2,3}$/
 
 const tokenRef = z.string().regex(TOKEN_NAME)
+/** A palette token name (`pink-400`), never a hex value; theme.json must define it. */
+export const PaletteTokenRefSchema = tokenRef
 
 /**
  * The 3D city's colours, as palette token names (never hex), so the scene and the DOM share one
@@ -541,6 +543,21 @@ export const BalanceConfigSchema = z
       moveInCost: z.partialRecord(z.enum(HOME_IDS), dollars),
     }),
     /**
+     * The apartment (S16, src/engine/home.ts; TUNE-8 placeholders). A home's score is its
+     * `baseScore` plus the `homeScore` of every decor item placed there; home clout is that score
+     * capped at `maxClout`. `moveLogMax` is how many moves the save keeps (newest last).
+     */
+    home: z.strictObject({
+      baseScore: z.strictObject(
+        Object.fromEntries(HOME_IDS.map((id) => [id, z.int().nonnegative()])) as Record<
+          (typeof HOME_IDS)[number],
+          z.ZodInt
+        >,
+      ),
+      maxClout: positiveInt,
+      moveLogMax: positiveInt,
+    }),
+    /**
      * Missed rent. Each consecutive due date the player cannot pay in full adds that week's
      * rent to what they owe, plus `lateFees[missed - 1]` (0 is a warning). On the
      * `evictAfterMissed`-th miss the player is evicted to the lowest-rent home.
@@ -673,6 +690,19 @@ export const BalanceConfigSchema = z
       path: ['housing', 'moveInCost'],
     },
   )
+  .refine(({ home }) => Object.values(home.baseScore).every((score) => score <= home.maxClout), {
+    error: 'home.baseScore must not exceed home.maxClout',
+    path: ['home', 'baseScore'],
+  })
+  .refine(({ home, start }) => home.baseScore[start.home] === 0, {
+    // The start home adds no clout, so a new player (and the economy bot) starts at 0.
+    error: 'the start home must have a base score of 0',
+    path: ['home', 'baseScore'],
+  })
+  .refine(({ home, clout }) => home.maxClout < (clout.levels.at(-1)?.minClout ?? 0), {
+    error: 'home.maxClout must be below the top clout level',
+    path: ['home', 'maxClout'],
+  })
   .refine((balance) => balance.rent.lateFees.length === balance.rent.evictAfterMissed - 1, {
     error: 'rent.lateFees needs one fee for each miss before eviction',
     path: ['rent', 'lateFees'],

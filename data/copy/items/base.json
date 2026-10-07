@@ -37,6 +37,18 @@
     "items.slots.face.name": "Makeup",
     "items.rarity.common.name": "Common",
     "items.rarity.medium.name": "Medium",
-    "items.rarity.rare.name": "Rare"
+    "items.rarity.rare.name": "Rare",
+    "items.fairyStringLights.name": "Fairy string lights",
+    "items.fairyStringLights.description": "A strand of warm little bulbs to hang on a wall.",
+    "items.windowsillMonstera.name": "Windowsill monstera",
+    "items.windowsillMonstera.description": "A leafy monstera in a pot, made for a sunny sill.",
+    "items.thriftFlatweaveRug.name": "Thrift flatweave rug",
+    "items.thriftFlatweaveRug.description": "A woven flat rug from a thrift store.",
+    "items.crateRecordPlayer.name": "Crate record player",
+    "items.crateRecordPlayer.description": "A record player on a milk crate of vinyl.",
+    "items.customNeonSign.name": "Custom neon sign",
+    "items.customNeonSign.description": "A glowing neon sign made to order.",
+    "items.cloudLoungeChair.name": "Cloud lounge chair",
+    "items.cloudLoungeChair.description": "An oversized, extra-soft lounge chair."
   }
 }
