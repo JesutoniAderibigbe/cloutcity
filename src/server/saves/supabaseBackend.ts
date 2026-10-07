@@ -105,6 +105,18 @@ export function supabaseSaveBackend(client: ServiceClient): SaveBackend {
             acceptedAt: row.accepted_at,
             burstCreditMinutes: row.burst_credit_minutes,
             paceCredit: { cash: row.pace_credit_cash, clout: row.pace_credit_clout },
+            baseline:
+              row.base_actions === null ||
+              row.base_minute === null ||
+              row.base_run === null ||
+              row.base_prestige_count === null
+                ? null
+                : {
+                    actions: row.base_actions,
+                    minute: row.base_minute,
+                    run: row.base_run,
+                    prestigeCount: row.base_prestige_count,
+                  },
           }
     },
 

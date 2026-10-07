@@ -29,7 +29,12 @@ const DEVICE = '00000000-0000-4000-8000-0000000000d1'
 const logger = createLogger({ sink: () => {} })
 
 /** A backend that behaves like commit_save: it stores what it accepts, credits included. */
-function liveBackend(start: StoredSave, ageMinutes: number, grantKeys: string[] = []) {
+function liveBackend(
+  start: StoredSave,
+  ageMinutes: number,
+  grantKeys: string[] = [],
+  withBaselines = true,
+) {
   let save: StoredSave = start
   let now = NOW
   const history = new Map<number, HistorySave>()
@@ -37,10 +42,19 @@ function liveBackend(start: StoredSave, ageMinutes: number, grantKeys: string[] 
   const ledger = new Map<number, LedgerRevision>()
   const remember = (revision: number, entry: HistorySave) => {
     history.set(revision, entry)
+    const data = entry.data as SaveState
     ledger.set(revision, {
       acceptedAt: entry.acceptedAt,
       burstCreditMinutes: entry.burstCreditMinutes,
       paceCredit: entry.paceCredit,
+      baseline: withBaselines
+        ? {
+            actions: data.actions,
+            minute: data.clock.minute,
+            run: data.goals.run,
+            prestigeCount: data.prestige.count,
+          }
+        : null,
     })
     // Like commit_save, the full history keeps only the newest sync.json historyKeep saves.
     for (const old of [...history.keys()].sort((a, b) => a - b)) {
@@ -530,5 +544,142 @@ describe('keep this device from a revision the history trimmed: the revision led
       logger,
     )
     expect(cash.status).toBe(422)
+  })
+})
+
+/**
+ * A long honest run on both devices: 2000 taps and 20 game days when they last shared revision
+ * 10. Device X then uploads six times in six minutes (history trims 10). Device Y played 20 more
+ * taps offline for 10 real minutes and keeps its game.
+ */
+async function longRunTrimmed(idleDays = 0, withBaselines = true) {
+  const base = initialSave(config)
+  const shared: SaveState = {
+    ...base,
+    actions: 2000,
+    clock: { minute: (20 + idleDays) * 1440, remainderMs: 0 },
+  }
+  const live = liveBackend(
+    {
+      revision: 10,
+      saveVersion: SAVE_VERSION,
+      data: shared,
+      acceptedAt: new Date(NOW).toISOString(),
+      deviceId: DEVICE,
+      burstCreditMinutes: 5,
+      paceCredit: serverCeilings().paceCreditCap,
+    },
+    7 * 24 * 60,
+    [],
+    withBaselines,
+  )
+  let save = shared
+  for (let revision = 10; revision < 16; revision++) {
+    live.tick(60_000)
+    save = {
+      ...save,
+      actions: save.actions + 1,
+      clock: { ...save.clock, minute: save.clock.minute + 30 },
+    }
+    const r = await handleUpload(
+      { authorization: 'Bearer x', bodyText: body(save, { baseRevision: revision }) },
+      live.backend,
+      serverCeilings(),
+      live.now(),
+      logger,
+    )
+    expect(r.status).toBe(200)
+  }
+  expect(await live.backend.saveAt(USER, 10)).toBeNull()
+  live.tick(4 * 60_000)
+  const mine: SaveState = {
+    ...shared,
+    actions: shared.actions + 20,
+    clock: { ...shared.clock, minute: shared.clock.minute + 300 },
+  }
+  return { live, mine, shared }
+}
+
+const keep = (
+  live: Awaited<ReturnType<typeof longRunTrimmed>>['live'],
+  save: SaveState,
+  from: number,
+) =>
+  handleUpload(
+    {
+      authorization: 'Bearer x',
+      bodyText: body(save, { baseRevision: 16, overrideFromRevision: from }),
+    },
+    live.backend,
+    serverCeilings(),
+    live.now(),
+    logger,
+  )
+
+describe('keep this device from a trimmed revision: the ledger baselines (R1)', () => {
+  it('an honest long run kept from a trimmed revision is accepted', async () => {
+    const { live, mine } = await longRunTrimmed()
+    const result = await keep(live, mine, 10)
+    expect({ status: result.status, findings: findingsOf(live.backend) }).toEqual({
+      status: 200,
+      findings: undefined,
+    })
+  })
+
+  it('control: the same game with override 0 (account age) is accepted', async () => {
+    const { live, mine } = await longRunTrimmed()
+    const result = await keep(live, mine, 0)
+    expect({ status: result.status, findings: findingsOf(live.backend) }).toEqual({
+      status: 200,
+      findings: undefined,
+    })
+  })
+
+  it('more taps above the baseline than the time since the revision allows is refused', async () => {
+    const { live, mine, shared } = await longRunTrimmed()
+    // Revision 10 was accepted 10 minutes ago, with 5 minutes of burst: 15 minutes of taps.
+    const forged = {
+      ...mine,
+      actions: shared.actions + 15 * serverCeilings().actionsPerRealMinute + 1,
+    }
+    const result = await keep(live, forged, 10)
+    expect(result.status).toBe(422)
+    expect(findingsOf(live.backend)).toContain('action-rate')
+  })
+
+  it('without baselines (an old ledger row) the whole run is measured from the account age', async () => {
+    const { live, mine } = await longRunTrimmed(0, false)
+    expect((await live.backend.ledgerAt(USER, 10))?.baseline).toBeNull()
+    expect((await keep(live, mine, 10)).status).toBe(200)
+    // Account age (a week) is the budget: past it, refused.
+    const other = await longRunTrimmed(0, false)
+    const forged = {
+      ...other.mine,
+      actions: other.shared.actions + 7 * 24 * 60 * serverCeilings().actionsPerRealMinute,
+    }
+    expect((await keep(other.live, forged, 10)).status).toBe(422)
+  })
+
+  it('a kept game in another run than the revision falls back to the account-age path', async () => {
+    const { live, shared } = await longRunTrimmed()
+    // Device Y finished the run and started run 2 offline: 30 taps in the new run, below the
+    // revision's 2000. Measured from that baseline it would read as going back.
+    const nextRun: SaveState = {
+      ...shared,
+      actions: 30,
+      clock: { ...shared.clock, minute: shared.clock.minute + 600 },
+      goals: { ...shared.goals, run: 2, achieved: {} },
+      prestige: {
+        count: 1,
+        badges: ['prestige-1'],
+        history: [
+          { run: 1, endedAt: shared.clock.minute + 60, issuedAtMs: NOW, badge: 'prestige-1' },
+        ],
+      },
+    }
+    const result = await keep(live, nextRun, 10)
+    expect(findingsOf(live.backend) ?? []).not.toContain('regressed')
+    expect(findingsOf(live.backend) ?? []).not.toContain('action-rate')
+    expect(result.status).toBe(200)
   })
 })

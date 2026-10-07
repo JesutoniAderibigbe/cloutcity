@@ -330,6 +330,12 @@ export interface UploadContext {
    * prestige-run clout check counts from this save too.
    */
   readonly head?: SaveState
+  /**
+   * For a branch without its shared save: the shared revision's tap count and clock minute (the
+   * revision ledger), when the upload is in that revision's run. The taps and clock window then
+   * start there instead of at the run's start.
+   */
+  readonly baseline?: { readonly actions: number; readonly minute: number }
 }
 
 /** Why a verdict is what it is. Reject codes are listed in `REJECTING`. */
@@ -416,6 +422,8 @@ interface Window {
   readonly actions: number | null
   /** What finished runs count from: `prev`, or the account's save for a branch without it. */
   readonly runsFrom: SaveState | null
+  /** Where taps and the clock count from when there is no `prev` (`UploadContext.baseline`). */
+  readonly baseline: { readonly actions: number; readonly minute: number } | null
   /**
    * The counted taps the window's earnings must fit: `actions`, or for a run that started inside
    * a real-time window (a prestige since `prev`) every tap of that run; null when nothing bounds
@@ -486,6 +494,7 @@ export function checkUpload(
     realMinutes: Math.max(0, ctx.realMinutesSinceAccept) + credit,
     actions: base === null ? null : save.actions - base.actions,
     runsFrom: prev ?? ctx.head ?? null,
+    baseline: prev === null ? (ctx.baseline ?? null) : null,
     earningTaps:
       base !== null ? save.actions - base.actions : !ctx.firstUpload ? save.actions : null,
   }
@@ -971,18 +980,24 @@ function checkPace(
   const tapRate = ceilings.actionsPerRealMinute
   // With no previous save (a branch the history no longer keeps), the whole run is the window.
   const entries = prev === null ? 0 : save.player.clout.nextSeq - prev.player.clout.nextSeq
-  const counted = window.actions ?? save.actions
+  const { baseline } = window
+  const counted =
+    window.actions ?? (baseline === null ? save.actions : save.actions - baseline.actions)
+  // Behind the shared revision's taps or clock: the save went back.
+  if (baseline !== null && (counted < 0 || save.clock.minute < baseline.minute)) {
+    findings.push('regressed')
+  }
   const tapMinutes = Math.max(0, counted, entries) / tapRate
   if (tapMinutes > window.realMinutes) findings.push('action-rate')
   // A fresh run in the window: the taps the previous run made after `prev` are counted nowhere,
   // so they are allowed for at the tap rate over the whole window.
   const clockTaps =
     prev === null
-      ? save.actions
+      ? Math.max(0, counted)
       : window.actions === null
         ? save.actions + tapRate * window.realMinutes
         : Math.max(0, window.actions)
-  const from = prev === null ? window.fromMinute : prev.clock.minute
+  const from = prev !== null ? prev.clock.minute : (baseline?.minute ?? window.fromMinute)
   const passive = Math.max(0, save.clock.minute - from - clockTaps * ceilings.maxActionGameMinutes)
   const clockMinutes = passive / ceilings.passiveGameMinutesPerRealMinute
   if (clockMinutes > window.realMinutes) findings.push('clock-advance')

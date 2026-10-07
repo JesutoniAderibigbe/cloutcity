@@ -393,11 +393,13 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   panel on phones) shows the status; a conflict asks the player which save to keep. Keeping this
   device's game is checked against the save both devices last shared (`save_at_revision` from the
   history, with the credits it was stored with), not the other device's. If the history no longer
-  keeps that save, the kept game is checked as a whole run, from the time that revision was accepted
-  and its credits, which a small untrimmed revision ledger keeps (`private.save_revisions`, the
-  newest `sync.revisionLedgerKeep` revisions per player, 5000 by default, oldest pruned); a revision
-  the ledger does not know (0: never synced) is measured from the account's creation with the
-  current credits, lenient by design (overrides are rate limited, earnings capped by the credit).
+  keeps that save, the kept game is checked from that revision's taps and clock minute, against the
+  time it was accepted and its credits, which a small untrimmed revision ledger keeps
+  (`private.save_revisions`, the newest `sync.revisionLedgerKeep` revisions per player, 5000 by
+  default, oldest pruned), while the kept game is in that revision's run and prestige; a revision
+  the ledger does not know (0: never synced), a ledger row without baselines, or a kept game in
+  another run is measured as a whole run from the account's creation with the current credits,
+  lenient by design (overrides are rate limited, earnings capped by the credit).
   Either way the account's prestige and run must not be newer. A kept game from before
   the account's last prestige cannot replace it (409 `branch-behind`; the panel offers the
   account's game). Grant keys on the server stop a kept game from claiming a reward again.

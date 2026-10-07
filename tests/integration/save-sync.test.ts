@@ -567,7 +567,16 @@ describe('the revision ledger (N3)', () => {
     expect(history?.count).toBe(2)
     const { data, error } = await service.rpc('revision_at', { p_user_id: guest.id, p_revision: 3 })
     expect(error).toBeNull()
-    expect(data?.[0]).toMatchObject({ burst_credit_minutes: 2, pace_credit_cash: 20 })
+    const fresh = initialSave(config)
+    expect(data?.[0]).toMatchObject({
+      burst_credit_minutes: 2,
+      pace_credit_cash: 20,
+      // The save's baselines (R1): where a branch from this revision starts counting.
+      base_actions: fresh.actions,
+      base_minute: fresh.clock.minute,
+      base_run: fresh.goals.run,
+      base_prestige_count: fresh.prestige.count,
+    })
     const denied = await guest.client.rpc('revision_at', { p_user_id: guest.id, p_revision: 3 })
     expect(denied.error).not.toBeNull()
   })

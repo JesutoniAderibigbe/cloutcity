@@ -11,10 +11,11 @@
  *    checked against the save both devices last shared (`save_at_revision`, from the history,
  *    with its stored credits) rather than the other device's, as a branch (grants the other
  *    branch claimed too are not a replay). If the history no longer keeps it, the upload is
- *    checked as a whole run against the real time since that revision was accepted and its
- *    credits (from the untrimmed revision ledger), or for a revision the ledger does not know,
- *    since the account was created with the current credits; and against the current save's
- *    prestige and run. First-upload rules apply only to an account with no save. A kept game from before the account's last prestige is refused with
+ *    checked from that revision's baselines (taps and clock), against the real time since it was
+ *    accepted and its credits (the untrimmed revision ledger) while the kept game is in that
+ *    revision's run and prestige; otherwise, or for a revision the ledger does not know, as a
+ *    whole run since the account was created with the current credits; and against the current
+ *    save's prestige and run. First-upload rules apply only to an account with no save. A kept game from before the account's last prestige is refused with
  *    409 `branch-behind` (its badges would be lost; the device offers the account's game). It is
  *    stored on top of the current head, which stays in the history.
  * 6. Save plausibility (src/engine/plausibility.ts `checkUpload`): a rejected save goes to
@@ -87,6 +88,13 @@ export interface LedgerRevision {
   readonly acceptedAt: string
   readonly burstCreditMinutes: number
   readonly paceCredit: CashClout
+  /** That save's tap count, clock minute, run and prestige count, or null when unknown. */
+  readonly baseline: {
+    readonly actions: number
+    readonly minute: number
+    readonly run: number
+    readonly prestigeCount: number
+  } | null
 }
 
 export interface CommitArgs {
@@ -241,6 +249,7 @@ export async function handleUpload(
   let head: SaveState | undefined
   /** Where a branch without its shared save is measured from (epoch ms). */
   let branchFrom: number | null = null
+  let baseline: { readonly actions: number; readonly minute: number } | undefined
   if (override !== null) {
     if (stored === null || override >= stored.revision) {
       return reply(400, { ok: false, code: 'invalid' })
@@ -270,11 +279,22 @@ export async function handleUpload(
       // credits: the branch is measured from there, exactly. A revision the ledger does not know
       // (0: never synced) is measured from the account's creation with the current credits,
       // lenient by design (overrides are rate limited, earnings capped by the credit).
+      // Measured from the revision only while the kept game is still in that revision's run
+      // and prestige (its baselines say where the window starts); otherwise, or without
+      // baselines, the whole run is measured from the account's creation.
       const revision = override === 0 ? null : await backend.ledgerAt(userId, override)
-      if (revision !== null) {
+      const from = revision?.baseline ?? null
+      if (
+        revision !== null &&
+        from !== null &&
+        kept.ok &&
+        kept.save.goals.run === from.run &&
+        kept.save.prestige.count === from.prestigeCount
+      ) {
         branchFrom = Date.parse(revision.acceptedAt)
         burst = revision.burstCreditMinutes
         pace = revision.paceCredit
+        baseline = { actions: from.actions, minute: from.minute }
       } else {
         branchFrom = Date.parse(player.createdAt)
       }
@@ -302,6 +322,7 @@ export async function handleUpload(
       firstUpload: stored === null,
       branch: override !== null,
       ...(head === undefined ? {} : { head }),
+      ...(baseline === undefined ? {} : { baseline }),
     },
     ceilings,
     engineConfig,

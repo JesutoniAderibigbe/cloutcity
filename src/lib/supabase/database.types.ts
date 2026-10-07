@@ -430,7 +430,7 @@ isOneToOne: true
                            },
 "revision_at":
 { Args: { "p_revision": number,"p_user_id": string }; Returns: {
-              "accepted_at": string,"burst_credit_minutes": number,"pace_credit_cash": number,"pace_credit_clout": number
+              "accepted_at": string,"base_actions": number,"base_minute": number,"base_prestige_count": number,"base_run": number,"burst_credit_minutes": number,"pace_credit_cash": number,"pace_credit_clout": number
             }[]
                            },
 "save_at_revision":
