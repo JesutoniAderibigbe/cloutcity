@@ -1,7 +1,7 @@
 /**
  * Cloud save sync (S18c). Loaded lazily, with the Supabase chunk, once the guest session has
  * connected (src/state/session.ts): play never waits on it, and without a session the save
- * stays on this device ("Saved on this phone").
+ * stays on this device ("Saved on this device").
  *
  * - Restore: on start the account's save is read (RLS: the player's own row) and compared with
  *   this device's sync record (`cloutcity:sync`: device id, the cloud revision the local save is

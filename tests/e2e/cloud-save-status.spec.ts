@@ -4,11 +4,11 @@ import { hudIsWide, moreButton, morePanel, waitForHudLoaded } from './helpers/hu
 import { waitForMapSettled } from './helpers/scene'
 
 // S18c: the cloud save status. The default e2e build has no Supabase configuration and no
-// network to an account, so the save lives on this phone, and the HUD says so: a cloud chip on
+// network to an account, so the save lives on this device, and the HUD says so: a cloud chip on
 // wide screens, a row in More on phones. Its panel explains it in a sentence.
 
 const zone = (page: Page) => page.locator('[data-overlay-zone="hud"]')
-const LABEL = 'Cloud save: Saved on this phone'
+const LABEL = 'Cloud save: Saved on this device'
 /** The chip shows where the actions cell has room for it (HudPanelButtons). */
 const CHIP_MIN_WIDTH_PX = 704
 const chipShown = (page: Page) =>
@@ -24,7 +24,7 @@ async function openCloudSave(page: Page): Promise<void> {
   await morePanel(page).getByRole('button', { name: LABEL, exact: true }).click()
 }
 
-test('says the save is on this phone, and the panel explains it', async ({ page, checkA11y }) => {
+test('says the save is on this device, and the panel explains it', async ({ page, checkA11y }) => {
   await page.goto('/')
   await waitForMapSettled(page)
   await waitForHudLoaded(page)
@@ -36,8 +36,8 @@ test('says the save is on this phone, and the panel explains it', async ({ page,
   await openCloudSave(page)
   const panel = page.getByRole('dialog', { name: 'Cloud save' })
   await expect(panel).toBeVisible()
-  await expect(panel.locator('[data-sync-status-line]')).toHaveText('Saved on this phone')
-  await expect(panel).toContainText('Your progress lives on this phone.')
+  await expect(panel.locator('[data-sync-status-line]')).toHaveText('Saved on this device')
+  await expect(panel).toContainText('Your progress lives on this device.')
   // Nothing to press without a session: no retry or conflict choice.
   await expect(panel.getByRole('button')).toHaveText(['Close'])
   await checkA11y()
