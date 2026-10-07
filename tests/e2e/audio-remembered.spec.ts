@@ -27,7 +27,7 @@ test('stays silent until the sound control is tapped, and remembers "My own musi
   await page.mouse.click(viewport.width / 2, viewport.height / 2)
   await page
     .getByRole('navigation', { name: 'Main' })
-    .getByRole('button', { name: 'Phone' })
+    .getByRole('button', { name: 'Map', exact: true })
     .click()
   await page.locator('[data-hud-cell="money"]').click()
   await page.keyboard.press('Space')

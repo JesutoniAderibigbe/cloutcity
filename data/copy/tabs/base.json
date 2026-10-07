@@ -3,6 +3,8 @@
     "tabs.map": "Map",
     "tabs.phone": "Phone",
     "tabs.shop": "Shop",
-    "tabs.me": "Me"
+    "tabs.me": "Me",
+    "tabs.soon": "Soon",
+    "tabs.soonLabel": "{tab}: coming soon"
   }
 }

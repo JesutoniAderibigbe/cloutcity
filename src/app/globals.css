@@ -167,6 +167,13 @@ body {
   }
 }
 
+/* The attribution credits the map's data, so it leaves with the map: while the apartment has the
+   screen (its slot in src/scene/CityScene.tsx is not empty) the chip is hidden, and it is back on
+   the map as soon as the room closes (UI-16). CSS only: the attribution stays out of the shell JS. */
+[data-scene-slot='room']:not(:empty) ~ [data-map-attribution-layer] {
+  display: none;
+}
+
 /* A lazy feature's loading skeleton (src/components/overlay/ZoneLoading.tsx) stays invisible for
    the reveal delay (data/config/layout.json, written to --overlay-loading-delay by the overlay
    layout), so a fast load never flashes a placeholder. Under reduced motion the rule below turns

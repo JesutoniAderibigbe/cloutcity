@@ -52,13 +52,13 @@ test.describe('Me panel', () => {
     ).toHaveAttribute('aria-current', 'page')
   })
 
-  test('another tab closes the Me panel; Escape closes it too', async ({ page }) => {
+  test('the Map tab closes the Me panel; Escape closes it too', async ({ page }) => {
     await boot(page)
     await meTab(page).click()
     await expect(panel(page)).toBeVisible()
     await page
       .getByRole('navigation', { name: 'Main' })
-      .getByRole('button', { name: 'Shop' })
+      .getByRole('button', { name: 'Map', exact: true })
       .click()
     await expect(panel(page)).toHaveCount(0)
 
