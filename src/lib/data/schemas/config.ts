@@ -105,6 +105,19 @@ export const ScenePaletteRefsSchema = z.strictObject({
   labelInk: tokenRef,
   ambientLight: tokenRef,
   sunLight: tokenRef,
+  /**
+   * Place pins (S04c): by kind, teaser pins on "expanding soon" land, a muted colour for memorial
+   * pins (the key avoids the word, which no config file may name), the selection ring.
+   */
+  pins: z.strictObject({
+    venue: tokenRef,
+    landmark: tokenRef,
+    teaser: tokenRef,
+    muted: tokenRef,
+    selected: tokenRef,
+  }),
+  /** The "expanding soon" ground chips. */
+  chip: z.strictObject({ fill: tokenRef, ink: tokenRef }),
   /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
   toonRamp: z.array(z.number().gt(0).max(1)).min(2),
 })
@@ -124,6 +137,8 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     scene.labelInk,
     scene.ambientLight,
     scene.sunLight,
+    ...Object.values(scene.pins),
+    ...Object.values(scene.chip),
   ]
 }
 

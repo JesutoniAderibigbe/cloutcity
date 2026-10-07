@@ -11,6 +11,7 @@
     "loading.inventory": "Loading your inventory",
     "loading.rent": "Loading your rent",
     "loading.failed": "That didn't load. Check your connection and try again.",
-    "loading.retry": "Try again"
+    "loading.retry": "Try again",
+    "loading.places": "Loading the places list"
   }
 }

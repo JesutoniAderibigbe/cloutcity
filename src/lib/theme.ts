@@ -52,6 +52,14 @@ export function scenePalette(): ScenePalette {
     labelInk: tokenHex(scene.labelInk),
     ambientLight: tokenHex(scene.ambientLight),
     sunLight: tokenHex(scene.sunLight),
+    pins: {
+      venue: tokenHex(scene.pins.venue),
+      landmark: tokenHex(scene.pins.landmark),
+      teaser: tokenHex(scene.pins.teaser),
+      muted: tokenHex(scene.pins.muted),
+      selected: tokenHex(scene.pins.selected),
+    },
+    chip: { fill: tokenHex(scene.chip.fill), ink: tokenHex(scene.chip.ink) },
     toonRamp: [...scene.toonRamp],
   }
 }

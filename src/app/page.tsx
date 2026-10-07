@@ -8,6 +8,8 @@ import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
+import { PlacesButton } from '@/components/places/PlacesButton'
+import { PlacesPanelMount } from '@/components/places/PlacesPanelMount'
 import { WelcomeMount } from '@/components/welcome/WelcomeMount'
 import { copy } from '@/lib/copy'
 import { CityScene } from '@/scene/CityScene'
@@ -29,6 +31,7 @@ export default function HomePage() {
                 (S05 splits the HUD into two rows); from sm up the sound control's text shrinks. */}
             <div className="flex shrink-0 items-center gap-2 sm:min-w-0 sm:shrink">
               <CloutHudMount />
+              <PlacesButton />
               <HudPanelButtonsMount />
               <SoundControlMount />
             </div>
@@ -39,6 +42,7 @@ export default function HomePage() {
           <>
             <EventSheetMount />
             <PlaceSheetMount />
+            <PlacesPanelMount />
             <HudPanelMount />
             <SoundSheetMount />
           </>

@@ -6,7 +6,15 @@ import { engineConfig } from '@/engine/config'
 import { playerWithClout } from '@/engine/test-support'
 import { findPlace } from '@/lib/world/places'
 import { createLogger } from '@/lib/log'
-import { closePlace, openPlace, placeSheetStore } from './placeSheet'
+import {
+  announcePlace,
+  closePlace,
+  currentPlaceId,
+  onOpenPlaceChange,
+  onPlacePicked,
+  openPlace,
+  placeSheetStore,
+} from './placeSheet'
 import { createSafeJsonStorage } from './storage'
 import { createGameStore, type PersistedState } from './store'
 
@@ -15,12 +23,54 @@ afterEach(() => closePlace())
 describe('place sheet store', () => {
   it('starts closed, opens one place at a time and closes', () => {
     expect(placeSheetStore.getState().placeId).toBeNull()
-    openPlace('glowmatic')
+    openPlace('glowmatic', { origin: 'panel' })
     expect(placeSheetStore.getState().placeId).toBe('glowmatic')
-    openPlace('steam-vent-coffee')
+    openPlace('steam-vent-coffee', { origin: 'panel' })
     expect(placeSheetStore.getState().placeId).toBe('steam-vent-coffee')
     closePlace()
     expect(placeSheetStore.getState().placeId).toBeNull()
+  })
+})
+
+describe('place sheet origin and announcement (S04c)', () => {
+  it('records where each pick came from and counts every pick, repeats included', () => {
+    const before = placeSheetStore.getState().openCount
+    openPlace('glowmatic', { origin: 'map' })
+    expect(placeSheetStore.getState()).toMatchObject({ placeId: 'glowmatic', origin: 'map' })
+    openPlace('glowmatic', { origin: 'panel' })
+    expect(placeSheetStore.getState()).toMatchObject({ placeId: 'glowmatic', origin: 'panel' })
+    expect(placeSheetStore.getState().openCount).toBe(before + 2)
+    closePlace()
+    expect(placeSheetStore.getState()).toMatchObject({ placeId: null, origin: null })
+  })
+
+  it('tells the 3D map about every pick and every change of the open place', () => {
+    const picks: string[] = []
+    const changes: (string | null)[] = []
+    const offPicked = onPlacePicked((id, origin) => picks.push(`${id}:${origin}`))
+    const offChange = onOpenPlaceChange((id) => changes.push(id))
+    openPlace('glowmatic', { origin: 'map' })
+    openPlace('glowmatic', { origin: 'panel' })
+    announcePlace('Glowmatic selected')
+    openPlace('brickwave', { origin: 'hook' })
+    expect(currentPlaceId()).toBe('brickwave')
+    closePlace()
+    offPicked()
+    offChange()
+    openPlace('glowmatic', { origin: 'panel' })
+    expect(picks).toEqual(['glowmatic:map', 'glowmatic:panel', 'brickwave:hook'])
+    expect(changes).toEqual(['glowmatic', 'brickwave', null])
+  })
+
+  it('clears the announcement on every pick and on close, so a repeat is announced again', () => {
+    openPlace('glowmatic', { origin: 'panel' })
+    announcePlace('Glowmatic selected')
+    expect(placeSheetStore.getState().announcement).toBe('Glowmatic selected')
+    openPlace('glowmatic', { origin: 'panel' })
+    expect(placeSheetStore.getState().announcement).toBe('')
+    announcePlace('Glowmatic selected')
+    closePlace()
+    expect(placeSheetStore.getState().announcement).toBe('')
   })
 })
 
@@ -82,9 +132,9 @@ describe('one way into a place sheet', () => {
   })
 
   it('an unknown id still goes through the store (the sheet clears it), and reopening replaces', () => {
-    openPlace('nowhere')
+    openPlace('nowhere', { origin: 'panel' })
     expect(placeSheetStore.getState().placeId).toBe('nowhere')
-    openPlace('september-11-memorial')
+    openPlace('september-11-memorial', { origin: 'panel' })
     expect(placeSheetStore.getState().placeId).toBe('september-11-memorial')
   })
 })

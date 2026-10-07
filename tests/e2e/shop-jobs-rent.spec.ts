@@ -597,9 +597,9 @@ test.describe('HUD row', () => {
     await boot(page)
   })
 
-  // The HUD row holds the title, the clout meter, the Inventory and Rent buttons and the sound
-  // control. Below `sm` the two panel buttons are icon buttons (their labels stay their
-  // accessible names) so nothing in the row overlaps at 390 px.
+  // The HUD row holds the title, the clout meter, the Places button (S04c), the Inventory and
+  // Rent buttons and the sound control. Below `sm` the Places and panel buttons are icon buttons
+  // (their labels stay their accessible names) so nothing in the row overlaps at 390 px.
   for (const width of [390, 1280]) {
     test(`at ${width} px nothing in the HUD row overlaps and every control fits the row`, async ({
       page,
@@ -609,6 +609,7 @@ test.describe('HUD row', () => {
       const zone = page.locator('[data-overlay-zone="hud"]')
       const inventory = page.getByRole('button', { name: 'Inventory', exact: true })
       const rent = page.getByRole('button', { name: 'Rent', exact: true })
+      const places = zone.locator('[data-places-button]')
       await expect(inventory).toBeVisible()
       await expect(zone.locator('[data-clout-meter]')).toBeVisible()
       await expect(zone.locator('[data-cc-feature="cc-feature:sound-control"]')).toBeVisible()
@@ -616,6 +617,7 @@ test.describe('HUD row', () => {
       const parts = [
         { name: 'title', locator: zone.locator('h1') },
         { name: 'clout meter', locator: zone.locator('[data-clout-meter]') },
+        { name: 'Places', locator: places },
         { name: 'Inventory', locator: inventory },
         { name: 'Rent', locator: rent },
         ...(await zone.locator('[data-cc-feature="cc-feature:sound-control"] button').all()).map(
@@ -647,7 +649,7 @@ test.describe('HUD row', () => {
           expect(apart, `${a.name} overlaps ${b.name}`).toBe(true)
         }
       }
-      for (const button of [inventory, rent]) {
+      for (const button of [places, inventory, rent]) {
         const box = await button.boundingBox()
         expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
         expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)

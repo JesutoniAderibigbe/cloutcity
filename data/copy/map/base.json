@@ -7,6 +7,9 @@
     "map.attribution.nyc": "Map: NYC Open Data (NYC DCP)",
     "map.attribution.mta": "Subway: MTA data, not endorsed by the MTA, may be inaccurate",
     "map.attribution.compact": "NYC Open Data · MTA data, not endorsed",
-    "map.attribution.credits": "Credits"
+    "map.attribution.credits": "Credits",
+    "map.lost": "The 3D map paused. Pick places from the list while it comes back.",
+    "map.fallback": "Simplified map of New York City's five boroughs",
+    "map.expandingSoon": "Expanding soon"
   }
 }
