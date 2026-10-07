@@ -7,8 +7,10 @@ import {
   SERVICE_WORKER_PATH,
   cacheContents,
   geoCacheUrls,
+  installOlderBuild,
   reloadControlled,
   seedQualityOverride,
+  updateToWaitingWorker,
   waitForActiveWorker,
   waitForLog,
   warmUrlsFromWorker,
@@ -146,9 +148,11 @@ test.describe('service worker', () => {
     context,
     checkA11y,
   }) => {
+    const shipNewBuild = await installOlderBuild(context)
     await page.goto('/')
     await waitForWelcomeGate(page)
     await waitForActiveWorker(page)
+    await shipNewBuild()
     await reloadControlled(page)
 
     // Caches an older build left behind, and one the current build owns.
@@ -161,15 +165,8 @@ test.describe('service worker', () => {
     const current = before.find((name) => /^cc-geo-/.test(name) && name !== 'cc-geo-0123456789ab')
     expect(current, 'the current geo cache').toBeDefined()
 
-    // A "new build": the same worker with different bytes, served to the browser's update check.
-    await context.route(`**${SERVICE_WORKER_PATH}`, async (route) => {
-      const response = await route.fetch()
-      await route.fulfill({ response, body: `${await response.text()}\n// next build\n` })
-    })
-    await page.evaluate(async () => {
-      const registration = await navigator.serviceWorker.getRegistration()
-      await registration?.update()
-    })
+    // A "new build": the served worker differs from the one installed (installOlderBuild).
+    await updateToWaitingWorker(page)
 
     // The new worker waits: nothing is swapped under the player until they choose.
     const notice = updateNotice(page)
@@ -193,17 +190,13 @@ test.describe('service worker', () => {
   })
 
   test('the update notice can be put off', async ({ page, context }) => {
+    const shipNewBuild = await installOlderBuild(context)
     await page.goto('/')
     await waitForWelcomeGate(page)
     await waitForActiveWorker(page)
+    await shipNewBuild()
     await reloadControlled(page)
-    await context.route(`**${SERVICE_WORKER_PATH}`, async (route) => {
-      const response = await route.fetch()
-      await route.fulfill({ response, body: `${await response.text()}\n// next build\n` })
-    })
-    await page.evaluate(async () => {
-      await (await navigator.serviceWorker.getRegistration())?.update()
-    })
+    await updateToWaitingWorker(page)
     const notice = updateNotice(page)
     await notice.getByRole('button', { name: copyText('offline.update.dismiss') }).click()
     await expect(notice).toHaveCount(0)
@@ -357,24 +350,16 @@ test.describe('update notice during the tour', () => {
 
   test('waits behind the tour and shows once it is skipped', async ({ page, context }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
+    const shipNewBuild = await installOlderBuild(context)
     await page.goto('/')
     await waitForWelcomeGate(page)
     await expectStep(page, 'hud')
     await waitForActiveWorker(page)
+    await shipNewBuild()
     await reloadControlled(page)
     await expectStep(page, 'hud')
 
-    await context.route(`**${SERVICE_WORKER_PATH}`, async (route) => {
-      const response = await route.fetch()
-      await route.fulfill({ response, body: `${await response.text()}\n// next build\n` })
-    })
-    await page.evaluate(async () => {
-      await (await navigator.serviceWorker.getRegistration())?.update()
-    })
-    await page.waitForFunction(async () => {
-      const registration = await navigator.serviceWorker.getRegistration()
-      return (registration?.waiting ?? null) !== null
-    })
+    await updateToWaitingWorker(page)
 
     // A new build is waiting, but the tour holds the banner zone (GR-9).
     await expect(tourCard(page)).toBeVisible()
