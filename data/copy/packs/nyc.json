@@ -1,6 +1,9 @@
 {
   "id": "nyc",
   "strings": {
+    "audio.hud.musicUnavailable": "The beat dropped out · Tap to retry",
+    "audio.hud.soundUnavailable": "City went quiet · Tap to retry",
+    "audio.settings.ownMusicHint": "Your playlist, your rules. Our music goes quiet; sound effects and city sounds keep playing.",
     "events.mtaDelay.title": "Train delays",
     "events.mtaDelay.body": "The train is 'experiencing delays.' You are experiencing main-character suffering.",
     "events.mtaDelay.wait.result": "Twenty-five minutes later it pulls in like nothing happened. Classic.",

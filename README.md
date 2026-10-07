@@ -25,16 +25,17 @@ gitignored; later tasks document their variables here.
 
 ## Scripts
 
-| Script                            | What it does                                                                                                         |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                              |
-| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                          |
-| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error |
-| `npm run format:check` / `format` | Prettier check / write                                                                                               |
-| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                     |
-| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                      |
-| `npm run budget`                  | Gzipped shell JS of `/` against `data/config/perf.json` (run after `npm run build`)                                  |
-| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                             |
+| Script                            | What it does                                                                                                            |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                 |
+| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                             |
+| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error    |
+| `npm run format:check` / `format` | Prettier check / write                                                                                                  |
+| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                        |
+| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                         |
+| `npm run budget`                  | Gzipped shell JS of `/` against `data/config/perf.json` (run after `npm run build`)                                     |
+| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                |
+| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies |
 
 Gate order used by the build loop:
 `npm run format:check && npm run typecheck && npm run lint && npm test && npm run build && npm run e2e && npm run budget`
@@ -116,7 +117,50 @@ passes, since the birthday is unknown); numbers live in `data/config/onboarding.
   overwritten; an invalid one is ignored and the card shows.
 - The form follows the shared pattern (`src/lib/forms/`): one zod/mini schema whose messages are
   copy keys, `fieldErrors()` for every error at once, `firstInvalid()` for focus.
-- No audio is created or loaded by the card (GR-13): the choice is only recorded.
+- Picking a sound option does nothing audible. Submitting a passing card is the deliberate tap
+  that turns sound on (GR-13, see Audio); under-age and invalid submits never do.
+
+## Audio
+
+Four channels (music, sfx, ambience, voice) under a master, each with its own volume
+(`src/lib/audio/mixer.ts`, pure; defaults, slider step, ramps and per-tier loading in
+`data/config/audio.json`).
+
+- **No sound before the choice (GR-13).** The only `AudioContext` is created in
+  `src/lib/audio/unlock.ts`, synchronously inside the welcome card's submit or a tap on the HUD
+  sound control or the sound settings. Returning players hear nothing until they tap "Tap for
+  sound". No other gesture, and no document-level listener, ever starts audio.
+- **Mixing with the player's music app.** Before the context exists, Safari's
+  `navigator.audioSession.type` is set to `'ambient'` (mixes with other audio; the silent switch
+  mutes it). Everything plays through AudioBuffers: no `<audio>`/`<video>` elements and no
+  `navigator.mediaSession`, so Android Chrome takes no audio focus and our sounds never take
+  over lock-screen controls.
+- **"My own music"** is the welcome card's sound choice in the onboarding store
+  (`audioChoice: 'own'`), changed only through `src/lib/audio/controls.ts` (the HUD toggle and
+  the settings checkbox). It mutes our music only and skips fetching it; sfx and ambience keep
+  playing. Volumes persist under `cloutcity:audio` (`src/state/audioSettings.ts`; S18c syncs
+  them, newest `updatedAt` wins). `src/lib/audio/no-override.test.ts` enforces all of this.
+- **Lazy.** The runtime (`src/lib/audio/runtime.ts`: graph, music rotation with crossfades,
+  ambience loop, sfx) loads with a plain `import()` after the tap and once the map is playable
+  (`src/state/mapPlayable.ts`). `playSfx(id)` from `src/lib/audio/sfx.ts` is safe to call any
+  time (ids `ui-tap`, `purchase`, `clout-up`). The settings sheet is a `React.lazy` chunk.
+- **Recovery.** Music start/stop is a generation-keyed state machine: the latest "My own music"
+  choice always wins, however fast it is toggled. If no music file loads, or the runtime chunk
+  does not arrive (offline), the sound control says "… · Tap to retry" and a tap retries. A
+  closed AudioContext is replaced by a fresh one on the next tap.
+- **Assets.** CC0 only, self-hosted, listed in `data/audio/SOURCES.md`. `npm run audio:build`
+  (needs ffmpeg) downloads the originals pinned in `scripts/audio/sources.json` into
+  `.cache/audio/` (sha256-checked), then excerpts, loudness-normalises, bakes loop crossfades and
+  encodes Opus/WebM plus AAC/.m4a into `public/audio/`, writing `data/audio/manifest.json`. The
+  build is deterministic; `npm run audio:build -- --check` (offline, no ffmpeg) verifies the
+  committed files, the manifest and SOURCES.md agree. To add a sound: pin it in
+  `sources.json`, add its row to SOURCES.md (and a `audio.track.*` "Title by Artist" copy key
+  for music), then rebuild.
+- **e2e hook.** Test builds (`NEXT_PUBLIC_TEST_HOOKS=1`, built into `.next-e2e`) expose
+  `window.__CLOUTCITY_TEST__.audio` (context state, live and target gains, what is playing,
+  sfx count); `tests/e2e/fixtures/audio.ts` wraps it with the audio probe.
+- **HUD copy keys** `audio.hud.*` are on the boot path; `audio.settings.*` belong to the lazy
+  sheet (for S05c's copy split).
 
 ## Data, copy and config
 
@@ -278,7 +322,10 @@ build, the scene and the engine; `src/lib/data/geo.ts` loads the layers for serv
 through the shared schema (KB = 1000 bytes) and sums the
 gzipped size of every script the prerendered `/` makes a modern browser run (Next.js chunks
 plus inline scripts; `nomodule` polyfills excluded). Enforcement of the other budgets joins it in
-later tasks.
+later tasks. Audio has its own budgets (`audioLazyGzKB` per tier for the first music track, the
+ambience and the tier's preloaded sfx, per encoding; `audioFileMaxKB`), checked by
+`src/lib/data/data.test.ts`; `audioRuntimeJsGzKB` is measured by hand until the budget script
+covers lazy chunks.
 
 ## PWA
 
@@ -296,7 +343,8 @@ initialised. Nothing needs a running stack yet; see `progress.md` for when to `n
 
 `.gitignore` covers env files, build output (`.next/`, `out/`), test artefacts
 (`test-results/`, `playwright-report/`, `coverage/`) and the geo download cache (`.cache/`:
-the raw NYC Open Data and MTA files `npm run geo:build` downloads, kept unmodified).
+the raw NYC Open Data and MTA files `npm run geo:build` downloads, and the audio originals
+`npm run audio:build` downloads, kept unmodified). The e2e test-hook build goes to `.next-e2e/`.
 
 ## Agent orchestration kit
 

@@ -2,12 +2,14 @@
  * Every file under /data is validated by a zod schema, and the cross-file references hold
  * (copy keys, balance ids, coordinates inside the NYC extent).
  */
-import { readFileSync, readdirSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { z } from 'zod'
 import { parseDataFile } from './parse'
 import {
+  AudioConfigSchema,
   BalanceConfigSchema,
   type BalanceConfig,
   CopyConfigSchema,
@@ -41,8 +43,17 @@ import {
   ZoneShapesFileSchema,
   ZonesFileSchema,
 } from './schemas/world'
-import { balance, onboarding, perf, realtime, theme } from './config'
-import { events, geoBounds, items, jobs, landmarks, premiumItems, venues } from './content'
+import { audio, balance, onboarding, perf, realtime, theme } from './config'
+import {
+  audioManifest,
+  events,
+  geoBounds,
+  items,
+  jobs,
+  landmarks,
+  premiumItems,
+  venues,
+} from './content'
 import { baseCopy } from '@/lib/copy'
 
 const DATA = join(import.meta.dirname, '../../../data')
@@ -51,6 +62,7 @@ const DATA = join(import.meta.dirname, '../../../data')
 const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'audio/manifest.json': AudioManifestSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
+  'config/audio.json': AudioConfigSchema,
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,
   'config/geo.json': GeoConfigSchema,
@@ -200,6 +212,9 @@ describe('config/perf.json', () => {
           viewport: { width: 390, height: 844 },
         },
       },
+      audioLazyGzKB: { low: 600, mid: 1000, high: 1400 },
+      audioFileMaxKB: 600,
+      audioRuntimeJsGzKB: 20,
     })
   })
 
@@ -247,6 +262,95 @@ describe('config/onboarding.json', () => {
     expect(parse({ birthYearSpan: 19 })).toBe(false)
     expect(parse({ extra: true })).toBe(false)
   })
+})
+
+describe('config/audio.json', () => {
+  it('has a default for every channel and a step that divides 100', () => {
+    expect(Object.keys(audio.defaults).sort()).toEqual(
+      ['ambience', 'master', 'music', 'sfx', 'voice'].sort(),
+    )
+    expect(100 % audio.volumeStep).toBe(0)
+  })
+
+  it('rejects a step that does not divide 100, off-step defaults and an over-long crossfade', () => {
+    const valid = readJson('config/audio.json') as Record<string, unknown>
+    const parse = (patch: Record<string, unknown>) =>
+      AudioConfigSchema.safeParse({ ...valid, ...patch }).success
+    expect(parse({})).toBe(true)
+    expect(parse({ volumeStep: 7 })).toBe(false)
+    expect(parse({ defaults: { ...audio.defaults, music: 62 } })).toBe(false)
+    expect(parse({ defaults: { ...audio.defaults, music: 120 } })).toBe(false)
+    expect(parse({ musicCrossfadeSeconds: 500 })).toBe(false)
+    expect(parse({ prefetchAheadSeconds: 1 })).toBe(false)
+  })
+})
+
+describe('data/audio/manifest.json and public/audio', () => {
+  const PUBLIC = join(DATA, '../public')
+  const sourcesOf = audioManifest.tracks.flatMap((track) =>
+    track.sources.map((source) => ({ track, source })),
+  )
+
+  it('every file exists in public/ with the recorded size and sha256', () => {
+    for (const { source } of sourcesOf) {
+      const bytes = readFileSync(join(PUBLIC, source.file))
+      expect(bytes.byteLength, source.file).toBe(source.bytes)
+      expect(createHash('sha256').update(bytes).digest('hex'), source.file).toBe(source.sha256)
+    }
+  })
+
+  it('public/audio holds nothing the manifest does not list', () => {
+    const listed = new Set(sourcesOf.map(({ source }) => source.file))
+    const onDisk = readdirSync(join(PUBLIC, 'audio'), { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name !== '.DS_Store')
+      .map(
+        (entry) => `/${relative(PUBLIC, join(entry.parentPath, entry.name)).split('\\').join('/')}`,
+      )
+    expect(onDisk.filter((file) => !listed.has(file))).toEqual([])
+  })
+
+  it('every music track has a "Title by Artist" copy key', () => {
+    const keys = new Set(Object.keys(baseCopy.strings))
+    for (const track of audioManifest.tracks.filter((entry) => entry.channel === 'music')) {
+      expect(track.titleKey !== undefined && keys.has(track.titleKey), track.id).toBe(true)
+    }
+  })
+
+  it('is CC0 only, from https pages, with every sound listed in SOURCES.md', () => {
+    const sourcesMd = readFileSync(join(DATA, 'audio/SOURCES.md'), 'utf8')
+    for (const track of audioManifest.tracks) {
+      expect(track.license).toBe('CC0-1.0')
+      expect(track.sourceUrl.startsWith('https://'), track.id).toBe(true)
+      expect(sourcesMd.includes(`\`${track.id}\``), track.id).toBe(true)
+      for (const source of track.sources) expect(source.file.startsWith('/audio/')).toBe(true)
+    }
+  })
+
+  it('every file fits the per-file cap', () => {
+    for (const { source } of sourcesOf) {
+      expect(statSync(join(PUBLIC, source.file)).size, source.file).toBeLessThanOrEqual(
+        perf.audioFileMaxKB * 1000,
+      )
+    }
+  })
+
+  it.each(['low', 'mid', 'high'] as const)(
+    'the first music track, the ambience and the %s-tier sfx fit audioLazyGzKB in each encoding',
+    (tier) => {
+      const byId = new Map(audioManifest.tracks.map((track) => [track.id, track]))
+      const initial = [audioManifest.playlists.music[0], audioManifest.playlists.ambience[0]]
+      if (audio.tiers[tier].preloadSfx) initial.push(...Object.values(audioManifest.sfx))
+      for (const type of ['audio/webm; codecs=opus', 'audio/mp4; codecs=mp4a.40.2']) {
+        // Audio is already compressed; gzip would not shrink it, so bytes count as is.
+        const bytes = initial.reduce((sum, id) => {
+          const source = byId.get(id ?? '')?.sources.find((entry) => entry.type === type)
+          if (source === undefined) throw new Error(`${id} has no ${type} source`)
+          return sum + source.bytes
+        }, 0)
+        expect(bytes, `${tier} ${type}`).toBeLessThanOrEqual(perf.audioLazyGzKB[tier] * 1000)
+      }
+    },
+  )
 })
 
 describe('config/theme.json', () => {
@@ -417,20 +521,33 @@ describe('content schemas', () => {
     expect(LandmarksFileSchema.safeParse({ landmarks: [tower] }).success).toBe(false)
   })
 
-  it('accepts only CC0 audio tracks with an https source', () => {
-    const track = {
-      id: 'loop-1',
-      channel: 'music',
-      file: '/audio/music/loop-1.ogg',
-      license: 'CC0-1.0',
-      sourceUrl: 'https://example.org/loop-1',
-    }
-    const manifest = { channels: ['music', 'sfx', 'ambience', 'voice'], tracks: [track] }
-    expect(AudioManifestSchema.safeParse(manifest).success).toBe(true)
-    const radio = { ...manifest, tracks: [{ ...track, license: 'CC-BY-4.0' }] }
-    expect(AudioManifestSchema.safeParse(radio).success).toBe(false)
-    const http = { ...manifest, tracks: [{ ...track, sourceUrl: 'http://example.org/x' }] }
-    expect(AudioManifestSchema.safeParse(http).success).toBe(false)
+  it('accepts only CC0 audio tracks with an https source, served from /audio/', () => {
+    const valid = readJson('audio/manifest.json') as { tracks: Record<string, unknown>[] }
+    const withTrack = (patch: Record<string, unknown>) => ({
+      ...valid,
+      tracks: valid.tracks.map((track, index) => (index === 0 ? { ...track, ...patch } : track)),
+    })
+    const source = (valid.tracks[0]?.sources as Record<string, unknown>[])[0]
+    expect(AudioManifestSchema.safeParse(withTrack({})).success).toBe(true)
+    expect(AudioManifestSchema.safeParse(withTrack({ license: 'CC-BY-4.0' })).success).toBe(false)
+    expect(
+      AudioManifestSchema.safeParse(withTrack({ sourceUrl: 'http://example.org/x' })).success,
+    ).toBe(false)
+    const remote = { ...source, file: 'https://radio.example.org/live.webm' }
+    expect(AudioManifestSchema.safeParse(withTrack({ sources: [remote] })).success).toBe(false)
+    const wrongType = { ...source, type: 'audio/mp4; codecs=mp4a.40.2' }
+    expect(AudioManifestSchema.safeParse(withTrack({ sources: [wrongType] })).success).toBe(false)
+    expect(AudioManifestSchema.safeParse(withTrack({ sources: [] })).success).toBe(false)
+    expect(AudioManifestSchema.safeParse(withTrack({ titleKey: undefined })).success).toBe(false)
+    expect(AudioManifestSchema.safeParse(withTrack({ loopEndMs: 999_999_999 })).success).toBe(false)
+  })
+
+  it('rejects playlists and sfx that name a missing track or the wrong channel', () => {
+    const valid = readJson('audio/manifest.json') as Record<string, unknown>
+    const playlists = { music: ['nyc-night'], ambience: ['nyc-night'] }
+    expect(AudioManifestSchema.safeParse({ ...valid, playlists }).success).toBe(false)
+    const sfx = { 'ui-tap': 'nope', purchase: 'purchase', 'clout-up': 'clout-up' }
+    expect(AudioManifestSchema.safeParse({ ...valid, sfx }).success).toBe(false)
   })
 
   it('rejects a zone with a bad CDTA or NTA code, no NTAs or a fractional centroid', () => {

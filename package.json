@@ -18,7 +18,8 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "budget": "node scripts/budget.ts",
-    "geo:build": "node scripts/geo/build.ts"
+    "geo:build": "node scripts/geo/build.ts",
+    "audio:build": "node scripts/audio/build.ts"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",

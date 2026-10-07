@@ -56,6 +56,16 @@ export const PerfConfigSchema = z.strictObject({
   /** Step down one tier when average FPS stays below `belowFps` for `sustainMs`. */
   fpsStepDown: z.strictObject({ belowFps: positive, sustainMs: positive }),
   throttleProfiles: z.strictObject({ 'cc-mid-4g': ThrottleProfileSchema }),
+  /**
+   * Audio fetched after the player's sound choice, per tier: the first music track, the ambience
+   * loop and (where the tier preloads them) the sound effects, in one encoding. Audio is not part
+   * of `totalBytesToPlayableGzKB`.
+   */
+  audioLazyGzKB: perTier(positive),
+  /** Largest single audio file. */
+  audioFileMaxKB: positive,
+  /** The lazily loaded audio runtime chunk (src/lib/audio/runtime.ts). */
+  audioRuntimeJsGzKB: positive,
 })
 export type PerfConfig = z.infer<typeof PerfConfigSchema>
 
@@ -499,6 +509,61 @@ export const OnboardingConfigSchema = z
     path: ['birthYearSpan'],
   })
 export type OnboardingConfig = z.infer<typeof OnboardingConfigSchema>
+
+const volume = z.int().min(0).max(100)
+const AudioTierSchema = z.strictObject({
+  /** Decode the sound effects as soon as the runtime starts (else on first use). */
+  preloadSfx: z.boolean(),
+  /** Fetch the next music track ahead of the crossfade (else at the switch). */
+  prefetchNextMusic: z.boolean(),
+})
+
+/**
+ * The audio mixer and runtime (S05b). Volumes are whole percent 0-100 on the player's sliders;
+ * gains follow a squared curve (src/lib/audio/mixer.ts). Times are seconds.
+ */
+export const AudioConfigSchema = z
+  .strictObject({
+    defaults: z.strictObject({
+      master: volume,
+      music: volume,
+      sfx: volume,
+      ambience: volume,
+      voice: volume,
+    }),
+    /** Slider step; every stored volume is a multiple of it. */
+    volumeStep: z.int().min(1).max(50),
+    /** Length of the linear ramp on every gain change, so volume moves never click. */
+    rampSeconds: positive,
+    musicCrossfadeSeconds: positive,
+    /** How long one music track plays before the next fades in. */
+    musicTrackPlaySeconds: positive,
+    /** How far ahead of the switch the next track is fetched, where the tier prefetches. */
+    prefetchAheadSeconds: positive,
+    tiers: perTier(AudioTierSchema),
+  })
+  .refine((audio) => 100 % audio.volumeStep === 0, {
+    error: 'volumeStep must divide 100',
+    path: ['volumeStep'],
+  })
+  .refine(
+    (audio) => Object.values(audio.defaults).every((value) => value % audio.volumeStep === 0),
+    { error: 'defaults must be multiples of volumeStep', path: ['defaults'] },
+  )
+  .refine((audio) => audio.musicCrossfadeSeconds < audio.musicTrackPlaySeconds, {
+    error: 'the crossfade must be shorter than a track',
+    path: ['musicCrossfadeSeconds'],
+  })
+  .refine(
+    (audio) =>
+      audio.prefetchAheadSeconds > audio.musicCrossfadeSeconds &&
+      audio.prefetchAheadSeconds < audio.musicTrackPlaySeconds,
+    {
+      error: 'prefetchAheadSeconds must fall between the crossfade and the track length',
+      path: ['prefetchAheadSeconds'],
+    },
+  )
+export type AudioConfig = z.infer<typeof AudioConfigSchema>
 
 const metres = z.number().positive()
 

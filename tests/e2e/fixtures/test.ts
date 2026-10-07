@@ -63,12 +63,19 @@ interface Fixtures {
    * `use: { consoleSettleMs }` in playwright.config.ts or `test.use()`.
    */
   consoleSettleMs: number
+  /**
+   * Extra console errors a spec causes on purpose (it simulates going offline, so the browser
+   * logs "Failed to load resource"). Exact patterns only; anything else still fails.
+   */
+  expectedConsoleErrors: readonly RegExp[]
   consoleGuard: void
   checkA11y: (options?: A11yOptions) => Promise<void>
 }
 
 export const test = base.extend<Fixtures>({
   consoleSettleMs: [250, { option: true }],
+
+  expectedConsoleErrors: [[], { option: true }],
 
   onboarding: ['complete', { option: true }],
 
@@ -93,11 +100,17 @@ export const test = base.extend<Fixtures>({
   ],
 
   consoleGuard: [
-    async ({ page, consoleSettleMs }, use) => {
+    async ({ page, consoleSettleMs, expectedConsoleErrors }, use) => {
       const problems: string[] = []
       page.on('console', (message) => {
         if (!FAILING_CONSOLE_TYPES.has(message.type())) return
         if (isIgnored(message)) return
+        if (
+          message.type() === 'error' &&
+          expectedConsoleErrors.some((pattern) => pattern.test(message.text()))
+        ) {
+          return
+        }
         const { url, lineNumber } = message.location()
         problems.push(`console.${message.type()}: ${message.text()} (${url}:${lineNumber})`)
       })
