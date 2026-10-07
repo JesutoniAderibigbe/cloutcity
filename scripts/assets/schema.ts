@@ -161,6 +161,12 @@ export const ModelSchema = z
      * material covers a whole gradient (KayKit) or a mis-hued pack colour (Kenney's teal leaves).
      */
     remap: z.record(hex, token).optional(),
+    /**
+     * How far (CIEDE2000) a baked colour may be from a `remap` anchor to join it; defaults to
+     * `maxDeltaE`. A tight radius pins one exact pack colour (the taxi's hood highlight) without
+     * pulling in its neighbours (the roof sign).
+     */
+    remapMaxDeltaE: z.number().positive().max(100).optional(),
     maxDeltaE: z.number().positive().max(100).optional(),
     /** Tokens whose vertices glow at night (`_EMISSIVE` = 1). */
     emissive: z.array(token),

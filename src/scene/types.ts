@@ -7,6 +7,7 @@ import type { HomeIdLiteral } from '@/lib/data/homes'
 import type { FpsStepDown, PerfConfig, QualityTier, TierPicker } from '@/lib/data/schemas/config'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
+import type { PlayerModel } from './avatar/PlayerAvatar'
 import type { LocalBounds } from './camera/limits'
 import type { BoroughId } from './geo/schema'
 import type { LandmarkPalette } from './landmarks/types'
@@ -119,6 +120,8 @@ export interface SceneProps {
   /** District building and block files per tier (S04d, src/lib/data/districts.ts). */
   readonly buildings: Readonly<Record<QualityTier, DistrictAssets>>
   readonly travelAnimation: TravelAnimation
+  /** The player's hand-made avatar (S04h/S05), shown once loaded over the capsule placeholder. */
+  readonly playerModel: PlayerModel
   /** The overlay grid rows (src/components/overlay/layers.ts), for the scene's own status row. */
   readonly overlayRows: string
   /** The free scene row of that grid (no overlay zone covers it). */

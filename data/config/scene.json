@@ -143,7 +143,28 @@
       "dayIntensity": 0,
       "nightIntensity": 1.2
     },
-    "cacheMaxEntries": 48
+    "cacheMaxEntries": 48,
+    "player": {
+      "head": "head-female-c",
+      "body": "body-female-c",
+      "clip": "idle",
+      "minDeviceMemoryGB": 2,
+      "capsuleTiers": ["low"]
+    },
+    "decor": {
+      "thrift-flatweave-rug": {
+        "model": "rug",
+        "slot": "pattern"
+      },
+      "cloud-lounge-chair": {
+        "model": "armchair",
+        "slot": "upholstery"
+      },
+      "windowsill-monstera": {
+        "model": "plant",
+        "slot": "pot"
+      }
+    }
   },
   "fallback": {
     "metresPerUnit": 20,

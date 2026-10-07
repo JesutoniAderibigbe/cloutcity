@@ -18,6 +18,7 @@ import { geoBounds, homes } from '@/lib/data/content'
 import { districtAssets } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
 import { HOME_IDS } from '@/lib/data/homes'
+import { modelRef } from '@/lib/data/models'
 import { project } from '@/lib/geo/projection'
 import { scenePalette } from '@/lib/theme'
 import { landmarksLayer } from '@/lib/world/landmarksLayer'
@@ -61,6 +62,16 @@ function landmarkNames(): Record<string, string> {
   )
 }
 
+/** The player's avatar parts from scene.json `models.player`, fitted by the head's top. */
+function playerModel(): SceneProps['playerModel'] {
+  const head = modelRef(scene.models.player.head)
+  if (head.bounds === undefined) throw new Error(`Avatar head ${head.id} has no bounds`)
+  return {
+    parts: { rig: modelRef('avatar-rig'), head, body: modelRef(scene.models.player.body) },
+    heightM: head.bounds.max[1],
+  }
+}
+
 export function CityScene() {
   const overlayRows = overlayGridTemplateRows(overlayLayout)
   const props: SceneProps = {
@@ -78,6 +89,7 @@ export function CityScene() {
       QUALITY_TIERS.map((tier) => [tier, districtAssets(tier)]),
     ) as SceneProps['buildings'],
     travelAnimation: balance.transit.animation,
+    playerModel: playerModel(),
     overlayRows,
     freeRow: FREE_SCENE_GRID_ROW,
     copy: {

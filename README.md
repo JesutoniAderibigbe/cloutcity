@@ -205,7 +205,8 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
 
 - **Catalog.** `data/assets/catalog.json` lists the packs (licence, licence-file phrases, pin,
   colour grade) and the models (entries, category, real-world fit, pivot, per-tier
-  simplification, palette swatches and anchors, night-glow tokens, recolour slots, rig clips,
+  simplification, palette swatches and anchors (`remap`, with an optional tight
+  `remapMaxDeltaE` to pin one exact pack colour), night-glow tokens, recolour slots, rig clips,
   load phase, copy name key). The schema allows only CC0/MIT packs and project-original Blender
   sources.
 - **Build.** `npm run assets:build` downloads into `.cache/assets/` (sha256-checked against
@@ -227,6 +228,38 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
 - **To add a model:** add it to the catalog (and its `models.name.*` copy key in
   `data/copy/models/base.json`), run `npm run assets:build -- --update` once, then
   `npm run assets:build`, and check the printed colour report and cap pressure.
+- **Runtime** (`src/scene/models`). Models load only in lazy chunks, through three's own
+  `GLTFLoader` with its bundled `MeshoptDecoder` (never drei's `useGLTF`). A page-wide cache
+  holds each decoded file while any component uses it and keeps up to
+  `scene.json models.cacheMaxEntries` idle ones (least recently used are disposed). Every model
+  draws with one shared material per canvas (`models.shading`: lit = Standard on mid/high,
+  Lambert on low; or toon) and its baked vertex colours. `ModelInstances` draws every placement
+  of a static model as one InstancedMesh; `_SLOT` recolours make one colour-buffer variant.
+  `AvatarModel` binds a head and a body to one skeleton and poses them with the rig's clips; it
+  holds a continuous frame lease only while `animate` is true, so an idle map still draws zero
+  frames. Night glow uses the S04f contract: the shared material is patched with
+  `patchNightGlow(material, 'attribute', …)`, so each `_EMISSIVE` vertex glows at
+  `models.emissive.nightIntensity × uNightGlow` (the day/night rig writes `uNightGlow`;
+  `dayIntensity` stays 0). The showcase sets `uNightGlow` from its own time-of-day preset.
+- **Player avatar** (S05). The capsule placeholder shows at once; the hand-made avatar
+  (`scene.json models.player`) starts loading after the city has drawn and replaces it. The
+  capsule stays while loading, on failure, below `minDeviceMemoryGB` and on `capsuleTiers`.
+- **Apartment decor** (S16). Items mapped in `scene.json models.decor` (item → model and the slot
+  its colour variant recolours) draw with their hand-made model once `src/scene/apartment/
+decorModels.ts` (its own lazy chunk) has loaded them at the active tier; the rest, and every
+  item until then or if loading fails, keep the code-built stand-ins. The room shell stays
+  code-built (each home's window and door positions come from data).
+- **Tiers.** Models follow the active quality tier (`useActiveTier`): the map avatar, the
+  apartment decor and the shared material (Lambert on low) switch with a runtime step-down.
+- **Service worker.** `public/models/**` is never precached (only on-demand); a unit test guards
+  the precache inputs.
+- **Showcase** (`/dev/models`, test builds only: `NEXT_PUBLIC_TEST_HOOKS=1`, otherwise 404).
+  Review scenes from `data/assets/showcase.json`: `?view=avatars|street|room|catalog`,
+  `&time=day|golden|night`, `&tier=low|mid|high`, `&chrome=0` for clean screenshots;
+  `window.__cloutcityTest.showcase.ready` turns true once every model has drawn.
+- **Budget.** `npm run budget` prints model bytes per tier and load phase from the manifest,
+  fails if the playable-path models alone break `totalBytesToPlayableGzKB`, and fails if the
+  glTF loader reaches the shell JS. Model credits are on /credits.
 
 ## Data, copy and config
 

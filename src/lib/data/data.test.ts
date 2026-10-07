@@ -60,7 +60,7 @@ import {
   ZoneShapesFileSchema,
   ZonesFileSchema,
 } from './schemas/world'
-import { ModelManifestSchema } from './schemas/assets'
+import { ModelManifestSchema, ShowcaseSchema } from './schemas/assets'
 import { CatalogSchema } from '../../../scripts/assets/schema'
 import {
   audio,
@@ -95,6 +95,7 @@ const DATA = join(import.meta.dirname, '../../../data')
 const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'assets/catalog.json': CatalogSchema,
   'assets/manifest.json': ModelManifestSchema,
+  'assets/showcase.json': ShowcaseSchema,
   'audio/manifest.json': AudioManifestSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
   'config/audio.json': AudioConfigSchema,

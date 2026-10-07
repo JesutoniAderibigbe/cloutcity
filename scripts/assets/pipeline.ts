@@ -236,7 +236,11 @@ function colourClassifier(model: Model, ctx: BuildContext, triangles: readonly R
   const anchors: Anchor[] = Object.entries(model.remap ?? {}).map(([hex, token]) => {
     const [swatch] = swatchesFor([token], ctx.palette)
     if (swatch === undefined) throw new Error(`${model.id}: unknown token ${token}`)
-    return { lab: linearToLab(hexToLinear(hex)), swatch }
+    return {
+      lab: linearToLab(hexToLinear(hex)),
+      swatch,
+      ...(model.remapMaxDeltaE !== undefined && { maxDeltaE: model.remapMaxDeltaE }),
+    }
   })
   const harmonised = harmoniseAll(
     { colours, weights, anchors },

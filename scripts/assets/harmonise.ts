@@ -170,6 +170,8 @@ export interface Anchor {
   /** CIELAB of the anchoring source colour (before grading). */
   readonly lab: Rgb
   readonly swatch: Swatch
+  /** Its own capture radius (CIEDE2000); the model's `maxDeltaE` when absent. */
+  readonly maxDeltaE?: number
 }
 
 export interface HarmoniseInput {
@@ -212,8 +214,11 @@ export function harmoniseAll(
   const graded = input.colours.map((rgb) => applyGrade(rgb, grade))
   const anchors = input.anchors ?? []
   const member = input.colours.map((rgb, i): Swatch | undefined => {
-    const anchor = nearest(linearToLab(rgb), anchors, (a) => a.lab, maxDeltaE)
-    if (anchor !== undefined) return anchor.swatch
+    const lab = linearToLab(rgb)
+    const anchor = nearest(lab, anchors, (a) => a.lab, maxDeltaE)
+    if (anchor !== undefined && deltaE2000(lab, anchor.lab) <= (anchor.maxDeltaE ?? maxDeltaE)) {
+      return anchor.swatch
+    }
     return nearest(linearToLab(graded[i] ?? rgb), swatches, (s) => s.lab, maxDeltaE)
   })
   const lightness = graded.map((rgb) => linearToOklab(rgb)[0])

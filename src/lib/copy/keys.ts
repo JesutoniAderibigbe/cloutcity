@@ -25,6 +25,7 @@ export type CopyKey =
   | keyof (typeof import('@data/copy/loading/base.json'))['strings']
   | keyof (typeof import('@data/copy/map/base.json'))['strings']
   | keyof (typeof import('@data/copy/mod/base.json'))['strings']
+  | keyof (typeof import('@data/copy/models/base.json'))['strings']
   | keyof (typeof import('@data/copy/nav/base.json'))['strings']
   | keyof (typeof import('@data/copy/offline/base.json'))['strings']
   | keyof (typeof import('@data/copy/place/base.json'))['strings']

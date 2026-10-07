@@ -225,6 +225,7 @@ export function CitySceneClient(props: SceneProps) {
             quality={props.quality}
             buildings={props.buildings}
             travelAnimation={props.travelAnimation}
+            playerModel={props.playerModel}
             label={copy.label}
             expandingSoon={copy.expandingSoon}
             landmarkNames={copy.landmarkNames}

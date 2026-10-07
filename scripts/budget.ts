@@ -29,6 +29,10 @@
  * positive control that proves, on a real build, that a limit below the measured size fails
  * (perf.json itself is never edited for that).
  *
+ * - Hand-made models (S04h): bytes per tier and load phase from data/assets/manifest.json, the
+ *   glTF loader kept out of the shell JS, and the model runtime's own lazy chunk reported
+ *   (scripts/budget-models.ts).
+ *
  * Every lookup has a positive control: a marker, loader or manifest entry that cannot be found
  * fails the run, so a change in the build format cannot turn a check into a silent pass.
  * scripts/shell-guard.ts runs next and checks the boot path and that no test hook ships.
@@ -39,6 +43,7 @@ import { join, relative, resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { z } from 'zod'
 import { PerfConfigSchema, QUALITY_TIERS } from '../src/lib/data/schemas/config.ts'
+import { loaderLeaks, modelBudgetLines } from './budget-models.ts'
 
 export interface ScriptRefs {
   /** `src` values of external scripts, in document order, deduplicated. */
@@ -809,6 +814,25 @@ async function main(): Promise<void> {
       lines.push(report(result, `${count} districts plus /geo/blocks/${tier}`))
     }
   }
+
+  const readJson = async (file: string): Promise<unknown> =>
+    JSON.parse(await readFile(join(root, file), 'utf8'))
+  const shellCode = new Map(shellFiles.map((file) => [file, chunks.get(file) ?? '']))
+  shellCode.set('(inline)', inline.join('\n'))
+  const models = modelBudgetLines(
+    await readJson('data/assets/manifest.json'),
+    perf,
+    await readJson('data/config/scene.json'),
+    shellCode,
+  )
+  lines.push(...models.map((line) => line.text))
+  if (models.some((line) => !line.ok)) process.exitCode = 1
+  // The model runtime's lazy chunk(s), loaded once the city has drawn (or the apartment or the
+  // showcase opens): outside the shell and 3D chunk budgets, reported so growth stays visible.
+  const runtime = loaderLeaks(chunks)
+  lines.push(
+    `INFO Model runtime JS (lazy, after the map draws): ${kb(sum(runtime))} KB gz in ${runtime.length} chunks`,
+  )
 
   const duplicates = duplicateModules(chunks)
   const top = duplicates.top.map(([id, count, bytes]) => `#${id} ×${count} +${kb(bytes)} KB`)

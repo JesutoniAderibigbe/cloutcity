@@ -65,6 +65,7 @@ export interface CityCanvasProps extends Pick<
   | 'quality'
   | 'buildings'
   | 'travelAnimation'
+  | 'playerModel'
 > {
   /**
    * The downloaded geo body, validated here before the canvas mounts; null while it downloads
@@ -175,6 +176,7 @@ function CityScene3D({
   quality,
   buildings,
   travelAnimation,
+  playerModel,
   label,
   expandingSoon,
   landmarkNames,
@@ -333,6 +335,10 @@ function CityScene3D({
             color={palette.player}
             toonRamp={palette.toonRamp}
             avatar={config.avatar}
+            model={playerModel}
+            models={config.models}
+            tier={tier}
+            loadModel={cityReady}
             onPlaced={() => {
               placedRef.current = true
             }}
