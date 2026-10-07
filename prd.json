@@ -358,7 +358,7 @@
       ],
       "acceptance": "Migrations for profiles (with age attestation timestamp, consent version and timestamp, audio preference), saves, friendships, friend_boosts, roommates, referrals, live_stats, purchases, entitlements and grants, all with Row Level Security; purchases, entitlements and grants are readable only by their owner and writable only by the service role; a profile row is created on first guest session and receives the S05a attestation and consent; a server helper requires attestation and every social, realtime and purchase RPC calls it (test proves an unattested account is refused); a server-side function enforces one friend boost per sender per day; tests prove users cannot read or write others' private rows.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
