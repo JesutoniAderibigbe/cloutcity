@@ -1,0 +1,7 @@
+{
+  "strings": {
+    "safety.report.error.reason": "Pick a reason for your report.",
+    "safety.report.error.noteTooLong": "That note is too long. Trim it down a little.",
+    "safety.report.error.noteContact": "Leave out links, emails, phone numbers, @handles and hidden characters."
+  }
+}

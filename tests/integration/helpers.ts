@@ -89,3 +89,61 @@ export function expectRpcError(
   expect(error?.message).toBe(message)
   if (code !== undefined) expect(error?.code).toBe(code)
 }
+
+/**
+ * A permanent (email) account that has attested, like a moderator signed in to /mod. The /mod
+ * routes check the email allowlist; the database only checks the id is a real, non-guest user.
+ */
+export async function newPermanentUser(): Promise<Guest> {
+  const email = `it-${crypto.randomUUID()}@example.test`
+  const password = `pw-${crypto.randomUUID()}`
+  const service = serviceClient()
+  const created = await service.auth.admin.createUser({ email, password, email_confirm: true })
+  if (created.error !== null) throw created.error
+  const client = anonClient()
+  const signedIn = await client.auth.signInWithPassword({ email, password })
+  if (signedIn.error !== null) throw signedIn.error
+  const guest = { client, id: created.data.user.id }
+  const { error } = await client.rpc('attest_and_consent', toAttestationArgs(welcomeRecord()))
+  if (error !== null) throw error
+  return guest
+}
+
+const rollback = new Error('rollback')
+
+/**
+ * Runs `body` inside a transaction as the given database role with the given JWT claims, the
+ * way PostgREST does for a request, then rolls back. In one transaction now() is fixed, so the
+ * exact clock edges can be hit, and settings changed first are seen by no one else.
+ */
+export async function asRequest<T>(
+  role: 'anon' | 'authenticated' | 'service_role',
+  claims: Record<string, unknown>,
+  body: (tx: postgres.TransactionSql) => Promise<T>,
+  before?: (tx: postgres.TransactionSql) => Promise<unknown>,
+): Promise<T> {
+  let result: T | undefined
+  await expect(
+    sql.begin(async (tx) => {
+      if (before !== undefined) await before(tx)
+      await tx`select set_config('request.jwt.claims', ${JSON.stringify(claims)}, true)`
+      await tx.unsafe(`set local role ${role}`)
+      result = await body(tx)
+      throw rollback
+    }),
+  ).rejects.toBe(rollback)
+  return result as T
+}
+
+/** The error a statement raised inside a savepoint (so the transaction carries on), or null. */
+export async function errorOf(
+  tx: postgres.TransactionSql,
+  run: (sp: postgres.TransactionSql) => Promise<unknown>,
+): Promise<{ message: string; code: string } | null> {
+  try {
+    await tx.savepoint(run)
+    return null
+  } catch (error) {
+    return error as { message: string; code: string }
+  }
+}
