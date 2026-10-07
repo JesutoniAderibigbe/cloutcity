@@ -21,7 +21,8 @@ export interface CloutMeterProps {
 /**
  * The player's clout level and progress to the next level (S13). Purely presentational: the
  * level name, a native <progress> whose accessible name says it all ("Clout: Local, 140 of 300
- * to Scene Regular"), and the numbers. At the top level the bar stays full.
+ * to Scene Regular"), and the numbers, on one line under the HUD's goal line (S05). At the top
+ * level the bar stays full.
  */
 export function CloutMeter({ levelName, total, next, pct, atMax }: CloutMeterProps) {
   const count = formatCount(total)
@@ -35,26 +36,27 @@ export function CloutMeter({ levelName, total, next, pct, atMax }: CloutMeterPro
     <div
       data-clout-meter=""
       data-cc-feature="cc-feature:clout-hud"
-      className="flex min-w-0 shrink-0 flex-col items-end gap-1"
+      className="flex min-w-0 items-center gap-1.5"
     >
-      {/* Below sm the HUD row is full (S15 added the Goals button): the word "Clout" gives way
-          so a long level name ("Scene Regular") never squeezes the title to nothing. The bar's
-          accessible name still starts with it. S05 splits the HUD into two rows. */}
-      <p aria-hidden="true" className="flex gap-1.5 text-xs leading-none font-bold">
-        <span className="hidden text-ink-300 sm:inline">{copy('hud.clout.label')}</span>
-        <span className="text-taxi-400">{levelName}</span>
-      </p>
+      {/* One line under the goal line (S05): level, bar, numbers. The bar's accessible name
+          says it all, so the visible text is hidden from screen readers. */}
+      <span
+        aria-hidden="true"
+        className="max-w-[45%] shrink-0 truncate text-[11px] leading-none font-bold text-taxi-400"
+      >
+        {levelName}
+      </span>
       <progress
         aria-label={label}
         max={100}
         value={atMax ? 100 : pct}
-        className="h-2 w-20 appearance-none sm:w-28 overflow-hidden rounded-full bg-night-800 [&::-moz-progress-bar]:bg-pink-400 [&::-webkit-progress-bar]:bg-night-800 [&::-webkit-progress-value]:bg-pink-400"
+        className="h-1.5 min-w-6 flex-1 appearance-none overflow-hidden rounded-full bg-night-950 [&::-moz-progress-bar]:bg-pink-400 [&::-webkit-progress-bar]:bg-night-950 [&::-webkit-progress-value]:bg-pink-400"
       />
-      <p aria-hidden="true" className="text-[11px] leading-none text-ink-300">
+      <span aria-hidden="true" className="shrink-0 text-[11px] leading-none text-ink-300">
         {target === null
           ? copy('hud.clout.max', { count })
           : copy('hud.clout.progress', { count, target })}
-      </p>
+      </span>
     </div>
   )
 }

@@ -177,7 +177,7 @@ test.describe('3D city scene', () => {
     await expect(page.getByRole('img', { name: '3D map of New York City' })).toBeVisible()
   })
 
-  test('the default view starts at the Queens camera within the mid-tier budget', async ({
+  test('the default view starts over the Queens room within the mid-tier budget', async ({
     page,
   }) => {
     await page.goto('/')
@@ -190,7 +190,8 @@ test.describe('3D city scene', () => {
     expect(info?.triangles).toBeLessThanOrEqual(perf.trianglesMax.mid)
 
     const state = await camera(page)
-    const start = project({ lat: 40.7471, lng: -73.9456 })
+    // data/homes/homes.json queens-room: every new player's home (S05).
+    const start = project({ lat: 40.7651, lng: -73.9247 })
     expect(state.target.x).toBeCloseTo(start.x, 0)
     expect(-state.target.z).toBeCloseTo(start.y, 0)
     expect(state.polarDeg).toBeCloseTo(48, 1)
@@ -484,6 +485,11 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
       const movedPx = Math.hypot(px.x, px.y)
       if (movedM > 0 && movedPx > 0) metresPerPx = movedM / movedPx
     }
+    // Zoom towards the target itself: it projects to the canvas centre (zoom-to-cursor would pull
+    // the view towards any other point, such as the free row's centre below the S05 HUD).
+    const viewport = page.viewportSize()
+    if (!viewport) throw new Error('viewport size is not set')
+    await page.mouse.move(viewport.width / 2, viewport.height / 2)
     for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -20_000)
     await settle(page)
     const over = await camera(page)

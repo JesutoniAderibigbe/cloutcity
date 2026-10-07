@@ -39,7 +39,8 @@ describe('feature copy renders with only its own namespaces loaded', () => {
       'loading.place',
       'loading.sound',
       'loading.soundSettings',
-      'loading.clout',
+      'loading.hud',
+      'loading.more',
       'loading.levelUp',
     ] as const
     for (const labelKey of loadingKeys) {
@@ -169,8 +170,8 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     expect(done).toBeGreaterThan(0)
   })
 
-  it('the HUD clout chunk: the meter at every level, with and without a next level', async () => {
-    await import('@/components/hud/CloutHudIsland')
+  it('the HUD live chunk: the meter at every level, with and without a next level', async () => {
+    await import('@/components/hud/HudLive')
     const { CloutMeter } = await import('@/components/hud/CloutMeter')
     const { cloutLevelName } = await import('@/lib/economyCopy')
     const { engineConfig } = await import('@/engine/config')
@@ -191,12 +192,39 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     })
   })
 
-  it('the clout HUD chunk: the Goals button label for any count (S15)', async () => {
-    await import('@/components/hud/CloutHudIsland')
+  it('the HUD live chunk: the Goals button label for any count (S15, S05)', async () => {
+    await import('@/components/hud/HudLive')
     const { copy } = await import('./index')
-    expect(copy('hud.goals')).toBe('Goals')
-    expect(copy('hud.goalsReadyOne')).toBe('Goals, 1 reward ready')
-    expect(copy('hud.goalsReady', { count: '2' })).toBe('Goals, 2 rewards ready')
+    const goal = copy('hud.goalLine')
+    expect(goal).toBe('Make it in New York')
+    expect(copy('hud.goals', { goal })).toBe('Goals: Make it in New York')
+    expect(copy('hud.goalsReadyOne', { goal })).toBe('Goals: Make it in New York, 1 reward ready')
+    expect(copy('hud.goalsReady', { goal, count: '2' })).toBe(
+      'Goals: Make it in New York, 2 rewards ready',
+    )
+  })
+
+  it('the HUD live chunk renders every cell for a new player (S05)', async () => {
+    const { HudLive } = await import('@/components/hud/HudLive')
+    const markup = renderToStaticMarkup(createElement(HudLive))
+    for (const cell of ['money', 'clock', 'speed', 'clout', 'stats']) {
+      expect(markup).toContain(`data-hud-cell="${cell}"`)
+    }
+    for (const text of ['$150', 'Day 1', '8:00 AM', 'Make it in New York', 'Nobody']) {
+      expect(markup).toContain(text)
+    }
+    expect(markup).toContain('aria-valuetext="80 of 100"')
+    expect(markup).toContain('Game speed 1x, tap to change')
+  })
+
+  it('the More panel chunk and the HUD skeleton render their labels (S05)', async () => {
+    // The skeleton is shell code: boot copy only.
+    const { HudSkeleton } = await import('@/components/hud/HudSkeleton')
+    expect(renderToStaticMarkup(createElement(HudSkeleton))).toContain('Loading your stats')
+    expect(await registered()).not.toContain('hud')
+    const { MorePanel } = await import('@/components/hud/MorePanel')
+    const more = renderToStaticMarkup(createElement(MorePanel))
+    for (const text of ['Inventory', 'Rent', 'Sound settings']) expect(more).toContain(text)
   })
 
   it('the goals chunk: every goal line, status, reward and claim label (S15)', async () => {

@@ -1,5 +1,5 @@
 /**
- * Server mount of the 3D map: resolves config, palette tokens, projected start and bounds, and
+ * Server mount of the 3D map: resolves config, palette tokens, projected homes and bounds, and
  * copy into small serialisable props, so the client scene needs no config loader, classic zod
  * or colour literal.
  */
@@ -12,9 +12,10 @@ import { copy } from '@/lib/copy'
 // The map copy renders here on the server and reaches the client as props, so the map
 // namespace never ships in the shell (DEC-11).
 import '@/lib/copy/ns/map'
-import { perf, scene } from '@/lib/data/config'
-import { geoBounds } from '@/lib/data/content'
+import { balance, perf, scene } from '@/lib/data/config'
+import { geoBounds, homes } from '@/lib/data/content'
 import { geoVersion } from '@/lib/data/geo'
+import { HOME_IDS } from '@/lib/data/homes'
 import { project } from '@/lib/geo/projection'
 import { scenePalette } from '@/lib/theme'
 import { boundsToLocal } from './camera/limits'
@@ -28,7 +29,10 @@ export function CityScene() {
     geoUrl: `/geo/base?v=${geoVersion}`,
     palette: scenePalette(),
     config: scene,
-    startLocal: project(scene.camera.start),
+    homesLocal: Object.fromEntries(
+      HOME_IDS.map((id) => [id, project(homes[id].location)]),
+    ) as SceneProps['homesLocal'],
+    startHome: balance.start.home,
     boundsLocal: boundsToLocal(geoBounds),
     // Quality tiers arrive with S04b; until then every device gets the mid tier's cap.
     dprCap: perf.dprCap.mid,

@@ -99,7 +99,8 @@ export function CitySceneClient(props: SceneProps) {
             onInvalidGeo={onInvalidGeo}
             palette={props.palette}
             config={props.config}
-            startLocal={props.startLocal}
+            homesLocal={props.homesLocal}
+            startHome={props.startHome}
             boundsLocal={props.boundsLocal}
             dprCap={props.dprCap}
             label={copy.label}

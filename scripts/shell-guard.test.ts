@@ -32,6 +32,12 @@ describe('shellGuardFailures', () => {
     ])
   })
 
+  it('fails on the Supabase anonymous sign-in in the shell (S05)', () => {
+    expect(shellGuardFailures(withShell('a.auth.signInAnonymously()'))).toEqual([
+      'chunks/shell.js: Supabase auth (signInAnonymously)',
+    ])
+  })
+
   it('fails on a feature marker in the shell', () => {
     expect(shellGuardFailures(withShell('"cc-feature:event-sheet"'))).toEqual([
       'chunks/shell.js: feature module cc-feature:event-sheet',

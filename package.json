@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "e2e": "playwright test",
+    "e2e:supabase": "playwright test --config playwright.supabase.config.ts",
     "budget": "node scripts/budget.ts && node scripts/shell-guard.ts",
     "db:types": "supabase gen types --local --schema public > src/lib/supabase/database.types.ts",
     "geo:build": "node scripts/geo/build.ts",

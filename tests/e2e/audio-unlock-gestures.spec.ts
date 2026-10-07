@@ -3,6 +3,7 @@ import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import { SILENT, audio, installAudioProbe, probeOf, trackAudioRequests } from './fixtures/audio'
 import { T0, YEAR, welcomeDialog } from './fixtures/welcome'
 import { waitForMapSettled } from './helpers/scene'
+import { openFromHud } from './helpers/hud'
 
 // GR-13 edges (S05b): which gestures count as the deliberate tap on the sound choice, and how
 // sound comes back after the browser suspends it. The shared fixture seeds a returning player
@@ -66,7 +67,7 @@ test('keyboard arrows on a volume slider while sound is off are a deliberate cho
   await installAudioProbe(page)
   await page.goto('/')
   await waitForMapSettled(page)
-  await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
+  await openFromHud(page, 'Sound settings')
   const sheet = page.getByRole('region', { name: 'Sound' })
   await expect(sheet).toBeVisible()
   expect(await probeOf(page)).toEqual(SILENT)
@@ -86,7 +87,7 @@ test('the "My own music" checkbox while sound is off turns sound on with music p
   await installAudioProbe(page)
   await page.goto('/')
   await waitForMapSettled(page)
-  await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
+  await openFromHud(page, 'Sound settings')
   const checkbox = page
     .getByRole('region', { name: 'Sound' })
     .getByRole('checkbox', { name: 'My own music' })

@@ -49,6 +49,7 @@ export function scenePalette(): ScenePalette {
     subwayLines: scene.subwayLines.map(tokenHex),
     subwayCasing: tokenHex(scene.subwayCasing),
     station: tokenHex(scene.station),
+    player: tokenHex(scene.player),
     labelInk: tokenHex(scene.labelInk),
     ambientLight: tokenHex(scene.ambientLight),
     sunLight: tokenHex(scene.sunLight),

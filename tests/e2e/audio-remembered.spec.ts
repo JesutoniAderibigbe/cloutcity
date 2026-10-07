@@ -2,6 +2,7 @@ import { expect, test } from './fixtures/test'
 import { SILENT, audio, installAudioProbe, probeOf, trackAudioRequests } from './fixtures/audio'
 import { storedOnboarding } from './fixtures/welcome'
 import { waitForMapSettled } from './helpers/scene'
+import { openFromHud } from './helpers/hud'
 
 // A returning player (the shared fixture seeds a completed card with "I'll bring my own") hears
 // nothing until they tap the sound control; their choice is remembered (S05b, GR-13).
@@ -28,7 +29,7 @@ test('stays silent until the sound control is tapped, and remembers "My own musi
     .getByRole('navigation', { name: 'Main' })
     .getByRole('button', { name: 'Phone' })
     .click()
-  await page.getByRole('heading', { level: 1, name: 'Clout City: NYC' }).click()
+  await page.locator('[data-hud-cell="money"]').click()
   await page.keyboard.press('Space')
   expect(await probeOf(page)).toEqual(SILENT)
   expect(requests).toEqual([])
@@ -41,7 +42,7 @@ test('stays silent until the sound control is tapped, and remembers "My own musi
   const toggle = page.getByRole('button', { name: 'My own music' })
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
 
-  await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
+  await openFromHud(page, 'Sound settings')
   await expect(
     page.getByRole('region', { name: 'Sound' }).getByRole('checkbox', { name: 'My own music' }),
   ).toBeChecked()

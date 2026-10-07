@@ -1,9 +1,5 @@
 {
   "camera": {
-    "start": {
-      "lat": 40.7471,
-      "lng": -73.9456
-    },
     "fovDeg": 45,
     "distanceM": 4500,
     "minDistanceM": 250,
@@ -46,6 +42,18 @@
     "minRadiusM": 6,
     "maxRadiusM": 120,
     "rescaleRatio": 1.15
+  },
+  "avatar": {
+    "heightPerDistance": 0.012,
+    "minHeightM": 3,
+    "maxHeightM": 400,
+    "radiusRatio": 0.22,
+    "ringOuterRatio": 0.6,
+    "ringInnerRatio": 0.42,
+    "ringLiftRatio": 0.02,
+    "capSegments": 4,
+    "radialSegments": 12,
+    "ringSegments": 24
   },
   "labels": {
     "maxDistanceM": 12000,

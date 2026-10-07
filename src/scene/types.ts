@@ -2,6 +2,7 @@
  * Serialisable props the server scene mount (CityScene.tsx) hands to the client scene. Types
  * only, so the client never imports a config loader.
  */
+import type { HomeIdLiteral } from '@/lib/data/homes'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
 import type { LocalBounds } from './camera/limits'
@@ -17,6 +18,8 @@ export interface ScenePalette {
   readonly subwayLines: readonly string[]
   readonly subwayCasing: string
   readonly station: string
+  /** The player's avatar placeholder and its ring (S05). */
+  readonly player: string
   readonly labelInk: string
   readonly ambientLight: string
   readonly sunLight: string
@@ -37,8 +40,13 @@ export interface SceneProps {
   readonly geoUrl: string
   readonly palette: ScenePalette
   readonly config: SceneConfig
-  /** camera.start projected to local metres. */
-  readonly startLocal: LocalPoint
+  /** Every home (data/homes/homes.json) projected to local metres. */
+  readonly homesLocal: Readonly<Record<HomeIdLiteral, LocalPoint>>
+  /**
+   * The new player's home (balance.json `start.home`): where the camera and avatar start until
+   * the HUD has read the save (src/state/playerHome.ts).
+   */
+  readonly startHome: HomeIdLiteral
   /** data/geo/bounds.json in local metres: the camera target never leaves it. */
   readonly boundsLocal: LocalBounds
   readonly dprCap: number

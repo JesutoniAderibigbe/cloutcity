@@ -323,40 +323,33 @@ test.describe('the level-up toast', () => {
 })
 
 test.describe('the HUD clout meter', () => {
-  test('sits inside the HUD without covering the title or tagline', async ({ page }) => {
+  test('sits under the goal line inside the clout cell, clear of every other cell (S05)', async ({
+    page,
+  }) => {
     await boot(page)
-    const hud = page.locator('[data-overlay-zone="hud"]')
     await expect(meter(page)).toBeVisible()
-    // The text's own extent, not its block box (which spans the header), clipped to that box:
-    // since S10a added the Inventory and Rent buttons to the row, the title and tagline
-    // truncate at phone widths, and the hidden overflow covers nothing.
-    const textBox = (selector: string) =>
-      hud
-        .locator(selector)
-        .first()
-        .evaluate((el) => {
-          const range = document.createRange()
-          range.selectNodeContents(el)
-          const text = range.getBoundingClientRect()
-          const box = el.getBoundingClientRect()
-          const x = Math.max(text.x, box.x)
-          const right = Math.min(text.x + text.width, box.x + box.width)
-          return { x, y: text.y, width: Math.max(0, right - x), height: text.height }
-        })
-    const [zone, meterBox, title, tagline] = await Promise.all([
-      hud.boundingBox(),
-      hud.locator('[data-clout-meter]').boundingBox(),
-      textBox('header h1'),
-      textBox('header > p'),
+    const box = (selector: string) => page.locator(selector).first().boundingBox()
+    const [cell, meterBox, goalLine] = await Promise.all([
+      box('[data-hud-cell="clout"]'),
+      box('[data-clout-meter]'),
+      box('[data-hud-goal-line]'),
     ])
-    if (zone === null || meterBox === null) throw new Error('missing HUD boxes')
-    expect(title.width).toBeGreaterThan(0)
-    expect(meterBox.y).toBeGreaterThanOrEqual(zone.y)
-    expect(meterBox.y + meterBox.height).toBeLessThanOrEqual(zone.y + zone.height)
-    expect(meterBox.x + meterBox.width).toBeLessThanOrEqual(zone.x + zone.width)
-    for (const text of [title, tagline]) {
-      const apart = text.x + text.width <= meterBox.x || meterBox.y + meterBox.height <= text.y
-      expect(apart).toBe(true)
+    if (cell === null || meterBox === null || goalLine === null) {
+      throw new Error('missing HUD boxes')
+    }
+    expect(meterBox.x).toBeGreaterThanOrEqual(cell.x)
+    expect(meterBox.x + meterBox.width).toBeLessThanOrEqual(cell.x + cell.width + 0.5)
+    expect(meterBox.y + meterBox.height).toBeLessThanOrEqual(cell.y + cell.height + 0.5)
+    expect(meterBox.y).toBeGreaterThanOrEqual(goalLine.y + goalLine.height - 0.5)
+    for (const other of ['money', 'clock', 'speed', 'stats', 'actions']) {
+      const otherBox = await box(`[data-hud-cell="${other}"]`)
+      if (otherBox === null) throw new Error(`no ${other} cell`)
+      const apart =
+        otherBox.x + otherBox.width <= meterBox.x ||
+        meterBox.x + meterBox.width <= otherBox.x ||
+        otherBox.y + otherBox.height <= meterBox.y ||
+        meterBox.y + meterBox.height <= otherBox.y
+      expect(apart, other).toBe(true)
     }
   })
 })

@@ -12,7 +12,7 @@ const IconMoment = lazyIsland(() => import('./IconMoment').then((module) => modu
 })
 
 /**
- * The modal slot's Icon moment (S15): nothing until the HUD clout island reports that the run
+ * The modal slot's Icon moment (S15): nothing until the HUD's live island reports that the run
  * reached the victory goal and the player has not seen the moment yet.
  */
 export function IconMomentMount() {

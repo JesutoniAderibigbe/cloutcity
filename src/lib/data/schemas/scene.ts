@@ -16,13 +16,9 @@ const AngleRangeSchema = z
   })
 
 export const SceneConfigSchema = z.strictObject({
+  /** The camera starts over the player's home (data/homes/homes.json), not a fixed point. */
   camera: z
     .strictObject({
-      /** Where the camera looks at first (the Queens start). */
-      start: z.strictObject({
-        lat: z.number().min(-90).max(90),
-        lng: z.number().min(-180).max(180),
-      }),
       fovDeg: z.number().gt(0).lt(180),
       distanceM: metres,
       minDistanceM: metres,
@@ -80,6 +76,32 @@ export const SceneConfigSchema = z.strictObject({
     })
     .refine((s) => s.minRadiusM <= s.maxRadiusM, {
       error: 'minRadiusM must not exceed maxRadiusM',
+    }),
+  /**
+   * The player's avatar placeholder (S05): a toon capsule on a flat ring at the player's home.
+   * Like the station markers it grows with camera distance (clamped), so it stays visible from
+   * the default view and never towers over the street up close. Ratios are of its height.
+   */
+  avatar: z
+    .strictObject({
+      heightPerDistance: ratio,
+      minHeightM: metres,
+      maxHeightM: metres,
+      /** Capsule radius. */
+      radiusRatio: z.number().gt(0).lt(0.5),
+      ringOuterRatio: ratio,
+      ringInnerRatio: z.number().nonnegative(),
+      /** The ring floats this far above the land so it never fights it in the depth test. */
+      ringLiftRatio: z.number().nonnegative().max(0.1),
+      capSegments: z.int().min(1).max(16),
+      radialSegments: z.int().min(3).max(32),
+      ringSegments: z.int().min(3).max(64),
+    })
+    .refine((a) => a.minHeightM <= a.maxHeightM, {
+      error: 'minHeightM must not exceed maxHeightM',
+    })
+    .refine((a) => a.ringInnerRatio < a.ringOuterRatio, {
+      error: 'ringInnerRatio must be less than ringOuterRatio',
     }),
   labels: z.strictObject({
     /** Line letters are hidden when the camera is farther than this. */

@@ -3,6 +3,7 @@ import type { Locator, Page } from '@playwright/test'
 import type { HudTestHook } from '@/components/hud/hudTestHook'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
+import { hudIsWide, hudOpener, openFromHud } from './helpers/hud'
 
 // S10a: the shop in a thrift store's place sheet, the inventory and rent panels from the HUD,
 // and a shift with its lock and energy states. Places open through the S09 test hook (the same
@@ -97,7 +98,7 @@ test.describe('shop, inventory, jobs and rent', () => {
     expect(worked.minute).toBe(bought.minute + shift.durationMin)
 
     // Inventory from the HUD: the place sheet makes way for the panel.
-    await page.getByRole('button', { name: 'Inventory', exact: true }).click()
+    await openFromHud(page, 'Inventory')
     const inventory = page.getByRole('dialog', { name: 'Inventory' })
     await expect(inventory).toBeVisible()
     await expect(card).toHaveCount(0)
@@ -121,7 +122,7 @@ test.describe('shop, inventory, jobs and rent', () => {
     await expect(inventory.getByRole('status')).not.toHaveText('')
 
     // Rent: nothing has come due yet; advancing past a rent day pays it and shows the notice.
-    await page.getByRole('button', { name: 'Rent', exact: true }).click()
+    await openFromHud(page, 'Rent')
     const rent = page.getByRole('dialog', { name: 'Rent' })
     await expect(rent).toBeVisible()
     await expect(rent.locator('[data-rent-next-due]')).toHaveText(/ day \d+\.$/)
@@ -140,7 +141,7 @@ test.describe('shop, inventory, jobs and rent', () => {
     await rent.getByRole('heading', { name: 'Rent', exact: true }).focus()
     await page.keyboard.press('Escape')
     await expect(rent).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Rent', exact: true })).toBeFocused()
+    await expect(hudOpener(page, 'Rent')).toBeFocused()
   })
 
   test('a buy the player cannot afford, and a tired player, say why in the accessible name', async ({
@@ -171,19 +172,25 @@ test.describe('shop, inventory, jobs and rent', () => {
   })
 
   test('HUD buttons are 44 px targets and toggle their panel', async ({ page, checkA11y }) => {
-    for (const name of ['Inventory', 'Rent']) {
-      const button = page.getByRole('button', { name, exact: true })
+    // Wide screens show Inventory and Rent; phones show More, which holds them (S05).
+    const toggles = hudIsWide(page)
+      ? (['Inventory', 'Rent'] as const).map((name) => ({ name, dialog: name }))
+      : [{ name: 'More', dialog: 'More' }]
+    for (const { name, dialog } of toggles) {
+      const button = page
+        .locator('[data-overlay-zone="hud"]')
+        .getByRole('button', { name, exact: true })
       const box = await button.boundingBox()
       if (box === null) throw new Error(`${name} is not rendered`)
       expect(box.height).toBeGreaterThanOrEqual(44)
       expect(box.width).toBeGreaterThanOrEqual(44)
       await button.click()
-      await expect(page.getByRole('dialog', { name })).toBeVisible()
+      await expect(page.getByRole('dialog', { name: dialog })).toBeVisible()
       await expect(button).toHaveAttribute('aria-expanded', 'true')
       await button.click()
-      await expect(page.getByRole('dialog', { name })).toHaveCount(0)
+      await expect(page.getByRole('dialog', { name: dialog })).toHaveCount(0)
     }
-    await page.getByRole('button', { name: 'Inventory', exact: true }).click()
+    await openFromHud(page, 'Inventory')
     await expect(page.getByText(/^Nothing here yet\./)).toBeVisible()
     await checkA11y()
   })
@@ -248,7 +255,7 @@ async function buyThrough(page: Page, ids: readonly string[], cash: number) {
 }
 
 async function openInventory(page: Page) {
-  await page.getByRole('button', { name: 'Inventory', exact: true }).click()
+  await openFromHud(page, 'Inventory')
   const panel = inventoryDialog(page)
   await expect(panel).toBeVisible()
   return panel
@@ -396,13 +403,13 @@ test.describe('shop and inventory: double taps and focus', () => {
 
     // Panel to panel: Rent replaces Inventory, and closing Rent returns to the Rent button.
     await openInventory(page)
-    await page.getByRole('button', { name: 'Rent', exact: true }).click()
+    await openFromHud(page, 'Rent')
     const rent = page.getByRole('dialog', { name: 'Rent' })
     await expect(rent.getByRole('heading', { name: 'Rent', exact: true })).toBeFocused()
     await expect(dialogs).toHaveCount(1)
     await rent.getByRole('button', { name: /^Close / }).click()
     await expect(dialogs).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Rent', exact: true })).toBeFocused()
+    await expect(hudOpener(page, 'Rent')).toBeFocused()
   })
 })
 
@@ -472,7 +479,7 @@ test.describe('rent notices', () => {
     checkA11y,
   }) => {
     await page.evaluate(() => window.__cloutcityPlaces?.setCash(0))
-    await page.getByRole('button', { name: 'Rent', exact: true }).click()
+    await openFromHud(page, 'Rent')
     const rent = page.getByRole('dialog', { name: 'Rent' })
     const notice = rent.locator('[data-rent-notice]')
     const owed = rent.locator('[data-rent-owed]')
@@ -581,10 +588,12 @@ test.describe('shop on a phone', () => {
       await expect(sheet(page).locator('[data-shop-item] button:enabled').first()).toBeAttached()
       await checkA11y()
 
-      // The HUD buttons stay 44 px targets beside the title.
-      for (const name of ['Inventory', 'Rent']) {
-        const box = await page.getByRole('button', { name, exact: true }).boundingBox()
-        if (!box) throw new Error(`${name} is not rendered`)
+      // The HUD's actions stay 44 px targets (on phones Inventory and Rent are behind More).
+      const actions = await page.locator('[data-hud-cell="actions"] button:visible').all()
+      expect(actions.length).toBeGreaterThan(0)
+      for (const action of actions) {
+        const box = await action.boundingBox()
+        if (!box) throw new Error('a HUD action is not rendered')
         expect(box.height).toBeGreaterThanOrEqual(44)
         expect(box.width).toBeGreaterThanOrEqual(44)
       }
@@ -592,74 +601,7 @@ test.describe('shop on a phone', () => {
   }
 })
 
-test.describe('HUD row', () => {
-  test.beforeEach(async ({ page }) => {
-    await boot(page)
-  })
-
-  // The HUD row holds the title, the clout meter, the Inventory and Rent buttons and the sound
-  // control. Below `sm` the two panel buttons are icon buttons (their labels stay their
-  // accessible names) so nothing in the row overlaps at 390 px.
-  for (const width of [390, 1280]) {
-    test(`at ${width} px nothing in the HUD row overlaps and every control fits the row`, async ({
-      page,
-      checkA11y,
-    }) => {
-      await page.setViewportSize({ width, height: 844 })
-      const zone = page.locator('[data-overlay-zone="hud"]')
-      const inventory = page.getByRole('button', { name: 'Inventory', exact: true })
-      const rent = page.getByRole('button', { name: 'Rent', exact: true })
-      await expect(inventory).toBeVisible()
-      await expect(zone.locator('[data-clout-meter]')).toBeVisible()
-      await expect(zone.locator('[data-cc-feature="cc-feature:sound-control"]')).toBeVisible()
-
-      const parts = [
-        { name: 'title', locator: zone.locator('h1') },
-        { name: 'clout meter', locator: zone.locator('[data-clout-meter]') },
-        { name: 'Inventory', locator: inventory },
-        { name: 'Rent', locator: rent },
-        ...(await zone.locator('[data-cc-feature="cc-feature:sound-control"] button').all()).map(
-          (locator, index) => ({ name: `sound control ${index}`, locator }),
-        ),
-      ]
-      const row = await zone.boundingBox()
-      if (row === null) throw new Error('the HUD zone is not rendered')
-      const boxes = []
-      for (const part of parts) {
-        const box = await part.locator.boundingBox()
-        if (box === null) throw new Error(`${part.name} is not rendered`)
-        expect(box.width, `${part.name} width`).toBeGreaterThan(0)
-        expect(box.x, `${part.name} left`).toBeGreaterThanOrEqual(row.x - 0.5)
-        expect(box.x + box.width, `${part.name} right`).toBeLessThanOrEqual(row.x + row.width + 0.5)
-        expect(box.y, `${part.name} top`).toBeGreaterThanOrEqual(row.y - 0.5)
-        expect(box.y + box.height, `${part.name} bottom`).toBeLessThanOrEqual(
-          row.y + row.height + 0.5,
-        )
-        boxes.push({ name: part.name, box })
-      }
-      for (const [i, a] of boxes.entries()) {
-        for (const b of boxes.slice(i + 1)) {
-          const apart =
-            a.box.x + a.box.width <= b.box.x + 0.5 ||
-            b.box.x + b.box.width <= a.box.x + 0.5 ||
-            a.box.y + a.box.height <= b.box.y + 0.5 ||
-            b.box.y + b.box.height <= a.box.y + 0.5
-          expect(apart, `${a.name} overlaps ${b.name}`).toBe(true)
-        }
-      }
-      for (const button of [inventory, rent]) {
-        const box = await button.boundingBox()
-        expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
-        expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)
-      }
-      // Icons below `sm` (640 px), text labels from `sm` up (an sr-only label is 1 px wide).
-      const label = await inventory.getByText('Inventory', { exact: true }).boundingBox()
-      expect((label?.width ?? 0) > 1, 'text label shown').toBe(width >= 640)
-      await expect(inventory.locator('svg')).toBeVisible({ visible: width < 640 })
-      await checkA11y()
-    })
-  }
-})
+// The HUD's layout at every width (nothing overlaps, 44 px targets): tests/e2e/hud-layout.spec.ts.
 
 test.describe('lazy loading (DEC-11)', () => {
   test('the HUD panels load only when opened, never with the shell', async ({ page }) => {
@@ -680,7 +622,7 @@ test.describe('lazy loading (DEC-11)', () => {
     expect(loaded('data-rent-notice'), 'rent panel at boot').toBe(false)
     expect(loaded('data-shop-status'), 'shop at boot').toBe(false)
 
-    await page.getByRole('button', { name: 'Rent', exact: true }).click()
+    await openFromHud(page, 'Rent')
     await expect(page.getByRole('dialog', { name: 'Rent' })).toBeVisible()
     await expect
       .poll(() => loaded('data-rent-notice'), { message: 'rent panel once opened' })
@@ -838,7 +780,7 @@ test.describe('rent notices from events (BUG-1)', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
     expect((await hudState(page)).lastRentEvent).toBe('missed')
 
-    await page.getByRole('button', { name: 'Rent', exact: true }).click()
+    await openFromHud(page, 'Rent')
     const notice = page.getByRole('dialog', { name: 'Rent' }).locator('[data-rent-notice]')
     await expect(notice).not.toHaveText(/^No rent/)
     await expect(notice).toContainText(/owe \$\d/)

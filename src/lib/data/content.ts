@@ -2,6 +2,7 @@
 import audioJson from '@data/audio/manifest.json'
 import boroughsJson from '@data/boroughs/boroughs.json'
 import eventsJson from '@data/events/events.json'
+import homesJson from '@data/homes/homes.json'
 import boundsJson from '@data/geo/bounds.json'
 import itemsJson from '@data/items/items.json'
 import jobsJson from '@data/jobs/jobs.json'
@@ -12,6 +13,7 @@ import zonesJson from '@data/zones/zones.derived.json'
 import { parseDataFile } from './parse'
 import {
   EventsFileSchema,
+  HomesFileSchema,
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
@@ -34,6 +36,8 @@ export const premiumItems = parseDataFile(
 export const events = parseDataFile('events/events.json', EventsFileSchema, eventsJson).events
 export const jobs = parseDataFile('jobs/jobs.json', JobsFileSchema, jobsJson).jobs
 export const venues = parseDataFile('venues/venues.json', VenuesFileSchema, venuesJson).venues
+/** Where each home sits on the map (S05). */
+export const homes = parseDataFile('homes/homes.json', HomesFileSchema, homesJson).homes
 export const landmarks = parseDataFile(
   'landmarks/landmarks.json',
   LandmarksFileSchema,

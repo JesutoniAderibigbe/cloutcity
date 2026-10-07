@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
-import { formatCount, formatMoney, formatPercent } from './format'
+import { formatCount, formatGameTime, formatMoney, formatPercent } from './format'
 
 const ROOT = join(import.meta.dirname, '../..')
 
@@ -169,5 +169,37 @@ describe('formatPercent', () => {
 
   it('rejects non-finite values', () => {
     expect(() => formatPercent(Number.NaN)).toThrow(RangeError)
+  })
+})
+
+describe('formatGameTime (S05)', () => {
+  it('shows the minute of day on a 12-hour clock', () => {
+    expect(formatGameTime(480)).toBe('8:00 AM')
+    expect(formatGameTime(0)).toBe('12:00 AM')
+    expect(formatGameTime(12 * 60)).toBe('12:00 PM')
+    expect(formatGameTime(13 * 60 + 5)).toBe('1:05 PM')
+    expect(formatGameTime(1439)).toBe('11:59 PM')
+  })
+
+  it('uses a plain space before the day period', () => {
+    expect(formatGameTime(480)).toMatch(/^8:00 AM$/)
+    expect(formatGameTime(480)).not.toMatch(/ | /)
+  })
+
+  it('does not depend on the host time zone', () => {
+    const zone = process.env.TZ
+    try {
+      process.env.TZ = 'Pacific/Kiritimati'
+      expect(formatGameTime(480)).toBe('8:00 AM')
+    } finally {
+      if (zone === undefined) delete process.env.TZ
+      else process.env.TZ = zone
+    }
+  })
+
+  it('rejects a minute outside one day or a fraction', () => {
+    for (const bad of [-1, 1440, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => formatGameTime(bad), String(bad)).toThrow(RangeError)
+    }
   })
 })

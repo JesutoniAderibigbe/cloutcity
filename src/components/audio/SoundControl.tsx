@@ -5,7 +5,8 @@
  * and city sounds keep playing), and the second line says what is playing. Before audio is
  * unlocked it reads "Tap for sound" with the remembered choice, and that first tap only turns
  * sound on (GR-13). If music (or the whole runtime) failed to load, it says so and a tap retries.
- * The gear opens the sound settings.
+ * The gear opens the sound settings (on wide screens; on phones they open from the HUD's More
+ * panel).
  *
  * A boot island (SoundControlMount): it and the zod-backed stores it reads load in their own
  * chunk right after the shell (DEC-11).
@@ -121,22 +122,15 @@ export function SoundControl() {
       <button
         type="button"
         onClick={onMain}
-        className={`${BUTTON} min-w-0 max-w-44 justify-center text-left aria-pressed:border-taxi-400 sm:flex-col sm:items-start sm:px-3 ${view.kind === 'locked' ? 'border-taxi-400 sm:border-night-700' : ''}`}
+        data-sound-main=""
+        className={`${BUTTON} max-w-44 min-w-[110px] flex-col items-start justify-center px-3 text-left aria-pressed:border-taxi-400 ${view.kind === 'locked' ? 'border-taxi-400' : ''}`}
         {...main}
       >
-        {/* Phone widths: the HUD row also holds the title and the clout meter, so the control
-            is an icon; its two lines stay readable to screen readers and show from sm up. */}
-        <SpeakerIcon
-          on={view.kind !== 'locked' && view.kind !== 'unsupported' && view.kind !== 'off'}
-        />
-        <span className="sr-only sm:not-sr-only sm:block sm:max-w-full sm:truncate sm:text-xs sm:font-bold">
-          {line1}
-        </span>
+        {/* Two visible lines at every width (S05 restored them on phones, UX-7): what a tap
+            does, and what is playing. */}
+        <span className="block max-w-full truncate text-xs font-bold">{line1}</span>
         {line2 === '' ? null : (
-          <span
-            id={LINE_2_ID}
-            className="sr-only sm:not-sr-only sm:block sm:max-w-full sm:truncate sm:text-[0.6875rem] sm:text-ink-300"
-          >
+          <span id={LINE_2_ID} className="block max-w-full truncate text-[0.6875rem] text-ink-300">
             {line2}
           </span>
         )}
@@ -148,7 +142,8 @@ export function SoundControl() {
         aria-expanded={sheetOpen}
         aria-controls={sheetOpen ? SOUND_SETTINGS_SHEET_ID : undefined}
         onClick={() => setSoundSheetOpen(!sheetOpen)}
-        className={`${BUTTON} shrink-0 justify-center`}
+        // On phones and landscape phones the gear lives in the HUD's More panel (S05, Q3).
+        className={`${BUTTON} hidden shrink-0 justify-center hud-wide:flex hud-short:hidden`}
       >
         <svg
           aria-hidden="true"
@@ -161,23 +156,5 @@ export function SoundControl() {
         </svg>
       </button>
     </div>
-  )
-}
-
-/** The phone-width face of the main button: a speaker, struck through while sound is off. */
-function SpeakerIcon({ on }: { readonly on: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      className="h-5 w-5 fill-none stroke-current stroke-2 sm:hidden"
-    >
-      <path d="M4 9h4l5-4v14l-5-4H4z" strokeLinejoin="round" />
-      {on ? (
-        <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" strokeLinecap="round" />
-      ) : (
-        <path d="M16 9l5 6M21 9l-5 6" strokeLinecap="round" />
-      )}
-    </svg>
   )
 }

@@ -7,7 +7,7 @@
  * src/lib/data/data.test.ts.
  */
 import { z } from 'zod'
-import { JOB_IDS, RarityTierSchema } from './config'
+import { HOME_IDS, JOB_IDS, RarityTierSchema } from './config'
 
 export const IdSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'kebab-case id')
 export const CopyKeyRefSchema = z.string().regex(/^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)+$/)
@@ -168,6 +168,19 @@ const placeBase = {
   zoneId: IdSchema,
   location: LatLngSchema,
 }
+
+/**
+ * Where each home sits (S05): the player's start point and avatar position for that home.
+ * `borough` and `zoneId` are checked against the S04 geo layers in
+ * src/lib/world/homes-content.test.ts. Keyed by every home id, so none can be missing.
+ */
+export const HomeSchema = z.strictObject({
+  borough: BoroughSchema,
+  zoneId: IdSchema,
+  location: LatLngSchema,
+})
+export const HomesFileSchema = z.strictObject({ homes: z.record(z.enum(HOME_IDS), HomeSchema) })
+export type HomesFile = z.infer<typeof HomesFileSchema>
 
 /** Station venues are deliberately unbranded and point at an S04 subway station. */
 const StationVenueSchema = z.strictObject({

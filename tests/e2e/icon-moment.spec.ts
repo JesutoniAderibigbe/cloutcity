@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import type { PlaceTestHook } from '@/components/places/placeTestHook'
 import { expect, test } from './fixtures/test'
+import { waitForMapSettled } from './helpers/scene'
 
 // S15: reaching Icon shows the victory screen (a modal) instead of a level-up toast, with a
 // share hook, Keep playing (never shown again this run, across reloads) and a two-step prestige
@@ -83,6 +84,9 @@ async function boot(page: Page) {
   })
   await page.goto('/')
   await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+  // The map's start-up holds the main thread on SwiftShader (PERF-4); the moment's lazy chunk
+  // would otherwise race it against the 5 s expectation.
+  await waitForMapSettled(page)
 }
 
 const state = (page: Page) =>
@@ -383,6 +387,9 @@ test.describe('the Icon moment: the HUD island fails to load', () => {
       return route.fulfill({ response, body })
     })
     await page.goto('/')
+    // The map's start-up holds the main thread on SwiftShader for seconds (PERF-4); the failed
+    // island's retry renders after it.
+    await waitForMapSettled(page)
     const hud = page.locator('[data-overlay-zone="hud"]')
     const retry = hud.getByRole('button', { name: 'Try again' })
     await expect(retry).toBeVisible()

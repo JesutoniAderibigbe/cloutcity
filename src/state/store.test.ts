@@ -427,14 +427,15 @@ describe('saving is guarded', () => {
     expect(store().getState().newerSavePresent).toBe(false)
   })
 
-  it('a tick that only moves the sub-minute remainder does not write', () => {
+  it('a tick that only moves the sub-minute carry changes no state and does not write', () => {
     const local = new MemoryStorage()
     local.setItem(STORE_KEY, JSON.stringify({ state: fresh, version: STORE_VERSION }))
     const before = local.getItem(STORE_KEY)
     const game = setup(local).store()
+    const clock = game.getState().clock
     game.getState().tick(1000, true)
     game.getState().tick(4000, true)
-    expect(game.getState().clock).toEqual({ minute: 480, remainderMs: 5000 })
+    expect(game.getState().clock).toBe(clock)
     expect(local.getItem(STORE_KEY)).toBe(before)
   })
 

@@ -1,5 +1,5 @@
 /**
- * Which HUD panel (inventory or rent, S10a; goals, S15) is open in the sheet zone. Session-only
+ * Which HUD panel (inventory or rent, S10a; goals, S15; more, S05) is open in the sheet zone. Session-only
  * UI state, never persisted, and deliberately tiny like placeSheet.ts: the shell imports it for
  * the HUD buttons, and each panel with its engine, data and copy loads only on first use
  * (DEC-11).
@@ -11,7 +11,7 @@ import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
 import { closePlace } from './placeSheet'
 
-export const HUD_PANELS = ['inventory', 'rent', 'goals'] as const
+export const HUD_PANELS = ['inventory', 'rent', 'goals', 'more'] as const
 export type HudPanel = (typeof HUD_PANELS)[number]
 
 interface HudPanelState {

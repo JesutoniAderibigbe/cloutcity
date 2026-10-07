@@ -18,8 +18,22 @@ export const WEBGL_LAUNCH_ARGS = [
   '--enable-unsafe-swiftshader',
 ]
 
+/**
+ * The default e2e suite runs local-only: the build gets blank Supabase variables, so a
+ * developer's .env.local can never make it sign in (S05). Specs that need the local Supabase
+ * stack are named `*.supabase.spec.ts` and run with `npm run e2e:supabase`
+ * (playwright.supabase.config.ts).
+ */
+export const SUPABASE_BLANK_ENV = {
+  NEXT_PUBLIC_SUPABASE_URL: '',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: '',
+}
+
+export const SUPABASE_SPECS = '**/*.supabase.spec.ts'
+
 export default defineConfig({
   testDir: 'tests/e2e',
+  testIgnore: SUPABASE_SPECS,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -58,6 +72,6 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
-    env: { NEXT_PUBLIC_TEST_HOOKS: '1', NEXT_DIST_DIR: E2E_DIST_DIR },
+    env: { NEXT_PUBLIC_TEST_HOOKS: '1', NEXT_DIST_DIR: E2E_DIST_DIR, ...SUPABASE_BLANK_ENV },
   },
 })

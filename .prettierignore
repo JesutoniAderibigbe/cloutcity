@@ -1,5 +1,6 @@
 .next/
 .next-e2e/
+.next-e2e-supabase/
 out/
 build/
 coverage/

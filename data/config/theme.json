@@ -36,6 +36,7 @@
     "subwayLines": ["pink-400", "taxi-400", "sky-400", "mint-400", "orange-400", "lilac-300"],
     "subwayCasing": "night-950",
     "station": "ink-50",
+    "player": "taxi-400",
     "labelInk": "night-950",
     "ambientLight": "ink-50",
     "sunLight": "ink-50",

@@ -1,7 +1,7 @@
 /**
  * CloutMeter is presentational (S13): it renders the props it is given and must not reach for
  * the store or the engine itself, so it stays reusable and out of the store's chunk. The
- * store-backed adapter is CloutHudIsland.
+ * store-backed adapter is the HUD's live island (HudLive.tsx).
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'

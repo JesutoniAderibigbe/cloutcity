@@ -5,6 +5,7 @@ import {
   OVERLAY_ZONES,
   ZONE_GRID_ROW,
   layerZIndex,
+  overlayCssVars,
   overlayGridTemplateRows,
   overlayLayout,
   type OverlayZone,
@@ -45,14 +46,14 @@ const ZONE_ARIA: Readonly<Partial<Record<OverlayZone, Record<string, string>>>> 
  * let touches fall through to the scene.
  */
 export function OverlayLayout({ children, slots, modal }: OverlayLayoutProps) {
-  const rootStyle = {
-    gridTemplateRows: overlayGridTemplateRows(overlayLayout),
-    '--overlay-sheet-max-w': `${overlayLayout.sheetMaxWidthPx}px`,
-    '--overlay-loading-delay': `${overlayLayout.loadingRevealDelayMs}ms`,
-  } as CSSProperties
+  const rootStyle: CSSProperties = { gridTemplateRows: overlayGridTemplateRows(overlayLayout) }
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
+    // `cc-overlay`: globals.css switches the HUD row to its compact height here (layers.ts).
+    <div
+      className="cc-overlay fixed inset-0 overflow-hidden"
+      style={overlayCssVars(overlayLayout) as CSSProperties}
+    >
       <OverlayBackground holdForModal={modal !== undefined}>
         {/* tabIndex -1: focus lands here when a modal closes. */}
         <main

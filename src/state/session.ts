@@ -1,34 +1,169 @@
 /**
- * The guest session hook. A Supabase anonymous session may start only after a passing 18+
+ * The guest session. A Supabase anonymous session may start only after a passing 18+
  * attestation (CLAUDE.md "Auth model", "Age"); under-age and locked players never get one.
  *
- * S05a ships the hook only: it checks the attestation and reports a local (offline-capable)
- * session. S05 adds the anonymous sign-in here, behind the same check, with a lazy import of
- * @supabase/supabase-js so the client stays out of the shell JS.
+ * `startGuestSession()` stays synchronous (the welcome card calls it inside the submit gesture):
+ * it checks the attestation and reports a local session at once, so play never waits on the
+ * network. On the first success it also starts connecting, once per page:
+ *
+ *  1. no Supabase configuration in this build → stays local (`no-config`), nothing is imported;
+ *  2. waits until the map is playable, so the sign-in never competes with the map for bandwidth;
+ *  3. imports src/lib/supabase/supabaseAuth.ts (and with it @supabase/supabase-js) lazily;
+ *  4. reuses this device's session or signs in anonymously, then records the attestation.
+ *
+ * Failures degrade to local play and never block it: a rate limit (429) or no network are
+ * expected and logged at info (no network retries once when the browser comes back online);
+ * sign-ins switched off, or any other refusal, are a misconfiguration and logged at warn. The
+ * user id and tokens are never logged or kept here (src/state/guestSession.ts).
  */
+import { toAttestationArgs } from '@/lib/supabase/attestation'
+import { supabaseEnv, type SupabaseEnv } from '@/lib/supabase/env'
+import type { AuthFailure, ConnectResult } from '@/lib/supabase/supabaseAuth'
 import { log, type Logger } from '@/lib/log'
-import { onboardingStore, type OnboardingStore } from './onboarding'
+import { guestSessionStore, type GuestSessionReason, type GuestSessionStore } from './guestSession'
+import { whenMapPlayable } from './mapPlayable'
+import { onboardingStore, type OnboardingRecord, type OnboardingStore } from './onboarding'
 
 export type GuestSessionResult =
   /** No passing attestation on this device: no session, no Supabase user. */
   | { readonly mode: 'refused' }
-  /** Solo play on this device, with no server session yet. */
+  /** Solo play on this device; a server session may follow in the background. */
   | { readonly mode: 'local' }
+
+/** What the session needs from the browser and the network; injectable for tests. */
+export interface GuestSessionDeps {
+  readonly env: () => SupabaseEnv | null
+  readonly whenMapPlayable: () => Promise<void>
+  /** Loads the Supabase session module (the lazy chunk with supabase-js). */
+  readonly loadAuth: () => Promise<{
+    connectAnonymous: (
+      env: SupabaseEnv,
+      attestation: ReturnType<typeof toAttestationArgs>,
+    ) => Promise<ConnectResult>
+  }>
+  readonly isOnline: () => boolean
+  /** Calls `listener` once when the browser is next online; returns a way to cancel. */
+  readonly onceOnline: (listener: () => void) => () => void
+  readonly status: GuestSessionStore
+}
+
+export function browserSessionDeps(): GuestSessionDeps {
+  return {
+    env: () => supabaseEnv(),
+    whenMapPlayable,
+    loadAuth: () => import('@/lib/supabase/supabaseAuth'),
+    isOnline: () => typeof navigator === 'undefined' || navigator.onLine,
+    onceOnline: (listener) => {
+      window.addEventListener('online', listener, { once: true })
+      return () => window.removeEventListener('online', listener)
+    },
+    status: guestSessionStore,
+  }
+}
+
+type Failure = Exclude<GuestSessionReason, 'no-config' | 'attestation-failed'>
+
+/** Why a sign-in failed, from the error's status and Auth error code alone. */
+export function classifySessionFailure(failure: AuthFailure, online: boolean): Failure {
+  if (failure.status === 429 || failure.code === 'over_request_rate_limit') return 'rate-limited'
+  if (failure.code === 'anonymous_provider_disabled' || failure.code === 'signup_disabled') {
+    return 'disabled'
+  }
+  // supabase-js reports an unreachable network as a retryable fetch error with status 0; a
+  // thrown fetch is a TypeError.
+  const unreachable =
+    (failure.name === 'AuthRetryableFetchError' && !failure.status) || failure.name === 'TypeError'
+  if (!online || unreachable) return 'offline'
+  return 'error'
+}
 
 /**
  * A session starter bound to one onboarding store. Once a session has started, later calls
- * return it again instead of starting another (the gate calls it on boot and on completion).
+ * return it again instead of starting another (the gate calls it on boot and on completion),
+ * and the connection is attempted at most once (plus one retry when the network returns).
  */
-export function createGuestSessionStarter(store: OnboardingStore, logger: Logger = log) {
+export function createGuestSessionStarter(
+  store: OnboardingStore,
+  logger: Logger = log,
+  deps: GuestSessionDeps = browserSessionDeps(),
+) {
   let started: GuestSessionResult | undefined
+  const setLocal = (reason: GuestSessionReason) =>
+    deps.status.setState({ status: 'local', reason, reused: false })
+
+  const connect = async (
+    record: Extract<OnboardingRecord, { status: 'complete' }>,
+    retry: boolean,
+  ) => {
+    const env = deps.env()
+    if (env === null) {
+      setLocal('no-config')
+      logger.info('Playing local-only: this build has no Supabase configuration')
+      return
+    }
+    const attestation = toAttestationArgs(record)
+    await deps.whenMapPlayable()
+    deps.status.setState({ status: 'connecting', reason: null, reused: false })
+
+    let result: ConnectResult
+    try {
+      result = await (await deps.loadAuth()).connectAnonymous(env, attestation)
+    } catch (error) {
+      // The session chunk itself failed to load: the same as no network.
+      result = {
+        ok: false,
+        stage: 'session',
+        failure: {
+          name: error instanceof Error ? error.name : typeof error,
+          status: undefined,
+          code: undefined,
+        },
+      }
+    }
+
+    if (result.ok) {
+      deps.status.setState({ status: 'anonymous', reason: null, reused: result.reused })
+      logger.info('Guest session connected', { reused: result.reused })
+      return
+    }
+    if (result.stage === 'attest') {
+      setLocal('attestation-failed')
+      logger.warn('Signed in, but the server did not record the 18+ attestation; playing local', {
+        code: result.code,
+      })
+      return
+    }
+    const reason = classifySessionFailure(result.failure, deps.isOnline())
+    setLocal(reason)
+    const context = { reason, status: result.failure.status, code: result.failure.code }
+    if (reason === 'rate-limited') {
+      logger.info('Guest sign-in is rate limited; playing local', context)
+    } else if (reason === 'offline') {
+      logger.info('No network for the guest sign-in; playing local', context)
+      if (retry) deps.onceOnline(() => void connect(record, false))
+    } else {
+      logger.warn('Guest sign-in failed; playing local', context)
+    }
+  }
+
   return function startGuestSession(): GuestSessionResult {
     if (started !== undefined) return started
-    if (store.getState().record?.status !== 'complete') {
+    const record = store.getState().record
+    if (record?.status !== 'complete') {
+      deps.status.setState({ status: 'refused', reason: null, reused: false })
       logger.info('Not starting a guest session: no 18+ attestation on this device')
       return { mode: 'refused' }
     }
     started = { mode: 'local' }
+    deps.status.setState({ status: 'local', reason: null, reused: false })
     logger.info('Guest session started', { mode: started.mode })
+    void connect(record, true).catch((error: unknown) => {
+      // connect handles every expected failure; anything left is a bug, but play goes on.
+      setLocal('error')
+      logger.error('The guest session failed unexpectedly; playing local', {
+        error: error instanceof Error ? error.name : typeof error,
+      })
+    })
     return started
   }
 }

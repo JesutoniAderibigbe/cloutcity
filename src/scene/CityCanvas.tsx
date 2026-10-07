@@ -2,12 +2,14 @@
 
 /**
  * The 3D chunk's entry (loaded with next/dynamic, ssr: false, from CitySceneClient): the
- * react-three-fiber canvas with the city, lights, camera rig and test hooks. Renders on demand
+ * react-three-fiber canvas with the city, the player's avatar, lights, camera rig and test hooks. Renders on demand
  * only, so an idle map draws zero frames.
  */
 import { useEffect, useMemo, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
+import { usePlayerHome } from '@/state/playerHome'
+import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
 import { nearFar } from './camera/limits'
 import { City } from './City'
@@ -30,7 +32,7 @@ const GL = {
 
 export interface CityCanvasProps extends Pick<
   SceneProps,
-  'palette' | 'config' | 'startLocal' | 'boundsLocal' | 'dprCap'
+  'palette' | 'config' | 'homesLocal' | 'startHome' | 'boundsLocal' | 'dprCap'
 > {
   /** The downloaded geo body, validated here before the canvas mounts. */
   readonly geoBody: unknown
@@ -45,13 +47,16 @@ export default function CityCanvas({
   onInvalidGeo,
   palette,
   config,
-  startLocal,
+  homesLocal,
+  startHome,
   boundsLocal,
   dprCap,
   label,
   onReady,
 }: CityCanvasProps) {
   const readyRef = useRef(false)
+  // The camera starts over the player's home and the avatar stands there (S05).
+  const home = homesLocal[usePlayerHome() ?? startHome]
   // Validated outside the R3F root and without throwing: an invalid body is an expected
   // failure, reported to the shell instead of reaching React's error logging.
   const parsed = useMemo(() => safeParseGeoBase(geoBody), [geoBody])
@@ -88,7 +93,7 @@ export default function CityCanvas({
           intensity={lights.sunIntensity}
           position={[sun.x, sun.y, sun.z]}
         />
-        <CameraRig camera={camera} start={startLocal} bounds={boundsLocal} groundY={groundY} />
+        <CameraRig camera={camera} start={home} bounds={boundsLocal} groundY={groundY} />
         <City
           geo={geo}
           palette={palette}
@@ -97,6 +102,13 @@ export default function CityCanvas({
             readyRef.current = true
             onReady()
           }}
+        />
+        <PlayerAvatar
+          at={home}
+          groundY={groundY}
+          color={palette.player}
+          toonRamp={palette.toonRamp}
+          avatar={config.avatar}
         />
         <TestHooks readyRef={readyRef} />
       </Canvas>
