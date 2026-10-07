@@ -26,3 +26,15 @@ test('the shell does not scroll', async ({ page }) => {
   })
   expect(scroll).toEqual({ y: 0, overflow: 0 })
 })
+
+test.describe('without JavaScript', () => {
+  test.use({ javaScriptEnabled: false })
+
+  test('the page says the city needs JavaScript (UI-12)', async ({ page }) => {
+    await page.goto('/')
+    const message = page.getByText('The city runs on JavaScript. Switch it on and tap back in.')
+    await expect(message).toBeVisible()
+    const box = await message.boundingBox()
+    expect(box?.y ?? -1).toBeGreaterThanOrEqual(0)
+  })
+})
