@@ -298,4 +298,10 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   only when drifting to another item; cooldown measured from when the action ran), BUG-1 rent notices
   from events. Two fix cycles + UX-6 touch fix. Dev gates: unit 2140, integration ok, e2e 418, shell
   142.3 KB. Follow-ups: UX-5 (event outcome text omits rent), FLAKE-1/2.
+- S04a (attempt 1, passed): stylised 3D city scene (toon land/water/parks/subway/stations, camera
+  limits, demand frameloop, PCFShadowMap object, context failure handling), lazy 3D chunk 268.3 KB gz
+  via next/dynamic; integrated after S05c/S13/S05b/S10a (INT-4: CitySceneClient marks the map playable;
+  ScenePlaceholder removed; one `__cloutcityTest` hook global; expectedConsole + injectedConsoleErrors).
+  Specs wait for waitForMapSettled where they time other features. Dev gates: unit 2205, e2e 484 + 2
+  load-timeout gesture loops (6/6 alone, FLAKE-4), shell 145.8 KB, 3D 268.3 KB.
 

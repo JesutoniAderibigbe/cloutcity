@@ -75,7 +75,7 @@
       ],
       "acceptance": "The react-three-fiber canvas is lazy-loaded with no SSR so the DOM shell is interactive before the 3D chunk arrives; borough land extruded from /data/geo, water plane, parks, subway lines as ribbons in our own colours with plain line letters and stations as markers (no MTA logos or bullets); toon shading via a shared gradient ramp and palette tokens from config/theme.json; camera rig with one-finger pan, pinch zoom and limited two-finger rotate and tilt, bounded to the NYC extent with zoom limits; frameloop is on demand (test hook frame counter shows zero frames over 2 s idle); zero console warnings with the pinned three version (if R3F triggers three deprecation warnings, pin three to the newest version that does not and record it in progress.md); required map attribution visible on the map; a test-mode hook exposes camera state and renderer.info; Playwright pans and zooms on mobile-390 and asserts camera state; draw calls and triangles at the default view are within the mid-tier budget.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
