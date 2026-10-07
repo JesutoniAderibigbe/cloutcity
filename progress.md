@@ -141,6 +141,10 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   `npx supabase start` only for test:integration / e2e:supabase, then `npx supabase stop`. Never quit
   Docker or touch non-cloutcity containers (the user has other projects there).
 
+- Speed rule (2026-10-07): while iterating, run only affected e2e specs (`npx playwright test <files>` via
+  heavy.sh); run the FULL e2e suite once, as the final gate. The orchestrator's dev gate is the second
+  full run.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.
