@@ -70,6 +70,7 @@ function Toast({ levelUp }: { readonly levelUp: LevelUp }) {
       ref={ref}
       data-level-up={levelUp.to}
       data-cc-feature="cc-feature:level-up"
+      data-cc-notice="level-up"
       data-paused={paused ? '' : undefined}
       className="level-up-pop mx-2 flex items-center gap-2 rounded-2xl border border-pink-400 bg-night-900/95 px-3 py-1 shadow-lg backdrop-blur"
     >

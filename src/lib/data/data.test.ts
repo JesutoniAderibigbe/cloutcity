@@ -23,6 +23,7 @@ import {
   ProgressionConfigSchema,
   RealtimeConfigSchema,
   ThemeConfigSchema,
+  TourConfigSchema,
   createProgressionConfigSchema,
 } from './schemas/config'
 import {
@@ -85,6 +86,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/realtime.json': RealtimeConfigSchema,
   'config/scene.json': SceneConfigSchema,
   'config/theme.json': ThemeConfigSchema,
+  'config/tour.json': TourConfigSchema,
   'copy/handleWords.json': HandleWordsSchema,
   'copy/superlatives.json': SuperlativesSchema,
   'events/events.json': EventsFileSchema,

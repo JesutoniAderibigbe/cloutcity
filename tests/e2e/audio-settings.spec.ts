@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures/test'
 import { audio, gainOf, installAudioProbe, probeOf } from './fixtures/audio'
 import { waitForMapSettled } from './helpers/scene'
-import { hudIsWide, hudOpener, openFromHud } from './helpers/hud'
+import { hudOpener, openFromHud } from './helpers/hud'
 
 // Sound settings (S05b): loaded on demand, native controls, live changes per channel.
 
@@ -17,13 +17,11 @@ test('the sheet loads on demand, opening it stays silent, and each slider moves 
     if (request.resourceType() === 'script') scripts.push(request.url())
   })
 
-  // On phones the gear is in the More panel (S05); the HUD gear shows on wide screens.
+  // The sound settings open from the More panel at every width (S05, S06).
   const opener = hudOpener(page, 'Sound settings')
-  if (hudIsWide(page)) await expect(opener).toHaveAttribute('aria-expanded', 'false')
   await openFromHud(page, 'Sound settings')
   const sheet = page.getByRole('region', { name: 'Sound' })
   await expect(sheet).toBeVisible()
-  if (hudIsWide(page)) await expect(opener).toHaveAttribute('aria-expanded', 'true')
   expect(scripts.length, 'the sheet chunk loads on the first tap').toBeGreaterThan(0)
   expect((await probeOf(page)).contexts, 'opening the sheet is not the audio choice').toBe(0)
 
@@ -62,8 +60,8 @@ test('the sheet loads on demand, opening it stays silent, and each slider moves 
   await expect(opener).toBeFocused()
 })
 
-// S05: the sound control sits in the HUD's actions cell beside the Places button (S04c); the
-// gear is in the HUD on wide screens only, and on phones the More button stands in for it.
+// S05: the sound control sits in the HUD's actions cell beside the Places button (S04c) and the
+// More button, which holds the sound settings at every width (S06).
 for (const viewport of [
   { width: 390, height: 844 },
   { width: 1280, height: 720 },
@@ -78,9 +76,7 @@ for (const viewport of [
     await waitForMapSettled(page)
     const hud = await page.locator('[data-overlay-zone="hud"]').boundingBox()
     if (!hud) throw new Error('no HUD zone')
-    const names = hudIsWide(page)
-      ? ['Turn on sound', 'Sound settings', 'Places']
-      : ['Turn on sound', 'More', 'Places']
+    const names = ['Turn on sound', 'More', 'Places']
     for (const name of names) {
       const box = await page
         .locator('[data-overlay-zone="hud"]')

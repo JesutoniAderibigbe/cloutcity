@@ -15,6 +15,7 @@
     "loading.iconMoment": "Loading your Icon moment",
     "loading.hud": "Loading your stats",
     "loading.more": "Loading more options",
-    "loading.places": "Loading the places list"
+    "loading.places": "Loading the places list",
+    "loading.tour": "Loading the tour"
   }
 }

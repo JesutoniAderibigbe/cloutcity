@@ -181,6 +181,7 @@ function CloutCell() {
         {ready === 0 ? null : (
           <span
             aria-hidden="true"
+            data-cc-notice="goals-ready"
             className="ml-auto min-w-4 shrink-0 rounded-full bg-taxi-400 px-1 text-center text-[10px] leading-3.5 font-bold text-night-950"
           >
             {formatCount(ready)}
