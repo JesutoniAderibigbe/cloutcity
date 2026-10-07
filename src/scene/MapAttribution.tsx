@@ -4,17 +4,22 @@ interface MapAttributionProps {
   /** One-line form for a short free scene row (landscape phones). */
   readonly compact: string
   readonly credits: string
+  /** The chip's label ("Map data"). */
+  readonly toggle: string
   /** The overlay grid rows and free scene row (src/components/overlay/layers.ts). */
   readonly gridTemplateRows: string
   readonly row: number
 }
 
 /**
- * Required map attribution (NYC Open Data, MTA; data/geo/SOURCES.md), always visible over the
- * map. It sits in the free scene row of the overlay grid, bottom-end, so no HUD, sheet, toast
- * or tab bar covers it (UX-1); the full text is on /credits. When the row is too short for the
- * two-line form, a container query (globals.css, `.map-attribution-row`) swaps in the one-line
- * form; the row never shrinks below one 44 px link (layout.json `freeSceneMinHeightPx`).
+ * Required map attribution (NYC Open Data, MTA; data/geo/SOURCES.md). A compact "ⓘ Map data"
+ * chip in the bottom-end corner of the free scene row, so it never covers the middle of the map
+ * on a phone (UX-9) nor any HUD, sheet, toast or tab bar (UX-1); one tap opens the attribution
+ * and the link to /credits, where the full text lives. A native `<details>`: no JavaScript, so
+ * nothing joins the shell, and it opens with the keyboard as well as a tap. When the row is too
+ * short for the two-line text, a container query (globals.css, `.map-attribution-row`) swaps in
+ * the one-line form; the row never shrinks below one 44 px target (layout.json
+ * `freeSceneMinHeightPx`).
  *
  * The credits link is a plain anchor, not next/link: next/link would cost the shell bundle about
  * 4.6 KB gz for one rarely used navigation.
@@ -24,6 +29,7 @@ export function MapAttribution({
   mta,
   compact,
   credits,
+  toggle,
   gridTemplateRows,
   row,
 }: MapAttributionProps) {
@@ -36,23 +42,31 @@ export function MapAttribution({
         className="map-attribution-row flex min-h-0 items-end justify-end overflow-hidden px-2 py-1"
         style={{ gridRow: row }}
       >
-        <div
+        <details
           data-map-attribution=""
-          className="pointer-events-auto flex max-w-full items-center gap-2 rounded-lg bg-night-950 py-0.5 pr-0.5 pl-2 text-[11px] leading-snug text-ink-300"
+          className="pointer-events-auto relative text-[11px] leading-snug text-ink-300"
         >
-          <p className="map-attribution-full">
-            {nyc}
-            <br />
-            {mta}
-          </p>
-          <p className="map-attribution-compact truncate">{compact}</p>
-          <a
-            href="/credits"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md px-2 font-semibold text-ink-50 underline focus-visible:outline-2 focus-visible:outline-taxi-400"
-          >
-            {credits}
-          </a>
-        </div>
+          <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-end gap-1 rounded-lg bg-night-950/90 px-3 font-semibold text-ink-50 focus-visible:outline-2 focus-visible:outline-taxi-400 [&::-webkit-details-marker]:hidden">
+            <span aria-hidden="true">ⓘ</span>
+            {toggle}
+          </summary>
+          {/* Opens to the left of the chip, on the same bottom line, so it fits the shortest free
+              row (one 44 px target tall) and never reaches into another zone. */}
+          <div className="absolute right-full bottom-0 mr-1 flex w-max max-w-[calc(100vw-7.5rem)] items-center gap-2 rounded-lg bg-night-950/90 py-0.5 pr-0.5 pl-2">
+            <p className="map-attribution-full">
+              {nyc}
+              <br />
+              {mta}
+            </p>
+            <p className="map-attribution-compact truncate">{compact}</p>
+            <a
+              href="/credits"
+              className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md px-2 font-semibold text-ink-50 underline focus-visible:outline-2 focus-visible:outline-taxi-400"
+            >
+              {credits}
+            </a>
+          </div>
+        </details>
       </div>
     </div>
   )

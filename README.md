@@ -15,13 +15,15 @@ npx playwright install chromium   # browser for e2e, once per Playwright version
 npm run dev                       # http://localhost:3000
 ```
 
-No environment variables are needed for the shell. Env files (`.env`, `.env.local`, ...) are
-gitignored; later tasks document their variables here.
+No environment variables are needed to play: without Supabase the game runs local-only. Env
+files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names.
 
-| Variable                | Used by                                                           | Default                              |
-| ----------------------- | ----------------------------------------------------------------- | ------------------------------------ |
-| `NEXT_PUBLIC_LOG_LEVEL` | `src/lib/log.ts` minimum level (`debug`, `info`, `warn`, `error`) | `debug` in dev, `info` in production |
-| `E2E_PORT`              | Port Playwright serves the production build on                    | `3100`                               |
+| Variable                                                    | Used by                                                                                   | Default                              |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------ |
+| `NEXT_PUBLIC_LOG_LEVEL`                                     | `src/lib/log.ts` minimum level (`debug`, `info`, `warn`, `error`)                         | `debug` in dev, `info` in production |
+| `E2E_PORT`                                                  | Port Playwright serves the production build on                                            | `3100`                               |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The guest's anonymous Supabase session (`src/lib/supabase/env.ts`); inlined at build time | unset: local-only play               |
+| `E2E_SUPABASE_PORT`                                         | Port of the opt-in `npm run e2e:supabase` build                                           | `3110`                               |
 
 ## Scripts
 
@@ -34,7 +36,8 @@ gitignored; later tasks document their variables here.
 | `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                    |
 | `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                        |
 | `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                            |
-| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                                     |
+| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)            |
+| `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                     |
 | `npm run budget`                  | Gzipped shell JS of `/` and the lazy 3D chunk against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
 | `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                            |
 | `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies             |
@@ -104,6 +107,15 @@ never shrinks below `freeSceneMinHeightPx` (room for the map attribution and its
 link); on short viewports banner, toast and sheet shrink first. Zone sizes live in
 `data/config/layout.json`. The bottom tab bar (`src/components/nav/BottomTabs.tsx`) sits in the
 `tabs` zone with safe-area padding.
+
+The HUD (`src/components/hud/HudFrame.tsx`, S05) is two rows of 44 px targets
+(`hudHeightPx`), or one row (`hudCompactHeightPx`) on a short, wide screen. The breakpoints
+(`hudWideMinWidthPx`, `hudCompactMaxHeightPx`) are repeated in `src/app/globals.css` as the
+Tailwind variants `hud-wide` and `hud-short` (`src/app/layout-css.test.ts` keeps them equal), and
+the grid lives in `src/components/hud/hudLayout.ts`. The live cells (cash, clock, speed, clout
+with the goal line, stats) are a boot island over a skeleton of the same boxes; on phones
+Inventory, Rent and the sound settings sit in the More panel. The S04c Places button goes in
+`HudFrame`'s `places` prop.
 
 A modal (the welcome card) goes in `OverlayLayout`'s `modal` slot: a second grid on the top
 layer that places it between the HUD and the tab bar, never over the banner, HUD or tab bar.
@@ -434,10 +446,12 @@ land). `src/lib/shell-boundary.test.ts` checks the same boot path on the source 
 `src/scene/` renders the base city with react-three-fiber: extruded borough land, the water
 plane, parks and cemeteries, subway ribbons with a dark casing, instanced station markers and
 plain line-letter chips at each line's terminals (our own colours and style, never MTA bullets).
-It is about a dozen draw calls at the default view.
+It is about a dozen draw calls at the default view, plus the player's avatar placeholder at their
+home (`src/scene/avatar/`, two draw calls; `data/homes/homes.json` places each home, and the
+camera starts over it).
 
 - **Loading.** `src/scene/CityScene.tsx` (server) resolves config, palette tokens, the projected
-  start and bounds and copy into small props. `CitySceneClient.tsx` loads the canvas with
+  homes and bounds and copy into small props. `CitySceneClient.tsx` loads the canvas with
   `next/dynamic` (`ssr: false`), so the shell is interactive first, and starts the geo request at
   hydration. The geo layers come from the prerendered route `/geo/base?v=<geoVersion>`
   (`src/app/geo/base/route.ts`) and are validated in the 3D chunk with `zod/mini`
@@ -460,7 +474,7 @@ It is about a dozen draw calls at the default view.
   structured warning; the shell keeps working. `SceneErrorBoundary` only catches unexpected
   renderer errors.
 - **Test hooks.** With `NEXT_PUBLIC_TEST_HOOKS=1` at build time, `window.__cloutcityTest.scene`
-  exposes `ready`, `frames()`, `pendingFrames()`, `camera()` and `renderInfo()` (`src/scene/testHooks.tsx`). The e2e
+  exposes `ready`, `frames()`, `pendingFrames()`, `camera()`, `renderInfo()` and `player()` (`src/scene/testHooks.tsx`). The e2e
   web server sets it and builds into `.next-e2e` (`NEXT_DIST_DIR`, read by `next.config.ts`), so
   the hook never reaches `.next`; in every other build its code is removed as dead code.
 
@@ -540,13 +554,19 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   (`RPC_ERRORS` in `attestation.ts`; `parseRpcError()` reads it).
 - **Browser bundle.** `@supabase/supabase-js` may reach browser code only through a dynamic
   `import()`; `src/lib/client-imports.test.ts` fails on a static import chain from a client entry.
+- **Guest session (S05).** After the 18+ card, `src/state/session.ts` plays local at once and, if
+  `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set, waits for the map to be
+  playable, imports `src/lib/supabase/supabaseAuth.ts` lazily, reuses or starts an anonymous
+  session (default `sb-<ref>-auth-token` key) and records the attestation. A rate limit or no
+  network keeps local play (info; no network retries once when back online); sign-ins switched
+  off or any other refusal warn. `npm run e2e:supabase` checks it against the local stack.
 - **Production** (set in the Supabase dashboard, not `config.toml`): enable anonymous sign-ins,
   set the anonymous sign-in rate limit per IP (locally raised to 1000/h for tests) and turn on
   Turnstile under Auth > Bot and Abuse Protection (CAPTCHA). The local stack has no CAPTCHA.
 
 ## Ignored paths
 
-`.gitignore` covers env files, build output (`.next/`, `.next-e2e/` for the e2e build, `out/`), test artefacts
+`.gitignore` covers env files, build output (`.next/`, `.next-e2e/` and `.next-e2e-supabase/` for the e2e builds, `out/`), test artefacts
 (`test-results/`, `playwright-report/`, `coverage/`) and the geo download cache (`.cache/`:
 the raw NYC Open Data and MTA files `npm run geo:build` downloads, and the audio originals
 `npm run audio:build` downloads, kept unmodified).

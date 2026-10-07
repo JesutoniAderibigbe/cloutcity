@@ -1,9 +1,17 @@
 /**
  * Every material of the base city, created once per scene and disposed with it. All toon
  * materials share one gradient ramp texture (the sticker look), so tones step identically on
- * every layer.
+ * every layer. "Expanding soon" boroughs (S04c) get dimmed land and park colours: the palette
+ * colour mixed towards the background.
  */
-import { DataTexture, MeshBasicMaterial, MeshToonMaterial, NearestFilter, RedFormat } from 'three'
+import {
+  Color,
+  DataTexture,
+  MeshBasicMaterial,
+  MeshToonMaterial,
+  NearestFilter,
+  RedFormat,
+} from 'three'
 import type { Texture } from 'three'
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
@@ -24,11 +32,20 @@ export function createToonRamp(steps: readonly number[]): DataTexture {
   return texture
 }
 
+/** `hex` mixed a fraction `t` of the way towards `towards` (both sRGB hex). */
+export function dimmedColor(hex: string, towards: string, t: number): Color {
+  return new Color(hex).lerp(new Color(towards), t)
+}
+
 export interface CityMaterials {
+  readonly gradientMap: DataTexture
   readonly land: Readonly<Record<BoroughId, MeshToonMaterial>>
   readonly water: MeshToonMaterial
   readonly park: MeshToonMaterial
   readonly cemetery: MeshToonMaterial
+  /** Parks and cemeteries on dimmed land. */
+  readonly parkDimmed: MeshToonMaterial
+  readonly cemeteryDimmed: MeshToonMaterial
   readonly station: MeshToonMaterial
   readonly subway: LineMaterial
   readonly subwayCasing: LineMaterial
@@ -38,13 +55,15 @@ export interface CityMaterials {
 
 export function createCityMaterials(
   palette: ScenePalette,
-  config: Pick<SceneConfig, 'subway' | 'labels'>,
+  config: Pick<SceneConfig, 'subway' | 'labels' | 'dimmed'>,
   labelAtlas: Texture,
+  dimmedBoroughs: ReadonlySet<BoroughId>,
 ): CityMaterials {
   const gradientMap = createToonRamp(palette.toonRamp)
-  const toon = (color: string) => new MeshToonMaterial({ color, gradientMap })
+  const toon = (color: string | Color) => new MeshToonMaterial({ color, gradientMap })
+  const dim = (hex: string) => dimmedColor(hex, palette.background, config.dimmed.towardBackground)
   // Parks lie just above the land top: the offset wins the depth test without a visible gap.
-  const ground = (color: string) =>
+  const ground = (color: string | Color) =>
     new MeshToonMaterial({
       color,
       gradientMap,
@@ -53,10 +72,12 @@ export function createCityMaterials(
       polygonOffsetUnits: -1,
     })
 
-  const land = Object.fromEntries(BOROUGH_IDS.map((id) => [id, toon(palette.land[id])])) as Record<
-    BoroughId,
-    MeshToonMaterial
-  >
+  const land = Object.fromEntries(
+    BOROUGH_IDS.map((id) => [
+      id,
+      toon(dimmedBoroughs.has(id) ? dim(palette.land[id]) : palette.land[id]),
+    ]),
+  ) as Record<BoroughId, MeshToonMaterial>
   const subway = new LineMaterial({
     vertexColors: true,
     linewidth: config.subway.lineWidthPx,
@@ -73,10 +94,13 @@ export function createCityMaterials(
   const label = new MeshBasicMaterial({ map: labelAtlas, alphaTest: config.labels.alphaTest })
 
   const materials = {
+    gradientMap,
     land,
     water: toon(palette.water),
     park: ground(palette.park),
     cemetery: ground(palette.cemetery),
+    parkDimmed: ground(dim(palette.park)),
+    cemeteryDimmed: ground(dim(palette.cemetery)),
     station: toon(palette.station),
     subway,
     subwayCasing,
@@ -90,6 +114,8 @@ export function createCityMaterials(
         materials.water,
         materials.park,
         materials.cemetery,
+        materials.parkDimmed,
+        materials.cemeteryDimmed,
         materials.station,
         subway,
         subwayCasing,

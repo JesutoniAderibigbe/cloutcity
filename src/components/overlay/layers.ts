@@ -53,6 +53,33 @@ export const FREE_SCENE_GRID_ROW = 4
 export const MODAL_GRID_ROW = `4 / ${ZONE_GRID_ROW.tabs}`
 
 /**
+ * The HUD row's height (S05): two rows of 44 px targets, or one row on a short, wide screen. The
+ * overlay layout writes both heights on its root ({@link overlayCssVars}); globals.css switches
+ * `--overlay-hud-h` to the compact height inside the same media query as the HUD's `hud-short`
+ * variant, so the grid track and the HUD's own layout change together.
+ */
+export const HUD_HEIGHT_VAR = '--overlay-hud-h'
+export const HUD_COMPACT_HEIGHT_VAR = '--overlay-hud-compact-h'
+
+/** The HUD track: the CSS variable, falling back to the two-row height outside the layout. */
+export function hudTrack(config: OverlayLayoutConfig): string {
+  return `var(${HUD_HEIGHT_VAR}, ${config.hudHeightPx}px)`
+}
+
+/**
+ * Custom properties the overlay layout sets on its root, inherited by every grid that repeats
+ * the overlay rows (the modal layer, the scene's status row, the map attribution).
+ */
+export function overlayCssVars(config: OverlayLayoutConfig): Readonly<Record<string, string>> {
+  return {
+    [HUD_HEIGHT_VAR]: `${config.hudHeightPx}px`,
+    [HUD_COMPACT_HEIGHT_VAR]: `${config.hudCompactHeightPx}px`,
+    '--overlay-sheet-max-w': `${config.sheetMaxWidthPx}px`,
+    '--overlay-loading-delay': `${config.loadingRevealDelayMs}ms`,
+  }
+}
+
+/**
  * Rows: top safe-area inset, banner, HUD, free scene area, toast, sheet, tab bar (which also
  * absorbs the bottom safe-area inset so its background reaches the screen edge).
  *
@@ -65,7 +92,7 @@ export function overlayGridTracks(config: OverlayLayoutConfig): readonly string[
   return [
     'env(safe-area-inset-top, 0px)',
     `minmax(0, ${config.bannerHeightPx}px)`,
-    `${config.hudHeightPx}px`,
+    hudTrack(config),
     `minmax(${config.freeSceneMinHeightPx}px, 1fr)`,
     `minmax(0, ${config.toastHeightPx}px)`,
     `minmax(0, ${config.sheetMaxHeightVh}dvh)`,

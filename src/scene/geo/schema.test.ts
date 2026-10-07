@@ -14,10 +14,12 @@ import {
   SubwayFileSchema,
   WaterFileSchema,
 } from '@/lib/data/schemas/world'
+import { placesLayer } from '@/lib/world/placesLayer'
 import {
   BOROUGH_IDS,
   GEO_BASE_FORMAT,
   LandMiniSchema,
+  PlacesMiniSchema,
   ParksMiniSchema,
   SubwayMiniSchema,
   WaterMiniSchema,
@@ -145,7 +147,15 @@ describe('client geo schemas match the classic schemas', () => {
 })
 
 describe('parseGeoBase', () => {
-  const body = { format: GEO_BASE_FORMAT, version: '0123456789ab', land, water, parks, subway }
+  const body = {
+    format: GEO_BASE_FORMAT,
+    version: '0123456789ab',
+    land,
+    water,
+    parks,
+    subway,
+    places: placesLayer,
+  }
 
   it('returns the layers of a valid body', () => {
     expect(parseGeoBase(body).land.boroughs).toHaveLength(BOROUGH_IDS.length)
@@ -155,6 +165,7 @@ describe('parseGeoBase', () => {
     expect(() => parseGeoBase({ ...body, format: 'other' })).toThrow(/format/)
     expect(() => parseGeoBase({ ...body, version: 'nope' })).toThrow(/version/)
     expect(() => parseGeoBase({ ...body, subway: undefined })).toThrow(/subway/)
+    expect(() => parseGeoBase({ ...body, places: undefined })).toThrow(/places/)
     expect(() => parseGeoBase(null)).toThrow(/root/)
   })
 
@@ -167,5 +178,41 @@ describe('parseGeoBase', () => {
       expect(result.paths.length).toBeLessThanOrEqual(3)
     }
     expect(safeParseGeoBase(undefined)).toEqual({ ok: false, paths: ['(root)'] })
+  })
+})
+
+describe('places layer schema (S04c)', () => {
+  type Places = { pins: Record<string, unknown>[]; boroughs: Record<string, unknown>[] }
+  const real = (): Places => clone(placesLayer) as unknown as Places
+  const withPin = (patch: Record<string, unknown>): Places => {
+    const copy = real()
+    copy.pins[0] = { ...copy.pins[0], ...patch }
+    return copy
+  }
+
+  it('accepts the layer the route serves, with and without a per-pin liftM', () => {
+    expect(PlacesMiniSchema.safeParse(placesLayer).success).toBe(true)
+    expect(PlacesMiniSchema.safeParse(withPin({ liftM: 0 })).success).toBe(true)
+    expect(PlacesMiniSchema.safeParse(withPin({ liftM: 42.5 })).success).toBe(true)
+  })
+
+  it('rejects malformed pins and borough states', () => {
+    const duplicate = real()
+    duplicate.pins.push({ ...duplicate.pins[0] })
+    const missingBorough = real()
+    missingBorough.boroughs.pop()
+    for (const variant of [
+      withPin({ liftM: -1 }),
+      withPin({ x: 1.5 }),
+      withPin({ style: 'glowing' }),
+      withPin({ kind: 'player' }),
+      withPin({ borough: 'jersey' }),
+      withPin({ extra: true }),
+      duplicate,
+      missingBorough,
+      { ...real(), boroughs: real().boroughs.map((b) => ({ ...b, render: 'hidden' })) },
+    ]) {
+      expect(PlacesMiniSchema.safeParse(variant).success).toBe(false)
+    }
   })
 })

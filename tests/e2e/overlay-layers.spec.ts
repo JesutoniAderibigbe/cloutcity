@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
-import { hideSceneForScreenshot } from './helpers/scene'
+import { holdGameTime, waitForHudLoaded } from './helpers/hud'
+import { hideSceneForScreenshot, waitForMapSettled } from './helpers/scene'
 
 // UX-1: overlays never cover each other. Runs at mobile-390 and desktop-1280.
 
@@ -126,9 +127,13 @@ test.describe('overlay layer system', () => {
   })
 
   test('the shell as shipped matches its screenshot', async ({ page }) => {
+    await holdGameTime(page)
     await page.goto('/')
     await waitForWelcomeGate(page)
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
+    // The map's start-up on SwiftShader keeps the page from settling for a stable capture.
+    await waitForMapSettled(page)
+    await waitForHudLoaded(page)
     await hideSceneForScreenshot(page)
     await expect(page).toHaveScreenshot('overlay-shell.png')
   })

@@ -5,10 +5,22 @@ import { paletteStyle, themeColorHex } from '@/lib/theme'
 import './globals.css'
 
 const APP_NAME = copy('app.name')
+const TITLE = `${APP_NAME} | ${copy('app.tagline')}`
+const DESCRIPTION = copy('app.description')
 
+// The tagline lives in the title and the share metadata (S05): the page heading is for screen
+// readers only, so the HUD keeps its room for play.
 export const metadata: Metadata = {
-  title: { default: `${APP_NAME} | ${copy('app.tagline')}`, template: `%s | ${APP_NAME}` },
-  description: copy('app.description'),
+  title: { default: TITLE, template: `%s | ${APP_NAME}` },
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    siteName: APP_NAME,
+    type: 'website',
+    locale: 'en_US',
+  },
+  twitter: { card: 'summary', title: TITLE, description: DESCRIPTION },
   applicationName: APP_NAME,
   appleWebApp: { capable: true, title: copy('app.shortName'), statusBarStyle: 'black-translucent' },
   formatDetection: { telephone: false },

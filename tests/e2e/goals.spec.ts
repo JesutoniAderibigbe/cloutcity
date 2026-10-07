@@ -57,7 +57,7 @@ test.describe('goals and rewards', () => {
   }) => {
     await boot(page)
     const button = goalsButton(page)
-    await expect(button).toHaveAccessibleName('Goals')
+    await expect(button).toHaveAccessibleName('Goals: Make it in New York')
     const box = await button.boundingBox()
     expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
@@ -90,7 +90,7 @@ test.describe('goals and rewards', () => {
     await boot(page)
     await visitLandmark(page)
     const button = goalsButton(page)
-    await expect(button).toHaveAccessibleName('Goals, 1 reward ready')
+    await expect(button).toHaveAccessibleName('Goals: Make it in New York, 1 reward ready')
     await button.click()
     const dialog = panel(page)
     const claim = dialog.getByRole('button', {
@@ -110,7 +110,7 @@ test.describe('goals and rewards', () => {
     expect(after.clout).toBe(before.clout + Number(clout))
     const row = dialog.locator('[data-goal="first-landmark-visit"]')
     await expect(row).toHaveAttribute('data-goal-status', 'claimed')
-    await expect(button).toHaveAccessibleName('Goals')
+    await expect(button).toHaveAccessibleName('Goals: Make it in New York')
     // Focus stays in the panel when the claimed row's button goes away.
     await expect(dialog.getByRole('heading', { name: 'Goals' })).toBeFocused()
 
@@ -190,7 +190,9 @@ test.describe('goals: double claims, open events, small screens', () => {
   test('a double click and two quick taps on Claim pay once', async ({ page }) => {
     await seed(page, 120, ['first-paycheck', 'reach-local'])
     await boot(page)
-    await expect(goalsButton(page)).toHaveAccessibleName('Goals, 2 rewards ready')
+    await expect(goalsButton(page)).toHaveAccessibleName(
+      'Goals: Make it in New York, 2 rewards ready',
+    )
     await goalsButton(page).click()
     const dialog = panel(page)
     const before = await state(page)
@@ -217,7 +219,7 @@ test.describe('goals: double claims, open events, small screens', () => {
       'data-goal-status',
       'claimed',
     )
-    await expect(goalsButton(page)).toHaveAccessibleName('Goals')
+    await expect(goalsButton(page)).toHaveAccessibleName('Goals: Make it in New York')
     const log = dialog.locator('[data-goal-status="claimed"]')
     await expect(log).toHaveCount(2)
     const after = await state(page)
@@ -263,30 +265,34 @@ test.describe('goals: double claims, open events, small screens', () => {
     ['Scene Regular', 400],
     ['Famous', 2500],
   ] as const) {
-    test(`HUD row with ${label} and a ready count: nothing overlaps, targets are 44 px`, async ({
+    test(`HUD with ${label} and a ready count: nothing overlaps, targets are 44 px`, async ({
       page,
     }) => {
       await seed(page, earned, ['first-paycheck', 'reach-local', 'reach-scene-regular'])
       await boot(page)
       const zone = page.locator('[data-overlay-zone="hud"]')
       await expect(zone.locator('[data-clout-meter]')).toContainText(label)
-      await expect(goalsButton(page)).toHaveAccessibleName('Goals, 3 rewards ready')
+      await expect(goalsButton(page)).toHaveAccessibleName(
+        'Goals: Make it in New York, 3 rewards ready',
+      )
+      // S05's HUD layouts: phone, desktop, short phone, landscape phone.
       for (const viewport of [
         { width: 390, height: 844 },
+        { width: 1280, height: 720 },
+        { width: 390, height: 600 },
         { width: 844, height: 390 },
       ]) {
         await page.setViewportSize(viewport)
+        // S05: the clout meter is drawn inside the Goals button's cell, so the cell stands for
+        // both; every other cell and every visible action must stay clear of it.
         const parts = [
-          { name: 'title', locator: zone.locator('h1') },
-          { name: 'clout meter', locator: zone.locator('[data-clout-meter]') },
+          ...['money', 'clock', 'speed', 'stats'].map((cell) => ({
+            name: cell,
+            locator: zone.locator(`[data-hud-cell="${cell}"]`),
+          })),
           { name: 'Goals', locator: goalsButton(page) },
-          {
-            name: 'Inventory',
-            locator: page.getByRole('button', { name: 'Inventory', exact: true }),
-          },
-          { name: 'Rent', locator: page.getByRole('button', { name: 'Rent', exact: true }) },
-          ...(await zone.locator('[data-cc-feature="cc-feature:sound-control"] button').all()).map(
-            (locator, index) => ({ name: `sound control ${index}`, locator }),
+          ...(await zone.locator('[data-hud-cell="actions"] button:visible').all()).map(
+            (locator, index) => ({ name: `action ${index}`, locator }),
           ),
         ]
         const row = await zone.boundingBox()

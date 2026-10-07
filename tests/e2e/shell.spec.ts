@@ -6,9 +6,12 @@ test('the shell loads with the app name and tagline and passes axe', async ({
 }) => {
   await page.goto('/')
 
+  // The tagline is in the title and share metadata (title-meta.spec.ts); the page heading names
+  // the app for screen readers, leaving the HUD's room to play (S05, Q2).
   await expect(page).toHaveTitle('Clout City: NYC | Tap In. Blow Up.')
-  await expect(page.getByRole('heading', { level: 1, name: 'Clout City: NYC' })).toBeVisible()
-  await expect(page.getByText('Tap In. Blow Up.')).toBeVisible()
+  const heading = page.getByRole('heading', { level: 1, name: 'Clout City: NYC' })
+  await expect(heading).toHaveCount(1)
+  await expect(heading).toHaveClass(/\bsr-only\b/)
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
 
   await checkA11y()

@@ -107,10 +107,25 @@ export const ScenePaletteRefsSchema = z.strictObject({
   subwayLines: z.array(tokenRef).min(1),
   subwayCasing: tokenRef,
   station: tokenRef,
+  /** The player's avatar placeholder and the ring under it (S05). */
+  player: tokenRef,
   /** Letter colour on the line chips (the chip itself takes its line's colour). */
   labelInk: tokenRef,
   ambientLight: tokenRef,
   sunLight: tokenRef,
+  /**
+   * Place pins (S04c): by kind, teaser pins on "expanding soon" land, a muted colour for memorial
+   * pins (the key avoids the word, which no config file may name), the selection ring.
+   */
+  pins: z.strictObject({
+    venue: tokenRef,
+    landmark: tokenRef,
+    teaser: tokenRef,
+    muted: tokenRef,
+    selected: tokenRef,
+  }),
+  /** The "expanding soon" ground chips. */
+  chip: z.strictObject({ fill: tokenRef, ink: tokenRef }),
   /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
   toonRamp: z.array(z.number().gt(0).max(1)).min(2),
 })
@@ -127,9 +142,12 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     ...scene.subwayLines,
     scene.subwayCasing,
     scene.station,
+    scene.player,
     scene.labelInk,
     scene.ambientLight,
     scene.sunLight,
+    ...Object.values(scene.pins),
+    ...Object.values(scene.chip),
   ]
 }
 
@@ -818,32 +836,46 @@ export const BalanceConfigSchema = z
 export type BalanceConfig = z.infer<typeof BalanceConfigSchema>
 
 export const LayoutConfigSchema = z.strictObject({
-  overlay: z.strictObject({
-    bannerHeightPx: positive,
-    hudHeightPx: positive,
-    toastHeightPx: positive,
-    /** How long a toast (the level-up message) shows before it closes itself. */
-    toastMs: positiveInt,
-    sheetMaxHeightVh: positive,
-    sheetMaxWidthPx: positive,
-    tabBarHeightPx: positive,
-    /**
-     * The free scene row never shrinks below this, so the map stays visible and the map
-     * attribution with its 44 px credits link always fits (banner, toast and sheet shrink first).
-     */
-    freeSceneMinHeightPx: z.number().min(44),
-    /**
-     * A lazily loaded feature's loading skeleton stays invisible this long, so a fast load never
-     * flashes a placeholder (its status is announced at once).
-     */
-    loadingRevealDelayMs: z.int().nonnegative(),
-    /**
-     * After a sheet or panel action, pointer taps on its actions are ignored this long (ms), so
-     * the second tap of a drifting double tap cannot land on the row or button that replaced
-     * the one tapped. Keyboard activations are not delayed.
-     */
-    actionCooldownMs: positiveInt,
-  }),
+  overlay: z
+    .strictObject({
+      bannerHeightPx: positive,
+      /**
+       * The HUD's two rows of 44 px targets (S05). On a short, wide screen (a landscape phone:
+       * width ≥ hudWideMinWidthPx and height ≤ hudCompactMaxHeightPx) it is one row,
+       * hudCompactHeightPx tall. globals.css repeats the two thresholds as media queries
+       * (src/app/layout-css.test.ts keeps them equal).
+       */
+      hudHeightPx: z.number().min(2 * 44),
+      hudCompactHeightPx: z.number().min(44),
+      hudWideMinWidthPx: positiveInt,
+      hudCompactMaxHeightPx: positiveInt,
+      toastHeightPx: positive,
+      /** How long a toast (the level-up message) shows before it closes itself. */
+      toastMs: positiveInt,
+      sheetMaxHeightVh: positive,
+      sheetMaxWidthPx: positive,
+      tabBarHeightPx: positive,
+      /**
+       * The free scene row never shrinks below this, so the map stays visible and the map
+       * attribution with its 44 px credits link always fits (banner, toast and sheet shrink first).
+       */
+      freeSceneMinHeightPx: z.number().min(44),
+      /**
+       * A lazily loaded feature's loading skeleton stays invisible this long, so a fast load never
+       * flashes a placeholder (its status is announced at once).
+       */
+      loadingRevealDelayMs: z.int().nonnegative(),
+      /**
+       * After a sheet or panel action, pointer taps on its actions are ignored this long (ms), so
+       * the second tap of a drifting double tap cannot land on the row or button that replaced
+       * the one tapped. Keyboard activations are not delayed.
+       */
+      actionCooldownMs: positiveInt,
+    })
+    .refine((overlay) => overlay.hudCompactHeightPx < overlay.hudHeightPx, {
+      error: 'hudCompactHeightPx must be less than hudHeightPx',
+      path: ['hudCompactHeightPx'],
+    }),
 })
 export type LayoutConfig = z.infer<typeof LayoutConfigSchema>
 

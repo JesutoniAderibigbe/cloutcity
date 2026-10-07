@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { lazyIsland } from '@/components/overlay/lazyIsland'
-import { useOpenPlaceId } from '@/state/placeSheet'
+import { useOpenPlaceId, usePlaceAnnouncement } from '@/state/placeSheet'
 
 // DEC-11: the shell carries only the boot path. The action sheet, with the game store, engine,
 // place data and copy it needs, loads in its own chunk the first time a place opens, with a
@@ -16,9 +16,15 @@ const PlaceSheet = lazyIsland(() => import('./PlaceSheet').then((module) => modu
  * The sheet zone's place slot: nothing until a place is opened (`openPlace`), then the lazily
  * loaded action sheet. In builds with test hooks the e2e hook is installed from its own chunk,
  * so no test code ships in the shell (or at all in production).
+ *
+ * The selection status (S04c, A11Y-3) is always rendered, so screen readers already track the
+ * live region when the first place is picked, from the map or the Places panel. It is passive
+ * (`data-overlay-passive`): on its own it does not make the sheet zone catch touches meant for
+ * the map (OverlayLayout).
  */
 export function PlaceSheetMount() {
   const placeId = useOpenPlaceId()
+  const announcement = usePlaceAnnouncement()
 
   useEffect(() => {
     // Inlined at build time (next.config.ts): production builds drop the hook entirely.
@@ -26,5 +32,12 @@ export function PlaceSheetMount() {
     void import('./placeTestHook').then((module) => module.installPlaceTestHook())
   }, [])
 
-  return placeId === null ? null : <PlaceSheet placeId={placeId} />
+  return (
+    <>
+      <p role="status" data-overlay-passive="" data-place-announcer="" className="sr-only">
+        {announcement}
+      </p>
+      {placeId === null ? null : <PlaceSheet placeId={placeId} />}
+    </>
+  )
 }

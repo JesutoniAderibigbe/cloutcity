@@ -5,7 +5,10 @@ import {
   OVERLAY_LAYER_ORDER,
   OVERLAY_ZONES,
   ZONE_GRID_ROW,
+  HUD_COMPACT_HEIGHT_VAR,
+  HUD_HEIGHT_VAR,
   layerZIndex,
+  overlayCssVars,
   overlayGridTracks,
   overlayLayout,
 } from './layers'
@@ -29,9 +32,30 @@ describe('overlay layers', () => {
 
   it('reserves a fixed tab bar and HUD at least 44 px tall', () => {
     const tracks = overlayGridTracks(overlayLayout)
-    expect(tracks[2]).toBe(`${overlayLayout.hudHeightPx}px`)
+    expect(tracks[2]).toBe(`var(${HUD_HEIGHT_VAR}, ${overlayLayout.hudHeightPx}px)`)
     expect(overlayLayout.tabBarHeightPx).toBeGreaterThanOrEqual(44)
     expect(tracks[6]).toContain('env(safe-area-inset-bottom')
+  })
+
+  it('sizes the HUD for two rows of 44 px targets, or one compact row (S05)', () => {
+    // Two rows of 44 px, a 4 px gap and 6 px padding above and below.
+    expect(overlayLayout.hudHeightPx).toBeGreaterThanOrEqual(2 * 44 + 4 + 2 * 6)
+    expect(overlayLayout.hudCompactHeightPx).toBeGreaterThanOrEqual(44 + 2 * 6)
+    expect(overlayCssVars(overlayLayout)).toMatchObject({
+      [HUD_HEIGHT_VAR]: `${overlayLayout.hudHeightPx}px`,
+      [HUD_COMPACT_HEIGHT_VAR]: `${overlayLayout.hudCompactHeightPx}px`,
+    })
+  })
+
+  it('keeps the free scene row on a landscape phone with the compact HUD (S04a)', () => {
+    // 844×390: the fixed rows (compact HUD, free scene minimum, tab bar) leave room to spare.
+    const fixed =
+      overlayLayout.hudCompactHeightPx +
+      overlayLayout.freeSceneMinHeightPx +
+      overlayLayout.tabBarHeightPx
+    expect(fixed).toBeLessThanOrEqual(390)
+    const tracks = overlayGridTracks(overlayLayout)
+    expect(tracks[3]).toBe(`minmax(${overlayLayout.freeSceneMinHeightPx}px, 1fr)`)
   })
 
   it('keeps a free scene row tall enough for the map attribution and its 44 px link', () => {

@@ -45,6 +45,30 @@ export function formatPercent(percent: number): string {
   return PERCENT.format(percent / 100)
 }
 
+// The personal game clock has no time zone: its minute of day is laid on a UTC day and read
+// back in UTC, so the host's zone and DST never shift it.
+const GAME_TIME = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+})
+
+const MINUTES_PER_DAY = 24 * 60
+
+/**
+ * A game clock time of day, 12-hour (S05): minute of day `480` → `"8:00 AM"`, `0` → `"12:00 AM"`,
+ * `1439` → `"11:59 PM"`. Takes the minute of day (0..1439), not the clock's running minute.
+ */
+export function formatGameTime(minuteOfDay: number): string {
+  if (!Number.isInteger(minuteOfDay) || minuteOfDay < 0 || minuteOfDay >= MINUTES_PER_DAY) {
+    throw new RangeError(`Minute of day must be a whole number from 0 to 1439: ${minuteOfDay}`)
+  }
+  // Intl may separate the day period with a narrow no-break space (U+202F); players see a
+  // plain space, and specs can match "8:00 AM" as typed.
+  return GAME_TIME.format(minuteOfDay * 60_000).replace(/\s/gu, ' ')
+}
+
 /** Wall-clock fields of an instant in an IANA time zone. Month is 1-12, hour is 0-23. */
 export interface WallClockParts {
   readonly year: number

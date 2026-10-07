@@ -5,7 +5,6 @@
     "loading.place": "Loading this place",
     "loading.sound": "Loading the sound controls",
     "loading.soundSettings": "Loading sound settings",
-    "loading.clout": "Loading your clout",
     "loading.levelUp": "Loading the level-up message",
     "loading.hudPanels": "Loading the inventory and rent buttons",
     "loading.inventory": "Loading your inventory",
@@ -13,6 +12,9 @@
     "loading.failed": "That didn't load. Check your connection and try again.",
     "loading.retry": "Try again",
     "loading.goals": "Loading your goals",
-    "loading.iconMoment": "Loading your Icon moment"
+    "loading.iconMoment": "Loading your Icon moment",
+    "loading.hud": "Loading your stats",
+    "loading.more": "Loading more options",
+    "loading.places": "Loading the places list"
   }
 }

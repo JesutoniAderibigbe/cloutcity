@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { scenePalette } from '@/lib/theme'
 import { scene, theme } from './config'
-import { geoBounds } from './content'
+import { geoBounds, homes } from './content'
 import { BOROUGHS } from './schemas/content'
 import { ThemeConfigSchema } from './schemas/config'
 import { SceneConfigSchema } from './schemas/scene'
@@ -14,12 +14,25 @@ const readJson = (file: string) =>
   JSON.parse(readFileSync(join(DATA, file), 'utf8')) as Record<string, unknown>
 
 describe('config/scene.json', () => {
-  it('starts the camera at Court Square, inside the NYC extent', () => {
-    const { lat, lng } = scene.camera.start
-    expect(lat).toBeGreaterThan(geoBounds.south)
-    expect(lat).toBeLessThan(geoBounds.north)
-    expect(lng).toBeGreaterThan(geoBounds.west)
-    expect(lng).toBeLessThan(geoBounds.east)
+  it('starts the camera over every home, inside the NYC extent (S05)', () => {
+    expect('start' in scene.camera).toBe(false)
+    for (const { location } of Object.values(homes)) {
+      expect(location.lat).toBeGreaterThan(geoBounds.south)
+      expect(location.lat).toBeLessThan(geoBounds.north)
+      expect(location.lng).toBeGreaterThan(geoBounds.west)
+      expect(location.lng).toBeLessThan(geoBounds.east)
+    }
+  })
+
+  it('rejects an avatar whose ring is inverted or whose size range is upside down', () => {
+    const valid = readJson('config/scene.json') as { avatar: Record<string, unknown> }
+    const withAvatar = (avatar: Record<string, unknown>) => ({
+      ...valid,
+      avatar: { ...valid.avatar, ...avatar },
+    })
+    expect(SceneConfigSchema.safeParse(valid).success).toBe(true)
+    expect(SceneConfigSchema.safeParse(withAvatar({ ringInnerRatio: 0.9 })).success).toBe(false)
+    expect(SceneConfigSchema.safeParse(withAvatar({ minHeightM: 999 })).success).toBe(false)
   })
 
   it('rejects a start distance outside the zoom limits, an inverted angle range or a flat sun', () => {

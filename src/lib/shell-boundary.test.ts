@@ -34,8 +34,12 @@ const ALLOWED_FILES: readonly RegExp[] = [
   /^data\/copy\/superlatives\.json$/,
   /^data\/config\/copy\.json$/,
   /^src\/lib\/(log|format|placeholders)\.ts$/,
-  /^src\/state\/(placeSheet|mapPlayable|hudPanel|iconMoment)\.ts$/,
+  /^src\/state\/(placeSheet|placesPanel|mapPlayable|hudPanel|iconMoment)\.ts$/,
+  // The HUD's Places button (S04c): the way into the Places panel must not wait for a chunk.
+  /^src\/components\/places\/PlacesButton\.tsx$/,
   /^src\/components\/audio\/soundSheet\.ts$/,
+  // The HUD skeleton (S05): the live cells' boxes, drawn before their island loads.
+  /^src\/components\/hud\/(HudSkeleton\.tsx|hudLayout\.ts)$/,
   // The 3D map's thin mount: WebGL probe, geo download, status and error boundary. The canvas
   // and everything three-based load through its next/dynamic import (the 3D chunk).
   /^src\/scene\/(CitySceneClient|SceneErrorBoundary)\.tsx$/,
@@ -47,7 +51,8 @@ const ALLOWED_PACKAGES = /^(react|react-dom|next|zustand)(\/|$)/
 
 /** Never in the shell, named so a failure says why. */
 const DENIED_FILES: readonly RegExp[] = [
-  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session)\.ts$/,
+  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session|gameClock|clockDriver|guestSession|playerHome|hudView)\.ts$/,
+  /^src\/lib\/supabase\//,
   /^src\/lib\/audio\//,
   /^src\/components\/audio\/(SoundControl|SoundSettingsSheet)\.tsx$/,
   /^src\/engine\//,
@@ -56,20 +61,21 @@ const DENIED_FILES: readonly RegExp[] = [
   /^src\/lib\/share\//,
   /^src\/lib\/forms\//,
   /^src\/components\/events\/(EventSheet|EventSheetHost|effectLabels|eventTestHook)\.tsx?$/,
-  /^src\/components\/places\/(PlaceSheet|ShopSection|placeTestHook)\.tsx?$/,
-  /^src\/components\/hud\/(HudPanelButtons|InventoryPanel|RentPanel|GoalsPanel|PanelDialog|hudTestHook)\.tsx?$/,
+  /^src\/components\/places\/(PlaceSheet|PlacesPanel|ShopSection|placeTestHook)\.tsx?$/,
+  /^src\/components\/hud\/(HudLive|HudPanelButtons|InventoryPanel|RentPanel|GoalsPanel|MorePanel|PanelDialog|hudTestHook|hudLiveTestHook)\.tsx?$/,
   /^src\/components\/goals\/IconMoment\.tsx$/,
   /^src\/components\/welcome\/(WelcomeGate|WelcomeCard|AgeLockNotice)\.tsx$/,
   /^src\/lib\/copy\/all\.ts$/,
   /^src\/scene\/(CityCanvas|City|materials|testHooks)\.tsx?$/,
   /^src\/scene\/camera\//,
+  /^src\/scene\/pins\//,
   /^src\/scene\/geo\/(?!load\.ts$)/,
   new RegExp(`^src/lib/copy/ns/(?!(${BOOT})\\.ts$)`),
   new RegExp(`^data/copy/(?!(${BOOT})/|superlatives\\.json$)`),
   /^data\/(events|items|venues|landmarks|boroughs|jobs|premium|geo|zones|audio)\//,
 ]
 
-const DENIED_PACKAGES = /^zod(\/|$)/
+const DENIED_PACKAGES = /^(zod|@supabase\/[\w.-]+)(\/|$)/
 
 export function shellViolations(files: Iterable<string>, packages: Iterable<string>): string[] {
   const found: string[] = []
@@ -97,11 +103,15 @@ describe('shell boundary of / (S05c)', () => {
         'src/components/overlay/lazyIsland.tsx',
         'src/components/events/EventSheetMount.tsx',
         'src/components/places/PlaceSheetMount.tsx',
+        'src/components/places/PlacesButton.tsx',
+        'src/components/places/PlacesPanelMount.tsx',
         'src/components/welcome/WelcomeMount.tsx',
         'src/scene/CitySceneClient.tsx',
         'src/components/audio/SoundControlMount.tsx',
         'src/components/audio/SoundSheetMount.tsx',
         'src/components/goals/IconMomentMount.tsx',
+        'src/components/hud/HudLiveMount.tsx',
+        'src/components/hud/HudSkeleton.tsx',
         'src/state/iconMoment.ts',
         'src/lib/copy/index.ts',
         'src/lib/copy/ns/app.ts',
@@ -121,6 +131,8 @@ describe('shell boundary of / (S05c)', () => {
       'src/components/events/EventSheetHost.tsx',
       'src/components/events/EventSheet.tsx',
       'src/components/places/PlaceSheet.tsx',
+      'src/components/places/PlacesPanel.tsx',
+      'src/scene/pins/PlacePins.tsx',
       'src/components/welcome/WelcomeGate.tsx',
       'src/scene/CityCanvas.tsx',
       'src/scene/City.tsx',
@@ -136,6 +148,11 @@ describe('shell boundary of / (S05c)', () => {
       'src/lib/goalsCopy.ts',
       'src/lib/share/shareMoment.ts',
       'src/engine/goals.ts',
+      'src/components/hud/HudLive.tsx',
+      'src/components/hud/MorePanel.tsx',
+      'src/state/gameClock.ts',
+      'src/state/guestSession.ts',
+      'src/lib/supabase/supabaseAuth.ts',
     ]) {
       expect(existsSync(join(ROOT, path)), path).toBe(true)
       expect(shellPaths, path).not.toContain(path)
@@ -163,8 +180,10 @@ describe('shell boundary of / (S05c)', () => {
           at('src/components/overlay/lazyIsland.tsx'),
           at('src/scene/geo/load.ts'),
           at('src/lib/copy/ns/tabs.ts'),
+          at('src/state/gameClock.ts'),
+          at('src/lib/supabase/supabaseAuth.ts'),
         ],
-        ['zod/mini', 'zod', 'react', 'three'],
+        ['zod/mini', 'zod', 'react', 'three', '@supabase/supabase-js', '@supabase/auth-js'],
       ),
     ).toEqual([
       'src/state/store.ts (denied)',
@@ -180,9 +199,13 @@ describe('shell boundary of / (S05c)', () => {
       'src/lib/audio/runtime.ts (denied)',
       'src/lib/copy/ns/audio.ts (denied)',
       'src/components/audio/SoundControl.tsx (denied)',
+      'src/state/gameClock.ts (denied)',
+      'src/lib/supabase/supabaseAuth.ts (denied)',
       'package zod/mini',
       'package zod',
       'package three',
+      'package @supabase/supabase-js',
+      'package @supabase/auth-js',
     ])
   })
 

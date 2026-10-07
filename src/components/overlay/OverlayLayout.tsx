@@ -5,6 +5,7 @@ import {
   OVERLAY_ZONES,
   ZONE_GRID_ROW,
   layerZIndex,
+  overlayCssVars,
   overlayGridTemplateRows,
   overlayLayout,
   type OverlayZone,
@@ -45,14 +46,14 @@ const ZONE_ARIA: Readonly<Partial<Record<OverlayZone, Record<string, string>>>> 
  * let touches fall through to the scene.
  */
 export function OverlayLayout({ children, slots, modal }: OverlayLayoutProps) {
-  const rootStyle = {
-    gridTemplateRows: overlayGridTemplateRows(overlayLayout),
-    '--overlay-sheet-max-w': `${overlayLayout.sheetMaxWidthPx}px`,
-    '--overlay-loading-delay': `${overlayLayout.loadingRevealDelayMs}ms`,
-  } as CSSProperties
+  const rootStyle: CSSProperties = { gridTemplateRows: overlayGridTemplateRows(overlayLayout) }
 
   return (
-    <div className="fixed inset-0 overflow-hidden">
+    // `cc-overlay`: globals.css switches the HUD row to its compact height here (layers.ts).
+    <div
+      className="cc-overlay fixed inset-0 overflow-hidden"
+      style={overlayCssVars(overlayLayout) as CSSProperties}
+    >
       <OverlayBackground holdForModal={modal !== undefined}>
         {/* tabIndex -1: focus lands here when a modal closes. */}
         <main
@@ -77,8 +78,9 @@ export function OverlayLayout({ children, slots, modal }: OverlayLayoutProps) {
             >
               {slots[zone] === undefined ? null : (
                 // `empty:` lets touches through a zone whose client content renders nothing
-                // (a sheet with no event or place open).
-                <div className="pointer-events-auto h-full overflow-y-auto overscroll-contain empty:pointer-events-none">
+                // (a sheet with no event or place open), and so does a zone holding only a
+                // passive element (an always-present sr-only status, `data-overlay-passive`).
+                <div className="pointer-events-auto h-full overflow-y-auto overscroll-contain empty:pointer-events-none [&:has(>[data-overlay-passive]:only-child)]:pointer-events-none">
                   {slots[zone]}
                 </div>
               )}

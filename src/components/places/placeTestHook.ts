@@ -10,8 +10,9 @@ import { gameStore } from '@/state/store'
  * Test-only hook so Playwright can open any place by id and set up the player
  * (tests/e2e/place-sheet.spec.ts). Installed only when the page sets
  * `window.__CLOUTCITY_E2E__ = true` before the app loads (Playwright's addInitScript), from its
- * own lazily loaded chunk. Opening goes through `openPlace`, the same entry point the 3D pins
- * and Places panel use, and actions still run through the engine. The setters write the local
+ * own lazily loaded chunk. Opening goes through `openPlace` (origin `hook`, so the 3D map brings
+ * the place into view), the same entry point the 3D pins and Places panel use, and actions still
+ * run through the engine. The setters write the local
  * save directly, which anyone with devtools can already do.
  */
 export interface PlaceTestHook {
@@ -66,7 +67,7 @@ export function installPlaceTestHook(): void {
   window.__cloutcityPlaces = {
     open: (placeId) => {
       if (findPlace(placeId) === undefined) return false
-      openPlace(placeId)
+      openPlace(placeId, { origin: 'hook' })
       return true
     },
     close: closePlace,

@@ -1,7 +1,10 @@
 {
   "overlay": {
     "bannerHeightPx": 48,
-    "hudHeightPx": 64,
+    "hudHeightPx": 104,
+    "hudCompactHeightPx": 56,
+    "hudWideMinWidthPx": 640,
+    "hudCompactMaxHeightPx": 479,
     "toastHeightPx": 72,
     "sheetMaxHeightVh": 40,
     "sheetMaxWidthPx": 560,

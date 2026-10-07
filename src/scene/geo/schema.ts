@@ -15,7 +15,8 @@ import { GEO_SOURCE_IDS } from '@/lib/geo/sources'
 export const BOROUGH_IDS = ['queens', 'brooklyn', 'manhattan', 'bronx', 'staten-island'] as const
 export type BoroughId = (typeof BOROUGH_IDS)[number]
 
-export const GEO_BASE_FORMAT = 'cc-geo-base-v1'
+/** v2 (S04c) adds the `places` layer; S07a's per-pin `liftM` is already accepted. */
+export const GEO_BASE_FORMAT = 'cc-geo-base-v2'
 
 const id = z.string().check(z.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'kebab-case id'))
 const borough = z.enum(BOROUGH_IDS)
@@ -102,21 +103,54 @@ export const SubwayMiniSchema = z.strictObject({
   ),
 })
 
+/** A pin's look: a playable place, a teaser on "expanding soon" land, or a muted memorial. */
+export const PIN_STYLES = ['normal', 'teaser', 'memorial'] as const
+export type PinStyle = (typeof PIN_STYLES)[number]
+export const PIN_KINDS = ['venue', 'landmark'] as const
+export type PinKind = (typeof PIN_KINDS)[number]
+
+/** Pins and borough render states (src/lib/world/placesLayer.ts). */
+export const PlacesMiniSchema = z.strictObject({
+  pins: listOf(
+    z.strictObject({
+      id,
+      kind: z.enum(PIN_KINDS),
+      category: id,
+      borough,
+      x: metre,
+      y: metre,
+      style: z.enum(PIN_STYLES),
+      /** Extra height above the land top; omitted means 0 (S07a lifts pins over models). */
+      liftM: z.optional(z.number().check(z.gte(0))),
+    }),
+  ),
+  boroughs: listOf(
+    z.strictObject({
+      id: borough,
+      render: z.enum(['normal', 'dimmed']),
+      teaserIds: z.array(id),
+    }),
+  ).check(z.length(BOROUGH_IDS.length)),
+})
+
 /** The body of GET /geo/base (src/app/geo/base/route.ts). */
 export const GeoBaseSchema = z.strictObject({
   format: z.literal(GEO_BASE_FORMAT),
-  /** Short hash of the base layers (src/lib/data/geo.ts geoVersion). */
+  /** Short hash of the base layers and places (src/lib/data/geo.ts geoVersion). */
   version: z.string().check(z.regex(/^[0-9a-f]{12}$/)),
   land: LandMiniSchema,
   water: WaterMiniSchema,
   parks: ParksMiniSchema,
   subway: SubwayMiniSchema,
+  places: PlacesMiniSchema,
 })
 export type GeoBase = z.infer<typeof GeoBaseSchema>
 export type GeoLand = GeoBase['land']
 export type GeoParks = GeoBase['parks']
 export type GeoSubway = GeoBase['subway']
 export type GeoWater = GeoBase['water']
+export type GeoPlaces = GeoBase['places']
+export type GeoPin = GeoPlaces['pins'][number]
 
 /** The first failing paths of a rejected body (never the payload itself). */
 function failingPaths(issues: readonly { readonly path: readonly PropertyKey[] }[]): string[] {

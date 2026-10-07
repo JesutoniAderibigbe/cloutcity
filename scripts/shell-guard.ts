@@ -5,8 +5,9 @@
  * HTML runs, plus its inline scripts) and fails when:
  * - a shell chunk contains a feature marker: every feature root renders a literal
  *   `data-cc-feature="cc-feature:<id>"`, and the list of ids is read from src/;
- * - a shell chunk contains a copy key of a non-boot namespace (read from data/copy/), or
- *   `$ZodType` (zod belongs in the boot islands, not the shell);
+ * - a shell chunk contains a copy key of a non-boot namespace (read from data/copy/),
+ *   `$ZodType` (zod belongs in the boot islands, not the shell) or `signInAnonymously`
+ *   (supabase-js belongs in its own lazy chunk, S05);
  * - any static chunk contains an e2e test-hook marker (hooks ship only in the `.next-e2e` test
  *   build; next.config.ts `NEXT_PUBLIC_TEST_HOOKS`);
  * - the shell is over `shellJsGzKB - shellHeadroomGzKB` (data/config/perf.json).
@@ -28,6 +29,12 @@ export const TEST_HOOK_MARKERS = ['__cloutcityTest', '__cloutcityPlaces'] as con
 
 const MARKER = /cc-feature:[a-z0-9]+(?:-[a-z0-9]+)*/g
 const ZOD_MARKER = '$ZodType'
+/**
+ * The anonymous sign-in (S05) lives in the lazy Supabase chunk, imported only after the 18+
+ * attestation and once the map is playable; its method name in the shell would mean
+ * supabase-js was bundled into it.
+ */
+export const SUPABASE_AUTH_MARKER = 'signInAnonymously'
 
 export interface Chunk {
   /** Path relative to the build's `static/` directory, or `inline` for the inline scripts. */
@@ -82,6 +89,9 @@ export function shellGuardFailures(input: GuardInput): string[] {
       )
     }
     if (chunk.text.includes(ZOD_MARKER)) failures.push(`${chunk.name}: zod (${ZOD_MARKER})`)
+    if (chunk.text.includes(SUPABASE_AUTH_MARKER)) {
+      failures.push(`${chunk.name}: Supabase auth (${SUPABASE_AUTH_MARKER})`)
+    }
   }
   for (const chunk of [...input.shell, ...input.others]) {
     for (const hook of TEST_HOOK_MARKERS) {

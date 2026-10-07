@@ -27,6 +27,7 @@ import {
 } from './schemas/config'
 import {
   EventsFileSchema,
+  HomesFileSchema,
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
@@ -93,6 +94,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/parks.derived.json': ParksFileSchema,
   'geo/subway.derived.json': SubwayFileSchema,
   'geo/water.derived.json': WaterFileSchema,
+  'homes/homes.json': HomesFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
@@ -156,6 +158,7 @@ describe('/data files', () => {
     'zones',
     'audio',
     'boroughs',
+    'homes',
     'config',
     'copy',
     'moderation',

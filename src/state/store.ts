@@ -16,7 +16,7 @@ import { useStore } from 'zustand'
 import { persist, type PersistStorage, type StorageValue } from 'zustand/middleware'
 import { createStore } from 'zustand/vanilla'
 import { performAction, type ActionResult } from '@/engine/actions'
-import { isSpeed } from '@/engine/clock'
+import { isSpeed, type ClockState } from '@/engine/clock'
 import type { LevelUp } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import {
@@ -306,9 +306,26 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
          * Applies a state-changing action's result, then records any goal it reached
          * (src/engine/goals.ts `syncGoals`). Never on the passive tick: time alone reaches no goal.
          */
+        /**
+         * The passive clock's sub-minute carry (S05). A visible tab ticks every second, but the
+         * clock shows whole game minutes, so the carry lives here and the state changes (and
+         * subscribers re-render) only when a game minute passes: six ticks a minute at 1x, not
+         * one notification per tick.
+         *
+         * It is tied to the clock it was carried on. The store's own actions fast-forward whole
+         * minutes and keep it (`keepCarry`); a clock written from outside (a loaded save, a
+         * test hook) or a fresh start drops it, and the state's own remainder applies.
+         */
+        let carry: { readonly clock: ClockState; readonly ms: number } | null = null
+        const carriedMs = (clock: ClockState) =>
+          carry !== null && carry.clock === clock ? carry.ms : clock.remainderMs
+        const keepCarry = () => {
+          if (carry !== null) carry = { clock: get().clock, ms: carry.ms }
+        }
         const commit = (patch: Partial<GameState>, levelUp: LevelUp | null = null) => {
           const { save } = syncGoals({ ...get(), ...patch }, engineConfig)
           set({ ...patch, goals: save.goals, ...levelUpPatch(levelUp, save.goals) })
+          keepCarry()
         }
         return {
           ...initialPersistedState(),
@@ -318,19 +335,21 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
           lastLevelUp: null,
           tick: (realElapsedMs, visible) => {
             const state = get()
-            const { snapshot, rent } = tick(
-              state,
+            const clock = { minute: state.clock.minute, remainderMs: carriedMs(state.clock) }
+            const { snapshot, minutes, rent } = tick(
+              { clock, player: state.player },
               realElapsedMs,
               { visible, speed: state.speed },
               engineConfig,
             )
-            if (snapshot.clock !== state.clock) {
+            if (minutes > 0) {
               set({
                 clock: snapshot.clock,
                 player: snapshot.player,
                 lastRentEvent: latestRent(rent, state.lastRentEvent),
               })
             }
+            carry = { clock: get().clock, ms: snapshot.clock.remainderMs }
           },
           performAction: (actionId) => {
             const state = get()
@@ -412,6 +431,7 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
               player: snapshot.player,
               lastRentEvent: latestRent(rent, state.lastRentEvent),
             })
+            keepCarry()
           },
           setSpeed: (speed) => {
             if (!isSpeed(speed, engineConfig))
@@ -469,6 +489,7 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
           startPrestige: () => {
             const result = startNextRun(persistedOf(get()), Date.now(), engineConfig)
             if (result.ok) {
+              carry = null
               set({
                 ...result.save,
                 eventOutcome: null,
@@ -486,6 +507,7 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
           discardNewerSaveAndStartFresh: () => {
             guard.release()
             logger.info("Discarding a saved game from a newer build at the player's request")
+            carry = null
             set({
               ...initialPersistedState(),
               newerSavePresent: false,

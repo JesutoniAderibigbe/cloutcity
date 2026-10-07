@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import type { PlaceTestHook } from '@/components/places/placeTestHook'
 import { expect, test } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
+import { openFromHud } from './helpers/hud'
 
 /**
  * The place hook is installed and the 3D map has finished starting: on SwiftShader the map's
@@ -105,7 +106,8 @@ test('prestige keeps the outfit worn as a look only; the HUD shows Nobody and $1
   await expect(meter(page)).toHaveAccessibleName('Clout: Nobody, 0 of 100 to Local')
   expect((await state(page)).cash).toBe(150)
 
-  await page.locator('[data-overlay-zone="hud"]').getByRole('button', { name: 'Inventory' }).click()
+  // On phones Inventory is in the HUD's More panel (S05).
+  await openFromHud(page, 'Inventory')
   const panel = page.locator('[data-hud-panel-dialog="inventory"]')
   const row = panel.locator(`[data-inventory-item="${TEE}"]`)
   await expect(row).toHaveAttribute('data-prestige-kept', '')

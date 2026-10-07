@@ -10,12 +10,26 @@ export type ParkKind = (typeof PARK_KINDS)[number]
 
 interface ParkArea {
   readonly kind: ParkKind
+  readonly borough: string
   readonly polygons: readonly DeltaPolygon[]
 }
 
-/** Every polygon of one kind, in data order. */
-export function polygonsOfKind(parks: readonly ParkArea[], kind: ParkKind): DeltaPolygon[] {
-  return parks.filter((park) => park.kind === kind).flatMap((park) => park.polygons)
+/**
+ * Every polygon of one kind, in data order; with `inBoroughs`, only those whose borough is (or,
+ * with `exclude`, is not) in the set (S04c: dimmed boroughs' parks draw in their own mesh).
+ */
+export function polygonsOfKind(
+  parks: readonly ParkArea[],
+  kind: ParkKind,
+  inBoroughs?: { readonly ids: ReadonlySet<string>; readonly exclude: boolean },
+): DeltaPolygon[] {
+  return parks
+    .filter(
+      (park) =>
+        park.kind === kind &&
+        (inBoroughs === undefined || inBoroughs.ids.has(park.borough) !== inBoroughs.exclude),
+    )
+    .flatMap((park) => park.polygons)
 }
 
 /**

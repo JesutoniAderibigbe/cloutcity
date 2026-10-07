@@ -3,7 +3,7 @@
  * and deliberately tiny like hudPanel.ts: the shell's modal mount reads it, so the victory
  * screen with the store, engine and goals copy loads only when the moment comes (DEC-11).
  *
- * The HUD clout island (which already holds the game store) sets it from the save: true while
+ * The HUD's live island (which already holds the game store) sets it from the save: true while
  * `goals.icon` has been reached and not acknowledged. Closing the screen or prestiging clears
  * it through the store, and the island follows.
  */

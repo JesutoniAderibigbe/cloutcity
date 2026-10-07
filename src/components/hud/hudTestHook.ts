@@ -18,6 +18,8 @@ export interface HudTestHook {
    * is charged. Returns the 1-based day it fell on.
    */
   advancePastNextRentDay(): number
+  /** Fast-forwards the personal clock by whole game minutes (decay and rent apply). */
+  advanceMinutes(minutes: number): void
   setEnergy(energy: number): void
   state(): {
     readonly cash: number
@@ -54,6 +56,7 @@ function createHudTestHook(): HudTestHook {
       gameStore.getState().advanceMinutes(target - clock.minute)
       return day
     },
+    advanceMinutes: (minutes) => gameStore.getState().advanceMinutes(minutes),
     setEnergy: (energy) => {
       const { max } = engineConfig.stats
       if (!Number.isSafeInteger(energy) || energy < 0 || energy > max) {

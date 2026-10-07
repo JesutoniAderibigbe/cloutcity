@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { HUD_MORE_SELECTOR, focusFirstVisible } from '@/components/overlay/focusVisible'
 import { copy } from '@/lib/copy'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/place'
@@ -16,7 +17,7 @@ const SHORT_SCREEN_BODY = '[@media(max-height:480px)]:gap-1'
 /**
  * The frame of a HUD panel in the sheet zone (S10a): a non-modal dialog like the place sheet,
  * so the map and HUD stay usable. Focus moves to the title on open and back to its HUD button
- * on close; Escape and the Close button close it.
+ * (or the More button, where that button is hidden) on close; Escape and the Close button close it.
  */
 export function PanelDialog({
   title,
@@ -47,10 +48,9 @@ export function PanelDialog({
   // on open: switching panels would otherwise hand it to the other panel's button.
   useEffect(() => {
     ref.current?.querySelector<HTMLElement>('h2')?.focus()
+    // On phones the panel's own button may be hidden behind More (S05): then More takes focus.
     return () => {
-      const selector = `[data-hud-panel="${CSS.escape(panel)}"]`
-      const target = document.querySelector<HTMLElement>(selector) ?? document.querySelector('main')
-      target?.focus()
+      focusFirstVisible([`[data-hud-panel="${CSS.escape(panel)}"]`, HUD_MORE_SELECTOR, 'main'])
     }
   }, [panel])
 

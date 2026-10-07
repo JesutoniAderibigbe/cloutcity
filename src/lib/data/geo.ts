@@ -11,6 +11,7 @@ import parksJson from '@data/geo/parks.derived.json'
 import subwayJson from '@data/geo/subway.derived.json'
 import waterJson from '@data/geo/water.derived.json'
 import zoneShapesJson from '@data/zones/zone-shapes.derived.json'
+import { placesLayer } from '@/lib/world/placesLayer'
 import { parseDataFile } from './parse'
 import {
   GeoManifestSchema,
@@ -37,15 +38,27 @@ export const geoManifest = parseDataFile(
 )
 
 /**
- * Short content hash of the base geo layers, from their manifest sha256s. The scene fetches
- * /geo/base?v=<geoVersion>, so a geo rebuild changes the URL and no stale copy is reused.
+ * Short content hash of everything /geo/base serves: the base layers' manifest sha256s and the
+ * places layer (S04c, built from the venue, landmark and borough data). The scene fetches
+ * /geo/base?v=<geoVersion> (and /geo/fallback), so a geo rebuild or a moved place changes the
+ * URL and no stale copy is reused.
  */
-export const geoVersion = createHash('sha256')
-  .update(
-    geoManifest.files
-      .filter((file) => file.group === 'base')
-      .map((file) => `${file.path}:${file.sha256}`)
-      .join('\n'),
-  )
-  .digest('hex')
-  .slice(0, 12)
+export function geoVersionOf(
+  files: readonly { readonly path: string; readonly group: string; readonly sha256: string }[],
+  places: unknown,
+): string {
+  const placesHash = createHash('sha256').update(JSON.stringify(places)).digest('hex')
+  return createHash('sha256')
+    .update(
+      [
+        ...files
+          .filter((file) => file.group === 'base')
+          .map((file) => `${file.path}:${file.sha256}`),
+        `places:${placesHash}`,
+      ].join('\n'),
+    )
+    .digest('hex')
+    .slice(0, 12)
+}
+
+export const geoVersion = geoVersionOf(geoManifest.files, placesLayer)

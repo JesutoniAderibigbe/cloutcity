@@ -1,49 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createLogger } from '@/lib/log'
-import { startClockDriver, type ClockDriverEnv } from './clockDriver'
+import { fakeClockEnv as fakeEnv } from '@/lib/testing/fakeClockEnv'
+import { startClockDriver } from './clockDriver'
 import { createSafeJsonStorage } from './storage'
 import { createGameStore, type PersistedState } from './store'
-
-/** A fake browser: a manual clock, visibility flag and interval. */
-function fakeEnv() {
-  let now = 0
-  let visible = true
-  let onTick: (() => void) | undefined
-  let onVisibility: (() => void) | undefined
-  const env: ClockDriverEnv = {
-    now: () => now,
-    isVisible: () => visible,
-    onVisibilityChange: (callback) => {
-      onVisibility = callback
-      return () => (onVisibility = undefined)
-    },
-    setInterval: (callback) => {
-      onTick = callback
-      return 1
-    },
-    clearInterval: () => (onTick = undefined),
-  }
-  return {
-    env,
-    /** Advances real time in interval steps, firing the interval each step. */
-    run(ms: number, step = 1000) {
-      for (let left = ms; left > 0; left -= step) {
-        now += Math.min(step, left)
-        onTick?.()
-      }
-    },
-    setVisible(next: boolean) {
-      visible = next
-      onVisibility?.()
-    },
-    jump(ms: number) {
-      now += ms
-    },
-    get running() {
-      return onTick !== undefined && onVisibility !== undefined
-    },
-  }
-}
 
 function newStore() {
   const logger = createLogger({ sink: () => {} })
@@ -151,6 +111,8 @@ describe('clock driver edge cases', () => {
     stop()
     fake.jump(60_000)
     fake.setVisible(false)
-    expect(store.getState().clock).toEqual({ minute: 480, remainderMs: 3000 })
+    // A live listener would count the 60 s jump (capped at 5 s) on top of the 3 s carried, and
+    // a game minute would pass.
+    expect(store.getState().clock.minute).toBe(480)
   })
 })

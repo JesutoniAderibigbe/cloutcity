@@ -6,7 +6,8 @@
  * the configured zoom, tilt and turn ranges, with the target kept inside the NYC extent. Every
  * change requests one frame (frameloop "demand"), so an idle map renders nothing.
  *
- * No keyboard controls yet: the keyboard and DOM path to every place lands with S04c (A11Y-3).
+ * The keyboard and DOM path to every place is the Places panel (S04c, A11Y-3); a place picked
+ * there brings the camera to it (pins/PlacePins.tsx).
  */
 import { useEffect } from 'react'
 import { useThree } from '@react-three/fiber'

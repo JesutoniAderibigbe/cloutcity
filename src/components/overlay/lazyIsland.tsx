@@ -44,6 +44,12 @@ export interface IslandOptions {
    * event-sheet host with no event open), so boot shows no placeholder.
    */
   readonly quiet?: boolean
+  /**
+   * Drawn on the server, during hydration and while the chunk loads, in place of the zone's
+   * loading state: a skeleton with the loaded island's exact boxes (the HUD, S05), so nothing
+   * moves or flashes when it arrives. It must render the same on the server and the client.
+   */
+  readonly placeholder?: ReactNode
 }
 
 const RetryContext = createContext<() => void>(() => {})
@@ -57,7 +63,7 @@ export function lazyIsland<P extends object>(
   load: () => Promise<ComponentType<P>>,
   options: IslandOptions,
 ): ComponentType<P> {
-  const { zone, labelKey, eager = false, quiet = false } = options
+  const { zone, labelKey, eager = false, quiet = false, placeholder } = options
   let pending: Promise<ComponentType<P>> | undefined
 
   // One import in flight at a time; a failure is forgotten so the next attempt imports again.
@@ -116,7 +122,7 @@ export function lazyIsland<P extends object>(
   function Island(props: P) {
     const hydrated = useHydrated()
     const [generation, setGeneration] = useState(0)
-    if (!hydrated) return null
+    if (!hydrated) return placeholder ?? null
 
     const retry = () => {
       Current = build()
@@ -126,7 +132,11 @@ export function lazyIsland<P extends object>(
     return (
       <RetryContext value={retry}>
         <IslandBoundary key={generation} zone={zone} onRetry={retry}>
-          <Suspense fallback={quiet ? null : <ZoneLoading zone={zone} labelKey={labelKey} />}>
+          <Suspense
+            fallback={
+              placeholder ?? (quiet ? null : <ZoneLoading zone={zone} labelKey={labelKey} />)
+            }
+          >
             <Loaded {...props} />
           </Suspense>
         </IslandBoundary>

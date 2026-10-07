@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures/test'
 import { audio, gainOf, installAudioProbe, probeOf } from './fixtures/audio'
 import { waitForMapSettled } from './helpers/scene'
+import { hudIsWide, hudOpener, openFromHud } from './helpers/hud'
 
 // Sound settings (S05b): loaded on demand, native controls, live changes per channel.
 
@@ -16,12 +17,13 @@ test('the sheet loads on demand, opening it stays silent, and each slider moves 
     if (request.resourceType() === 'script') scripts.push(request.url())
   })
 
-  const gear = page.getByRole('button', { name: 'Sound settings', exact: true })
-  await expect(gear).toHaveAttribute('aria-expanded', 'false')
-  await gear.click()
+  // On phones the gear is in the More panel (S05); the HUD gear shows on wide screens.
+  const opener = hudOpener(page, 'Sound settings')
+  if (hudIsWide(page)) await expect(opener).toHaveAttribute('aria-expanded', 'false')
+  await openFromHud(page, 'Sound settings')
   const sheet = page.getByRole('region', { name: 'Sound' })
   await expect(sheet).toBeVisible()
-  await expect(gear).toHaveAttribute('aria-expanded', 'true')
+  if (hudIsWide(page)) await expect(opener).toHaveAttribute('aria-expanded', 'true')
   expect(scripts.length, 'the sheet chunk loads on the first tap').toBeGreaterThan(0)
   expect((await probeOf(page)).contexts, 'opening the sheet is not the audio choice').toBe(0)
 
@@ -57,35 +59,56 @@ test('the sheet loads on demand, opening it stays silent, and each slider moves 
 
   await page.keyboard.press('Escape')
   await expect(sheet).toHaveCount(0)
-  await expect(gear).toBeFocused()
+  await expect(opener).toBeFocused()
 })
 
-test('the sound control stays inside the HUD, at least 44 px', async ({ page }) => {
-  const hud = await page
-    .goto('/')
-    .then(() => page.locator('[data-overlay-zone="hud"]').boundingBox())
-  if (!hud) throw new Error('no HUD zone')
-  for (const name of ['Turn on sound', 'Sound settings']) {
-    const box = await page.getByRole('button', { name }).boundingBox()
-    if (!box) throw new Error(`${name} not rendered`)
-    expect(box.width, name).toBeGreaterThanOrEqual(44)
-    expect(box.height, name).toBeGreaterThanOrEqual(44)
-    expect(box.y, name).toBeGreaterThanOrEqual(hud.y)
-    expect(box.y + box.height, name).toBeLessThanOrEqual(hud.y + hud.height)
-    expect(box.x + box.width, name).toBeLessThanOrEqual(hud.x + hud.width)
-  }
-})
+// S05: the sound control sits in the HUD's actions cell beside the Places button (S04c); the
+// gear is in the HUD on wide screens only, and on phones the More button stands in for it.
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1280, height: 720 },
+  { width: 390, height: 600 },
+  { width: 844, height: 390 },
+] as const) {
+  test(`the sound control stays inside the HUD, at least 44 px, at ${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+    await waitForMapSettled(page)
+    const hud = await page.locator('[data-overlay-zone="hud"]').boundingBox()
+    if (!hud) throw new Error('no HUD zone')
+    const names = hudIsWide(page)
+      ? ['Turn on sound', 'Sound settings', 'Places']
+      : ['Turn on sound', 'More', 'Places']
+    for (const name of names) {
+      const box = await page
+        .locator('[data-overlay-zone="hud"]')
+        .getByRole('button', { name, exact: true })
+        .boundingBox()
+      if (!box) throw new Error(`${name} not rendered`)
+      expect(box.width, name).toBeGreaterThanOrEqual(44)
+      expect(box.height, name).toBeGreaterThanOrEqual(44)
+      expect(box.y, name).toBeGreaterThanOrEqual(hud.y)
+      expect(box.y + box.height, name).toBeLessThanOrEqual(hud.y + hud.height)
+      expect(box.x, name).toBeGreaterThanOrEqual(hud.x)
+      expect(box.x + box.width, name).toBeLessThanOrEqual(hud.x + hud.width)
+    }
+    // Both lines of the control are visible text at every width (UX-7).
+    await expect(page.getByText('Tap for sound', { exact: true })).toBeVisible()
+  })
+}
 
 test('accessible with the sheet closed and open', async ({ page, checkA11y }) => {
   await page.goto('/')
   await waitForMapSettled(page)
   await checkA11y()
-  await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
+  await openFromHud(page, 'Sound settings')
   await expect(page.getByRole('region', { name: 'Sound' })).toBeVisible()
   await checkA11y()
   await page.getByRole('button', { name: 'Close sound settings' }).click()
   await expect(page.getByRole('region', { name: 'Sound' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Sound settings', exact: true })).toBeFocused()
+  await expect(hudOpener(page, 'Sound settings')).toBeFocused()
 })
 
 interface Box {
@@ -108,7 +131,7 @@ test('the sound settings and an event can be open together without overlapping (
   await waitForMapSettled(page)
   await page.waitForFunction(() => window.__cloutcityTest?.events !== undefined)
   await waitForMapSettled(page)
-  await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
+  await openFromHud(page, 'Sound settings')
   const sheet = page.getByRole('region', { name: 'Sound' })
   await expect(sheet).toBeVisible()
 
@@ -147,7 +170,7 @@ test('the sound settings and an event can be open together without overlapping (
   await expect(page.getByRole('region', { name: 'Sound' })).toBeVisible()
 })
 
-test('a long track title stays on one truncated line inside the HUD, clear of the title', async ({
+test('a long track title stays on one truncated line inside the HUD, clear of the other cells', async ({
   page,
 }) => {
   await page.goto('/')
@@ -158,23 +181,19 @@ test('a long track title stays on one truncated line inside the HUD, clear of th
   await expect(toggle).toHaveAccessibleDescription(/^♪ .+ by .+$/)
 
   const hud = await page.locator('[data-overlay-zone="hud"]').boundingBox()
-  const title = await page.getByRole('heading', { level: 1 }).boundingBox()
   const control = await toggle.boundingBox()
-  if (!hud || !title || !control) throw new Error('HUD not rendered')
+  if (!hud || !control) throw new Error('HUD not rendered')
   expect(control.x + control.width).toBeLessThanOrEqual(hud.x + hud.width)
   expect(control.y + control.height).toBeLessThanOrEqual(hud.y + hud.height)
-  expect(overlaps(title, control), 'sound control overlaps the game title').toBe(false)
-
-  const nowPlaying = page.locator('#sound-control-now-playing')
-  // Below Tailwind's sm breakpoint the HUD row also holds the clout meter, so the control is an
-  // icon and its lines are for screen readers only (the description above still reads).
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    const box = await nowPlaying.boundingBox()
-    expect(box === null || (box.width <= 1 && box.height <= 1), 'line is visually hidden').toBe(
-      true,
-    )
-    return
+  for (const cell of ['money', 'clock', 'speed', 'clout', 'stats']) {
+    const box = await page.locator(`[data-hud-cell="${cell}"]`).boundingBox()
+    if (!box) throw new Error(`no ${cell} cell`)
+    expect(overlaps(box, control), `sound control overlaps the ${cell} cell`).toBe(false)
   }
+
+  // Both lines are visible at every width since S05 (UX-7), each on one truncated line.
+  const nowPlaying = page.locator('#sound-control-now-playing')
+  await expect(nowPlaying).toBeVisible()
   const line = await nowPlaying.evaluate((element) => {
     const style = getComputedStyle(element)
     const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5
@@ -203,7 +222,7 @@ test('volumes saved by a newer build are shown and never overwritten', async ({ 
   }, newer)
   await page.goto('/')
   await waitForMapSettled(page)
-  await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
+  await openFromHud(page, 'Sound settings')
   const sheet = page.getByRole('region', { name: 'Sound' })
   await expect(sheet.getByRole('slider', { name: 'Master' })).toHaveValue('55')
   await expect(sheet.getByRole('slider', { name: 'City sounds' })).toHaveValue('25')
@@ -223,7 +242,7 @@ test('a corrupt sound save falls back to the defaults without a console error', 
   })
   await page.goto('/')
   await waitForMapSettled(page)
-  await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
+  await openFromHud(page, 'Sound settings')
   await expect(
     page.getByRole('region', { name: 'Sound' }).getByRole('slider', { name: 'Master' }),
   ).toHaveValue('80')
