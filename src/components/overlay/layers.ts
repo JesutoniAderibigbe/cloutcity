@@ -61,6 +61,15 @@ export const MODAL_GRID_ROW = `4 / ${ZONE_GRID_ROW.tabs}`
 export const HUD_HEIGHT_VAR = '--overlay-hud-h'
 export const HUD_COMPACT_HEIGHT_VAR = '--overlay-hud-compact-h'
 
+/**
+ * The banner row's floor (UI-8): 0 while the banner is empty or holds only text, so a short
+ * screen gives the room to the toast and sheet; the banner's height while it shows a notice
+ * with buttons (the tour, the update notice, `data-cc-notice`), so its 44 px targets are never
+ * clipped. globals.css raises it with `:has()`; no JS measures anything.
+ */
+export const BANNER_MIN_VAR = '--overlay-banner-min'
+export const BANNER_HEIGHT_VAR = '--overlay-banner-h'
+
 /** The HUD track: the CSS variable, falling back to the two-row height outside the layout. */
 export function hudTrack(config: OverlayLayoutConfig): string {
   return `var(${HUD_HEIGHT_VAR}, ${config.hudHeightPx}px)`
@@ -74,6 +83,7 @@ export function overlayCssVars(config: OverlayLayoutConfig): Readonly<Record<str
   return {
     [HUD_HEIGHT_VAR]: `${config.hudHeightPx}px`,
     [HUD_COMPACT_HEIGHT_VAR]: `${config.hudCompactHeightPx}px`,
+    [BANNER_HEIGHT_VAR]: `${config.bannerHeightPx}px`,
     '--overlay-sheet-max-w': `${config.sheetMaxWidthPx}px`,
     '--overlay-loading-delay': `${config.loadingRevealDelayMs}ms`,
   }
@@ -85,13 +95,14 @@ export function overlayCssVars(config: OverlayLayoutConfig): Readonly<Record<str
  *
  * Banner, toast and sheet are `minmax(0, max)`: the grid fills them to their max before the free
  * area gets more than its minimum, and on a short viewport (landscape phone) they shrink instead
- * of pushing the tab bar off screen. HUD, tab bar and the free area's minimum
+ * of pushing the tab bar off screen. The banner keeps its full height while it shows a notice
+ * with buttons ({@link BANNER_MIN_VAR}). HUD, tab bar and the free area's minimum
  * (`freeSceneMinHeightPx`, room for the map attribution) never shrink.
  */
 export function overlayGridTracks(config: OverlayLayoutConfig): readonly string[] {
   return [
     'env(safe-area-inset-top, 0px)',
-    `minmax(0, ${config.bannerHeightPx}px)`,
+    `minmax(var(${BANNER_MIN_VAR}, 0px), ${config.bannerHeightPx}px)`,
     hudTrack(config),
     `minmax(${config.freeSceneMinHeightPx}px, 1fr)`,
     `minmax(0, ${config.toastHeightPx}px)`,

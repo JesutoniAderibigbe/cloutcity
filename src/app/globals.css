@@ -120,6 +120,13 @@
   }
 }
 
+/* A banner notice with buttons (the tour, the update notice) keeps the banner row at its full
+   height on a short screen, so its 44 px targets are not clipped (UI-8; src/components/overlay/
+   layers.ts BANNER_MIN_VAR). Set on the root so every grid repeating the rows inherits it. */
+.cc-overlay:has([data-overlay-zone='banner'] [data-cc-notice]) {
+  --overlay-banner-min: var(--overlay-banner-h);
+}
+
 /* Lock the app shell to the visual viewport: no page scroll, rubber-band bounce or double-tap
    zoom. Pinch zoom stays available (WCAG 1.4.4); the 3D canvas claims its own gestures: the camera
    controls set touch-action: none on it (src/scene/camera/CameraRig.tsx). */
