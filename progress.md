@@ -292,4 +292,10 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   sound-control boot island + lazy settings sheet, `audio` copy namespace, hooks behind
   NEXT_PUBLIC_TEST_HOOKS. At 390 px the sound control is icon-only below `sm` (UX-7; S05 restores the
   visible text in the two-row HUD). Dev gates: unit 2084, integration 124, e2e 358, shell 141.9 KB.
+- S10a (attempt 1, passed): shop sections and job shifts in place sheets, lazy Inventory and Rent HUD
+  panels (eager quiet button island; 44 px icons below sm), focus after buy/sell/use, useActionGuard
+  (held keys act once; during actionCooldownMs touch presses in the just-tapped rect are ignored, mouse
+  only when drifting to another item; cooldown measured from when the action ran), BUG-1 rent notices
+  from events. Two fix cycles + UX-6 touch fix. Dev gates: unit 2140, integration ok, e2e 418, shell
+  142.3 KB. Follow-ups: UX-5 (event outcome text omits rent), FLAKE-1/2.
 
