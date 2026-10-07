@@ -265,9 +265,12 @@ test.describe('goals: double claims, open events, small screens', () => {
     expect(await grantLog(page)).toBe(0)
   })
 
-  for (const [label, earned] of [
-    ['Scene Regular', 400],
-    ['Famous', 2500],
+  // A v8 seed is older than the current save, so loading derives every level goal its clout
+  // already holds (src/engine/save.ts `migrateSave` → `syncGoals`): at Famous that adds Known and
+  // Famous to the three seeded goals.
+  for (const [label, earned, ready] of [
+    ['Scene Regular', 400, 3],
+    ['Famous', 2500, 5],
   ] as const) {
     test(`HUD with ${label} and a ready count: nothing overlaps, targets are 44 px`, async ({
       page,
@@ -277,7 +280,7 @@ test.describe('goals: double claims, open events, small screens', () => {
       const zone = page.locator('[data-overlay-zone="hud"]')
       await expect(zone.locator('[data-clout-meter]')).toContainText(label)
       await expect(goalsButton(page)).toHaveAccessibleName(
-        'Goals: Make it in New York, 3 rewards ready',
+        `Goals: Make it in New York, ${ready} rewards ready`,
       )
       // S05's HUD layouts: phone, desktop, short phone, landscape phone.
       for (const viewport of [
