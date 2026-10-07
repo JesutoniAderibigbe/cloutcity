@@ -462,11 +462,27 @@ export const ModerationConfigSchema = z
       .refine((retention) => retention.evidenceDays <= retention.reportRowDays, {
         error: 'evidenceDays must not exceed reportRowDays',
       }),
+    /**
+     * The /mod console's server routes (S18b part 2), not mirrored in the database: sign-in
+     * links one IP may ask for per window, and how many cases one queue read returns.
+     */
+    console: z.strictObject({
+      signInMaxPerWindow: positiveInt,
+      signInWindowMs: positiveInt,
+      queueLimit: z.int().min(1).max(200),
+    }),
   })
   .refine((config) => config.noteMaxChars <= 1000 && config.appealMaxChars <= 2000, {
     error: 'note and appeal limits must stay within the database column checks',
   })
 export type ModerationConfig = z.infer<typeof ModerationConfigSchema>
+
+/** data/config/profile.json (S18a part 2): the Me panel's client-side timing. */
+export const ProfileConfigSchema = z.strictObject({
+  /** How long the handle form waits after typing stops before it asks whether a handle is free. */
+  handleCheckDebounceMs: z.int().min(0).max(5000),
+})
+export type ProfileConfig = z.infer<typeof ProfileConfigSchema>
 
 /**
  * data/config/handles.json (S18a). The database enforces these: the migration's generated seed

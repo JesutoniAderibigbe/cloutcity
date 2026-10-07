@@ -10,6 +10,7 @@ const SECTIONS: readonly { heading: CopyKey; body: readonly CopyKey[] }[] = [
   { heading: 'credits.nyc.heading', body: ['credits.nyc.body', 'credits.nyc.disclaimer'] },
   { heading: 'credits.mta.heading', body: ['credits.mta.body'] },
   { heading: 'credits.osm.heading', body: ['credits.osm.body'] },
+  { heading: 'credits.handles.heading', body: ['credits.handles.body'] },
 ]
 
 /** Data sources and their required attribution (data/geo/SOURCES.md), linked from the map. */

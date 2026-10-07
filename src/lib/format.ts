@@ -139,3 +139,20 @@ export function wallClockParts(epochMs: number, timeZone: string): WallClockPart
     utcOffsetMinutes: Math.round((wallAsUtc - wholeSecondMs) / 60_000),
   }
 }
+
+let calendarDate: Intl.DateTimeFormat | undefined
+
+/**
+ * A calendar date for player-facing text (S18a: when the next handle change opens, when a
+ * suspension ends): `"October 9, 2026"`, in `timeZone` (default: the player's own). Takes an
+ * instant (epoch milliseconds or an ISO timestamp); an invalid one throws.
+ */
+export function formatDate(instant: number | string, timeZone?: string): string {
+  const epochMs = typeof instant === 'number' ? instant : Date.parse(instant)
+  assertFinite(epochMs, 'Date')
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
+  if (timeZone !== undefined)
+    return new Intl.DateTimeFormat('en-US', { ...options, timeZone }).format(epochMs)
+  calendarDate ??= new Intl.DateTimeFormat('en-US', options)
+  return calendarDate.format(epochMs)
+}

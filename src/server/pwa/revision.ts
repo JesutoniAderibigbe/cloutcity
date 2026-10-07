@@ -4,6 +4,7 @@
  * (src/app/serwist/[path]/route.ts). Server-only: it reads git, the build directory and the
  * classic-zod geo data, and runs only while the worker route is prerendered.
  */
+import 'server-only'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readdirSync } from 'node:fs'

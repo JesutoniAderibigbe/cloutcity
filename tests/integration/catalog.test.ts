@@ -71,10 +71,12 @@ const PRIVATE_TABLES = [
   'sanctions',
 ]
 
-/** The moderator actions (S18b): the /mod server routes call them with the service role. */
+/** The moderator actions and console reads (S18b): the /mod server routes call them with the service role. */
 const MODERATOR_RPCS = [
   'mod_ban',
+  'mod_case',
   'mod_dismiss',
+  'mod_queue',
   'mod_reset_handle',
   'mod_resolve_appeal',
   'mod_restrict',

@@ -34,7 +34,8 @@ const ALLOWED_FILES: readonly RegExp[] = [
   /^data\/copy\/superlatives\.json$/,
   /^data\/config\/copy\.json$/,
   /^src\/lib\/(log|format|placeholders|perfMarks)\.ts$/,
-  /^src\/state\/(placeSheet|placesPanel|mapPlayable|hudPanel|iconMoment)\.ts$/,
+  // Tiny session-only signals whose features load lazily (S18b: the safety toast, notices).
+  /^src\/state\/(placeSheet|placesPanel|mapPlayable|hudPanel|iconMoment|safetyToast|accountNotices)\.ts$/,
   // The trip on screen (S08): the place slot shows its progress card. Types only from the engine.
   /^src\/state\/trip\.ts$/,
   // The HUD's Places button (S04c): the way into the Places panel must not wait for a chunk.

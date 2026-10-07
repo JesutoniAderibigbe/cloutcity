@@ -10,6 +10,8 @@ import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
 import { PlacesButton } from '@/components/places/PlacesButton'
 import { PlacesPanelMount } from '@/components/places/PlacesPanelMount'
+import { AccountNoticesMount } from '@/components/safety/AccountNoticesMount'
+import { SafetyToastMount } from '@/components/safety/SafetyToastMount'
 import { TourMount } from '@/components/tour/TourMount'
 import { WelcomeMount } from '@/components/welcome/WelcomeMount'
 import { CityScene } from '@/scene/CityScene'
@@ -21,6 +23,7 @@ export default function HomePage() {
         <>
           <WelcomeMount />
           <IconMomentMount />
+          <AccountNoticesMount />
         </>
       }
       slots={{
@@ -31,7 +34,12 @@ export default function HomePage() {
           </>
         ),
         hud: <HudFrame places={<PlacesButton />} />,
-        toast: <LevelUpToastMount />,
+        toast: (
+          <>
+            <LevelUpToastMount />
+            <SafetyToastMount />
+          </>
+        ),
         sheet: (
           <>
             <EventSheetMount />

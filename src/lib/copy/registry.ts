@@ -69,8 +69,14 @@ export function registeredNamespaces(): string[] {
 }
 
 /**
+ * Keys no slang pack may change (S18b): crisis resources read the same, plainly, in every voice.
+ * A pack that overrides one is ignored for that key (src/lib/copy/slangImmune.test.ts).
+ */
+export const SLANG_IMMUNE_KEY = /^(?:safety\.crisis\.|legal\.conduct\.crisis\.)/
+
+/**
  * The template for `key` in `packId` (falling back to base), or undefined when its namespace is
- * loaded but has no such key. Throws {@link CopyNamespaceNotLoadedError} when the namespace is
+ * loaded but has no such key. A slang-immune key always comes from base. Throws {@link CopyNamespaceNotLoadedError} when the namespace is
  * not loaded.
  */
 export function lookupTemplate(key: string, packId: string): string | undefined {
@@ -78,7 +84,9 @@ export function lookupTemplate(key: string, packId: string): string | undefined 
   const entry = registry.get(namespace)
   if (entry === undefined) throw new CopyNamespaceNotLoadedError(namespace, key)
   const pack = entry.packs[packId]
-  if (pack !== undefined && Object.hasOwn(pack.strings, key)) return pack.strings[key]
+  if (pack !== undefined && Object.hasOwn(pack.strings, key) && !SLANG_IMMUNE_KEY.test(key)) {
+    return pack.strings[key]
+  }
   return Object.hasOwn(entry.base.strings, key) ? entry.base.strings[key] : undefined
 }
 

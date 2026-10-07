@@ -12,6 +12,7 @@ export default function TermsPage() {
     <LegalPage
       titleKey="legal.terms.title"
       paragraphKeys={['legal.terms.intro', 'legal.terms.age', 'legal.terms.conduct']}
+      links={{ conduct: { href: '/conduct', labelKey: 'legal.terms.conductLink' } }}
     />
   )
 }

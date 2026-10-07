@@ -9,7 +9,8 @@
  *  1. no Supabase configuration in this build → stays local (`no-config`), nothing is imported;
  *  2. waits until the map is playable, so the sign-in never competes with the map for bandwidth;
  *  3. imports src/lib/supabase/supabaseAuth.ts (and with it @supabase/supabase-js) lazily;
- *  4. reuses this device's session or signs in anonymously, then records the attestation.
+ *  4. reuses this device's session or signs in anonymously, then records the attestation;
+ *  5. once connected, loads any moderator notices waiting for the player (S18b).
  *
  * Failures degrade to local play and never block it: a rate limit (429) or no network are
  * expected and logged at info (no network retries once when the browser comes back online);
@@ -45,6 +46,11 @@ export interface GuestSessionDeps {
   /** Calls `listener` once when the browser is next online; returns a way to cancel. */
   readonly onceOnline: (listener: () => void) => () => void
   readonly status: GuestSessionStore
+  /**
+   * Runs once the session is connected (S18b: loads the moderator notices shown at session
+   * start). Its failures are its own; it never affects the session.
+   */
+  readonly onConnected?: () => void
 }
 
 export function browserSessionDeps(): GuestSessionDeps {
@@ -58,6 +64,15 @@ export function browserSessionDeps(): GuestSessionDeps {
       return () => window.removeEventListener('online', listener)
     },
     status: guestSessionStore,
+    onConnected: () => {
+      void import('@/lib/safety/loadNotices')
+        .then((module) => module.loadAccountNotices())
+        .catch((error: unknown) => {
+          log.info('Account notices did not load; they show next session', {
+            error: error instanceof Error ? error.name : typeof error,
+          })
+        })
+    },
   }
 }
 
@@ -127,6 +142,7 @@ export function createGuestSessionStarter(
     if (result.ok) {
       deps.status.setState({ status: 'anonymous', reason: null, reused: result.reused })
       logger.info('Guest session connected', { reused: result.reused })
+      deps.onConnected?.()
       return
     }
     if (result.stage === 'attest') {

@@ -49,6 +49,7 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean } = {}) {
       return () => (onlineListener = undefined)
     },
     status,
+    onConnected: vi.fn(),
   }
   const start = createGuestSessionStarter(onboarding, logger, deps)
   return {
@@ -59,6 +60,7 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean } = {}) {
     results,
     connectAnonymous,
     loadAuth,
+    onConnected: deps.onConnected,
     markPlayable,
     complete: () =>
       onboarding
@@ -310,5 +312,26 @@ describe('classifySessionFailure', () => {
     [f('AuthApiError', 400, 'validation_failed'), true, 'error'],
   ] as const)('%o (online %s) → %s', (failure, online, expected) => {
     expect(classifySessionFailure(failure, online)).toBe(expected)
+  })
+})
+
+describe('guest session: after connecting (S18b)', () => {
+  it('loads the moderator notices once the session is connected, never before or on failure', async () => {
+    const ok = setup()
+    ok.complete()
+    ok.start()
+    await flush()
+    expect(ok.onConnected).not.toHaveBeenCalled()
+    ok.markPlayable()
+    await flush()
+    expect(ok.onConnected).toHaveBeenCalledTimes(1)
+
+    const failed = setup()
+    failed.results.push({ ok: false, stage: 'attest', code: 'unknown' })
+    failed.complete()
+    failed.start()
+    failed.markPlayable()
+    await flush()
+    expect(failed.onConnected).not.toHaveBeenCalled()
   })
 })
