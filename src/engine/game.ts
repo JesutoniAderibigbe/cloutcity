@@ -13,6 +13,7 @@ import {
 } from './clock'
 import { initialCloutState, type CloutState } from './clout'
 import type { EngineConfig, HomeId } from './config'
+import { initialApartment, type ApartmentState } from './home'
 import { emptyInventory, type Inventory } from './items'
 import { initialRent, settleRent, type RentEvent, type RentState } from './rent'
 import { decayStats, initialStats, type Stats } from './stats'
@@ -25,7 +26,8 @@ export interface GameSnapshot {
     readonly stats: Stats
     /**
      * The clout ledger (src/engine/clout.ts). The player's clout is derived from it, their
-     * wearables and the premium cap: read it with `totalClout`, never by summing it here.
+     * wearables, their home and the premium cap: read it with `totalClout`, never by summing it
+     * here.
      */
     readonly clout: CloutState
     /** Flex state (src/engine/flex.ts): the viral roll's generator and today's flexes. */
@@ -45,6 +47,8 @@ export interface GameSnapshot {
      * they never appear here.
      */
     readonly visited: Visited
+    /** Decor placed in the current home and the moves made (src/engine/home.ts). */
+    readonly apartment: ApartmentState
   }
 }
 
@@ -86,6 +90,7 @@ export function initialSnapshot(config: EngineConfig): GameSnapshot {
       inventory: emptyInventory,
       clubNights: {},
       visited: {},
+      apartment: initialApartment,
     },
   }
 }

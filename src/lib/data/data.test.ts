@@ -28,6 +28,7 @@ import {
 import {
   EventsFileSchema,
   HomesFileSchema,
+  HomeInteriorsFileSchema,
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
@@ -55,6 +56,7 @@ import {
   audioManifest,
   events,
   geoBounds,
+  homeInteriors,
   items,
   jobs,
   landmarks,
@@ -95,6 +97,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/subway.derived.json': SubwayFileSchema,
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
+  'homes/interiors.json': HomeInteriorsFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
@@ -754,6 +757,8 @@ describe('cross-file references', () => {
     venues: venues.flatMap((entry) => [entry.nameKey, entry.blurbKey]),
     landmarks: landmarks.flatMap((entry) => [entry.nameKey, entry.infoKey]),
     club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
+    colors: items.flatMap((entry) => entry.decor?.variants.map((variant) => variant.nameKey) ?? []),
+    housing: Object.values(homeInteriors).flatMap((home) => home.slots.map((slot) => slot.nameKey)),
   }
 
   it('every copy key named by content exists in data/copy', () => {

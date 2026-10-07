@@ -21,14 +21,23 @@
  *   loop earns nothing. Buying and selling a wearable write an `item` audit entry to the clout
  *   ledger; a purchase that lifts the player to a new level reports it (`levelUp`). Wearing
  *   changes the outfit's style score, never clout itself.
+ * - Decor (S16) is owned at most once each, depreciates like a wearable, and is worth no item
+ *   clout or style: it adds to the home score only while placed (src/engine/home.ts). A new
+ *   purchase shows its first colour variant. Selling placed decor takes it out of its slot
+ *   first (which can lower clout, so the level is settled); decor kept through prestige is a
+ *   look only and the shop refuses it (PRESTIGE_KEPT).
  */
-import { recordClout, type LevelUp } from './clout'
+import { recordClout, settleLevel, type LevelUp } from './clout'
 import type { EngineConfig } from './config'
 import type { GameSnapshot } from './game'
 import {
   ITEM_SLOTS,
+  isDecor,
   isGift,
   isWearable,
+  type DecorDef,
+  type DecorFit,
+  type DecorVariant,
   type GiftDef,
   type ItemDef,
   type ItemSlot,
@@ -36,8 +45,8 @@ import {
 } from './itemCatalog'
 import { applyStatChanges } from './stats'
 
-export { ITEM_SLOTS, isGift, isWearable }
-export type { GiftDef, ItemDef, ItemSlot, WearableDef }
+export { ITEM_SLOTS, isDecor, isGift, isWearable }
+export type { DecorDef, DecorFit, DecorVariant, GiftDef, ItemDef, ItemSlot, WearableDef }
 
 const MINUTES_PER_HOUR = 60
 
@@ -56,8 +65,19 @@ export interface OwnedWearable {
   readonly prestigeKept?: true
 }
 
-/** True for a wearable kept through prestige: a look only (see `OwnedWearable.prestigeKept`). */
-export function isPrestigeKept(owned: Pick<OwnedWearable, 'prestigeKept'>): boolean {
+/** A decor item the player owns (S16). Where it is placed lives in `player.apartment`. */
+export interface OwnedDecor {
+  readonly itemId: string
+  /** Personal-clock minute it was bought; drives resale depreciation. */
+  readonly acquiredMinute: number
+  /** The colour variant shown: one of the item's `decor.variants` ids. */
+  readonly variant: string
+  /** Kept through prestige from a past run: a look only (as `OwnedWearable.prestigeKept`). */
+  readonly prestigeKept?: true
+}
+
+/** True for an item kept through prestige: a look only (see `OwnedWearable.prestigeKept`). */
+export function isPrestigeKept(owned: { readonly prestigeKept?: true }): boolean {
   return owned.prestigeKept === true
 }
 
@@ -74,9 +94,11 @@ export interface Inventory {
   readonly gifts: readonly GiftStack[]
   /** What is worn, by slot. Every entry names an owned wearable for that slot. */
   readonly outfit: Outfit
+  /** Owned decor, placed or in storage (S16). */
+  readonly decor: readonly OwnedDecor[]
 }
 
-export const emptyInventory: Inventory = { wearables: [], gifts: [], outfit: {} }
+export const emptyInventory: Inventory = { wearables: [], gifts: [], outfit: {}, decor: [] }
 
 declare const npcIdBrand: unique symbol
 /** An NPC's id: kebab-case with the `npc-` prefix. Only `toNpcId` makes one. */
@@ -126,10 +148,13 @@ export function isItemSlot(slot: unknown): slot is ItemSlot {
   return typeof slot === 'string' && (ITEM_SLOTS as readonly string[]).includes(slot)
 }
 
-/** Items the shop sells now: wearables and gifts (decor and upgrades arrive later). */
-export function shopItems(config: EngineConfig): readonly (WearableDef | GiftDef)[] {
+/** An item the shop sells. */
+export type ShopItemDef = WearableDef | GiftDef | DecorDef
+
+/** Items the shop sells now: wearables, gifts and decor (apartment upgrades arrive later). */
+export function shopItems(config: EngineConfig): readonly ShopItemDef[] {
   return config.items.catalog.filter(
-    (item): item is WearableDef | GiftDef => isWearable(item) || isGift(item),
+    (item): item is ShopItemDef => isWearable(item) || isGift(item) || isDecor(item),
   )
 }
 
@@ -149,7 +174,7 @@ export function resaleValue(
   nowMinute: number,
   config: EngineConfig,
 ): number {
-  if (!isWearable(item)) return item.sellValue
+  if (!isWearable(item) && !isDecor(item)) return item.sellValue
   const { depreciationPctPerGameDay, minResalePct } = config.items
   const days = daysOwned(acquiredMinute, nowMinute, config)
   const pct = Math.max(minResalePct, 100 - depreciationPctPerGameDay * days)
@@ -168,12 +193,19 @@ export function buyItem(
 ): ItemResult<{ readonly price: number; readonly levelUp: LevelUp | null }> {
   const item = findItem(itemId, config)
   if (item === undefined) return { ok: false, error: { code: 'UNKNOWN_ITEM', itemId } }
-  if (!isWearable(item) && !isGift(item)) {
+  if (!isWearable(item) && !isGift(item) && !isDecor(item)) {
     return { ok: false, error: { code: 'NOT_FOR_SALE', itemId } }
   }
   const { cash, inventory } = snapshot.player
   let next: Inventory
-  if (isWearable(item)) {
+  if (isDecor(item)) {
+    if (inventory.decor.some((owned) => owned.itemId === itemId)) {
+      return { ok: false, error: { code: 'ALREADY_OWNED', itemId } }
+    }
+    const variant = item.decor.variants[0]?.id ?? ''
+    const owned: OwnedDecor = { itemId, acquiredMinute: snapshot.clock.minute, variant }
+    next = { ...inventory, decor: [...inventory.decor, owned] }
+  } else if (isWearable(item)) {
     if (inventory.wearables.some((owned) => owned.itemId === itemId)) {
       return { ok: false, error: { code: 'ALREADY_OWNED', itemId } }
     }
@@ -229,7 +261,7 @@ function withoutItem(outfit: Outfit, itemId: string): Outfit {
   return Object.fromEntries(Object.entries(outfit).filter(([, worn]) => worn !== itemId))
 }
 
-/** Sells one of `itemId` (a worn item is taken off first). */
+/** Sells one of `itemId` (a worn item is taken off first, placed decor taken out of its slot). */
 export function sellItem(
   snapshot: GameSnapshot,
   itemId: string,
@@ -238,6 +270,7 @@ export function sellItem(
   const item = findItem(itemId, config)
   if (item === undefined) return { ok: false, error: { code: 'UNKNOWN_ITEM', itemId } }
   const { cash, inventory } = snapshot.player
+  if (isDecor(item)) return sellDecor(snapshot, item, config)
   if (isWearable(item)) {
     const owned = inventory.wearables.find((entry) => entry.itemId === itemId)
     if (owned === undefined) return { ok: false, error: { code: 'NOT_OWNED', itemId } }
@@ -256,6 +289,34 @@ export function sellItem(
   const amount = resaleValue(item, snapshot.clock.minute, snapshot.clock.minute, config)
   const next = { ...inventory, gifts: setGiftCount(inventory.gifts, itemId, count - 1) }
   return { ok: true, snapshot: withInventory(snapshot, next, cash + amount), amount, levelUp: null }
+}
+
+function sellDecor(
+  snapshot: GameSnapshot,
+  item: DecorDef,
+  config: EngineConfig,
+): ItemResult<{ readonly amount: number; readonly levelUp: LevelUp | null }> {
+  const { cash, inventory, apartment } = snapshot.player
+  const itemId = item.id
+  const owned = inventory.decor.find((entry) => entry.itemId === itemId)
+  if (owned === undefined) return { ok: false, error: { code: 'NOT_OWNED', itemId } }
+  if (isPrestigeKept(owned)) return { ok: false, error: { code: 'PRESTIGE_KEPT', itemId } }
+  const amount = resaleValue(item, owned.acquiredMinute, snapshot.clock.minute, config)
+  const placed = Object.fromEntries(
+    Object.entries(apartment.placed).filter(([, placedId]) => placedId !== itemId),
+  )
+  const sold = settleLevel(
+    {
+      ...snapshot.player,
+      cash: cash + amount,
+      inventory: { ...inventory, decor: inventory.decor.filter((entry) => entry !== owned) },
+      apartment: { ...apartment, placed },
+    },
+    snapshot.clock.minute,
+    'home',
+    config,
+  )
+  return { ok: true, snapshot: { ...snapshot, player: sold.player }, amount, levelUp: sold.levelUp }
 }
 
 /**

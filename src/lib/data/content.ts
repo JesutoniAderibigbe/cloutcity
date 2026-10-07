@@ -4,6 +4,7 @@ import boroughsJson from '@data/boroughs/boroughs.json'
 import eventsJson from '@data/events/events.json'
 import homesJson from '@data/homes/homes.json'
 import boundsJson from '@data/geo/bounds.json'
+import interiorsJson from '@data/homes/interiors.json'
 import itemsJson from '@data/items/items.json'
 import jobsJson from '@data/jobs/jobs.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
@@ -14,6 +15,7 @@ import { parseDataFile } from './parse'
 import {
   EventsFileSchema,
   HomesFileSchema,
+  HomeInteriorsFileSchema,
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
@@ -43,6 +45,12 @@ export const landmarks = parseDataFile(
   LandmarksFileSchema,
   landmarksJson,
 ).landmarks
+/** Each home's interior: room, window, door, camera, avatar anchor and decor slots (S16). */
+export const homeInteriors = parseDataFile(
+  'homes/interiors.json',
+  HomeInteriorsFileSchema,
+  interiorsJson,
+).homes
 export const geoBounds = parseDataFile('geo/bounds.json', GeoBoundsSchema, boundsJson)
 export const zones = parseDataFile('zones/zones.derived.json', ZonesFileSchema, zonesJson).zones
 export const audioManifest = parseDataFile('audio/manifest.json', AudioManifestSchema, audioJson)

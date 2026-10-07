@@ -33,7 +33,13 @@ export interface HudTestHook {
     readonly lastRentEvent: string | null
   }
   /** Shop items with their prices, so specs assert against data, not literals. */
-  shop(): readonly { readonly id: string; readonly price: number; readonly gift: boolean }[]
+  /** Every item the shop sells; `gift` and `decor` mark those that are not wearables. */
+  shop(): readonly {
+    readonly id: string
+    readonly price: number
+    readonly gift: boolean
+    readonly decor: boolean
+  }[]
 }
 
 declare global {
@@ -84,6 +90,7 @@ function createHudTestHook(): HudTestHook {
         id: item.id,
         price: item.price,
         gift: item.category === 'gift',
+        decor: item.category === 'decor',
       })),
   }
 }

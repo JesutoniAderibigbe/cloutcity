@@ -70,6 +70,11 @@
   "housing": {
     "moveInCost": { "brooklyn-1br": 400, "manhattan-loft": 1000 }
   },
+  "home": {
+    "baseScore": { "queens-room": 0, "brooklyn-1br": 10, "manhattan-loft": 25 },
+    "maxClout": 60,
+    "moveLogMax": 20
+  },
   "rent": {
     "lateFees": [0, 30],
     "evictAfterMissed": 3

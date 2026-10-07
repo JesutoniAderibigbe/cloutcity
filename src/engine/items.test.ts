@@ -97,14 +97,14 @@ describe('buying', () => {
     })
   })
 
-  it('refuses a catalog item the shop does not sell (decor, upgrades)', () => {
-    const lamp: ItemDef = { ...tee, id: 'lamp', category: 'decor' } as ItemDef
-    const withLamp = { ...config, items: { ...config.items, catalog: [lamp] } }
-    expect(buyItem(withCash(1000), 'lamp', withLamp)).toEqual({
+  it('refuses a catalog item the shop does not sell (apartment upgrades)', () => {
+    const upgrade: ItemDef = { ...tee, id: 'skylight', category: 'upgrade' } as ItemDef
+    const withUpgrade = { ...config, items: { ...config.items, catalog: [upgrade] } }
+    expect(buyItem(withCash(1000), 'skylight', withUpgrade)).toEqual({
       ok: false,
-      error: { code: 'NOT_FOR_SALE', itemId: 'lamp' },
+      error: { code: 'NOT_FOR_SALE', itemId: 'skylight' },
     })
-    expect(shopItems(withLamp)).toEqual([])
+    expect(shopItems(withUpgrade)).toEqual([])
   })
 
   it('never touches the clock or stats; clout counts the owned item, audited in the ledger', () => {
