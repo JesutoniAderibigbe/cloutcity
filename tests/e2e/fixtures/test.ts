@@ -189,7 +189,9 @@ export const test = base.extend<Fixtures>({
   locationSeed: [
     async ({ page, location }, use) => {
       if (location === 'follow') {
+        // The follow mode lives in the place test hook, which installs only on an e2e page.
         await page.addInitScript(() => {
+          window.__CLOUTCITY_E2E__ = true
           window.__CLOUTCITY_E2E_LOCATION__ = 'follow'
         })
       }
