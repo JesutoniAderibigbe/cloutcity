@@ -1,12 +1,15 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  APARTMENT_MARKER,
   checkBudget,
+  containsMarker,
   extractScripts,
   gzipBytes,
+  lazyChunkFiles,
+  readApartmentChunkLimit,
   readSceneChunkLimit,
   readShellLimit,
-  sceneChunkFiles,
   staticFilePath,
 } from './budget'
 
@@ -75,23 +78,70 @@ describe('readSceneChunkLimit', () => {
   })
 })
 
-describe('sceneChunkFiles', () => {
-  it('collects the lazy JS once, skipping shell scripts, CSS and duplicates', () => {
+describe('readApartmentChunkLimit', () => {
+  it('reads a positive limit and rejects anything else', () => {
+    expect(readApartmentChunkLimit({ apartmentChunkJsGzKB: 40 })).toBe(40)
+    expect(() => readApartmentChunkLimit({})).toThrow(/apartmentChunkJsGzKB/)
+    expect(() => readApartmentChunkLimit({ apartmentChunkJsGzKB: 0 })).toThrow()
+  })
+})
+
+describe('containsMarker', () => {
+  it('finds the whole marker only, never as the start of a longer id', () => {
+    expect(containsMarker(`x="${APARTMENT_MARKER}"`, APARTMENT_MARKER)).toBe(true)
+    expect(containsMarker(`x="${APARTMENT_MARKER}-extra"`, APARTMENT_MARKER)).toBe(false)
+    expect(containsMarker(`"${APARTMENT_MARKER}x" "${APARTMENT_MARKER}"`, APARTMENT_MARKER)).toBe(
+      true,
+    )
+    expect(containsMarker('cc-feature:city-scene', APARTMENT_MARKER)).toBe(false)
+  })
+})
+
+describe('lazyChunkFiles', () => {
+  const isApartment = (file: string) => file === 'static/chunks/room.js'
+
+  it('splits the city 3D chunk from what only the apartment import adds', () => {
+    const manifest = {
+      '1': { id: 1, files: ['static/chunks/scene.js', 'static/chunks/three.js'] },
+      '2': { id: 2, files: ['static/chunks/three.js', 'static/chunks/room.js'] },
+      '3': { id: 3, files: ['static/chunks/scene.js', 'static/css/scene.css'] },
+    }
+    expect(lazyChunkFiles(manifest, [], isApartment)).toEqual({
+      scene: ['static/chunks/scene.js', 'static/chunks/three.js'],
+      apartment: ['static/chunks/room.js'],
+    })
+  })
+
+  it('leaves out shell scripts, CSS and duplicates', () => {
     const manifest = {
       '1': { id: 1, files: ['static/chunks/scene.js', 'static/chunks/shared.js'] },
-      '2': { id: 2, files: ['static/chunks/scene.js', 'static/css/scene.css'] },
+      '2': { id: 2, files: ['static/chunks/room.js', 'static/chunks/shared.js'] },
     }
-    expect(sceneChunkFiles(manifest, ['/_next/static/chunks/shared.js?v=1'])).toEqual([
-      'static/chunks/scene.js',
-    ])
+    expect(lazyChunkFiles(manifest, ['/_next/static/chunks/shared.js?v=1'], isApartment)).toEqual({
+      scene: ['static/chunks/scene.js'],
+      apartment: ['static/chunks/room.js'],
+    })
+  })
+
+  it('fails fast without exactly one apartment import, or without a city chunk', () => {
+    const city = { '1': { id: 1, files: ['static/chunks/scene.js'] } }
+    expect(() => lazyChunkFiles(city, [], isApartment)).toThrow(/found 0/)
+    const twice = {
+      ...city,
+      '2': { id: 2, files: ['static/chunks/room.js'] },
+      '3': { id: 3, files: ['static/chunks/room.js', 'static/chunks/x.js'] },
+    }
+    expect(() => lazyChunkFiles(twice, [], isApartment)).toThrow(/found 2/)
+    const roomOnly = { '2': { id: 2, files: ['static/chunks/room.js'] } }
+    expect(() => lazyChunkFiles(roomOnly, [], isApartment)).toThrow(/no lazy JS/)
   })
 
   it('fails fast on an unknown format, an empty manifest or path traversal', () => {
-    expect(() => sceneChunkFiles([], [])).toThrow(/format/)
-    expect(() => sceneChunkFiles({ '1': { files: 'x.js' } }, [])).toThrow(/format/)
-    expect(() => sceneChunkFiles({}, [])).toThrow(/no lazy JS/)
-    expect(() => sceneChunkFiles({ '1': { files: ['static/../../x.js'] } }, [])).toThrow(
-      /traversal/,
-    )
+    expect(() => lazyChunkFiles([], [], isApartment)).toThrow(/format/)
+    expect(() => lazyChunkFiles({ '1': { files: 'x.js' } }, [], isApartment)).toThrow(/format/)
+    expect(() => lazyChunkFiles({}, [], isApartment)).toThrow(/no lazy JS/)
+    expect(() =>
+      lazyChunkFiles({ '1': { files: ['static/../../x.js'] } }, [], isApartment),
+    ).toThrow(/traversal/)
   })
 })

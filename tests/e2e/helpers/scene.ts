@@ -4,12 +4,13 @@ import type { Page } from '@playwright/test'
  * The lazy 3D map (S04a) draws behind every overlay and is still loading or already drawn
  * depending on timing, so overlay screenshots hide its canvas and loading status: those
  * baselines cover the overlay layout (static background and map attribution included), not the
- * map, which city-scene.spec.ts covers through its test hook.
+ * map, which city-scene.spec.ts covers through its test hook. The apartment's canvas (S16) is
+ * hidden the same way; home-apartment.spec.ts covers it through its own hook.
  */
 export async function hideSceneForScreenshot(page: Page): Promise<void> {
   await page.addStyleTag({
     content:
-      '[data-scene-root] canvas, [data-scene-root] [role="status"] { visibility: hidden !important; }',
+      '[data-scene-root] canvas, [data-scene-root] [role="status"], [data-scene-slot] canvas { visibility: hidden !important; }',
   })
 }
 

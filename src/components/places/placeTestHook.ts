@@ -1,6 +1,7 @@
 import { calendar, minutesPerDay } from '@/engine/clock'
 import { cloutLevel, itemClout, legacyCloutState, playerLevel, totalClout } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
+import { homeClout } from '@/engine/home'
 import { placeActions } from '@/engine/placeActions'
 import { findPlace } from '@/lib/world/places'
 import { closePlace, openPlace } from '@/state/placeSheet'
@@ -23,8 +24,8 @@ export interface PlaceTestHook {
   setTimeOfDay(minuteOfDay: number): void
   /**
    * Sets the player's total clout to `clout`: the ledger becomes one legacy entry (less the
-   * clout their wearables already carry), and the level it lands on counts as reached, so no
-   * level-up is reported for it.
+   * clout their wearables and home already carry), and the level it lands on counts as reached,
+   * so no level-up is reported for it.
    */
   setClout(clout: number): void
   setCash(cash: number): void
@@ -83,7 +84,8 @@ export function installPlaceTestHook(): void {
     setClout: (clout) => {
       wholeNonNegative(clout, 'clout')
       const { player } = gameStore.getState()
-      const earned = Math.max(0, clout - itemClout(player, engineConfig))
+      const carried = itemClout(player, engineConfig) + homeClout(player, engineConfig)
+      const earned = Math.max(0, clout - carried)
       const peak = cloutLevel(clout, engineConfig).index
       const ledger = {
         ...legacyCloutState(earned, peak),

@@ -9,13 +9,14 @@ import '@/lib/copy/ns/hud'
 
 /**
  * The HUD's More panel (S05, Q3): on phones and landscape phones the HUD has no room for
- * Inventory, Rent and the sound settings gear, so they live here. Each opens its own sheet in
+ * Inventory, Rent, Home (S16) and the sound settings gear, so they live here. Each opens its own sheet in
  * place of this one; Escape or Close returns focus to the More button.
  */
 export function MorePanel() {
   const items = [
     { key: 'inventory', label: copy('hud.inventory'), open: () => openHudPanel('inventory') },
     { key: 'rent', label: copy('hud.rent'), open: () => openHudPanel('rent') },
+    { key: 'home', label: copy('hud.home'), open: () => openHudPanel('home') },
     {
       key: 'sound',
       label: copy('hud.soundSettings'),

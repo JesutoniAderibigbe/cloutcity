@@ -5,7 +5,8 @@ import { nextRentDueDay, rentFor } from '@/engine/rent'
 import { gameStore } from '@/state/store'
 
 /**
- * Test-only hook for the S10a shop, inventory and rent flows (tests/e2e/shop-jobs-rent.spec.ts),
+ * Test-only hook for the S10a shop, inventory and rent flows (tests/e2e/shop-jobs-rent.spec.ts)
+ * and the S16 home (tests/e2e/home-apartment.spec.ts),
  * on `window.__cloutcityTest.hud`. Only builds with NEXT_PUBLIC_TEST_HOOKS=1 load it (from its
  * own chunk, see HudPanelMount), and it installs only when the page also sets
  * `window.__CLOUTCITY_E2E__ = true` before the app loads (Playwright's addInitScript). Time moves through the
@@ -21,6 +22,8 @@ export interface HudTestHook {
   /** Fast-forwards the personal clock by whole game minutes (decay and rent apply). */
   advanceMinutes(minutes: number): void
   setEnergy(energy: number): void
+  /** Buys an item through the store and engine (funds and ownership still apply); false if refused. */
+  buy(itemId: string): boolean
   state(): {
     readonly cash: number
     readonly minute: number
@@ -30,10 +33,16 @@ export interface HudTestHook {
     readonly owned: readonly string[]
     readonly outfit: Readonly<Record<string, string>>
     readonly gifts: Readonly<Record<string, number>>
+    /** Owned decor (S16): item id → the colour variant shown. */
+    readonly decor: Readonly<Record<string, string>>
+    /** Decor placed in the current home: slot id → item id. */
+    readonly placed: Readonly<Record<string, string>>
     readonly lastRentEvent: string | null
   }
-  /** Shop items with their prices, so specs assert against data, not literals. */
-  /** Every item the shop sells; `gift` and `decor` mark those that are not wearables. */
+  /**
+   * Every item the shop sells, with its price, so specs assert against data, not literals;
+   * `gift` and `decor` mark those that are not wearables.
+   */
   shop(): readonly {
     readonly id: string
     readonly price: number
@@ -71,6 +80,7 @@ function createHudTestHook(): HudTestHook {
       const { player } = gameStore.getState()
       gameStore.setState({ player: { ...player, stats: { ...player.stats, energy } } })
     },
+    buy: (itemId) => gameStore.getState().buyItem(itemId).ok,
     state: () => {
       const { player, clock, lastRentEvent } = gameStore.getState()
       return {
@@ -82,6 +92,8 @@ function createHudTestHook(): HudTestHook {
         owned: player.inventory.wearables.map((owned) => owned.itemId),
         outfit: { ...player.inventory.outfit },
         gifts: Object.fromEntries(player.inventory.gifts.map((g) => [g.itemId, g.count])),
+        decor: Object.fromEntries(player.inventory.decor.map((d) => [d.itemId, d.variant])),
+        placed: { ...player.apartment.placed },
         lastRentEvent: lastRentEvent?.kind ?? null,
       }
     },

@@ -9,6 +9,7 @@ import '@/lib/copy/ns/hud'
 const BUTTONS = [
   { panel: 'inventory', labelKey: 'hud.inventory' },
   { panel: 'rent', labelKey: 'hud.rent' },
+  { panel: 'home', labelKey: 'hud.home' },
 ] as const satisfies readonly { panel: HudPanel; labelKey: CopyKey }[]
 
 const BUTTON =
@@ -18,9 +19,9 @@ const toggle = (panel: HudPanel, open: HudPanel | null) =>
   open === panel ? closeHudPanel() : openHudPanel(panel)
 
 /**
- * The HUD's panel buttons in the actions cell (S10a; S05 layout). On wide screens, Inventory
- * and Rent with their labels; on phones and landscape phones, one More button that opens a
- * panel holding Inventory, Rent and the sound settings (Q3). Toggle buttons: tapping the open
+ * The HUD's panel buttons in the actions cell (S10a; S05 layout; Home, S16). On wide screens,
+ * Inventory, Rent and Home with their labels; on phones and landscape phones, one More button
+ * that opens a panel holding them and the sound settings (Q3). Toggle buttons: tapping the open
  * panel's button closes it. Hidden while a modal (the welcome card) is open, since everything
  * behind it is inert anyway.
  */

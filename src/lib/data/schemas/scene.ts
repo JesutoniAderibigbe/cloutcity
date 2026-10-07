@@ -188,5 +188,52 @@ export const SceneConfigSchema = z.strictObject({
     labelOpacity: z.number().gt(0).max(1),
     dimmedLabelOpacity: z.number().gt(0).max(1),
   }),
+  /**
+   * The apartment interior (S16, src/scene/apartment/): the floor slab and wall insets, the ledge or
+   * side table drawn under each surface slot, the slot markers, tap picking, the camera fit, the
+   * static lighting (until S04f drives it from the clock) and the mid tier's blob shadows.
+   */
+  apartment: z.strictObject({
+    floorThicknessM: metres,
+    /**
+     * Walls are single-sided planes facing into the room, so a wall between the camera and the
+     * room is culled (the cutaway); trim, the window pane and the door sit this far in front of
+     * their wall so they never fight it in the depth test.
+     */
+    insetM: metres,
+    trimHeightM: metres,
+    /** A surface slot this close to a side wall sits on a ledge; elsewhere on a side table. */
+    ledgeDepthM: metres,
+    ledgeThicknessM: metres,
+    tableSizeM: metres,
+    marker: z.strictObject({
+      radiusM: metres,
+      segments: z.int().min(3).max(64),
+      liftM: z.number().nonnegative(),
+      /** The selected or highlighted slot's marker grows by this factor. */
+      selectedScale: z.number().min(1),
+    }),
+    /** At least 22 px, so a slot's tap target is at least 44 px across (CLAUDE.md "Art direction"). */
+    hitRadiusPx: z.number().min(22),
+    /** Slots this close to the nearest hit (in pixels) make the tap ambiguous: a chooser opens. */
+    ambiguityPx: z.number().nonnegative(),
+    /** The room's bounding sphere is fitted into the free scene row with this much margin. */
+    fitMargin: z.number().min(1),
+    lights: z.strictObject({
+      ambientIntensity: z.number().nonnegative(),
+      sunIntensity: z.number().nonnegative(),
+      sunDirection: z
+        .strictObject({ x: z.number(), y: z.number(), z: z.number() })
+        .refine((d) => d.y > 0, { error: 'the light must come from above' }),
+      /** The high tier's one directional shadow map (PCFShadowMap). */
+      shadowMapSizePx: z.int().min(256).max(4096),
+    }),
+    /** The mid tier's blob shadows under placed floor and surface decor. */
+    blob: z.strictObject({
+      radiusM: metres,
+      opacity: z.number().gt(0).max(1),
+      liftM: z.number().nonnegative(),
+    }),
+  }),
 })
 export type SceneConfig = z.infer<typeof SceneConfigSchema>

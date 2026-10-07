@@ -46,6 +46,12 @@ export const PerfConfigSchema = z.strictObject({
    */
   shellHeadroomGzKB: z.number().nonnegative(),
   sceneChunkJsGzKB: positive,
+  /**
+   * The apartment's 3D chunk (S16, `cc-feature:apartment-scene`): loaded when the Home panel
+   * opens, so `npm run budget` reports it on its own and leaves it out of the 3D chunk counted
+   * before the map is playable.
+   */
+  apartmentChunkJsGzKB: positive,
   totalJsToPlayableGzKB: positive,
   baseGeoGzKB: positive,
   districtBuildingsGzKB: perTier(positive),
@@ -57,6 +63,26 @@ export const PerfConfigSchema = z.strictObject({
   /** `renderer.info.render.calls` at the default Queens-start camera. */
   drawCallsMax: perTier(positiveInt),
   trianglesMax: perTier(positiveInt),
+  /**
+   * The apartment interior (S16), per tier: `renderer.info.render` draw calls and triangles of
+   * the room with every slot filled. `avatarReserve` is kept free inside both caps for the 3D
+   * avatar standing in the room (S16a), so the room alone must stay within the cap minus it.
+   */
+  apartment: z
+    .strictObject({
+      drawCallsMax: perTier(positiveInt),
+      trianglesMax: perTier(positiveInt),
+      avatarReserve: z.strictObject({ drawCalls: positiveInt, triangles: positiveInt }),
+    })
+    .refine(
+      (a) =>
+        QUALITY_TIERS.every(
+          (tier) =>
+            a.avatarReserve.drawCalls < a.drawCallsMax[tier] &&
+            a.avatarReserve.triangles < a.trianglesMax[tier],
+        ),
+      { error: 'the avatar reserve must leave room for the apartment in every tier' },
+    ),
   dprCap: perTier(positive),
   /** `pcf-directional` means one directional light with PCFShadowMap, never PCFSoftShadowMap. */
   shadows: perTier(z.enum(['none', 'blob-or-baked', 'pcf-directional'])),
@@ -128,6 +154,28 @@ export const ScenePaletteRefsSchema = z.strictObject({
   }),
   /** The "expanding soon" ground chips. */
   chip: z.strictObject({ fill: tokenRef, ink: tokenRef }),
+  /**
+   * The apartment interior (S16): room surfaces, decor second colours, the window pane, slot
+   * markers (idle, a slot the held item fits, the selected slot), blob shadows and the static
+   * lights. Decor main colours come from each item's variants (data/items/items.json).
+   */
+  apartment: z.strictObject({
+    background: tokenRef,
+    floor: tokenRef,
+    wall: tokenRef,
+    trim: tokenRef,
+    furniture: tokenRef,
+    /** Second colours of decor: leaves, and the warm glow of bulbs and neon backing. */
+    plant: tokenRef,
+    glow: tokenRef,
+    window: tokenRef,
+    marker: tokenRef,
+    markerActive: tokenRef,
+    markerSelected: tokenRef,
+    blob: tokenRef,
+    ambientLight: tokenRef,
+    sunLight: tokenRef,
+  }),
   /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
   toonRamp: z.array(z.number().gt(0).max(1)).min(2),
 })
@@ -150,6 +198,7 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     scene.sunLight,
     ...Object.values(scene.pins),
     ...Object.values(scene.chip),
+    ...Object.values(scene.apartment),
   ]
 }
 

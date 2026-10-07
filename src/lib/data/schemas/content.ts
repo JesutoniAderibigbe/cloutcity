@@ -227,6 +227,7 @@ export const HomeSchema = z.strictObject({
 })
 export const HomesFileSchema = z.strictObject({ homes: z.record(z.enum(HOME_IDS), HomeSchema) })
 export type HomesFile = z.infer<typeof HomesFileSchema>
+
 /** A point in an apartment, in metres: x right, y up, z toward the camera; 0,0,0 is the floor's centre. */
 const RoomPointSchema = z.tuple([z.number(), z.number(), z.number()])
 const metres = z.number().positive()
@@ -299,6 +300,11 @@ export const HomeInteriorSchema = z
     room: z.strictObject({ widthM: metres, depthM: metres, heightM: metres }),
     window: OpeningSchema,
     door: OpeningSchema.refine((door) => door.sillM === 0, { error: 'a door starts at the floor' }),
+    /**
+     * The camera looks from `position` towards `target` through the open front. The scene keeps
+     * that direction and target and moves along it until the room fits the free scene row
+     * (src/scene/apartment/fit.ts), so `position` sets the angle, not the distance.
+     */
     camera: z.strictObject({
       position: RoomPointSchema,
       target: RoomPointSchema,

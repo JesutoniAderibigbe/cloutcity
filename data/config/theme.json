@@ -19,7 +19,17 @@
     "mint-400": "#5cf2b3",
     "orange-400": "#ff9a3d",
     "lilac-300": "#c8a6ff",
-    "stone-400": "#8f8aae"
+    "stone-400": "#8f8aae",
+    "charcoal-900": "#1c1c1e",
+    "charcoal-800": "#2e2e30",
+    "concrete-400": "#9b9a95",
+    "plaster-100": "#ece6da",
+    "cream-100": "#fff6e3",
+    "sand-200": "#d9c7a3",
+    "oak-500": "#b07d4f",
+    "walnut-700": "#5c4030",
+    "leaf-600": "#3e7b45",
+    "glass-700": "#46607a"
   },
   "themeColor": "night-950",
   "scene": {
@@ -52,6 +62,22 @@
     "chip": {
       "fill": "night-800",
       "ink": "ink-300"
+    },
+    "apartment": {
+      "background": "charcoal-900",
+      "floor": "oak-500",
+      "wall": "plaster-100",
+      "trim": "cream-100",
+      "furniture": "walnut-700",
+      "plant": "leaf-600",
+      "glow": "cream-100",
+      "window": "glass-700",
+      "marker": "concrete-400",
+      "markerActive": "cream-100",
+      "markerSelected": "taxi-400",
+      "blob": "charcoal-900",
+      "ambientLight": "cream-100",
+      "sunLight": "cream-100"
     }
   }
 }

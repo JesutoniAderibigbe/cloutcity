@@ -238,7 +238,7 @@ describe('v9 repairs', () => {
     expect(result.save.player.inventory.decor).toEqual([
       { itemId: neon, acquiredMinute: NOW, variant: 'pink' },
       { itemId: lights, acquiredMinute: 0, variant: 'pink', prestigeKept: true },
-      { itemId: rug, acquiredMinute: NOW, variant: 'indigo' },
+      { itemId: rug, acquiredMinute: NOW, variant: 'oatmeal' },
     ])
     expect(schema.safeParse(result.save).success).toBe(true)
   })

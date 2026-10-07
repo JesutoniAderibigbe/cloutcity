@@ -1,16 +1,16 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
 /**
- * The HUD's layouts (S05, data/config/layout.json): on wide screens Inventory, Rent and the
- * sound settings gear sit in the HUD; on phones and landscape phones they live in the More
+ * The HUD's layouts (S05, data/config/layout.json): on wide screens Inventory, Rent, Home (S16)
+ * and the sound settings gear sit in the HUD; on phones and landscape phones they live in the More
  * panel. Specs about those panels reach them through these helpers on every project.
  */
 const HUD_WIDE_MIN_WIDTH_PX = 640
 const HUD_COMPACT_MAX_HEIGHT_PX = 479
 
-export type HudPanelName = 'Inventory' | 'Rent' | 'Sound settings'
+export type HudPanelName = 'Inventory' | 'Rent' | 'Home' | 'Sound settings'
 
-/** True when the HUD shows Inventory, Rent and the gear itself (no More button). */
+/** True when the HUD shows Inventory, Rent, Home and the gear itself (no More button). */
 export function hudIsWide(page: Page): boolean {
   const viewport = page.viewportSize()
   if (!viewport) throw new Error('viewport size is not set')
@@ -34,7 +34,7 @@ export function hudOpener(page: Page, name: HudPanelName): Locator {
   return hudIsWide(page) ? hud(page).getByRole('button', { name, exact: true }) : moreButton(page)
 }
 
-/** Opens Inventory, Rent or the sound settings the way a player on this screen would. */
+/** Opens Inventory, Rent, Home or the sound settings the way a player on this screen would. */
 export async function openFromHud(page: Page, name: HudPanelName): Promise<void> {
   if (hudIsWide(page)) {
     await hud(page).getByRole('button', { name, exact: true }).click()

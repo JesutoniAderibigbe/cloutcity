@@ -256,7 +256,7 @@
         "variants": [
           {
             "id": "warm-white",
-            "token": "ink-50",
+            "token": "cream-100",
             "nameKey": "colors.warmWhite.name"
           },
           {
@@ -299,9 +299,9 @@
             "nameKey": "colors.mint.name"
           },
           {
-            "id": "midnight",
-            "token": "night-800",
-            "nameKey": "colors.midnight.name"
+            "id": "charcoal",
+            "token": "charcoal-800",
+            "nameKey": "colors.charcoal.name"
           }
         ]
       }
@@ -323,9 +323,9 @@
         "homeScore": 8,
         "variants": [
           {
-            "id": "indigo",
-            "token": "indigo-500",
-            "nameKey": "colors.indigo.name"
+            "id": "oatmeal",
+            "token": "sand-200",
+            "nameKey": "colors.oatmeal.name"
           },
           {
             "id": "teal",
@@ -436,7 +436,7 @@
           },
           {
             "id": "warm-white",
-            "token": "ink-50",
+            "token": "cream-100",
             "nameKey": "colors.warmWhite.name"
           },
           {

@@ -23,11 +23,12 @@ function noisyChunk(seed: number): string {
 }
 
 /** Limits every fake project gets unless a test overrides them. */
-const DEFAULT_PERF = { shellJsGzKB: 180, sceneChunkJsGzKB: 350 }
+const DEFAULT_PERF = { shellJsGzKB: 180, sceneChunkJsGzKB: 350, apartmentChunkJsGzKB: 40 }
 
 /**
- * A fake project: one shell chunk referenced from the prerendered `/` and one lazy 3D chunk
- * listed in the route's react-loadable-manifest.json (the format Next 16 / Turbopack writes).
+ * A fake project: one shell chunk referenced from the prerendered `/`, and the city's lazy 3D
+ * chunk and the apartment's (S16, which renders its feature marker) listed in the route's
+ * react-loadable-manifest.json (the format Next 16 / Turbopack writes).
  */
 function fakeProject(perf: Record<string, unknown>, withBuild = true): string {
   const root = mkdtempSync(join(tmpdir(), 'budget-'))
@@ -40,12 +41,19 @@ function fakeProject(perf: Record<string, unknown>, withBuild = true): string {
     writeFileSync(join(root, '.next/static/chunks/main.js'), noisyChunk(0))
     writeFileSync(join(root, '.next/static/chunks/scene.js'), noisyChunk(7))
     writeFileSync(
+      join(root, '.next/static/chunks/room.js'),
+      `${noisyChunk(11)}var f="cc-feature:apartment-scene";`,
+    )
+    writeFileSync(
       join(root, '.next/server/app/index.html'),
       '<html><body><script src="/_next/static/chunks/main.js" async=""></script><script>self.__next_f=[]</script></body></html>',
     )
     writeFileSync(
       join(root, '.next/server/app/page/react-loadable-manifest.json'),
-      JSON.stringify({ '2135': { id: 2135, files: ['static/chunks/scene.js'] } }),
+      JSON.stringify({
+        '2135': { id: 2135, files: ['static/chunks/scene.js'] },
+        '4242': { id: 4242, files: ['static/chunks/scene.js', 'static/chunks/room.js'] },
+      }),
     )
   }
   return root
@@ -91,6 +99,27 @@ describe('budget CLI', () => {
     const over = runBudget(fakeProject({ sceneChunkJsGzKB: 1 }))
     expect(over.stdout).toMatch(/^FAIL 3D chunk JS/m)
     expect(over.status).toBe(1)
+  })
+
+  it('reports the apartment chunk on its own and fails when it is over its limit', () => {
+    const result = runBudget(fakeProject({}))
+    expect(result.stdout).toMatch(
+      /^PASS Apartment chunk JS[^\n]*\n {2}1 chunks: static\/chunks\/room\.js$/m,
+    )
+    expect(result.stdout).toMatch(
+      /^PASS 3D chunk JS[^\n]*\n {2}1 chunks: static\/chunks\/scene\.js$/m,
+    )
+    const over = runBudget(fakeProject({ apartmentChunkJsGzKB: 1 }))
+    expect(over.stdout).toMatch(/^FAIL Apartment chunk JS/m)
+    expect(over.status).toBe(1)
+  })
+
+  it('exits non-zero when no lazy chunk renders the apartment marker', () => {
+    const root = fakeProject({})
+    writeFileSync(join(root, '.next/static/chunks/room.js'), noisyChunk(11))
+    const result = runBudget(root)
+    expect(result.stderr).toMatch(/cc-feature:apartment-scene/)
+    expect(result.status).toBe(1)
   })
 
   it('exits non-zero when the loadable manifest is missing or lists no lazy JS', () => {

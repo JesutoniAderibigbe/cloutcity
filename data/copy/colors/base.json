@@ -5,10 +5,10 @@
     "colors.yellow.name": "Yellow",
     "colors.terracotta.name": "Terracotta",
     "colors.mint.name": "Mint green",
-    "colors.midnight.name": "Midnight blue",
-    "colors.indigo.name": "Indigo",
     "colors.teal.name": "Teal",
     "colors.lilac.name": "Lilac",
-    "colors.skyBlue.name": "Sky blue"
+    "colors.skyBlue.name": "Sky blue",
+    "colors.charcoal.name": "Charcoal",
+    "colors.oatmeal.name": "Oatmeal"
   }
 }

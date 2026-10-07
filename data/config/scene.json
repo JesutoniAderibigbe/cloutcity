@@ -118,5 +118,37 @@
     "labelSizeM": 1500,
     "labelOpacity": 0.85,
     "dimmedLabelOpacity": 0.5
+  },
+  "apartment": {
+    "floorThicknessM": 0.12,
+    "insetM": 0.006,
+    "trimHeightM": 0.1,
+    "ledgeDepthM": 0.32,
+    "ledgeThicknessM": 0.05,
+    "tableSizeM": 0.5,
+    "marker": {
+      "radiusM": 0.17,
+      "segments": 16,
+      "liftM": 0.02,
+      "selectedScale": 1.35
+    },
+    "hitRadiusPx": 26,
+    "ambiguityPx": 6,
+    "fitMargin": 1.06,
+    "lights": {
+      "ambientIntensity": 0.7,
+      "sunIntensity": 0.85,
+      "sunDirection": {
+        "x": -0.6,
+        "y": 1,
+        "z": 0.5
+      },
+      "shadowMapSizePx": 1024
+    },
+    "blob": {
+      "radiusM": 0.36,
+      "opacity": 0.35,
+      "liftM": 0.004
+    }
   }
 }

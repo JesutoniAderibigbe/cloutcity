@@ -18,6 +18,7 @@ import { geoVersion } from '@/lib/data/geo'
 import { HOME_IDS } from '@/lib/data/homes'
 import { project } from '@/lib/geo/projection'
 import { scenePalette } from '@/lib/theme'
+import { ApartmentMount } from './apartment/ApartmentMount'
 import { boundsToLocal } from './camera/limits'
 import { CitySceneClient } from './CitySceneClient'
 import { MapAttribution } from './MapAttribution'
@@ -52,6 +53,11 @@ export function CityScene() {
   return (
     <div className="absolute inset-0">
       <CitySceneClient {...props} />
+      {/* The apartment's canvas draws here while the Home panel shows the room (S16,
+          src/scene/apartment/ApartmentMount.tsx); empty, it takes no space or pointer events. */}
+      <div data-scene-slot="room" className="absolute inset-0 empty:hidden">
+        <ApartmentMount />
+      </div>
       <MapAttribution
         nyc={copy('map.attribution.nyc')}
         mta={copy('map.attribution.mta')}
