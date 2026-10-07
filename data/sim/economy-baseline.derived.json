@@ -50,5 +50,9 @@
   },
   "actions": {
     "maxPerGameDay": 16
+  },
+  "pace": {
+    "cashPerTap": 11.57,
+    "cloutPerTap": 0.48
   }
 }

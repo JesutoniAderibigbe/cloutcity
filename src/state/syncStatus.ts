@@ -31,14 +31,22 @@ export interface SyncControls {
   retryNow(): void
   /** Settles a conflict: keep this device's progress, or take the account's. */
   resolveConflict(choice: 'keep-local' | 'use-cloud'): void
+  /** Replaces this device's game with the account's (after a refused save; only on a tap). */
+  useCloud(): void
 }
 
 export interface SyncStatusState {
   readonly status: SyncStatus
+  /** True after the server refused this device's save (422), until a save is accepted or taken. */
+  readonly rejected: boolean
   readonly controls: SyncControls | null
 }
 
-export const INITIAL_SYNC_STATUS: SyncStatusState = { status: 'local', controls: null }
+export const INITIAL_SYNC_STATUS: SyncStatusState = {
+  status: 'local',
+  rejected: false,
+  controls: null,
+}
 
 export type SyncStatusStore = ReturnType<typeof createSyncStatusStore>
 

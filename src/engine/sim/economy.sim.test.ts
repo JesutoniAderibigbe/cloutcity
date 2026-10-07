@@ -75,6 +75,9 @@ const runFlex = (engine: EngineConfig, jobId: JobId = 'barista') =>
   runEconomyBot({ jobId, days: DAYS, upgradeTo, flex: { place: flexPlace } }, engine)
 const flexReport = runFlex(config)
 
+/** A per-tap average, rounded up to a hundredth so the baseline stays readable. */
+const perTap = (value: number) => Math.ceil(value * 100) / 100
+
 /** The baseline file: money from the job bots, clout maxima from those and the flex bot. */
 function baseline(all: readonly BotReport[], flexRuns: readonly BotReport[] = [flexReport]) {
   const max = (pick: (report: BotReport) => number) => Math.max(...all.map(pick))
@@ -113,6 +116,11 @@ function baseline(all: readonly BotReport[], flexRuns: readonly BotReport[] = [f
       sources: Object.fromEntries(Object.entries(sources).sort(([a], [b]) => a.localeCompare(b))),
     },
     actions: { maxPerGameDay: max((report) => report.maxActionsPerGameDay) },
+    // Honest pace (S18c, DEC-19): what a tap earns on average over a whole run, at the best bot.
+    pace: {
+      cashPerTap: perTap(max((report) => report.cashGained / Math.max(1, report.taps))),
+      cloutPerTap: perTap(cloutMax((report) => report.cloutGained / Math.max(1, report.taps))),
+    },
   }
 }
 

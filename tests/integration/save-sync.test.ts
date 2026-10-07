@@ -38,6 +38,7 @@ async function upload(
   save: unknown,
   baseRevision: number,
   deviceId = crypto.randomUUID(),
+  overrideFromRevision?: number,
 ): Promise<{ status: number; body: UploadReply }> {
   return handleUpload(
     {
@@ -48,6 +49,7 @@ async function upload(
         deviceId,
         clientSavedAt: Date.now(),
         save,
+        ...(overrideFromRevision === undefined ? {} : { overrideFromRevision }),
       }),
     },
     backend,
@@ -122,7 +124,7 @@ describe('POST /api/save against the real database', () => {
     ])
     expect(results.map((r) => r.status).sort()).toEqual([200, 409])
     const conflict = results.find((r) => r.status === 409)?.body
-    expect(conflict).toMatchObject({ ok: false, code: 'conflict', cloud: { revision: 1 } })
+    expect(conflict).toMatchObject({ ok: false, code: 'conflict', head: { revision: 1 } })
   })
 
   it('an upload on a stale revision conflicts with the cloud copy', async () => {
@@ -262,6 +264,8 @@ describe('POST /api/save against the real database', () => {
       p_avatar: {},
       p_grants: [],
       p_burst_credit_minutes: 0,
+      p_pace_credit_cash: 0,
+      p_pace_credit_clout: 0,
       p_min_interval_ms: 0,
       p_max_per_minute: 10,
       p_history_keep: 5,
@@ -286,6 +290,8 @@ describe('what clients can and cannot do', () => {
       p_avatar: {},
       p_grants: [],
       p_burst_credit_minutes: 0,
+      p_pace_credit_cash: 0,
+      p_pace_credit_clout: 0,
       p_min_interval_ms: 0,
       p_max_per_minute: 10,
       p_history_keep: 5,
@@ -374,5 +380,110 @@ describe('set_audio_settings', () => {
       p_updated_at: future,
     })
     expectRpcError(error, 'invalid_timestamp', 'PT400')
+  })
+})
+
+describe('keep this device (H2) against the real history', () => {
+  const fresh = initialSave(config)
+  /** The save both devices shared: Local reached, its reward not claimed yet. */
+  const shared = syncGoals(
+    { ...fresh, player: playerWithClout(fresh.player, 150, config) },
+    config,
+  ).save
+  function claimedOn(save: SaveState): SaveState {
+    const result = grant(
+      save,
+      { kind: 'goal_reward', goalId: 'reach-local', reward: { cash: 50, clout: 15 } },
+      Date.now(),
+      config,
+    )
+    if (!result.ok) throw new Error(result.error.code)
+    return { ...result.save, actions: 1 }
+  }
+  const played = (cash: number): SaveState => ({
+    ...shared,
+    actions: 2,
+    clock: { ...shared.clock, minute: shared.clock.minute + 30 },
+    player: { ...shared.player, cash: shared.player.cash + cash },
+  })
+
+  async function branched() {
+    const guest = await newAttestedGuest()
+    const [x, y] = [crypto.randomUUID(), crypto.randomUUID()]
+    expect((await upload(guest, shared, 0, x)).status).toBe(200)
+    await ageAccept(guest)
+    // Device X claims the goal reward.
+    expect((await upload(guest, claimedOn(shared), 1, x)).status).toBe(200)
+    await ageAccept(guest)
+    // Device Y, still on revision 1, conflicts.
+    const conflict = await upload(guest, played(20), 1, y)
+    expect(conflict.body).toMatchObject({ ok: false, code: 'conflict', head: { revision: 2 } })
+    expect(conflict.body).not.toHaveProperty('head.data')
+    return { guest, y }
+  }
+
+  it("X claims a goal, Y keeps its own game: stored on top; X's grant stays as audit", async () => {
+    const { guest, y } = await branched()
+    const kept = await upload(guest, played(20), 2, y, 1)
+    expect(kept).toMatchObject({ status: 200, body: { ok: true, revision: 3 } })
+    const [row] = await sql<{ revision: number; cash: number }[]>`
+      select revision::int as revision, (data->'player'->>'cash')::int as cash
+      from public.saves where user_id = ${guest.id}
+    `
+    expect(row).toEqual({ revision: 3, cash: shared.player.cash + 20 })
+    const grants = await sql<{ key: string }[]>`
+      select idempotency_key as key from public.grants where user_id = ${guest.id}
+    `
+    expect(grants.map((g) => g.key)).toEqual(['goal:reach-local:r1'])
+    const history = await sql<{ revision: number }[]>`
+      select revision::int as revision from private.save_history
+      where user_id = ${guest.id} order by id
+    `
+    expect(history.map((h) => h.revision)).toEqual([1, 2, 3])
+  })
+
+  it('a forged kept game is still rejected, and the cloud game stays', async () => {
+    const { guest, y } = await branched()
+    const forged = await upload(guest, played(1_000_000), 2, y, 1)
+    expect(forged.status).toBe(422)
+    const [row] = await sql<{ revision: number }[]>`
+      select revision::int as revision from public.saves where user_id = ${guest.id}
+    `
+    expect(row?.revision).toBe(2)
+  })
+
+  it('save_at_revision is for the service role only', async () => {
+    const guest = await newAttestedGuest()
+    const { error } = await guest.client.rpc('save_at_revision', {
+      p_user_id: guest.id,
+      p_revision: 1,
+    })
+    expect(error).not.toBeNull()
+    const [row] = await sql<{ anon: boolean; auth: boolean; service: boolean }[]>`
+      select
+        has_function_privilege('anon', 'public.save_at_revision(uuid, bigint)', 'execute') as anon,
+        has_function_privilege('authenticated', 'public.save_at_revision(uuid, bigint)', 'execute') as auth,
+        has_function_privilege('service_role', 'public.save_at_revision(uuid, bigint)', 'execute') as service
+    `
+    expect(row).toEqual({ anon: false, auth: false, service: true })
+  })
+})
+
+describe('set_audio_settings is rate limited', () => {
+  it('refuses the 31st change in a minute (429)', async () => {
+    const guest = await newAttestedGuest()
+    const volumes = { master: 80, music: 60, sfx: 70, ambience: 50, voice: 90 }
+    for (let i = 0; i < 30; i++) {
+      const { error } = await guest.client.rpc('set_audio_settings', {
+        p_volumes: volumes,
+        p_updated_at: new Date(Date.now() - 60_000 + i).toISOString(),
+      })
+      expect(error, `call ${i + 1}`).toBeNull()
+    }
+    const { error } = await guest.client.rpc('set_audio_settings', {
+      p_volumes: volumes,
+      p_updated_at: new Date().toISOString(),
+    })
+    expectRpcError(error, 'rate_limited', 'PT429')
   })
 })

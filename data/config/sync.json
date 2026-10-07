@@ -13,6 +13,6 @@
     "margin": 1.5,
     "maxActionsPerRealMinute": 40,
     "burstRealMinutes": 5,
-    "maxActionGameMinutes": 1440
+    "honestTapsPerRealMinute": 15
   }
 }

@@ -39,6 +39,11 @@ export const EconomyBaselineSchema = z
       sources: z.record(z.string().min(1), ceiling),
     }),
     actions: z.strictObject({ maxPerGameDay: z.int().nonnegative() }),
+    /**
+     * Honest pace (S18c, DEC-19): gain per tap over a whole run (gross, every bot's run; the
+     * highest), the save plausibility's per-tap ceilings before the margin.
+     */
+    pace: z.strictObject({ cashPerTap: ceiling, cloutPerTap: ceiling }),
   })
   .refine((baseline) => baseline.bestJob in baseline.jobs, {
     error: 'bestJob must be one of jobs',

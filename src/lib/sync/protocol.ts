@@ -18,15 +18,25 @@ export interface UploadBody {
   /** When the device made the save (epoch ms), or null. */
   readonly clientSavedAt: number | null
   readonly save: unknown
+  /**
+   * "Keep this device" after a conflict: the last revision this device synced, the save both
+   * devices last shared. The upload (based on the account's current revision) is then checked
+   * against that save instead of the other device's, and stored on top. Absent otherwise.
+   */
+  readonly overrideFromRevision?: number | null
 }
 
-/** The account's save as the server holds it. */
-export interface CloudCopy {
+/** Which save the account holds now, without the save itself. */
+export interface CloudHead {
   readonly revision: number
   readonly saveVersion: number
-  readonly data: unknown
   readonly acceptedAt: string | null
   readonly deviceId: string | null
+}
+
+/** The account's save as the server holds it (the device reads it with its own session). */
+export interface CloudCopy extends CloudHead {
+  readonly data: unknown
 }
 
 export type UploadReply =
@@ -39,8 +49,11 @@ export type UploadReply =
       /** Grant keys the server now holds (src/engine/grants.ts `markGrantsSynced`). */
       readonly syncedGrantKeys: readonly string[]
     }
-  /** The cloud moved on since `baseRevision` (another device, or a reply that never arrived). */
-  | { readonly ok: false; readonly code: 'conflict'; readonly cloud: CloudCopy | null }
+  /**
+   * The cloud moved on since `baseRevision` (another device, or a reply that never arrived).
+   * Only the head is sent back: the device reads the save itself if it needs it.
+   */
+  | { readonly ok: false; readonly code: 'conflict'; readonly head: CloudHead | null }
   /** The save failed plausibility; it was kept aside and not stored. */
   | { readonly ok: false; readonly code: 'rejected' }
   | { readonly ok: false; readonly code: 'rate-limited'; readonly retryAfterMs: number }

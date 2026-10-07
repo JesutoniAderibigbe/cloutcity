@@ -9,16 +9,17 @@ import { sync } from '@/lib/data/config'
 import { landmarks } from '@/lib/data/content'
 import { EconomyBaselineSchema } from '@/lib/data/schemas/sim'
 import { realMsPerGameMinute } from './clock'
-import { cloutCeilings, findCloutLevel, playerLevel } from './clout'
+import { cloutCeilings, cloutLevel, findCloutLevel, playerLevel } from './clout'
 import { engineConfig as config } from './config'
 import { initialEventsState } from './events'
 import { syncGoals } from './goals'
-import { goalGrantKey, grant, grantCeilings, type GrantRecord } from './grants'
+import { goalGrantKey, grant, grantCeilings, prestigeBadge, type GrantRecord } from './grants'
 import { buyItem, isWearable, shopItems } from './items'
 import {
   applyRepairs,
   cashCeilings,
   checkUpload,
+  maxActionGameMinutes,
   plausibilityCeilings,
   type Repair,
   type UploadContext,
@@ -489,7 +490,7 @@ describe('tampering', () => {
     next.player = { ...next.player, cash: next.player.cash + 100_000 }
     const verdict = check(prev, next, { serverGrantKeys: keys })
     expect(verdict.outcome).toBe('reject')
-    expect(verdict.findings).toEqual(['cash-flow'])
+    expect(verdict.findings).toEqual(['cash-flow', 'honest-pace'])
   })
 
   it('items that appear without being paid for reject', () => {
@@ -506,7 +507,7 @@ describe('tampering', () => {
     next.player = { ...next.player, inventory: { ...next.player.inventory, gifts } }
     const verdict = check(prev, next, { serverGrantKeys: keys })
     expect(verdict.outcome).toBe('reject')
-    expect(verdict.findings).toEqual(['cash-flow'])
+    expect(verdict.findings).toEqual(['cash-flow', 'honest-pace'])
   })
 
   it('a structurally broken upload rejects', () => {
@@ -673,7 +674,7 @@ describe('ceilings', () => {
   })
 
   it('every term is max(fixture x margin, theoretical); real time bounds taps and passive time', () => {
-    const { margin, maxActionsPerRealMinute, maxActionGameMinutes, burstRealMinutes } =
+    const { margin, maxActionsPerRealMinute, burstRealMinutes, honestTapsPerRealMinute } =
       sync.plausibility
     const theory = cloutCeilings(config)
     for (const source of ['paycheck', 'flex', 'club', 'event'] as const) {
@@ -686,7 +687,12 @@ describe('ceilings', () => {
     expect(ceilings).toMatchObject({
       actionsPerRealMinute: maxActionsPerRealMinute,
       burstRealMinutes,
-      maxActionGameMinutes,
+      honestTapsPerRealMinute,
+      maxActionGameMinutes: maxActionGameMinutes(config),
+      pacePerTap: {
+        cash: baseline.pace.cashPerTap * margin,
+        clout: baseline.pace.cloutPerTap * margin,
+      },
       passiveGameMinutesPerRealMinute:
         config.time.gameMinutesPerRealMinute * Math.max(...config.time.speeds),
     })
@@ -781,9 +787,9 @@ describe('pace (DEC-19)', () => {
     const next = later(prev, jump)
     const verdict = check(prev, next, { serverGrantKeys: keys, realMinutesSinceAccept: 1 })
     expect(verdict.findings).toContain('clock-advance')
-    // Three taps of a game day each explain the jump (rent and decay aside, which the clock
+    // Enough taps of the longest action explain the jump (rent and decay aside, which the clock
     // check does not look at).
-    next.actions += 3
+    next.actions += Math.ceil(jump / ceilings.maxActionGameMinutes)
     const explained = check(prev, next, { serverGrantKeys: keys, realMinutesSinceAccept: 1 })
     expect(explained.findings).not.toContain('clock-advance')
   })
@@ -890,5 +896,245 @@ describe('the public projection', () => {
     synced.grants.log = synced.grants.log.map((record) => ({ ...record, sync: 'synced' }))
     const verdict = check(next, synced, { serverGrantKeys: serverKeys(next) })
     expect(verdict.findings).toEqual([])
+  })
+})
+
+describe('review probes (S18c bug-hunter)', () => {
+  const famous = findCloutLevel('famous', config)
+  if (famous === undefined) throw new Error('no famous level')
+
+  /** `runs` finished runs in the history, each with its own badge, ended a day apart. */
+  const withHistory = (save: SaveState, runs: number): Draft<SaveState> => {
+    const next = clone(save)
+    next.prestige.history = Array.from({ length: runs }, (_, i) => ({
+      run: i + 1,
+      endedAt: (i + 1) * 1440,
+      issuedAtMs: MS,
+      badge: prestigeBadge(i + 1, config),
+    }))
+    next.prestige.count = runs
+    next.prestige.badges = [...new Set(next.prestige.history.map((entry) => entry.badge))]
+    next.goals.run = runs + 1
+    return next
+  }
+
+  it('a forged prestige history does not lift the public level cap (clout resets each run)', () => {
+    const base = initialSave(config)
+    const atFamous = syncGoals(
+      {
+        ...base,
+        clock: { minute: 60 * 1440, remainderMs: 0 },
+        player: playerWithClout(base.player, famous.minClout, config),
+      },
+      config,
+    ).save
+    const plain = check(null, atFamous, { firstUpload: true, accountAgeMinutes: 0 })
+    const forged = check(null, withHistory(atFamous, 40), {
+      firstUpload: true,
+      accountAgeMinutes: 0,
+    })
+    expect(forged.outcome).not.toBe('reject')
+    expect(forged.publicView?.level_index).toBe(plain.publicView?.level_index)
+    expect(forged.publicView?.level_index).toBeLessThan(famous.index)
+  })
+
+  it('an honest prestige uploaded a minute later is accepted', () => {
+    const { before, after } = prestiged()
+    const verdict = check(before, later(after), { realMinutesSinceAccept: 1 })
+    expect(verdict.findings).toEqual([])
+    expect(verdict.sameRun).toBe(false)
+  })
+
+  it('a prestige in the window gets no more clout per counted tap than a run does', () => {
+    const { before, after } = prestiged()
+    const taps = 20
+    const next = clone(after)
+    next.actions = taps
+    next.clock.minute += taps * 1440
+    next.player.clout.nextSeq += taps
+    // Every tap folded away as the best flex there is, and more: far beyond a tap's worth.
+    const flex = ceilings.clout.flex.perAction * taps * 3
+    next.player.clout.compacted = {
+      entries: next.player.clout.compacted.entries + 10_000,
+      bySource: { ...next.player.clout.compacted.bySource, flex },
+    }
+    next.player.clout.peakLevel = playerLevel(next.player, config).index
+    const verdict = check(before, next, { realMinutesSinceAccept: 1 })
+    expect(verdict.findings).toContain('clout-rate')
+  })
+
+  it('a prestige in the window cannot carry legacy clout into the new run', () => {
+    const { before, after } = prestiged()
+    const next = clone(after)
+    // Taps enough to explain a month on the clock, so the day budget is no limit.
+    next.actions = 30
+    next.clock.minute += 30 * 1440
+    next.player.clout.compacted = {
+      entries: next.player.clout.compacted.entries + 1,
+      bySource: { ...next.player.clout.compacted.bySource, legacy: famous.minClout },
+    }
+    next.player.clout.nextSeq += 1
+    next.player.clout.peakLevel = playerLevel(next.player, config).index
+    const verdict = check(before, next, { realMinutesSinceAccept: 1 })
+    expect(verdict.findings).toContain('clout-rate')
+  })
+
+  it('a prestige in the window gets no more cash per counted tap than a run does', () => {
+    const { before, after } = prestiged()
+    const next = clone(after)
+    next.actions = 1
+    next.clock.minute += 30 * 1440
+    next.player.clout.nextSeq += 1
+    next.player.cash += ceilings.cash.perAction * 5
+    const verdict = check(before, next, { realMinutesSinceAccept: 1 })
+    expect(verdict.findings).toContain('cash-flow')
+  })
+
+  it('folded entries are one tap each: they cannot pay every source at once', () => {
+    const prev = lateRun()
+    const taps = 10
+    const next = later(prev)
+    next.actions += taps
+    next.player.clout.nextSeq += taps
+    next.player.clout.compacted = {
+      entries: next.player.clout.compacted.entries + taps,
+      bySource: Object.fromEntries(
+        Object.entries({
+          ...next.player.clout.compacted.bySource,
+        }).concat(
+          (['flex', 'club', 'event'] as const).map((source) => [
+            source,
+            (next.player.clout.compacted.bySource[source] ?? 0) +
+              ceilings.clout[source].perAction * taps,
+          ]),
+        ),
+      ),
+    }
+    next.clock.minute += taps * 1440
+    next.player.clout.peakLevel = Math.max(
+      next.player.clout.peakLevel,
+      playerLevel(next.player, config).index,
+    )
+    const verdict = check(prev, next, { serverGrantKeys: serverKeys(prev) })
+    expect(verdict.findings).toContain('clout-rate')
+  })
+
+  it('an entitled premium cosmetic stays public after its ledger entry is folded away', () => {
+    const premium = 'premium-probe'
+    const base = initialSave(config)
+    const save = clone(base)
+    save.player.clout.compacted = { entries: 1, bySource: { premium: 10 } }
+    save.player.clout.nextSeq = 2
+    const verdict = check(null, save, { firstUpload: true, entitledItemIds: [premium] })
+    expect(verdict.publicView?.cosmetics).toEqual([premium])
+  })
+})
+
+describe('honest pace (DEC-19, H1)', () => {
+  const prev = lateRun()
+  const keys = serverKeys(prev)
+  const empty = { cash: 0, clout: 0 }
+
+  it("per-tap ceilings come from the bots' whole-run pace x margin, not the per-action maximum", () => {
+    const { margin } = sync.plausibility
+    expect(ceilings.pacePerTap.cash).toBeCloseTo(baseline.pace.cashPerTap * margin)
+    expect(ceilings.pacePerTap.clout).toBeCloseTo(baseline.pace.cloutPerTap * margin)
+    expect(ceilings.pacePerTap.cash).toBeLessThan(ceilings.cash.perAction)
+    expect(ceilings.pacePerTap.clout).toBeLessThan(ceilings.clout.flex.perAction)
+  })
+
+  it('the longest action comes from config, at the worst stat penalties', () => {
+    const slowest = Object.values(config.stats.atZero).reduce(
+      (product, rule) => product * rule.durationMultiplier,
+      1,
+    )
+    expect(config.actions.catalog.sleep?.durationMin).toBe(480)
+    expect(maxActionGameMinutes(config)).toBe(Math.ceil(480 * slowest))
+  })
+
+  it('one shift on an empty pace credit is more than a tap earns at honest pace: rejected', () => {
+    const next = later(prev)
+    next.actions += 1
+    next.player.cash += 72
+    const verdict = check(prev, next, { serverGrantKeys: keys, paceCredit: empty })
+    expect(verdict.findings).toEqual(['honest-pace'])
+    // With the credit a player carries, the same shift is fine.
+    expect(check(prev, next, { serverGrantKeys: keys }).findings).toEqual([])
+  })
+
+  it('the credit refills only by taps, and what one upload spends the next does not get back', () => {
+    let base: SaveState = prev
+    let credit = ceilings.paceCreditCap
+    const outcomes: string[] = []
+    // A shift's top wage every tap: far above the honest pace, so the credit runs out.
+    for (let i = 0; i < 6; i++) {
+      const next = later(base)
+      next.actions += 1
+      next.player.cash += cashCeilings(config).shift.perAction
+      const verdict = check(base, next, {
+        serverGrantKeys: keys,
+        realMinutesSinceAccept: 1,
+        paceCredit: credit,
+      })
+      outcomes.push(verdict.outcome)
+      if (verdict.save === null || verdict.paceCredit === null) break
+      base = verdict.save
+      credit = verdict.paceCredit
+    }
+    expect(outcomes.at(-1)).toBe('reject')
+    expect(outcomes.length).toBeLessThan(6)
+  })
+
+  it.each([2, 10, 60])(
+    'a forged Icon save on a %i-minute-old account shows no more than honest play allows',
+    (minutes) => {
+      const icon = findCloutLevel('icon', config)
+      if (icon === undefined) throw new Error('no icon level')
+      const base = initialSave(config)
+      const forged = syncGoals(
+        {
+          ...base,
+          clock: { minute: 40 * 1440, remainderMs: 0 },
+          player: playerWithClout(base.player, icon.minClout * 2, config),
+        },
+        config,
+      ).save
+      const verdict = check(null, forged, { firstUpload: true, accountAgeMinutes: minutes })
+      const honest = ceilings.pacePerTap.clout * sync.plausibility.honestTapsPerRealMinute * minutes
+      const allowed = cloutLevel(
+        honest + ceilings.itemCloutMax + ceilings.grants.perRun.clout + ceilings.premiumCap,
+        config,
+      ).index
+      expect(verdict.publicView?.level_index).toBeLessThanOrEqual(Math.min(allowed, icon.index - 1))
+      expect(verdict.publicView?.level_id).not.toBe('icon')
+    },
+  )
+
+  it('reaching Icon publicly takes hours of honest play', () => {
+    const icon = findCloutLevel('icon', config)
+    if (icon === undefined) throw new Error('no icon level')
+    const perMinute = ceilings.pacePerTap.clout * sync.plausibility.honestTapsPerRealMinute
+    expect((icon.minClout - ceilings.itemCloutMax) / perMinute / 60).toBeGreaterThan(2)
+  })
+})
+
+describe('keeping one device over another (H2, branch)', () => {
+  const { prev, next } = aroundClaim()
+
+  it('a claim the server holds from the other branch is not a replay on a kept branch', () => {
+    const keys = serverKeys(next)
+    const replay = check(prev, next, { serverGrantKeys: keys })
+    expect(replay.findings).toContain('grant-replayed')
+    const branch = check(prev, next, { serverGrantKeys: keys, branch: true })
+    expect(branch.outcome).toBe('accept')
+    // The server keeps the row it holds; nothing is inserted twice.
+    expect(branch.grantsToInsert).toEqual([])
+  })
+
+  it('a forged branch is still rejected', () => {
+    const forged = clone(next)
+    forged.player.cash += 100_000
+    const verdict = check(prev, forged, { serverGrantKeys: serverKeys(next), branch: true })
+    expect(verdict.outcome).toBe('reject')
   })
 })

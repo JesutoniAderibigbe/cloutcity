@@ -19,6 +19,7 @@
     "sync.sheet.keepLocal": "Keep this phone's progress",
     "sync.sheet.useCloud": "Use the account save",
     "sync.sheet.retry": "Try again now",
+    "sync.sheet.useCloudGame": "Use the cloud game",
     "sync.sheet.close": "Close",
     "sync.announce": "Cloud save: {status}"
   }

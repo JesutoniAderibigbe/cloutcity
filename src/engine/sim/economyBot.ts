@@ -138,6 +138,12 @@ export interface BotReport {
   readonly maxCashGainPerGameHour: number
   /** Most steps (actions, shifts and rides; not waiting) started in one game day. */
   readonly maxActionsPerGameDay: number
+  /** Steps that were taps (actions, shifts and rides; not waiting), over the whole run. */
+  readonly taps: number
+  /** Cash gained over the whole run: every step's gain, spending not netted (S18c honest pace). */
+  readonly cashGained: number
+  /** Clout gained over the whole run: every step's gain, losses not netted. */
+  readonly cloutGained: number
   readonly maxCloutGainPerAction: number
   readonly maxCloutGainPerGameDay: number
   /**
@@ -193,6 +199,9 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   let maxCashGainPerAction = 0
   let maxCashGainPerGameHour = 0
   let maxCloutGainPerAction = 0
+  let taps = 0
+  let cashGained = 0
+  let cloutGained = 0
   const rentEvents: RentEvent[] = []
   const paidCash: number[] = []
   const cashByDay: number[] = []
@@ -244,6 +253,9 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     const level = playerLevel(after.player, config).id
     if (!Object.hasOwn(levelReachedDay, level)) levelReachedDay[level] = endDay
     if (counts) add(actionsByDay, startDay, 1)
+    if (counts) taps += 1
+    cashGained += cashGain
+    cloutGained += cloutGain
 
     rentEvents.push(...step.rent)
     if (step.rent.some((event) => event.kind === 'paid')) paidCash.push(after.player.cash)
@@ -407,6 +419,9 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     maxCashGainPerGameDay: Math.max(0, ...cashGainByDay.values()),
     maxCashGainPerGameHour,
     maxActionsPerGameDay: Math.max(0, ...actionsByDay.values()),
+    taps,
+    cashGained,
+    cloutGained,
     maxCloutGainPerAction,
     maxCloutGainPerGameDay: Math.max(0, ...cloutGainByDay.values()),
     cloutGainBySource,

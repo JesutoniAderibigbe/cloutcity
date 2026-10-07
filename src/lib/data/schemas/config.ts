@@ -312,8 +312,11 @@ export const SyncConfigSchema = z
        * player, DEC-19): uploads lag the play they carry.
        */
       burstRealMinutes: positive,
-      /** The most game minutes one counted tap can move the personal clock (DEC-19). */
-      maxActionGameMinutes: positiveInt,
+      /**
+       * Taps a person makes in a real minute of honest play (the bot replay's 4 s a tap): the
+       * pace the public level cap allows for an account's age (DEC-19).
+       */
+      honestTapsPerRealMinute: positive,
     }),
   })
   .refine((sync) => sync.debounceMs <= sync.maxWaitMs, {
@@ -328,6 +331,14 @@ export const SyncConfigSchema = z
     error: 'keepaliveMaxBytes must not exceed maxSaveBytes',
     path: ['keepaliveMaxBytes'],
   })
+  .refine(
+    (sync) =>
+      sync.plausibility.honestTapsPerRealMinute <= sync.plausibility.maxActionsPerRealMinute,
+    {
+      error: 'honestTapsPerRealMinute must not exceed maxActionsPerRealMinute',
+      path: ['plausibility', 'honestTapsPerRealMinute'],
+    },
+  )
   .refine((sync) => sync.minUploadIntervalMs * sync.maxUploadsPerMinute <= 60_000, {
     error: 'maxUploadsPerMinute must fit in a minute at minUploadIntervalMs',
     path: ['maxUploadsPerMinute'],

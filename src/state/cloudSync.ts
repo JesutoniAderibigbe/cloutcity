@@ -10,16 +10,24 @@
  *     | no save                          | anything                          | upload                   |
  *     | newer save format                | anything                          | `update`, no upload      |
  *     | same revision                    | anything                          | upload if changed        |
- *     | other revision, from this device | anything                          | rebase on it, upload     |
+ *     | other revision, an upload this   | anything                          | rebase on it, upload     |
+ *     | device sent (its reply was lost) |                                   |                          |
  *     | other revision                   | unchanged since the last sync, or | adopt the account's save |
- *     |                                  | never tapped (a fresh game)       |                          |
+ *     |                                  | never played (a fresh game)       |                          |
  *     | other revision                   | changed                           | `conflict`: player picks |
+ *   An upload "this device sent" is one whose mark (`uploadMark`) the sync record kept when it was
+ *   sent: the device id alone also matches another tab of the game, or this device's upload for
+ *   another account.
  * - Upload: a meaningful change (anything but the clock's minute) is uploaded after
  *   `sync.debounceMs` of quiet, and at most `sync.maxWaitMs` after the first change. A hidden tab
  *   or a page being left flushes at once with a keepalive request (if it fits
  *   `sync.keepaliveMaxBytes`). Offline, changes wait for the network (`offline`). Failures back
  *   off exponentially (`sync.retry`); a save the server refuses pauses sync (`paused`) for
- *   `sync.rejectedRetryMs`; a conflict (409) waits for the player's choice in the sheet.
+ *   `sync.rejectedRetryMs`; a conflict (409, naming the head only: the save is read with this
+ *   session) waits for the player's choice in the sheet. "Keep this device" uploads on top of the
+ *   account's save with `overrideFromRevision`, the revision this device last synced, so the
+ *   server checks it against the save both devices shared. After a refused save the sheet also
+ *   offers the account's game (`useCloud`), taken only on a tap.
  * - The server's repairs are applied to the game (`applyRepairs`) and the grants it holds are
  *   marked synced, so the next upload starts from what the server stored.
  * - Volumes (src/state/audioSettings.ts) sync too: the newer change wins.
@@ -29,6 +37,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import * as z from 'zod/mini'
 import syncJson from '@data/config/sync.json'
+import { engineConfig } from '@/engine/config'
 import { applyRepairs } from '@/engine/repairs'
 import { SAVE_VERSION, type SaveState } from '@/engine/save'
 import type { Database } from '@/lib/supabase/database.types'
@@ -56,6 +65,13 @@ const MetaSchema = z.strictObject({
   userId: z.string(),
   revision: z.int().check(z.gte(0)),
   cloudSignature: z.nullable(z.string()),
+  /** Marks (`uploadMark`) of uploads sent whose reply has not arrived, newest last. */
+  sent: z.optional(z.array(z.string())),
+  /**
+   * "Keep this device" under way: the revision this device last synced before the conflict, the
+   * save both devices shared. Sent as `overrideFromRevision` until the server accepts the upload.
+   */
+  overrideFrom: z.optional(z.nullable(z.int().check(z.gte(0)))),
 })
 type Meta = z.infer<typeof MetaSchema>
 
@@ -67,10 +83,9 @@ const RepairSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('drop-premium'), itemId: z.nullable(z.string()) }),
 ])
 
-const CloudCopySchema = z.object({
+const CloudHeadSchema = z.object({
   revision: z.int(),
   saveVersion: z.int(),
-  data: z.unknown(),
   acceptedAt: z.nullable(z.string()),
   deviceId: z.nullable(z.string()),
 })
@@ -86,7 +101,7 @@ const ReplySchema = z.union([
   z.object({
     ok: z.literal(false),
     code: z.literal('conflict'),
-    cloud: z.nullable(CloudCopySchema),
+    head: z.nullable(CloudHeadSchema),
   }),
   z.object({ ok: z.literal(false), code: z.literal('rate-limited'), retryAfterMs: z.number() }),
   z.object({ ok: z.literal(false), code: z.literal('version'), serverVersion: z.int() }),
@@ -124,9 +139,51 @@ export function cloudSignature(save: SaveState): string {
   return JSON.stringify({ ...save, clock: null, grants })
 }
 
-/** A game nobody has tapped yet: nothing in it is worth keeping over the account's save. */
+/** Unanswered uploads the sync record remembers. */
+const SENT_KEEP = 8
+
+/**
+ * What tells one uploaded save from another, whatever the server's repairs (which never touch
+ * these fields) or a jsonb round trip did to it; null for something that is not a save.
+ */
+export function uploadMark(save: unknown): string | null {
+  if (typeof save !== 'object' || save === null) return null
+  const s = save as {
+    clock?: { minute?: unknown }
+    actions?: unknown
+    player?: { cash?: unknown; clout?: { nextSeq?: unknown } }
+    grants?: { nextSeq?: unknown }
+    prestige?: { count?: unknown }
+  }
+  return JSON.stringify([
+    s.clock?.minute ?? null,
+    s.actions ?? null,
+    s.player?.cash ?? null,
+    s.player?.clout?.nextSeq ?? null,
+    s.grants?.nextSeq ?? null,
+    s.prestige?.count ?? null,
+  ])
+}
+
+/**
+ * A game nobody has played yet: nothing in it is worth keeping over the account's save. The tap
+ * count alone is not enough: a save from before it existed (v8) upgrades with 0 taps.
+ */
 function untouched(save: SaveState): boolean {
-  return save.actions === 0 && save.prestige.history.length === 0 && save.grants.log.length === 0
+  const { player } = save
+  return (
+    save.actions === 0 &&
+    save.prestige.history.length === 0 &&
+    save.grants.log.length === 0 &&
+    Object.keys(save.goals.achieved).length === 0 &&
+    player.clout.nextSeq === 1 &&
+    player.cash <= engineConfig.startCash &&
+    player.home === engineConfig.startHome &&
+    player.inventory.wearables.length === 0 &&
+    player.inventory.gifts.length === 0 &&
+    Object.keys(player.visited).length === 0 &&
+    Object.keys(player.clubNights).length === 0
+  )
 }
 
 export interface Timers {
@@ -257,6 +314,16 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
 
   const changed = () => meta !== null && cloudSignature(current()) !== meta.cloudSignature
 
+  /** True when `cloud` is an upload this device sent for this account (see the table above). */
+  const sentHere = (cloud: CloudCopy, local: SaveState | null): boolean => {
+    if (meta === null || cloud.deviceId !== meta.deviceId) return false
+    const mark = uploadMark(cloud.data)
+    return (
+      mark !== null &&
+      ((meta.sent ?? []).includes(mark) || (local !== null && mark === uploadMark(local)))
+    )
+  }
+
   const clearPending = () => {
     if (pendingTimer !== null) timers.clear(pendingTimer)
     pendingTimer = null
@@ -333,6 +400,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       deviceId: meta.deviceId,
       clientSavedAt: deps.now(),
       save,
+      ...(meta.overrideFrom == null ? {} : { overrideFromRevision: meta.overrideFrom }),
     }
     const text = JSON.stringify(body)
     if (keepalive && text.length > SYNC.keepaliveMaxBytes) return
@@ -347,6 +415,8 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       return
     }
     firstChangeAt = null
+    const mark = uploadMark(save)
+    if (mark !== null) writeMeta({ sent: [...(meta.sent ?? []), mark].slice(-SENT_KEEP) })
     let response: Response
     try {
       response = await deps.fetch(SAVE_ROUTE, {
@@ -377,10 +447,10 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       retryIn(pausedUntil - deps.now())
       return
     }
-    handleReply(reply, save)
+    await handleReply(reply, save)
   }
 
-  const handleReply = (reply: z.infer<typeof ReplySchema>, sent: SaveState) => {
+  const handleReply = async (reply: z.infer<typeof ReplySchema>, sent: SaveState) => {
     if (reply.ok) {
       failures = 0
       pausedUntil = 0
@@ -388,7 +458,10 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       writeMeta({
         revision: reply.revision,
         cloudSignature: cloudSignature(applyRepairs(sent, reply.repairs)),
+        sent: [],
+        overrideFrom: null,
       })
+      status.setState({ rejected: false })
       game.getState().applyRepairs(reply.repairs)
       game.getState().markGrantsSynced(reply.syncedGrantKeys)
       if (reply.repairs.length > 0) {
@@ -399,12 +472,23 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
     }
     switch (reply.code) {
       case 'conflict': {
-        const cloud = reply.cloud
-        if (cloud === null) {
+        if (reply.head === null) {
           // The account has no save (it was removed): start its history over.
-          writeMeta({ revision: 0, cloudSignature: null })
+          writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
           retryIn(0)
-        } else if (cloud.deviceId === meta?.deviceId) {
+          return
+        }
+        // The reply names the head only: read the save itself with this session.
+        const read = await readCloud()
+        if (!read.ok) {
+          pause(backoff())
+          return
+        }
+        const cloud = read.cloud
+        if (cloud === null) {
+          writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
+          retryIn(0)
+        } else if (sentHere(cloud, null)) {
           // This device's own upload landed, but its reply never arrived.
           writeMeta({ revision: cloud.revision })
           retryIn(0)
@@ -430,6 +514,8 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
         logger.info('The server did not accept the cloud save; sync is paused', {
           code: reply.code,
         })
+        // The panel then offers the account's game as a way out (never taken on its own).
+        status.setState({ rejected: true })
         pause(SYNC.rejectedRetryMs)
         return
       case 'unauthenticated':
@@ -460,32 +546,56 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
 
   const adopt = (cloud: CloudCopy): boolean => {
     if (!game.getState().adoptCloudSave(cloud.data, cloud.saveVersion)) return false
-    writeMeta({ revision: cloud.revision, cloudSignature: cloudSignature(current()) })
+    writeMeta({
+      revision: cloud.revision,
+      cloudSignature: cloudSignature(current()),
+      overrideFrom: null,
+    })
+    pausedUntil = 0
+    failures = 0
+    status.setState({ rejected: false })
     setStatus('synced')
     return true
   }
 
-  const restore = async (): Promise<void> => {
-    if (meta === null) return
+  /** The account's save, read with this session (RLS: the player's own row). */
+  const readCloud = async (): Promise<
+    { readonly ok: true; readonly cloud: CloudCopy | null } | { readonly ok: false }
+  > => {
     const { data, error } = await deps.client
       .from('saves')
       .select('revision, save_version, data, accepted_at, last_device_id')
       .maybeSingle()
     if (error !== null) {
       logger.info('Could not read the cloud save; trying again later', { code: error.code })
+      return { ok: false }
+    }
+    return {
+      ok: true,
+      cloud:
+        data === null
+          ? null
+          : {
+              revision: data.revision,
+              saveVersion: data.save_version,
+              data: data.data,
+              acceptedAt: data.accepted_at,
+              deviceId: data.last_device_id,
+            },
+    }
+  }
+
+  const restore = async (): Promise<void> => {
+    if (meta === null) return
+    const read = await readCloud()
+    if (!read.ok) {
       pause(backoff())
       return
     }
-    if (data === null) {
-      if (meta.revision !== 0) writeMeta({ revision: 0, cloudSignature: null })
+    const cloud = read.cloud
+    if (cloud === null) {
+      if (meta.revision !== 0) writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
       return
-    }
-    const cloud: CloudCopy = {
-      revision: data.revision,
-      saveVersion: data.save_version,
-      data: data.data,
-      acceptedAt: data.accepted_at,
-      deviceId: data.last_device_id,
     }
     if (cloud.saveVersion > SAVE_VERSION) {
       blocked = 'update'
@@ -505,7 +615,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       enterConflict(cloud)
       return
     }
-    if (cloud.deviceId === meta.deviceId) {
+    if (sentHere(cloud, local)) {
       writeMeta({ revision: cloud.revision })
       return
     }
@@ -525,9 +635,24 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
         blocked = null
         conflict = null
         if (choice === 'use-cloud' && adopt(cloud)) return
-        // Keep this device's progress: upload it on top of the account's save.
-        writeMeta({ revision: cloud.revision })
+        // Keep this device's progress: upload it on top of the account's save, checked against
+        // the save both devices last shared (the revision this device last synced).
+        writeMeta({
+          overrideFrom: meta?.overrideFrom ?? meta?.revision ?? 0,
+          revision: cloud.revision,
+        })
         void flush()
+      },
+      useCloud: () => {
+        void (async () => {
+          const read = await readCloud()
+          if (read.ok && read.cloud !== null && read.cloud.saveVersion <= SAVE_VERSION) {
+            blocked = null
+            conflict = null
+            if (adopt(read.cloud)) return
+          }
+          logger.info('Could not take the account save; sync stays paused')
+        })()
       },
     },
   })

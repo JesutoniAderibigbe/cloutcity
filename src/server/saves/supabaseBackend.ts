@@ -35,7 +35,9 @@ export function supabaseSaveBackend(client: ServiceClient): SaveBackend {
         client.from('profiles').select('attested, created_at').eq('id', userId).maybeSingle(),
         client
           .from('saves')
-          .select('revision, save_version, data, accepted_at, last_device_id, burst_credit_minutes')
+          .select(
+            'revision, save_version, data, accepted_at, last_device_id, burst_credit_minutes, pace_credit_cash, pace_credit_clout',
+          )
           .eq('user_id', userId)
           .maybeSingle(),
         client.from('grants').select('idempotency_key').eq('user_id', userId),
@@ -64,11 +66,24 @@ export function supabaseSaveBackend(client: ServiceClient): SaveBackend {
                 acceptedAt: row.accepted_at,
                 deviceId: row.last_device_id,
                 burstCreditMinutes: row.burst_credit_minutes,
+                paceCredit: { cash: row.pace_credit_cash, clout: row.pace_credit_clout },
               },
         grantKeys: (grants.data ?? []).map((grant) => grant.idempotency_key),
         entitledItemIds: (entitlements.data ?? []).map((entitlement) => entitlement.item_id),
       }
       return record
+    },
+
+    async saveAt(userId, revision) {
+      const { data, error } = await client.rpc('save_at_revision', {
+        p_user_id: userId,
+        p_revision: revision,
+      })
+      if (error !== null) throw new BackendError('save_at_revision', error)
+      const [row] = data
+      return row === undefined
+        ? null
+        : { saveVersion: row.save_version, data: row.data, acceptedAt: row.accepted_at }
     },
 
     async commit(args): Promise<CommitOutcome> {
@@ -86,6 +101,8 @@ export function supabaseSaveBackend(client: ServiceClient): SaveBackend {
         p_avatar: args.avatar as unknown as Json,
         p_grants: args.grants as unknown as Json,
         p_burst_credit_minutes: args.burstCreditMinutes,
+        p_pace_credit_cash: args.paceCredit.cash,
+        p_pace_credit_clout: args.paceCredit.clout,
         p_min_interval_ms: sync.minUploadIntervalMs,
         p_max_per_minute: sync.maxUploadsPerMinute,
         p_history_keep: sync.historyKeep,

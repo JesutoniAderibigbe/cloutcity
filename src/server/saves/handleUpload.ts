@@ -5,8 +5,14 @@
  * 1. The caller is the Supabase user whose access token is the Bearer token (401 otherwise).
  * 2. The body fits `UploadBodySchema` (400) and the save fits `sync.maxSaveBytes` (413).
  * 3. The account has attested (403) and the save format is this server's (409 `version`).
- * 4. The upload is based on the cloud's current revision (409 `conflict`, with the cloud copy).
- * 5. Save plausibility (src/engine/plausibility.ts `checkUpload`): a rejected save goes to
+ * 4. The upload is based on the cloud's current revision (409 `conflict`, with the head's
+ *    metadata only: the device reads the save itself with its own session).
+ * 5. "Keep this device" (`overrideFromRevision`, H2): the upload is checked against the save
+ *    both devices last shared (`save_at_revision`, from the history) rather than the other
+ *    device's, as a branch (grants the other branch claimed too are not a replay); if the
+ *    history no longer keeps it, against nothing, with first-upload rules. It is stored on top of
+ *    the current head, which stays in the history.
+ * 6. Save plausibility (src/engine/plausibility.ts `checkUpload`): a rejected save goes to
  *    `quarantine_save` (422); otherwise `commit_save` stores it with its repairs, the new grant
  *    rows and the public projection (INT-10), under a compare-and-swap on the revision and the
  *    upload rate limit (409, 429).
@@ -19,26 +25,42 @@ import 'server-only'
 import { z } from 'zod'
 import { engineConfig } from '@/engine/config'
 import { toServerGrantRow, type ServerGrantRow } from '@/engine/grants'
-import { checkUpload, type PlausibilityCeilings } from '@/engine/plausibility'
+import { checkUpload, type CashClout, type PlausibilityCeilings } from '@/engine/plausibility'
 import { SAVE_VERSION, loadSave, migrateSave, type SaveState } from '@/engine/save'
 import { sync } from '@/lib/data/config'
 import type { Logger } from '@/lib/log'
-import type { CloudCopy, UploadReply } from '@/lib/sync/protocol'
+import type { CloudCopy, CloudHead, UploadReply } from '@/lib/sync/protocol'
 
 /** Room for the envelope around the save in a request body. */
 const ENVELOPE_BYTES = 4096
+
+/** The latest time a JavaScript date holds (ms since the epoch). */
+const MAX_DATE_MS = 8.64e15
 
 export const UploadBodySchema = z.strictObject({
   saveVersion: z.int().positive(),
   baseRevision: z.int().nonnegative(),
   deviceId: z.uuid(),
-  clientSavedAt: z.int().nonnegative().nullable(),
-  save: z.unknown(),
+  clientSavedAt: z.int().nonnegative().max(MAX_DATE_MS).nullable(),
+  // Required: an envelope without a save is a broken request, not a save to keep aside.
+  save: z.unknown().refine((save) => save !== undefined),
+  overrideFromRevision: z.int().nonnegative().nullable().optional(),
 })
+
+/** The largest request body the route reads (the save plus its envelope). */
+export const MAX_BODY_BYTES = sync.maxSaveBytes + ENVELOPE_BYTES
 
 /** The account's save row as the server reads it. */
 export interface StoredSave extends CloudCopy {
   readonly burstCreditMinutes: number
+  readonly paceCredit: CashClout
+}
+
+/** A save the history keeps (`save_at_revision`). */
+export interface HistorySave {
+  readonly saveVersion: number
+  readonly data: unknown
+  readonly acceptedAt: string
 }
 
 /** What the server holds for a player. */
@@ -66,6 +88,7 @@ export interface CommitArgs {
   readonly avatar: { readonly cosmetics: readonly string[] }
   readonly grants: readonly ServerGrantRow[]
   readonly burstCreditMinutes: number
+  readonly paceCredit: CashClout
 }
 
 export type CommitOutcome =
@@ -90,6 +113,8 @@ export interface SaveBackend {
   userIdFor(accessToken: string): Promise<string | null>
   /** The player's record, or null when there is no profile. */
   load(userId: string): Promise<PlayerRecord | null>
+  /** The save the history keeps at `revision`, or null once it has been trimmed. */
+  saveAt(userId: string, revision: number): Promise<HistorySave | null>
   commit(args: CommitArgs): Promise<CommitOutcome>
   quarantine(args: QuarantineArgs): Promise<'ok' | 'rate-limited'>
 }
@@ -111,22 +136,23 @@ function bearer(authorization: string | null): string | null {
   return match?.[1] ?? null
 }
 
-const cloudOf = (save: StoredSave | null): CloudCopy | null =>
+const headOf = (save: StoredSave | null): CloudHead | null =>
   save === null
     ? null
     : {
         revision: save.revision,
         saveVersion: save.saveVersion,
-        data: save.data,
         acceptedAt: save.acceptedAt,
         deviceId: save.deviceId,
       }
 
 /**
- * The stored save in the current format, or null when there is none. A save stored by an older
+ * A stored save in the current format, or null when there is none. A save stored by an older
  * build is upgraded; one from a newer build than this server cannot be checked against.
  */
-function previousSave(stored: StoredSave | null): SaveState | null | 'newer' {
+function previousSave(
+  stored: Pick<CloudCopy, 'saveVersion' | 'data'> | null,
+): SaveState | null | 'newer' {
   if (stored === null) return null
   if (stored.saveVersion > SAVE_VERSION) return 'newer'
   if (stored.saveVersion < SAVE_VERSION) {
@@ -147,7 +173,7 @@ export async function handleUpload(
 ): Promise<UploadResult> {
   const token = bearer(request.authorization)
   if (token === null) return reply(401, { ok: false, code: 'unauthenticated' })
-  if (Buffer.byteLength(request.bodyText, 'utf8') > sync.maxSaveBytes + ENVELOPE_BYTES) {
+  if (Buffer.byteLength(request.bodyText, 'utf8') > MAX_BODY_BYTES) {
     return reply(413, { ok: false, code: 'too-large' })
   }
 
@@ -174,24 +200,41 @@ export async function handleUpload(
   }
   const stored = player.save
   if ((stored?.revision ?? 0) !== body.baseRevision) {
-    return reply(409, { ok: false, code: 'conflict', cloud: cloudOf(stored) })
+    return reply(409, { ok: false, code: 'conflict', head: headOf(stored) })
   }
-  const prev = previousSave(stored)
+
+  // "Keep this device": the base is the save both devices last shared, if the history has it.
+  const override = body.overrideFromRevision ?? null
+  let base: Pick<CloudCopy, 'saveVersion' | 'data' | 'acceptedAt'> | null = stored
+  if (override !== null) {
+    if (stored === null || override >= stored.revision) {
+      return reply(400, { ok: false, code: 'invalid' })
+    }
+    base = await backend.saveAt(userId, override)
+  }
+  const prev = previousSave(base)
   if (prev === 'newer') {
     return reply(409, { ok: false, code: 'version', serverVersion: SAVE_VERSION })
   }
 
-  const acceptedAtMs = stored?.acceptedAt == null ? nowMs : Date.parse(stored.acceptedAt)
+  const acceptedAtMs = base?.acceptedAt == null ? nowMs : Date.parse(base.acceptedAt)
   const verdict = checkUpload(
     prev,
     body.save,
     {
       realMinutesSinceAccept: Math.max(0, nowMs - acceptedAtMs) / 60_000,
-      burstCreditMinutes: stored?.burstCreditMinutes ?? ceilings.burstRealMinutes,
+      // A branch's play is measured from the shared save, with full credit.
+      burstCreditMinutes:
+        override === null
+          ? (stored?.burstCreditMinutes ?? ceilings.burstRealMinutes)
+          : ceilings.burstRealMinutes,
+      paceCredit: override === null ? (stored?.paceCredit ?? null) : null,
       accountAgeMinutes: Math.max(0, nowMs - Date.parse(player.createdAt)) / 60_000,
       serverGrantKeys: player.grantKeys,
       entitledItemIds: player.entitledItemIds,
-      firstUpload: stored === null,
+      // A trimmed common ancestor: checked like a first upload (structure and facts, no real time).
+      firstUpload: base === null,
+      branch: override !== null,
     },
     ceilings,
     engineConfig,
@@ -232,12 +275,13 @@ export async function handleUpload(
     avatar: { cosmetics: verdict.publicView.cosmetics },
     grants: verdict.grantsToInsert.map((record) => toServerGrantRow(record, userId)),
     burstCreditMinutes: verdict.burstCreditMinutes ?? 0,
+    paceCredit: verdict.paceCredit ?? { cash: 0, clout: 0 },
   })
   if (!committed.ok) {
     switch (committed.code) {
       case 'conflict': {
         const latest = await backend.load(userId)
-        return reply(409, { ok: false, code: 'conflict', cloud: cloudOf(latest?.save ?? null) })
+        return reply(409, { ok: false, code: 'conflict', head: headOf(latest?.save ?? null) })
       }
       case 'version':
         return reply(409, { ok: false, code: 'version', serverVersion: SAVE_VERSION })

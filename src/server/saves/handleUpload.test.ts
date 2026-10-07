@@ -16,6 +16,7 @@ import {
   handleUpload,
   type CommitArgs,
   type CommitOutcome,
+  type HistorySave,
   type PlayerRecord,
   type QuarantineArgs,
   type SaveBackend,
@@ -31,6 +32,7 @@ function fakeBackend(record: Partial<PlayerRecord> | null = {}) {
   const commits: CommitArgs[] = []
   const quarantined: QuarantineArgs[] = []
   let outcome: CommitOutcome | null = null
+  const history = new Map<number, HistorySave>()
   const player: PlayerRecord | null =
     record === null
       ? null
@@ -45,6 +47,7 @@ function fakeBackend(record: Partial<PlayerRecord> | null = {}) {
   const backend: SaveBackend = {
     userIdFor: vi.fn(async (token: string) => (token === 'good' ? USER : null)),
     load: vi.fn(async () => player),
+    saveAt: vi.fn(async (_user: string, revision: number) => history.get(revision) ?? null),
     commit: vi.fn(async (args: CommitArgs) => {
       commits.push(args)
       const accepted: CommitOutcome = {
@@ -64,6 +67,7 @@ function fakeBackend(record: Partial<PlayerRecord> | null = {}) {
     commits,
     quarantined,
     failCommit: (next: CommitOutcome) => (outcome = next),
+    keep: (revision: number, save: HistorySave) => history.set(revision, save),
   }
 }
 
@@ -87,6 +91,7 @@ const stored = (save: SaveState, patch: Partial<StoredSave> = {}): StoredSave =>
   acceptedAt: new Date(NOW - 60_000).toISOString(),
   deviceId: DEVICE,
   burstCreditMinutes: sync.plausibility.burstRealMinutes,
+  paceCredit: serverCeilings().paceCreditCap,
   ...patch,
 })
 
@@ -146,7 +151,16 @@ describe('POST /api/save', () => {
     const { backend, commits } = fakeBackend({ save: stored(fresh) })
     const result = await upload(backend, body(fresh, { baseRevision: 2 }))
     expect(result.status).toBe(409)
-    expect(result.body).toMatchObject({ ok: false, code: 'conflict', cloud: { revision: 3 } })
+    expect(result.body).toEqual({
+      ok: false,
+      code: 'conflict',
+      head: {
+        revision: 3,
+        saveVersion: SAVE_VERSION,
+        acceptedAt: expect.any(String),
+        deviceId: DEVICE,
+      },
+    })
     expect(commits).toEqual([])
   })
 
@@ -156,7 +170,8 @@ describe('POST /api/save', () => {
     const result = await upload(backend, body(rich, { baseRevision: 3 }))
     expect(result).toEqual({ status: 422, body: { ok: false, code: 'rejected' } })
     expect(commits).toEqual([])
-    expect(quarantined[0]).toMatchObject({ baseRevision: 3, findings: ['cash-flow'] })
+    expect(quarantined[0]).toMatchObject({ baseRevision: 3 })
+    expect(quarantined[0]?.findings).toContain('cash-flow')
   })
 
   it('a save that is not an object is quarantined wrapped', async () => {
@@ -199,6 +214,44 @@ describe('POST /api/save', () => {
     expect(commits[0]?.grants[0]?.user_id).toBe(USER)
   })
 
+  it('refuses a device time no date can hold, and an envelope without a save (400)', async () => {
+    const { backend, commits, quarantined } = fakeBackend()
+    const farOff = await upload(backend, body(fresh, { clientSavedAt: Number.MAX_SAFE_INTEGER }))
+    expect(farOff).toEqual({ status: 400, body: { ok: false, code: 'invalid' } })
+    const noSave = await upload(
+      backend,
+      JSON.stringify({
+        saveVersion: SAVE_VERSION,
+        baseRevision: 0,
+        deviceId: DEVICE,
+        clientSavedAt: NOW,
+      }),
+    )
+    expect(noSave).toEqual({ status: 400, body: { ok: false, code: 'invalid' } })
+    expect(commits).toEqual([])
+    expect(quarantined).toEqual([])
+  })
+
+  it('logs neither the user id, the token nor the save', async () => {
+    const records: unknown[] = []
+    const capture = createLogger({ sink: (record) => records.push(record), level: 'debug' })
+    const { backend } = fakeBackend({ save: stored(fresh) })
+    const rich = { ...fresh, player: { ...fresh.player, cash: 1_000_000 } }
+    await handleUpload(
+      { authorization: 'Bearer good', bodyText: body(rich, { baseRevision: 3 }) },
+      backend,
+      serverCeilings(),
+      NOW,
+      capture,
+    )
+    expect(records.length).toBeGreaterThan(0)
+    const text = JSON.stringify(records)
+    expect(text).not.toContain(USER)
+    expect(text).not.toContain(DEVICE)
+    expect(text).not.toContain('good')
+    expect(text).not.toContain('1000000')
+  })
+
   it('an upload a minute after the last accept carries the burst credit forward', async () => {
     const { backend, commits } = fakeBackend({ save: stored(fresh, { burstCreditMinutes: 2 }) })
     const next = { ...fresh, clock: { ...fresh.clock, minute: fresh.clock.minute + 1 } }
@@ -210,5 +263,89 @@ describe('POST /api/save', () => {
     expect(commits[0]?.burstCreditMinutes).toBeCloseTo(
       3 - 1 / serverCeilings().passiveGameMinutesPerRealMinute,
     )
+  })
+})
+
+describe('keep this device (H2): checked against the save both devices shared', () => {
+  /** The save both devices shared: Local reached, its reward not claimed yet. */
+  const fresh = initialSave(config)
+  const ancestor = syncGoals(
+    { ...fresh, player: playerWithClout(fresh.player, 150, config) },
+    config,
+  ).save
+  /** A device's later save: it claimed the reward (one tap). */
+  function claimed(): SaveState {
+    const result = grant(
+      ancestor,
+      { kind: 'goal_reward', goalId: 'reach-local', reward: { cash: 50, clout: 15 } },
+      NOW,
+      config,
+    )
+    if (!result.ok) throw new Error(result.error.code)
+    return { ...result.save, actions: 1 }
+  }
+  /** Device Y's own play since the shared save: a few taps, a little cash. */
+  const mine = (): SaveState => ({
+    ...ancestor,
+    actions: 2,
+    clock: { ...ancestor.clock, minute: ancestor.clock.minute + 30 },
+    player: { ...ancestor.player, cash: ancestor.player.cash + 20 },
+  })
+  const setup = (history: boolean) => {
+    const theirs = claimed()
+    const fake = fakeBackend({
+      save: stored(theirs, { revision: 3 }),
+      grantKeys: ['goal:reach-local:r1'],
+    })
+    if (history) {
+      fake.keep(2, {
+        saveVersion: SAVE_VERSION,
+        data: ancestor,
+        acceptedAt: new Date(NOW - 30 * 60_000).toISOString(),
+      })
+    }
+    return fake
+  }
+
+  it('device X claims a goal, device Y keeps its own game: accepted on top of the head', async () => {
+    const { backend, commits } = setup(true)
+    const result = await upload(backend, body(mine(), { baseRevision: 3, overrideFromRevision: 2 }))
+    expect(result.status).toBe(200)
+    expect(commits[0]).toMatchObject({ expectedRevision: 3, grants: [] })
+    expect(commits[0]?.data.player.cash).toBe(ancestor.player.cash + 20)
+  })
+
+  it('Y claimed the same reward on its branch: not a replay, and not inserted twice', async () => {
+    const { backend, commits } = setup(true)
+    const result = await upload(
+      backend,
+      body(claimed(), { baseRevision: 3, overrideFromRevision: 2 }),
+    )
+    expect(result.status).toBe(200)
+    expect(commits[0]?.grants).toEqual([])
+  })
+
+  it('a forged kept game is still rejected', async () => {
+    const { backend, commits, quarantined } = setup(true)
+    const forged = { ...mine(), player: { ...mine().player, cash: 1_000_000 } }
+    const result = await upload(backend, body(forged, { baseRevision: 3, overrideFromRevision: 2 }))
+    expect(result.status).toBe(422)
+    expect(commits).toEqual([])
+    expect(quarantined).toHaveLength(1)
+  })
+
+  it('a shared save the history no longer keeps is checked with first-upload rules', async () => {
+    const { backend } = setup(false)
+    const result = await upload(backend, body(mine(), { baseRevision: 3, overrideFromRevision: 2 }))
+    expect(result.status).toBe(200)
+    const rich = { ...mine(), player: { ...mine().player, cash: 1_000_000 } }
+    const refused = await upload(backend, body(rich, { baseRevision: 3, overrideFromRevision: 2 }))
+    expect(refused.status).toBe(422)
+  })
+
+  it('an override at or past the head is not a branch: 400', async () => {
+    const { backend } = setup(true)
+    const result = await upload(backend, body(mine(), { baseRevision: 3, overrideFromRevision: 3 }))
+    expect(result).toEqual({ status: 400, body: { ok: false, code: 'invalid' } })
   })
 })

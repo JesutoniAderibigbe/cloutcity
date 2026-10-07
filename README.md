@@ -374,9 +374,13 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   career path (null until S16a), worn cosmetics and entitled premium items) and the grant
   records to insert. Ceilings come from `plausibilityCeilings`: max(economy fixture × `sync.json`
   margin, theoretical ceilings from config). Real time bounds the taps the save counts
-  (`SaveState.actions`, v9) and passive clock time; earnings are bounded per counted tap; the
-  slack is a per-player token bucket (`burstRealMinutes`) the server carries between uploads
-  (DEC-19). The first upload is never rejected for real-time reasons.
+  (`SaveState.actions`, v9) and passive clock time (each tap moves the clock at most
+  `maxActionGameMinutes`, derived from config: the longest action at the worst stat penalties);
+  earnings must fit the counted taps at the bots' honest pace (`pace` in the economy baseline x
+  margin) plus a small pace credit; the public level an account's age allows follows the same
+  pace at `honestTapsPerRealMinute`. The real-time slack and the pace credit are per-player token
+  buckets the server carries between uploads (DEC-19). The first upload is never rejected for
+  real-time reasons.
 - **Cloud save sync** (S18c): once the guest session connects, `src/state/cloudSync.ts` (lazy)
   restores the account's save or uploads this device's to POST `/api/save`
   (`src/server/saves/handleUpload.ts`, Node, never cached), debounced (`sync.json`), queued
@@ -384,7 +388,9 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   refuses a save. The server stores accepted saves with `commit_save` (service role only: a
   compare-and-swap on the revision, the upload rate limit, grant rows, the public profile
   projection) and keeps refused ones aside with `quarantine_save`. The HUD's cloud chip (the More
-  panel on phones) shows the status; a conflict asks the player which save to keep. Server code
+  panel on phones) shows the status; a conflict asks the player which save to keep. Keeping this
+  device's game is checked against the save both devices last shared (`save_at_revision` from the
+  history), not the other device's; after a refused save the panel offers the cloud game. Server code
   lives in `src/server/` behind `import 'server-only'`; `src/server/server-boundary.test.ts`
   proves browser code never reaches it.
 

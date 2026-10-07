@@ -200,6 +200,7 @@ function setup(options: { cloud?: CloudRow | null; online?: boolean; local?: Sav
     advance,
     accept,
     cloud: () => cloud,
+    setCloud: (row: CloudRow | null) => (cloud = row),
     setServerAudio: (value: typeof serverAudio) => (serverAudio = value),
     goOnline: async () => {
       online = true
@@ -266,7 +267,8 @@ describe('cloud save sync: restore', () => {
     expect(s.uploads).toEqual([])
     s.status.getState().controls?.resolveConflict('keep-local')
     await settle()
-    expect(s.uploads[0]?.body).toMatchObject({ baseRevision: 4 })
+    // Checked against the save both devices shared: here none was ever synced (revision 0).
+    expect(s.uploads[0]?.body).toMatchObject({ baseRevision: 4, overrideFromRevision: 0 })
     expect((s.uploads[0]?.body.save as SaveState).actions).toBe(3)
     expect(s.status.getState().status).toBe('synced')
     sync.stop()
@@ -428,7 +430,23 @@ describe('cloud save sync: uploads', () => {
       acceptedAt: null,
       deviceId: 'other-device',
     }
-    s.replies.push(() => ({ status: 409, reply: { ok: false, code: 'conflict', cloud } }))
+    s.replies.push(() => {
+      // Another device's save lands first: the reply names the head, the device reads it.
+      s.setCloud({
+        revision: cloud.revision,
+        save_version: cloud.saveVersion,
+        data: cloud.data,
+        accepted_at: cloud.acceptedAt,
+        last_device_id: cloud.deviceId,
+      })
+      const head = {
+        revision: cloud.revision,
+        saveVersion: cloud.saveVersion,
+        acceptedAt: cloud.acceptedAt,
+        deviceId: cloud.deviceId,
+      }
+      return { status: 409, reply: { ok: false, code: 'conflict', head } }
+    })
     const sync = createCloudSync(s.deps)
     await sync.ready
     expect(s.status.getState().status).toBe('conflict')
@@ -497,6 +515,185 @@ describe('cloud save sync: volumes', () => {
     await s.advance(5000)
     expect(s.audioCalls).toHaveLength(1)
     expect(s.audioCalls[0]).toMatchObject({ p_updated_at: new Date(T0).toISOString() })
+    sync.stop()
+  })
+})
+
+describe('cloud save sync: review probes (S18c bug-hunter)', () => {
+  /** A server that checks the revision like commit_save: a stale base gets the cloud copy. */
+  const cas =
+    (s: ReturnType<typeof setup>) =>
+    (body: UploadBody): { status: number; reply: UploadReply } => {
+      const current = s.cloud()
+      if ((current?.revision ?? 0) !== body.baseRevision) {
+        return {
+          status: 409,
+          reply: {
+            ok: false,
+            code: 'conflict',
+            head:
+              current === null
+                ? null
+                : {
+                    revision: current.revision,
+                    saveVersion: current.save_version,
+                    acceptedAt: current.accepted_at,
+                    deviceId: current.last_device_id,
+                  },
+          },
+        }
+      }
+      return s.accept(body)
+    }
+  const serve = (s: ReturnType<typeof setup>, times = 10) => {
+    for (let i = 0; i < times; i++) s.replies.push(cas(s))
+  }
+
+  /** A second tab of the same game: the same storage (and device id), its own page state. */
+  const secondTab = (s: ReturnType<typeof setup>) => {
+    const logger = createLogger({ sink: () => {} })
+    const game = createGameStore(
+      createSafeJsonStorage<PersistedState>(() => s.local, logger),
+      logger,
+    )
+    const status = createSyncStatusStore()
+    return { game, status, deps: { ...s.deps, game, status } }
+  }
+
+  it("a second tab's stale save is not uploaded over the first tab's (same device id)", async () => {
+    const s = setup()
+    serve(s)
+    const tabA = createCloudSync(s.deps)
+    await tabA.ready
+    const b = secondTab(s)
+    const tabB = createCloudSync(b.deps)
+    await tabB.ready
+    // Tab A plays on and syncs; tab B, still on the first revision, plays something else.
+    s.game.getState().performAction('sleep')
+    await s.advance(syncJson.debounceMs)
+    const afterA = s.cloud()
+    expect(afterA?.revision).toBe(2)
+    b.game.getState().performAction('nap')
+    await s.advance(syncJson.debounceMs + syncJson.minUploadIntervalMs)
+    // Tab B never sent revision 2: it is another copy of the game, not B's lost reply.
+    expect(b.status.getState().status).toBe('conflict')
+    expect(s.cloud()).toEqual(afterA)
+    tabA.stop()
+    tabB.stop()
+  })
+
+  it('a reply lost in flight is still built on (this page sent that save)', async () => {
+    const s = setup()
+    serve(s, 1)
+    s.replies.push((body) => {
+      s.accept(body)
+      throw new TypeError('Failed to fetch')
+    })
+    serve(s)
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.game.getState().performAction('nap')
+    await s.advance(syncJson.debounceMs)
+    expect(s.cloud()?.revision).toBe(2)
+    s.game.getState().performAction('nap')
+    await s.advance(syncJson.retry.maxMs)
+    expect(s.status.getState().status).toBe('synced')
+    expect(s.cloud()?.revision).toBe(3)
+    expect((s.cloud()?.data as SaveState).actions).toBe(2)
+    sync.stop()
+  })
+
+  it('a keepalive flush whose reply never came is built on after a reload', async () => {
+    const s = setup()
+    serve(s, 1)
+    const first = createCloudSync(s.deps)
+    await first.ready
+    s.game.getState().performAction('nap')
+    // The page goes away: the keepalive request lands, its reply is never read.
+    s.replies.push((body) => {
+      s.accept(body)
+      throw new TypeError('Failed to fetch')
+    })
+    await s.leave()
+    first.stop()
+    expect(s.cloud()?.revision).toBe(2)
+    serve(s)
+    const reloaded = secondTab(s)
+    const second = createCloudSync(reloaded.deps)
+    await second.ready
+    expect(reloaded.status.getState().status).toBe('synced')
+    second.stop()
+  })
+
+  it('a migrated save with progress but no counted taps is not overwritten by the account', async () => {
+    // A v8 save upgrades with actions 0: real progress the tap counter never saw.
+    const base = initialSave(config)
+    const mine: SaveState = {
+      ...base,
+      actions: 0,
+      player: playerWithClout({ ...base.player, cash: base.player.cash + 400 }, 150, config),
+    }
+    const theirs = { ...played(), actions: 9 }
+    const s = setup({ cloud: row(theirs, 4, 'other-device'), local: mine })
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    expect(s.status.getState().status).toBe('conflict')
+    expect(persistedOf(s.game.getState()).player.cash).toBe(mine.player.cash)
+    sync.stop()
+  })
+
+  it('another account on this device does not count as this device for the new account', async () => {
+    // This device once uploaded for account B, then played as account A; now B signs in again.
+    const s = setup({ cloud: row({ ...played(), actions: 9 }, 6, DEVICE), local: played() })
+    s.local.setItem(
+      SYNC_META_KEY,
+      JSON.stringify({
+        version: 1,
+        deviceId: DEVICE,
+        userId: 'user-a',
+        revision: 2,
+        cloudSignature: null,
+      }),
+    )
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    expect(s.status.getState().status).toBe('conflict')
+    expect(s.uploads).toEqual([])
+    sync.stop()
+  })
+})
+
+describe('cloud save sync: after a refused save (H2)', () => {
+  it('"Use the cloud game" takes the account save, only when tapped', async () => {
+    const theirs = { ...played(), actions: 9 }
+    const s = setup({ cloud: row(theirs, 4, 'other-device'), local: played() })
+    s.replies.push(() => ({ status: 422, reply: { ok: false, code: 'rejected' } }))
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.status.getState().controls?.resolveConflict('keep-local')
+    await settle()
+    expect(s.status.getState()).toMatchObject({ status: 'paused', rejected: true })
+    // Nothing is taken on its own, however long it waits.
+    expect(s.game.getState().actions).toBe(3)
+    s.status.getState().controls?.useCloud()
+    await settle()
+    expect(persistedOf(s.game.getState())).toEqual(theirs)
+    expect(s.status.getState()).toMatchObject({ status: 'synced', rejected: false })
+    expect(s.meta()).toMatchObject({ revision: 4, overrideFrom: null })
+    sync.stop()
+  })
+
+  it('the keep-local override is sent until an upload is accepted, then dropped', async () => {
+    const theirs = { ...played(), actions: 9 }
+    const s = setup({ cloud: row(theirs, 4, 'other-device'), local: played() })
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.status.getState().controls?.resolveConflict('keep-local')
+    await settle()
+    expect(s.uploads.at(-1)?.body.overrideFromRevision).toBe(0)
+    s.game.getState().performAction('nap')
+    await s.advance(syncJson.maxWaitMs)
+    expect(s.uploads.at(-1)?.body.overrideFromRevision).toBeUndefined()
     sync.stop()
   })
 })

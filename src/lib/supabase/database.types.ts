@@ -296,13 +296,13 @@ isOneToOne: false
                   ]
                 },"saves": {
                   Row: {
-                    "accepted_at": string | null,"burst_credit_minutes": number,"client_saved_at": string | null,"created_at": string,"data": NonNullable<Json>,"flag_reason": string | null,"flagged_at": string | null,"last_device_id": string | null,"rate_window_count": number,"rate_window_started_at": string | null,"revision": number,"save_version": number,"updated_at": string,"user_id": string
+                    "accepted_at": string | null,"burst_credit_minutes": number,"client_saved_at": string | null,"created_at": string,"data": NonNullable<Json>,"flag_reason": string | null,"flagged_at": string | null,"last_device_id": string | null,"pace_credit_cash": number,"pace_credit_clout": number,"rate_window_count": number,"rate_window_started_at": string | null,"revision": number,"save_version": number,"updated_at": string,"user_id": string
                   }
                   Insert: {
-                    "accepted_at"?: string | null,"burst_credit_minutes"?: number,"client_saved_at"?: string | null,"created_at"?: string,"data": NonNullable<Json>,"flag_reason"?: string | null,"flagged_at"?: string | null,"last_device_id"?: string | null,"rate_window_count"?: number,"rate_window_started_at"?: string | null,"revision"?: number,"save_version": number,"updated_at"?: string,"user_id": string
+                    "accepted_at"?: string | null,"burst_credit_minutes"?: number,"client_saved_at"?: string | null,"created_at"?: string,"data": NonNullable<Json>,"flag_reason"?: string | null,"flagged_at"?: string | null,"last_device_id"?: string | null,"pace_credit_cash"?: number,"pace_credit_clout"?: number,"rate_window_count"?: number,"rate_window_started_at"?: string | null,"revision"?: number,"save_version": number,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "accepted_at"?: string | null,"burst_credit_minutes"?: number,"client_saved_at"?: string | null,"created_at"?: string,"data"?: NonNullable<Json>,"flag_reason"?: string | null,"flagged_at"?: string | null,"last_device_id"?: string | null,"rate_window_count"?: number,"rate_window_started_at"?: string | null,"revision"?: number,"save_version"?: number,"updated_at"?: string,"user_id"?: string
+                    "accepted_at"?: string | null,"burst_credit_minutes"?: number,"client_saved_at"?: string | null,"created_at"?: string,"data"?: NonNullable<Json>,"flag_reason"?: string | null,"flagged_at"?: string | null,"last_device_id"?: string | null,"pace_credit_cash"?: number,"pace_credit_clout"?: number,"rate_window_count"?: number,"rate_window_started_at"?: string | null,"revision"?: number,"save_version"?: number,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -358,7 +358,7 @@ isOneToOne: true
 { Args: { "p_handle": string }; Returns: string
                            },
 "commit_save":
-{ Args: { "p_avatar": Json,"p_burst_credit_minutes": number,"p_career_path": string,"p_client_saved_at": string,"p_data": Json,"p_device_id": string,"p_expected_revision": number,"p_grants": Json,"p_history_keep": number,"p_max_per_minute": number,"p_min_interval_ms": number,"p_public_level": string,"p_same_run": boolean,"p_save_version": number,"p_user_id": string }; Returns: {
+{ Args: { "p_avatar": Json,"p_burst_credit_minutes": number,"p_career_path": string,"p_client_saved_at": string,"p_data": Json,"p_device_id": string,"p_expected_revision": number,"p_grants": Json,"p_history_keep": number,"p_max_per_minute": number,"p_min_interval_ms": number,"p_pace_credit_cash": number,"p_pace_credit_clout": number,"p_public_level": string,"p_same_run": boolean,"p_save_version": number,"p_user_id": string }; Returns: {
               "saved_at": string,"saved_revision": number
             }[]
                            },
@@ -424,6 +424,11 @@ isOneToOne: true
                            },
 "quarantine_save":
 { Args: { "p_base_revision": number,"p_data": Json,"p_device_id": string,"p_findings": (string)[],"p_max_per_minute": number,"p_quarantine_keep": number,"p_save_version": number,"p_user_id": string }; Returns: undefined
+                           },
+"save_at_revision":
+{ Args: { "p_revision": number,"p_user_id": string }; Returns: {
+              "accepted_at": string,"data": Json,"revision": number,"save_version": number
+            }[]
                            },
 "send_friend_boost":
 { Args: { "p_to": string }; Returns: {

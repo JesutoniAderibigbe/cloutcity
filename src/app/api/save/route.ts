@@ -4,7 +4,7 @@
  * has no cloud saves and answers 503 (the device keeps playing on its own copy).
  */
 import { serverCeilings } from '@/server/saves/ceilings'
-import { handleUpload } from '@/server/saves/handleUpload'
+import { MAX_BODY_BYTES, handleUpload } from '@/server/saves/handleUpload'
 import { supabaseSaveBackend } from '@/server/saves/supabaseBackend'
 import { serviceClient, serviceEnv } from '@/server/supabase/service'
 import { log, newCorrelationId } from '@/lib/log'
@@ -19,6 +19,11 @@ export async function POST(request: Request): Promise<Response> {
   const env = serviceEnv()
   if (env === null) {
     return Response.json({ ok: false, code: 'unavailable' }, { status: 503, headers: NO_STORE })
+  }
+  // Refuse an oversized body before reading it (the handler checks the bytes it reads too).
+  const declared = Number(request.headers.get('content-length') ?? Number.NaN)
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    return Response.json({ ok: false, code: 'too-large' }, { status: 413, headers: NO_STORE })
   }
   try {
     const result = await handleUpload(

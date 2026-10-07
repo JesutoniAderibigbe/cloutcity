@@ -11,11 +11,12 @@ import '@/lib/copy/ns/sync'
 /**
  * The cloud save panel (S18c), opened from the status chip or the More panel: where the save
  * stands, in a sentence. In a conflict the player keeps this phone's progress or takes the
- * account's; while sync is paused or offline they can try again now. The controls come from the
+ * account's; while sync is paused or offline they can try again now, and after the server refused
+ * this device's save they can take the account's game instead. The controls come from the
  * running sync (src/state/cloudSync.ts); without a session there is nothing to press.
  */
 export function CloudSavePanel() {
-  const { status, controls } = useSyncStatus()
+  const { status, rejected, controls } = useSyncStatus()
   const act = (run: () => void) => () => {
     run()
     closeHudPanel()
@@ -59,6 +60,16 @@ export function CloudSavePanel() {
           className={`${PANEL_BUTTON} bg-night-800 text-ink-50`}
         >
           {copy('sync.sheet.retry')}
+        </button>
+      ) : null}
+      {controls !== null && status === 'paused' && rejected ? (
+        <button
+          type="button"
+          data-sync-use-cloud=""
+          onClick={act(controls.useCloud)}
+          className={`${PANEL_BUTTON} bg-night-800 text-ink-50`}
+        >
+          {copy('sync.sheet.useCloudGame')}
         </button>
       ) : null}
     </PanelDialog>
