@@ -10,5 +10,7 @@
   "stationOnLineToleranceM": 10,
   "terminalGapMaxM": 150,
   "stationAreaFallbackM": 300,
-  "waterMarginM": 2000
+  "waterMarginM": 2000,
+  "landmarkFrontMaxM": 80,
+  "landmarkExclusionMarginM": 10
 }

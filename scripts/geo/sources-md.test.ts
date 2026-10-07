@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { GeoConfigSchema } from '../../src/lib/data/schemas/config'
 import { SubwayFileSchema } from '../../src/lib/data/schemas/world'
 import { LockSchema } from './lock'
-import { MTA_ATTRIBUTION, renderSourcesMd } from './sources-md'
+import { LION_METADATA_URL, MTA_ATTRIBUTION, renderSourcesMd } from './sources-md'
 
 const ROOT = join(import.meta.dirname, '../..')
 const read = (path: string) => readFileSync(join(ROOT, path), 'utf8')
@@ -80,5 +80,13 @@ describe('data/geo/SOURCES.md', () => {
         `Line \`${ext.lineId}\` extended ${ext.gapM} m to station \`${ext.stationId}\``,
       )
     }
+  })
+
+  it('documents the LION queries: the data dictionary, the codes used and the frames file', () => {
+    expect(sourcesMd).toContain('### LION street centerlines (landmark frames)')
+    expect(sourcesMd).toContain(LION_METADATA_URL)
+    expect(sourcesMd).toContain('`landmarks/frames.derived.json`')
+    expect(sourcesMd).toMatch(/E entrance\/exit ramp/)
+    expect(sourcesMd).toContain('The Department of City Planning make no representation')
   })
 })

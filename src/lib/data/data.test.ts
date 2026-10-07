@@ -31,6 +31,7 @@ import {
   VenuesFileSchema,
 } from './schemas/content'
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
+import { LandmarkModelsFileSchema, SceneLandmarksFileSchema } from './schemas/landmarkModels'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
@@ -38,6 +39,7 @@ import {
   GeoBoundsSchema,
   GeoManifestSchema,
   LandFileSchema,
+  LandmarkFramesFileSchema,
   ParksFileSchema,
   SubwayFileSchema,
   WaterFileSchema,
@@ -75,6 +77,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
   'config/realtime.json': RealtimeConfigSchema,
+  'config/scene.json': SceneLandmarksFileSchema,
   'config/theme.json': ThemeConfigSchema,
   'copy/superlatives.json': SuperlativesSchema,
   'events/events.json': EventsFileSchema,
@@ -86,7 +89,9 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/water.derived.json': WaterFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
+  'landmarks/frames.derived.json': LandmarkFramesFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
+  'landmarks/models.json': LandmarkModelsFileSchema,
   'premium/premium.json': PremiumFileSchema,
   'sim/economy-baseline.derived.json': EconomyBaselineSchema,
   'venues/venues.json': VenuesFileSchema,
@@ -224,6 +229,14 @@ describe('config/perf.json', () => {
       audioLazyGzKB: { low: 600, mid: 1000, high: 1400 },
       audioFileMaxKB: 600,
       audioRuntimeJsGzKB: 20,
+      landmarkTrianglesMax: {
+        bridge: { low: 1200, mid: 3500, high: 7000 },
+        building: { low: 600, mid: 1800, high: 3500 },
+        station: { low: 600, mid: 1800, high: 3500 },
+        government: { low: 600, mid: 1800, high: 3500 },
+      },
+      landmarkTrianglesOverride: {},
+      landmarkLodRatioMax: 0.5,
     })
   })
 

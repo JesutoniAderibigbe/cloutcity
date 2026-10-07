@@ -1,10 +1,15 @@
 /**
  * A tiny synthetic city for the geo build tests: two square boroughs sharing an edge; three
  * NTAs in two CDTAs (one a park); one subway route with two shapes (the second a duplicate) and
- * three stations, the last 50 m past the end of the shapes.
+ * three stations, the last 50 m past the end of the shapes; one bridge running west to east from
+ * Brooklyn into Queens (plus a ramp that must be ignored) and one hall facing a north-south
+ * street.
  */
 import { strToU8, zipSync } from 'fflate'
 import type { GeoConfig } from '../../../src/lib/data/schemas/config.ts'
+import type { LandmarkModel } from '../../../src/lib/data/schemas/landmarkModels.ts'
+import type { LionSourceId } from '../../../src/lib/geo/sources.ts'
+import type { FramePlace } from '../landmarks.ts'
 import { SOURCE_DEFINITIONS, type Lock } from '../lock.ts'
 import type { GeoBuildParams, RawGeoInputs } from '../transform.ts'
 
@@ -161,6 +166,8 @@ export const FIXTURE_CONFIG: GeoConfig = {
   terminalGapMaxM: 150,
   stationAreaFallbackM: 300,
   waterMarginM: 2000,
+  landmarkFrontMaxM: 80,
+  landmarkExclusionMarginM: 10,
 }
 
 export const FIXTURE_LOCK: Lock = {
@@ -173,8 +180,129 @@ export const FIXTURE_LOCK: Lock = {
   })),
 }
 
+const BRIDGE_LAT = 40.7035
+const HALL = { lat: 40.708, lng: -73.996 }
+/** About 17 m west of the hall. */
+const STREET_LNG = -73.9962
+
+function lionFeature(
+  street: string,
+  segmentId: string,
+  segmentType: string,
+  roadwayType: string,
+  coordinates: [number, number][],
+) {
+  return {
+    type: 'Feature',
+    geometry: { type: 'LineString', coordinates },
+    properties: {
+      Street: street,
+      SegmentID: segmentId,
+      SegmentTyp: segmentType,
+      RW_TYPE: ` ${roadwayType}`,
+      FeatureTyp: '0',
+    },
+  }
+}
+
+export function fixtureLion(): Map<LionSourceId, unknown> {
+  return new Map<LionSourceId, unknown>([
+    [
+      'dcp-lion-brooklyn-bridge',
+      {
+        type: 'FeatureCollection',
+        features: [
+          lionFeature('BROOKLYN BRIDGE', '0000001', 'G', '3', [
+            [-73.997, BRIDGE_LAT],
+            [-73.99, BRIDGE_LAT],
+          ]),
+          lionFeature('BROOKLYN BRIDGE', '0000002', 'G', '3', [
+            [-73.99, BRIDGE_LAT],
+            [-73.983, BRIDGE_LAT],
+          ]),
+          // A ramp heading north: ignored, or it would tilt the axis.
+          lionFeature('BROOKLYN BRIDGE', '0000003', 'E', '9', [
+            [-73.99, BRIDGE_LAT],
+            [-73.99, 40.709],
+          ]),
+        ],
+      },
+    ],
+    [
+      'dcp-lion-5-avenue',
+      {
+        type: 'FeatureCollection',
+        features: [
+          lionFeature('5 AVENUE', '0000010', 'U', '1', [
+            [STREET_LNG, 40.701],
+            [STREET_LNG, 40.709],
+          ]),
+        ],
+      },
+    ],
+  ])
+}
+
+export const FIXTURE_PLACES: FramePlace[] = [
+  {
+    id: 'test-bridge',
+    category: 'bridge',
+    location: { lat: BRIDGE_LAT, lng: -73.99 },
+    spans: ['brooklyn', 'queens'],
+  },
+  { id: 'test-hall', category: 'government', location: HALL },
+]
+
+export const FIXTURE_MODELS: LandmarkModel[] = [
+  {
+    id: 'test-bridge',
+    archetype: 'suspensionBridge',
+    depiction: 'stylised',
+    params: {
+      deck: { widthM: 20, clearanceM: 40, thicknessM: 4 },
+      towers: {
+        offsetsM: [-150, 150],
+        heightM: 80,
+        widthM: 30,
+        depthM: 12,
+        legWidthM: 6,
+        openings: 1,
+        pierHeightM: 10,
+      },
+      cables: { perSide: 1, hangerSpacingM: 30 },
+      roles: { deck: 'steel', tower: 'stone', cable: 'accent' },
+    },
+    frame: {
+      kind: 'lion-bridge',
+      street: 'BROOKLYN BRIDGE',
+      segmentTypes: ['G'],
+      roadwayTypes: ['3'],
+    },
+  },
+  {
+    id: 'test-hall',
+    archetype: 'civicHall',
+    depiction: 'stylised',
+    params: {
+      widthM: 40,
+      depthM: 20,
+      heightM: 15,
+      floors: 2,
+      windowColumns: 6,
+      portico: { columns: 4, widthM: 16, depthM: 5, heightM: 12 },
+      roles: { body: 'stone', trim: 'accent', roof: 'roof' },
+    },
+    frame: { kind: 'lion-front', street: '5 AVENUE', faceDeg: 90 },
+  },
+]
+
 export function fixtureInputs(p3Lng?: number): RawGeoInputs {
-  return { boroughs: FIXTURE_BOROUGHS, ntas: FIXTURE_NTAS, gtfsZip: fixtureGtfsZip(p3Lng) }
+  return {
+    boroughs: FIXTURE_BOROUGHS,
+    ntas: FIXTURE_NTAS,
+    gtfsZip: fixtureGtfsZip(p3Lng),
+    lion: fixtureLion(),
+  }
 }
 
 export const FIXTURE_PARAMS: GeoBuildParams = {
@@ -182,4 +310,5 @@ export const FIXTURE_PARAMS: GeoBuildParams = {
   bounds: { west: -74.01, south: 40.69, east: -73.97, north: 40.72 },
   lock: FIXTURE_LOCK,
   expected: { boroughs: 2, ntas: 3 },
+  landmarks: { models: FIXTURE_MODELS, places: FIXTURE_PLACES },
 }

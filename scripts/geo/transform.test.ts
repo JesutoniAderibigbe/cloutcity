@@ -7,6 +7,7 @@ import {
   ZoneShapesFileSchema,
   ZonesFileSchema,
   GeoManifestSchema,
+  LandmarkFramesFileSchema,
 } from '../../src/lib/data/schemas/world'
 import { decodePath, decodeRing } from '../../src/lib/geo/codec'
 import { distanceToPolyline, pointInPolygon, signedArea } from '../../src/lib/geo/polygon'
@@ -15,7 +16,7 @@ import { FIXTURE_BOROUGHS, FIXTURE_NTAS, FIXTURE_PARAMS, fixtureInputs } from '.
 import { OUTPUT_FILES, buildGeoOutputs, type GeoBuildResult } from './transform'
 
 /** sha256 over every output (path, newline, text) in path order. Update only on purpose. */
-const FIXTURE_GOLDEN = '096b7243aa39909477ab724a39b77d0e74afb9b867648ec425f0768540bd8420'
+const FIXTURE_GOLDEN = '136b90ecd9946a889a04a7043734d3a50c4ba1385987d553f01db6afa1a579ae'
 
 function digest(result: GeoBuildResult): string {
   const hash = createHash('sha256')
@@ -44,7 +45,10 @@ describe('buildGeoOutputs on the synthetic fixture', () => {
     expect(SubwayFileSchema.parse(json(result, OUTPUT_FILES.subway)).derived).toBe(true)
     expect(ZonesFileSchema.parse(json(result, OUTPUT_FILES.zones)).derived).toBe(true)
     expect(ZoneShapesFileSchema.parse(json(result, OUTPUT_FILES.zoneShapes)).derived).toBe(true)
-    expect(GeoManifestSchema.parse(json(result, OUTPUT_FILES.manifest)).files).toHaveLength(7)
+    expect(GeoManifestSchema.parse(json(result, OUTPUT_FILES.manifest)).files).toHaveLength(8)
+    expect(LandmarkFramesFileSchema.parse(json(result, OUTPUT_FILES.landmarkFrames)).derived).toBe(
+      true,
+    )
   })
 
   it('neighbouring boroughs share their edge vertex for vertex (no gaps)', () => {

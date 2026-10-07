@@ -5,6 +5,12 @@
 import { z } from 'zod'
 import { STYLED_SOURCES } from '../cloutSources.ts'
 import { HOME_IDS, lowestRentHome } from '../homes.ts'
+import {
+  LANDMARK_ROLES,
+  LandmarkPaletteRefsSchema,
+  LandmarkTrianglesMaxSchema,
+  LandmarkTrianglesOverrideSchema,
+} from './landmarkModels.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
 export const QualityTierSchema = z.enum(QUALITY_TIERS)
@@ -73,6 +79,15 @@ export const PerfConfigSchema = z.strictObject({
   audioFileMaxKB: positive,
   /** The lazily loaded audio runtime chunk (src/lib/audio/runtime.ts). */
   audioRuntimeJsGzKB: positive,
+  /**
+   * Triangles of one landmark model's finest level per tier (outline and windows included), by
+   * landmark category (S07a). Each coarser level may have at most `landmarkLodRatioMax` of the
+   * level above it.
+   */
+  landmarkTrianglesMax: LandmarkTrianglesMaxSchema,
+  /** Per-landmark caps replacing the category caps, by landmark id. */
+  landmarkTrianglesOverride: LandmarkTrianglesOverrideSchema,
+  landmarkLodRatioMax: z.number().gt(0).max(1),
 })
 export type PerfConfig = z.infer<typeof PerfConfigSchema>
 
@@ -85,10 +100,16 @@ export const ThemeConfigSchema = z
     colors: z.record(z.string().regex(TOKEN_NAME), z.string().regex(HEX_COLOR)),
     /** Token used for the browser/PWA theme colour and the page background. */
     themeColor: z.string(),
+    /** 3D scene colours as token names: the landmark kit's role palette (S07a). */
+    scene: z.strictObject({ landmarks: LandmarkPaletteRefsSchema }),
   })
   .refine((theme) => theme.themeColor in theme.colors, {
     error: 'themeColor must name a token in colors',
     path: ['themeColor'],
+  })
+  .refine((theme) => LANDMARK_ROLES.every((role) => theme.scene.landmarks[role] in theme.colors), {
+    error: 'every landmark role must name a token in colors',
+    path: ['scene', 'landmarks'],
   })
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>
 
@@ -814,6 +835,10 @@ export const GeoConfigSchema = z
     stationAreaFallbackM: metres,
     /** How far the sea extends beyond data/geo/bounds.json. */
     waterMarginM: metres,
+    /** A landmark's fronting LION street must pass this close to its location (S07a). */
+    landmarkFrontMaxM: metres,
+    /** Clear ground kept around a landmark model's footprint (its exclusion rectangle). */
+    landmarkExclusionMarginM: z.number().nonnegative(),
   })
   .refine(
     (geo) =>

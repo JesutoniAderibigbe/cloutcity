@@ -29,5 +29,13 @@
   },
   "audioLazyGzKB": { "low": 600, "mid": 1000, "high": 1400 },
   "audioFileMaxKB": 600,
-  "audioRuntimeJsGzKB": 20
+  "audioRuntimeJsGzKB": 20,
+  "landmarkTrianglesMax": {
+    "bridge": { "low": 1200, "mid": 3500, "high": 7000 },
+    "building": { "low": 600, "mid": 1800, "high": 3500 },
+    "station": { "low": 600, "mid": 1800, "high": 3500 },
+    "government": { "low": 600, "mid": 1800, "high": 3500 }
+  },
+  "landmarkTrianglesOverride": {},
+  "landmarkLodRatioMax": 0.5
 }

@@ -5,7 +5,12 @@
  * the build instead of silently changing the map.
  */
 import { z } from 'zod'
-import { GEO_SOURCE_IDS, type GeoSourceId } from '../../src/lib/geo/sources.ts'
+import {
+  GEO_SOURCE_IDS,
+  LION_SOURCE_IDS,
+  LION_STREETS,
+  type GeoSourceId,
+} from '../../src/lib/geo/sources.ts'
 
 const httpsUrl = z.url({ protocol: /^https$/ })
 
@@ -32,14 +37,21 @@ export const LockEntrySchema = SourceDefinitionSchema.extend({
 })
 export type LockEntry = z.infer<typeof LockEntrySchema>
 
-export const LockSchema = z
-  .strictObject({ version: z.literal(1), sources: z.array(LockEntrySchema) })
-  .refine(
-    (lock) =>
-      lock.sources.length === GEO_SOURCE_IDS.length &&
-      lock.sources.every((entry, index) => entry.id === GEO_SOURCE_IDS[index]),
-    { error: `sources must list ${GEO_SOURCE_IDS.join(', ')} in that order` },
-  )
+/**
+ * A lock whose source list may be incomplete or out of order: what `--update` accepts as the
+ * previous lock, so adding a source keeps the retrieval dates of the ones already pinned.
+ */
+export const PartialLockSchema = z.strictObject({
+  version: z.literal(1),
+  sources: z.array(LockEntrySchema),
+})
+
+export const LockSchema = PartialLockSchema.refine(
+  (lock) =>
+    lock.sources.length === GEO_SOURCE_IDS.length &&
+    lock.sources.every((entry, index) => entry.id === GEO_SOURCE_IDS[index]),
+  { error: `sources must list ${GEO_SOURCE_IDS.join(', ')} in that order` },
+)
 export type Lock = z.infer<typeof LockSchema>
 
 const ARCGIS = 'https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services'
@@ -47,6 +59,35 @@ const NYC_OPEN_DATA_TERMS = {
   name: 'NYC Open Data Terms of Use',
   url: 'https://www.nyc.gov/html/data/terms.html',
 }
+
+/** ArcGIS item of DCP's LION FeatureServer (the street centerline file, release 26C). */
+export const LION_ITEM_ID = 'db6fdacfc5ff44e7a244e2f798d98a7d'
+/**
+ * Only the fields the frames build reads. Ordered by segment id so the response, and its hash,
+ * stay byte-identical between downloads of the same release.
+ */
+const LION_FIELDS = 'Street,SegmentID,SegmentTyp,RW_TYPE,FeatureTyp'
+
+function lionQueryUrl(street: string): string {
+  const query = new URLSearchParams({
+    where: `Street='${street}'`,
+    outFields: LION_FIELDS,
+    outSR: '4326',
+    orderByFields: 'SegmentID,OBJECTID',
+    f: 'geojson',
+  })
+  return `${ARCGIS}/LION/FeatureServer/0/query?${query.toString()}`
+}
+
+const lionDefinitions = LION_SOURCE_IDS.map((id) => ({
+  id,
+  title: `LION street centerline: ${LION_STREETS[id]}`,
+  publisher: 'NYC Department of City Planning',
+  catalogUrl: `https://www.arcgis.com/home/item.html?id=${LION_ITEM_ID}`,
+  url: lionQueryUrl(LION_STREETS[id]),
+  file: `${id}.geojson`,
+  terms: NYC_OPEN_DATA_TERMS,
+}))
 
 /** In GEO_SOURCE_IDS order. */
 export const SOURCE_DEFINITIONS: readonly SourceDefinition[] = z
@@ -82,4 +123,5 @@ export const SOURCE_DEFINITIONS: readonly SourceDefinition[] = z
         url: 'https://www.mta.info/developers/terms-and-conditions',
       },
     },
+    ...lionDefinitions,
   ] satisfies (SourceDefinition & { id: GeoSourceId })[])

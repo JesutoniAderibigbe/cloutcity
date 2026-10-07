@@ -49,6 +49,132 @@ refused requests from the build machine):
 
 > The City of New York can not vouch for the accuracy or completeness of data provided by this web site or application or for the usefulness or integrity of the web site or application. This site provides applications using data that has been modified for use from its original source, NYC.gov, the official web site of the City of New York.
 
+### LION street centerlines (landmark frames)
+
+One query per street, each an exact `Street` match on the LION FeatureServer (release 26C),
+reduced to the fields used and ordered by segment id so the bytes are stable.
+
+- Used for: `landmarks/frames.derived.json` (where each landmark model stands and faces).
+- Codes (LION data dictionary <https://s-media.nyc.gov/agencies/dcp/assets/files/pdf/data-tools/bytes/lion_metadata.pdf>): `SegmentTyp` B both, C connector,
+  E entrance/exit ramp, F faux, G generic, R roadbed, T terminator, U undivided, S suppressed;
+  `RW_TYPE` 1 street, 3 bridge, 9 ramp. A bridge uses only its main-roadway segment types
+  and roadway types (data/landmarks/models.json `frame`), never ramps or connectors.
+- Transformations: projected to local metres; bridges: the length-weighted principal axis
+  of those segments, its two ends where the extreme vertices project onto it (each checked
+  to lie on the land of the borough it spans, from the borough boundaries above), the
+  heading from the first spanned borough to the second; other landmarks: the bearing of
+  the nearest segment of the fronting street plus the model's face angle. Headings are
+  rounded to 0.1°, points to whole metres. No street geometry is kept.
+- The item's own notice: "The Department of City Planning make no representation as to the accuracy of the information or its suitability for any purposes. The Department and the City disclaim any liability for errors that may be contained herein."
+
+#### LION street centerline: 5 AVENUE
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%275+AVENUE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-5-avenue.geojson` (138332 bytes, sha256 `f388bc673fd9f39fca44e015cd4c706e23138590cd2a2d8358e3a06930161f41`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: 8 AVENUE
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%278+AVENUE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-8-avenue.geojson` (48631 bytes, sha256 `882dc43027174539e8fe01ab0453644b77d98329c3d7eca03d086522374fa97d`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: BROOKLYN BRIDGE
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27BROOKLYN+BRIDGE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-brooklyn-bridge.geojson` (44983 bytes, sha256 `ec7b4784e782fa3c9bd3ea0c5162ae6cd0f363bc7900ab702be19124a0af62a2`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: CITY HALL PARK GREENWAY
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27CITY+HALL+PARK+GREENWAY%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-city-hall-park-greenway.geojson` (845 bytes, sha256 `3053a0e71dd6ebaf197d6ede87330aaec1f8af98b1f66ea039ab3429accfdb02`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: ED KOCH QUEENSBORO BRIDGE
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27ED+KOCH+QUEENSBORO+BRIDGE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-ed-koch-queensboro-bridge.geojson` (57516 bytes, sha256 `e2c60bddd1e8aa1e53ecdda7ee6ccf0b118666e191d9b3f97d11acf479a7997c`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: FERRY TERMINAL VIADUCT
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27FERRY+TERMINAL+VIADUCT%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-ferry-terminal-viaduct.geojson` (10531 bytes, sha256 `412dab6ef730681710d51fd3eb26601ee0425f3b81decb983fc1761c223e54af`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: JORALEMON STREET
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27JORALEMON+STREET%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-joralemon-street.geojson` (4951 bytes, sha256 `740fd36a42a22b89c3f28039f79863c8e539abdc5271eb4d00248438bcf21f40`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: LEXINGTON AVENUE
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27LEXINGTON+AVENUE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-lexington-avenue.geojson` (63440 bytes, sha256 `7d7ed6ac9c7fe13d2fd87896641dda688b5e2f7258e2a2ceb6bab3683c52ee53`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: MANHATTAN BRIDGE
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27MANHATTAN+BRIDGE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-manhattan-bridge.geojson` (49792 bytes, sha256 `4c555e93c88a1c20aded461fe2cefc6629c773398d5dee172def06232c763513`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: QUEENS BOULEVARD
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27QUEENS+BOULEVARD%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-queens-boulevard.geojson` (296024 bytes, sha256 `d7cf312a0c26144a5e7e625e43b70b89f40e4859683794416c6bd8cd977703c6`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: SUTPHIN BOULEVARD
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27SUTPHIN+BOULEVARD%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-sutphin-boulevard.geojson` (20407 bytes, sha256 `d371e5bc0c6ba7b47367779c2152bbddf8fd46c73f97ae69dc91576dc0744722`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
+#### LION street centerline: VANDERBILT AVENUE
+
+- Publisher: NYC Department of City Planning
+- Downloaded from: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=Street%3D%27VANDERBILT+AVENUE%27&outFields=Street%2CSegmentID%2CSegmentTyp%2CRW_TYPE%2CFeatureTyp&outSR=4326&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Catalogue page: <https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d>
+- Retrieved: 2026-10-07
+- File: `.cache/geo/dcp-lion-vanderbilt-avenue.geojson` (17610 bytes, sha256 `24a1c143a0d8925f97ce04894472ca57dda0777507c76fffac93d55290063ec6`)
+- Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
+
 ## MTA
 
 ### MTA New York City Transit subway static GTFS
