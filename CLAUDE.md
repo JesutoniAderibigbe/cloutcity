@@ -126,7 +126,7 @@ Unit tests sit next to the code as *.test.ts.
 - **Rendering.** The map is a **stylised 3D city** rendered with react-three-fiber:
   - extruded land, a water plane, parks, subway ribbons
   - district buildings, street props and landmarks (see Art direction for model sources)
-  - toon/sticker shading in the night and day palettes
+  - real-world colours under a day/night sky that follows the personal game clock
 - **No third-party tiles, no Google Maps, no map SDKs, no photos or photogrammetry of real places.**
 - **Quality tiers.**
   - Tiers are low, mid and high, chosen automatically from device signals, stepped down at runtime by FPS, and overridable in settings.
@@ -247,16 +247,26 @@ Further rules:
 - **Realtime config** (shard size, move rate limit, emote rate limit, heartbeat interval) lives in `/data/config/realtime.json`.
 
 ## Art direction
-- Stylised low-poly 3D with a flat, bold sticker/toon look: a shared gradient ramp (MeshToonMaterial), inverted-hull outlines on mid/high tiers, and flat emissive lit windows at night.
-- Warm night-city palette: deep indigo, hot pink, taxi yellow, plus a day palette (user decision
-  2026-10-07): the interface and the 3D lighting follow the personal game clock's day/night keyframes
-  (S04f, S04g). Both palettes meet WCAG 2.2 AA. Palette tokens live in `/data/config/theme.json`.
+- Stylised hand-made low-poly 3D at or above the polish of lagoslife/sflife (soft natural lighting; the
+  material model — toon ramp or standard lit — is chosen in the S04h showcase), flat emissive lit windows
+  at night.
+- **Real-world colours (user decision 2026-10-07, DEC-26).** The world uses real New York colours
+  (brick, concrete, limestone, asphalt, park green, harbour blue-grey, yellow taxis) under a real sky that
+  follows the personal game clock (morning blue, golden hour, real night with warm windows; S04f). The
+  interface uses clean light frosted cards by day and dark glass by night (S04g), with taxi yellow as the
+  single brand accent. The old indigo/hot-pink palette is retired. Both UI palettes meet WCAG 2.2 AA.
+  Palette tokens live in `/data/config/theme.json`.
 - **Hand-made 3D models (user decision 2026-10-07, DEC-24): free CC0 packs only.** Target polish at or
   above lagoslife/sflife/anambralive. Characters, furniture, decor, vehicles, street props and buildings
   come from professional hand-made low-poly packs with a CC0 licence (e.g. KayKit, Quaternius, Kenney,
   Poly Pizza CC0), pinned by version and hash and listed in a SOURCES.md. No commissioned or
-  AI-generated models. New York landmarks stay styled stand-ins: the code-built landmark kit, dressed
-  with CC0 pack parts where they fit. Never photos, scans, or models with unclear licences.
+  AI-generated models from third-party services.
+- **NYC landmarks are modelled by Claude in Blender (user decision 2026-10-07, DEC-25):** original
+  hand-made-style low-poly models built by committed, reproducible Blender Python scripts
+  (`scripts/blender/`, run headless) from real measurements, exported as glTF through the S04h pipeline,
+  matching the pack style. They are ours (no third-party licence). Trademark-sensitive landmarks stay
+  generic (no logos, signage or text). The code-built kit remains the fallback until each model lands.
+  Never photos, scans, or models with unclear licences.
 - Models ship as compressed glTF (meshopt geometry, KTX2/WebP textures) through a reproducible asset
   script, with per-asset triangle and byte budgets in perf.json. Model loading lives in lazy chunks; if
   the asset bytes threaten a perf.json budget, measure and raise it with the user, never edit silently.

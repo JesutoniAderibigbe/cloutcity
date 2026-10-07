@@ -150,6 +150,10 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - Art direction (DEC-24, user 2026-10-07): hand-made 3D models from free CC0 packs only (no custom
   or AI models); S04h asset pipeline added; landmarks use the code-built kit as styled stand-ins.
 
+- DEC-25: NYC landmarks modelled by Claude in Blender (scripts/blender, headless, reproducible) → S07c.
+  DEC-26: real-world colours; indigo/pink retired; UI light by day, dark glass by night, taxi-yellow accent
+  (S04f/S04g re-scoped).
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.

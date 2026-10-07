@@ -123,7 +123,7 @@
       "phase": 1,
       "id": "S04f",
       "title": "Day/night cycle on the personal game clock",
-      "acceptance": "The 3D city's lighting follows the player's personal game clock (user decision 2026-10-07): a stylised sky gradient, sun direction and colour, and ambient and hemisphere light interpolate between config keyframes (dawn, day, golden hour, dusk, night) in scene.json; the scene re-evaluates lighting only when the game minute changes (frameloop stays on demand, zero idle frames); at night building windows (S04d) and streetlight and landmark accents glow with flat emissive per tier, never on the memorial; the UI theme stays dark and is unaffected; reduced motion steps between keyframes instead of blending; draw calls, triangles and shader programs stay within perf.json for every tier; unit tests cover keyframe interpolation at boundaries and midnight wrap; Playwright screenshots at 08:00, golden hour, 21:00 and 03:00 via a seeded clock prove the look, and the console guard passes.",
+      "acceptance": "The 3D city's lighting follows the player's personal game clock (user decision 2026-10-07): a real-world sky (morning blue, golden hour, dusk, real night) with real-world colours on the city (DEC-26), sun direction and colour, and ambient and hemisphere light interpolate between config keyframes (dawn, day, golden hour, dusk, night) in scene.json; the scene re-evaluates lighting only when the game minute changes (frameloop stays on demand, zero idle frames); at night building windows (S04d) and streetlight and landmark accents glow with flat emissive per tier, never on the memorial; the UI theme stays dark and is unaffected; reduced motion steps between keyframes instead of blending; draw calls, triangles and shader programs stay within perf.json for every tier; unit tests cover keyframe interpolation at boundaries and midnight wrap; Playwright screenshots at 08:00, golden hour, 21:00 and 03:00 via a seeded clock prove the look, and the console guard passes.",
       "requires": [
         "webgl"
       ],
@@ -135,8 +135,8 @@
     {
       "id": "S04g",
       "phase": 1,
-      "title": "Interface theme follows the day/night cycle",
-      "acceptance": "The interface (HUD, tabs, sheets, panels, toasts, welcome card) switches between a day palette and the existing night palette following the same personal game clock and keyframes as S04f (user decision 2026-10-07); both palettes are tokens in config/theme.json; the switch is driven by a data attribute on the root element set from a boot island, so the shell carries only the CSS variables (shell budget holds) and pages render in the night palette until the game clock is known (welcome card, legal pages and the WebGL fallback included); every text and control colour pair meets WCAG 2.2 AA contrast in both palettes (automated contrast test over the tokens plus axe in both themes); the change cross-fades over config milliseconds and is instant under prefers-reduced-motion; no layout shift when switching; darwin screenshot baselines exist for both palettes at 390 and 1280; the console guard passes.",
+      "title": "Interface theme: real-world palette, light by day and dark glass by night",
+      "acceptance": "Per DEC-26 (user decision 2026-10-07): the indigo/hot-pink palette is retired; the interface (HUD, tabs, sheets, panels, toasts, welcome card, legal pages) uses clean light frosted cards by day and dark glass by night with taxi yellow as the single brand accent, switching on the same personal game clock keyframes as S04f; both palettes are tokens in config/theme.json; the switch is driven by a data attribute on the root element set from a boot island, so the shell carries only CSS variables (shell budget holds), and pages render in the day palette until the game clock is known; every text and control colour pair meets WCAG 2.2 AA in both palettes (automated contrast test plus axe in both themes); the change cross-fades over config milliseconds and is instant under prefers-reduced-motion; no layout shift; darwin screenshot baselines for both palettes at 390 and 1280; the console guard passes.",
       "requires": [],
       "review": false,
       "passes": false,
@@ -257,6 +257,19 @@
         "webgl"
       ],
       "acceptance": "Code-built low-poly models for the remaining S07 landmarks; the Statue of Liberty is visible from Battery Park at the default zoom range; the memorial uses a muted palette with no emissive or animated effects, no emotes and no flex FX (test asserts no effect components are attached); per-tier LOD and triangle budgets as S07a; npm run budget and e2e:perf pass for every tier.",
+      "review": true,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S07c",
+      "phase": 2,
+      "title": "NYC landmark models built in Blender",
+      "acceptance": "Per DEC-25 (user decision 2026-10-07): every S07 landmark gets an original hand-made-style low-poly model authored by a committed, reproducible Blender Python script under scripts/blender/ (run headless with a pinned Blender version recorded in README; output byte-stable for the same inputs), built from real measurements recorded with sources in data/landmarks/SOURCES.md, coloured in real-world colours (DEC-26), with per-tier LODs, exported as glTF and processed through the S04h pipeline within per-landmark triangle and byte budgets in perf.json; trademark-sensitive landmarks stay generic (no logos, signage or text; LEGAL-1); the memorial stays muted with no emissive; models replace the code-built stand-ins at their real coordinates and headings (frames.derived.json) with the code-built kit as fallback; a showcase renders each landmark for screenshot review at 390 and 1280; npm run budget and e2e:perf pass for every tier.",
+      "requires": [
+        "webgl"
+      ],
       "review": true,
       "passes": false,
       "blocked": false,
