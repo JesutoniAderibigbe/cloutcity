@@ -16,8 +16,9 @@
  * - v7 (S13): `player.clout` becomes the clout ledger (src/engine/clout.ts) and `player.flex`
  *   is added; event clout no longer waits in `events.pending` (it lands at once).
  * - v8 (S15): adds `player.visited` (first visit per landmark), `goals` (run, goals reached,
- *   the Icon moment), `grants` (the grant log) and `prestige` (count, badges, history). An
- *   older save's goals are derived from what it holds at load (`syncGoals`).
+ *   the Icon moment), `grants` (the grant log) and `prestige` (count, badges, history), and
+ *   `prestigeKept` on wearables kept through prestige. An older save's goals are derived from
+ *   what it holds at load (`syncGoals`).
  */
 import * as z from 'zod/mini'
 import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
@@ -248,6 +249,8 @@ function inventorySchema(config: EngineConfig) {
         itemId: z.string().check(z.refine(knownWearable(config), 'Unknown wearable')),
         acquiredMinute: z.int().check(z.gte(0)),
         worn: z.boolean(),
+        // Kept through prestige (S15, Q-8): a look only.
+        prestigeKept: z.optional(z.literal(true)),
       }),
     ),
     gifts: z.array(
@@ -712,7 +715,8 @@ function repairClubNights(
  * The player's inventory from an untrusted save, keeping everything usable: unknown or
  * duplicate items are dropped, a purchase minute that is not a whole number in
  * 0..`nowMinute` is clamped (a non-number becomes `nowMinute`), a non-boolean `worn` becomes
- * true (so stat effects never land twice), gift counts are rounded and clamped to
+ * true (so stat effects never land twice), any `prestigeKept` mark becomes `true` (a kept look
+ * never regains value), gift counts are rounded and clamped to
  * 1..maxGiftStack (0 drops the stack), and outfit slots that do not hold an owned item for that
  * slot are emptied. `repaired` is false when the inventory was already valid.
  */
@@ -735,7 +739,7 @@ function repairInventory(
 
   const wearables: OwnedWearable[] = []
   for (const entry of list(source.wearables).map(record)) {
-    const { itemId, acquiredMinute, worn } = entry
+    const { itemId, acquiredMinute, worn, prestigeKept } = entry
     if (typeof itemId !== 'string' || !knownWearable(config)(itemId)) continue
     if (wearables.some((owned) => owned.itemId === itemId)) continue
     const minute =
@@ -746,6 +750,8 @@ function repairInventory(
       itemId,
       acquiredMinute: minute,
       worn: typeof worn === 'boolean' ? worn : true,
+      // Any mark at all keeps it a look only: a damaged mark never turns value back on.
+      ...(prestigeKept === undefined ? {} : { prestigeKept: true as const }),
     })
   }
 

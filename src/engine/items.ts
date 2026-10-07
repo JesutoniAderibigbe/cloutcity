@@ -48,6 +48,17 @@ export interface OwnedWearable {
   readonly acquiredMinute: number
   /** True once its stat effects have landed (first time worn). */
   readonly worn: boolean
+  /**
+   * Kept through prestige from a past run (S15, user ruling Q-8): a look only. It adds no item
+   * clout or style, sells for nothing (the shop refuses it) and cannot be bought again while
+   * owned, so no value carries into the new run (ECON-1).
+   */
+  readonly prestigeKept?: true
+}
+
+/** True for a wearable kept through prestige: a look only (see `OwnedWearable.prestigeKept`). */
+export function isPrestigeKept(owned: Pick<OwnedWearable, 'prestigeKept'>): boolean {
+  return owned.prestigeKept === true
 }
 
 export interface GiftStack {
@@ -89,6 +100,8 @@ export type ItemError =
   | { readonly code: 'ALREADY_OWNED'; readonly itemId: string }
   | { readonly code: 'STACK_FULL'; readonly itemId: string; readonly max: number }
   | { readonly code: 'NOT_OWNED'; readonly itemId: string }
+  /** A wearable kept through prestige: a look only, the shop does not buy it back. */
+  | { readonly code: 'PRESTIGE_KEPT'; readonly itemId: string }
   | { readonly code: 'NOT_WEARABLE'; readonly itemId: string }
   | {
       readonly code: 'WRONG_SLOT'
@@ -228,6 +241,7 @@ export function sellItem(
   if (isWearable(item)) {
     const owned = inventory.wearables.find((entry) => entry.itemId === itemId)
     if (owned === undefined) return { ok: false, error: { code: 'NOT_OWNED', itemId } }
+    if (isPrestigeKept(owned)) return { ok: false, error: { code: 'PRESTIGE_KEPT', itemId } }
     const amount = resaleValue(item, owned.acquiredMinute, snapshot.clock.minute, config)
     const next: Inventory = {
       ...inventory,

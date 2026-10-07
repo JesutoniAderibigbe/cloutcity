@@ -11,8 +11,9 @@
  *   new run cannot replay the same rolls. Goals always reset, to the next run (`run + 1`), so
  *   every goal can be reached and (with `rewardsRepeat`) rewarded again.
  * - The parts in `prestige.keeps` carry over: the personal clock and speed, the grant log (the
- *   audit trail), prestige itself (count, badges, history) and premium clout. Cash-bought items
- *   are progression (they carry clout), so the shipped config resets them with the run.
+ *   audit trail), prestige itself (count, badges, history) and premium clout. The shipped config
+ *   also keeps the inventory (user ruling Q-8): owned wearables and the outfit carry over as
+ *   looks only (`keptInventory`: no clout, style or resale value), and gifts start over.
  *
  * It is atomic: either everything above happens or nothing does.
  */
@@ -23,7 +24,7 @@ import { initialEventsState, type EventsState } from './events'
 import { initialSnapshot, type PlayerState } from './game'
 import { initialGoalsState, victoryGoal, type GoalsState } from './goals'
 import { grant, type GrantRecord, type GrantSnapshot } from './grants'
-import { emptyInventory } from './items'
+import { emptyInventory, type Inventory } from './items'
 import { initialRent } from './rent'
 
 export interface PrestigeRun {
@@ -94,6 +95,19 @@ function nextRunClout(clout: CloutState, config: EngineConfig): CloutState {
   }
 }
 
+/**
+ * What a kept inventory carries into the new run (user ruling Q-8): every owned wearable as a
+ * look only (`prestigeKept`: no clout, style or resale; marked worn, so first-wear stat effects
+ * never land again) and the outfit as worn. Gifts are consumables and start over.
+ */
+function keptInventory(inventory: Inventory): Inventory {
+  return {
+    wearables: inventory.wearables.map((owned) => ({ ...owned, worn: true, prestigeKept: true })),
+    gifts: [],
+    outfit: inventory.outfit,
+  }
+}
+
 function nextRunPlayer(player: PlayerState, config: EngineConfig): PlayerState {
   const fresh = initialSnapshot(config).player
   const pick = <K extends keyof PlayerState>(key: K, part: PrestigePart): PlayerState[K] =>
@@ -105,7 +119,7 @@ function nextRunPlayer(player: PlayerState, config: EngineConfig): PlayerState {
     flex: resets('flex', config) ? { ...fresh.flex, rngState: player.flex.rngState } : player.flex,
     home: pick('home', 'home'),
     rent: resets('rent', config) ? initialRent : player.rent,
-    inventory: resets('inventory', config) ? emptyInventory : player.inventory,
+    inventory: resets('inventory', config) ? emptyInventory : keptInventory(player.inventory),
     clubNights: pick('clubNights', 'clubNights'),
     visited: pick('visited', 'visited'),
   }

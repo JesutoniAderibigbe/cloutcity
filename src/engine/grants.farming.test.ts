@@ -4,11 +4,11 @@
  * limit loads with the current run's claims still claimed.
  */
 import { describe, expect, it } from 'vitest'
-import { appendClout, cloutSums, totalClout } from './clout'
+import { appendClout, cloutSums, itemClout, styleScore, totalClout } from './clout'
 import { engineConfig as config } from './config'
 import { claimableCount, goalClout, syncGoals } from './goals'
 import { claimedGrantKeys, goalGrantKey, grant, grantCeilings, type GrantRecord } from './grants'
-import { emptyInventory } from './items'
+import { buyItem, equipItem, isWearable, sellItem, shopItems } from './items'
 import { prestige } from './prestige'
 import { initialRent } from './rent'
 import { createSaveSchema, initialSave, loadSave, type SaveState } from './save'
@@ -17,6 +17,26 @@ const schema = createSaveSchema(config)
 const MS = 1_760_000_000_000
 const club = Object.keys(config.place.clubs)[0] ?? ''
 const landmark = [...config.places].find(([, category]) => category !== 'memorial')?.[0] ?? ''
+
+/** Every shop wearable: each run buys the next one (there are more than runs). */
+const wearables = shopItems(config).filter(isWearable)
+const gift = shopItems(config).find((item) => !isWearable(item))
+
+/** Buys (with cash to spare, then back to the run's cash) and wears `itemId`, plus a gift. */
+function shop(save: SaveState, itemId: string): SaveState {
+  const cash = save.player.cash
+  let snapshot: SaveState = { ...save, player: { ...save.player, cash: 10_000 } }
+  for (const id of [itemId, gift?.id ?? '']) {
+    const bought = buyItem(snapshot, id, config)
+    if (!bought.ok) throw new Error(`${id}: ${bought.error.code}`)
+    snapshot = { ...snapshot, player: bought.snapshot.player }
+  }
+  const item = wearables.find((entry) => entry.id === itemId)
+  if (item === undefined) throw new Error(`no wearable ${itemId}`)
+  const worn = equipItem(snapshot, itemId, item.slot, config)
+  if (!worn.ok) throw new Error(worn.error.code)
+  return { ...snapshot, player: { ...worn.snapshot.player, cash } }
+}
 
 /** Earned (event) clout until goal clout reaches `target`. */
 function earnTo(save: SaveState, target: number): SaveState {
@@ -51,7 +71,7 @@ function claimAll(save: SaveState) {
 }
 
 describe('prestige farming (ECON-1)', () => {
-  it('six runs of reach-everything, claim-everything, prestige: each run within its ceilings, nothing carried', () => {
+  it('six runs of reach-everything, claim-everything, prestige: each run within its ceilings, nothing carried but looks', () => {
     const ceilings = grantCeilings(config)
     const premium = 150
     let save: SaveState = {
@@ -84,6 +104,17 @@ describe('prestige farming (ECON-1)', () => {
           clubNights: { [club]: 1 },
         },
       }
+      // Each run buys and wears a new outfit piece and a gift (Q-8: outfits are kept as looks).
+      save = shop(save, wearables[(run - 1) % wearables.length]?.id ?? '')
+      const previous = wearables[(run - 2 + wearables.length) % wearables.length]?.id ?? ''
+      if (run > 1) {
+        const again = buyItem(
+          { ...save, player: { ...save.player, cash: 10_000 } },
+          previous,
+          config,
+        )
+        expect(again.ok === false && again.error.code).toBe('ALREADY_OWNED')
+      }
       // Claim at every rung (when the caps are widest), then try a second sweep: no more.
       for (const target of levels) {
         save = syncGoals(earnTo(save, target), config).save
@@ -112,7 +143,17 @@ describe('prestige farming (ECON-1)', () => {
         Math.min(premium, config.clout.caps.byCurrency.usd),
       )
       expect(goalClout(save.player, config)).toBe(0)
-      expect(save.player.inventory).toEqual(emptyInventory)
+      // Outfits stay as looks only: owned and worn, worth no clout, style or resale; gifts reset.
+      const { inventory } = save.player
+      expect(inventory.gifts).toEqual([])
+      expect(inventory.wearables.length).toBe(Math.min(run, wearables.length))
+      expect(inventory.wearables.every((owned) => owned.prestigeKept === true)).toBe(true)
+      expect(Object.keys(inventory.outfit).length).toBeGreaterThan(0)
+      expect(itemClout(save.player, config)).toBe(0)
+      expect(styleScore(save.player, config)).toBe(0)
+      for (const owned of inventory.wearables) {
+        expect(sellItem(save, owned.itemId, config).ok).toBe(false)
+      }
       expect(save.player.rent).toEqual(initialRent)
       expect(save.player.flex.byPlace).toEqual({})
       expect(save.player.visited).toEqual({})

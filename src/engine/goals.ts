@@ -81,7 +81,8 @@ function factHolds(goal: GoalDef, snapshot: GameSnapshot, config: EngineConfig):
     case 'first-paycheck':
       return player.clout.firstPaycheckPaid
     case 'first-outfit':
-      return player.inventory.wearables.length > 0
+      // A look kept through prestige is not this run's outfit (Q-8): it reaches no goal.
+      return player.inventory.wearables.some((owned) => owned.prestigeKept !== true)
     case 'first-landmark-visit':
       return Object.keys(player.visited).length > 0
     case 'first-club-night':

@@ -510,10 +510,11 @@ describe('config/progression.json (S15)', () => {
     expect(schema.safeParse(file).success).toBe(false)
   })
 
-  it('may move a part that is not pinned (inventory) from resets to keeps', () => {
+  it('keeps outfits through prestige (user ruling Q-8), and may move inventory back to resets', () => {
     const file = valid()
-    file.prestige.resets = file.prestige.resets.filter((part) => part !== 'inventory')
-    file.prestige.keeps.push('inventory')
+    expect(file.prestige.keeps).toContain('inventory')
+    file.prestige.keeps = file.prestige.keeps.filter((part) => part !== 'inventory')
+    file.prestige.resets.push('inventory')
     expect(schema.safeParse(file).success).toBe(true)
   })
 })

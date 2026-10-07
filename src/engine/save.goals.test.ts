@@ -297,3 +297,52 @@ describe('v8 repairs', () => {
     expect(result.repaired).toEqual(['goals'])
   })
 })
+
+describe('kept looks in the save (S15, Q-8)', () => {
+  const tee = { itemId: 'bodega-graphic-tee', acquiredMinute: 10, worn: true }
+
+  it('round-trips a kept look untouched', () => {
+    const save = {
+      ...base,
+      player: {
+        ...base.player,
+        inventory: {
+          wearables: [{ ...tee, prestigeKept: true }],
+          gifts: [],
+          outfit: { top: tee.itemId },
+        },
+      },
+    }
+    expect(createSaveSchema(config).safeParse(save).success).toBe(true)
+    expect(loadSave(JSON.parse(JSON.stringify(save)), config)).toMatchObject({
+      ok: true,
+      repaired: [],
+    })
+  })
+
+  it.each([false, 'yes', 1, null])(
+    'a damaged mark (%j) stays a kept look; unknown items are dropped',
+    (mark) => {
+      const raw = JSON.parse(
+        JSON.stringify({
+          ...base,
+          player: {
+            ...base.player,
+            inventory: {
+              wearables: [
+                { ...tee, prestigeKept: mark },
+                { itemId: 'made-up-hat', acquiredMinute: 1, worn: true, prestigeKept: true },
+              ],
+              gifts: [],
+              outfit: {},
+            },
+          },
+        }),
+      ) as unknown
+      const result = loadSave(raw, config)
+      if (!result.ok) throw new Error('unusable')
+      expect(result.repaired).toEqual(['player.inventory'])
+      expect(result.save.player.inventory.wearables).toEqual([{ ...tee, prestigeKept: true }])
+    },
+  )
+})
