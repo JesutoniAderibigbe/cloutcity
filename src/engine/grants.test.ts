@@ -326,7 +326,7 @@ describe('properties: 1000 random grants', () => {
 })
 
 describe('toServerGrantRow and grantCeilings (S18c)', () => {
-  it('maps a record to the S18 grants columns, key scoped to the user, clout cap in eligibility', () => {
+  it('maps a record to the grants columns: the engine key per user, the clout cap in its column (SEC-8)', () => {
     const s = allReached(save({ clout: 60 }))
     const result = grant(s, request('reach-local'), MS, config)
     if (!result.ok) throw new Error(result.error.code)
@@ -334,16 +334,16 @@ describe('toServerGrantRow and grantCeilings (S18c)', () => {
     expect(toServerGrantRow(result.record, userId)).toEqual({
       user_id: userId,
       kind: 'goal_reward',
-      idempotency_key: `${userId}:goal:reach-local:r1`,
+      idempotency_key: 'goal:reach-local:r1',
       cash_amount: 50,
       clout_amount: 10,
       item_id: null,
       cap_amount: result.record.cap.cash,
+      clout_cap: 10,
       eligibility: {
         rule: 'goal-achieved',
         goalId: 'reach-local',
         run: 1,
-        cloutCap: 10,
         requested: { cash: 50, clout: 15, badge: null },
         localSeq: 1,
         at: NOW,

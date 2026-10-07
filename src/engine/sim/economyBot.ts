@@ -88,6 +88,21 @@ export interface EconomyBotOptions {
   readonly flex?: { readonly place: Place }
   /** Claim every goal reward as soon as it is reached (S15). Off by default. */
   readonly claimAll?: boolean
+  /**
+   * Called after every step (and the claims it led to) with the state it left: S18c replays
+   * these as uploads to prove save plausibility accepts normal play.
+   */
+  readonly onStep?: (step: BotStep) => void
+}
+
+/** The state one step left (see `EconomyBotOptions.onStep`). */
+export interface BotStep {
+  readonly snapshot: GameSnapshot
+  readonly goals: GoalsState
+  readonly grants: GrantsState
+  readonly prestige: PrestigeState
+  /** False for waiting (passive time), true for an action, shift or ride. */
+  readonly counted: boolean
 }
 
 export interface BotReport {
@@ -238,6 +253,7 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     if (firstAffordableDay === null && canAffordMove(snapshot.player, upgradeTo, config)) {
       firstAffordableDay = endDay
     }
+    options.onStep?.({ snapshot, ...progress, counted: counts })
   }
 
   /** See "Goals" in the module comment. */

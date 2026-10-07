@@ -9,6 +9,7 @@ import perfJson from '@data/config/perf.json'
 import progressionJson from '@data/config/progression.json'
 import realtimeJson from '@data/config/realtime.json'
 import sceneJson from '@data/config/scene.json'
+import syncJson from '@data/config/sync.json'
 import themeJson from '@data/config/theme.json'
 import { parseDataFile } from './parse'
 import {
@@ -20,6 +21,7 @@ import {
   OnboardingConfigSchema,
   PerfConfigSchema,
   RealtimeConfigSchema,
+  SyncConfigSchema,
   createProgressionConfigSchema,
   ThemeConfigSchema,
 } from './schemas/config'
@@ -46,5 +48,6 @@ export const progression = parseDataFile(
   progressionJson,
 )
 export const realtime = parseDataFile('config/realtime.json', RealtimeConfigSchema, realtimeJson)
+export const sync = parseDataFile('config/sync.json', SyncConfigSchema, syncJson)
 export const theme = parseDataFile('config/theme.json', ThemeConfigSchema, themeJson)
 export const scene = parseDataFile('config/scene.json', SceneConfigSchema, sceneJson)
