@@ -51,6 +51,26 @@ function luminance(hex: string): number {
   return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4)
 }
 
+/** Travel copy (S08): plain line names only, no operator name, no claim of real-time data. */
+const TRAVEL_COPY = ['data/copy/travel/base.json', 'data/copy/tour/base.json']
+
+describe('no MTA branding in travel copy (S08)', () => {
+  for (const file of TRAVEL_COPY) {
+    it(`${file} names no transit operator and claims no real-time or official data`, () => {
+      const text = read(file)
+      expect(text).not.toMatch(/\bMTA\b|Metropolitan Transportation|\bNYCT\b/i)
+      expect(text).not.toMatch(/real[- ]time|official|live (?:train|subway|transit)|accurate/i)
+    })
+  }
+
+  it('the travel palette is not an MTA colour', () => {
+    const travel = (theme.scene as unknown as { travel: Record<string, string> }).travel
+    for (const token of Object.values(travel)) {
+      expect(MTA_TRUNK_HEXES).not.toContain(theme.colors[token]?.slice(1).toLowerCase())
+    }
+  })
+})
+
 describe('no MTA branding in the scene (S04a)', () => {
   for (const file of SCANNED) {
     it(`${file} contains no MTA trunk-line colour`, () => {

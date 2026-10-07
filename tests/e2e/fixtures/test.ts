@@ -14,7 +14,11 @@ import { TOUR_KEY, doneTourSeed } from './tour-seed'
  *  - a completed welcome card (S05a), so specs for other flows start like a returning player.
  *    Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`;
  *  - a finished first-run tour (S06), so no coach marks sit over other flows. Tour specs opt out
- *    with `test.use({ tour: 'fresh' })`.
+ *    with `test.use({ tour: 'fresh' })`;
+ *  - a player who starts at home and must travel to a place before its actions work (S08,
+ *    DEC-22). Specs about a place's own rules use `test.use({ location: 'follow' })`: every place
+ *    picked (pin, Places panel, hook) then puts the player there, as if they had travelled
+ *    (src/components/places/placeTestHook.ts).
  */
 
 const FAILING_CONSOLE_TYPES = new Set<ReturnType<ConsoleMessage['type']>>([
@@ -101,6 +105,12 @@ interface Fixtures {
   tour: 'done' | 'fresh'
   tourSeed: void
   /**
+   * `home` (default): the player is where the save says (a new game starts at home) and travels
+   * like a player. `follow`: picking a place puts the player there first.
+   */
+  location: 'home' | 'follow'
+  locationSeed: void
+  /**
    * How long the guard keeps listening after the test body ends, so late async warnings
    * (a failed fetch, an effect after the last assertion) still fail the test. Override with
    * `use: { consoleSettleMs }` in playwright.config.ts or `test.use()`.
@@ -168,6 +178,20 @@ export const test = base.extend<Fixtures>({
           },
           { key: TOUR_KEY, value: JSON.stringify(doneTourSeed()) },
         )
+      }
+      await use()
+    },
+    { auto: true },
+  ],
+
+  location: ['home', { option: true }],
+
+  locationSeed: [
+    async ({ page, location }, use) => {
+      if (location === 'follow') {
+        await page.addInitScript(() => {
+          window.__CLOUTCITY_E2E_LOCATION__ = 'follow'
+        })
       }
       await use()
     },

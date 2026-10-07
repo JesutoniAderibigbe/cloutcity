@@ -33,6 +33,8 @@ export interface ScenePalette {
     readonly selected: string
   }
   readonly chip: { readonly fill: string; readonly ink: string }
+  /** Travel (S08): the taxi, the subway car and the trail. */
+  readonly travel: { readonly taxi: string; readonly train: string; readonly trail: string }
   readonly toonRamp: readonly number[]
 }
 
@@ -74,6 +76,12 @@ export interface SceneQuality {
   readonly tiers: Readonly<Record<QualityTier, TierRenderSettings>>
 }
 
+/** How long a trip animates (balance.json `transit.animation`, S08). */
+export interface TravelAnimation {
+  readonly maxMs: number
+  readonly msPerGameMinute: number
+}
+
 export interface SceneProps {
   /** /geo/base?v=<geoVersion>. */
   readonly geoUrl: string
@@ -91,6 +99,7 @@ export interface SceneProps {
   /** data/geo/bounds.json in local metres: the camera target never leaves it. */
   readonly boundsLocal: LocalBounds
   readonly quality: SceneQuality
+  readonly travelAnimation: TravelAnimation
   /** The overlay grid rows (src/components/overlay/layers.ts), for the scene's own status row. */
   readonly overlayRows: string
   /** The free scene row of that grid (no overlay zone covers it). */

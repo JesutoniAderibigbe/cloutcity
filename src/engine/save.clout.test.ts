@@ -28,6 +28,8 @@ function v6Save(clout: number, extra: { inventory?: unknown; events?: unknown } 
   delete player.flex
   delete player.visited
   delete player.apartment
+  delete player.location
+  delete player.transit
   if (extra.inventory !== undefined) player.inventory = extra.inventory
   const v6: Record<string, unknown> = { ...base, player, events: extra.events ?? base.events }
   delete v6.goals
@@ -40,8 +42,8 @@ const level = (id: string) => config.clout.levels.findIndex((entry) => entry.id 
 const minOf = (id: string) => config.clout.levels[level(id)]?.minClout ?? Number.NaN
 
 describe('save v7', () => {
-  it('is version 9 (S16 after S15) and a fresh save has an empty ledger and no flexes', () => {
-    expect(SAVE_VERSION).toBe(9)
+  it('is version 10 (S08 after S16) and a fresh save has an empty ledger and no flexes', () => {
+    expect(SAVE_VERSION).toBe(10)
     expect(initialSave(config).player.clout).toEqual(initialCloutState)
     expect(initialSave(config).player.flex).toEqual(initialFlexState)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)

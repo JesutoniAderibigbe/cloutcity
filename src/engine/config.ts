@@ -224,6 +224,16 @@ function homeSlots(json: typeof interiorsJson): Readonly<Record<HomeId, readonly
   }
 }
 
+/**
+ * balance.json `transit` plus the subway fare, for src/engine/transit/config.ts. Built here so
+ * the balance file has one importer in the client graph: the bundler then keeps one copy of it
+ * instead of copying the JSON into the lazy travel chunk and the boot islands (PERF-3).
+ */
+export const transitBalance = {
+  ...balanceJson.transit,
+  subwayFare: balanceJson.costs.subwayFare,
+}
+
 export const engineConfig: EngineConfig = {
   time: balanceJson.time,
   stats: balanceJson.stats,

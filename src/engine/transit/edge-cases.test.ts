@@ -12,7 +12,7 @@ import { encodeRing } from '@/lib/geo/codec'
 import { distanceM, project, type LocalPoint } from '@/lib/geo/projection'
 import { engineConfig, type EngineConfig } from '../config'
 import { initialSnapshot, type GameSnapshot } from '../game'
-import { createSeededRng, type Rng } from '../random'
+import { createRng, type Rng } from '../rng'
 import { transitConfig, type TransitConfig } from './config'
 import { buildLandMask, longestWaterRunM } from './land'
 import {
@@ -55,8 +55,8 @@ function nearStation(id: string): LocalPoint {
 
 /** Seeded random pairs of stations, ends at least 1 km apart. */
 function stationPairs(count: number, seed: number): [LocalPoint, LocalPoint][] {
-  const rng = createSeededRng(seed)
-  const pick = () => network.stations[Math.floor(rng() * network.stations.length)]
+  const rng = createRng(seed)
+  const pick = () => network.stations[Math.floor(rng.next() * network.stations.length)]
   const pairs: [LocalPoint, LocalPoint][] = []
   while (pairs.length < count) {
     const a = pick()
@@ -320,12 +320,17 @@ function snapshotAt(minuteOfDay: number, cash = 150): GameSnapshot {
 }
 
 function counting(seed: number): { rng: Rng; draws: () => number } {
-  const inner = createSeededRng(seed)
+  const inner = createRng(seed)
   let draws = 0
   return {
-    rng: () => {
-      draws++
-      return inner()
+    rng: {
+      next: () => {
+        draws++
+        return inner.next()
+      },
+      get state() {
+        return inner.state
+      },
     },
     draws: () => draws,
   }
@@ -388,7 +393,7 @@ describe('determinism and random draws', () => {
     const exact = travel(
       snapshotAt(NOON, 3),
       subwayTrip,
-      { world, rng: () => 0.99 },
+      { world, rng: { next: () => 0.99, state: 0 } },
       engine,
       delays,
     )
@@ -429,7 +434,7 @@ describe('rush hour and delays with the shipped balance', () => {
       let hits = 0
       const n = 4000
       for (let seed = 0; seed < n; seed++) {
-        if (rollSubwayDelay(r, createSeededRng(seed), transitConfig).event) hits++
+        if (rollSubwayDelay(r, createRng(seed), transitConfig).event) hits++
       }
       return hits / n
     }
@@ -441,7 +446,7 @@ describe('rush hour and delays with the shipped balance', () => {
     const r = route(planTrip(PLACES.coneyIsland, PLACES.flushingMainSt, 'subway', at(NOON)))
     expect(trains(r).length).toBeGreaterThanOrEqual(2)
     for (let seed = 0; seed < 200; seed++) {
-      const { route: delayed, event } = rollSubwayDelay(r, createSeededRng(seed), delays)
+      const { route: delayed, event } = rollSubwayDelay(r, createRng(seed), delays)
       if (event === undefined) {
         expect(delayed).toBe(r)
         continue
@@ -472,7 +477,13 @@ describe('clock and duration limits', () => {
     }
     const trip: TravelRequest = { from: PLACES.coneyIsland, to: PLACES.timesSquare, mode: 'subway' }
     const planned = route(planTrip(trip.from, trip.to, 'subway', at(NOON)))
-    const result = travel(tired, trip, { world, rng: () => 0.99 }, engine, TEST_TRANSIT)
+    const result = travel(
+      tired,
+      trip,
+      { world, rng: { next: () => 0.99, state: 0 } },
+      engine,
+      TEST_TRANSIT,
+    )
     if (!result.ok) throw new Error(result.error.code)
     // All three at zero: 1.5 x 1 x 1.25, rounded up.
     expect(result.durationMin).toBe(Math.ceil(planned.durationMin * 1.5 * 1.25))
@@ -501,7 +512,7 @@ describe('clock and duration limits', () => {
     const result = travel(
       snapshotAt(NOON),
       far,
-      { world: allLandWorld(), rng: () => 0 },
+      { world: allLandWorld(), rng: { next: () => 0, state: 0 } },
       engine,
       TEST_TRANSIT,
     )

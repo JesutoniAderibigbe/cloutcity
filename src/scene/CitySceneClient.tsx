@@ -19,7 +19,7 @@ import { log } from '@/lib/log'
 import { perfMark } from '@/lib/perfMarks'
 import { markMapPlayable } from '@/state/mapPlayable'
 import { autoOpenPlacesPanel, closeAutoPlacesPanel } from '@/state/placesPanel'
-import { loadGeoBase, type GeoLoadFailure } from './geo/load'
+import { loadGeoBase, registerGeoBaseUrl, type GeoLoadFailure } from './geo/load'
 import { SCENE_FAILED_MESSAGE, SceneErrorBoundary } from './SceneErrorBoundary'
 import type { SceneFailure, SceneProps, SceneStatus } from './types'
 import { whenIdle } from './schedule'
@@ -67,6 +67,8 @@ export function CitySceneClient(props: SceneProps) {
   const { picker } = props.quality
   const { idleTimeoutMs } = props.config.startup
   useEffect(() => {
+    // Travel reads the subway and land layers from the same body, with or without WebGL.
+    registerGeoBaseUrl(geoUrl)
     let active = true
     let cancelStart = () => undefined as void
     const fail = (failure: SceneFailure, context: Record<string, unknown>) => {
@@ -166,6 +168,20 @@ export function CitySceneClient(props: SceneProps) {
   useEffect(() => {
     if (status !== 'loading') markMapPlayable()
   }, [status])
+  // Travel's routes (S08): built once the browser is idle after the map is playable, from the
+  // geo body already downloaded, so the first "Get there" rows rarely wait. Its own chunk.
+  const playable = status !== 'loading'
+  useEffect(() => {
+    if (!playable) return
+    return whenIdle(() => {
+      // The whole travel chunk (the place sheet's "Get there" rows load the same module).
+      import('@/state/tripDriver').then(
+        (module) => void module.ensureTransitWorld(),
+        // Offline before the chunk was cached: the place sheet loads it again when needed.
+        () => log.info('Travel routes could not be prepared yet'),
+      )
+    }, idleTimeoutMs)
+  }, [playable, idleTimeoutMs])
 
   const unavailable = status === 'error' || status === 'lost'
   const previousStatus = useRef<SceneStatus>('loading')
@@ -207,6 +223,7 @@ export function CitySceneClient(props: SceneProps) {
             startHome={props.startHome}
             boundsLocal={props.boundsLocal}
             quality={props.quality}
+            travelAnimation={props.travelAnimation}
             label={copy.label}
             expandingSoon={copy.expandingSoon}
             onReady={onReady}

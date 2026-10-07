@@ -5,6 +5,10 @@ import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
 import { hudIsWide, hudOpener, openFromHud } from './helpers/hud'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 // S10a: the shop in a thrift store's place sheet, the inventory and rent panels from the HUD,
 // and a shift with its lock and energy states. Places open through the S09 test hook (the same
 // `openPlace` the map uses); the HUD hook advances the personal clock through the store. Prices,

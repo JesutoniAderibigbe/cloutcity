@@ -20,10 +20,13 @@ import { performFlex } from './flex'
 import { initialSnapshot, type GameSnapshot } from './game'
 import { buyItem, equipItem, isWearable, sellItem, shopItems, unequipSlot } from './items'
 import { workShift } from './jobs'
-import { performPlaceAction, placeActions } from './placeActions'
 import type { Place } from './places'
 import { createSaveSchema, initialSave, loadSave, migrateSave, type SaveState } from './save'
-import { withClout } from './test-support'
+import {
+  performPlaceActionHere as performPlaceAction,
+  placeActionsHere as placeActions,
+  withClout,
+} from './test-support'
 
 const DAY = 24 * 60
 const schema = createSaveSchema(config)

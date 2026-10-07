@@ -8,10 +8,19 @@ import { minutesPerDay } from '@/engine/clock'
 import { engineConfig } from '@/engine/config'
 import { initialSnapshot, type GameSnapshot } from '@/engine/game'
 import { isWearable, shopItems } from '@/engine/items'
-import { buyAtShop, hasShop, SHOP_VENUE_TYPES, shopBlock } from '@/engine/placeActions'
+import {
+  buyAtShop as buyAtShopAnywhere,
+  hasShop,
+  SHOP_VENUE_TYPES,
+  shopBlock as shopBlockAnywhere,
+} from '@/engine/placeActions'
 import { minuteOf } from '@/engine/places'
 import { findPlace, landmarks, venues } from './places'
-import { playerWithClout } from '@/engine/test-support'
+import {
+  buyAtShopHere as buyAtShop,
+  playerWithClout,
+  shopBlockHere as shopBlock,
+} from '@/engine/test-support'
 
 const DAY = minutesPerDay(engineConfig)
 const MAX_CLOUT = Math.max(...engineConfig.clout.levels.map((level) => level.minClout))
@@ -120,6 +129,31 @@ describe('buyAtShop', () => {
         required: wearable.price,
         available: wearable.price - 1,
       },
+    })
+  })
+})
+
+describe('the shop needs the player there (DEC-22)', () => {
+  const wearable = shopItems(engineConfig).find(isWearable)
+  if (wearable === undefined) throw new Error('no wearable')
+
+  it('away from an open shop, shopBlock says so and a buy is refused without changes', () => {
+    const snapshot = snapshotAt(openMinute('rerun-racks'), wearable.price)
+    expect(shopBlockAnywhere(place('rerun-racks'), snapshot, engineConfig)).toEqual({
+      code: 'away',
+    })
+    expect(buyAtShopAnywhere(snapshot, place('rerun-racks'), wearable.id, engineConfig)).toEqual({
+      ok: false,
+      error: { code: 'BLOCKED', block: { code: 'away' } },
+    })
+  })
+
+  it('a closed shop says closed before away', () => {
+    const shop = place('rerun-racks') as { hours: { open: string } | '24h' }
+    if (shop.hours === '24h') return
+    const early = snapshotAt(minuteOf(shop.hours.open) - 1, wearable.price)
+    expect(shopBlockAnywhere(place('rerun-racks'), early, engineConfig)).toMatchObject({
+      code: 'closed',
     })
   })
 })

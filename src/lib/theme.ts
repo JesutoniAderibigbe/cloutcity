@@ -61,6 +61,11 @@ export function scenePalette(): ScenePalette {
       selected: tokenHex(scene.pins.selected),
     },
     chip: { fill: tokenHex(scene.chip.fill), ink: tokenHex(scene.chip.ink) },
+    travel: {
+      taxi: tokenHex(scene.travel.taxi),
+      train: tokenHex(scene.travel.train),
+      trail: tokenHex(scene.travel.trail),
+    },
     toonRamp: [...scene.toonRamp],
   }
 }

@@ -1,7 +1,7 @@
 /**
  * The continuous-rendering window of the runtime step-down (S04b). The map renders on demand
  * (`frameloop="demand"`), so FPS means something only while the scene is meant to animate: a
- * gesture on the map, or a camera flight. Their owners open the window with
+ * gesture on the map, a camera flight, or a trip's animation (S08). Their owners open the window with
  * {@link beginContinuous} and close it with {@link endContinuous}; TierMonitor renders every
  * frame and measures FPS only while it is open (src/scene/quality/TierMonitor.tsx).
  *
@@ -10,7 +10,7 @@
  */
 
 /** What keeps the scene animating. */
-export type ContinuousSource = 'gesture' | 'flight'
+export type ContinuousSource = 'gesture' | 'flight' | 'travel'
 
 const sources = new Set<ContinuousSource>()
 let since: number | null = null

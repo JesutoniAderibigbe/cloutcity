@@ -7,8 +7,8 @@
  *   reward, so a player who already claimed it gets a replay, never a second badge), then the
  *   parts in `prestige.resets` start over. Clout always resets except premium (real-money)
  *   clout, which is kept, folded into the ledger's compacted totals; the ledger's `seq` carries
- *   on so entries stay unique across runs. The flex and event generators keep their state, so a
- *   new run cannot replay the same rolls. Goals always reset, to the next run (`run + 1`), so
+ *   on so entries stay unique across runs. The flex, event and transit-delay generators keep
+ *   their state, so a new run cannot replay the same rolls. The new run starts at home. Goals always reset, to the next run (`run + 1`), so
  *   every goal can be reached and (with `rewardsRepeat`) rewarded again.
  * - The parts in `prestige.keeps` carry over: the personal clock and speed, the grant log (the
  *   audit trail), prestige itself (count, badges, history) and premium clout. The shipped config
@@ -134,6 +134,9 @@ function nextRunPlayer(player: PlayerState, config: EngineConfig): PlayerState {
       placed: keepsInventory ? placementsAfterMove(player.apartment.placed, home, config) : {},
       moveLog: player.apartment.moveLog,
     },
+    // A new run starts at home; the delay roll's generator carries on (no re-rolls).
+    location: fresh.location,
+    transit: player.transit,
   }
   // The new run's level is where its kept clout lands (premium, and the home's base score): no
   // level-up is reported for clout carried over.

@@ -63,6 +63,11 @@
       "fill": "night-800",
       "ink": "ink-300"
     },
+    "travel": {
+      "taxi": "taxi-400",
+      "train": "concrete-400",
+      "trail": "cream-100"
+    },
     "apartment": {
       "background": "charcoal-900",
       "floor": "oak-500",

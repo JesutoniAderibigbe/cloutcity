@@ -5,6 +5,7 @@ import {
   expectStep,
   money,
   targetAction,
+  walkToTarget,
   targetRow,
   tourCard,
   tourNext,
@@ -45,7 +46,8 @@ test('without WebGL the tour leads through the auto-opened Places panel', async 
   await expectStep(page, 'pick')
   await expectRinged(targetRow(page))
   await targetRow(page).click()
-  await expectStep(page, 'buy')
+  // Without WebGL the trip lands at once (no animation to watch).
+  await walkToTarget(page)
   await targetAction(page).click()
   await expectStep(page, 'cash')
   await expect(money(page)).toHaveText('$140')

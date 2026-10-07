@@ -79,3 +79,31 @@ describe('the tour (S06)', () => {
     expect(text).toBe('Paid. Your cash went from $150 to $140.')
   })
 })
+
+describe('the purchase step away from the place (S08)', () => {
+  for (const pack of [null, ...Object.keys(slangPacks)]) {
+    const copy = createCopy(baseCopy, (pack === null ? undefined : slangPacks[pack]) ?? NO_PACK)
+    const names = tourNames(target, snapshot, { copy })
+    const away = tourStepText({ status: 'active', step: 'buy', receipt: null }, names, {
+      copy,
+      here: false,
+    })
+
+    it(`names the "Walk there" button by its own label and fits (${pack ?? 'base'})`, () => {
+      expect(away).toContain(copy('travel.mode.walk.action'))
+      expect(away).toContain(names.action)
+      expect(away.length).toBeLessThanOrEqual(config.maxCharsPerStep)
+    })
+
+    it(`the walking tour, one tap longer, still reads in about ${config.timing.targetSeconds} s (${pack ?? 'base'})`, () => {
+      const chars = texts(pack).reduce(
+        (sum, { step, text }) => sum + (step === 'buy' ? away.length : text.length),
+        0,
+      )
+      const seconds =
+        chars / config.timing.readCharsPerSecond +
+        (TOUR_STEPS.length + 1) * config.timing.secondsPerTap
+      expect(seconds).toBeLessThanOrEqual(config.timing.targetSeconds)
+    })
+  }
+})

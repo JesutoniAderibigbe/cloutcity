@@ -3,6 +3,10 @@ import { copyText, placeName } from './helpers/places'
 import { waitForMapSettled } from './helpers/scene'
 import { reloadControlled, waitForActiveWorker } from './helpers/serviceWorker'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 // S04e: a returning player loads the map once, loses the network, reloads and still plays: the
 // shell, the 3D chunk and the base geo come from the service worker's precache, and a solo
 // action (a deli breakfast through the Places panel) runs entirely on the device.

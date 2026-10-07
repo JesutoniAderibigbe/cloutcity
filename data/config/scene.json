@@ -108,6 +108,17 @@
     "tweenMs": 350,
     "maxDistanceM": 3000
   },
+  "travel": {
+    "taxiLengthRatio": 1.2,
+    "trainLengthRatio": 2.6,
+    "vehicleWidthRatio": 0.45,
+    "vehicleHeightRatio": 0.4,
+    "trailMaxPoints": 64,
+    "trailWidthPx": 3,
+    "trailStepRatio": 0.5,
+    "trailLiftRatio": 0.05,
+    "trailOnLow": false
+  },
   "chips": {
     "widthM": 2400,
     "heightM": 600,

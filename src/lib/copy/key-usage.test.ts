@@ -97,6 +97,8 @@ describe('copy key usage (S05c)', () => {
         'shop',
         'items',
         'inventory',
+        // S08: the "Get there" rows, the trip progress card and the home card.
+        'travel',
       ]),
     )
   })

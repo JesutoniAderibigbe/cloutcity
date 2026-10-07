@@ -61,6 +61,7 @@ export function CityScene() {
     startHome: balance.start.home,
     boundsLocal: boundsToLocal(geoBounds),
     quality: sceneQuality(),
+    travelAnimation: balance.transit.animation,
     overlayRows,
     freeRow: FREE_SCENE_GRID_ROW,
     copy: {

@@ -44,3 +44,19 @@ export function loadGeoBase(url: string): Promise<GeoDownload> {
   }
   return request
 }
+
+let baseUrl: string | null = null
+
+/**
+ * Records the base geo URL the page was rendered with (the scene's mount does, whether or not
+ * WebGL works), so travel can load the subway and land layers from the same, already-fetched
+ * body (src/state/geoSource.ts).
+ */
+export function registerGeoBaseUrl(url: string): void {
+  baseUrl = url
+}
+
+/** The base geo URL, or null before the scene's mount has run. */
+export function geoBaseUrl(): string | null {
+  return baseUrl
+}

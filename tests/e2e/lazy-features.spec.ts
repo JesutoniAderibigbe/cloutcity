@@ -5,6 +5,10 @@ import { ONBOARDING_KEY } from './fixtures/onboarding-seed'
 import { passWelcomeCard, welcomeDialog } from './fixtures/welcome'
 import { waitForMapSettled } from './helpers/scene'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 // S05c (DEC-11): the shell of / carries only the boot path. Every other feature loads in its own
 // chunk on first use, with a loading state inside its overlay zone; the welcome card loads as a
 // boot island while the page behind it stays inert. Chunks outside the shell are held back or

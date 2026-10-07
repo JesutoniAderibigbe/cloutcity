@@ -34,7 +34,7 @@ export function resumeTour(): void {
 
 /**
  * The element each step rings: the HUD, the Places button, the place in the Places panel, its
- * action in the place sheet, the cash in the HUD, and the More button that holds Help.
+ * "Walk there" row and then its action in the place sheet, the cash in the HUD, and the More button that holds Help.
  * `escape` is CSS.escape in the browser.
  */
 export function tourHighlightSelector(
@@ -51,7 +51,11 @@ export function tourHighlightSelector(
     case 'pick':
       return `[data-place-button="${place}"]`
     case 'buy':
-      return `[data-place-sheet="${place}"] [data-place-action="${escape(target.actionId)}"]`
+      // Away from the place (S08) the step rings "Walk there" first, then the purchase.
+      return [
+        `[data-place-sheet="${place}"]:not([data-player-here]) [data-trip-mode="walk"]`,
+        `[data-place-sheet="${place}"][data-player-here] [data-place-action="${escape(target.actionId)}"]`,
+      ].join(',')
     case 'cash':
       return '[data-hud-cell="money"]'
     case 'done':

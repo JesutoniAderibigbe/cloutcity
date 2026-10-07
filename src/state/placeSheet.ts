@@ -12,8 +12,11 @@
 import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
 
-/** Where a place was picked: a tap on its 3D pin, the Places panel, or a test hook. */
-export type PlaceOrigin = 'map' | 'panel' | 'hook'
+/**
+ * Where a place was picked: a tap on its 3D pin, the Places panel, a test hook, or the end of a
+ * trip there (S08: the sheet opens again on arrival, announcing it).
+ */
+export type PlaceOrigin = 'map' | 'panel' | 'hook' | 'travel'
 
 interface PlaceSheetState {
   /** The place whose sheet is open, or null. An unknown id renders nothing and is cleared. */
@@ -72,6 +75,14 @@ const serverOpenCount = () => 0
 /** Changes on every openPlace call, including a repeat pick of the open place. */
 export function usePlaceOpenCount(): number {
   return useSyncExternalStore(placeSheetStore.subscribe, openCountNow, serverOpenCount)
+}
+
+const originNow = () => placeSheetStore.getState().origin
+const serverOrigin = () => null
+
+/** How the open place was picked; null with none, on the server and during hydration. */
+export function usePlaceOrigin(): PlaceOrigin | null {
+  return useSyncExternalStore(placeSheetStore.subscribe, originNow, serverOrigin)
 }
 
 const announcementNow = () => placeSheetStore.getState().announcement

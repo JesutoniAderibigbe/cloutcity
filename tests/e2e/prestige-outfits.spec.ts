@@ -4,6 +4,10 @@ import { expect, test } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
 import { openFromHud } from './helpers/hud'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 /**
  * The place hook is installed and the 3D map has finished starting: on SwiftShader the map's
  * start keeps the main thread busy for seconds (PERF-4), so the overlay checks below wait for

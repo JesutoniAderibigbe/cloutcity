@@ -282,6 +282,8 @@ export const ScenePaletteRefsSchema = z.strictObject({
   }),
   /** The "expanding soon" ground chips. */
   chip: z.strictObject({ fill: tokenRef, ink: tokenRef }),
+  /** Travel (S08): the taxi and subway car the avatar rides in, and the trail behind it. */
+  travel: z.strictObject({ taxi: tokenRef, train: tokenRef, trail: tokenRef }),
   /**
    * The apartment interior (S16): room surfaces, decor second colours, the window pane, slot
    * markers (idle, a slot the held item fits, the selected slot), blob shadows and the static
@@ -326,6 +328,7 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     scene.sunLight,
     ...Object.values(scene.pins),
     ...Object.values(scene.chip),
+    ...Object.values(scene.travel),
     ...Object.values(scene.apartment),
   ]
 }

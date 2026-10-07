@@ -10,7 +10,9 @@ import { formatCount } from '@/lib/format'
 import { tourNames, tourStepText } from '@/lib/tourCopy'
 import { onPlaceActionDone, useOpenPlaceId } from '@/state/placeSheet'
 import { usePlacesPanelShown } from '@/state/placesPanel'
+import { isAtPlace } from '@/engine/game'
 import { gameStore } from '@/state/store'
+import { setArrivalEventsSuppressed } from '@/state/trip'
 import { TOUR_STEPS, isFreshStart, tourStore, type ActiveTour, type TourUi } from '@/state/tour'
 import { TOUR_TARGET, tourConfig, tourHighlightCss, tourHighlightSelector } from './tourControl'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -40,6 +42,13 @@ export function TourHost() {
     const ui: TourUi = { panelShown, openPlaceId }
     tourStore.getState().dispatch({ type: 'ui', ui }, TOUR_TARGET)
   }, [panelShown, openPlaceId])
+
+  // No random event greets an arrival while the tour runs (S06 rule, GR-9).
+  const touring = record?.status === 'active'
+  useEffect(() => {
+    setArrivalEventsSuppressed(touring)
+    return () => setArrivalEventsSuppressed(false)
+  }, [touring])
 
   useEffect(
     () =>
@@ -71,7 +80,8 @@ function TourCard({ record, ui }: { readonly record: ActiveTour; readonly ui: To
     const { clock, player } = gameStore.getState()
     return tourNames(TOUR_TARGET, { clock, player })
   }, [])
-  const text = tourStepText(record, names)
+  const here = useStore(gameStore, (state) => isAtPlace(state.player, TOUR_TARGET.placeId))
+  const text = tourStepText(record, names, { here })
   const highlight = tourHighlightCss(tourHighlightSelector(step, TOUR_TARGET, CSS.escape))
   const number = formatCount(TOUR_STEPS.indexOf(step) + 1)
   const total = formatCount(TOUR_STEPS.length)

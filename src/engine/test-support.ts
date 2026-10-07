@@ -6,6 +6,8 @@ import { cloutLevel, itemClout, legacyCloutState } from './clout'
 import type { EngineConfig } from './config'
 import type { GameSnapshot, PlayerState } from './game'
 import { homeClout } from './home'
+import { buyAtShop, performPlaceAction, placeActions, shopBlock } from './placeActions'
+import type { Place } from './places'
 
 /**
  * `player` holding `total` clout: earned clout becomes one folded legacy entry (less what their
@@ -32,4 +34,42 @@ export function withClout(
   config: EngineConfig,
 ): GameSnapshot {
   return { ...snapshot, player: playerWithClout(snapshot.player, total, config) }
+}
+
+/** `snapshot` with the player standing at the place `placeId` (DEC-22: its actions need them there). */
+export function atPlace<S extends GameSnapshot>(snapshot: S, placeId: string): S {
+  return { ...snapshot, player: { ...snapshot.player, location: { kind: 'place', placeId } } }
+}
+
+/**
+ * The place rules as the player sees them standing at the place (DEC-22): for tests about a
+ * place's own rules (hours, door, funds, limits), not about getting there.
+ */
+export function placeActionsHere(place: Place, snapshot: GameSnapshot, config: EngineConfig) {
+  return placeActions(place, atPlace(snapshot, place.id), config)
+}
+
+/** `performPlaceAction` standing at the place (see `placeActionsHere`). */
+export function performPlaceActionHere(
+  snapshot: GameSnapshot,
+  place: Place,
+  actionId: string,
+  config: EngineConfig,
+) {
+  return performPlaceAction(atPlace(snapshot, place.id), place, actionId, config)
+}
+
+/** `shopBlock` standing at the place (see `placeActionsHere`). */
+export function shopBlockHere(place: Place, snapshot: GameSnapshot, config: EngineConfig) {
+  return shopBlock(place, atPlace(snapshot, place.id), config)
+}
+
+/** `buyAtShop` standing at the place (see `placeActionsHere`). */
+export function buyAtShopHere(
+  snapshot: GameSnapshot,
+  place: Place,
+  itemId: string,
+  config: EngineConfig,
+) {
+  return buyAtShop(atPlace(snapshot, place.id), place, itemId, config)
 }

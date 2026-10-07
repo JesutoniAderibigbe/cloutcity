@@ -4,8 +4,10 @@ import { engineConfig } from '@/engine/config'
 import { homeClout } from '@/engine/home'
 import { placeActions } from '@/engine/placeActions'
 import { findPlace } from '@/lib/world/places'
-import { closePlace, openPlace } from '@/state/placeSheet'
+import type { PlayerLocation } from '@/engine/game'
+import { closePlace, onPlacePicked, openPlace } from '@/state/placeSheet'
 import { gameStore } from '@/state/store'
+import { HOME_SPOT_ID } from '@/state/trip'
 
 /**
  * Test-only hook so Playwright can open any place by id and set up the player
@@ -15,10 +17,17 @@ import { gameStore } from '@/state/store'
  * the place into view), the same entry point the 3D pins and Places panel use, and actions still
  * run through the engine. The setters write the local
  * save directly, which anyone with devtools can already do.
+ *
+ * Location (S08, DEC-22): a place's actions need the player there. Specs about a place's own
+ * rules run with the e2e fixture option `location: 'follow'`, which sets
+ * `window.__CLOUTCITY_E2E_LOCATION__ = 'follow'`: every place picked (pin, panel, hook) then
+ * puts the player there, as if they had travelled. The default, `home`, plays it straight.
  */
 export interface PlaceTestHook {
-  /** Opens a place's sheet; false (and nothing opens) when no place has that id. */
+  /** Opens a place's sheet (or the home card, `home`); false when no place has that id. */
   open(placeId: string): boolean
+  /** Puts the player at a place, or at home with `home`, without travelling. */
+  setLocation(placeId: string): void
   close(): void
   /** Moves the personal clock forward to the next `minuteOfDay` (0..1439). */
   setTimeOfDay(minuteOfDay: number): void
@@ -38,6 +47,7 @@ export interface PlaceTestHook {
     readonly minute: number
     readonly minuteOfDay: number
     readonly stats: { readonly energy: number; readonly hunger: number; readonly mood: number }
+    readonly location: PlayerLocation
   }
   /** The engine's view of a place's actions, so specs assert against config, not literals. */
   actions(placeId: string): readonly {
@@ -53,6 +63,8 @@ export interface PlaceTestHook {
 declare global {
   interface Window {
     __CLOUTCITY_E2E__?: boolean
+    /** `follow`: picking a place puts the player there (see PlaceTestHook). */
+    __CLOUTCITY_E2E_LOCATION__?: 'follow' | 'home'
     __cloutcityPlaces?: PlaceTestHook
   }
 }
@@ -63,14 +75,30 @@ const wholeNonNegative = (value: number, what: string) => {
   }
 }
 
+const locationOf = (placeId: string): PlayerLocation =>
+  placeId === HOME_SPOT_ID ? { kind: 'home' } : { kind: 'place', placeId }
+
+function setLocation(placeId: string): void {
+  if (placeId !== HOME_SPOT_ID && findPlace(placeId) === undefined) {
+    throw new Error(`No place "${placeId}"`)
+  }
+  const { player } = gameStore.getState()
+  gameStore.setState({ player: { ...player, location: locationOf(placeId) } })
+}
+
 export function installPlaceTestHook(): void {
   if (window.__CLOUTCITY_E2E__ !== true) return
+  if (window.__CLOUTCITY_E2E_LOCATION__ === 'follow') {
+    // Runs inside openPlace, before the sheet renders: it opens with the player already there.
+    onPlacePicked((placeId) => setLocation(placeId))
+  }
   window.__cloutcityPlaces = {
     open: (placeId) => {
-      if (findPlace(placeId) === undefined) return false
+      if (placeId !== HOME_SPOT_ID && findPlace(placeId) === undefined) return false
       openPlace(placeId, { origin: 'hook' })
       return true
     },
+    setLocation,
     close: closePlace,
     setTimeOfDay: (minuteOfDay) => {
       const perDay = minutesPerDay(engineConfig)
@@ -107,6 +135,7 @@ export function installPlaceTestHook(): void {
         minute: clock.minute,
         minuteOfDay: calendar(clock.minute, engineConfig).minuteOfDay,
         stats: player.stats,
+        location: player.location,
       }
     },
     actions: (placeId) => {

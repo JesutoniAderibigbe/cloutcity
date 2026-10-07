@@ -10,11 +10,17 @@ import { copy as activeCopy, type CopyFn, type CopyKey } from './copy'
 import { formatMoney } from './format'
 import { placeActionName } from './world/placeActionCopy'
 import { findPlace, placeName } from './world/places'
+import { tripModeAction } from './world/travelCopy'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/tour'
 
 export interface TourCopyOptions {
   readonly copy?: CopyFn
+  /**
+   * Whether the player stands at the tour's place (S08, DEC-22). Away, the purchase step first
+   * points at walking there, in the same step.
+   */
+  readonly here?: boolean
 }
 
 /** The names the tour shows for its target: the place, and the action bought there. */
@@ -58,14 +64,20 @@ const STEP_KEYS: Readonly<Record<TourStep, CopyKey>> = {
 export function tourStepText(
   record: ActiveTour,
   names: TourNames,
-  { copy = activeCopy }: TourCopyOptions = {},
+  options: TourCopyOptions = {},
 ): string {
+  const { copy = activeCopy, here = true } = options
   const key = STEP_KEYS[record.step]
   switch (record.step) {
     case 'pick':
       return copy(key, { place: names.place })
     case 'buy':
-      return copy(key, { action: names.action })
+      return here
+        ? copy(key, { action: names.action })
+        : copy('tour.step.buyAway', {
+            walk: tripModeAction('walk', { copy }),
+            action: names.action,
+          })
     case 'cash': {
       // The cash step always carries its receipt (src/state/tour.ts); without one there is
       // nothing true to say about the purchase, so the line falls back to the last step's.
