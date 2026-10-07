@@ -355,6 +355,17 @@
       "attempts": 1
     },
     {
+      "id": "S50",
+      "phase": 2,
+      "title": "Explore: filters, search, happening now",
+      "requires": [],
+      "acceptance": "Category chips (coffee, food, parks, landmarks, nightlife, culture, job sites) and text search over the Places panel, keyboard accessible; a 'Happening now' chip listing S34 live events with countdown (shown once S34 lands); the map pin filter mirrors the panel; lazy chunk within shell and perf budgets (DEC-11). Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
       "id": "S13",
       "phase": 3,
       "title": "Clout, style, flex, levels",
@@ -409,6 +420,105 @@
       ],
       "acceptance": "A modular low-poly 3D avatar (code-built or CC0 parts listed in SOURCES.md) within per-tier triangle budgets, used on the map and in the apartment; guests start immediately with a randomized avatar and never meet the creator before first play; after the first action the creator is offered (skippable, always reachable from the HUD) with the flow Look, Traits, Dream (career path: influencer, streamer, artist/DJ, founder/hustler), Neighborhood roll (dice reveal among Queens start neighborhoods), Home; option and roll copy is generated from the same data that drives the options (GR-10); Hair, Facial hair, Accessories, Skin and Outfit are separate categories (GR-12); every swatch has a human colour name (A11Y-1); career path sets the goal line copy and a path-tagged bonus from config, and the S12 bot meets its targets for every path; native controls clicked in e2e; tests.",
       "review": true,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S36",
+      "phase": 3,
+      "title": "Needs, moodlets and working home objects",
+      "requires": [],
+      "acceptance": "Needs in /data/config: energy, hunger, fun, social, hygiene (bladder only if the user approves); decay on the personal game clock only, pausing while hidden and never draining while away (GR-20). Moodlets from /data with source, size and game-minute expiry, listed with plain numbers in a 'Why you feel this way' sheet. Home objects work: fridge/stove (eat, cook from a pantry), bed (sleep), shower (hygiene), desk/guitar (skill hooks for S39), each usable by tapping in 3D or from an equivalent DOM list (A11Y-3). Groceries bought at bodegas; home delivery costs a fee. Optional 'Free will' setting (off by default) uses one home object when a need is critical, spending at most a config amount. No humiliating moodlet or event; nightlife moodlets never come from drinking. Unit tests: decay, hidden pause, stacking, expiry; S12 bot meets targets with needs on. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S37",
+      "phase": 3,
+      "title": "Daily Drop riddle hunt",
+      "requires": [],
+      "acceptance": "Each New York day one riddle (copy generated from place data, GR-10) points to a non-memorial, non-government landmark or venue, seeded and server-chosen when online. Up to two hints unlock at config city times. 'Search here' costs a little energy with a config daily attempt cap. Every finder gets the same capped cash and clout grant; early finders get only a cosmetic badge tier. Finder counts come from real server finds only (UX-3). Offline it runs on device time and rewards are re-validated by S18c. Tests: memorial exclusion, grant idempotency, attempt cap, city-time rollover across DST. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S38",
+      "phase": 3,
+      "title": "Wishes and Perks",
+      "requires": [],
+      "acceptance": "Three rotating wishes drawn from /data with conditions; swapping one costs perk points. Perk points come only from wishes, goals and promotions via the grant function and are never sold, premium or transferable. A perk shop sells permanent, config-capped buffs. Perk points and buffs never count toward goal clout (ECON-1). S18c plausibility covers perk ownership. Tests: swap cost, caps, no premium path grants points. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S39",
+      "phase": 3,
+      "title": "Skills and career ladders",
+      "requires": [],
+      "acceptance": "Skills in /data (charisma, fitness, creativity, music, coding, cooking, hustle), levels 0–10 raised by home objects, venue classes and shifts. Every career path and day job has a promotion ladder in /data/jobs (title, wage, skill or clout requirement). Promotions fast-forward like shifts (no real-time waits, GR-24). Locked rungs explain why in their accessible name. S12 bot meets targets on every path; reruns log wage tuning. Unit tests: promotion gates, skill gain. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S40",
+      "phase": 3,
+      "title": "Buy mode 2.0: grid, paint, floors, wardrobe",
+      "requires": [],
+      "acceptance": "Placement grid per home tier with footprints (1×1, 2×1, wall); move, rotate, sell and storage by tap or keyboard/DOM (A11Y-3). At least 10 furniture categories from CC0 packs within budgets. Wall paint and floor finishes with try-before-buy, visible to visitors (S45). Outfits by occasion (everyday, work, gym, sleep, night out). Colour variants have human names (A11Y-1). Rare luxury items carry weekly upkeep from config as cash sinks. Sale values depreciate and buy-sell loops cannot farm clout (S13 test extended). Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S41",
+      "phase": 3,
+      "title": "Side hustles and small businesses",
+      "requires": [],
+      "acceptance": "Buyable NPC-customer hustles from /data (coffee cart, sneaker resale stall, studio time, food truck, founder pitch to NPC investors), each paying seeded, config-bounded nightly income on the personal clock with upkeep and occasional mild bad days. No player buys from, works for or pays another player. Payback period shown honestly. S12 bot still lands the first upgrade between game day 10 and 14; owning every hustle stays within bounds. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S42",
+      "phase": 3,
+      "title": "Personal transport",
+      "requires": [],
+      "acceptance": "New modes in config: bike share (dock fee), owned e-bike, used car (weekly parking and insurance), Staten Island ferry when unlocked. An owned vehicle changes S08 time and cost. Delivery-bike and cab shifts are S11 jobs using the owned vehicle. Generic models, no brands or liveries. Travel fast-forwards (reduced motion cuts). Unit tests: mode choice, upkeep. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S43",
+      "phase": 3,
+      "title": "Bank, bills and money history",
+      "requires": [],
+      "acceptance": "Bank sheet: balance, weekly bills (rent, upkeep, parking) with due day, money history from the ledger. Optional savings with capped config interest on the personal clock. Every number via formatMoney; comparisons computed from data (GR-11). No loans for real money. S12 bot within bounds. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S44",
+      "phase": 3,
+      "title": "Origin story and more homes",
+      "requires": [],
+      "acceptance": "Origin: a dice reveal picks one of N backgrounds from /data with different starting cash and modifiers, shown once and locked per run (re-rolled only by prestige), never re-rolled via social posts or referrals; S12 bot meets targets for every origin; copy generated from data (GR-10). Homes: 3–4 per unlocked borough in /data/homes, move-in deposit from config, furniture moves with you, prices rounded and comparisons computed (GR-11), locked homes explain why; S12 targets hold. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
       "passes": false,
       "blocked": false,
       "attempts": 0
@@ -568,6 +678,78 @@
       "attempts": 0
     },
     {
+      "id": "S46",
+      "phase": 4,
+      "title": "Clout leaderboards",
+      "requires": [
+        "supabase"
+      ],
+      "acceptance": "Weekly, all-time and friends boards ranked by server-accepted earned clout, excluding grant and premium clout (ECON-1, DEC-13); never ranked by cash. Ties shared with a deterministic tie-break (GR-22). Per-career-path filter. Opt-out via ghost/privacy. Cached server-side. Counts via the shared compact formatter. Tests: tampered save, premium-only account, tie ordering. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S47",
+      "phase": 4,
+      "title": "Updates inbox and opt-in push",
+      "requires": [
+        "supabase"
+      ],
+      "acceptance": "One Updates inbox (goals, rent, live events, friend requests) with a config badge cap and no '99+' floods (GR-21); fresh accounts start with ≤3 items (GR-9). Web push offered only after a win, per category (rent due, friend online, event starting), with quiet hours and a daily cap from config; push never contains chat text; settings mirrored to the server. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S48",
+      "phase": 4,
+      "title": "Settings, help and account hub",
+      "requires": [],
+      "acceptance": "Help and guide sheet (static FAQ from /data/copy); replay tour; keyboard shortcuts sheet (also via '?'); 'Clean screen' HUD toggle; QR code for the invite link; contact support (filtered form, email shown as text); ghost mode and live-feed visibility; 'Start a new life' with typed confirmation that keeps premium entitlements; export my data (deletion is S19a). Everything within 2 taps of the HUD. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S49",
+      "phase": 4,
+      "title": "Badges, postcards and Wrapped",
+      "requires": [],
+      "acceptance": "Badges in /data (first paycheck, all-borough tourist, 10 landmark postcards, Daily Drop finds) granted idempotently. Postcard collection: first photo at each non-memorial landmark. Weekly or seasonal 'Your NYC Wrapped' 9:16 card via S22 OG routes, own stats only, never other players' handles. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S51",
+      "phase": 4,
+      "title": "The Clout Times, live feed and weather",
+      "requires": [
+        "supabase"
+      ],
+      "acceptance": "A daily in-voice newspaper generated from data: city events, live events, simulated NYC weather and season, top weekly clout (opt-in handles only); no player free text. Landing page and HUD can show an enum-only activity feed ('@handle reached Known') only for opted-in players; default off. Weather shown in the HUD (simulated). Copy never mocks a group; memorial respectful info only. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S53",
+      "phase": 4,
+      "title": "Gentle daily streak",
+      "requires": [],
+      "acceptance": "One small capped grant a day after any meaningful action; streak counter with config free skip days (no loss aversion); resets on New York time; re-validated by S18c. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
       "id": "S29",
       "phase": 5,
       "title": "Zones, shards, and server-authored presence",
@@ -659,6 +841,45 @@
       ],
       "acceptance": "A script (npm run sim:realtime) runs at least 50 simulated clients against local Supabase across several zones and measures messages per player-minute, join rate and snapshot latency; a test fails if messages per player-minute exceed realtime.budgetMsgsPerPlayerMinute in config or if any client exceeds server rate limits without being refused; the run writes a cost projection (monthly messages and connections at 100, 1,000 and 5,000 average concurrent players, using the Supabase pricing recorded in CLAUDE.md) to progress.md; abuse cases tested: rapid move spam, zone-hop spam, joining a full shard, and reconnect storms.",
       "review": true,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S45",
+      "phase": 5,
+      "title": "Home visits and house parties",
+      "requires": [
+        "supabase"
+      ],
+      "acceptance": "A host opens their home to accepted friends, or creates a host-approved invite link with config caps (default 10 uses, 24 h, 5 guests); every entry needs a 'Let them in' tap; non-friend guests can only send preset emotes (whether links admit non-friends is a user decision). Block, mute, report and kick on every guest. Visitors see the room only, never cash or inventory. Home location shown only as a borough tier label. Guest list from server presence; ghost-mode hosts not listed. A 'Neighbours' list shows only friends who are home. Two-browser e2e: visit, approve, kick, block. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S52",
+      "phase": 5,
+      "title": "Seasons, event passport and bingo",
+      "requires": [
+        "supabase"
+      ],
+      "acceptance": "Each S34 live event awards a passport stamp once (presence-verified, minimum stay from config). A seasonal bingo card from /data gives cosmetic and badge rewards via the grant function. No paid pass. No geolocation; check-ins are in-game only. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S54",
+      "phase": 5,
+      "title": "Flex billboards",
+      "requires": [
+        "supabase"
+      ],
+      "acceptance": "Rent a Times Square or Brooklyn billboard slot for one game day with in-game cash only (a sink). Shows the renter's handle, server-validated avatar and a preset slogan from /data/copy; no uploads, links or free text. Slots capped per player per week. Reportable with S18b auto-hide. Never near the memorial. Grants no clout beyond a config cap. Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); no player-to-player cash, item or trading; the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "review": false,
       "passes": false,
       "blocked": false,
       "attempts": 0
