@@ -275,7 +275,7 @@
       "requires": [],
       "acceptance": "Inside the S09 location action sheet (lazy-loaded per DEC-11): boutique and thrift venues show a shop listing every for-sale item with copy name, slot, rarity, price via formatMoney and a Buy button whose disabled state explains why (owned, can't afford: shortfall) in its accessible name; an inventory panel reachable from the HUD lists owned wearables and gifts with Equip/Unequip, Sell (showing the current resale value) and Use on yourself; job-site and other job venues offer Work a shift for each job they list, with locked jobs showing the why-locked copy in the button's accessible name and an out-of-energy state; rent status (next due day, amount owed, last rent notice) shows in a HUD or phone panel using the S11 copy helpers; every action goes through the store and shows the engine's outcome or typed error in voice; all controls are native, 44 px targets, axe-clean, inside the overlay system (UX-1); Playwright on mobile-390 and desktop-1280 buys an item, equips it, sells it, works a shift and sees cash and clock change, and sees a rent payment notice after advancing past a rent day via a test hook.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
