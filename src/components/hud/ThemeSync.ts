@@ -37,15 +37,28 @@ export function glassMode(input: {
 /** Pending end of a cross-fade, so a quick second switch restarts it. */
 let fadeTimer: ReturnType<typeof setTimeout> | undefined
 
+/** Remembers the theme for pages without the clock (StoredTheme): /credits, /terms, /offline. */
+function storeUiTheme(theme: UiTheme): void {
+  try {
+    localStorage.setItem(UI_THEME_KEY, theme)
+  } catch (error) {
+    // Storage can be off (private mode, quota): the other pages then show day.
+    log.debug('ui theme not stored', { error: error instanceof Error ? error.name : 'unknown' })
+  }
+}
+
 /**
  * Puts `theme` on the root element (and the browser's theme colour), cross-fading over
- * `fadeMs` unless `instant`. A no-op when the root already shows it.
+ * `fadeMs` unless `instant`, and stores it. When the root already shows it (a day load after the
+ * server's day HTML) only the store is written: a night left stored from the last session would
+ * otherwise keep the other pages dark (UI-2).
  */
 export function applyUiTheme(
   root: HTMLElement,
   theme: UiTheme,
   options: { readonly fadeMs: number; readonly instant: boolean; readonly themeColor: string },
 ): void {
+  storeUiTheme(theme)
   if (root.dataset.theme === theme) return
   if (fadeTimer !== undefined) clearTimeout(fadeTimer)
   fadeTimer = undefined
@@ -61,12 +74,6 @@ export function applyUiTheme(
       root.removeAttribute('data-theme-fading')
       fadeTimer = undefined
     }, options.fadeMs)
-  }
-  try {
-    localStorage.setItem(UI_THEME_KEY, theme)
-  } catch (error) {
-    // Storage can be off (private mode, quota): the other pages then show day.
-    log.debug('ui theme not stored', { error: error instanceof Error ? error.name : 'unknown' })
   }
 }
 

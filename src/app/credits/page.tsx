@@ -5,6 +5,7 @@ import { modelCredits } from '@/lib/data/models'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/credits'
 import { StoredTheme } from '@/components/legal/StoredTheme'
+import { uiThemeClock } from '@/lib/theme'
 
 export const metadata: Metadata = { title: copy('credits.title') }
 
@@ -27,7 +28,7 @@ export default function CreditsPage() {
     // The shell locks page scroll (globals.css), so this page scrolls inside its own box.
     <div className="h-full overflow-y-auto overscroll-contain">
       <main className="mx-auto max-w-2xl px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <StoredTheme />
+        <StoredTheme themeColor={uiThemeClock().themeColor} />
         <h1 className="text-2xl font-extrabold tracking-tight text-fg">{copy('credits.title')}</h1>
         <p className="mt-2 text-sm text-muted">{copy('credits.intro')}</p>
         {SECTIONS.map((section) => (

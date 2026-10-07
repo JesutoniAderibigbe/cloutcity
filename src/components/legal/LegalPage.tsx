@@ -3,6 +3,7 @@ import { copy, copyParts, type CopyKey } from '@/lib/copy'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/legal'
 import { StoredTheme } from './StoredTheme'
+import { uiThemeClock } from '@/lib/theme'
 
 /** A link a paragraph's `{slot}` placeholder stands for. */
 export interface LegalLink {
@@ -55,7 +56,7 @@ function LinkedText({
 export function LegalPage({ titleKey, paragraphKeys, sections = [], links = {} }: LegalPageProps) {
   return (
     <main className="h-full overflow-y-auto overscroll-contain px-4 py-8">
-      <StoredTheme />
+      <StoredTheme themeColor={uiThemeClock().themeColor} />
       <article className="mx-auto flex max-w-prose flex-col gap-4">
         <p
           role="note"

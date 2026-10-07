@@ -60,9 +60,34 @@ test('a night save turns the interface dark once the HUD has read it', async ({ 
   expect(await themeColorMeta(page)).toBe(theme.colors[theme.themeColor.night])
   const scheme = await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme)
   expect(scheme).toBe('dark')
-  // The legal pages show the theme the game last showed.
-  await page.goto('/terms')
-  await expect.poll(() => rootTheme(page)).toBe('night')
+  // The legal pages and the offline page show the theme the game last showed, browser chrome
+  // included (UI-14).
+  for (const path of ['/terms', '/credits', '/offline']) {
+    await page.goto(path)
+    await expect.poll(() => rootTheme(page), path).toBe('night')
+    await expect.poll(() => themeColorMeta(page), path).toBe(theme.colors[theme.themeColor.night])
+  }
+})
+
+test('a day load after a night session stores day, so the other pages open light (UI-2)', async ({
+  page,
+}) => {
+  // The last session ended at night; the server's HTML is already day, so nothing switches.
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('theme-seeded') !== null) return
+    sessionStorage.setItem('theme-seeded', '1')
+    localStorage.setItem('cloutcity:ui-theme', 'night')
+  })
+  await bootAt(page, at(12))
+  await expect.poll(() => rootTheme(page)).toBe('day')
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('cloutcity:ui-theme')))
+    .toBe('day')
+  for (const path of ['/credits', '/terms']) {
+    await page.goto(path)
+    await expect.poll(() => rootTheme(page), path).toBe('day')
+    expect(await themeColorMeta(page), path).toBe(theme.colors[theme.themeColor.day])
+  }
 })
 
 test('the interface switches at dusk with the scene, cross-fading, with no layout shift', async ({
