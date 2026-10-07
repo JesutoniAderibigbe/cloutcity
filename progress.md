@@ -131,6 +131,9 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - Never `pkill -f next-server` (or any pattern-wide kill): it stops every lane's servers and the user's
   preview. Stop only your own process by PID or by its port (`lsof -tiTCP:<port> -sTCP:LISTEN`).
 
+- Day/night (DEC-15): city lighting follows the personal game clock; task S04f added after S04d to the
+  playable slice. The UI stays dark always.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.

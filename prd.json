@@ -120,6 +120,19 @@
       "attempts": 0
     },
     {
+      "phase": 1,
+      "id": "S04f",
+      "title": "Day/night cycle on the personal game clock",
+      "acceptance": "The 3D city's lighting follows the player's personal game clock (user decision 2026-10-07): a stylised sky gradient, sun direction and colour, and ambient and hemisphere light interpolate between config keyframes (dawn, day, golden hour, dusk, night) in scene.json; the scene re-evaluates lighting only when the game minute changes (frameloop stays on demand, zero idle frames); at night building windows (S04d) and streetlight and landmark accents glow with flat emissive per tier, never on the memorial; the UI theme stays dark and is unaffected; reduced motion steps between keyframes instead of blending; draw calls, triangles and shader programs stay within perf.json for every tier; unit tests cover keyframe interpolation at boundaries and midnight wrap; Playwright screenshots at 08:00, golden hour, 21:00 and 03:00 via a seeded clock prove the look, and the console guard passes.",
+      "requires": [
+        "webgl"
+      ],
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
       "id": "S04e",
       "phase": 1,
       "title": "Offline and caching",
