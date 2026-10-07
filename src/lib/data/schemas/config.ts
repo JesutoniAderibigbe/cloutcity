@@ -32,88 +32,208 @@ export const ThrottleProfileSchema = z.strictObject({
   cpuSlowdown: z.number().min(1),
   viewport: z.strictObject({ width: positiveInt, height: positiveInt }),
 })
+export type ThrottleProfile = z.infer<typeof ThrottleProfileSchema>
+
+/** True when `source` compiles as a case-insensitive regular expression. */
+function compiles(source: string): boolean {
+  try {
+    new RegExp(source, 'i')
+    return true
+  } catch {
+    return false
+  }
+}
+
+const rendererPatterns = z
+  .array(z.string().min(1).refine(compiles, { error: 'must be a valid regular expression' }))
+  .min(1)
+
+/** Device signals the tier picker compares against thresholds; each may be unknown on a device. */
+const TierSignalThresholdsSchema = z.strictObject({
+  maxTextureSize: positiveInt,
+  /** `navigator.deviceMemory` (GB; browsers report 0.25 to 8 in powers of two). */
+  deviceMemoryGb: positive,
+  /** `navigator.hardwareConcurrency`. */
+  cores: positiveInt,
+})
 
 /**
- * Every row of CLAUDE.md "Performance budgets". Sizes are gzipped KB (1 KB = 1000 bytes, so
- * 1.2 MB = 1200 KB); times are milliseconds.
+ * The automatic tier picker (S04b, src/lib/quality/tier.ts). Renderer patterns are
+ * case-insensitive regular expressions matched against the WebGL renderer string. TUNE-6
+ * placeholders until checked on real devices.
  */
-export const PerfConfigSchema = z.strictObject({
-  /** Shell JS of route `/`, before the 3D chunk. Read by `npm run budget`. */
-  shellJsGzKB: positive,
-  /**
-   * Room the shell keeps below `shellJsGzKB` for features still to land (S05c): the shell may
-   * use at most shellJsGzKB minus this. Read by scripts/shell-guard.ts.
-   */
-  shellHeadroomGzKB: z.number().nonnegative(),
-  sceneChunkJsGzKB: positive,
-  /**
-   * The apartment's 3D chunk (S16, `cc-feature:apartment-scene`): loaded when the Home panel
-   * opens, so `npm run budget` reports it on its own and leaves it out of the 3D chunk counted
-   * before the map is playable.
-   */
-  apartmentChunkJsGzKB: positive,
-  totalJsToPlayableGzKB: positive,
-  baseGeoGzKB: positive,
-  districtBuildingsGzKB: perTier(positive),
-  /** Audio excluded: it loads after the player's choice. */
-  totalBytesToPlayableGzKB: perTier(positive),
-  shellInteractiveColdMs: positive,
-  playableColdMs: perTier(positive),
-  playableWarmMs: positive,
-  /** `renderer.info.render.calls` at the default Queens-start camera. */
-  drawCallsMax: perTier(positiveInt),
-  trianglesMax: perTier(positiveInt),
-  /**
-   * The apartment interior (S16), per tier: `renderer.info.render` draw calls and triangles of
-   * the room with every slot filled. `avatarReserve` is kept free inside both caps for the 3D
-   * avatar standing in the room (S16a), so the room alone must stay within the cap minus it.
-   */
-  apartment: z
-    .strictObject({
-      drawCallsMax: perTier(positiveInt),
-      trianglesMax: perTier(positiveInt),
-      avatarReserve: z.strictObject({ drawCalls: positiveInt, triangles: positiveInt }),
-    })
-    .refine(
-      (a) =>
-        QUALITY_TIERS.every(
-          (tier) =>
-            a.avatarReserve.drawCalls < a.drawCallsMax[tier] &&
-            a.avatarReserve.triangles < a.trianglesMax[tier],
-        ),
-      { error: 'the avatar reserve must leave room for the apartment in every tier' },
-    ),
-  dprCap: perTier(positive),
-  /** `pcf-directional` means one directional light with PCFShadowMap, never PCFSoftShadowMap. */
-  shadows: perTier(z.enum(['none', 'blob-or-baked', 'pcf-directional'])),
-  otherPlayersMax: perTier(z.int().nonnegative()),
-  otherPlayersStyle: perTier(z.enum(['billboard', 'model'])),
-  /** Real reference device only (human/qa check); headless CI cannot measure FPS. */
-  medianFpsMin: perTier(positive),
-  /** Idle renders zero frames (`frameloop="demand"`). */
-  idleFramesMax: z.literal(0),
-  /** Step down one tier when average FPS stays below `belowFps` for `sustainMs`. */
-  fpsStepDown: z.strictObject({ belowFps: positive, sustainMs: positive }),
-  throttleProfiles: z.strictObject({ 'cc-mid-4g': ThrottleProfileSchema }),
-  /**
-   * Audio fetched after the player's sound choice, per tier: the first music track, the ambience
-   * loop and (where the tier preloads them) the sound effects, in one encoding. Audio is not part
-   * of `totalBytesToPlayableGzKB`.
-   */
-  audioLazyGzKB: perTier(positive),
-  /** Largest single audio file. */
-  audioFileMaxKB: positive,
-  /** The lazily loaded audio runtime chunk (src/lib/audio/runtime.ts). */
-  audioRuntimeJsGzKB: positive,
-  /** The service worker script, /serwist/sw.js (S04e). Read by `npm run budget`. */
-  serviceWorkerGzKB: positive,
-  /**
-   * Everything the service worker precaches on install (static JS/CSS/SVG/fonts, icons, pages,
-   * base geo, the fallback map), gzipped. Fetched in the background after the map is playable,
-   * so it is not part of `totalBytesToPlayableGzKB`. Read by `npm run budget`.
-   */
-  precacheGzKB: positive,
+export const TierPickerSchema = z
+  .strictObject({
+    /** A renderer matching any of these is low (software rasterisers, old mobile GPUs). */
+    lowRendererPatterns: rendererPatterns,
+    /** High needs a renderer matching one of these, plus every known signal at `highAtLeast`. */
+    highRendererPatterns: rendererPatterns,
+    /** A known signal strictly below its value makes the device low. */
+    lowBelow: TierSignalThresholdsSchema,
+    /** Each known signal must be at least this for high. */
+    highAtLeast: TierSignalThresholdsSchema,
+  })
+  .refine(
+    (picker) =>
+      (Object.keys(picker.lowBelow) as (keyof typeof picker.lowBelow)[]).every(
+        (signal) => picker.highAtLeast[signal] >= picker.lowBelow[signal],
+      ),
+    { error: 'highAtLeast must not be below lowBelow', path: ['highAtLeast'] },
+  )
+export type TierPicker = z.infer<typeof TierPickerSchema>
+
+/**
+ * Runtime step-down (drei PerformanceMonitor): FPS is averaged over `sampleMs` windows, and one
+ * tier is dropped when more than `threshold` of the `sustainMs / sampleMs` windows are below
+ * `belowFps`. Hysteresis: at most `maxSteps` drops per session, `cooldownMs` apart, and never an
+ * automatic step up.
+ */
+export const FpsStepDownSchema = z
+  .strictObject({
+    belowFps: positive,
+    sustainMs: positiveInt,
+    sampleMs: positiveInt,
+    threshold: z.number().gt(0).max(1),
+    cooldownMs: z.int().nonnegative(),
+    maxSteps: z
+      .int()
+      .nonnegative()
+      .max(QUALITY_TIERS.length - 1),
+  })
+  .refine((rule) => rule.sustainMs % rule.sampleMs === 0, {
+    error: 'sustainMs must be a whole number of sampleMs windows',
+    path: ['sustainMs'],
+  })
+export type FpsStepDown = z.infer<typeof FpsStepDownSchema>
+
+/** How `npm run e2e:perf` measures (S04b). */
+export const PerfRunSchema = z.strictObject({
+  /** Cold loads per measurement; the median is asserted, so the count is odd. */
+  coldRuns: positiveInt.refine((runs) => runs % 2 === 1, { error: 'must be odd' }),
+  /** The tier forced for the cold-load timings. */
+  coldTier: QualityTierSchema,
+  /** A key of `throttleProfiles`. */
+  profile: z.string().min(1),
+  /** Measuring waits until the 1-minute load average per CPU core is at most this. */
+  maxLoadPerCore: positive,
+  loadWaitMaxMs: positiveInt,
+  loadPollMs: positiveInt,
+  /** How long a run waits for another checkout's perf run to release the machine-wide lock. */
+  lockWaitMaxMs: positiveInt,
 })
+export type PerfRun = z.infer<typeof PerfRunSchema>
+
+/**
+ * Every row of CLAUDE.md "Performance budgets", plus the per-tier render settings and the quality
+ * tier rules (S04b). Sizes are gzipped KB (1 KB = 1000 bytes, so 1.2 MB = 1200 KB); times are
+ * milliseconds.
+ */
+export const PerfConfigSchema = z
+  .strictObject({
+    /** Shell JS of route `/`, before the 3D chunk. Read by `npm run budget`. */
+    shellJsGzKB: positive,
+    /**
+     * Room the shell keeps below `shellJsGzKB` for features still to land (S05c): the shell may
+     * use at most shellJsGzKB minus this. Read by scripts/shell-guard.ts.
+     */
+    shellHeadroomGzKB: z.number().nonnegative(),
+    sceneChunkJsGzKB: positive,
+    /**
+     * The apartment's 3D chunk (S16, `cc-feature:apartment-scene`): loaded when the Home panel
+     * opens, so `npm run budget` reports it on its own and leaves it out of the 3D chunk counted
+     * before the map is playable.
+     */
+    apartmentChunkJsGzKB: positive,
+    /** Shell JS, the boot islands and the 3D chunk, each file once. */
+    totalJsToPlayableGzKB: positive,
+    baseGeoGzKB: positive,
+    districtBuildingsGzKB: perTier(positive),
+    /** Audio excluded: it loads after the player's choice. */
+    totalBytesToPlayableGzKB: perTier(positive),
+    shellInteractiveColdMs: positive,
+    playableColdMs: perTier(positive),
+    playableWarmMs: positive,
+    /** `renderer.info.render.calls` at the default Queens-start camera. */
+    drawCallsMax: perTier(positiveInt),
+    trianglesMax: perTier(positiveInt),
+    /**
+     * The apartment interior (S16), per tier: `renderer.info.render` draw calls and triangles of
+     * the room with every slot filled. `avatarReserve` is kept free inside both caps for the 3D
+     * avatar standing in the room (S16a), so the room alone must stay within the cap minus it.
+     */
+    apartment: z
+      .strictObject({
+        drawCallsMax: perTier(positiveInt),
+        trianglesMax: perTier(positiveInt),
+        avatarReserve: z.strictObject({ drawCalls: positiveInt, triangles: positiveInt }),
+      })
+      .refine(
+        (a) =>
+          QUALITY_TIERS.every(
+            (tier) =>
+              a.avatarReserve.drawCalls < a.drawCallsMax[tier] &&
+              a.avatarReserve.triangles < a.trianglesMax[tier],
+          ),
+        { error: 'the avatar reserve must leave room for the apartment in every tier' },
+      ),
+    dprCap: perTier(positive),
+    /** `pcf-directional` means one directional light with PCFShadowMap, never PCFSoftShadowMap. */
+    shadows: perTier(z.enum(['none', 'blob-or-baked', 'pcf-directional'])),
+    /** Shadow map size of the directional light; 0 exactly where the tier has no such light. */
+    shadowMapSizePx: perTier(z.int().nonnegative()),
+    /** Read when the canvas is created, so a tier change applies it on the next load. */
+    antialias: perTier(z.boolean()),
+    /** Inverted-hull outlines (CLAUDE.md "Art direction": mid and high). */
+    outlines: perTier(z.boolean()),
+    /** Share of district buildings drawn, 0 to 1. */
+    buildingDensity: perTier(z.number().gt(0).max(1)),
+    /** Multiplies the distances at which detail levels switch. */
+    lodDistanceScale: perTier(positive),
+    /** No postprocessing pass on any tier. */
+    postprocessing: z.literal('none'),
+    otherPlayersMax: perTier(z.int().nonnegative()),
+    otherPlayersStyle: perTier(z.enum(['billboard', 'model'])),
+    /** Real reference device only (human/qa check); headless CI cannot measure FPS. */
+    medianFpsMin: perTier(positive),
+    /** Idle renders zero frames (`frameloop="demand"`). */
+    idleFramesMax: z.literal(0),
+    fpsStepDown: FpsStepDownSchema,
+    tierPicker: TierPickerSchema,
+    throttleProfiles: z.strictObject({ 'cc-mid-4g': ThrottleProfileSchema }),
+    perfRun: PerfRunSchema,
+    /**
+     * Audio fetched after the player's sound choice, per tier: the first music track, the ambience
+     * loop and (where the tier preloads them) the sound effects, in one encoding. Audio is not part
+     * of `totalBytesToPlayableGzKB`.
+     */
+    audioLazyGzKB: perTier(positive),
+    /** Largest single audio file. */
+    audioFileMaxKB: positive,
+    /** The lazily loaded audio runtime chunk (src/lib/audio/runtime.ts). */
+    audioRuntimeJsGzKB: positive,
+    /** The service worker script, /serwist/sw.js (S04e). Read by `npm run budget`. */
+    serviceWorkerGzKB: positive,
+    /**
+     * Everything the service worker precaches on install (static JS/CSS/SVG/fonts, icons, pages,
+     * base geo, the fallback map), gzipped. Fetched in the background after the map is playable,
+     * so it is not part of `totalBytesToPlayableGzKB`. Read by `npm run budget`.
+     */
+    precacheGzKB: positive,
+  })
+  .refine(
+    (perf) =>
+      QUALITY_TIERS.every(
+        (tier) => (perf.shadows[tier] === 'pcf-directional') === perf.shadowMapSizePx[tier] > 0,
+      ),
+    {
+      error: 'shadowMapSizePx must be above 0 exactly where shadows is pcf-directional',
+      path: ['shadowMapSizePx'],
+    },
+  )
+  .refine((perf) => Object.hasOwn(perf.throttleProfiles, perf.perfRun.profile), {
+    error: 'perfRun.profile must name a throttle profile',
+    path: ['perfRun', 'profile'],
+  })
 export type PerfConfig = z.infer<typeof PerfConfigSchema>
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i

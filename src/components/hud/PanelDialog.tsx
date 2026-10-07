@@ -72,7 +72,7 @@ export function PanelDialog({
       aria-labelledby={titleId}
       data-hud-panel-dialog={panel}
       data-cc-feature={feature}
-      className={`m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur ${
+      className={`m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg ${
         scrollBody ? `max-h-[calc(100%-1rem)] min-h-0 ${SHORT_SCREEN_FRAME}` : ''
       }`}
     >

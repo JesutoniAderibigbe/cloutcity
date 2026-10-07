@@ -19,7 +19,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import { z } from 'zod'
 import { PerfConfigSchema } from '../src/lib/data/schemas/config.ts'
-import { extractScripts, gzipBytes, staticFilePath } from './budget.ts'
+import { extractScripts, gzipBytes, hasMarker, staticFilePath } from './budget.ts'
 
 /**
  * Window properties the e2e test hooks install (src/components/{events,places}/*TestHook.ts,
@@ -52,19 +52,6 @@ export interface GuardInput {
   readonly featureKeys: readonly string[]
   readonly shellGzBytes: number
   readonly maxShellGzBytes: number
-}
-
-/**
- * True when `marker` appears whole: not as the start of a longer id (`cc-feature:event` inside
- * `cc-feature:event-sheet`), which would report the wrong feature or hide a missing one.
- */
-function hasMarker(text: string, marker: string): boolean {
-  let at = text.indexOf(marker)
-  while (at !== -1) {
-    if (!/^-?[a-z0-9]/.test(text.slice(at + marker.length, at + marker.length + 2))) return true
-    at = text.indexOf(marker, at + 1)
-  }
-  return false
 }
 
 /** True when `key` appears as a whole string literal (any quote, JSON-escaped or not). */

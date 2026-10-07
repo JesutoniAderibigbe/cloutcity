@@ -9,7 +9,7 @@ import { expect, type Locator, type Page } from '@playwright/test'
 const HUD_WIDE_MIN_WIDTH_PX = 640
 const HUD_COMPACT_MAX_HEIGHT_PX = 479
 
-export type HudPanelName = 'Inventory' | 'Rent' | 'Home' | 'Sound settings' | 'Help: take the tour'
+export type HudPanelName = 'Inventory' | 'Rent' | 'Home' | 'Settings' | 'Help: take the tour'
 
 /** True when the HUD shows Inventory, Rent and Home itself (they are in More elsewhere). */
 export function hudIsWide(page: Page): boolean {

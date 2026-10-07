@@ -13,6 +13,7 @@
  */
 import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
+import { soundSheetStore } from '@/components/audio/soundSheet'
 import { useHudPanel, type HudPanel } from './hudPanel'
 import { closePlace, useOpenPlaceId } from './placeSheet'
 
@@ -75,18 +76,27 @@ export function usePlacesPanel(): PlacesPanelState {
 
 /**
  * Whether the panel is on screen, not just open: a place sheet hides it until it closes (the
- * player went into a place from it), and so does a HUD panel the player has open over an
- * automatically opened one (the app must not push the player's own panel aside).
+ * player went into a place from it), and so does a HUD panel or the Settings sheet the player
+ * has open over an automatically opened one (the app must not push the player's own panel aside).
  */
 export function placesPanelShown(
   panel: PlacesPanelState,
   openPlaceId: string | null,
   hudPanel: HudPanel | null,
+  settingsOpen = false,
 ): boolean {
-  return panel.open && openPlaceId === null && !(panel.auto && hudPanel !== null)
+  return panel.open && openPlaceId === null && !(panel.auto && (hudPanel !== null || settingsOpen))
 }
+
+const settingsOpenNow = () => soundSheetStore.getState().open
+const serverSettingsOpen = () => false
 
 /** Whether the panel is on screen (placesPanelShown) right now. */
 export function usePlacesPanelShown(): boolean {
-  return placesPanelShown(usePlacesPanel(), useOpenPlaceId(), useHudPanel())
+  const settingsOpen = useSyncExternalStore(
+    soundSheetStore.subscribe,
+    settingsOpenNow,
+    serverSettingsOpen,
+  )
+  return placesPanelShown(usePlacesPanel(), useOpenPlaceId(), useHudPanel(), settingsOpen)
 }

@@ -68,9 +68,7 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     const { copy, isCopyKey } = await import('./index')
 
     expect(renderToStaticMarkup(createElement(SoundControl))).toContain('Tap for sound')
-    expect(renderToStaticMarkup(createElement(SoundSettingsSheet))).toContain(
-      'Close sound settings',
-    )
+    expect(renderToStaticMarkup(createElement(SoundSettingsSheet))).toContain('Close settings')
     const titled = audioManifest.tracks.filter((track) => track.titleKey !== undefined)
     expect(titled.length).toBeGreaterThan(0)
     for (const track of titled) {
@@ -256,7 +254,7 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     expect(await registered()).not.toContain('hud')
     const { MorePanel } = await import('@/components/hud/MorePanel')
     const more = renderToStaticMarkup(createElement(MorePanel))
-    for (const text of ['Inventory', 'Rent', 'Home', 'Sound settings']) expect(more).toContain(text)
+    for (const text of ['Inventory', 'Rent', 'Home', 'Settings']) expect(more).toContain(text)
   })
 
   it('the home chunk: slots, colours, storage, moves, locks and every home error (S16)', async () => {

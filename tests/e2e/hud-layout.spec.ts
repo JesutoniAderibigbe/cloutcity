@@ -118,8 +118,8 @@ for (const viewport of VIEWPORTS) {
       for (const name of ['Inventory', 'Rent', 'Home']) {
         await expect(visible(name), name).toHaveCount(wide ? 1 : 0)
       }
-      // The sound settings and Help live in More at every width (S06: no gear in the HUD).
-      for (const name of ['Sound settings', 'Help: take the tour']) {
+      // The settings and Help live in More at every width (S06: no gear in the HUD).
+      for (const name of ['Settings', 'Help: take the tour']) {
         await expect(visible(name), name).toHaveCount(0)
       }
 
@@ -128,7 +128,7 @@ for (const viewport of VIEWPORTS) {
       await expect(panel).toBeVisible()
       await expect(moreButton(page)).toHaveAttribute('aria-expanded', 'true')
       await expect(panel.getByRole('heading', { name: 'More' })).toBeFocused()
-      for (const name of ['Inventory', 'Rent', 'Home', 'Sound settings', 'Help: take the tour']) {
+      for (const name of ['Inventory', 'Rent', 'Home', 'Settings', 'Help: take the tour']) {
         const item = panel.getByRole('button', { name, exact: true })
         await expect(item).toBeVisible()
         expect((await boxOf(item, name)).height).toBeGreaterThanOrEqual(44)
@@ -147,10 +147,10 @@ for (const viewport of VIEWPORTS) {
       await expect(rent).toHaveCount(0)
       await expect(wide ? visible('Rent') : moreButton(page)).toBeFocused()
 
-      // The sound settings sheet hands focus back to More at every width.
+      // The settings sheet hands focus back to More at every width.
       await moreButton(page).click()
-      await panel.getByRole('button', { name: 'Sound settings', exact: true }).click()
-      const sound = page.getByRole('region', { name: 'Sound' })
+      await panel.getByRole('button', { name: 'Settings', exact: true }).click()
+      const sound = page.getByRole('region', { name: 'Settings' })
       await expect(sound).toBeVisible()
       await page.keyboard.press('Escape')
       await expect(sound).toHaveCount(0)

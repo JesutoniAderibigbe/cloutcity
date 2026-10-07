@@ -128,7 +128,7 @@ export function PlacesPanel() {
       hidden={hidden}
       data-places-panel={panel.mode}
       data-cc-feature="cc-feature:places-panel"
-      className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur"
+      className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg"
     >
       <div className="flex items-start justify-between gap-2">
         <h2

@@ -54,7 +54,7 @@ export function OverlayLayout({ children, slots, modal }: OverlayLayoutProps) {
       className="cc-overlay fixed inset-0 overflow-hidden"
       style={overlayCssVars(overlayLayout) as CSSProperties}
     >
-      <OverlayBackground holdForModal={modal !== undefined}>
+      <OverlayBackground holdForModal={modal !== undefined} scrimZIndex={layerZIndex('modal')}>
         {/* tabIndex -1: focus lands here when a modal closes. */}
         <main
           tabIndex={-1}

@@ -20,9 +20,18 @@ interface PlayerAvatarProps {
   readonly color: string
   readonly toonRamp: readonly number[]
   readonly avatar: AvatarConfig
+  /** Called once the avatar stands at its home (the map is playable from its next frame). */
+  readonly onPlaced?: () => void
 }
 
-export function PlayerAvatar({ at, groundY, color, toonRamp, avatar }: PlayerAvatarProps) {
+export function PlayerAvatar({
+  at,
+  groundY,
+  color,
+  toonRamp,
+  avatar,
+  onPlaced,
+}: PlayerAvatarProps) {
   const built = useMemo(() => buildAvatar(color, toonRamp, avatar), [color, toonRamp, avatar])
   const controls = useThree((state) => state.controls)
   const invalidate = useThree((state) => state.invalidate)
@@ -31,8 +40,9 @@ export function PlayerAvatar({ at, groundY, color, toonRamp, avatar }: PlayerAva
 
   useEffect(() => {
     toScene(at, groundY, built.group.position)
+    onPlaced?.()
     invalidate()
-  }, [built, at, groundY, invalidate])
+  }, [built, at, groundY, onPlaced, invalidate])
 
   useEffect(() => {
     if (!(controls instanceof MapControls)) return

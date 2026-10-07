@@ -19,7 +19,7 @@ export function BottomTabs() {
   return (
     <nav
       aria-label={copy('nav.main')}
-      className="h-full border-t border-night-700 bg-night-900/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur"
+      className="h-full border-t border-night-700 bg-night-900/95 pb-[env(safe-area-inset-bottom,0px)]"
     >
       <ul className="grid h-full grid-cols-4">
         {TABS.map((tab) => {

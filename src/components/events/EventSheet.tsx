@@ -68,7 +68,7 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
       data-event={event.id}
       data-cc-feature="cc-feature:event-sheet"
       data-cc-notice="event"
-      className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur"
+      className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg"
     >
       <h2 id={titleId} className="text-base leading-tight font-extrabold text-pink-400">
         {eventText(event.titleKey)}

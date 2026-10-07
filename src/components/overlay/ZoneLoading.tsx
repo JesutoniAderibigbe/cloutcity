@@ -19,8 +19,8 @@ const CARD: Readonly<Record<IslandZone, string>> = {
     'mx-2 flex h-full items-center gap-2 rounded-2xl border border-night-700 bg-night-900/95 px-3',
   hud: 'flex items-center gap-2',
   toast:
-    'mx-2 flex items-center gap-2 rounded-2xl border border-night-700 bg-night-900/95 px-3 py-1 shadow-lg backdrop-blur',
-  sheet: 'm-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur',
+    'mx-2 flex items-center gap-2 rounded-2xl border border-night-700 bg-night-900/95 px-3 py-1 shadow-lg',
+  sheet: 'm-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg',
   modal:
     'pointer-events-auto w-full max-w-[var(--overlay-sheet-max-w)] self-center rounded-3xl border border-night-700 bg-night-900 p-5 shadow-2xl',
 }

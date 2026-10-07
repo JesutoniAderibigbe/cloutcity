@@ -33,7 +33,7 @@ const ALLOWED_FILES: readonly RegExp[] = [
   new RegExp(`^data/copy/(${BOOT})/[\\w-]+\\.json$`),
   /^data\/copy\/superlatives\.json$/,
   /^data\/config\/copy\.json$/,
-  /^src\/lib\/(log|format|placeholders)\.ts$/,
+  /^src\/lib\/(log|format|placeholders|perfMarks)\.ts$/,
   /^src\/state\/(placeSheet|placesPanel|mapPlayable|hudPanel|iconMoment)\.ts$/,
   // The HUD's Places button (S04c): the way into the Places panel must not wait for a chunk.
   /^src\/components\/places\/PlacesButton\.tsx$/,
@@ -43,11 +43,13 @@ const ALLOWED_FILES: readonly RegExp[] = [
   // The 3D map's thin mount: WebGL probe, geo download, status and error boundary. The canvas
   // and everything three-based load through its next/dynamic import (the 3D chunk).
   /^src\/scene\/(CitySceneClient|SceneErrorBoundary)\.tsx$/,
-  /^src\/scene\/(webgl|geo\/load)\.ts$/,
+  /^src\/scene\/(webgl|schedule|geo\/load)\.ts$/,
   // The apartment's thin mount (S16): its next/dynamic import must be reachable from the page
   // for the build to list the room's chunk; it reads the room's view and hands the screen over.
   /^src\/scene\/apartment\/ApartmentMount\.tsx$/,
   /^src\/state\/(apartmentView|sceneFocus)\.ts$/,
+  // The tier picker runs in the shell (S04b); the quality store it reports to is lazy.
+  /^src\/lib\/quality\/(probe|tier)\.ts$/,
 ]
 
 /** Packages the shell may import (zod is not one of them). */
@@ -55,7 +57,7 @@ const ALLOWED_PACKAGES = /^(react|react-dom|next|zustand)(\/|$)/
 
 /** Never in the shell, named so a failure says why. */
 const DENIED_FILES: readonly RegExp[] = [
-  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session|gameClock|clockDriver|guestSession|playerHome|hudView|tour)\.ts$/,
+  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session|gameClock|clockDriver|guestSession|playerHome|hudView|tour|quality)\.ts$/,
   /^src\/lib\/supabase\//,
   /^src\/lib\/audio\//,
   /^src\/components\/audio\/(SoundControl|SoundSettingsSheet)\.tsx$/,
@@ -144,6 +146,8 @@ describe('shell boundary of / (S05c)', () => {
       'src/scene/City.tsx',
       'src/state/store.ts',
       'src/state/onboarding.ts',
+      'src/state/quality.ts',
+      'src/scene/quality/TierMonitor.tsx',
       'src/components/audio/SoundControl.tsx',
       'src/components/audio/SoundSettingsSheet.tsx',
       'src/state/audioSettings.ts',

@@ -14,18 +14,40 @@
  */
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { modalStore } from '@/components/overlay/modalState'
 import { log } from '@/lib/log'
+import { perfMark } from '@/lib/perfMarks'
 import { markMapPlayable } from '@/state/mapPlayable'
 import { autoOpenPlacesPanel, closeAutoPlacesPanel } from '@/state/placesPanel'
 import { loadGeoBase, type GeoLoadFailure } from './geo/load'
 import { SCENE_FAILED_MESSAGE, SceneErrorBoundary } from './SceneErrorBoundary'
 import type { SceneFailure, SceneProps, SceneStatus } from './types'
-import { webgl2Available } from './webgl'
+import { whenIdle } from './schedule'
+import { probeDevice } from './webgl'
 
 const CityCanvas = dynamic(() => import('./CityCanvas'), { ssr: false })
+/** Runs `callback` once the modal slot's island has decided (at once if it has). */
+function whenModalSettled(callback: () => void): () => void {
+  if (modalStore.getState().settled) {
+    callback()
+    return () => undefined
+  }
+  const off = modalStore.subscribe((state) => {
+    if (!state.settled) return
+    off()
+    callback()
+  })
+  return off
+}
+
+const loadQualityStore = () => import('@/state/quality').then((module) => module.qualityStore)
 
 type SceneState =
-  | { readonly status: 'loading' }
+  /**
+   * `preload`: the device has WebGL2, so the 3D chunk is rendered (it renders nothing yet) to
+   * download alongside the geo layers instead of after them.
+   */
+  | { readonly status: 'loading'; readonly preload: boolean }
   /**
    * Geo downloaded: the 3D chunk validates it, then mounts the canvas; `drawn` after frame 1;
    * `lost` while the WebGL context is lost.
@@ -39,11 +61,14 @@ type SceneState =
   | { readonly status: 'error'; readonly failure: SceneFailure }
 
 export function CitySceneClient(props: SceneProps) {
-  const [state, setState] = useState<SceneState>({ status: 'loading' })
+  const [state, setState] = useState<SceneState>({ status: 'loading', preload: false })
   const { geoUrl, copy, overlayRows, freeRow } = props
 
+  const { picker } = props.quality
+  const { idleTimeoutMs } = props.config.startup
   useEffect(() => {
     let active = true
+    let cancelStart = () => undefined as void
     const fail = (failure: SceneFailure, context: Record<string, unknown>) => {
       if (!active) return
       log.warn(SCENE_FAILED_MESSAGE, context)
@@ -51,19 +76,57 @@ export function CitySceneClient(props: SceneProps) {
     }
     // Probe and download run after this effect returns (the result arrives in a callback).
     void Promise.resolve().then(async () => {
-      if (!webgl2Available()) {
+      perfMark('cc:3d:start')
+      const device = probeDevice(picker)
+      perfMark('cc:3d:probed')
+      // The quality store is not shell code (it persists the settings choice): it loads in its
+      // own chunk, and every device records its pick, so audio and settings see it even when
+      // the map cannot start.
+      const detected = loadQualityStore().then(
+        (store) => {
+          store.getState().setDetected(device.pick, device.dataSaver)
+          return true
+        },
+        () => false,
+      )
+      if (!device.signals.webgl2) {
+        // Recorded before the map counts as playable, which is when audio reads the tier.
+        await detected
         fail('device', { reason: 'no-webgl' })
         return
       }
-      const result = await loadGeoBase(geoUrl)
+      // The 3D chunk starts downloading alongside the geo layers, once the boot hold has settled
+      // (the welcome card goes first; the chunk is the page's largest).
+      const stopPreload = whenModalSettled(() => {
+        if (!active) return
+        setState((current) =>
+          current.status === 'loading' ? { status: 'loading', preload: true } : current,
+        )
+      })
+      cancelStart = stopPreload
+      const [result, stored] = await Promise.all([loadGeoBase(geoUrl), detected])
       if (!active) return
-      if (result.ok) setState({ status: 'starting', body: result.body, drawn: false, lost: false })
-      else fail('load', { ...result.failure })
+      perfMark('cc:3d:geo')
+      if (!result.ok) {
+        fail('load', { ...result.failure })
+        return
+      }
+      if (!stored) {
+        fail('load', { reason: 'chunk-failed', chunk: 'quality' })
+        return
+      }
+      // Mounting the canvas is the page's heaviest task: let the shell and the other islands
+      // finish their own start-up first.
+      stopPreload()
+      cancelStart = whenIdle(() => {
+        if (active) setState({ status: 'starting', body: result.body, drawn: false, lost: false })
+      }, idleTimeoutMs)
     })
     return () => {
       active = false
+      cancelStart()
     }
-  }, [geoUrl])
+  }, [geoUrl, picker, idleTimeoutMs])
 
   const onReady = useCallback(
     () =>
@@ -133,17 +196,17 @@ export function CitySceneClient(props: SceneProps) {
         aria-hidden="true"
         className="absolute inset-0 bg-gradient-to-b from-night-800 via-night-900 to-night-950"
       />
-      {state.status === 'starting' ? (
+      {state.status === 'starting' || (state.status === 'loading' && state.preload) ? (
         <SceneErrorBoundary onError={onError}>
           <CityCanvas
-            geoBody={state.body}
+            geo={state.status === 'starting' ? { body: state.body } : null}
             onInvalidGeo={onInvalidGeo}
             palette={props.palette}
             config={props.config}
             homesLocal={props.homesLocal}
             startHome={props.startHome}
             boundsLocal={props.boundsLocal}
-            dprCap={props.dprCap}
+            quality={props.quality}
             label={copy.label}
             expandingSoon={copy.expandingSoon}
             onReady={onReady}

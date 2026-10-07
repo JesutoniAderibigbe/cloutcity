@@ -27,21 +27,22 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 
 ## Scripts
 
-| Script                            | What it does                                                                                                                                             |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                                  |
-| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                                              |
-| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                                     |
-| `npm run format:check` / `format` | Prettier check / write                                                                                                                                   |
-| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                                         |
-| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                                             |
-| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                                                 |
-| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)                                 |
-| `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                                          |
-| `npm run budget`                  | Gzipped shell JS of `/`, the lazy 3D chunk and the apartment chunk against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
-| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                 |
-| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                  |
-| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                   |
+| Script                            | What it does                                                                                                                                                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                                                                                         |
+| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                                                                                                     |
+| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                                                                                            |
+| `npm run format:check` / `format` | Prettier check / write                                                                                                                                                                                          |
+| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                                                                                                |
+| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                                                                                                    |
+| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                                                                                                        |
+| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)                                                                                        |
+| `npm run e2e:perf`                | Cold, warm and per-tier render budgets under the `cc-mid-4g` throttle (`tests/perf/*.perf.ts`); medians in `test-results/perf/report.json`                                                                      |
+| `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                                                                                                 |
+| `npm run budget`                  | Gzipped shell JS, 3D chunk, apartment chunk, total JS to playable, base geo, district assets, service worker and precache against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
+| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                                                                        |
+| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                         |
+| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                          |
 
 Gate order used by the build loop:
 `npm run format:check && npm run typecheck && npm run lint && npm test && npm run test:integration && npm run build && npm run e2e && npm run budget`
@@ -425,28 +426,71 @@ build, the scene and the engine; `src/lib/data/geo.ts` loads the layers for serv
 ## Performance budget
 
 `data/config/perf.json` holds every budget from `CLAUDE.md`, per tier where tiered, plus the
-`cc-mid-4g` throttle profile and the FPS step-down rule. `npm run budget` (after `npm run build`,
-KB = 1000 bytes) checks:
+`cc-mid-4g` throttle profile, the per-tier render settings (shadow map size, antialias, outlines,
+building density, LOD distance scale; no postprocessing), the tier picker thresholds, the FPS
+step-down rule and the `e2e:perf` run settings (`perfRun`). `npm run budget` (after
+`npm run build`, KB = 1000 bytes) checks:
 
 - `shellJsGzKB`: the gzipped size of every script the prerendered `/` makes a modern browser run
   (Next.js chunks plus inline scripts; `nomodule` polyfills excluded);
-- `sceneChunkJsGzKB`: the lazy 3D chunk, i.e. the files of the `next/dynamic` scene import listed
-  in `.next/server/app/page/react-loadable-manifest.json` (minus any file the shell already
-  loads); the script fails if the manifest is missing or lists no lazy JS. The apartment's
-  import is left out: it loads when the Home panel opens, not before the map is playable;
+- `sceneChunkJsGzKB`: the lazy 3D chunk, i.e. the files Turbopack's loader in the shell fetches
+  for the scene's `next/dynamic` import (minus any file the shell already loads). The import is
+  found by the scene's `cc-feature:city-scene` marker and must match its entry in
+  `.next/server/app/page/react-loadable-manifest.json`; the build must hold exactly one copy of
+  three (its `REVISION`), inside this chunk. The apartment's import is left out: it loads when the
+  Home panel opens, not before the map is playable;
 - `apartmentChunkJsGzKB` (S16): what only the apartment's `next/dynamic` import adds (the manifest
   entry whose code renders `cc-feature:apartment-scene`, minus the city's 3D chunk and the shell);
   the script fails if no lazy entry, or more than one, renders that marker. The import sits in the
   shell's `src/scene/apartment/ApartmentMount.tsx`: nested in a lazy island's chunk, Turbopack
-  lists it under a chunk it never writes.
+  lists it under a chunk it never writes;
+- `totalJsToPlayableGzKB`: the shell, the boot islands (`BOOT_ISLAND_FEATURES` in
+  `scripts/budget.ts`, checked against the `eager: true` islands in `src` by its test) and the 3D
+  chunk, each file once;
+- `baseGeoGzKB`: the prerendered `/geo/base` body (`.next/server/app/geo/base.body`);
+- `districtBuildingsGzKB`: per tier, every prerendered `/geo/districts/<tier>/<id>` body plus
+  `/geo/blocks/<tier>`, once the build has those routes (S04d; until then the line says SKIP);
+- `serviceWorkerGzKB` and `precacheGzKB` (S04e): the service worker script and everything it
+  precaches.
+
+It also prints a PERF-3 report line (modules Turbopack copies into more than one chunk); that line
+never fails the run. Every lookup fails loudly when it finds nothing, so a change in the build
+format cannot turn a check into a silent pass.
 
 Draw calls, triangles and idle frames at the default view are asserted by
-`tests/e2e/city-scene.spec.ts`; the apartment's per-tier caps (`perf.json` `apartment`, with
-`avatarReserve` kept free for the S16a avatar, shadow pass included) by
-`tests/e2e/home-apartment.spec.ts`. Enforcement of the other budgets joins in later tasks. Audio has its own budgets
+`tests/e2e/city-scene.spec.ts`, and per tier by `npm run e2e:perf`; the apartment's per-tier caps
+(`perf.json` `apartment`, with `avatarReserve` kept free for the S16a avatar, shadow pass
+included) by `tests/e2e/home-apartment.spec.ts`. Audio has its own budgets
 (`audioLazyGzKB` per tier for the first music track, the ambience and the tier's preloaded sfx,
 per encoding; `audioFileMaxKB`), checked by `src/lib/data/data.test.ts`; `audioRuntimeJsGzKB` is
 measured by hand until the budget script covers its lazy chunk.
+
+**Quality tiers (S04b).** `src/lib/quality/probe.ts` reads the device signals (WebGL2, renderer,
+`MAX_TEXTURE_SIZE`, `deviceMemory`, `hardwareConcurrency`, Save-Data, `prefers-reduced-data`);
+`src/lib/quality/tier.ts` picks low, mid or high from them with the `tierPicker` thresholds
+(unknown signals are neutral; data saver forces low); `src/lib/quality/stepDown.ts` decides
+runtime step-downs (never up) and the active tier. `src/state/quality.ts` persists only the
+settings override (`cloutcity:quality`); it loads in its own chunk, outside the shell.
+
+At run time the 3D map's shell mount (`src/scene/CitySceneClient.tsx`) probes the device
+(`src/scene/webgl.ts`) with the thresholds and per-tier settings `CityScene` passes as server
+props, records the pick in the store, and mounts the canvas when the main thread is idle. The
+canvas (`src/scene/CityCanvas.tsx`) applies the active tier: DPR cap and outlines (the subway
+casing) live, PCFShadowMap shadows from one directional sun on the high tier only
+(`src/scene/SunLight.tsx`), antialiasing on the next load; building density and LOD scale are
+exposed to scene parts through `useTierSettings()` (`src/scene/quality/tierSettings.ts`).
+`TierMonitor` runs drei's `PerformanceMonitor` only inside the continuous-rendering window that
+gestures and camera flights open (`beginContinuous` / `endContinuous` in
+`src/scene/quality/continuity.ts`), so an idle on-demand map never reads as a low frame rate.
+Audio plays the active tier. The Settings sheet (gear, or More on phones) has a Graphics choice:
+Auto (the detected tier), Low, Mid or High; a data-saver request disables Mid and High.
+
+Start-up marks (User Timing): `cc:shell-interactive`, `cc:playable` and the `cc:3d:*` steps
+(`src/lib/perfMarks.ts`). `playwright.perf.config.ts` and `tests/perf/` hold the `e2e:perf`
+harness: CDP network and CPU throttling, a machine-wide lock with a load wait so only one perf
+run measures at a time, and specs for cold loads (median of `perfRun.coldRuns`), warm loads
+(the service worker, S04e, and the HTTP cache) and each tier's draw calls, triangles and
+renderer settings. The run writes its medians to `test-results/perf/report.json`.
 
 **Shell diet (S05c, DEC-11).** The shell of `/` carries only the boot path: the layout, overlay
 system, HUD, tab bar, the copy core with its boot namespaces, and the island mounts. Everything
