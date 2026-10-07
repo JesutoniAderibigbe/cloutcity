@@ -9,6 +9,25 @@
     "colors.lilac.name": "Lilac",
     "colors.skyBlue.name": "Sky blue",
     "colors.charcoal.name": "Charcoal",
-    "colors.oatmeal.name": "Oatmeal"
+    "colors.oatmeal.name": "Oatmeal",
+    "colors.hair.black": "Black",
+    "colors.hair.darkBrown": "Dark brown",
+    "colors.hair.auburn": "Auburn",
+    "colors.hair.lightBrown": "Light brown",
+    "colors.hair.blonde": "Blonde",
+    "colors.hair.grey": "Grey",
+    "colors.hair.silver": "Silver",
+    "colors.hair.copper": "Copper",
+    "colors.hair.pink": "Pink",
+    "colors.hair.blue": "Blue",
+    "colors.denim.name": "Denim blue",
+    "colors.navy.name": "Navy",
+    "colors.moss.name": "Moss green",
+    "colors.rust.name": "Rust",
+    "colors.ivory.name": "Ivory",
+    "colors.red.name": "Red",
+    "colors.gold.name": "Golden yellow",
+    "colors.blush.name": "Blush pink",
+    "colors.white.name": "White"
   }
 }

@@ -39,6 +39,12 @@
  * Clout is measured as the player's total (src/engine/clout.ts `totalClout`), and gains are
  * attributed to the ledger sources of the entries each step wrote.
  *
+ * Traits and career (S16a): the `traits` and `careerPath` options start the player with those
+ * creator choices, so the matrix in economy.matrix.test.ts can play every path with the best and
+ * worst trait pair. Trait modifiers apply through the engine (energy costs and mood gains of
+ * actions; the subway ride's length through the travel-time trait); the bot's own energy
+ * planning reads the adjusted costs.
+ *
  * Goals (S15): with the `claimAll` option the bot records goals after every step and claims
  * every reward it has reached at once, through the grant function (src/engine/grants.ts), so
  * the sim shows what goal rewards do to the economy. Claims are not steps: their cash and clout
@@ -51,6 +57,7 @@ import {
   performAction,
   type ActionDef,
 } from '../actions'
+import type { CareerPathId } from '@/lib/data/avatarIds'
 import { calendar, minutesPerDay } from '../clock'
 import { playerLevel, totalClout } from '../clout'
 import type { EngineConfig, HomeId, JobId } from '../config'
@@ -65,6 +72,7 @@ import { performPlaceAction } from '../placeActions'
 import type { Place } from '../places'
 import { initialPrestigeState, type PrestigeState } from '../prestige'
 import type { RentEvent } from '../rent'
+import { traitAdjustedAction, traitAdjustedTrip } from '../traits'
 
 /** Hunger at or below this sends the bot to eat. */
 const HUNGRY = 60
@@ -89,6 +97,10 @@ export interface EconomyBotOptions {
   readonly flex?: { readonly place: Place }
   /** Claim every goal reward as soon as it is reached (S15). Off by default. */
   readonly claimAll?: boolean
+  /** Start with these traits (S16a); none by default. */
+  readonly traits?: readonly string[]
+  /** Start with this career path (S16a); none by default. */
+  readonly careerPath?: CareerPathId
 }
 
 export interface BotReport {
@@ -159,14 +171,27 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   const homeMeal = requireAction('home-meal', config)
   const coffee = requireAction('deli-coffee', config)
   const nap = requireAction('nap', config)
-  const ride: ActionDef = {
+  const rawRide: ActionDef = {
     durationMin: RIDE_MINUTES,
     cashCost: config.costs.subwayFare,
     energyCost: 0,
     statEffects: {},
   }
 
-  let snapshot = initialSnapshot(config)
+  const start = initialSnapshot(config)
+  let snapshot: GameSnapshot = {
+    ...start,
+    player: {
+      ...start.player,
+      traits: options.traits ?? [],
+      traitsChangedAt: options.traits === undefined || options.traits.length === 0 ? null : 0,
+      careerPath: options.careerPath ?? null,
+      careerChangedAt: options.careerPath === undefined ? null : 0,
+    },
+  }
+  const ride = traitAdjustedTrip(rawRide, snapshot.player, config)
+  /** An action as the engine will charge it for this player (traits applied). */
+  const adjusted = (def: ActionDef) => traitAdjustedAction(def, snapshot.player, config)
   let minCash = snapshot.player.cash
   let flexes = 0
   let viralFlexes = 0
@@ -284,14 +309,14 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
 
   /** Energy the next shift needs: its cost plus its passive decay, plus one point to spare. */
   function shiftEnergyNeed(): number {
-    const shift = shiftAction(jobId, config)
+    const shift = adjusted(shiftAction(jobId, config))
     const hours = Math.ceil(effectiveDuration(shift, snapshot, config) / MINUTES_PER_HOUR)
     return shift.energyCost + hours * config.stats.decayPerGameHour.energy + 1
   }
 
   function eatIfHungry(options: { readonly beforeShift: boolean; readonly atHome: boolean }) {
     if (snapshot.player.stats.hunger > HUNGRY) return
-    const energyAfterMeal = snapshot.player.stats.energy - homeMeal.energyCost
+    const energyAfterMeal = snapshot.player.stats.energy - adjusted(homeMeal).energyCost
     const homeMealFits = !options.beforeShift || energyAfterMeal >= shiftEnergyNeed()
     if (options.atHome && homeMealFits && act('home-meal')) return
     act('bodega-breakfast')
@@ -318,7 +343,7 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
 
   /** See "Clout" in the module comment. */
   function flex(place: Place): void {
-    const def = flexAction(config)
+    const def = adjusted(flexAction(config))
     if (snapshot.player.stats.energy < def.energyCost || !fitsBefore(def, at(BED_HOUR))) return
     // The bot's rides are fixed fares, not trips: it stands at the place it flexes at (DEC-22).
     const there = atPlaceNow(snapshot, place.id)

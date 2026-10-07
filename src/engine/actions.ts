@@ -17,6 +17,7 @@ import type { EngineConfig } from './config'
 import { advanceMinutes, type GameSnapshot } from './game'
 import type { RentEvent } from './rent'
 import { applyStatChanges, durationMultiplier, type StatChanges } from './stats'
+import { traitAdjustedAction } from './traits'
 
 export interface ActionDef {
   /** Game minutes the action takes before any slowdown. */
@@ -135,7 +136,11 @@ export function applyAction(
   }
 }
 
-/** Performs the catalog action `actionId`. */
+/**
+ * Performs the catalog action `actionId`, its energy cost and mood gain adjusted by the player's
+ * traits (src/engine/traits.ts). `applyAction` itself never adjusts: each caller applies traits
+ * to the definition it shows the player, so what is shown is what lands.
+ */
 export function performAction(
   snapshot: GameSnapshot,
   actionId: string,
@@ -143,5 +148,5 @@ export function performAction(
 ): ActionResult {
   const def = findAction(actionId, config)
   if (def === undefined) return { ok: false, error: { code: 'UNKNOWN_ACTION', actionId } }
-  return applyAction(snapshot, def, config)
+  return applyAction(snapshot, traitAdjustedAction(def, snapshot.player, config), config)
 }

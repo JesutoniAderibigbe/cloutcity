@@ -2,8 +2,10 @@
  * Helpers for engine tests (not used by the game). Clout is derived from the ledger, so tests
  * that need a player at some clout build the ledger through these instead of setting a number.
  */
+import { expect } from 'vitest'
 import { cloutLevel, itemClout, legacyCloutState } from './clout'
 import type { EngineConfig } from './config'
+import { initialCreatorState, initialRolls } from './creator'
 import type { GameSnapshot, PlayerState } from './game'
 import { homeClout } from './home'
 import { buyAtShop, performPlaceAction, placeActions, shopBlock } from './placeActions'
@@ -73,3 +75,32 @@ export function buyAtShopHere(
 ) {
   return buyAtShop(atPlace(snapshot, place.id), place, itemId, config)
 }
+
+/**
+ * The player fields save v11 (S16a) added. Tests that build an older save from a current one
+ * delete them (and the top-level `creator` and `rolls`), as an older build never wrote them.
+ */
+export const V11_PLAYER_KEYS = [
+  'look',
+  'traits',
+  'traitsChangedAt',
+  'careerPath',
+  'careerChangedAt',
+  'neighborhood',
+] as const
+
+/**
+ * What a migration to v11 gives an older save's player, for `toEqual`: a look (seeded from the
+ * save; src/engine/save.v11.test.ts checks which), and no traits, career or neighborhood.
+ */
+export const V11_FRESH_PLAYER = {
+  look: expect.any(Object) as unknown,
+  traits: [],
+  traitsChangedAt: null,
+  careerPath: null,
+  careerChangedAt: null,
+  neighborhood: null,
+} as const
+
+/** What a migration to v11 adds at the top of an older save: a fresh creator and no rolls. */
+export const V11_FRESH_SAVE = { creator: initialCreatorState, rolls: initialRolls } as const

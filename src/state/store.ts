@@ -19,6 +19,7 @@ import { performAction, type ActionResult } from '@/engine/actions'
 import { isSpeed, type ClockState } from '@/engine/clock'
 import type { LevelUp } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
+import { noteCreatorAction } from '@/engine/creator'
 import {
   chooseEventOption,
   openEvent,
@@ -61,6 +62,7 @@ import {
   type SaveState,
 } from '@/engine/save'
 import { log, type Logger } from '@/lib/log'
+import { randomSeed } from './randomSeed'
 import { browserLocalStorage, createSafeJsonStorage } from './storage'
 
 export const STORE_KEY = 'cloutcity:game'
@@ -192,8 +194,9 @@ export interface GameStatus {
 }
 export type GameState = PersistedState & GameActions & GameStatus
 
+/** A new game with a random starting look (S16a: guests start random, from a fresh seed). */
 export function initialPersistedState(): PersistedState {
-  return initialSave(engineConfig)
+  return initialSave(engineConfig, { lookSeed: randomSeed() })
 }
 
 /**
@@ -213,7 +216,8 @@ export function migrateGameState(
       : 'Starting fresh: saved game predates the current format',
     { version, persisted: typeof persisted },
   )
-  return save
+  // A fresh start is a new game: a random look, like any guest's (S16a).
+  return outcome === 'carried' ? save : initialPersistedState()
 }
 
 /**
@@ -241,8 +245,8 @@ export function mergeGameState(
 /**
  * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout
  * ledger, flex state, home, rent, inventory with decor, club nights, visits, the apartment's
- * placements and move log, location and transit state), speed, event state, goals,
- * the grant log and prestige. The sub-minute remainder alone is not, so a visible tab does not
+ * placements and move log, location and transit state, look, traits, career and neighborhood),
+ * speed, event state, goals, the grant log, prestige, the creator state and the rolls. The sub-minute remainder alone is not, so a visible tab does not
  * write on every tick (a reload loses at most one game minute's worth of carried real time).
  */
 function saveSignature(value: StorageValue<unknown> | null): string | undefined {
@@ -255,6 +259,8 @@ function saveSignature(value: StorageValue<unknown> | null): string | undefined 
     goals?: unknown
     grants?: unknown
     prestige?: unknown
+    creator?: unknown
+    rolls?: unknown
   }
   return JSON.stringify([
     value.version,
@@ -265,6 +271,8 @@ function saveSignature(value: StorageValue<unknown> | null): string | undefined 
     state.goals,
     state.grants,
     state.prestige,
+    state.creator,
+    state.rolls,
   ])
 }
 
@@ -321,16 +329,17 @@ const ICON_LEVEL = victoryGoal(engineConfig).level
  * victory level while the Icon moment is about to show adds no toast: the moment is the
  * celebration.
  */
-function levelUpPatch(levelUp: LevelUp | null, goals: GoalsState): Partial<GameStatus> {
+export function levelUpPatch(levelUp: LevelUp | null, goals: GoalsState): Partial<GameStatus> {
   if (levelUp === null) return {}
   const iconMoment = goals.icon.reachedAt !== null && !goals.icon.acknowledged
   return levelUp.to === ICON_LEVEL && iconMoment ? {} : { lastLevelUp: levelUp }
 }
 
 /** The persisted part of the state: what a save holds. */
-function persistedOf(state: PersistedState): PersistedState {
+export function persistedOf(state: PersistedState): PersistedState {
   const { clock, player, speed, events, goals, grants, prestige: prestigeState } = state
-  return { clock, player, speed, events, goals, grants, prestige: prestigeState }
+  const { creator, rolls } = state
+  return { clock, player, speed, events, goals, grants, prestige: prestigeState, creator, rolls }
 }
 
 export function createGameStore(storage: PersistStorage<PersistedState>, logger: Logger = log) {
@@ -358,9 +367,14 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         const keepCarry = () => {
           if (carry !== null) carry = { clock: get().clock, ms: carry.ms }
         }
+        /**
+         * Applies a state-changing action's result, records any goal it reached and counts the
+         * action toward the creator offer (S16a: offered after the first action, never before).
+         */
         const commit = (patch: Partial<GameState>, levelUp: LevelUp | null = null) => {
           const { save } = syncGoals({ ...get(), ...patch }, engineConfig)
-          set({ ...patch, goals: save.goals, ...levelUpPatch(levelUp, save.goals) })
+          const creator = noteCreatorAction(save.creator, save.clock.minute, engineConfig)
+          set({ ...patch, goals: save.goals, creator, ...levelUpPatch(levelUp, save.goals) })
           keepCarry()
         }
         return {

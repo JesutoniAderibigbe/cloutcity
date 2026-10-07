@@ -111,6 +111,39 @@
     "ledger": { "maxEntries": 100 },
     "caps": { "byCurrency": { "usd": 200 } }
   },
+  "career": {
+    "paths": {
+      "influencer": {
+        "nameKey": "career.influencer.name",
+        "goalKey": "career.influencer.goal",
+        "bonusKey": "career.influencer.bonus",
+        "bonus": { "kind": "clout-pct", "source": "flex", "pct": 20 }
+      },
+      "streamer": {
+        "nameKey": "career.streamer.name",
+        "goalKey": "career.streamer.goal",
+        "bonusKey": "career.streamer.bonus",
+        "bonus": {
+          "kind": "clout-pct",
+          "source": "event",
+          "pct": 20,
+          "exceptEventTags": ["nightlife"]
+        }
+      },
+      "artist-dj": {
+        "nameKey": "career.artistDj.name",
+        "goalKey": "career.artistDj.goal",
+        "bonusKey": "career.artistDj.bonus",
+        "bonus": { "kind": "home-clout-pct", "pct": 25 }
+      },
+      "founder-hustler": {
+        "nameKey": "career.founderHustler.name",
+        "goalKey": "career.founderHustler.goal",
+        "bonusKey": "career.founderHustler.bonus",
+        "bonus": { "kind": "resale-pts", "pts": 10 }
+      }
+    }
+  },
   "costs": { "food": { "min": 4, "max": 12 }, "subwayFare": 3 },
   "transit": {
     "minTripM": 25,

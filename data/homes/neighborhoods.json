@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "borough": "queens",
+  "maxStationM": 800,
+  "fairness": {
+    "tolerancePct": 30,
+    "mode": "subway",
+    "to": ["times-square"]
+  },
+  "neighborhoods": [
+    {
+      "id": "astoria",
+      "nameKey": "neighborhoods.astoria.name",
+      "blurbKey": "neighborhoods.astoria.blurb",
+      "zoneId": "qn01",
+      "home": {
+        "lat": 40.7651,
+        "lng": -73.9247
+      },
+      "stationId": "r04",
+      "homes": ["queens-room"]
+    },
+    {
+      "id": "sunnyside",
+      "nameKey": "neighborhoods.sunnyside.name",
+      "blurbKey": "neighborhoods.sunnyside.blurb",
+      "zoneId": "qn02",
+      "home": {
+        "lat": 40.74178,
+        "lng": -73.91469
+      },
+      "stationId": "713",
+      "homes": ["queens-room"]
+    },
+    {
+      "id": "jackson-heights",
+      "nameKey": "neighborhoods.jacksonHeights.name",
+      "blurbKey": "neighborhoods.jacksonHeights.blurb",
+      "zoneId": "qn03",
+      "home": {
+        "lat": 40.75079,
+        "lng": -73.88345
+      },
+      "stationId": "709",
+      "homes": ["queens-room"]
+    },
+    {
+      "id": "elmhurst",
+      "nameKey": "neighborhoods.elmhurst.name",
+      "blurbKey": "neighborhoods.elmhurst.blurb",
+      "zoneId": "qn04",
+      "home": {
+        "lat": 40.74034,
+        "lng": -73.87966
+      },
+      "stationId": "g13",
+      "homes": ["queens-room"]
+    },
+    {
+      "id": "ridgewood",
+      "nameKey": "neighborhoods.ridgewood.name",
+      "blurbKey": "neighborhoods.ridgewood.blurb",
+      "zoneId": "qn05",
+      "home": {
+        "lat": 40.70297,
+        "lng": -73.90167
+      },
+      "stationId": "m05",
+      "homes": ["queens-room"]
+    },
+    {
+      "id": "flushing",
+      "nameKey": "neighborhoods.flushing.name",
+      "blurbKey": "neighborhoods.flushing.blurb",
+      "zoneId": "qn07",
+      "home": {
+        "lat": 40.75817,
+        "lng": -73.8276
+      },
+      "stationId": "701",
+      "homes": ["queens-room"]
+    }
+  ]
+}

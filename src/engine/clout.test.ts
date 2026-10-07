@@ -457,9 +457,21 @@ describe('ceilings (S18c)', () => {
     const ceilings = cloutCeilings(config)
     const { flex, style } = config.clout
     const topPlace = Math.max(...Object.values(config.place.flexMultiplier.byLandmark))
+    // The influencer's flex bonus (S16a) is the best career percent for flex.
+    const influencerPct = 100 + 20
+    expect(config.career.paths.influencer.bonus).toEqual({
+      kind: 'clout-pct',
+      source: 'flex',
+      pct: influencerPct - 100,
+    })
     expect(ceilings.bySource.flex?.perAction).toBe(
       Math.floor(
-        (flex.baseClout * flex.viral.cloutMultiplier * topPlace * (100 + style.maxBonusPct)) / 100,
+        (flex.baseClout *
+          flex.viral.cloutMultiplier *
+          topPlace *
+          (100 + style.maxBonusPct) *
+          influencerPct) /
+          10_000,
       ),
     )
     expect(ceilings.bySource.flex?.perGameDay).toBe(

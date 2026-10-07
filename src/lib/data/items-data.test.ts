@@ -229,7 +229,8 @@ describe('ItemSchema', () => {
   it('rejects a gift with a slot and makeup outside the face slot', () => {
     expect(parses({ ...flowers, slot: 'top' })).toBe(false)
     expect(parses({ ...tee, category: 'makeup', slot: 'top' })).toBe(false)
-    expect(parses({ ...tee, category: 'makeup', slot: 'face' })).toBe(true)
+    expect(parses({ ...tee, category: 'makeup', slot: 'face' })).toBe(false)
+    expect(parses({ ...tee, category: 'makeup', slot: 'face', look: { part: 'none' } })).toBe(true)
   })
 })
 

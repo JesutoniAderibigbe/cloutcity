@@ -8,17 +8,35 @@
  * so the engine stays off classic zod and out of the shell JS budget
  * (src/lib/client-imports.test.ts).
  */
+import avatarOptionsJson from '@data/avatar/options.json'
+import traitsJson from '@data/avatar/traits.json'
 import balanceJson from '@data/config/balance.json'
+import creatorJson from '@data/config/creator.json'
 import progressionJson from '@data/config/progression.json'
 import eventsJson from '@data/events/events.json'
 import interiorsJson from '@data/homes/interiors.json'
+import neighborhoodsJson from '@data/homes/neighborhoods.json'
 import itemsJson from '@data/items/items.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
 import { STYLED_SOURCES, type StyledSourceId } from '@/lib/data/cloutSources'
 import { GOAL_FACTS, PRESTIGE_PARTS, type GoalFact, type PrestigePart } from '@/lib/data/goalFacts'
-import type { BalanceConfig, BoroughAccessRule, ProgressionConfig } from '@/lib/data/schemas/config'
+import {
+  ATTACHMENT_KINDS,
+  CREATOR_STEP_IDS,
+  ROLL_KINDS,
+  ROLL_SCOPES,
+  TRAIT_EFFECT_KINDS,
+} from '@/lib/data/avatarIds'
+import type { AvatarOptions, TraitsFile } from '@/lib/data/schemas/avatar'
+import type {
+  BalanceConfig,
+  BoroughAccessRule,
+  CareerConfig,
+  ProgressionConfig,
+} from '@/lib/data/schemas/config'
 import type { Borough, GameEvent, LocationCategory } from '@/lib/data/schemas/content'
+import type { CreatorConfig } from '@/lib/data/schemas/creator'
 import { DECOR_FITS, catalogFromJson, type DecorFit, type ItemDef } from './itemCatalog'
 
 /** A housing tier: a key of `rentPerWeek`. */
@@ -79,6 +97,23 @@ export interface EngineConfig {
   readonly grants: ProgressionConfig['grants']
   /** What prestige requires, earns, resets and keeps (src/engine/prestige.ts). */
   readonly prestige: ProgressionConfig['prestige']
+  /** Look options (data/avatar/options.json; src/engine/appearance.ts). */
+  readonly avatar: AvatarOptions
+  /** Traits and the cap on their summed modifiers (data/avatar/traits.json; src/engine/traits.ts). */
+  readonly traits: TraitsFile
+  /** Career paths and their bonuses (balance.json `career`; src/engine/career.ts). */
+  readonly career: CareerConfig
+  /** The creator's offer, steps, rolls and change cooldown (data/config/creator.json). */
+  readonly creator: CreatorConfig
+  /** Start neighborhoods (data/homes/neighborhoods.json; src/engine/neighborhoods.ts). */
+  readonly neighborhoods: readonly NeighborhoodDef[]
+}
+
+/** A start neighborhood as the engine sees it (the copy and geo checks are the data tests'). */
+export interface NeighborhoodDef {
+  readonly id: string
+  readonly home: { readonly lat: number; readonly lng: number }
+  readonly homes: readonly HomeId[]
 }
 
 /**
@@ -224,6 +259,130 @@ function homeSlots(json: typeof interiorsJson): Readonly<Record<HomeId, readonly
   }
 }
 
+function oneOf<T extends string>(value: unknown, options: readonly T[], where: string): T {
+  if (typeof value !== 'string' || !(options as readonly string[]).includes(value)) {
+    throw new Error(`${where}: "${String(value)}" is not one of ${options.join(', ')}`)
+  }
+  return value as T
+}
+
+/**
+ * JSON imports widen enums to string, so the look options are narrowed here; anything else
+ * throws at load (fail fast). AvatarOptionsSchema checks the same file in the data tests.
+ */
+function avatarRules(json: typeof avatarOptionsJson): AvatarOptions {
+  const where = 'avatar/options.json'
+  return {
+    ...json,
+    version: 1,
+    attachments: {
+      max: json.attachments.max,
+      priority: json.attachments.priority.map((kind) =>
+        oneOf(kind, ATTACHMENT_KINDS, `${where} attachments.priority`),
+      ),
+    },
+  }
+}
+
+/** Trait effect kinds narrowed (see `avatarRules`); TraitsFileSchema checks the file. */
+function traitRules(json: typeof traitsJson): TraitsFile {
+  return {
+    ...json,
+    version: 1,
+    traits: json.traits.map((trait) => ({
+      ...trait,
+      effects: trait.effects.map((effect) => ({
+        kind: oneOf(effect.kind, TRAIT_EFFECT_KINDS, `avatar/traits.json ${trait.id}`),
+        pct: effect.pct,
+      })),
+    })),
+  }
+}
+
+/** Career bonuses narrowed (see `avatarRules`); CareerConfigSchema checks balance.json. */
+function careerRules(json: typeof balanceJson.career): CareerConfig {
+  const where = 'config/balance.json career'
+  const path = (raw: (typeof json.paths)[keyof typeof json.paths]) => {
+    const bonus = raw.bonus as Record<string, unknown>
+    const kind = oneOf(bonus.kind, ['clout-pct', 'home-clout-pct', 'resale-pts'] as const, where)
+    const whole = (value: unknown) => {
+      if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+        throw new Error(`${where}: a bonus needs a whole positive amount`)
+      }
+      return value
+    }
+    const narrowed: CareerConfig['paths']['influencer']['bonus'] =
+      kind === 'clout-pct'
+        ? {
+            kind,
+            source: oneOf(bonus.source, ['flex', 'event'] as const, where),
+            pct: whole(bonus.pct),
+            ...(Array.isArray(bonus.exceptEventTags)
+              ? { exceptEventTags: bonus.exceptEventTags.map(String) }
+              : {}),
+          }
+        : kind === 'home-clout-pct'
+          ? { kind, pct: whole(bonus.pct) }
+          : { kind, pts: whole(bonus.pts) }
+    return { nameKey: raw.nameKey, goalKey: raw.goalKey, bonusKey: raw.bonusKey, bonus: narrowed }
+  }
+  return {
+    paths: {
+      influencer: path(json.paths.influencer),
+      streamer: path(json.paths.streamer),
+      'artist-dj': path(json.paths['artist-dj']),
+      'founder-hustler': path(json.paths['founder-hustler']),
+    },
+  }
+}
+
+/** Creator steps and roll scopes narrowed (see `avatarRules`); CreatorConfigSchema checks the file. */
+function creatorRules(json: typeof creatorJson): CreatorConfig {
+  const where = 'config/creator.json'
+  const steps = json.steps.map((raw) => {
+    const step = raw as Record<string, unknown>
+    const id = oneOf(step.id, CREATOR_STEP_IDS, `${where} steps`)
+    const enabled = typeof step.enabled === 'boolean' ? { enabled: step.enabled } : {}
+    if (id === 'traits') {
+      if (typeof step.pick !== 'number') throw new Error(`${where}: traits needs a pick count`)
+      return { id, pick: step.pick, ...enabled }
+    }
+    if (id === 'neighborhood') return { id, roll: 'neighborhood' as const, ...enabled }
+    if (id === 'origin' && step.roll !== undefined) {
+      return { id, roll: oneOf(step.roll, ROLL_KINDS, where), ...enabled }
+    }
+    return { id, ...enabled }
+  }) as CreatorConfig['steps']
+  const rolls: CreatorConfig['rolls'] = {}
+  for (const [kind, rule] of Object.entries(json.rolls)) {
+    rolls[oneOf(kind, ROLL_KINDS, `${where} rolls`)] = {
+      scope: oneOf(rule.scope, ROLL_SCOPES, `${where} rolls.${kind}`),
+    }
+  }
+  return {
+    version: 1,
+    offerAfterActions: json.offerAfterActions,
+    waitForTour: json.waitForTour,
+    steps,
+    rolls,
+    changeCooldownGameDays: json.changeCooldownGameDays,
+  }
+}
+
+/** The engine's view of the neighborhoods: ids, home points and startable homes. */
+function neighborhoodRules(json: typeof neighborhoodsJson): readonly NeighborhoodDef[] {
+  return json.neighborhoods.map((entry) => ({
+    id: entry.id,
+    home: entry.home,
+    homes: entry.homes.map((home) => {
+      if (!Object.hasOwn(rentPerWeek, home)) {
+        throw new Error(`homes/neighborhoods.json: ${entry.id} names an unknown home "${home}"`)
+      }
+      return home as HomeId
+    }),
+  }))
+}
+
 /**
  * balance.json `transit` plus the subway fare, for src/engine/transit/config.ts. Built here so
  * the balance file has one importer in the client graph: the bundler then keeps one copy of it
@@ -256,4 +415,9 @@ export const engineConfig: EngineConfig = {
   goals: progression.goals,
   grants: progression.grants,
   prestige: progression.prestige,
+  avatar: avatarRules(avatarOptionsJson),
+  traits: traitRules(traitsJson),
+  career: careerRules(balanceJson.career),
+  creator: creatorRules(creatorJson),
+  neighborhoods: neighborhoodRules(neighborhoodsJson),
 }

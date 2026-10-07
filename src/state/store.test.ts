@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { minutesPerDay } from '@/engine/clock'
 import { engineConfig } from '@/engine/config'
 import { initialCloutState, legacyCloutState } from '@/engine/clout'
-import { playerWithClout } from '@/engine/test-support'
+import { playerWithClout, V11_FRESH_PLAYER, V11_PLAYER_KEYS } from '@/engine/test-support'
 import { initialFlexState } from '@/engine/game'
 import { initialApartment } from '@/engine/home'
+import { initialCreatorState } from '@/engine/creator'
 import type { EventContext } from '@/engine/events'
 import { nextRentDueDay } from '@/engine/rent'
 import { createLogger, type LogRecord } from '@/lib/log'
@@ -18,6 +19,10 @@ import {
   initialPersistedState,
   type PersistedState,
 } from './store'
+
+// A fixed seed, so every new game in these tests has the same random look (S16a); the look's
+// randomness itself is tested in src/engine/appearance.test.ts.
+vi.mock('./randomSeed', () => ({ randomSeed: () => 1234 }))
 
 /** A minimal in-memory Web Storage, standing in for window.localStorage. */
 class MemoryStorage implements Storage {
@@ -84,7 +89,15 @@ describe('game store persistence', () => {
       apartment: initialApartment,
       location: { kind: 'home' },
       transit: { rngState: 0 },
+      look: fresh.player.look,
+      traits: [],
+      traitsChangedAt: null,
+      careerPath: null,
+      careerChangedAt: null,
+      neighborhood: null,
     })
+    expect(state.creator).toEqual(initialCreatorState)
+    expect(state.rolls).toEqual({})
     expect(state.lastLevelUp).toBeNull()
     expect(state.clock).toEqual({ minute: 480, remainderMs: 0 })
     expect(state.speed).toBe(1)
@@ -100,11 +113,13 @@ describe('game store persistence', () => {
     expect(after.state.clock.minute).toBe(500)
     expect(Object.keys(after.state).sort()).toEqual([
       'clock',
+      'creator',
       'events',
       'goals',
       'grants',
       'player',
       'prestige',
+      'rolls',
       'speed',
     ])
   })
@@ -126,8 +141,11 @@ describe('game store persistence', () => {
     const local = new MemoryStorage()
     local.setItem(STORE_KEY, JSON.stringify({ state: { player: { cash: 999 } }, version: 1 }))
     const { records, store } = setup(local)
-    expect(store().getState().player).toEqual(saveOf(999).player)
-    expect(saved(local)).toEqual({ state: saveOf(999), version: STORE_VERSION })
+    // An old save's look is seeded from what it holds (S16a), not drawn at random.
+    const { look } = store().getState().player
+    const upgraded = { ...saveOf(999), player: { ...saveOf(999).player, look } }
+    expect(store().getState().player).toEqual(upgraded.player)
+    expect(saved(local)).toEqual({ state: upgraded, version: STORE_VERSION })
     expect(records.some((r) => r.level === 'info' && /upgraded/i.test(r.msg))).toBe(true)
   })
 
@@ -215,6 +233,7 @@ describe('game store persistence', () => {
         apartment: initialApartment,
         location: { kind: 'home' },
         transit: { rngState: 0 },
+        ...V11_FRESH_PLAYER,
       },
       speed: 1,
     })
@@ -299,9 +318,10 @@ describe('storage unavailable', () => {
     const game = createGameStore(storage, logger)
     game.getState().performAction('bodega-breakfast')
     expect(game.getState().player.cash).toBe(START_CASH - BODEGA)
-    const { clock, player, speed, events, goals, grants, prestige } = game.getState()
+    const { clock, player, speed, events, goals, grants, prestige, creator, rolls } =
+      game.getState()
     expect(storage.getItem(STORE_KEY)).toEqual({
-      state: { clock, player, speed, events, goals, grants, prestige },
+      state: { clock, player, speed, events, goals, grants, prestige, creator, rolls },
       version: STORE_VERSION,
     })
   })
@@ -507,6 +527,7 @@ describe('jobs and rent in the store', () => {
       apartment: initialApartment,
       location: { kind: 'home' },
       transit: { rngState: 0 },
+      ...V11_FRESH_PLAYER,
     })
     expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
@@ -662,11 +683,14 @@ describe('items in the store', () => {
     delete v3player.apartment
     delete v3player.location
     delete v3player.transit
+    for (const key of V11_PLAYER_KEYS) delete v3player[key]
     const v3: Record<string, unknown> = { ...fresh, player: v3player }
     delete v3.events
     delete v3.goals
     delete v3.grants
     delete v3.prestige
+    delete v3.creator
+    delete v3.rolls
     local.setItem(STORE_KEY, JSON.stringify({ state: v3, version: 3 }))
     const game = setup(local).store()
     expect(game.getState().player.cash).toBe(321)

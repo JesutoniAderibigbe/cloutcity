@@ -24,9 +24,18 @@
  *   older save starts with no decor, nothing placed and an empty move log.
  * - v10 (S08): adds `player.location` (at home, or at a place by id) and `player.transit` (the
  *   delay roll's generator state). An older save starts at home with a fresh generator.
+ * - v11 (S16a): adds `player.look` (option ids), `player.traits` and `traitsChangedAt`,
+ *   `player.careerPath` and `careerChangedAt`, `player.neighborhood`, `creator` (the offer and
+ *   steps) and `rolls` (committed creator rolls). An older save gets a look seeded from an FNV
+ *   hash of what it already holds (the same save always gets the same look), no traits, no
+ *   career, no neighborhood, a fresh creator and no rolls. (INT-12/13: S18c also claims v11 on
+ *   its lane; whichever merges second renumbers to v12 and chains its migration.)
  */
 import * as z from 'zod/mini'
 import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
+import { CAREER_PATHS, CREATOR_STEP_IDS, ROLL_KINDS } from '@/lib/data/avatarIds'
+import { lookSeedFromFacts, randomLook, repairLook, type Look } from './appearance'
+import { isCareerPath } from './career'
 import { calendar, isSpeed, realMsPerGameMinute } from './clock'
 import {
   appendClout,
@@ -42,6 +51,14 @@ import {
   type CloutState,
 } from './clout'
 import { isHomeId, type EngineConfig, type HomeId } from './config'
+import {
+  initialCreatorState,
+  initialRolls,
+  rollPool,
+  type CreatorState,
+  type RollRecord,
+  type Rolls,
+} from './creator'
 import { initialEventsState, type EventsState, type PendingEffect } from './events'
 import {
   initialFlexState,
@@ -85,8 +102,9 @@ import {
 } from './items'
 import { initialPrestigeState, type PrestigeRun, type PrestigeState } from './prestige'
 import { initialRent } from './rent'
+import { isTraitId, traitPickCount } from './traits'
 
-export const SAVE_VERSION = 10
+export const SAVE_VERSION = 11
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
@@ -98,6 +116,10 @@ export interface SaveState extends GameSnapshot {
   readonly grants: GrantsState
   /** Prestige runs and badges (src/engine/prestige.ts). */
   readonly prestige: PrestigeState
+  /** The creator's offer and progress (S16a, src/engine/creator.ts). */
+  readonly creator: CreatorState
+  /** Committed creator rolls (S16a): drawn once, written before the reveal. */
+  readonly rolls: Rolls
 }
 
 const CashSchema = z.int().check(z.gte(0))
@@ -572,6 +594,126 @@ function prestigeIssue(prestige: PrestigeState, nowMinute: number) {
   return null
 }
 
+/** A look naming only known options (src/engine/appearance.ts). */
+function lookSchema(config: EngineConfig) {
+  return z
+    .strictObject({
+      skin: z.string(),
+      hairStyle: z.string(),
+      hairColor: z.string(),
+      facialHair: z.string(),
+      headwear: z.string(),
+      eyewear: z.string(),
+      ears: z.string(),
+      outfit: z.string(),
+      top: z.string(),
+      bottom: z.string(),
+      shoes: z.string(),
+      height: z.string(),
+    })
+    .check(z.refine((look) => !repairLook(look, config).repaired, 'Unknown look option'))
+}
+
+const MinuteOrNullSchema = z.nullable(WholeSchema)
+
+/** Known, different trait ids: none, or exactly the creator's pick count. */
+function traitsSchema(config: EngineConfig) {
+  return z
+    .array(z.string())
+    .check(
+      z.refine(
+        (ids) =>
+          (ids.length === 0 || ids.length === traitPickCount(config)) &&
+          new Set(ids).size === ids.length &&
+          ids.every((id) => isTraitId(id, config)),
+        'Unknown or repeated traits',
+      ),
+    )
+}
+
+const CareerPathSchema = z.nullable(z.enum(CAREER_PATHS))
+
+function neighborhoodSchema(config: EngineConfig) {
+  return z.nullable(
+    z
+      .string()
+      .check(
+        z.refine(
+          (id) => config.neighborhoods.some((entry) => entry.id === id),
+          'Unknown neighborhood',
+        ),
+      ),
+  )
+}
+
+const CreatorStateSchema = z.strictObject({
+  actions: WholeSchema,
+  offeredAt: MinuteOrNullSchema,
+  dismissedAt: MinuteOrNullSchema,
+  completedAt: MinuteOrNullSchema,
+  skippedSteps: z.array(z.enum(CREATOR_STEP_IDS)),
+})
+
+const RollRecordSchema = z.strictObject({
+  result: z.string(),
+  at: WholeSchema,
+  run: z.int().check(z.gte(1)),
+})
+
+const RollsSchema = z.partialRecord(z.enum(ROLL_KINDS), RollRecordSchema)
+
+/** What the identity fields (S16a) need to agree on, from the player and the save. */
+interface Identity {
+  readonly traits: readonly string[]
+  readonly traitsChangedAt: number | null
+  readonly careerPath: string | null
+  readonly careerChangedAt: number | null
+  readonly neighborhood: string | null
+}
+
+/**
+ * Why structurally valid identity fields are inconsistent, or null: chosen traits or a career
+ * without the minute they were chosen (or the reverse), a choice in the future, or a
+ * neighborhood the player was not rolled.
+ */
+function identityIssue(identity: Identity, rolls: Rolls, nowMinute: number) {
+  if ((identity.traits.length === 0) !== (identity.traitsChangedAt === null)) {
+    return 'traits out of step with their minute'
+  }
+  if ((identity.careerPath === null) !== (identity.careerChangedAt === null)) {
+    return 'career out of step with its minute'
+  }
+  if ((identity.traitsChangedAt ?? 0) > nowMinute || (identity.careerChangedAt ?? 0) > nowMinute) {
+    return 'a choice in the future'
+  }
+  if (identity.neighborhood !== null && rolls.neighborhood?.result !== identity.neighborhood) {
+    return 'a neighborhood that was not rolled'
+  }
+  return null
+}
+
+/** Why a structurally valid creator state is inconsistent, or null. */
+function creatorIssue(creator: CreatorState, nowMinute: number, config: EngineConfig) {
+  const minutes = [creator.offeredAt, creator.dismissedAt, creator.completedAt]
+  if (minutes.some((minute) => minute !== null && minute > nowMinute)) {
+    return 'creator minute in the future'
+  }
+  if (creator.actions > config.creator.offerAfterActions) return 'creator actions past the offer'
+  if (new Set(creator.skippedSteps).size !== creator.skippedSteps.length) return 'repeated step'
+  return null
+}
+
+/** Why structurally valid rolls are inconsistent, or null: a result outside the pool, or a roll in the future or a later run. */
+function rollsIssue(rolls: Rolls, nowMinute: number, run: number, config: EngineConfig) {
+  for (const kind of ROLL_KINDS) {
+    const roll = rolls[kind]
+    if (roll === undefined) continue
+    if (!rollPool(kind, config).includes(roll.result)) return 'roll result outside its pool'
+    if (roll.at > nowMinute || roll.run > run) return 'roll in the future'
+  }
+  return null
+}
+
 export function createSaveSchema(config: EngineConfig) {
   const stat = z.int().check(z.gte(0), z.lte(config.stats.max))
   const save = z.strictObject({
@@ -595,12 +737,20 @@ export function createSaveSchema(config: EngineConfig) {
       apartment: apartmentSchema(config),
       location: locationSchema(config),
       transit: TransitStateSchema,
+      look: lookSchema(config),
+      traits: traitsSchema(config),
+      traitsChangedAt: MinuteOrNullSchema,
+      careerPath: CareerPathSchema,
+      careerChangedAt: MinuteOrNullSchema,
+      neighborhood: neighborhoodSchema(config),
     }),
     speed: z.number().check(z.refine((speed) => isSpeed(speed, config), 'Unsupported speed')),
     events: eventsStateSchema(config),
     goals: goalsStateSchema(config),
     grants: grantsStateSchema(config),
     prestige: prestigeStateSchema(config),
+    creator: CreatorStateSchema,
+    rolls: RollsSchema,
   })
   return save.check(
     z.refine(
@@ -633,6 +783,7 @@ export function createSaveSchema(config: EngineConfig) {
             inventory: value.player.inventory as Inventory,
             home: value.player.home as HomeId,
             apartment: value.player.apartment as ApartmentState,
+            careerPath: value.player.careerPath,
           },
           config,
         ),
@@ -673,6 +824,19 @@ export function createSaveSchema(config: EngineConfig) {
       message: 'Inconsistent prestige',
       path: ['prestige'],
     }),
+    z.refine(
+      (value) => identityIssue(value.player, value.rolls as Rolls, value.clock.minute) === null,
+      { message: 'Inconsistent identity', path: ['player'] },
+    ),
+    z.refine((value) => creatorIssue(value.creator, value.clock.minute, config) === null, {
+      message: 'Inconsistent creator',
+      path: ['creator'],
+    }),
+    z.refine(
+      (value) =>
+        rollsIssue(value.rolls as Rolls, value.clock.minute, value.goals.run, config) === null,
+      { message: 'Inconsistent rolls', path: ['rolls'] },
+    ),
   )
 }
 
@@ -1154,6 +1318,118 @@ function repairPrestige(
 }
 
 /**
+ * The identity fields (S16a) from an untrusted save, each kept when usable: traits that are not
+ * known, different ids in the pick count become none; an unknown career path none; a choice
+ * minute that is missing or in the future becomes now while the choice is kept (so the change
+ * cooldown starts over, never ends early), and none without the choice; a neighborhood that was
+ * not rolled none. `repaired` names the fields changed.
+ */
+function repairIdentity(
+  raw: Record<string, unknown>,
+  rolls: Rolls,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly identity: Identity; readonly repaired: readonly string[] } {
+  const repaired: string[] = []
+  const minuteOf = (value: unknown) =>
+    typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && value <= nowMinute
+      ? value
+      : null
+  const traitsParsed = traitsSchema(config).safeParse(raw.traits)
+  const traits = traitsParsed.success ? traitsParsed.data : []
+  if (!traitsParsed.success) repaired.push('traits')
+  let traitsChangedAt = traits.length === 0 ? null : minuteOf(raw.traitsChangedAt)
+  if (traits.length > 0 && traitsChangedAt === null) traitsChangedAt = nowMinute
+  if (traitsChangedAt !== raw.traitsChangedAt) repaired.push('traitsChangedAt')
+
+  const careerPath = isCareerPath(raw.careerPath) ? raw.careerPath : null
+  if (careerPath !== raw.careerPath) repaired.push('careerPath')
+  let careerChangedAt = careerPath === null ? null : minuteOf(raw.careerChangedAt)
+  if (careerPath !== null && careerChangedAt === null) careerChangedAt = nowMinute
+  if (careerChangedAt !== raw.careerChangedAt) repaired.push('careerChangedAt')
+
+  const rolled = rolls.neighborhood?.result
+  const neighborhood =
+    typeof raw.neighborhood === 'string' &&
+    raw.neighborhood === rolled &&
+    config.neighborhoods.some((entry) => entry.id === rolled)
+      ? raw.neighborhood
+      : null
+  if (neighborhood !== raw.neighborhood) repaired.push('neighborhood')
+  return {
+    identity: { traits, traitsChangedAt, careerPath, careerChangedAt, neighborhood },
+    repaired,
+  }
+}
+
+/**
+ * The creator state from an untrusted save: minutes that are not whole numbers in 0..now become
+ * null, the action count is clamped to the offer threshold, and unknown or repeated skipped
+ * steps are dropped. `repaired` is false when it was already valid.
+ */
+function repairCreator(
+  raw: unknown,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly creator: CreatorState; readonly repaired: boolean } {
+  const parsed = CreatorStateSchema.safeParse(raw)
+  if (parsed.success && creatorIssue(parsed.data, nowMinute, config) === null) {
+    return { creator: parsed.data, repaired: false }
+  }
+  const source = recordOf(raw)
+  const minuteOf = (value: unknown) =>
+    typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && value <= nowMinute
+      ? value
+      : null
+  const rawActions = source.actions
+  const actions =
+    typeof rawActions === 'number' && Number.isSafeInteger(rawActions)
+      ? Math.min(config.creator.offerAfterActions, Math.max(0, rawActions))
+      : 0
+  const skippedSteps: CreatorState['skippedSteps'][number][] = []
+  for (const step of Array.isArray(source.skippedSteps) ? source.skippedSteps : []) {
+    const known = CREATOR_STEP_IDS.find((id) => id === step)
+    if (known !== undefined && !skippedSteps.includes(known)) skippedSteps.push(known)
+  }
+  return {
+    creator: {
+      actions,
+      offeredAt: minuteOf(source.offeredAt),
+      dismissedAt: minuteOf(source.dismissedAt),
+      completedAt: minuteOf(source.completedAt),
+      skippedSteps,
+    },
+    repaired: true,
+  }
+}
+
+/**
+ * Committed rolls from an untrusted save: rolls of unknown kinds, with a result outside the
+ * pool, or recorded in the future or a later run are dropped.
+ */
+function repairRolls(
+  raw: unknown,
+  nowMinute: number,
+  run: number,
+  config: EngineConfig,
+): { readonly rolls: Rolls; readonly repaired: boolean } {
+  const parsed = RollsSchema.safeParse(raw)
+  if (parsed.success && rollsIssue(parsed.data, nowMinute, run, config) === null) {
+    return { rolls: parsed.data, repaired: false }
+  }
+  const source = recordOf(raw)
+  const rolls: Partial<Record<(typeof ROLL_KINDS)[number], RollRecord>> = {}
+  for (const kind of ROLL_KINDS) {
+    const entry = RollRecordSchema.safeParse(Object.hasOwn(source, kind) ? source[kind] : undefined)
+    if (!entry.success) continue
+    if (rollsIssue({ [kind]: entry.data }, nowMinute, run, config) === null) {
+      rolls[kind] = entry.data
+    }
+  }
+  return { rolls, repaired: true }
+}
+
+/**
  * The structure a current-version save must have to be usable at all. Fields that can be
  * repaired one by one (see `loadSave`) are only type-checked loosely here.
  */
@@ -1179,6 +1455,13 @@ const LoadableSaveSchema = z.strictObject({
     location: z.optional(z.unknown()),
     // Repairable: a generator state that is not a uint32 starts over; a v9 save has none.
     transit: z.optional(z.unknown()),
+    // Repairable (`repairLook`, `repairIdentity`); a v10 save has none (its look is seeded).
+    look: z.optional(z.unknown()),
+    traits: z.optional(z.unknown()),
+    traitsChangedAt: z.optional(z.unknown()),
+    careerPath: z.optional(z.unknown()),
+    careerChangedAt: z.optional(z.unknown()),
+    neighborhood: z.optional(z.unknown()),
   }),
   speed: z.unknown(),
   // Repairable: a missing or unusable event state starts over (`repairEvents`).
@@ -1187,6 +1470,9 @@ const LoadableSaveSchema = z.strictObject({
   goals: z.optional(z.unknown()),
   grants: z.optional(z.unknown()),
   prestige: z.optional(z.unknown()),
+  // Repairable (`repairCreator`, `repairRolls`); a v10 save has none.
+  creator: z.optional(z.unknown()),
+  rolls: z.optional(z.unknown()),
 })
 
 /** A v6 save's structure (S09): clout is one number, no flex state yet. */
@@ -1289,7 +1575,12 @@ export type LoadResult =
  * - an inconsistent grant log, goals or prestige keep what is usable (see `repairGrants`,
  *   `repairGoals`, `repairPrestige`). Which rewards were claimed is never stored on its own:
  *   it is the grant log's keys plus the clout ledger's grant references, so no repair can
- *   unclaim one.
+ *   unclaim one;
+ * - a look option the options no longer have becomes the default (`repairLook`); a save with no
+ *   look (v10 and older) gets one seeded from what it holds (`lookSeedFromFacts`), so the same
+ *   save always gets the same look;
+ * - unusable traits, career, neighborhood, creator state or rolls keep what is usable (see
+ *   `repairIdentity`, `repairCreator`, `repairRolls`).
  * Only a structurally unusable save (missing objects, unknown keys, cash or minute of the wrong
  * type or range) fails, and the caller starts fresh.
  */
@@ -1350,7 +1641,10 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
     config,
   )
   if (apartmentRepaired && present(player.apartment)) repaired.push('player.apartment')
-  const holdings: Holdings = { inventory, home, apartment }
+  // The career path counts toward home clout (an artist/DJ's bonus), so the level checks below
+  // need it; `repairIdentity` keeps exactly the same path.
+  const careerPath = isCareerPath(player.careerPath) ? player.careerPath : null
+  const holdings: Holdings = { inventory, home, apartment, careerPath }
 
   const { clubNights, repaired: nightsRepaired } = repairClubNights(
     player.clubNights,
@@ -1414,6 +1708,45 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   )
   if (prestigeRepaired && present(raw.prestige)) repaired.push('prestige')
 
+  const { rolls, repaired: rollsRepaired } = repairRolls(
+    orFresh(raw.rolls, initialRolls),
+    clock.minute,
+    goals.run,
+    config,
+  )
+  if (rollsRepaired && present(raw.rolls)) repaired.push('rolls')
+
+  const { creator, repaired: creatorRepaired } = repairCreator(
+    orFresh(raw.creator, initialCreatorState),
+    clock.minute,
+    config,
+  )
+  if (creatorRepaired && present(raw.creator)) repaired.push('creator')
+
+  const identityRaw: Record<string, unknown> = {
+    traits: orFresh(player.traits, []),
+    traitsChangedAt: orFresh(player.traitsChangedAt, null),
+    careerPath: orFresh(player.careerPath, null),
+    careerChangedAt: orFresh(player.careerChangedAt, null),
+    neighborhood: orFresh(player.neighborhood, null),
+  }
+  const { identity, repaired: identityRepaired } = repairIdentity(
+    identityRaw,
+    rolls,
+    clock.minute,
+    config,
+  )
+  for (const field of identityRepaired) repaired.push(`player.${field}`)
+
+  let look: Look
+  if (present(player.look)) {
+    const fixed = repairLook(player.look, config)
+    look = fixed.look
+    if (fixed.repaired) repaired.push('player.look')
+  } else {
+    look = seededLook(clock.minute, player, transit, flex, raw.events, config)
+  }
+
   return {
     ok: true,
     save: {
@@ -1431,15 +1764,45 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
         apartment,
         location,
         transit,
+        look,
+        traits: identity.traits,
+        traitsChangedAt: identity.traitsChangedAt,
+        careerPath,
+        careerChangedAt: identity.careerChangedAt,
+        neighborhood: identity.neighborhood,
       },
       speed: validSpeed,
       events: repairEvents(events, config, repaired),
       goals,
       grants,
       prestige,
+      creator,
+      rolls,
     },
     repaired,
   }
+}
+
+/**
+ * The look an older save (v10 and before, which had none) starts with: random, seeded from what
+ * the save holds (D14), so loading the same old save again gives the same look.
+ */
+function seededLook(
+  minute: number,
+  player: { readonly cash: number; readonly stats: unknown; readonly home: unknown },
+  transit: TransitState,
+  flex: FlexState,
+  events: unknown,
+  config: EngineConfig,
+): Look {
+  const seed = lookSeedFromFacts({
+    minute,
+    cash: player.cash,
+    stats: player.stats,
+    home: player.home,
+    generators: [flex.rngState, transit.rngState, recordOf(events).rngState ?? null],
+  })
+  return randomLook(seed, config)
 }
 
 /**
@@ -1475,15 +1838,26 @@ function repairEvents(value: unknown, config: EngineConfig, repaired: string[]):
 
 const SaveV1Schema = z.strictObject({ player: z.strictObject({ cash: CashSchema }) })
 
-export function initialSave(config: EngineConfig): SaveState {
-  return {
-    ...initialSnapshot(config),
+/**
+ * A new game. `lookSeed` (a random seed the state layer draws from `crypto`, S16a) gives a guest
+ * their random starting look; without one the look is the configured default.
+ */
+export function initialSave(config: EngineConfig, options: { readonly lookSeed?: number } = {}) {
+  const snapshot = initialSnapshot(config)
+  const look =
+    options.lookSeed === undefined ? snapshot.player.look : randomLook(options.lookSeed, config)
+  const save: SaveState = {
+    ...snapshot,
+    player: { ...snapshot.player, look },
     speed: config.time.speeds[0] ?? 1,
     events: initialEventsState(),
     goals: initialGoalsState,
     grants: initialGrantsState,
     prestige: initialPrestigeState,
+    creator: initialCreatorState,
+    rolls: initialRolls,
   }
+  return save
 }
 
 /** A save written by a newer build: expected (an older tab or a rollback), not a failure. */
@@ -1514,7 +1888,7 @@ function upgradeV6(v6: LoadableSaveV6, config: EngineConfig) {
   const { clock, player } = v6
   const { inventory } = repairInventory(withDecorList(player.inventory), clock.minute, config)
   const home = isHomeId(player.home, config) ? player.home : config.startHome
-  const holdings: Holdings = { inventory, home, apartment: initialApartment }
+  const holdings: Holdings = { inventory, home, apartment: initialApartment, careerPath: null }
   let clout = legacyCloutState(player.clout, 0)
   let events: unknown = v6.events
   const parsedEvents = eventsStateV6Schema(config).safeParse(v6.events)
@@ -1551,7 +1925,8 @@ function loadV6(raw: unknown, config: EngineConfig): LoadResult | null {
  * Every step goes through the v6 form, so v2 to v5 saves get the v6 upgrade too. A v7 save keeps
  * everything and starts with no recorded visits, no grants and no prestige. A v7 or v8 save
  * starts with no decor, nothing placed and an empty move log. A v7 to v9 save starts at home
- * with a fresh transit generator. Every older save
+ * with a fresh transit generator. A v10 or older save gets a look seeded from what it holds, no
+ * traits, career or neighborhood, a fresh creator and no rolls. Every older save
  * then gets its goals derived from what it holds, at its current minute (`syncGoals`): a save
  * already at Icon starts with an unacknowledged Icon moment. Anything older or malformed
  * starts fresh. A save from a newer build throws `NewerSaveError`: it is
@@ -1567,10 +1942,9 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
   if (version === 1) {
     const v1 = SaveV1Schema.safeParse(persisted)
     if (v1.success) {
-      return {
-        save: { ...fresh, player: { ...fresh.player, cash: v1.data.player.cash } },
-        outcome: 'carried',
-      }
+      const player = { ...fresh.player, cash: v1.data.player.cash }
+      const look = seededLook(fresh.clock.minute, player, player.transit, player.flex, null, config)
+      return { save: { ...fresh, player: { ...player, look } }, outcome: 'carried' }
     }
   }
   if (version === 2) {
@@ -1622,9 +1996,9 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
     }
   }
   if (version === 6) loaded = loadV6(persisted, config)
-  // A v7 to v9 save is the current structure without the S15 (v7), S16 (v8) or S08 (v9)
-  // fields, which `loadSave` fills in.
-  if (version === 7 || version === 8 || version === 9) loaded = loadSave(persisted, config)
+  // A v7 to v10 save is the current structure without the S15 (v7), S16 (v8), S08 (v9) or
+  // S16a (v10) fields, which `loadSave` fills in.
+  if (version >= 7 && version <= 10) loaded = loadSave(persisted, config)
   if (loaded?.ok === true) {
     return { save: syncGoals(loaded.save, config).save, outcome: 'carried' }
   }

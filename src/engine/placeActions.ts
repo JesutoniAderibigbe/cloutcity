@@ -21,6 +21,7 @@
  */
 import type { Hours, Venue } from '@/lib/data/schemas/content'
 import { applyAction, findAction, type ActionDef, type ActionError } from './actions'
+import { traitAdjustedAction } from './traits'
 import { boroughAccess, type BoroughAccess } from './boroughs'
 import { calendar, type Rollovers } from './clock'
 import {
@@ -342,13 +343,15 @@ export function placeActions(
   const unblocked = isVenue(place)
     ? venueActions(place, snapshot, config)
     : landmarkActions(place, snapshot, config)
-  const actions = unblocked.map(
-    (action) =>
-      ({
-        ...action,
-        block: blockFor(action, place, access, hours, snapshot, config),
-      }) as PlaceAction,
-  )
+  // Each definition carries the player's traits (src/engine/traits.ts), so the sheet shows the
+  // energy and mood that will land; shifts and flexes apply the same adjustment themselves.
+  const actions = unblocked.map((raw) => {
+    const action = { ...raw, def: traitAdjustedAction(raw.def, snapshot.player, config) }
+    return {
+      ...action,
+      block: blockFor(action, place, access, hours, snapshot, config),
+    } as PlaceAction
+  })
   return { kind: 'actions', access, hours, actions }
 }
 

@@ -32,6 +32,7 @@ import {
   EventsFileSchema,
   HomesFileSchema,
   HomeInteriorsFileSchema,
+  NeighborhoodsFileSchema,
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
@@ -59,6 +60,8 @@ import {
   ZonesFileSchema,
 } from './schemas/world'
 import { ModelManifestSchema } from './schemas/assets'
+import { AvatarOptionsSchema, TraitsFileSchema } from './schemas/avatar'
+import { CreatorConfigSchema } from './schemas/creator'
 import { CatalogSchema } from '../../../scripts/assets/schema'
 import { audio, balance, layout, onboarding, perf, progression, realtime, theme } from './config'
 import {
@@ -84,10 +87,13 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'assets/catalog.json': CatalogSchema,
   'assets/manifest.json': ModelManifestSchema,
   'audio/manifest.json': AudioManifestSchema,
+  'avatar/options.json': AvatarOptionsSchema,
+  'avatar/traits.json': TraitsFileSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
   'config/audio.json': AudioConfigSchema,
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,
+  'config/creator.json': CreatorConfigSchema,
   'config/geo.json': GeoConfigSchema,
   'config/handles.json': HandlesConfigSchema,
   'config/layout.json': LayoutConfigSchema,
@@ -111,6 +117,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
   'homes/interiors.json': HomeInteriorsFileSchema,
+  'homes/neighborhoods.json': NeighborhoodsFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/frames.derived.json': LandmarkFramesFileSchema,
@@ -178,6 +185,7 @@ describe('/data files', () => {
     'zones',
     'audio',
     'assets',
+    'avatar',
     'boroughs',
     'homes',
     'config',
@@ -806,6 +814,7 @@ describe('content schemas', () => {
     cloutValue: 1,
     styleValue: 1,
     statEffects: { mood: 2 },
+    look: { part: 'outfit', outfit: 'outfit-01', top: 'teal' },
   }
 
   it('rejects an item that sells for more than it costs, or an unknown stat', () => {

@@ -5,13 +5,14 @@
  * clock, its speed, clout with the goal line (the Goals button, S15), and the three stats. Each
  * cell subscribes to the slice of the save it shows, so a passing game minute re-renders the
  * clock and the stats, not the clout cell. It also starts the game clock (Q12), tells the Icon
- * moment mount when the moment is due, and tells the 3D map which home the player lives in and
- * where they stand.
+ * moment mount when the moment is due, and tells the 3D map which home the player lives in,
+ * where they stand and how their avatar looks (S16a).
  *
  * It renders a fragment of grid cells in the HudFrame grid (hudLayout.ts), box for box the same
  * as HudSkeleton.
  */
 import { useEffect, useMemo } from 'react'
+import { effectiveLook } from '@/engine/appearance'
 import { minutesPerDay } from '@/engine/clock'
 import { cloutProgress } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
@@ -27,6 +28,7 @@ import { clockView, nextSpeed, statsView } from '@/state/hudView'
 import { setIconMomentPending } from '@/state/iconMoment'
 import { onboardingStore } from '@/state/onboarding'
 import { setPlayerHome } from '@/state/playerHome'
+import { setPlayerLook } from '@/state/playerLook'
 import { setPlayerSpot, useTripClockMinute } from '@/state/trip'
 import { gameStore, useGameStore } from '@/state/store'
 import { CloutMeter } from './CloutMeter'
@@ -49,13 +51,15 @@ export function HudLive() {
 
 /**
  * The live island's side effects: the game clock, the Icon moment signal, the player's home and
- * the minute of day the day/night cycle reads.
+ * look, and the minute of day the day/night cycle reads.
  */
 function useHudEffects() {
   const icon = useGameStore((state) => state.goals.icon)
   const home = useGameStore((state) => state.player.home)
   const minuteOfDay = useGameStore((state) => state.clock.minute % minutesPerDay(engineConfig))
   const location = useGameStore((state) => state.player.location)
+  const look = useGameStore((state) => state.player.look)
+  const inventory = useGameStore((state) => state.player.inventory)
 
   // Passive time runs once the welcome card is complete; one driver however often this mounts.
   useEffect(() => startGameClock({ game: gameStore, onboarding: onboardingStore }), [])
@@ -66,6 +70,10 @@ function useHudEffects() {
 
   useEffect(() => setPlayerHome(home), [home])
   useEffect(() => setPlayerSpot(location), [location])
+  useEffect(
+    () => setPlayerLook(effectiveLook({ look, inventory }, engineConfig)),
+    [look, inventory],
+  )
 
   useEffect(() => setMinuteOfDay(minuteOfDay), [minuteOfDay])
 

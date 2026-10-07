@@ -1,5 +1,6 @@
 /** Save v10 (S08): the player's location and the transit generator; migration from v9 and every older version; repairs. */
 import { describe, expect, it } from 'vitest'
+import { V11_PLAYER_KEYS } from './test-support'
 import { engineConfig as config } from './config'
 import { HOME_LOCATION, initialTransitState } from './game'
 import {
@@ -41,6 +42,7 @@ function v9Of(save: SaveState = base): Record<string, unknown> & {
   const player: Record<string, unknown> = { ...save.player }
   delete player.location
   delete player.transit
+  for (const key of V11_PLAYER_KEYS) delete player[key]
   return { ...save, player }
 }
 
@@ -50,8 +52,8 @@ const withPlayer = (patch: Record<string, unknown>) => ({
 })
 
 describe('save v10', () => {
-  it('is version 10 and a fresh save starts at home with a fresh generator', () => {
-    expect(SAVE_VERSION).toBe(10)
+  it('is version 11 and a fresh save starts at home with a fresh generator', () => {
+    expect(SAVE_VERSION).toBe(11)
     const fresh = initialSave(config)
     expect(fresh.player.location).toEqual(HOME_LOCATION)
     expect(fresh.player.transit).toEqual(initialTransitState)
@@ -99,6 +101,8 @@ describe('v9 -> v10', () => {
         delete save.goals
         delete save.grants
         delete save.prestige
+        delete save.creator
+        delete save.rolls
       }
       if (version < 7) {
         p.clout = 0

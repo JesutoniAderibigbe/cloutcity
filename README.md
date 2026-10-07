@@ -361,7 +361,9 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   `floor(price * resalePct[rarity] / 100)`), less `depreciationPctPerGameDay` per game day
   owned for wearables and decor, never below `minResalePct` (`balance.json` `items`). Decor is
   owned once and sells back out of its slot; selling a wearable or decor kept through prestige
-  is refused (`PRESTIGE_KEPT`).
+  is refused (`PRESTIGE_KEPT`). Every wearable has a `look` (S16a): a top sets the outfit (a
+  body option) and top colour, a bottom or shoes their colour, an accessory an attachment model,
+  makeup `{ "part": "none" }`; the ids come from `data/avatar/options.json`.
 - **Apartment** (`home.ts`, slots in `data/homes/interiors.json`, numbers in `balance.json`
   `home`): decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface,
   `homeScore`, and at least two colour `variants`, each a palette token and a `colors.*` copy
@@ -414,6 +416,23 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   listed in `prestige.resets`. To add a goal: add it to `progression.json` (a fact from
   `src/lib/data/goalFacts.ts`), add `goals.goal.<camelId>.name` and `.hint` to
   `data/copy/goals/base.json`, and run `npm test`.
+- **Look, traits, career and the creator** (S16a; `appearance.ts`, `traits.ts`, `career.ts`,
+  `creator.ts`, `neighborhoods.ts`): a look is option ids only (`data/avatar/options.json`, each
+  mapping to S04h catalog models and `theme.json` `models` tokens). Guests start with a random
+  look (`randomLook`, seeded from `crypto` by `src/state/randomSeed.ts`); `effectiveLook` lays
+  worn items over it and caps attachments; `publicAvatar` is the enums other players may see.
+  Traits (`data/avatar/traits.json`, pick 2) carry `effects[]` of ±10% on energy cost, mood
+  gains, shop prices and trip length; career paths (`balance.json` `career`) give a flex, event
+  (not nightlife), home-clout or resale bonus, never club, grant, premium or item clout. Both
+  changes wait `creator.changeCooldownGameDays` (`data/config/creator.json`, which also holds the
+  offer rule, the step registry with the disabled `origin` seam, and roll scopes).
+  `commitRoll` writes the neighborhood roll (`data/homes/neighborhoods.json`) before the reveal;
+  `homePoint` places the start home in the player's neighborhood. The store only counts actions
+  toward the creator offer; the creator's own actions (`src/state/creatorActions.ts`) load with
+  the creator, off the playable path, and the HUD publishes the drawn look for the 3D chunks
+  (`src/state/playerLook.ts`). To add a look option: add it to
+  `options.json` with a `nameKey` in `data/copy/avatar/` (colours in `data/copy/colors/`), and
+  run `npm test` (`src/lib/data/avatar-data.test.ts` resolves every model and token).
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
 
@@ -433,6 +452,11 @@ and the highest cash, clout and action counts per action, game hour and game day
 uses as save-plausibility ceilings) and fails if a later change to the balance moves it. After
 tuning `balance.json` on purpose, run `npm run econ:update`, check the target tests still pass,
 and log the change in the progress.md Tuning log.
+
+`src/engine/sim/economy.matrix.test.ts` (S16a) plays every career path with the best and the
+worst trait pair (found by playing all 28 pairs) against the same bands
+(`src/engine/sim/targets.ts`), on every entry job and as the flex bot. Its runs are not part of
+the baseline.
 
 ## Logging
 

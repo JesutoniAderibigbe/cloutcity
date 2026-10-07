@@ -286,3 +286,34 @@ describe('prestige keeps outfits as looks only (user ruling Q-8, ECON-1)', () =>
     expect(itemClout(bought.snapshot.player, config)).toBe(isWearable(extra) ? extra.cloutValue : 0)
   })
 })
+
+describe('who the player is carries over (S16a)', () => {
+  it('keeps the look, traits, Dream, neighborhood, creator state and the save-scoped roll', () => {
+    const icon = iconSave()
+    const identity: SaveState = {
+      ...icon,
+      player: {
+        ...icon.player,
+        look: { ...icon.player.look, hairStyle: 'locs', height: 'tall' },
+        traits: ['thrifty', 'hustler'],
+        traitsChangedAt: 100,
+        careerPath: 'streamer',
+        careerChangedAt: 200,
+        neighborhood: 'ridgewood',
+      },
+      creator: { actions: 1, offeredAt: 10, dismissedAt: null, completedAt: 300, skippedSteps: [] },
+      rolls: { neighborhood: { result: 'ridgewood', at: 250, run: 1 } },
+    }
+    const result = prestige(identity, MS, config)
+    if (!result.ok) throw new Error(result.error.code)
+    const { player } = result.save
+    expect(player.look).toEqual(identity.player.look)
+    expect(player.traits).toEqual(['thrifty', 'hustler'])
+    expect(player.careerPath).toBe('streamer')
+    expect(player.careerChangedAt).toBe(200)
+    expect(player.neighborhood).toBe('ridgewood')
+    expect(result.save.creator).toEqual(identity.creator)
+    expect(result.save.rolls).toEqual(identity.rolls)
+    expect(schema.safeParse(result.save).success).toBe(true)
+  })
+})

@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "maxModifierPct": 10,
+  "traits": [
+    {
+      "id": "early-bird",
+      "nameKey": "creator.trait.earlyBird.name",
+      "flavorKey": "creator.trait.earlyBird.flavor",
+      "effects": [
+        {
+          "kind": "energy-cost",
+          "pct": -10
+        },
+        {
+          "kind": "mood-gain",
+          "pct": -5
+        }
+      ]
+    },
+    {
+      "id": "easygoing",
+      "nameKey": "creator.trait.easygoing.name",
+      "flavorKey": "creator.trait.easygoing.flavor",
+      "effects": [
+        {
+          "kind": "mood-gain",
+          "pct": 10
+        }
+      ]
+    },
+    {
+      "id": "thrifty",
+      "nameKey": "creator.trait.thrifty.name",
+      "flavorKey": "creator.trait.thrifty.flavor",
+      "effects": [
+        {
+          "kind": "shop-price",
+          "pct": -10
+        }
+      ]
+    },
+    {
+      "id": "speed-walker",
+      "nameKey": "creator.trait.speedWalker.name",
+      "flavorKey": "creator.trait.speedWalker.flavor",
+      "effects": [
+        {
+          "kind": "travel-time",
+          "pct": -10
+        }
+      ]
+    },
+    {
+      "id": "homebody",
+      "nameKey": "creator.trait.homebody.name",
+      "flavorKey": "creator.trait.homebody.flavor",
+      "effects": [
+        {
+          "kind": "mood-gain",
+          "pct": 10
+        },
+        {
+          "kind": "travel-time",
+          "pct": 5
+        }
+      ]
+    },
+    {
+      "id": "hustler",
+      "nameKey": "creator.trait.hustler.name",
+      "flavorKey": "creator.trait.hustler.flavor",
+      "effects": [
+        {
+          "kind": "energy-cost",
+          "pct": -5
+        },
+        {
+          "kind": "travel-time",
+          "pct": -5
+        }
+      ]
+    },
+    {
+      "id": "main-character",
+      "nameKey": "creator.trait.mainCharacter.name",
+      "flavorKey": "creator.trait.mainCharacter.flavor",
+      "effects": [
+        {
+          "kind": "mood-gain",
+          "pct": 10
+        },
+        {
+          "kind": "shop-price",
+          "pct": 5
+        }
+      ]
+    },
+    {
+      "id": "wanderer",
+      "nameKey": "creator.trait.wanderer.name",
+      "flavorKey": "creator.trait.wanderer.flavor",
+      "effects": [
+        {
+          "kind": "travel-time",
+          "pct": -10
+        },
+        {
+          "kind": "mood-gain",
+          "pct": -5
+        }
+      ]
+    }
+  ]
+}
