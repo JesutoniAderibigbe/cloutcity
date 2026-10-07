@@ -15,6 +15,7 @@ import { PCFShadowMap } from 'three'
 import { usePlayerHome } from '@/state/playerHome'
 import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
+import { FreeRowFraming } from './camera/FreeRowFraming'
 import { nearFar } from './camera/limits'
 import { City, type CityObjects } from './City'
 import { landTopY } from './geo/buildLand'
@@ -148,6 +149,7 @@ export default function CityCanvas({
           position={[sun.x, sun.y, sun.z]}
         />
         <CameraRig camera={camera} start={home} bounds={boundsLocal} groundY={groundY} />
+        <FreeRowFraming />
         <City
           geo={geo}
           palette={palette}

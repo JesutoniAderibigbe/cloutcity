@@ -168,6 +168,8 @@ export function CitySceneClient(props: SceneProps) {
       >
         <p
           role="status"
+          // The camera frames its target at this row's centre (camera/FreeRowFraming.tsx).
+          data-free-scene-row=""
           className="flex min-h-0 items-center justify-center px-4 text-center text-sm font-semibold text-ink-300"
           style={{ gridRow: freeRow }}
         >

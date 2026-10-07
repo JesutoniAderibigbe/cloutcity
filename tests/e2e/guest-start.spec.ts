@@ -151,3 +151,42 @@ test('an under-18 answer gets no guest session and no HUD clock', async ({ page 
   )
   expect(await supabaseStorageKeys(page)).toEqual([])
 })
+
+// The camera frames the player at the centre of the free scene row, not the canvas centre, so
+// the HUD, a toast or a sheet never covers them (S05; on a phone the canvas centre is in the
+// toast zone).
+test.describe('the player is framed in the free scene row', () => {
+  test.use({ onboarding: 'complete' })
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 844, height: 390 },
+    { width: 1280, height: 720 },
+  ]) {
+    test(`at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+      await page.setViewportSize(viewport)
+      await freezeGameTime(page)
+      await page.goto('/')
+      await waitForMapSettled(page)
+      const row = await page.locator('[data-free-scene-row]').boundingBox()
+      if (row === null) throw new Error('no free scene row')
+      const player = await page.evaluate(() => window.__cloutcityTest?.scene?.player() ?? null)
+      if (player === null) throw new Error('the avatar is not in the scene')
+      const { x, y } = player.screen
+      expect(y, 'below the HUD').toBeGreaterThan(row.y)
+      expect(y, 'above the toast zone').toBeLessThan(row.y + row.height)
+      expect(Math.abs(y - (row.y + row.height / 2)), 'at the row centre').toBeLessThanOrEqual(2)
+      expect(x).toBeGreaterThan(0)
+      expect(x).toBeLessThan(viewport.width)
+      const hit = await page.evaluate(
+        ({ px, py }) => document.elementFromPoint(px, py)?.tagName ?? null,
+        { px: x, py: y },
+      )
+      expect(hit).toBe('CANVAS')
+      // The camera still looks at home: the framing moves the picture, not the target.
+      const camera = await page.evaluate(() => window.__cloutcityTest?.scene?.camera() ?? null)
+      expect(
+        Math.hypot((camera?.target.x ?? 0) - HOME.x, -(camera?.target.z ?? 0) - HOME.y),
+      ).toBeLessThanOrEqual(1)
+    })
+  }
+})

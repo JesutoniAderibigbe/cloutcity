@@ -79,3 +79,9 @@ export type SceneStatus = 'loading' | 'ready' | 'error' | 'lost'
 
 /** Why the 3D map is unavailable: the device (no WebGL) or loading (download, data, start). */
 export type SceneFailure = 'device' | 'load'
+
+/**
+ * Marks the scene's own status row, which repeats the overlay grid's free scene row: the camera
+ * frames the target at its centre (src/scene/camera/FreeRowFraming.tsx).
+ */
+export const FREE_SCENE_ROW_SELECTOR = '[data-free-scene-row]'

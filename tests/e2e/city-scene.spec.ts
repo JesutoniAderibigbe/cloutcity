@@ -513,11 +513,9 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
       const movedPx = Math.hypot(px.x, px.y)
       if (movedM > 0 && movedPx > 0) metresPerPx = movedM / movedPx
     }
-    // Zoom towards the target itself: it projects to the canvas centre (zoom-to-cursor would pull
-    // the view towards any other point, such as the free row's centre below the S05 HUD).
-    const viewport = page.viewportSize()
-    if (!viewport) throw new Error('viewport size is not set')
-    await page.mouse.move(viewport.width / 2, viewport.height / 2)
+    // Zoom towards the target itself: the camera frames it at the free row's centre (S05), so
+    // zoom-to-cursor does not pull the view away from Midtown.
+    await page.mouse.move(centre.x, centre.y)
     for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -20_000)
     await settle(page)
     const over = await camera(page)

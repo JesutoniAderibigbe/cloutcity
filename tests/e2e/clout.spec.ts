@@ -132,10 +132,16 @@ test.describe('clout, flexing and levels', () => {
     const close = toast.getByRole('button', { name: 'Close the Local message' })
     await page.clock.resume()
     // Measured once the pop has finished (it scales the toast while it plays).
-    await toast.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
+    // A pop that is cancelled (the toast re-rendered) rejects `finished`; either way it is over.
+    await toast.evaluate((el) =>
+      Promise.all(el.getAnimations().map((a) => a.finished.catch(() => undefined))),
+    )
     const box = await close.boundingBox()
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
     expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)
+    // Hold the toast open through the scan (it pauses while hovered, WCAG 2.2.1): a slow axe run
+    // on a busy machine could otherwise outlast toastMs and close it before the click.
+    await close.hover()
     await checkA11y()
     await close.click()
     await expect(toast).toHaveCount(0)
