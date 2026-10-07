@@ -57,7 +57,7 @@ const ALLOWED_PACKAGES = /^(react|react-dom|next|zustand)(\/|$)/
 
 /** Never in the shell, named so a failure says why. */
 const DENIED_FILES: readonly RegExp[] = [
-  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session|gameClock|clockDriver|guestSession|playerHome|hudView|tour|quality)\.ts$/,
+  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session|gameClock|clockDriver|guestSession|playerHome|dayClock|hudView|tour|quality)\.ts$/,
   /^src\/lib\/supabase\//,
   /^src\/lib\/audio\//,
   /^src\/components\/audio\/(SoundControl|SoundSettingsSheet)\.tsx$/,
@@ -161,6 +161,7 @@ describe('shell boundary of / (S05c)', () => {
       'src/components/hud/HudLive.tsx',
       'src/components/hud/MorePanel.tsx',
       'src/state/gameClock.ts',
+      'src/state/dayClock.ts',
       'src/state/guestSession.ts',
       'src/lib/supabase/supabaseAuth.ts',
     ]) {

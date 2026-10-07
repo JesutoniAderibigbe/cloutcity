@@ -11,6 +11,7 @@
  * as HudSkeleton.
  */
 import { useEffect, useMemo } from 'react'
+import { minutesPerDay } from '@/engine/clock'
 import { cloutProgress } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import { claimableCount } from '@/engine/goals'
@@ -18,6 +19,7 @@ import type { StatKey } from '@/engine/stats'
 import { copy, type CopyKey } from '@/lib/copy'
 import { cloutLevelName } from '@/lib/economyCopy'
 import { formatCount, formatMoney } from '@/lib/format'
+import { setMinuteOfDay } from '@/state/dayClock'
 import { startGameClock } from '@/state/gameClock'
 import { closeHudPanel, openHudPanel, useHudPanel } from '@/state/hudPanel'
 import { clockView, nextSpeed, statsView } from '@/state/hudView'
@@ -43,10 +45,14 @@ export function HudLive() {
   )
 }
 
-/** The live island's side effects: the game clock, the Icon moment signal, the player's home. */
+/**
+ * The live island's side effects: the game clock, the Icon moment signal, the player's home and
+ * the minute of day the day/night cycle reads.
+ */
 function useHudEffects() {
   const icon = useGameStore((state) => state.goals.icon)
   const home = useGameStore((state) => state.player.home)
+  const minuteOfDay = useGameStore((state) => state.clock.minute % minutesPerDay(engineConfig))
 
   // Passive time runs once the welcome card is complete; one driver however often this mounts.
   useEffect(() => startGameClock({ game: gameStore, onboarding: onboardingStore }), [])
@@ -56,6 +62,8 @@ function useHudEffects() {
   }, [icon])
 
   useEffect(() => setPlayerHome(home), [home])
+
+  useEffect(() => setMinuteOfDay(minuteOfDay), [minuteOfDay])
 
   useEffect(() => {
     // Inlined at build time (next.config.ts): production builds drop the hook entirely.
