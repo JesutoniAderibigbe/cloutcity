@@ -7,6 +7,7 @@ import {
   keepPlacesPanel,
   openPlacesChooser,
   openPlacesPanel,
+  placesPanelShown,
   placesPanelStore,
 } from './placesPanel'
 
@@ -67,5 +68,25 @@ describe('places panel store (S04c)', () => {
     openPlacesPanel()
     closeAutoPlacesPanel()
     expect(placesPanelStore.getState().open).toBe(true)
+  })
+})
+
+describe('placesPanelShown', () => {
+  const list = { open: true, mode: 'list', chooserIds: [], auto: false } as const
+  const auto = { ...list, auto: true }
+
+  it('is false when closed, and while a place sheet is open over it', () => {
+    expect(placesPanelShown({ ...list, open: false }, null, null)).toBe(false)
+    expect(placesPanelShown(list, null, null)).toBe(true)
+    expect(placesPanelShown(list, 'glowmatic', null)).toBe(false)
+    expect(placesPanelShown(auto, 'glowmatic', null)).toBe(false)
+  })
+
+  it('lets an app-opened panel wait behind a HUD panel; a player-opened one is never behind one', () => {
+    expect(placesPanelShown(auto, null, 'rent')).toBe(false)
+    expect(placesPanelShown(auto, null, null)).toBe(true)
+    // The mount closes the HUD panel when the player opens the list, so this is never on screen
+    // together with a HUD panel; were it, the player's own panel would show.
+    expect(placesPanelShown(list, null, 'rent')).toBe(true)
   })
 })

@@ -1,7 +1,14 @@
 import { gzipSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
+import { copy } from '@/lib/copy'
+import '@/lib/copy/ns/venues'
+import '@/lib/copy/ns/landmarks'
+import { scene } from '@/lib/data/config'
+import { land } from '@/lib/data/geo'
+import { scenePalette } from '@/lib/theme'
 import { placesLayer } from '@/lib/world/placesLayer'
 import { mixHex } from '@/lib/world/fallbackMap'
+import { mapPlaces, placeName } from '@/lib/world/places'
 import { GET, dynamic } from './route'
 
 /** S04c plan: the static fallback map stays small enough to load on a bad connection. */
@@ -38,6 +45,36 @@ describe('GET /geo/fallback', () => {
     expect(text.match(/>Expanding soon<\/tspan>/g)).toHaveLength(
       placesLayer.boroughs.filter((b) => b.render === 'dimmed').length,
     )
+  })
+
+  it('fills each borough by its render state, like the 3D land (dimmed toward the background)', async () => {
+    const text = await svg()
+    const palette = scenePalette()
+    const fills = [...text.matchAll(/<path fill="(#[0-9a-f]{6})"/g)].map((match) => match[1])
+    // Land paths come first, one per borough in the land layer's order.
+    const expected = land.boroughs.map((borough) => {
+      const render = placesLayer.boroughs.find((b) => b.id === borough.id)?.render
+      return render === 'dimmed'
+        ? mixHex(palette.land[borough.id], palette.background, scene.dimmed.towardBackground)
+        : palette.land[borough.id]
+    })
+    expect(fills.slice(0, land.boroughs.length)).toEqual(expected)
+    expect(placesLayer.boroughs.some((b) => b.render === 'dimmed')).toBe(true)
+    for (const borough of placesLayer.boroughs.filter((b) => b.render === 'dimmed')) {
+      expect(expected[land.boroughs.findIndex((b) => b.id === borough.id)]).not.toBe(
+        palette.land[borough.id],
+      )
+    }
+  })
+
+  it('names no place: only dots, so no business (or landmark) name ships in the map', async () => {
+    const text = await svg()
+    const names = mapPlaces().map((place) => placeName(place, { copy }))
+    expect(names.length).toBe(placesLayer.pins.length)
+    for (const name of names) {
+      expect(text, name).not.toContain(name)
+    }
+    expect(text).not.toMatch(/<title|<desc/)
   })
 
   it('is deterministic', async () => {

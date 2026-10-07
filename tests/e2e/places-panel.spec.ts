@@ -160,6 +160,21 @@ test.describe('Places panel', () => {
     await expect(page.getByRole('dialog', { name: 'Rent' })).toHaveCount(0)
   })
 
+  test('the Places button brings the list back over a sheet opened from it', async ({ page }) => {
+    const button = placesButton(page)
+    await button.click()
+    await panel(page).locator('[data-place-button="glowmatic"]').click()
+    await expect(page.locator('[data-place-sheet="glowmatic"]')).toBeVisible()
+    // The panel is hidden behind the sheet: the button says so, and a press shows the list.
+    await expect(panel(page)).toBeHidden()
+    await expect(button).toHaveAttribute('aria-expanded', 'false')
+    await button.click()
+    await expect(page.locator('[data-place-sheet]')).toHaveCount(0)
+    await expect(panel(page)).toBeVisible()
+    await expect(button).toHaveAttribute('aria-expanded', 'true')
+    await expect(panel(page).getByRole('heading', { level: 2 })).toBeFocused()
+  })
+
   test('the Places button replaces an open place sheet with the list', async ({ page }) => {
     await page.evaluate(() => window.__cloutcityPlaces?.open('glowmatic'))
     await expect(page.locator('[data-place-sheet="glowmatic"]')).toBeVisible()

@@ -19,6 +19,7 @@ import {
   keepPlacesPanel,
   openPlacesPanel,
   usePlacesPanel,
+  usePlacesPanelShown,
 } from '@/state/placesPanel'
 import { useGameStore } from '@/state/store'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk; places.ts
@@ -46,7 +47,7 @@ function focusPlacesButton() {
  * first, with a way back to the full list.
  *
  * A non-modal dialog in the sheet zone, like the place sheet, hidden while a place sheet is open
- * and shown again when it closes. Focus moves to the title when the player opens it, never when
+ * (or, when the app opened it, while a HUD panel is) and shown again when that closes. Focus moves to the title when the player opens it, never when
  * the app opens it because the 3D map is unavailable; Escape and Close close it and give focus
  * back to the HUD's Places button.
  */
@@ -57,7 +58,7 @@ export function PlacesPanel() {
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const lastOpened = useRef<string | null>(null)
-  const hidden = openId !== null
+  const hidden = !usePlacesPanelShown()
   const chooser = panel.mode === 'chooser'
 
   // Focus the title when the player opened the panel (or switched it to a chooser).

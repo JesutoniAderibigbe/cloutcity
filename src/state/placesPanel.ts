@@ -7,12 +7,14 @@
  * - `chooser`: a tap on the 3D map landed on several pins at once; the panel lists just those.
  *
  * `auto` marks a panel the app opened by itself because the 3D map is unavailable (no WebGL, a
- * failed load, a lost context): it must not take focus from what the player is doing, and it
- * closes again when the map comes back, unless the player has used it since.
+ * failed load, a lost context): it must not take focus from what the player is doing nor close
+ * a HUD panel they have open (it waits behind it), and it closes again when the map comes back,
+ * unless the player has used it since.
  */
 import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
-import { closePlace } from './placeSheet'
+import { useHudPanel, type HudPanel } from './hudPanel'
+import { closePlace, useOpenPlaceId } from './placeSheet'
 
 export type PlacesPanelMode = 'list' | 'chooser'
 
@@ -69,4 +71,22 @@ const server = () => CLOSED
 /** The panel state; closed during the server render and hydration. */
 export function usePlacesPanel(): PlacesPanelState {
   return useSyncExternalStore(placesPanelStore.subscribe, current, server)
+}
+
+/**
+ * Whether the panel is on screen, not just open: a place sheet hides it until it closes (the
+ * player went into a place from it), and so does a HUD panel the player has open over an
+ * automatically opened one (the app must not push the player's own panel aside).
+ */
+export function placesPanelShown(
+  panel: PlacesPanelState,
+  openPlaceId: string | null,
+  hudPanel: HudPanel | null,
+): boolean {
+  return panel.open && openPlaceId === null && !(panel.auto && hudPanel !== null)
+}
+
+/** Whether the panel is on screen (placesPanelShown) right now. */
+export function usePlacesPanelShown(): boolean {
+  return placesPanelShown(usePlacesPanel(), useOpenPlaceId(), useHudPanel())
 }

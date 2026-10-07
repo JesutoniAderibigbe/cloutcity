@@ -7,7 +7,8 @@
  *   tap lands on several pins at once;
  * - the open place gets the selection ring;
  * - a place opened from outside the map (the panel, a hook) brings the camera to it with a
- *   short tween, or a cut under `prefers-reduced-motion` (CLAUDE.md "Art direction").
+ *   short tween, or a cut under `prefers-reduced-motion` (CLAUDE.md "Art direction"); any input
+ *   of the player's on the map ends the tween where it is.
  *
  * Every camera step goes through the controls, so the rig's extent clamp and on-demand
  * rendering apply as they do to a gesture.
@@ -104,6 +105,13 @@ export function PlacePins({ pins, config, groundY }: PlacePinsProps) {
       tween.current = { from, to, elapsedMs: 0, started: false }
       invalidate()
     }
+    // The player's own input (a drag, pinch, wheel or tap: MapControls' `start`) ends a flight
+    // still under way, so the flight never drags the camera back from where they took it.
+    // `apply` only fires `change`, so the flight cannot cancel itself.
+    const interrupt = () => {
+      tween.current = null
+    }
+    rig.addEventListener('start', interrupt)
     applyRef.current = apply
     select(currentPlaceId())
     const offChange = onOpenPlaceChange(select)
@@ -111,6 +119,7 @@ export function PlacePins({ pins, config, groundY }: PlacePinsProps) {
       if (origin !== 'map') focus(placeId)
     })
     return () => {
+      rig.removeEventListener('start', interrupt)
       offChange()
       offPicked()
       tween.current = null

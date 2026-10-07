@@ -249,6 +249,76 @@ test.describe('place pins on the 3D map', () => {
     await expect(page.locator(`[data-place-sheet="${second.id}"]`)).toBeVisible()
   })
 
+  for (const zoom of ['max zoom-in', 'max zoom-out'] as const) {
+    test(`at ${zoom}, a tap ${pinConfig.hitRadiusPx - 2} px off a pin head still opens it`, async ({
+      page,
+    }, testInfo) => {
+      const touch = !!testInfo.project.use.hasTouch
+      // Over Queens, where the start view already shows pins, wheel to the zoom limit there.
+      await bringIntoView(page, 'flushing-meadows')
+      const pin = (await scenePins(page)).find((candidate) => candidate.id === 'flushing-meadows')
+      if (pin?.screen == null) throw new Error('flushing-meadows is not on screen')
+      const at = pin.screen
+      await page.locator('[data-scene-root] canvas').evaluate(
+        (canvas, { x, y, delta }) => {
+          for (let i = 0; i < 30; i++) {
+            canvas.dispatchEvent(
+              new WheelEvent('wheel', {
+                deltaY: delta,
+                deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+                clientX: x,
+                clientY: y,
+                bubbles: true,
+                cancelable: true,
+              }),
+            )
+          }
+        },
+        { ...at, delta: zoom === 'max zoom-in' ? -2000 : 2000 },
+      )
+      await waitForMapSettled(page)
+      const limit = readJson<{ camera: { minDistanceM: number; maxDistanceM: number } }>(
+        'data/config/scene.json',
+      ).camera
+      const distance = (await page.evaluate(() => window.__cloutcityTest?.scene?.camera()))
+        ?.distance
+      if (zoom === 'max zoom-in') expect(distance).toBeLessThanOrEqual(limit.minDistanceM * 1.05)
+      else expect(distance).toBeCloseTo(limit.maxDistanceM, -1)
+
+      const pins = await scenePins(page)
+      let target: (HookPin & { screen: { x: number; y: number } }) | null = null
+      for (const candidate of pins) {
+        const clear = isolated(pins, candidate.id)
+        if (clear?.screen == null) continue
+        const point = { x: clear.screen.x + pinConfig.hitRadiusPx - 2, y: clear.screen.y }
+        if ((await hitsCanvas(page, clear.screen)) && (await hitsCanvas(page, point))) {
+          target = { ...clear, screen: clear.screen }
+          break
+        }
+      }
+      if (target === null) throw new Error(`no isolated pin on screen at ${zoom}`)
+      await tap(page, { x: target.screen.x + pinConfig.hitRadiusPx - 2, y: target.screen.y }, touch)
+      await expect(page.locator(`[data-place-sheet="${target.id}"]`)).toBeVisible()
+    })
+  }
+
+  test('no tap over the HUD or the tab bar reaches a pin under them', async ({ page }) => {
+    // Pins draw under the overlay zones; every point of those zones (gaps between buttons
+    // included) must catch the tap, so the canvas never sees it and no pin is picked through.
+    for (const zone of ['hud', 'tabs'] as const) {
+      const box = await page.locator(`[data-overlay-zone="${zone}"]`).boundingBox()
+      if (box === null || box.height === 0) throw new Error(`no ${zone} zone`)
+      const through: { x: number; y: number }[] = []
+      for (let fx = 0.02; fx < 1; fx += 0.06) {
+        for (const fy of [0.05, 0.5, 0.95]) {
+          const point = { x: box.x + box.width * fx, y: box.y + box.height * fy }
+          if (await hitsCanvas(page, point)) through.push(point)
+        }
+      }
+      expect(through, `${zone} lets taps through to the map`).toEqual([])
+    }
+  })
+
   test('a place picked in the panel brings the camera to it', async ({ page }) => {
     const target = 'september-11-memorial'
     await page.locator('[data-places-button]').click()
@@ -262,6 +332,43 @@ test.describe('place pins on the 3D map', () => {
     const viewport = page.viewportSize()
     if (!viewport || pin?.screen == null) throw new Error('the place is not on screen')
     expect(Math.abs(pin.screen.x - viewport.width / 2)).toBeLessThan(viewport.width / 4)
+  })
+})
+
+test.describe('place pins: the focus flight gives way to the player', () => {
+  test.beforeEach(async ({ page }) => {
+    await boot(page)
+  })
+
+  test('a gesture during the flight to a place stops it; the gesture wins', async ({ page }) => {
+    const start = await page.evaluate(() => window.__cloutcityTest?.scene?.camera() ?? null)
+    if (start === null) throw new Error('no camera')
+    // In one task: open a far place (the camera starts flying to it), then the player zooms. The
+    // wheel event reaches MapControls before any frame of the flight has drawn.
+    await page.evaluate(() => {
+      if (window.__cloutcityPlaces?.open('statue-of-liberty') !== true) throw new Error('no place')
+      const canvas = document.querySelector('[data-scene-root] canvas')
+      if (!(canvas instanceof HTMLCanvasElement)) throw new Error('no canvas')
+      const rect = canvas.getBoundingClientRect()
+      canvas.dispatchEvent(
+        new WheelEvent('wheel', {
+          deltaY: -300,
+          deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+          clientX: rect.left + rect.width / 2,
+          clientY: rect.top + rect.height / 2,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    })
+    await expect(page.locator('[data-place-sheet="statue-of-liberty"]')).toBeVisible()
+    await waitForMapSettled(page)
+    const after = await page.evaluate(() => window.__cloutcityTest?.scene?.camera() ?? null)
+    if (after === null) throw new Error('no camera')
+    // Zoomed in where the player was, not flown kilometres away to the place.
+    expect(after.distance).toBeLessThan(start.distance)
+    const moved = Math.hypot(after.target.x - start.target.x, after.target.z - start.target.z)
+    expect(moved, 'the flight must not override the gesture').toBeLessThan(1000)
   })
 })
 

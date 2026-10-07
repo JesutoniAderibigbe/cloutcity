@@ -101,4 +101,85 @@ test.describe('a lost WebGL context', () => {
     await expect(page.locator('[data-place-sheet]')).toHaveCount(0)
     await expect(panel(page)).toBeVisible()
   })
+
+  test('an open HUD panel is not closed by the auto-opened panel; it shows when that closes', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForMapSettled(page)
+    const rentButton = page.getByRole('button', { name: 'Rent', exact: true })
+    await rentButton.click()
+    const rent = page.getByRole('dialog', { name: 'Rent' })
+    await expect(rent).toBeVisible()
+    await rent.getByRole('button').first().focus()
+    await page.evaluate(() => window.__cloutcityTest?.scene?.loseContext())
+    await expect(page.locator('[data-scene-root]')).toHaveAttribute('data-scene-status', 'lost')
+    // The player's panel stays, with focus where it was.
+    await expect(rent).toBeVisible()
+    expect(await rent.evaluate((element) => element.contains(document.activeElement))).toBe(true)
+    // Closing it reveals the Places panel the lost map opened.
+    await page.keyboard.press('Escape')
+    await expect(rent).toHaveCount(0)
+    await expect(panel(page)).toBeVisible()
+    await page.evaluate(() => window.__cloutcityTest?.scene?.restoreContext())
+    await expect(page.locator('[data-scene-root]')).toHaveAttribute('data-scene-status', 'ready', {
+      timeout: SCENE_READY_TIMEOUT_MS,
+    })
+    await expect(panel(page)).toHaveCount(0)
+  })
+
+  test('opening a HUD panel over the auto-opened panel does not lose it while the map is down', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForMapSettled(page)
+    await page.evaluate(() => window.__cloutcityTest?.scene?.loseContext())
+    await expect(panel(page)).toBeVisible()
+    await page.getByRole('button', { name: 'Rent', exact: true }).click()
+    const rent = page.getByRole('dialog', { name: 'Rent' })
+    await expect(rent).toBeVisible()
+    await expect(panel(page)).toBeHidden()
+    await page.keyboard.press('Escape')
+    await expect(rent).toHaveCount(0)
+    // The map is still down: the Places panel is still the way to play.
+    await expect(panel(page)).toBeVisible()
+  })
+
+  test('a loss during the flight to an open place keeps the sheet; the flight lands after the restore', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__CLOUTCITY_E2E__ = true
+    })
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+    await waitForMapSettled(page)
+    // In one task: the place opens (the camera starts flying to it) and the context goes.
+    await page.evaluate(() => {
+      if (window.__cloutcityPlaces?.open('statue-of-liberty') !== true) throw new Error('no place')
+      window.__cloutcityTest?.scene?.loseContext()
+    })
+    const root = page.locator('[data-scene-root]')
+    await expect(root).toHaveAttribute('data-scene-status', 'lost')
+    const sheet = page.locator('[data-place-sheet="statue-of-liberty"]')
+    await expect(sheet).toBeVisible()
+    // The auto-opened panel waits behind the player's sheet.
+    await expect(page.locator('[data-places-panel]')).toBeHidden()
+    await page.evaluate(() => window.__cloutcityTest?.scene?.restoreContext())
+    await expect(root).toHaveAttribute('data-scene-status', 'ready', {
+      timeout: SCENE_READY_TIMEOUT_MS,
+    })
+    await waitForMapSettled(page)
+    await expect(sheet).toBeVisible()
+    expect(await page.evaluate(() => window.__cloutcityTest?.scene?.selectedPlaceId())).toBe(
+      'statue-of-liberty',
+    )
+    const pin = (await page.evaluate(() => window.__cloutcityTest?.scene?.pins() ?? [])).find(
+      (candidate) => candidate.id === 'statue-of-liberty',
+    )
+    expect(pin?.screen, 'the place is in view after the restore').not.toBeNull()
+  })
 })
