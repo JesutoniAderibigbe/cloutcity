@@ -204,7 +204,7 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
 | `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `progression.json` (goals, grant caps, prestige rules), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings, the apartment's room, markers and picking) |
 | `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                                                                                                                                |
 | `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                                                                                                                               |
-| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                                                                              |
+| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway`, `blocks.<tier>`, `districts/<district>.<tier>` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                              |
 | `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                                                                                                                   |
 | `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                                                               |
 | `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                                                                      |
@@ -414,8 +414,14 @@ objects and Sets arrays. `console.*` is a lint error everywhere else.
 
 `npm run geo:build` (`scripts/geo/build.ts`) downloads the sources pinned in
 `scripts/geo/sources.lock.json` (DCP borough boundaries clipped to shoreline and 2020 NTAs, MTA
-subway static GTFS) into `.cache/geo/`, then writes simplified, integer-metre layers to
-`data/geo` and `data/zones`. The output is deterministic: `npm run geo:build -- --check` rebuilds
+subway static GTFS, MapPLUTO density statistics per community district, and NYC OTI building
+footprints for each district in `geo.json` `districts`, paged and hashed page by page) into
+`.cache/geo/`, then writes simplified, integer-metre layers to `data/geo` and `data/zones`. District
+building masses go to `data/geo/districts/<district>.<tier>.derived.json` and the procedural low
+blocks elsewhere to `data/geo/blocks.<tier>.derived.json`; the build fails if a tier's total
+exceeds `perf.json` `districtBuildingsGzKB` or `buildingTrianglesMax`, and footprints under a
+landmark's exclusion rectangle (`data/landmarks/frames.derived.json`, when present) are dropped.
+The output is deterministic: `npm run geo:build -- --check` rebuilds
 in memory and fails if a committed file differs, and `npm test` rebuilds from the cache when it
 is present. `--update` accepts changed upstream files and rewrites the lock; `--offline` never
 touches the network. Parameters live in `data/config/geo.json`; sources, terms, transformations

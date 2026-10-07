@@ -44,7 +44,9 @@ import { SceneConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
+  BlocksFileSchema,
   BoroughsFileSchema,
+  BuildingsFileSchema,
   GeoBoundsSchema,
   GeoManifestSchema,
   LandFileSchema,
@@ -115,6 +117,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
 }
 
 function schemaFor(file: string): z.ZodType | undefined {
+  if (/^geo\/districts\/[a-z0-9-]+\.[a-z]+\.derived\.json$/.test(file)) return BuildingsFileSchema
+  if (/^geo\/blocks\.[a-z]+\.derived\.json$/.test(file)) return BlocksFileSchema
   if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
   if (/^copy\/[\w-]+\/[\w-]+\.json$/.test(file)) return SlangPackSchema
   return SCHEMAS[file]
@@ -281,6 +285,7 @@ describe('config/perf.json', () => {
       // S04e: the service worker script and its install-time precache (not in CLAUDE.md's table).
       serviceWorkerGzKB: 15,
       precacheGzKB: 1000,
+      buildingTrianglesMax: { low: 160_000, mid: 300_000, high: 480_000 },
     })
   })
 

@@ -29,7 +29,11 @@
     "oak-500": "#b07d4f",
     "walnut-700": "#5c4030",
     "leaf-600": "#3e7b45",
-    "glass-700": "#46607a"
+    "glass-700": "#46607a",
+    "building-700": "#3a2f7d",
+    "roof-500": "#6b5bd6",
+    "window-300": "#ffd98a",
+    "block-800": "#2a2263"
   },
   "themeColor": "night-950",
   "scene": {
