@@ -51,13 +51,15 @@ const ALLOWED_PACKAGES = /^(react|react-dom|next|zustand)(\/|$)/
 
 /** Never in the shell, named so a failure says why. */
 const DENIED_FILES: readonly RegExp[] = [
-  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session|gameClock|clockDriver|guestSession|playerHome|hudView)\.ts$/,
+  /^src\/state\/(store|onboarding|audioSettings|audioStatus|storage|session|gameClock|clockDriver|guestSession|playerHome|hudView|tour)\.ts$/,
   /^src\/lib\/supabase\//,
   /^src\/lib\/audio\//,
   /^src\/components\/audio\/(SoundControl|SoundSettingsSheet)\.tsx$/,
   /^src\/engine\//,
   /^src\/lib\/world\//,
-  /^src\/lib\/(shopCopy|economyCopy|goalsCopy)\.ts$/,
+  /^src\/lib\/(shopCopy|economyCopy|goalsCopy|tourCopy)\.ts$/,
+  // The tour (S06): only TourMount is in the shell.
+  /^src\/components\/tour\/(TourHost|tourControl)\.tsx?$/,
   /^src\/lib\/share\//,
   /^src\/lib\/forms\//,
   /^src\/components\/events\/(EventSheet|EventSheetHost|effectLabels|eventTestHook)\.tsx?$/,

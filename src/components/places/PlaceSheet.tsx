@@ -18,7 +18,12 @@ import {
   placeHoursLine,
 } from '@/lib/world/placeActionCopy'
 import { findPlace, placeName } from '@/lib/world/places'
-import { announcePlace, closePlace, usePlaceOpenCount } from '@/state/placeSheet'
+import {
+  announcePlace,
+  closePlace,
+  reportPlaceActionDone,
+  usePlaceOpenCount,
+} from '@/state/placeSheet'
 import { gameStore, useGameStore } from '@/state/store'
 import { ShopSection } from './ShopSection'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -132,8 +137,15 @@ function PlaceCard({ place }: { readonly place: Place }) {
   const run = (action: PlaceAction) => {
     if (busy.current === action.id) return
     busy.current = action.id
+    const cashBefore = gameStore.getState().player.cash
     const outcome = gameStore.getState().performPlaceAction(place, action.id)
     if (outcome.ok) {
+      reportPlaceActionDone({
+        placeId: place.id,
+        actionId: action.id,
+        cashBefore,
+        cashAfter: outcome.snapshot.player.cash,
+      })
       // Rent that fell due while the action ran is part of what it did.
       const text = [
         placeActionDone(outcome, place),

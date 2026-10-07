@@ -3,9 +3,9 @@
 /**
  * Sound settings (S05b): "My own music" and one volume per channel plus master, applied live.
  * A non-modal region (a labelled <section>) in the sheet zone; Escape or the close button
- * closes it and focus goes back to the gear. Opening it never starts audio; changing a setting
+ * closes it and focus goes back to the HUD's More button. Opening it never starts audio; changing a setting
  * while sound is still off is a deliberate tap, so it also turns sound on (GR-13). A feature
- * island: it loads on the first gear tap (SoundSheetMount).
+ * island: it loads on the first open (SoundSheetMount).
  */
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { MIXER_CHANNELS, type MixerChannel } from '@/lib/audio/channels'

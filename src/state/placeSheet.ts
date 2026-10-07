@@ -114,3 +114,29 @@ export function onPlaceOpened(listener: () => void): () => void {
     if (state.placeId !== null && state.placeId !== previous.placeId) listener()
   })
 }
+
+/** A place action that ran (S06): where, which action, and the player's cash around it. */
+export interface PlaceActionDone {
+  readonly placeId: string
+  readonly actionId: string
+  readonly cashBefore: number
+  readonly cashAfter: number
+}
+
+const actionDoneListeners = new Set<(done: PlaceActionDone) => void>()
+
+/**
+ * Calls `listener` each time a place sheet action succeeds (S06: the tour waits for the first
+ * purchase). Returns unsubscribe.
+ */
+export function onPlaceActionDone(listener: (done: PlaceActionDone) => void): () => void {
+  actionDoneListeners.add(listener)
+  return () => {
+    actionDoneListeners.delete(listener)
+  }
+}
+
+/** The place sheet reports each action that succeeded. */
+export function reportPlaceActionDone(done: PlaceActionDone): void {
+  for (const listener of [...actionDoneListeners]) listener(done)
+}

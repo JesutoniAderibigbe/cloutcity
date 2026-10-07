@@ -19,8 +19,8 @@ const toggle = (panel: HudPanel, open: HudPanel | null) =>
 
 /**
  * The HUD's panel buttons in the actions cell (S10a; S05 layout). On wide screens, Inventory
- * and Rent with their labels; on phones and landscape phones, one More button that opens a
- * panel holding Inventory, Rent and the sound settings (Q3). Toggle buttons: tapping the open
+ * and Rent with their labels. At every width, the More button that opens a panel holding
+ * Inventory, Rent, the sound settings (Q3) and Help (S06). Toggle buttons: tapping the open
  * panel's button closes it. Hidden while a modal (the welcome card) is open, since everything
  * behind it is inert anyway.
  */
@@ -50,7 +50,7 @@ export function HudPanelButtons() {
         aria-label={copy('hud.more')}
         aria-expanded={open === 'more'}
         onClick={() => toggle('more', open)}
-        className={`${BUTTON} flex hud-wide:hidden hud-short:flex ${shade('more')}`}
+        className={`${BUTTON} flex ${shade('more')}`}
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 fill-current">
           <circle cx="5" cy="12" r="2" />

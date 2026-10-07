@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { test as base, expect, type ConsoleMessage, type Page } from '@playwright/test'
 import { ONBOARDING_KEY, completedOnboardingSeed } from './onboarding-seed'
+import { TOUR_KEY, doneTourSeed } from './tour-seed'
 
 /**
  * Shared e2e fixture. Every spec imports `test` and `expect` from here, never from
@@ -11,7 +12,9 @@ import { ONBOARDING_KEY, completedOnboardingSeed } from './onboarding-seed'
  *  - `checkA11y()` (A11Y-2): an axe scan of the current page that fails on serious or critical
  *    violations;
  *  - a completed welcome card (S05a), so specs for other flows start like a returning player.
- *    Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`.
+ *    Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`;
+ *  - a finished first-run tour (S06), so no coach marks sit over other flows. Tour specs opt out
+ *    with `test.use({ tour: 'fresh' })`.
  */
 
 const FAILING_CONSOLE_TYPES = new Set<ReturnType<ConsoleMessage['type']>>([
@@ -88,6 +91,12 @@ interface Fixtures {
   onboarding: 'complete' | 'fresh'
   onboardingSeed: void
   /**
+   * `done` (default) seeds a finished tour before every page load, unless the spec has already
+   * stored its own; `fresh` leaves storage alone, so a fresh game starts the tour.
+   */
+  tour: 'done' | 'fresh'
+  tourSeed: void
+  /**
    * How long the guard keeps listening after the test body ends, so late async warnings
    * (a failed fetch, an effect after the last assertion) still fail the test. Override with
    * `use: { consoleSettleMs }` in playwright.config.ts or `test.use()`.
@@ -132,6 +141,28 @@ export const test = base.extend<Fixtures>({
             }
           },
           { key: ONBOARDING_KEY, value: JSON.stringify(completedOnboardingSeed()) },
+        )
+      }
+      await use()
+    },
+    { auto: true },
+  ],
+
+  tour: ['done', { option: true }],
+
+  tourSeed: [
+    async ({ page, tour }, use) => {
+      if (tour === 'done') {
+        await page.addInitScript(
+          ({ key, value }) => {
+            // Storage can throw (opaque origins, specs that make it throw on purpose).
+            try {
+              if (localStorage.getItem(key) === null) localStorage.setItem(key, value)
+            } catch {
+              // Nothing to seed: a fresh game starts the tour, as it would for that player.
+            }
+          },
+          { key: TOUR_KEY, value: JSON.stringify(doneTourSeed()) },
         )
       }
       await use()

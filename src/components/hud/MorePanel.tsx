@@ -1,6 +1,7 @@
 'use client'
 
 import { setSoundSheetOpen } from '@/components/audio/soundSheet'
+import { resumeTour } from '@/components/tour/tourControl'
 import { copy } from '@/lib/copy'
 import { closeHudPanel, openHudPanel } from '@/state/hudPanel'
 import { PANEL_BUTTON, PanelDialog } from './PanelDialog'
@@ -8,9 +9,10 @@ import { PANEL_BUTTON, PanelDialog } from './PanelDialog'
 import '@/lib/copy/ns/hud'
 
 /**
- * The HUD's More panel (S05, Q3): on phones and landscape phones the HUD has no room for
- * Inventory, Rent and the sound settings gear, so they live here. Each opens its own sheet in
- * place of this one; Escape or Close returns focus to the More button.
+ * The HUD's More panel (S05, Q3; S06): Inventory and Rent (which also have their own buttons on
+ * wide screens), the sound settings and Help, which brings back the tour. The More button shows
+ * at every width. Each item opens its own sheet in place of this one, or closes it; Escape or
+ * Close returns focus to the More button.
  */
 export function MorePanel() {
   const items = [
@@ -22,6 +24,15 @@ export function MorePanel() {
       open: () => {
         closeHudPanel()
         setSoundSheetOpen(true)
+      },
+    },
+    {
+      // S06: Help resumes the tour (or replays it), over the map with nothing in the way.
+      key: 'help',
+      label: copy('hud.help'),
+      open: () => {
+        closeHudPanel()
+        resumeTour()
       },
     },
   ]

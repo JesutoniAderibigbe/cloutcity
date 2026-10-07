@@ -886,6 +886,47 @@ export const OnboardingConfigSchema = z
   })
 export type OnboardingConfig = z.infer<typeof OnboardingConfigSchema>
 
+/** The kinds of notice a new player may see (GR-9): each surface tags itself `data-cc-notice`. */
+export const NOTICE_KINDS = ['tour', 'level-up', 'goals-ready', 'event', 'icon'] as const
+
+/**
+ * The first-run tour (S06): coach marks over the live map that walk a new player through one
+ * purchase, and the GR-9 limit on what a new player is shown. Cross-file references (the place,
+ * its action, the step copy) are checked in src/lib/data/data.test.ts.
+ */
+export const TourConfigSchema = z.strictObject({
+  /** The place the tour leads to, and the action bought there. */
+  placeId: z.string().min(1),
+  actionId: z.string().min(1),
+  /** At most this many steps (GR-9: short). */
+  maxSteps: positiveInt,
+  /** A step's text, with its values filled in, fits the banner zone at 390 px. */
+  maxCharsPerStep: positiveInt,
+  /**
+   * The tour starts by itself only for a fresh game: nothing bought, earned or visited yet, and
+   * no more than this many game minutes played. Any other player is a veteran: the tour is
+   * marked done without showing, and stays one tap away in More, Help.
+   */
+  freshStartMaxGameMinutes: positiveInt,
+  /**
+   * How long the tour takes a player (the acceptance target: about 20 s): reading each step at
+   * `readCharsPerSecond` plus one tap per step.
+   */
+  timing: z.strictObject({
+    targetSeconds: positive,
+    readCharsPerSecond: positive,
+    secondsPerTap: positive,
+  }),
+  /** GR-9: a new player starts with at most this many notices. */
+  newPlayerNoticeMax: positiveInt,
+  /** The notice kinds that may reach a new player; every `data-cc-notice` must be one. */
+  meaningfulNotices: z
+    .array(z.enum(NOTICE_KINDS))
+    .min(1)
+    .refine((kinds) => new Set(kinds).size === kinds.length, { error: 'kinds must not repeat' }),
+})
+export type TourConfig = z.infer<typeof TourConfigSchema>
+
 const volume = z.int().min(0).max(100)
 const AudioTierSchema = z.strictObject({
   /** Decode the sound effects as soon as the runtime starts (else on first use). */
