@@ -1,7 +1,7 @@
 /**
  * The landmark kit is code-built geometry on three alone: no React, no config loaders, no model
- * loaders, and no model files shipped in public/ (CLAUDE.md "Art direction": never downloaded
- * models).
+ * loaders. The only model files in public/ are the pinned CC0 pack builds listed in
+ * data/assets/manifest.json (S04h, DEC-24); nothing else may ship there.
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -59,11 +59,19 @@ describe('src/scene/landmarks', () => {
     }
   })
 
-  it('public/ ships no 3D model files', () => {
-    const models = readdirSync(join(ROOT, 'public'), { recursive: true, withFileTypes: true })
+  it('public/ ships only the 3D model files listed in the asset manifest', () => {
+    const manifest = JSON.parse(readFileSync(join(ROOT, 'data/assets/manifest.json'), 'utf8')) as {
+      models: { tiers: Record<string, { file: string }> }[]
+    }
+    const listed = new Set(
+      manifest.models.flatMap((model) => Object.values(model.tiers).map((tier) => tier.file)),
+    )
+    const publicDir = join(ROOT, 'public')
+    const unlisted = readdirSync(publicDir, { recursive: true, withFileTypes: true })
       .filter((entry) => entry.isFile())
-      .map((entry) => entry.name)
-      .filter((name) => /\.(?:glb|gltf|obj|fbx|stl|ply|dae|3ds|usdz|drc|ktx2)$/i.test(name))
-    expect(models).toEqual([])
+      .filter((entry) => /\.(?:glb|gltf|obj|fbx|stl|ply|dae|3ds|usdz|drc|ktx2)$/i.test(entry.name))
+      .map((entry) => '/' + relative(publicDir, join(entry.parentPath, entry.name)))
+      .filter((file) => !listed.has(file))
+    expect(unlisted).toEqual([])
   })
 })
