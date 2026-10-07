@@ -25,6 +25,8 @@
     "db:types": "supabase gen types --local --schema public > src/lib/supabase/database.types.ts",
     "geo:build": "node scripts/geo/build.ts",
     "audio:build": "node scripts/audio/build.ts",
+    "assets:build": "node scripts/assets/build.ts",
+    "blender:build": "node scripts/blender/build.ts",
     "econ:update": "vitest run src/engine/sim --update"
   },
   "dependencies": {
@@ -41,6 +43,9 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
+    "@gltf-transform/core": "4.5.1",
+    "@gltf-transform/extensions": "4.5.1",
+    "@gltf-transform/functions": "4.5.1",
     "@playwright/test": "1.63.0",
     "@serwist/turbopack": "9.5.13",
     "@tailwindcss/postcss": "4.3.3",
@@ -60,6 +65,7 @@
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "fflate": "0.8.3",
+    "meshoptimizer": "1.3.0",
     "postcss": "8.5.29",
     "postgres": "3.4.9",
     "prettier": "3.9.9",

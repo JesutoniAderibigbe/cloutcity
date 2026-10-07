@@ -216,6 +216,29 @@ export const SceneConfigSchema = z.strictObject({
     cornerRadius: z.number().nonnegative().max(0.5),
     alphaTest: z.number().gt(0).lt(1),
   }),
+  /**
+   * The hand-made models (S04h, DEC-24). `lit` (MeshStandardMaterial on mid/high, Lambert on low)
+   * is the default until the user picks from the showcase; `toon` uses the shared toon ramp.
+   * Colours come from each model's vertex colours (theme.json `models` tokens).
+   */
+  models: z.strictObject({
+    shading: z.enum(['lit', 'toon']),
+    /** Material per quality tier when shading is `lit`. */
+    litMaterial: z.strictObject({
+      low: z.enum(['lambert', 'standard']),
+      mid: z.enum(['lambert', 'standard']),
+      high: z.enum(['lambert', 'standard']),
+    }),
+    roughness: z.number().min(0).max(1),
+    metalness: z.number().min(0).max(1),
+    /** `_EMISSIVE` vertices (lit windows, lamps) glow at this intensity by day and by night. */
+    emissive: z.strictObject({
+      dayIntensity: z.number().nonnegative(),
+      nightIntensity: z.number().nonnegative(),
+    }),
+    /** Decoded models kept in memory after their last user unmounts (LRU). */
+    cacheMaxEntries: z.int().min(1),
+  }),
   /** The static SVG map (GET /geo/fallback) shown when the 3D map is unavailable. */
   fallback: z.strictObject({
     /** SVG user units are whole multiples of this many metres. */

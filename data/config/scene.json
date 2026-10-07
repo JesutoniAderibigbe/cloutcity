@@ -130,6 +130,21 @@
     "cornerRadius": 0.3,
     "alphaTest": 0.5
   },
+  "models": {
+    "shading": "lit",
+    "litMaterial": {
+      "low": "lambert",
+      "mid": "standard",
+      "high": "standard"
+    },
+    "roughness": 0.9,
+    "metalness": 0,
+    "emissive": {
+      "dayIntensity": 0,
+      "nightIntensity": 1.2
+    },
+    "cacheMaxEntries": 48
+  },
   "fallback": {
     "metresPerUnit": 20,
     "toleranceM": 50,

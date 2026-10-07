@@ -42,6 +42,8 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `npm run budget`                  | Gzipped shell JS, 3D chunk, apartment chunk, total JS to playable, base geo, district assets, service worker and precache against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
 | `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                                                                        |
 | `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                         |
+| `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                          |
+| `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender                                                                                       |
 | `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                          |
 
 Gate order used by the build loop:
@@ -191,6 +193,37 @@ Four channels (music, sfx, ambience, voice) under a master, each with its own vo
   (context state, live and target gains, what is playing, sfx count);
   `tests/e2e/fixtures/audio.ts` wraps it with the audio probe. Production builds drop it
   (`scripts/shell-guard.ts` checks).
+
+## 3D models
+
+Hand-made low-poly models (S04h, DEC-24/25/26) come only from free CC0 packs pinned by commit or
+by zip sha256 (KayKit City Builder, Furniture and Restaurant Bits; Kenney Mini Characters,
+Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scripts.
+
+- **Catalog.** `data/assets/catalog.json` lists the packs (licence, licence-file phrases, pin,
+  colour grade) and the models (entries, category, real-world fit, pivot, per-tier
+  simplification, palette swatches and anchors, night-glow tokens, recolour slots, rig clips,
+  load phase, copy name key). The schema allows only CC0/MIT packs and project-original Blender
+  sources.
+- **Build.** `npm run assets:build` downloads into `.cache/assets/` (sha256-checked against
+  `scripts/assets/sources.lock.json`; `-- --update` re-pins, e.g. when a Kenney zip URL moves)
+  and reads zips in memory. Per model it bakes the texture atlas and material colours into
+  vertex colours (no textures ship), grades and snaps them to the real-world `models` tokens in
+  `data/config/theme.json`, writes `_EMISSIVE` (linear RGB night glow) and `_SLOT` (recolour
+  region) attributes, merges static models into one mesh, fits real-world size, simplifies per
+  tier, quantizes and compresses with meshopt (vertex codec v0, which three r182's bundled
+  decoder reads). Outputs: `public/models/<id>.<tier>.<sha8>.glb`, `data/assets/manifest.json`
+  (with `assetVersion`), the lock and `data/assets/SOURCES.md`. It fails when a model breaks
+  its per-category cap in `data/config/perf.json` `models` and prints the pressure; it never
+  edits perf.json. `-- --check --offline` rebuilds byte-identically from the cache.
+- **Blender.** `npm run blender:build` runs each model script listed in
+  `scripts/blender/lock.json` through `scripts/blender/run.py` with the pinned Blender
+  (`--background --factory-startup --python-exit-code 1`, `PYTHONHASHSEED=0`; override the
+  executable with `BLENDER_BIN`) and commits the GLBs to `scripts/blender/out/`; the asset build
+  reads them as a `local` source and checks their hashes, so CI never needs Blender.
+- **To add a model:** add it to the catalog (and its `models.name.*` copy key in
+  `data/copy/models/base.json`), run `npm run assets:build -- --update` once, then
+  `npm run assets:build`, and check the printed colour report and cap pressure.
 
 ## Data, copy and config
 
@@ -663,8 +696,9 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
 
 `.gitignore` covers env files, build output (`.next/`, `.next-e2e/` and `.next-e2e-supabase/` for the e2e builds, `out/`), test artefacts
 (`test-results/`, `playwright-report/`, `coverage/`) and the geo download cache (`.cache/`:
-the raw NYC Open Data and MTA files `npm run geo:build` downloads, and the audio originals
-`npm run audio:build` downloads, kept unmodified).
+the raw NYC Open Data and MTA files `npm run geo:build` downloads, the audio originals
+`npm run audio:build` downloads and the 3D packs `npm run assets:build` downloads, kept
+unmodified).
 
 ## Agent orchestration kit
 

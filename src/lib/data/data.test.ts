@@ -58,6 +58,8 @@ import {
   ZoneShapesFileSchema,
   ZonesFileSchema,
 } from './schemas/world'
+import { ModelManifestSchema } from './schemas/assets'
+import { CatalogSchema } from '../../../scripts/assets/schema'
 import { audio, balance, layout, onboarding, perf, progression, realtime, theme } from './config'
 import {
   audioManifest,
@@ -79,6 +81,8 @@ const DATA = join(import.meta.dirname, '../../../data')
  * copy/<ns>/base.json is a NamespaceBaseSchema, any other copy/<ns>/<pack>.json a SlangPackSchema.
  */
 const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
+  'assets/catalog.json': CatalogSchema,
+  'assets/manifest.json': ModelManifestSchema,
   'audio/manifest.json': AudioManifestSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
   'config/audio.json': AudioConfigSchema,
@@ -173,6 +177,7 @@ describe('/data files', () => {
     'geo',
     'zones',
     'audio',
+    'assets',
     'boroughs',
     'homes',
     'config',
@@ -298,6 +303,20 @@ describe('config/perf.json', () => {
       },
       landmarkTrianglesOverride: {},
       landmarkLodRatioMax: 0.5,
+      // S04h (TUNE-12): per-asset caps set from the Part 1 measurements with ~15–25% headroom.
+      models: {
+        vehicle: { trianglesMax: { low: 1200, mid: 1500, high: 1500 }, gzKBMax: 25 },
+        'street-prop': { trianglesMax: { low: 600, mid: 600, high: 600 }, gzKBMax: 12 },
+        tree: { trianglesMax: { low: 500, mid: 500, high: 500 }, gzKBMax: 8 },
+        building: { trianglesMax: { low: 1200, mid: 1200, high: 1500 }, gzKBMax: 18 },
+        'building-detail': { trianglesMax: { low: 200, mid: 200, high: 200 }, gzKBMax: 4 },
+        furniture: { trianglesMax: { low: 600, mid: 800, high: 800 }, gzKBMax: 16 },
+        'room-shell': { trianglesMax: { low: 200, mid: 200, high: 200 }, gzKBMax: 4 },
+        'avatar-rig': { trianglesMax: { low: 0, mid: 0, high: 0 }, gzKBMax: 8 },
+        'avatar-head': { trianglesMax: { low: 350, mid: 400, high: 400 }, gzKBMax: 11 },
+        'avatar-body': { trianglesMax: { low: 400, mid: 650, high: 650 }, gzKBMax: 15 },
+        'avatar-accessory': { trianglesMax: { low: 100, mid: 100, high: 100 }, gzKBMax: 4 },
+      },
     })
   })
 

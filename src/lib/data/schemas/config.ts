@@ -1,7 +1,7 @@
 /**
  * Schemas for /data/config. This file imports only `zod` and dependency-free modules by relative
  * `.ts` paths (`../homes.ts`, `../cloutSources.ts`, `../goalFacts.ts`, `../../geo/sources.ts`,
- * `../../geo/projection.ts`; no path aliases) so Node can load it directly from `scripts/` with its
+ * `../../geo/projection.ts`, `./assets.ts`; no path aliases) so Node can load it directly from `scripts/` with its
  * built-in type stripping.
  */
 import { z } from 'zod'
@@ -20,6 +20,7 @@ import {
   LandmarkTrianglesMaxSchema,
   LandmarkTrianglesOverrideSchema,
 } from './landmarkModels.ts'
+import { MODEL_CATEGORIES, type ModelCategory } from './assets.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
 export const QualityTierSchema = z.enum(QUALITY_TIERS)
@@ -242,6 +243,25 @@ export const PerfConfigSchema = z
     /** Per-landmark caps replacing the category caps, by landmark id. */
     landmarkTrianglesOverride: LandmarkTrianglesOverrideSchema,
     landmarkLodRatioMax: z.number().gt(0).max(1),
+    /**
+     * Per-asset caps for the hand-made models (S04h), by catalog category: triangles per tier and
+     * gzipped bytes of the largest tier file. `npm run assets:build` fails over them and prints the
+     * pressure; it never edits this file (TUNE-12: set from the Part 1 measurements).
+     */
+    models: z.strictObject(
+      Object.fromEntries(
+        MODEL_CATEGORIES.map((category) => [
+          category,
+          z.strictObject({ trianglesMax: perTier(z.int().nonnegative()), gzKBMax: positive }),
+        ]),
+      ) as Record<
+        ModelCategory,
+        z.ZodObject<{
+          trianglesMax: ReturnType<typeof perTier<z.ZodInt>>
+          gzKBMax: typeof positive
+        }>
+      >,
+    ),
   })
   .refine(
     (perf) =>
@@ -372,6 +392,14 @@ export const ThemeConfigSchema = z
     /** Token used for the browser/PWA theme colour and the page background. */
     themeColor: z.string(),
     scene: ScenePaletteRefsSchema,
+    /**
+     * Real-world colours for the hand-made 3D models (S04h, DEC-26): `npm run assets:build`
+     * snaps baked pack colours to these, and avatar swatches recolour from them. Each token has a
+     * human colour name in copy (`models.color.<token without its hyphen>`, e.g.
+     * `models.color.taxi400`). Separate from `colors`: these never
+     * become Tailwind classes.
+     */
+    models: z.record(z.string().regex(TOKEN_NAME), z.string().regex(HEX_COLOR)),
   })
   .refine((theme) => theme.themeColor in theme.colors, {
     error: 'themeColor must name a token in colors',
