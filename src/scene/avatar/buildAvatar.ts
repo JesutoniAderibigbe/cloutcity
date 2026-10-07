@@ -14,7 +14,7 @@ import {
   type Object3D,
 } from 'three'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
-import { createToonRamp } from '../materials'
+import { createToonRamp } from '../toonRamp'
 import { LAY_FLAT_X } from '../geo/coords'
 
 export type AvatarConfig = SceneConfig['avatar']

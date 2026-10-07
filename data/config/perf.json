@@ -2,6 +2,7 @@
   "shellJsGzKB": 180,
   "shellHeadroomGzKB": 20,
   "sceneChunkJsGzKB": 350,
+  "apartmentChunkJsGzKB": 40,
   "totalJsToPlayableGzKB": 550,
   "baseGeoGzKB": 400,
   "districtBuildingsGzKB": { "low": 150, "mid": 300, "high": 400 },
@@ -11,6 +12,11 @@
   "playableWarmMs": 2500,
   "drawCallsMax": { "low": 60, "mid": 120, "high": 200 },
   "trianglesMax": { "low": 150000, "mid": 400000, "high": 800000 },
+  "apartment": {
+    "drawCallsMax": { "low": 24, "mid": 32, "high": 56 },
+    "trianglesMax": { "low": 12000, "mid": 20000, "high": 30000 },
+    "avatarReserve": { "drawCalls": 6, "triangles": 4000 }
+  },
   "dprCap": { "low": 1, "mid": 1.5, "high": 2 },
   "shadows": { "low": "none", "mid": "blob-or-baked", "high": "pcf-directional" },
   "otherPlayersMax": { "low": 8, "mid": 16, "high": 24 },

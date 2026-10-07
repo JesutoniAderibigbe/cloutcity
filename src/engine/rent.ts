@@ -9,7 +9,8 @@
  *   they owe (a fee of 0 is a warning). Any midnight before the next due date, the debt is
  *   collected in full if the player has the cash, which clears the misses.
  * - On the `evictAfterMissed`-th consecutive miss the player is evicted: they move to the
- *   lowest-rent home (computed from `rentPerWeek`) and the debt is written off.
+ *   lowest-rent home (computed from `rentPerWeek`) and the debt is written off. Decor in slots
+ *   that home does not have goes back to storage (src/engine/home.ts `placementsAfterMove`).
  *
  * Like stat decay, the result depends only on the start and end minute of an advance, never on
  * how the time was split into ticks or actions, so a boundary is never charged twice.
@@ -18,6 +19,7 @@ import { HOME_IDS, lowestRentHome } from '@/lib/data/homes'
 import { minutesPerDay } from './clock'
 import { isHomeId, type EngineConfig, type HomeId } from './config'
 import type { PlayerState } from './game'
+import { placementsAfterMove } from './home'
 
 export interface RentState {
   /** Whole dollars of unpaid rent and late fees. */
@@ -156,5 +158,9 @@ export function settleRent(
   }
 
   if (events.length === 0) return { player, events }
-  return { player: { ...player, cash, home, rent: { owed, missed } }, events }
+  const apartment =
+    home === player.home
+      ? player.apartment
+      : { ...player.apartment, placed: placementsAfterMove(player.apartment.placed, home, config) }
+  return { player: { ...player, cash, home, rent: { owed, missed }, apartment }, events }
 }

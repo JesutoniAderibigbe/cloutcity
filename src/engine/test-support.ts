@@ -5,17 +5,19 @@
 import { cloutLevel, itemClout, legacyCloutState } from './clout'
 import type { EngineConfig } from './config'
 import type { GameSnapshot, PlayerState } from './game'
+import { homeClout } from './home'
 
 /**
  * `player` holding `total` clout: earned clout becomes one folded legacy entry (less what their
- * wearables already carry), and the level it lands on counts as reached (no level-up for it).
+ * wearables and home already carry), and the level it lands on counts as reached (no level-up
+ * for it).
  */
 export function playerWithClout<P extends PlayerState>(
   player: P,
   total: number,
   config: EngineConfig,
 ): P {
-  const earned = Math.max(0, total - itemClout(player, config))
+  const earned = Math.max(0, total - itemClout(player, config) - homeClout(player, config))
   const clout = {
     ...legacyCloutState(earned, cloutLevel(total, config).index),
     firstPaycheckPaid: player.clout.firstPaycheckPaid,

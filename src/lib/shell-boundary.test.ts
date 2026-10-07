@@ -44,6 +44,10 @@ const ALLOWED_FILES: readonly RegExp[] = [
   // and everything three-based load through its next/dynamic import (the 3D chunk).
   /^src\/scene\/(CitySceneClient|SceneErrorBoundary)\.tsx$/,
   /^src\/scene\/(webgl|geo\/load)\.ts$/,
+  // The apartment's thin mount (S16): its next/dynamic import must be reachable from the page
+  // for the build to list the room's chunk; it reads the room's view and hands the screen over.
+  /^src\/scene\/apartment\/ApartmentMount\.tsx$/,
+  /^src\/state\/(apartmentView|sceneFocus)\.ts$/,
 ]
 
 /** Packages the shell may import (zod is not one of them). */

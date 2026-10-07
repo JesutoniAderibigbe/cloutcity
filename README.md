@@ -27,21 +27,21 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 
 ## Scripts
 
-| Script                            | What it does                                                                                                                        |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                             |
-| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                         |
-| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                |
-| `npm run format:check` / `format` | Prettier check / write                                                                                                              |
-| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                    |
-| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                        |
-| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                            |
-| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)            |
-| `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                     |
-| `npm run budget`                  | Gzipped shell JS of `/` and the lazy 3D chunk against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
-| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                            |
-| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies             |
-| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                              |
+| Script                            | What it does                                                                                                                                             |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                                  |
+| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                                              |
+| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                                     |
+| `npm run format:check` / `format` | Prettier check / write                                                                                                                                   |
+| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                                         |
+| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                                             |
+| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                                                 |
+| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)                                 |
+| `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                                          |
+| `npm run budget`                  | Gzipped shell JS of `/`, the lazy 3D chunk and the apartment chunk against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
+| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                 |
+| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                  |
+| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                   |
 
 Gate order used by the build loop:
 `npm run format:check && npm run typecheck && npm run lint && npm test && npm run test:integration && npm run build && npm run e2e && npm run budget`
@@ -198,15 +198,15 @@ by a zod schema in `src/lib/data/schemas/` (`src/lib/data/data.test.ts` fails if
 no schema or does not match it, if any other file type appears (only `SOURCES.md` and
 `README.md` are allowed next to data), or if a cross-file reference breaks).
 
-| Folder            | Holds                                                                                                                                                                                                                                                                                                                |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `progression.json` (goals, grant caps, prestige rules), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings) |
-| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                                                                                     |
-| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                                                                                    |
-| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                                   |
-| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                                                                        |
-| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                    |
-| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                           |
+| Folder            | Holds                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `progression.json` (goals, grant caps, prestige rules), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings, the apartment's room, markers and picking) |
+| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                                                                                                                                |
+| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                                                                                                                               |
+| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                                                                              |
+| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                                                                                                                   |
+| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                                                               |
+| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                                                                      |
 
 - **Handles.** `data/config/handles.json` (handle rules, change and rate limits),
   `data/copy/handleWords.json` (guest-handle words) and `data/moderation/handle-blocklist.json`
@@ -325,7 +325,25 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   slot (top, bottom, shoes, accessory, face); gifts stack and are consumed on yourself or an
   NPC (`{ npcId }` with an `npc-` id), never another player. Resale is `sellValue` (data,
   `floor(price * resalePct[rarity] / 100)`), less `depreciationPctPerGameDay` per game day
-  owned for wearables, never below `minResalePct` (`balance.json` `items`).
+  owned for wearables and decor, never below `minResalePct` (`balance.json` `items`). Decor is
+  owned once and sells back out of its slot; selling a wearable or decor kept through prestige
+  is refused (`PRESTIGE_KEPT`).
+- **Apartment** (`home.ts`, slots in `data/homes/interiors.json`, numbers in `balance.json`
+  `home`): decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface,
+  `homeScore`, and at least two colour `variants`, each a palette token and a `colors.*` copy
+  name) is placed in a slot of its kind in the current home (`placeDecor`, `removeDecor`,
+  `setDecorVariant`). Home score is the home's `baseScore` plus placed decor's `homeScore`; home
+  clout is that score capped at `maxClout` and counts toward total, goal and level clout.
+  `moveHome` is instant and refused, in order, for the current home, a home in a borough the
+  level has not opened (`HOME_BOROUGHS` in `src/lib/data/homes.ts`) and a move the player cannot
+  afford (`canAffordMove`); it pays the move-in cost, keeps decor in slots the new home shares and
+  logs the move (`apartment.moveLog`). To add decor: add the item with its `decor` block to
+  `items.json` (cloutValue and styleValue 0, no stat effects), its name and description to
+  `data/copy/items/`, any new colour name to `data/copy/colors/`, a low-poly model to
+  `src/scene/apartment/buildDecor.ts` (one merged geometry, at most two material groups), and run
+  `npm test`. The Home panel (`src/components/hud/HomePanel.tsx`) places, recolours and moves
+  through a slot list (the keyboard path); the 3D room (`src/scene/apartment/`) mirrors it and
+  places by tapping a slot. While the room shows, the city draws nothing (`src/state/sceneFocus.ts`).
 - **Events** (`events.ts`, data in `data/events/events.json`): each event lists conditions
   (personal-clock `hours`, `minDay`, `boroughs`, `locationIds`/`locationCategories`, `stats`,
   `cash`, `clout`, `items`), a `weight`, an optional `cooldownMin` or `once`, and two or three
@@ -350,7 +368,7 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   `data/config/progression.json`): goals are facts read from the save (first paycheck, outfit,
   landmark visit, club night, one per clout level; first friend is coming soon), recorded by
   `syncGoals` after every state-changing store action. Level goals read goal clout (earned minus
-  granted, plus items, never premium), so granted value never counts toward a goal (ECON-1).
+  granted, plus items and home, never premium), so granted value never counts toward a goal (ECON-1).
   Icon is earned: every clout level reads total clout except Icon (the victory goal's level),
   which also needs goal clout at its threshold, so the Icon level-up and the victory screen land
   together and grants or premium clout never reach Icon (`levelClout` in `clout.ts`).
@@ -414,10 +432,18 @@ KB = 1000 bytes) checks:
   (Next.js chunks plus inline scripts; `nomodule` polyfills excluded);
 - `sceneChunkJsGzKB`: the lazy 3D chunk, i.e. the files of the `next/dynamic` scene import listed
   in `.next/server/app/page/react-loadable-manifest.json` (minus any file the shell already
-  loads); the script fails if the manifest is missing or lists no lazy JS.
+  loads); the script fails if the manifest is missing or lists no lazy JS. The apartment's
+  import is left out: it loads when the Home panel opens, not before the map is playable;
+- `apartmentChunkJsGzKB` (S16): what only the apartment's `next/dynamic` import adds (the manifest
+  entry whose code renders `cc-feature:apartment-scene`, minus the city's 3D chunk and the shell);
+  the script fails if no lazy entry, or more than one, renders that marker. The import sits in the
+  shell's `src/scene/apartment/ApartmentMount.tsx`: nested in a lazy island's chunk, Turbopack
+  lists it under a chunk it never writes.
 
 Draw calls, triangles and idle frames at the default view are asserted by
-`tests/e2e/city-scene.spec.ts`. Enforcement of the other budgets joins in later tasks. Audio has its own budgets
+`tests/e2e/city-scene.spec.ts`; the apartment's per-tier caps (`perf.json` `apartment`, with
+`avatarReserve` kept free for the S16a avatar, shadow pass included) by
+`tests/e2e/home-apartment.spec.ts`. Enforcement of the other budgets joins in later tasks. Audio has its own budgets
 (`audioLazyGzKB` per tier for the first music track, the ambience and the tier's preloaded sfx,
 per encoding; `audioFileMaxKB`), checked by `src/lib/data/data.test.ts`; `audioRuntimeJsGzKB` is
 measured by hand until the budget script covers its lazy chunk.

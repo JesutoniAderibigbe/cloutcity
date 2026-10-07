@@ -50,7 +50,10 @@ const shopRow = (page: Page, itemId: string) => sheet(page).locator(`[data-shop-
 
 async function cheapestWearable(page: Page) {
   const items = await page.evaluate(() => window.__cloutcityTest?.hud?.shop() ?? [])
-  const [item] = items.filter((entry) => !entry.gift).sort((a, b) => a.price - b.price)
+  // Wearables only: gifts stack and decor (S16) goes in the Home panel, not the outfit.
+  const [item] = items
+    .filter((entry) => !entry.gift && !entry.decor)
+    .sort((a, b) => a.price - b.price)
   if (item === undefined) throw new Error('no wearable for sale')
   const dearest = [...items].sort((a, b) => b.price - a.price)[0]
   if (dearest === undefined) throw new Error('no items for sale')
@@ -236,7 +239,7 @@ const focused = (page: Page) =>
 async function shopList(page: Page) {
   const items = await page.evaluate(() => window.__cloutcityTest?.hud?.shop() ?? [])
   const byPrice = [...items].sort((a, b) => a.price - b.price)
-  const wearables = byPrice.filter((item) => !item.gift)
+  const wearables = byPrice.filter((item) => !item.gift && !item.decor)
   const gifts = byPrice.filter((item) => item.gift)
   if (wearables.length < 2 || gifts.length < 2)
     throw new Error('shop needs 2 wearables and 2 gifts')

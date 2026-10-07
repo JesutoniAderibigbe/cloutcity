@@ -31,6 +31,7 @@ import {
 import { advanceMinutes, tick } from '@/engine/game'
 import { findGoal, syncGoals, victoryGoal, type GoalsState } from '@/engine/goals'
 import { grant, type GrantResult } from '@/engine/grants'
+import { moveHome, placeDecor, removeDecor, setDecorVariant, type HomeResult } from '@/engine/home'
 import {
   buyItem,
   equipItem,
@@ -90,6 +91,20 @@ export interface GameActions {
   unequipSlot(slot: string): ItemResult
   /** Uses one gift on yourself or an NPC; it is consumed. Never another player. */
   consumeGift(itemId: string, target: GiftTarget): ReturnType<typeof consumeGift>
+  /**
+   * Places owned decor in a slot of the current home (whatever sat there goes to storage). A
+   * level reached through the home score shows the level-up toast.
+   */
+  placeDecor(itemId: string, slotId: string): ReturnType<typeof placeDecor>
+  /** Takes the decor in a slot of the current home back to storage. */
+  removeDecor(slotId: string): ReturnType<typeof removeDecor>
+  /** Shows owned decor in another of its colour variants. */
+  setDecorVariant(itemId: string, variantId: string): HomeResult
+  /**
+   * Moves home at once, paying the move-in cost. The engine refuses the current home, a home in a
+   * locked borough and a move the player cannot afford, in that order.
+   */
+  moveHome(home: string): ReturnType<typeof moveHome>
   /**
    * Does one action from a place's action sheet. The engine re-checks the borough, opening
    * hours, club door, job lock, funds and energy; the state changes only when the result is ok.
@@ -205,7 +220,8 @@ export function mergeGameState(
 
 /**
  * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout
- * ledger, flex state, home, rent, inventory, club nights, visits), speed, event state, goals,
+ * ledger, flex state, home, rent, inventory with decor, club nights, visits, the apartment's
+ * placements and move log), speed, event state, goals,
  * the grant log and prestige. The sub-minute remainder alone is not, so a visible tab does not
  * write on every tick (a reload loses at most one game minute's worth of carried real time).
  */
@@ -406,6 +422,26 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
           consumeGift: (itemId, target) => {
             const result = consumeGift(get(), itemId, target, engineConfig)
             if (result.ok) set({ player: result.snapshot.player })
+            return result
+          },
+          placeDecor: (itemId, slotId) => {
+            const result = placeDecor(get(), itemId, slotId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          removeDecor: (slotId) => {
+            const result = removeDecor(get(), slotId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          setDecorVariant: (itemId, variantId) => {
+            const result = setDecorVariant(get(), itemId, variantId, engineConfig)
+            if (result.ok) set({ player: result.snapshot.player })
+            return result
+          },
+          moveHome: (home) => {
+            const result = moveHome(get(), home, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
             return result
           },
           performPlaceAction: (place, actionId) => {

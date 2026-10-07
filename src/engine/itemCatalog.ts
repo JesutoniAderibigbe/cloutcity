@@ -5,7 +5,7 @@
  * that does not fit throws at load (fail fast), without pulling classic zod into the client.
  */
 import type { RarityTier } from '@/lib/data/schemas/config'
-import type { Item } from '@/lib/data/schemas/content'
+import type { DecorFit, Item } from '@/lib/data/schemas/content'
 import { STAT_KEYS, type StatChanges } from './stats'
 
 /** Outfit slots, in display order. Mirrors ITEM_SLOTS in src/lib/data/schemas/content.ts. */
@@ -13,6 +13,9 @@ export const ITEM_SLOTS = ['top', 'bottom', 'shoes', 'accessory', 'face'] as con
 export type ItemSlot = (typeof ITEM_SLOTS)[number]
 
 const CATEGORIES = ['clothing', 'makeup', 'gift', 'decor', 'upgrade'] as const
+/** Mirrors DECOR_FITS in src/lib/data/schemas/content.ts. */
+export const DECOR_FITS = ['wall', 'floor', 'surface'] as const satisfies readonly DecorFit[]
+export type { DecorFit }
 const RARITIES = ['common', 'medium', 'rare'] as const
 type Category = (typeof CATEGORIES)[number]
 
@@ -47,12 +50,34 @@ export interface GiftDef extends ItemBase {
   readonly category: 'gift'
 }
 
-/** Decor and apartment upgrades: listed in the catalog, sold by later tasks. */
-export interface OtherItemDef extends ItemBase {
-  readonly category: 'decor' | 'upgrade'
+/** A decor item's colour variant: a palette token and its colour name's copy key. */
+export interface DecorVariant {
+  readonly id: string
+  readonly token: string
+  readonly nameKey: string
 }
 
-export type ItemDef = WearableDef | GiftDef | OtherItemDef
+/**
+ * Decor (S16): owned once and placed in a slot of its kind in the player's home. It is worth no
+ * item clout or style (`cloutValue` and `styleValue` are 0); while placed it adds `homeScore` to
+ * the home's score (src/engine/home.ts).
+ */
+export interface DecorDef extends ItemBase {
+  readonly category: 'decor'
+  readonly decor: {
+    readonly fits: DecorFit
+    readonly homeScore: number
+    /** At least two; the first is what a new purchase shows. */
+    readonly variants: readonly DecorVariant[]
+  }
+}
+
+/** Apartment upgrades: listed in the catalog, sold by a later task. */
+export interface OtherItemDef extends ItemBase {
+  readonly category: 'upgrade'
+}
+
+export type ItemDef = WearableDef | GiftDef | DecorDef | OtherItemDef
 
 export function isWearable(item: ItemDef): item is WearableDef {
   return item.category === 'clothing' || item.category === 'makeup'
@@ -60,6 +85,10 @@ export function isWearable(item: ItemDef): item is WearableDef {
 
 export function isGift(item: ItemDef): item is GiftDef {
   return item.category === 'gift'
+}
+
+export function isDecor(item: ItemDef): item is DecorDef {
+  return item.category === 'decor'
 }
 
 function oneOf<T extends string>(value: unknown, options: readonly T[]): value is T {
@@ -77,7 +106,7 @@ function narrow(raw: RawItem, index: number): ItemDef {
     throw new Error(`data/items/items.json: items[${index}].${field} does not fit the engine`)
   }
   const { id, nameKey, descriptionKey, category, slot, rarity, currency } = raw
-  const { price, sellValue, cloutValue, styleValue, statEffects } = raw
+  const { price, sellValue, cloutValue, styleValue, statEffects, decor } = raw
   if (typeof id !== 'string') return fail('id')
   if (typeof nameKey !== 'string') return fail('nameKey')
   if (typeof descriptionKey !== 'string') return fail('descriptionKey')
@@ -114,7 +143,32 @@ function narrow(raw: RawItem, index: number): ItemDef {
     return { ...base, category, slot }
   }
   if (slot !== undefined) return fail('slot')
+  if (category === 'decor') {
+    if (cloutValue !== 0) return fail('cloutValue')
+    if (styleValue !== 0) return fail('styleValue')
+    return { ...base, category, decor: narrowDecor(decor, fail) }
+  }
+  if (decor !== undefined) return fail('decor')
   return { ...base, category }
+}
+
+function narrowDecor(raw: unknown, fail: (field: string) => never): DecorDef['decor'] {
+  if (typeof raw !== 'object' || raw === null) return fail('decor')
+  const { fits, homeScore, variants } = raw as Record<string, unknown>
+  if (!oneOf<DecorFit>(fits, DECOR_FITS)) return fail('decor.fits')
+  if (!isDollars(homeScore) || homeScore < 1) return fail('decor.homeScore')
+  if (!Array.isArray(variants) || variants.length < 2) return fail('decor.variants')
+  const list = variants.map((variant: unknown, i): DecorVariant => {
+    const { id, token, nameKey } = (variant ?? {}) as Record<string, unknown>
+    if (typeof id !== 'string' || typeof token !== 'string' || typeof nameKey !== 'string') {
+      return fail(`decor.variants[${i}]`)
+    }
+    return { id, token, nameKey }
+  })
+  if (new Set(list.map((variant) => variant.id)).size !== list.length) {
+    return fail('decor.variants')
+  }
+  return { fits, homeScore, variants: list }
 }
 
 /** The engine catalog from the items file's `items` array. Throws on a duplicate id. */

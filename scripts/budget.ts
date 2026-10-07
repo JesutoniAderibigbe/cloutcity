@@ -6,7 +6,12 @@
  *   `shellJsGzKB`.
  * - 3D chunk JS: the files of the lazy `next/dynamic` scene import, read from the route's
  *   react-loadable-manifest.json (minus any file the shell already loads), gzipped, against
- *   `sceneChunkJsGzKB`.
+ *   `sceneChunkJsGzKB`. This is the 3D code loaded before the map is playable.
+ * - Apartment chunk JS (S16): the files only the apartment's `next/dynamic` import adds (the
+ *   manifest entry whose code renders `cc-feature:apartment-scene`, minus the city's 3D chunk
+ *   and the shell), gzipped, against `apartmentChunkJsGzKB`. It loads when the Home panel opens,
+ *   so it is left out of the 3D chunk above. A build without that marker fails, so the split
+ *   can never silently fold the apartment into the city figure or drop it.
  * - Service worker (S04e): the prerendered /serwist/sw.js, gzipped, against `serviceWorkerGzKB`,
  *   and every file it precaches on install, gzipped and summed, against `precacheGzKB`.
  *
@@ -105,30 +110,84 @@ export function readSceneChunkLimit(perf: unknown): number {
   return result.data.sceneChunkJsGzKB
 }
 
+const ApartmentLimitSchema = z.object({
+  apartmentChunkJsGzKB: PerfConfigSchema.shape.apartmentChunkJsGzKB,
+})
+
+export function readApartmentChunkLimit(perf: unknown): number {
+  const result = ApartmentLimitSchema.safeParse(perf)
+  if (!result.success) {
+    throw new Error('data/config/perf.json: apartmentChunkJsGzKB must be a positive number')
+  }
+  return result.data.apartmentChunkJsGzKB
+}
+
+/** The feature marker the apartment's 3D chunk renders (src/scene/apartment/ApartmentCanvas.tsx). */
+export const APARTMENT_MARKER = 'cc-feature:apartment-scene'
+
+/**
+ * True when `marker` appears whole in `text`, not as the start of a longer id (the same rule as
+ * scripts/shell-guard.ts).
+ */
+export function containsMarker(text: string, marker: string): boolean {
+  let at = text.indexOf(marker)
+  while (at !== -1) {
+    if (!/^-?[a-z0-9]/.test(text.slice(at + marker.length, at + marker.length + 2))) return true
+    at = text.indexOf(marker, at + 1)
+  }
+  return false
+}
+
 /** `server/app/page/react-loadable-manifest.json` as Turbopack writes it (Next 16). */
 const LoadableManifestSchema = z.record(z.string(), z.object({ files: z.array(z.string().min(1)) }))
 
+export interface LazyChunks {
+  /** The city's 3D chunk: loaded before the map is playable. */
+  readonly scene: readonly string[]
+  /** What only the apartment's import adds (S16): loaded when the Home panel opens. */
+  readonly apartment: readonly string[]
+}
+
 /**
- * The lazily loaded JS of route `/`: every `.js` file of every dynamic import in the manifest,
- * deduplicated, minus files the shell already loads (they count once, in the shell). Paths are
- * relative to the build directory (`static/chunks/...`). Fails fast on an unexpected format or
- * an empty result, so a build change cannot turn the check into a silent pass.
+ * The lazily loaded JS of route `/`, split in two: every `.js` file of every dynamic import in
+ * the manifest except the apartment's (deduplicated, minus files the shell already loads: they
+ * count once, in the shell), and the files only the apartment's import adds. The apartment's
+ * entry is the one whose files `isApartment` (the marker check) accepts. Paths are relative to
+ * the build directory (`static/chunks/...`). Fails fast on an unexpected format, no apartment
+ * entry or more than one, or an empty result, so a build change cannot turn a check into a
+ * silent pass.
  */
-export function sceneChunkFiles(manifest: unknown, shellScripts: readonly string[]): string[] {
+export function lazyChunkFiles(
+  manifest: unknown,
+  shellScripts: readonly string[],
+  isApartment: (file: string) => boolean,
+): LazyChunks {
   const result = LoadableManifestSchema.safeParse(manifest)
   if (!result.success) throw new Error('react-loadable-manifest.json: unexpected format')
   const shell = new Set(shellScripts.map((src) => src.split(/[?#]/)[0]?.replace(/^\/_next\//, '')))
-  const files = new Set<string>()
-  for (const entry of Object.values(result.data)) {
-    for (const file of entry.files) {
+  const entries = Object.values(result.data).map((entry) =>
+    entry.files.filter((file) => {
       if (file.split('/').includes('..')) throw new Error(`Refusing path traversal: ${file}`)
-      if (file.endsWith('.js') && !shell.has(file)) files.add(file)
-    }
-  }
-  if (files.size === 0) {
+      return file.endsWith('.js') && !shell.has(file)
+    }),
+  )
+  if (entries.every((files) => files.length === 0)) {
     throw new Error('react-loadable-manifest.json lists no lazy JS for /: is the 3D scene mounted?')
   }
-  return [...files].sort()
+  const apartmentEntries = entries.filter((files) => files.some(isApartment))
+  if (apartmentEntries.length !== 1) {
+    throw new Error(
+      `expected one lazy import rendering ${APARTMENT_MARKER}, found ${apartmentEntries.length}: is the apartment mounted with next/dynamic?`,
+    )
+  }
+  const scene = new Set(
+    entries.filter((files) => !files.some(isApartment)).flatMap((files) => files),
+  )
+  if (scene.size === 0) {
+    throw new Error('react-loadable-manifest.json lists no lazy JS for /: is the 3D scene mounted?')
+  }
+  const apartment = new Set((apartmentEntries[0] ?? []).filter((file) => !scene.has(file)))
+  return { scene: [...scene].sort(), apartment: [...apartment].sort() }
 }
 
 const ServiceWorkerLimitsSchema = z.object({
@@ -201,6 +260,7 @@ async function main(): Promise<void> {
   const perf: unknown = JSON.parse(await readFile(join(root, 'data/config/perf.json'), 'utf8'))
   const limitKB = readShellLimit(perf)
   const sceneLimitKB = readSceneChunkLimit(perf)
+  const apartmentLimitKB = readApartmentChunkLimit(perf)
 
   let html: string
   try {
@@ -227,10 +287,35 @@ async function main(): Promise<void> {
   } catch {
     throw new Error('No .next/server/app/page/react-loadable-manifest.json. Run `npm run build`.')
   }
-  const sceneFiles = sceneChunkFiles(manifest, external)
-  let sceneBytes = 0
-  for (const file of sceneFiles) sceneBytes += gzipBytes(await readFile(join(distDir, file)))
-  const scene = checkBudget('3D chunk JS (lazy)', sceneBytes, sceneLimitKB)
+  const texts = new Map<string, string>()
+  const read = async (file: string) => {
+    const text = texts.get(file) ?? (await readFile(join(distDir, file), 'utf8'))
+    texts.set(file, text)
+    return text
+  }
+  const parsed = LoadableManifestSchema.safeParse(manifest)
+  // Read every lazy file once so the marker check below can stay synchronous.
+  if (parsed.success) {
+    for (const entry of Object.values(parsed.data)) {
+      for (const file of entry.files) {
+        if (file.endsWith('.js') && !file.split('/').includes('..')) await read(file)
+      }
+    }
+  }
+  const chunks = lazyChunkFiles(manifest, external, (file) =>
+    containsMarker(texts.get(file) ?? '', APARTMENT_MARKER),
+  )
+  const gzipped = async (files: readonly string[]) => {
+    let bytes = 0
+    for (const file of files) bytes += gzipBytes(await read(file))
+    return bytes
+  }
+  const scene = checkBudget('3D chunk JS (lazy)', await gzipped(chunks.scene), sceneLimitKB)
+  const apartment = checkBudget(
+    'Apartment chunk JS (lazy, Home panel)',
+    await gzipped(chunks.apartment),
+    apartmentLimitKB,
+  )
 
   const swLimits = readServiceWorkerLimits(perf)
   let swSource: string
@@ -254,12 +339,15 @@ async function main(): Promise<void> {
       shell,
       `${external.length} chunks: ${(externalBytes / 1000).toFixed(1)} KB gz; inline: ${(inlineBytes / 1000).toFixed(1)} KB gz`,
     ),
-    report(scene, `${sceneFiles.length} chunks: ${sceneFiles.join(', ')}`),
+    report(scene, `${chunks.scene.length} chunks: ${chunks.scene.join(', ')}`),
+    report(apartment, `${chunks.apartment.length} chunks: ${chunks.apartment.join(', ')}`),
     report(worker, `${SERVICE_WORKER_BODY}`),
     report(precache, `${urls.length} entries`),
   ]
   process.stdout.write(`${lines.join('\n')}\n`)
-  if (![shell, scene, worker, precache].every((result) => result.ok)) process.exitCode = 1
+  if (![shell, scene, apartment, worker, precache].every((result) => result.ok)) {
+    process.exitCode = 1
+  }
 }
 
 if (import.meta.main) {

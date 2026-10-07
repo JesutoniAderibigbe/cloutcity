@@ -30,6 +30,7 @@ import {
 import {
   EventsFileSchema,
   HomesFileSchema,
+  HomeInteriorsFileSchema,
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
@@ -57,6 +58,7 @@ import {
   audioManifest,
   events,
   geoBounds,
+  homeInteriors,
   items,
   jobs,
   landmarks,
@@ -99,6 +101,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/subway.derived.json': SubwayFileSchema,
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
+  'homes/interiors.json': HomeInteriorsFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
@@ -214,6 +217,8 @@ describe('config/perf.json', () => {
       // S05c: the shell keeps 20 KB of the budget free for features still to land.
       shellHeadroomGzKB: 20,
       sceneChunkJsGzKB: 350,
+      // S16: the apartment's lazy 3D chunk, reported apart from the before-playable 3D chunk.
+      apartmentChunkJsGzKB: 40,
       totalJsToPlayableGzKB: 550,
       baseGeoGzKB: 400,
       districtBuildingsGzKB: { low: 150, mid: 300, high: 400 },
@@ -223,6 +228,12 @@ describe('config/perf.json', () => {
       playableWarmMs: 2500,
       drawCallsMax: { low: 60, mid: 120, high: 200 },
       trianglesMax: { low: 150_000, mid: 400_000, high: 800_000 },
+      // S16 apartment caps (TUNE-8 placeholders), with room kept for S16a's avatar.
+      apartment: {
+        drawCallsMax: { low: 24, mid: 32, high: 56 },
+        trianglesMax: { low: 12_000, mid: 20_000, high: 30_000 },
+        avatarReserve: { drawCalls: 6, triangles: 4000 },
+      },
       dprCap: { low: 1, mid: 1.5, high: 2 },
       shadows: { low: 'none', mid: 'blob-or-baked', high: 'pcf-directional' },
       otherPlayersMax: { low: 8, mid: 16, high: 24 },
@@ -256,6 +267,9 @@ describe('config/perf.json', () => {
     expect(PerfConfigSchema.safeParse({ ...valid, shellJsGzKB: 0 }).success).toBe(false)
     const softShadows = { low: 'none', mid: 'blob-or-baked', high: 'pcf-soft' }
     expect(PerfConfigSchema.safeParse({ ...valid, shadows: softShadows }).success).toBe(false)
+    const apartment = valid.apartment as Record<string, unknown>
+    const reserveFillsLow = { ...apartment, avatarReserve: { drawCalls: 24, triangles: 1 } }
+    expect(PerfConfigSchema.safeParse({ ...valid, apartment: reserveFillsLow }).success).toBe(false)
   })
 })
 
@@ -774,6 +788,8 @@ describe('cross-file references', () => {
     venues: venues.flatMap((entry) => [entry.nameKey, entry.blurbKey]),
     landmarks: landmarks.flatMap((entry) => [entry.nameKey, entry.infoKey]),
     club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
+    colors: items.flatMap((entry) => entry.decor?.variants.map((variant) => variant.nameKey) ?? []),
+    housing: Object.values(homeInteriors).flatMap((home) => home.slots.map((slot) => slot.nameKey)),
   }
 
   it('every copy key named by content exists in data/copy', () => {

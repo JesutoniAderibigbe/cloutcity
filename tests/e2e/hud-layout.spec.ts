@@ -4,9 +4,9 @@ import { holdGameTime, hudIsWide, moreButton, morePanel, waitForHudLoaded } from
 import { hideSceneForScreenshot, waitForMapSettled } from './helpers/scene'
 
 // S05: the HUD in the overlay's HUD zone (UX-1) at a phone, a desktop, a short phone and a
-// landscape phone. Nothing overlaps, every target is at least 44 px, Inventory and Rent move into
-// More on phones and landscape phones, More (with the sound settings and Help, S06) shows at
-// every width, and it closes back to its button.
+// landscape phone. Nothing overlaps, every target is at least 44 px, Inventory, Rent and Home
+// move into More on phones and landscape phones, More (with the sound settings and Help, S06)
+// shows at every width, and it closes back to its button.
 
 const VIEWPORTS = [
   { width: 390, height: 844 },
@@ -107,7 +107,7 @@ for (const viewport of VIEWPORTS) {
       await checkA11y()
     })
 
-    test('More shows at every width; Inventory and Rent leave the HUD only where it is narrow or short', async ({
+    test('More shows at every width; Inventory, Rent and Home leave the HUD only where it is narrow or short', async ({
       page,
     }) => {
       await boot(page)
@@ -115,7 +115,7 @@ for (const viewport of VIEWPORTS) {
       const visible = (name: string) =>
         zone(page).getByRole('button', { name, exact: true }).filter({ visible: true })
       await expect(moreButton(page)).toBeVisible()
-      for (const name of ['Inventory', 'Rent']) {
+      for (const name of ['Inventory', 'Rent', 'Home']) {
         await expect(visible(name), name).toHaveCount(wide ? 1 : 0)
       }
       // The sound settings and Help live in More at every width (S06: no gear in the HUD).
@@ -128,7 +128,7 @@ for (const viewport of VIEWPORTS) {
       await expect(panel).toBeVisible()
       await expect(moreButton(page)).toHaveAttribute('aria-expanded', 'true')
       await expect(panel.getByRole('heading', { name: 'More' })).toBeFocused()
-      for (const name of ['Inventory', 'Rent', 'Sound settings', 'Help: take the tour']) {
+      for (const name of ['Inventory', 'Rent', 'Home', 'Sound settings', 'Help: take the tour']) {
         const item = panel.getByRole('button', { name, exact: true })
         await expect(item).toBeVisible()
         expect((await boxOf(item, name)).height).toBeGreaterThanOrEqual(44)

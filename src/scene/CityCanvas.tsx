@@ -3,7 +3,8 @@
 /**
  * The 3D chunk's entry (loaded with next/dynamic, ssr: false, from CitySceneClient): the
  * react-three-fiber canvas with the city, place pins, the player's avatar, lights, camera rig and
- * test hooks. Renders on demand only, so an idle map draws zero frames.
+ * test hooks. Renders on demand only, so an idle map draws zero frames, and none at all while
+ * the apartment has the screen (src/state/sceneFocus.ts).
  *
  * A lost WebGL context (S04c) is restored in place: three re-creates its GL state when the
  * browser restores the context, so the canvas is never remounted; this only reports the loss
@@ -13,6 +14,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
 import { usePlayerHome } from '@/state/playerHome'
+import { useSceneFocus } from '@/state/sceneFocus'
 import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
 import { FreeRowFraming } from './camera/FreeRowFraming'
@@ -93,6 +95,15 @@ function ContextWatcher({
   return null
 }
 
+/** Draws one frame when the map gets the screen back from the apartment (S16). */
+function FocusRedraw({ hidden }: { readonly hidden: boolean }) {
+  const invalidate = useThree((state) => state.invalidate)
+  useEffect(() => {
+    if (!hidden) invalidate()
+  }, [hidden, invalidate])
+  return null
+}
+
 export default function CityCanvas({
   geoBody,
   onInvalidGeo,
@@ -109,6 +120,8 @@ export default function CityCanvas({
   onContextRestored,
 }: CityCanvasProps) {
   const readyRef = useRef(false)
+  // While the apartment has the screen (S16) the map draws nothing and is hidden.
+  const hidden = useSceneFocus() === 'room'
   // The camera starts over the player's home and the avatar stands there (S05).
   const home = homesLocal[usePlayerHome() ?? startHome]
   const cityRef = useRef<CityObjects | null>(null)
@@ -131,10 +144,11 @@ export default function CityCanvas({
       role="img"
       aria-label={label}
       data-cc-feature="cc-feature:city-scene"
-      className="absolute inset-0"
+      data-scene-hidden={hidden ? '' : undefined}
+      className={`absolute inset-0 ${hidden ? 'invisible' : ''}`}
     >
       <Canvas
-        frameloop="demand"
+        frameloop={hidden ? 'never' : 'demand'}
         dpr={[1, dprCap]}
         flat
         shadows={SHADOWS}
@@ -168,6 +182,7 @@ export default function CityCanvas({
           toonRamp={palette.toonRamp}
           avatar={config.avatar}
         />
+        <FocusRedraw hidden={hidden} />
         <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
         <TestHooks readyRef={readyRef} cityRef={cityRef} />
       </Canvas>

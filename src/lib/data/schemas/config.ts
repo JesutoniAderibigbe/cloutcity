@@ -46,6 +46,12 @@ export const PerfConfigSchema = z.strictObject({
    */
   shellHeadroomGzKB: z.number().nonnegative(),
   sceneChunkJsGzKB: positive,
+  /**
+   * The apartment's 3D chunk (S16, `cc-feature:apartment-scene`): loaded when the Home panel
+   * opens, so `npm run budget` reports it on its own and leaves it out of the 3D chunk counted
+   * before the map is playable.
+   */
+  apartmentChunkJsGzKB: positive,
   totalJsToPlayableGzKB: positive,
   baseGeoGzKB: positive,
   districtBuildingsGzKB: perTier(positive),
@@ -57,6 +63,26 @@ export const PerfConfigSchema = z.strictObject({
   /** `renderer.info.render.calls` at the default Queens-start camera. */
   drawCallsMax: perTier(positiveInt),
   trianglesMax: perTier(positiveInt),
+  /**
+   * The apartment interior (S16), per tier: `renderer.info.render` draw calls and triangles of
+   * the room with every slot filled. `avatarReserve` is kept free inside both caps for the 3D
+   * avatar standing in the room (S16a), so the room alone must stay within the cap minus it.
+   */
+  apartment: z
+    .strictObject({
+      drawCallsMax: perTier(positiveInt),
+      trianglesMax: perTier(positiveInt),
+      avatarReserve: z.strictObject({ drawCalls: positiveInt, triangles: positiveInt }),
+    })
+    .refine(
+      (a) =>
+        QUALITY_TIERS.every(
+          (tier) =>
+            a.avatarReserve.drawCalls < a.drawCallsMax[tier] &&
+            a.avatarReserve.triangles < a.trianglesMax[tier],
+        ),
+      { error: 'the avatar reserve must leave room for the apartment in every tier' },
+    ),
   dprCap: perTier(positive),
   /** `pcf-directional` means one directional light with PCFShadowMap, never PCFSoftShadowMap. */
   shadows: perTier(z.enum(['none', 'blob-or-baked', 'pcf-directional'])),
@@ -94,6 +120,8 @@ const HEX_COLOR = /^#[0-9a-f]{6}$/i
 const TOKEN_NAME = /^[a-z]+-\d{2,3}$/
 
 const tokenRef = z.string().regex(TOKEN_NAME)
+/** A palette token name (`pink-400`), never a hex value; theme.json must define it. */
+export const PaletteTokenRefSchema = tokenRef
 
 /**
  * The 3D city's colours, as palette token names (never hex), so the scene and the DOM share one
@@ -134,6 +162,28 @@ export const ScenePaletteRefsSchema = z.strictObject({
   }),
   /** The "expanding soon" ground chips. */
   chip: z.strictObject({ fill: tokenRef, ink: tokenRef }),
+  /**
+   * The apartment interior (S16): room surfaces, decor second colours, the window pane, slot
+   * markers (idle, a slot the held item fits, the selected slot), blob shadows and the static
+   * lights. Decor main colours come from each item's variants (data/items/items.json).
+   */
+  apartment: z.strictObject({
+    background: tokenRef,
+    floor: tokenRef,
+    wall: tokenRef,
+    trim: tokenRef,
+    furniture: tokenRef,
+    /** Second colours of decor: leaves, and the warm glow of bulbs and neon backing. */
+    plant: tokenRef,
+    glow: tokenRef,
+    window: tokenRef,
+    marker: tokenRef,
+    markerActive: tokenRef,
+    markerSelected: tokenRef,
+    blob: tokenRef,
+    ambientLight: tokenRef,
+    sunLight: tokenRef,
+  }),
   /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
   toonRamp: z.array(z.number().gt(0).max(1)).min(2),
 })
@@ -156,6 +206,7 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     scene.sunLight,
     ...Object.values(scene.pins),
     ...Object.values(scene.chip),
+    ...Object.values(scene.apartment),
   ]
 }
 
@@ -649,6 +700,21 @@ export const BalanceConfigSchema = z
       moveInCost: z.partialRecord(z.enum(HOME_IDS), dollars),
     }),
     /**
+     * The apartment (S16, src/engine/home.ts; TUNE-8 placeholders). A home's score is its
+     * `baseScore` plus the `homeScore` of every decor item placed there; home clout is that score
+     * capped at `maxClout`. `moveLogMax` is how many moves the save keeps (newest last).
+     */
+    home: z.strictObject({
+      baseScore: z.strictObject(
+        Object.fromEntries(HOME_IDS.map((id) => [id, z.int().nonnegative()])) as Record<
+          (typeof HOME_IDS)[number],
+          z.ZodInt
+        >,
+      ),
+      maxClout: positiveInt,
+      moveLogMax: positiveInt,
+    }),
+    /**
      * Missed rent. Each consecutive due date the player cannot pay in full adds that week's
      * rent to what they owe, plus `lateFees[missed - 1]` (0 is a warning). On the
      * `evictAfterMissed`-th miss the player is evicted to the lowest-rent home.
@@ -781,6 +847,19 @@ export const BalanceConfigSchema = z
       path: ['housing', 'moveInCost'],
     },
   )
+  .refine(({ home }) => Object.values(home.baseScore).every((score) => score <= home.maxClout), {
+    error: 'home.baseScore must not exceed home.maxClout',
+    path: ['home', 'baseScore'],
+  })
+  .refine(({ home, start }) => home.baseScore[start.home] === 0, {
+    // The start home adds no clout, so a new player (and the economy bot) starts at 0.
+    error: 'the start home must have a base score of 0',
+    path: ['home', 'baseScore'],
+  })
+  .refine(({ home, clout }) => home.maxClout < (clout.levels.at(-1)?.minClout ?? 0), {
+    error: 'home.maxClout must be below the top clout level',
+    path: ['home', 'maxClout'],
+  })
   .refine((balance) => balance.rent.lateFees.length === balance.rent.evictAfterMissed - 1, {
     error: 'rent.lateFees needs one fee for each miss before eviction',
     path: ['rent', 'lateFees'],

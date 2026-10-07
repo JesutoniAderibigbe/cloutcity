@@ -9,15 +9,16 @@ import { PANEL_BUTTON, PanelDialog } from './PanelDialog'
 import '@/lib/copy/ns/hud'
 
 /**
- * The HUD's More panel (S05, Q3; S06): Inventory and Rent (which also have their own buttons on
- * wide screens), the sound settings and Help, which brings back the tour. The More button shows
- * at every width. Each item opens its own sheet in place of this one, or closes it; Escape or
- * Close returns focus to the More button.
+ * The HUD's More panel (S05, Q3; S06; Home, S16): Inventory, Rent and Home (which also have
+ * their own buttons on wide screens), the sound settings and Help, which brings back the tour.
+ * The More button shows at every width. Each item opens its own sheet in place of this one, or
+ * closes it; Escape or Close returns focus to the More button.
  */
 export function MorePanel() {
   const items = [
     { key: 'inventory', label: copy('hud.inventory'), open: () => openHudPanel('inventory') },
     { key: 'rent', label: copy('hud.rent'), open: () => openHudPanel('rent') },
+    { key: 'home', label: copy('hud.home'), open: () => openHudPanel('home') },
     {
       key: 'sound',
       label: copy('hud.soundSettings'),
