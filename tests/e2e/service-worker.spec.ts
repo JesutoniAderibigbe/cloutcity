@@ -1,11 +1,20 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import { copyText } from './helpers/places'
 import {
+  QUALITY_TIERS,
   SERVICE_WORKER_PATH,
   cacheContents,
+  geoCacheUrls,
   reloadControlled,
+  seedQualityOverride,
   waitForActiveWorker,
+  waitForLog,
+  warmUrlsFromWorker,
+  type Tier,
 } from './helpers/serviceWorker'
+import { expectStep, tourCard, tourSkip } from './helpers/tour'
 
 // S04e: the service worker. Served uncached with a strict CSP, registered for the whole origin,
 // it stores only what its policy allows (src/sw/policy.ts) and replaces old versioned caches
@@ -24,9 +33,15 @@ test.describe('service worker', () => {
     expect(headers['cache-control']).toBe('no-cache, no-store, must-revalidate')
     expect(headers['content-security-policy']).toBe("default-src 'self'; script-src 'self'")
     expect(headers['content-type']).toMatch(/^application\/javascript/)
-    // Never precaches audio: it loads only after the player's audio choice.
+    // Never precaches audio (it loads only after the player's audio choice) or models (they
+    // load on demand, per tier).
     const body = await worker.text()
     expect(body).not.toMatch(/url:"\/audio\//)
+    expect(body).not.toMatch(/url:"\/models\//)
+    expect(body).not.toMatch(/url:"[^"]*\.(?:glb|map)"/)
+    // No source map: the bundle names none and none is served.
+    expect(body).not.toContain('sourceMappingURL')
+    expect((await request.get(`${SERVICE_WORKER_PATH}.map`)).status()).toBe(404)
     const geoVersion = /url:"\/geo\/base\?v=([0-9a-f]{12})"/.exec(body)?.[1]
     expect(geoVersion, 'the worker precaches the versioned base geo').toBeDefined()
 
@@ -198,5 +213,176 @@ test.describe('service worker', () => {
         async () => ((await navigator.serviceWorker.getRegistration())?.waiting ?? null) !== null,
       ),
     ).toBe(true)
+  })
+})
+
+test.describe('tier warm', () => {
+  async function servedWarmLists(
+    request: import('@playwright/test').APIRequestContext,
+  ): Promise<Record<Tier, string[]>> {
+    const lists = warmUrlsFromWorker(await (await request.get(SERVICE_WORKER_PATH)).text())
+    for (const tier of QUALITY_TIERS) expect(lists[tier].length, tier).toBeGreaterThan(1)
+    return lists
+  }
+
+  /** Waits until every URL of `tier` is in the geo cache, then checks no other tier's is. */
+  async function expectWarmed(
+    page: import('@playwright/test').Page,
+    lists: Record<Tier, string[]>,
+    tier: Tier,
+  ) {
+    await expect
+      .poll(async () => {
+        const cached = await geoCacheUrls(page)
+        return lists[tier].filter((url) => !cached.includes(url))
+      })
+      .toEqual([])
+    const cached = await geoCacheUrls(page)
+    for (const other of QUALITY_TIERS.filter((t) => t !== tier)) {
+      for (const url of lists[other])
+        expect(cached, `${tier} must not warm ${url}`).not.toContain(url)
+    }
+  }
+
+  test("warms the detected tier's district assets once the worker is active", async ({
+    page,
+    request,
+  }) => {
+    const lists = await servedWarmLists(request)
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForActiveWorker(page)
+    // Headless Chromium renders on SwiftShader, which the picker puts on the low tier.
+    await expectWarmed(page, lists, 'low')
+  })
+
+  test('warms the tier the Graphics setting chooses', async ({ page, request }) => {
+    const lists = await servedWarmLists(request)
+    await seedQualityOverride(page, 'mid')
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForActiveWorker(page)
+    await expectWarmed(page, lists, 'mid')
+  })
+
+  test('never warms under a data-saver request', async ({ page, request }) => {
+    const lists = await servedWarmLists(request)
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, 'connection', {
+        configurable: true,
+        get: () => ({
+          saveData: true,
+          effectiveType: '4g',
+          addEventListener() {},
+          removeEventListener() {},
+        }),
+      })
+    })
+    const skipped = waitForLog(page, 'Tier warm skipped')
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForActiveWorker(page)
+    await skipped
+    const cached = await geoCacheUrls(page)
+    for (const tier of QUALITY_TIERS) {
+      for (const url of lists[tier]) expect(cached, url).not.toContain(url)
+    }
+  })
+
+  test('never warms on a low-memory device', async ({ page, request }) => {
+    const lists = await servedWarmLists(request)
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, 'deviceMemory', {
+        configurable: true,
+        get: () => 1,
+      })
+    })
+    const skipped = waitForLog(page, 'Tier warm skipped')
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForActiveWorker(page)
+    await skipped
+    const cached = await geoCacheUrls(page)
+    for (const url of lists.low) expect(cached, url).not.toContain(url)
+  })
+})
+
+test.describe('3D models', () => {
+  const manifest = JSON.parse(
+    readFileSync(join(import.meta.dirname, '../../data/assets/manifest.json'), 'utf8'),
+  ) as { assetVersion: string; models: { tiers: Record<string, { file: string }> }[] }
+  const file = Object.values(manifest.models[0]?.tiers ?? {})[0]?.file ?? ''
+
+  test('are cached on first use in the versioned models cache, never precached', async ({
+    page,
+  }) => {
+    expect(file).toMatch(/^\/models\/[a-z0-9-]+\.(?:low|mid|high)\.[0-9a-f]{8}\.glb$/)
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForActiveWorker(page)
+    await reloadControlled(page)
+
+    const before = await cacheContents(page)
+    const precache = Object.keys(before).find((name) => name.startsWith('serwist-precache-'))
+    for (const url of before[precache ?? ''] ?? []) {
+      expect(new URL(url).pathname, url).not.toMatch(/^\/models\//)
+    }
+
+    const statuses = await page.evaluate(async (path) => {
+      const plain = await fetch(path)
+      const queried = await fetch(`${path}?probe=1`)
+      return [plain.status, queried.status]
+    }, file)
+    expect(statuses).toEqual([200, 200])
+
+    const contents = await cacheContents(page)
+    const models = Object.entries(contents).filter(([name]) => name.startsWith('cc-models-'))
+    expect(models.map(([name]) => name)).toEqual([`cc-models-${manifest.assetVersion}`])
+    const stored = (models[0]?.[1] ?? []).map((url) => {
+      const parsed = new URL(url)
+      return `${parsed.pathname}${parsed.search}`
+    })
+    // The content-named file is kept; the same file with a query is not a versioned model.
+    expect(stored).toContain(file)
+    expect(stored).not.toContain(`${file}?probe=1`)
+    for (const [name, urls] of Object.entries(contents)) {
+      if (name.startsWith('cc-models-')) continue
+      for (const url of urls) expect(new URL(url).pathname, `${name}: ${url}`).not.toMatch(/\.glb$/)
+    }
+  })
+})
+
+test.describe('update notice during the tour', () => {
+  test.use({ tour: 'fresh' })
+
+  test('waits behind the tour and shows once it is skipped', async ({ page, context }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await expectStep(page, 'hud')
+    await waitForActiveWorker(page)
+    await reloadControlled(page)
+    await expectStep(page, 'hud')
+
+    await context.route(`**${SERVICE_WORKER_PATH}`, async (route) => {
+      const response = await route.fetch()
+      await route.fulfill({ response, body: `${await response.text()}\n// next build\n` })
+    })
+    await page.evaluate(async () => {
+      await (await navigator.serviceWorker.getRegistration())?.update()
+    })
+    await page.waitForFunction(async () => {
+      const registration = await navigator.serviceWorker.getRegistration()
+      return (registration?.waiting ?? null) !== null
+    })
+
+    // A new build is waiting, but the tour holds the banner zone (GR-9).
+    await expect(tourCard(page)).toBeVisible()
+    await expect(updateNotice(page)).toHaveCount(0)
+
+    await tourSkip(page).click()
+    await expect(tourCard(page)).toHaveCount(0)
+    await expect(updateNotice(page)).toBeVisible()
+    await expect(updateNotice(page)).toContainText(copyText('offline.update.message'))
   })
 })

@@ -5,9 +5,13 @@
  *
  * - Precache: the build's static assets, the pages and the versioned geo, served cache-first;
  *   entries a new build dropped are deleted when it activates.
- * - Runtime: versioned geo and our own audio, cache-first, each in a versioned `cc-` cache;
+ * - Runtime: versioned geo, our own audio and the content-named 3D models, cache-first, each in
+ *   a versioned `cc-` cache (models are never precached: they load on demand, per tier);
  *   page navigations network-only with `/offline` when the network fails. Nothing else is
  *   handled, so `/api`, `/mod`, other origins and non-GET requests never touch a cache.
+ * - Tier warm: once the map is playable a page sends CC_WARM_TIER with its quality tier, and the
+ *   worker fetches that tier's district and block URLs (baked in at build time, never taken from
+ *   the message) through the geo route, one at a time, then replies on the message's port.
  * - Updates wait (no skipWaiting): the page shows an update banner and sends SKIP_WAITING when
  *   the player taps it, so a running game never swaps code under the player.
  *
@@ -16,14 +20,19 @@
  */
 import { CacheFirst, NetworkOnly, Serwist, type PrecacheEntry, type SerwistPlugin } from 'serwist'
 import {
+  WARM_TIER_DONE,
   isOwnAudio,
   isPageNavigation,
   isVersionedGeo,
+  isVersionedModel,
   parseWarmTierMessage,
   refuseSensitive,
   staleCacheNames,
+  warmTierUrls,
   type RequestFacts,
   type ServiceWorkerConfig,
+  type WarmTier,
+  type WarmTierDone,
 } from './policy'
 
 declare const self: ServiceWorkerGlobalScope & {
@@ -66,6 +75,10 @@ const serwist = new Serwist({
       handler: new CacheFirst({ cacheName: config.audioCache, plugins: [neverCacheSensitive] }),
     },
     {
+      matcher: (options) => isVersionedModel(facts(options)),
+      handler: new CacheFirst({ cacheName: config.modelsCache, plugins: [neverCacheSensitive] }),
+    },
+    {
       matcher: (options) => isPageNavigation(facts(options)),
       handler: new NetworkOnly(),
     },
@@ -81,7 +94,7 @@ self.addEventListener('fetch', serwist.handleFetch)
 
 // Versioned runtime caches from older builds are deleted once this worker takes over.
 self.addEventListener('activate', (event) => {
-  const current = [config.geoCache, config.audioCache]
+  const current = [config.geoCache, config.audioCache, config.modelsCache]
   event.waitUntil(
     caches
       .keys()
@@ -91,14 +104,33 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-// A page asks for its quality tier's district assets once the map is playable (S04e part 2).
+/**
+ * Fetches one tier's district assets through the routes above (so the geo route's cache-first
+ * strategy and never-cache rules apply), one at a time to stay gentle on a phone's connection.
+ */
+async function warmTier(tier: WarmTier, event: ExtendableMessageEvent): Promise<WarmTierDone> {
+  let cached = 0
+  let failed = 0
+  for (const url of warmTierUrls(config, tier, self.location.origin)) {
+    try {
+      const response = await serwist.handleRequest({ request: new Request(url), event })
+      if (response?.ok === true) cached += 1
+      else failed += 1
+    } catch {
+      failed += 1
+    }
+  }
+  return { type: WARM_TIER_DONE, tier, cached, failed }
+}
+
+// A page asks for its quality tier's district assets once the map is playable and the browser
+// is idle (src/components/offline/OfflineSupport.tsx). Anything but a known tier is ignored.
 self.addEventListener('message', (event) => {
   const message = parseWarmTierMessage(event.data)
   if (message === null) return
-  const urls = config.districtUrls[message.tier]
-  if (urls.length === 0) return
-  // Through the routes above, so the same matchers and never-cache rules apply.
   event.waitUntil(
-    Promise.all(urls.map((url) => serwist.handleRequest({ request: new Request(url), event }))),
+    warmTier(message.tier, event).then((done) => {
+      event.ports[0]?.postMessage(done)
+    }),
   )
 })

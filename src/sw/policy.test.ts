@@ -1,19 +1,25 @@
 import { describe, expect, it } from 'vitest'
+import modelManifestJson from '@data/assets/manifest.json'
 import { SAME_ORIGIN_AUDIO, audioManifest } from '@/lib/audio/manifest'
+import { ModelManifestSchema } from '@/lib/data/schemas/assets'
 import {
   AUDIO_PATH,
+  MODEL_PATH,
   NAVIGATION_DENYLIST,
   WARM_TIER_MESSAGE,
   isOwnAudio,
   isPageNavigation,
   isSensitive,
   isVersionedGeo,
+  isVersionedModel,
   parseWarmTierMessage,
   refuseSensitive,
   runtimeCacheName,
   staleCacheNames,
+  warmTierUrls,
   type CacheCandidate,
   type RequestFacts,
+  type ServiceWorkerConfig,
 } from './policy'
 
 const ORIGIN = 'https://cloutcity.example'
@@ -32,6 +38,7 @@ describe('runtime cache names', () => {
   it('carry the kind and the content version', () => {
     expect(runtimeCacheName('geo', '57ef63e13a99')).toBe('cc-geo-57ef63e13a99')
     expect(runtimeCacheName('audio', 'abc123')).toBe('cc-audio-abc123')
+    expect(runtimeCacheName('models', '2f59d8d46a436cef')).toBe('cc-models-2f59d8d46a436cef')
   })
 
   it('refuse a version that could name another cache', () => {
@@ -95,6 +102,80 @@ describe('isOwnAudio', () => {
     expect(isOwnAudio(facts('/audio/music/a.mp3'))).toBe(false)
     expect(isOwnAudio(facts('/audio/../api/a.webm'))).toBe(false)
     expect(isOwnAudio(facts('/audio/music/a.webm', { method: 'POST' }))).toBe(false)
+  })
+})
+
+describe('isVersionedModel', () => {
+  const modelFiles = ModelManifestSchema.parse(modelManifestJson).models.flatMap((model) =>
+    Object.values(model.tiers).map((tier) => tier.file),
+  )
+
+  it('agrees with the model manifest rule and matches every manifest file', () => {
+    expect(modelFiles.length).toBeGreaterThan(0)
+    for (const file of modelFiles) {
+      expect(MODEL_PATH.test(file), file).toBe(true)
+      expect(isVersionedModel(facts(file)), file).toBe(true)
+    }
+  })
+
+  it('refuses unversioned names, queries, other origins, other methods and other paths', () => {
+    const file = modelFiles[0] ?? ''
+    for (const path of [
+      '/models/taxi.glb',
+      '/models/taxi.low.glb',
+      '/models/taxi.ultra.752dce5e.glb',
+      '/models/taxi.low.752DCE5E.glb',
+      '/models/taxi.low.752dce5.glb',
+      '/models/taxi.low.752dce5e.gltf',
+      '/models/sub/taxi.low.752dce5e.glb',
+      '/models/../api/x.low.752dce5e.glb',
+      '/api/models/taxi.low.752dce5e.glb',
+      '/mod/models/taxi.low.752dce5e.glb',
+      '/models/',
+    ]) {
+      expect(isVersionedModel(facts(path)), path).toBe(false)
+    }
+    expect(isVersionedModel(facts(`${file}?v=1`))).toBe(false)
+    expect(isVersionedModel(facts(file, { sameOrigin: false }))).toBe(false)
+    expect(isVersionedModel(facts(file, { method: 'POST' }))).toBe(false)
+    expect(isVersionedModel(facts(file, { method: 'PUT' }))).toBe(false)
+  })
+
+  it('never overlaps the geo, audio or navigation rules', () => {
+    for (const file of modelFiles) {
+      expect(isVersionedGeo(facts(file)), file).toBe(false)
+      expect(isOwnAudio(facts(file)), file).toBe(false)
+    }
+  })
+})
+
+describe('warmTierUrls', () => {
+  const config: ServiceWorkerConfig = {
+    revision: 'r',
+    geoCache: 'cc-geo-a',
+    audioCache: 'cc-audio-a',
+    modelsCache: 'cc-models-a',
+    districtUrls: {
+      low: [
+        '/geo/districts/low/queens?v=abc',
+        '/geo/blocks/low?v=def',
+        // Never baked in by the build; filtered all the same.
+        '/geo/districts/low/x',
+        '/api/save',
+        'https://evil.example/geo/districts/low/queens?v=abc',
+      ],
+      mid: ['/geo/blocks/mid?v=1'],
+      high: [],
+    },
+  }
+
+  it("keeps only the tier's same-origin versioned geo", () => {
+    expect(warmTierUrls(config, 'low', ORIGIN)).toEqual([
+      '/geo/districts/low/queens?v=abc',
+      '/geo/blocks/low?v=def',
+    ])
+    expect(warmTierUrls(config, 'mid', ORIGIN)).toEqual(['/geo/blocks/mid?v=1'])
+    expect(warmTierUrls(config, 'high', ORIGIN)).toEqual([])
   })
 })
 

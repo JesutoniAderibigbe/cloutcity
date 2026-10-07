@@ -1,10 +1,16 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useStore } from 'zustand'
 import { useModalOpen } from '@/components/overlay/modalState'
 import { copy } from '@/lib/copy'
+import { log } from '@/lib/log'
 import { offlineConfig } from '@/lib/offline/config'
 import { startOfflineSupport, type OfflineSupportHandle } from '@/lib/offline/serviceWorker'
+import { readDeviceSignals, startTierWarm } from '@/lib/offline/tierWarm'
+import { updateNoticeShown } from '@/lib/offline/updateNotice'
+import { qualityStore, selectActiveTier } from '@/state/quality'
+import { tourStore } from '@/state/tour'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/offline'
 
@@ -21,17 +27,21 @@ function whenIdle(timeoutMs: number, run: () => void): () => void {
 
 /**
  * Offline support (S04e), loaded once the map is playable: registers the service worker when the
- * browser is idle, and shows the update notice in the banner zone when a new build is waiting.
- * The notice never covers a modal (the welcome card, the Icon moment); it waits until it closes.
+ * browser is idle, has it warm the quality tier's district assets once it is active (and again
+ * when the tier changes; skipped under data saver and on low memory), and shows the update notice
+ * in the banner zone when a new build is waiting. The notice never covers a modal (the welcome
+ * card, the Icon moment) or the first-run tour (GR-9); it waits until they are gone.
  */
 export function OfflineSupport() {
   const [waiting, setWaiting] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const handle = useRef<OfflineSupportHandle | null>(null)
   const modalOpen = useModalOpen()
+  const touring = useStore(tourStore, (state) => state.record?.status === 'active')
 
   useEffect(() => {
     let active = true
+    let stopWarm = () => {}
     const cancel = whenIdle(offlineConfig.registration.idleTimeoutMs, () => {
       void startOfflineSupport({
         production: process.env.NODE_ENV === 'production',
@@ -40,15 +50,28 @@ export function OfflineSupport() {
         },
       }).then((started) => {
         handle.current = started
+        if (!active || started === null) return
+        stopWarm = startTierWarm({
+          ready: navigator.serviceWorker.ready,
+          quality: () => {
+            const state = qualityStore.getState()
+            return { tier: selectActiveTier(state), dataSaver: state.dataSaver }
+          },
+          subscribe: (listener) => qualityStore.subscribe(listener),
+          device: () => readDeviceSignals(navigator),
+          config: offlineConfig.tierWarm,
+          logger: log,
+        })
       })
     })
     return () => {
       active = false
       cancel()
+      stopWarm()
     }
   }, [])
 
-  if (!waiting || dismissed || modalOpen) return null
+  if (!updateNoticeShown({ waiting, dismissed, modalOpen, touring })) return null
 
   return (
     <div

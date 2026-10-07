@@ -9,6 +9,8 @@ import { createHash } from 'node:crypto'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import audioManifestJson from '@data/audio/manifest.json'
+import modelManifestJson from '@data/assets/manifest.json'
+import { districtAssetUrls } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
 import { runtimeCacheName, type ServiceWorkerConfig } from '@/sw/policy'
 
@@ -87,9 +89,25 @@ export function serviceWorkerConfig(): ServiceWorkerConfig {
     }),
     geoCache: runtimeCacheName('geo', geoVersion),
     audioCache: runtimeCacheName('audio', audioVersion),
-    // TODO(S04e part 2): the detected tier's district asset URLs (S04d part 2).
-    districtUrls: { low: [], mid: [], high: [] },
+    // The model manifest's own content hash (S04h): a rebuilt model set gets a new cache, and the
+    // old one is deleted when the worker that knows the new set takes over.
+    modelsCache: runtimeCacheName('models', modelManifestJson.assetVersion),
+    districtUrls: {
+      low: districtAssetUrls('low'),
+      mid: districtAssetUrls('mid'),
+      high: districtAssetUrls('high'),
+    },
   }
+}
+
+/**
+ * What the worker precaches from the build and `public/` (globs relative to the project root).
+ * Only code, styles, vector art and fonts from the build, and the app icons from `public/`:
+ * never `public/audio` (it loads after the player's audio choice) and never `public/models`
+ * (models load on demand, per tier, and the worker caches them then).
+ */
+export function precacheGlobs(dir: string = distDir()): string[] {
+  return [`${dir}/static/**/*.{js,css,svg,woff2}`, 'public/icons/**/*']
 }
 
 /** Pages precached as they were built, refreshed whenever the build revision changes. */

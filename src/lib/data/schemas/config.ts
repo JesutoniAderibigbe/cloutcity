@@ -1106,11 +1106,16 @@ export const BalanceConfigSchema = z
 export type BalanceConfig = z.infer<typeof BalanceConfigSchema>
 
 /**
- * data/config/offline.json (S04e): when the service worker registers. It waits for the map to be
- * playable, then for the browser to be idle, but no longer than `idleTimeoutMs`.
+ * data/config/offline.json (S04e): when the service worker registers, and when it warms the
+ * player's tier. Registration waits for the map to be playable, then for the browser to be idle,
+ * but no longer than `idleTimeoutMs`. The tier warm (the tier's district assets fetched into the
+ * worker's cache ahead of the next load) follows registration, and is skipped under a data-saver
+ * request and on a device reporting at most `skipAtOrBelowDeviceMemoryGB` of memory
+ * (navigator.deviceMemory, where the browser exposes it).
  */
 export const OfflineConfigSchema = z.strictObject({
   registration: z.strictObject({ idleTimeoutMs: positiveInt }),
+  tierWarm: z.strictObject({ skipAtOrBelowDeviceMemoryGB: positive }),
 })
 export type OfflineConfig = z.infer<typeof OfflineConfigSchema>
 

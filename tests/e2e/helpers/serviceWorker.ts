@@ -34,3 +34,59 @@ export async function cacheContents(page: Page): Promise<Record<string, string[]
     return result
   })
 }
+
+export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
+export type Tier = (typeof QUALITY_TIERS)[number]
+
+const WARM_URL = /"(\/geo\/(?:districts|blocks)\/(low|mid|high)\b[^"]*\?v=[0-9a-f]+)"/g
+
+/**
+ * Each tier's warm list as the served worker carries it (src/server/pwa/revision.ts bakes in
+ * `districtAssetUrls(tier)`): the district and block URLs, versioned.
+ */
+export function warmUrlsFromWorker(source: string): Record<Tier, string[]> {
+  const result: Record<Tier, string[]> = { low: [], mid: [], high: [] }
+  for (const match of source.matchAll(WARM_URL)) {
+    const [, url = '', tier = 'low'] = match
+    const list = result[tier as Tier]
+    if (!list.includes(url)) list.push(url)
+  }
+  return result
+}
+
+/** The URLs (path and query) stored in the worker's versioned geo cache. */
+export async function geoCacheUrls(page: Page): Promise<string[]> {
+  return page.evaluate(async () => {
+    const urls: string[] = []
+    for (const name of await caches.keys()) {
+      if (!name.startsWith('cc-geo-')) continue
+      for (const request of await (await caches.open(name)).keys()) {
+        const url = new URL(request.url)
+        urls.push(`${url.pathname}${url.search}`)
+      }
+    }
+    return urls
+  })
+}
+
+/** Seeds the Graphics setting before the page loads (src/state/quality.ts). */
+export async function seedQualityOverride(page: Page, tier: Tier): Promise<void> {
+  await page.addInitScript((override) => {
+    localStorage.setItem('cloutcity:quality', JSON.stringify({ state: { override }, version: 1 }))
+  }, tier)
+}
+
+/** True once a console record from the app logger carries `msg`. */
+export function waitForLog(page: Page, msg: string) {
+  return page.waitForEvent('console', {
+    predicate: async (message) => {
+      const value = (await message
+        .args()[0]
+        ?.jsonValue()
+        .catch(() => null)) as {
+        msg?: unknown
+      } | null
+      return value?.msg === msg
+    },
+  })
+}

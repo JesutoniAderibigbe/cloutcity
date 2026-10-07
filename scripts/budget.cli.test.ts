@@ -52,6 +52,36 @@ const loader = (files: readonly string[], id: number) =>
 
 const chunk = (name: string) => `static/chunks/${name}.js`
 
+/** Every chunk on the fake build's path to playable: the shell, the 3D chunk and the islands. */
+const PLAYABLE_CHUNKS = [
+  'main',
+  'scene',
+  'shared',
+  ...BOOT_ISLAND_FEATURES.map((_island, index) => `island${index}`),
+]
+
+const TIERS = ['low', 'mid', 'high'] as const
+
+/**
+ * A fake /serwist/sw.js (S04e): its injected precache manifest (the given chunks, `/` and the
+ * versioned base geo) and, unless `warm` is false, the tier-warm URLs baked into its config.
+ */
+function workerBody(chunks: readonly string[], extra: readonly string[] = [], warm = true): string {
+  const entries = [
+    ...chunks.map((name) => `/_next/${chunk(name)}`),
+    '/',
+    '/geo/base?v=0123456789ab',
+    ...extra,
+  ].map((url) => `{url:"${url}",revision:null}`)
+  const warmUrls = warm
+    ? TIERS.map(
+        (tier) =>
+          `${tier}:["/geo/districts/${tier}/queens?v=abc123","/geo/blocks/${tier}?v=def456"]`,
+      )
+    : []
+  return `var m=[${entries.join(',')}];var c={districtUrls:{${warmUrls.join(',')}}};`
+}
+
 /**
  * A fake build in the format Next 16 / Turbopack writes: a shell chunk referenced from the
  * prerendered `/`, whose loaders fetch the 3D chunk (with three and the scene marker) and every
@@ -78,8 +108,7 @@ function fakeProject(perf: Record<string, unknown> = {}, files: Record<string, s
       '2135': { id: 2135, files: [chunk('scene'), chunk('shared')] },
       '4242': { id: 4242, files: [chunk('scene'), chunk('room')] },
     }),
-    '.next/server/app/serwist/sw.js.body':
-      'var m=[{url:"/_next/static/chunks/main.js",revision:null},{url:"/",revision:"r"}];',
+    '.next/server/app/serwist/sw.js.body': workerBody(PLAYABLE_CHUNKS),
     '.next/server/app/geo/base.body': GEO_BODY,
     [`.next/${chunk('main')}`]: noisyChunk(0, `push([0${shellLoaders.join('')}])`),
     [`.next/${chunk('scene')}`]: noisyChunk(7, `${THREE};x="${SCENE_FEATURE}"`),
@@ -114,8 +143,8 @@ function withDistricts(root: string, tiers = ['low', 'mid', 'high'], seed = 21) 
   return root
 }
 
-function runBudget(cwd: string) {
-  return spawnSync(process.execPath, [SCRIPT], { cwd, encoding: 'utf8' })
+function runBudget(cwd: string, args: readonly string[] = []) {
+  return spawnSync(process.execPath, [SCRIPT, ...args], { cwd, encoding: 'utf8' })
 }
 
 describe('budget CLI', () => {
@@ -242,11 +271,101 @@ describe('budget CLI', () => {
   it('reports the service worker and its precache, and fails either over its limit', () => {
     const result = runBudget(fakeProject())
     expect(result.stdout).toMatch(/^PASS Service worker/m)
-    expect(result.stdout).toMatch(/^PASS Precache \(install\)[^\n]*\n {2}2 entries$/m)
+    expect(result.stdout).toMatch(/^PASS Precache \(install\)[^\n]*\n {2}11 entries$/m)
     const over = runBudget(fakeProject({ serviceWorkerGzKB: 0.001, precacheGzKB: 1 }))
     expect(over.stdout).toMatch(/^FAIL Service worker/m)
     expect(over.stdout).toMatch(/^FAIL Precache/m)
     expect(over.status).toBe(1)
+  })
+
+  describe('service worker precache contents (S04e)', () => {
+    const SW = '.next/server/app/serwist/sw.js.body'
+
+    it.each([
+      ['a model', '/models/taxi.low.752dce5e.glb'],
+      ['audio', '/audio/music/a.webm'],
+      ['a source map', '/_next/static/chunks/main.js.map'],
+      ['an API route', '/api/save'],
+      ['the moderator area', '/mod'],
+    ])('exits non-zero when it precaches %s', (_label, url) => {
+      const root = fakeProject({}, { [SW]: workerBody(PLAYABLE_CHUNKS, [url]) })
+      // The forbidden file exists, so the failure is the policy, not a missing file.
+      const file = url.startsWith('/_next/')
+        ? join(root, '.next', url.slice('/_next/'.length))
+        : join(root, 'public', url)
+      mkdirSync(dirname(file), { recursive: true })
+      writeFileSync(file, 'x')
+      const result = runBudget(root)
+      expect(result.stderr).toMatch(new RegExp(`precaches ${url.replace(/[.?]/g, '\\$&')}`))
+      expect(result.status).toBe(1)
+    })
+
+    it('exits non-zero when a file on the path to playable is not precached', () => {
+      const without = PLAYABLE_CHUNKS.filter((name) => name !== 'scene')
+      const result = runBudget(fakeProject({}, { [SW]: workerBody(without) }))
+      expect(result.stderr).toMatch(/does not precache static\/chunks\/scene\.js/)
+      expect(result.status).toBe(1)
+    })
+
+    it('exits non-zero when the versioned base geo is not precached', () => {
+      const body = workerBody(PLAYABLE_CHUNKS).replace('/geo/base?v=0123456789ab', '/geo/base')
+      const result = runBudget(fakeProject({}, { [SW]: body }))
+      expect(result.stderr).toMatch(/versioned base geo/)
+      expect(result.status).toBe(1)
+    })
+
+    it('reports the tier-warm lists and fails when a tier has none', () => {
+      const ok = runBudget(withDistricts(fakeProject()))
+      expect(ok.stdout).toMatch(/^INFO Tier warm: low 2 URLs, mid 2 URLs, high 2 URLs$/m)
+      const root = withDistricts(fakeProject({}, { [SW]: workerBody(PLAYABLE_CHUNKS, [], false) }))
+      const result = runBudget(root)
+      expect(result.stderr).toMatch(/no tier-warm URLs for low, mid, high/)
+      expect(result.status).toBe(1)
+    })
+  })
+
+  describe('--perf limits override (positive control)', () => {
+    it('fails every budget whose override limit is below the measured size', () => {
+      const root = fakeProject()
+      const tight = {
+        ...DEFAULT_PERF,
+        shellJsGzKB: 1,
+        sceneChunkJsGzKB: 1,
+        totalJsToPlayableGzKB: 1,
+        baseGeoGzKB: 0.01,
+        apartmentChunkJsGzKB: 1,
+        serviceWorkerGzKB: 0.01,
+        precacheGzKB: 1,
+      }
+      writeFileSync(join(root, 'tight.json'), JSON.stringify(tight))
+      const result = runBudget(root, ['--perf=tight.json'])
+      expect(result.stdout).toMatch(/^NOTE limits read from tight\.json, not perf\.json$/m)
+      for (const name of [
+        'Shell JS',
+        '3D chunk JS',
+        'Apartment chunk JS',
+        'Total JS to playable',
+        'Base geo',
+        'Service worker',
+        'Precache',
+      ]) {
+        expect(result.stdout).toMatch(new RegExp(`^FAIL ${name}`, 'm'))
+      }
+      expect(result.status).toBe(1)
+      // perf.json was not touched, and the same build passes against it.
+      expect(runBudget(root).status).toBe(0)
+    })
+
+    it('exits non-zero when the override file is missing or invalid', () => {
+      const root = fakeProject()
+      const missing = runBudget(root, ['--perf=nope.json'])
+      expect(missing.stderr).toMatch(/No limits file/)
+      expect(missing.status).toBe(1)
+      writeFileSync(join(root, 'bad.json'), JSON.stringify({ shellJsGzKB: 1 }))
+      const bad = runBudget(root, ['--perf=bad.json'])
+      expect(bad.stderr).toMatch(/invalid or missing/)
+      expect(bad.status).toBe(1)
+    })
   })
 
   describe('district buildings', () => {
