@@ -9,7 +9,7 @@
  *   and their gaps, minus the speed column above them), so money and clock shrink first.
  * - `hud-wide` (≥ hudWideMinWidthPx): the same two rows with room for labels and every action;
  *   money and clock stay 88 px so that at 640 px the actions (sound, Places, Inventory, Rent,
- *   More) still fit beside the stats.
+ *   Home, More) still fit beside the stats; the cloud save chip (S18c) joins them from 704 px.
  * - `hud-short` (a landscape phone): one row, everything side by side.
  * Heights: 2 × 44 + 4 gap + 2 × 6 padding = layout.json `hudHeightPx`; 44 + 2 × 6 =
  * `hudCompactHeightPx` (src/components/overlay/layers.test.ts).

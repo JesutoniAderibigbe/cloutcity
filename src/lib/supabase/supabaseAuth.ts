@@ -107,8 +107,9 @@ export async function connectAnonymous(
 }
 
 /**
- * The guest's client for this configuration, for the feature APIs (profileApi.ts, safetyApi.ts).
- * It is the same client connectAnonymous signed in with, so it carries the guest's session.
+ * The guest's client for this configuration, for the feature APIs (profileApi.ts, safetyApi.ts)
+ * and cloud save sync (S18c, src/state/session.ts). It is the same client connectAnonymous
+ * signed in with, so it carries the guest's session.
  */
 export function supabaseClient(env: SupabaseEnv): SupabaseClient<Database> {
   return clientFor(env)

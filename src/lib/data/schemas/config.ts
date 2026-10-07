@@ -533,6 +533,76 @@ export const HandlesConfigSchema = z
   })
 export type HandlesConfig = z.infer<typeof HandlesConfigSchema>
 
+/**
+ * The browser's fetch keepalive budget: a request body sent with `keepalive` (the hidden-tab and
+ * pagehide flush, S18c) is refused above 64 KiB.
+ */
+const KEEPALIVE_LIMIT_BYTES = 65_536
+
+/** Cloud save sync timings and server save plausibility (S18c; placeholders, TUNE-10). */
+export const SyncConfigSchema = z
+  .strictObject({
+    /** Quiet time after the last meaningful change before an upload. */
+    debounceMs: positiveInt,
+    /** The longest a change waits for an upload while play keeps changing the save. */
+    maxWaitMs: positiveInt,
+    /** Exponential backoff after a failed upload: first wait, and the most it grows to. */
+    retry: z.strictObject({ baseMs: positiveInt, maxMs: positiveInt }),
+    /** Wait before uploading again after the server rejected a save (paused sync). */
+    rejectedRetryMs: positiveInt,
+    /** Server rate limit: least time between two accepted uploads, and most per minute. */
+    minUploadIntervalMs: positiveInt,
+    maxUploadsPerMinute: positiveInt,
+    /** Largest save body the server stores (the saves table's own check matches it). */
+    maxSaveBytes: positiveInt,
+    /** Largest body the hidden-tab / pagehide keepalive upload may send. */
+    keepaliveMaxBytes: positiveInt.max(KEEPALIVE_LIMIT_BYTES),
+    /** Accepted saves the server keeps per player, and quarantined (rejected) ones. */
+    historyKeep: positiveInt,
+    /**
+     * Revisions per player the revision ledger keeps (when each was accepted, and its credits:
+     * a few numbers a row), oldest pruned. "Keep this device" from a trimmed revision uses it.
+     */
+    revisionLedgerKeep: positiveInt,
+    quarantineKeep: positiveInt,
+    plausibility: z.strictObject({
+      /** The economy fixture's maxima are multiplied by this before they act as ceilings. */
+      margin: z.number().min(1),
+      /** Taps a person can make in one real minute (each writes at most one clout entry). */
+      maxActionsPerRealMinute: positiveInt,
+      /**
+       * The most real minutes of slack a window can carry (a token bucket the server keeps per
+       * player, DEC-19): uploads lag the play they carry.
+       */
+      burstRealMinutes: positive,
+      /**
+       * Clout other players may see an account gain per real minute of its age (the public
+       * level cap, DEC-19). Kept apart from the upload pace: a public level behind the save's is
+       * a display delay, never a refusal. (Icon − every wearable's clout) ÷ this ≥ 60 minutes.
+       */
+      publicCloutPerRealMinute: positive,
+      /** "Keep this device" uploads a player may make in an hour (H2 overrides; 429 beyond). */
+      overrideMaxPerHour: positiveInt,
+    }),
+  })
+  .refine((sync) => sync.debounceMs <= sync.maxWaitMs, {
+    error: 'debounceMs must not exceed maxWaitMs',
+    path: ['debounceMs'],
+  })
+  .refine((sync) => sync.retry.baseMs <= sync.retry.maxMs, {
+    error: 'retry.baseMs must not exceed retry.maxMs',
+    path: ['retry'],
+  })
+  .refine((sync) => sync.keepaliveMaxBytes <= sync.maxSaveBytes, {
+    error: 'keepaliveMaxBytes must not exceed maxSaveBytes',
+    path: ['keepaliveMaxBytes'],
+  })
+  .refine((sync) => sync.minUploadIntervalMs * sync.maxUploadsPerMinute <= 60_000, {
+    error: 'maxUploadsPerMinute must fit in a minute at minUploadIntervalMs',
+    path: ['maxUploadsPerMinute'],
+  })
+export type SyncConfig = z.infer<typeof SyncConfigSchema>
+
 const dollars = z.int().nonnegative()
 /** Whole percent, 0..99: resale is always worth less than the price. */
 const percent = z.int().min(0).max(99)

@@ -24,6 +24,10 @@ const HomePanel = lazyIsland(() => import('./HomePanel').then((module) => module
   zone: 'sheet',
   labelKey: 'loading.home',
 })
+const CloudSavePanel = lazyIsland(
+  () => import('@/components/sync/CloudSavePanel').then((module) => module.CloudSavePanel),
+  { zone: 'sheet', labelKey: 'loading.cloudSave' },
+)
 const GoalsPanel = lazyIsland(() => import('./GoalsPanel').then((module) => module.GoalsPanel), {
   zone: 'sheet',
   labelKey: 'loading.goals',
@@ -36,9 +40,9 @@ const MePanel = lazyIsland(
 )
 
 /**
- * The sheet zone's HUD-panel slot (S10a; goals S15; more S05; home S16; me S18a): nothing until
- * a HUD button (or the Me tab) opens a panel. A place opening closes the panel, so only one sheet
- * shows at a time. In builds with test hooks the
+ * The sheet zone's HUD-panel slot (S10a; goals S15; more S05; home S16; me S18a; cloud save
+ * S18c): nothing until a HUD button (or the Me tab) opens a panel. A place opening closes the
+ * panel, so only one sheet shows at a time. In builds with test hooks the
  * e2e hook is installed from its own chunk, so no test code ships in the shell (or at all in
  * production).
  */
@@ -58,5 +62,6 @@ export function HudPanelMount() {
   if (panel === 'more') return <MorePanel />
   if (panel === 'home') return <HomePanel />
   if (panel === 'me') return <MePanel />
+  if (panel === 'cloud') return <CloudSavePanel />
   return panel === 'inventory' ? <InventoryPanel /> : <RentPanel />
 }

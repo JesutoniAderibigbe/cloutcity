@@ -1,8 +1,9 @@
 /**
  * Opt-in e2e against the local Supabase stack (S05): `npm run e2e:supabase` runs only the
  * `*.supabase.spec.ts` specs, on their own port and build directory, with the stack's URL and
- * anon key from `supabase status` (and, for /mod, the service-role key and a test moderator). The
- * stack is shared by every checkout: these specs only add their own rows and never reset it. Fails fast, with the fix, when the stack is not running.
+ * anon key from `supabase status` (and, for /mod and the server's cloud saves, the service-role
+ * key and a test moderator). The stack is shared by every checkout: these specs only add their
+ * own rows and never reset it. Fails fast, with the fix, when the stack is not running.
  */
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
@@ -59,9 +60,10 @@ export default defineConfig({
       NEXT_DIST_DIR: E2E_SUPABASE_DIST_DIR,
       NEXT_PUBLIC_SUPABASE_URL: stack.url,
       NEXT_PUBLIC_SUPABASE_ANON_KEY: stack.anonKey,
-      // The /mod routes (S18b part 2): the server's service-role client and a test-only
-      // moderator (tests/e2e/helpers/stack.ts E2E_MODERATOR_EMAIL), never a real address.
+      // Server-only, never a NEXT_PUBLIC_ variable: the service-role client for the /mod routes
+      // (S18b part 2) and POST /api/save (S18c).
       SUPABASE_SERVICE_ROLE_KEY: stack.serviceRoleKey,
+      // A test-only moderator (tests/e2e/helpers/stack.ts E2E_MODERATOR_EMAIL), never a real address.
       MODERATOR_EMAILS: E2E_MODERATOR_EMAIL,
       // Where /mod sign-in links land (never the request's Host header).
       SITE_URL: BASE_URL,

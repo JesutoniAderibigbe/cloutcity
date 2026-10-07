@@ -25,6 +25,7 @@ import {
   ProfileConfigSchema,
   ProgressionConfigSchema,
   RealtimeConfigSchema,
+  SyncConfigSchema,
   ThemeConfigSchema,
   TourConfigSchema,
   createProgressionConfigSchema,
@@ -61,7 +62,17 @@ import {
 } from './schemas/world'
 import { ModelManifestSchema } from './schemas/assets'
 import { CatalogSchema } from '../../../scripts/assets/schema'
-import { audio, balance, layout, onboarding, perf, progression, realtime, theme } from './config'
+import {
+  audio,
+  balance,
+  layout,
+  onboarding,
+  perf,
+  progression,
+  realtime,
+  sync,
+  theme,
+} from './config'
 import {
   audioManifest,
   events,
@@ -100,6 +111,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/realtime.json': RealtimeConfigSchema,
   'config/scene.json': SceneConfigSchema,
+  'config/sync.json': SyncConfigSchema,
   'config/theme.json': ThemeConfigSchema,
   'config/tour.json': TourConfigSchema,
   'copy/handleWords.json': HandleWordsSchema,
@@ -428,6 +440,53 @@ describe('config/realtime.json and moderation', () => {
         retention: { evidenceDays: 900, reportRowDays: 730, auditDays: 730, appealDays: 180 },
       }).success,
     ).toBe(false)
+  })
+})
+
+describe('config/sync.json (S18c)', () => {
+  const valid = () => structuredClone(readJson('config/sync.json')) as Record<string, unknown>
+
+  it('holds the S18c defaults (TUNE-10 placeholders)', () => {
+    expect(sync).toMatchObject({
+      debounceMs: 10_000,
+      maxWaitMs: 60_000,
+      maxSaveBytes: 262_144,
+      keepaliveMaxBytes: 61_440,
+      plausibility: { margin: 1.5, maxActionsPerRealMinute: 40, burstRealMinutes: 5 },
+    })
+  })
+
+  it("matches the saves table's own size check", () => {
+    const migrations = join(DATA, '../supabase/migrations')
+    const sql = readdirSync(migrations)
+      .filter((file) => file.endsWith('.sql'))
+      .map((file) => readFileSync(join(migrations, file), 'utf8'))
+      .join('\n')
+    const limit = /octet_length\(data::text\) <= (\d+)/.exec(sql)?.[1]
+    expect(Number(limit)).toBe(sync.maxSaveBytes)
+  })
+
+  it.each<[string, (file: Record<string, unknown>) => void]>([
+    ['a debounce longer than the max wait', (file) => void (file.debounceMs = 120_000)],
+    ['a retry base above its max', (file) => void (file.retry = { baseMs: 10, maxMs: 5 })],
+    ['a keepalive body over 64 KiB', (file) => void (file.keepaliveMaxBytes = 65_537)],
+    ['a keepalive body over the save limit', (file) => void (file.maxSaveBytes = 1000)],
+    ['more uploads than fit a minute', (file) => void (file.maxUploadsPerMinute = 13)],
+    [
+      'a margin below 1',
+      (file) =>
+        void (file.plausibility = {
+          margin: 0.9,
+          maxActionsPerRealMinute: 40,
+          burstRealMinutes: 5,
+        }),
+    ],
+    ['an unknown key', (file) => void (file.extra = 1)],
+  ])('rejects %s', (_label, mutate) => {
+    const file = valid()
+    expect(SyncConfigSchema.safeParse(file).success).toBe(true)
+    mutate(file)
+    expect(SyncConfigSchema.safeParse(file).success).toBe(false)
   })
 })
 

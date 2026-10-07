@@ -35,6 +35,7 @@ export type CopyKey =
   | keyof (typeof import('@data/copy/safety/base.json'))['strings']
   | keyof (typeof import('@data/copy/share/base.json'))['strings']
   | keyof (typeof import('@data/copy/shop/base.json'))['strings']
+  | keyof (typeof import('@data/copy/sync/base.json'))['strings']
   | keyof (typeof import('@data/copy/tabs/base.json'))['strings']
   | keyof (typeof import('@data/copy/tour/base.json'))['strings']
   | keyof (typeof import('@data/copy/travel/base.json'))['strings']

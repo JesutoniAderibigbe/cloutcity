@@ -25,6 +25,7 @@ function grantFor(userId: string) {
     cash_amount: 50,
     clout_amount: 0,
     cap_amount: 100,
+    clout_cap: 0,
     eligibility: { goal: 'first-rent' },
     reason: 'First rent paid',
     issued_by: 'system',

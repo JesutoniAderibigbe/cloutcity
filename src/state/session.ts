@@ -10,7 +10,8 @@
  *  2. waits until the map is playable, so the sign-in never competes with the map for bandwidth;
  *  3. imports src/lib/supabase/supabaseAuth.ts (and with it @supabase/supabase-js) lazily;
  *  4. reuses this device's session or signs in anonymously, then records the attestation;
- *  5. once connected, loads any moderator notices waiting for the player (S18b).
+ *  5. once connected, loads any moderator notices waiting for the player (S18b) and starts cloud
+ *     save sync (src/state/cloudSync.ts, lazily, with the same session; S18c).
  *
  * Failures degrade to local play and never block it: a rate limit (429) or no network are
  * expected and logged at info (no network retries once when the browser comes back online);
@@ -42,6 +43,8 @@ export interface GuestSessionDeps {
       attestation: ReturnType<typeof toAttestationArgs>,
     ) => Promise<ConnectResult>
   }>
+  /** Loads and starts cloud save sync (S18c) once the session is connected. */
+  readonly startSync: () => Promise<void>
   readonly isOnline: () => boolean
   /** Calls `listener` once when the browser is next online; returns a way to cancel. */
   readonly onceOnline: (listener: () => void) => () => void
@@ -58,6 +61,14 @@ export function browserSessionDeps(): GuestSessionDeps {
     env: () => supabaseEnv(),
     whenMapPlayable,
     loadAuth: () => import('@/lib/supabase/supabaseAuth'),
+    startSync: () =>
+      Promise.all([import('@/lib/supabase/supabaseAuth'), import('./cloudSync')]).then(
+        ([auth, sync]) => {
+          // The client connectAnonymous signed in with: the same session (supabaseAuth.ts).
+          const env = supabaseEnv()
+          sync.startCloudSync(env === null ? undefined : auth.supabaseClient(env))
+        },
+      ),
     isOnline: () => typeof navigator === 'undefined' || navigator.onLine,
     onceOnline: (listener) => {
       window.addEventListener('online', listener, { once: true })
@@ -143,6 +154,12 @@ export function createGuestSessionStarter(
       deps.status.setState({ status: 'anonymous', reason: null, reused: result.reused })
       logger.info('Guest session connected', { reused: result.reused })
       deps.onConnected?.()
+      deps.startSync().catch((error: unknown) => {
+        // The sync chunk failed to load (offline): the save stays on this device.
+        logger.info('Cloud save sync did not load; saving on this device only', {
+          error: error instanceof Error ? error.name : typeof error,
+        })
+      })
       return
     }
     if (result.stage === 'attest') {

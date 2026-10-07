@@ -24,6 +24,9 @@
  *   older save starts with no decor, nothing placed and an empty move log.
  * - v10 (S08): adds `player.location` (at home, or at a place by id) and `player.transit` (the
  *   delay roll's generator state). An older save starts at home with a fresh generator.
+ * - v11 (S18c): adds `actions`, the taps that changed the game this run (DEC-19): the server's
+ *   save plausibility bounds how far the clock and the earnings can move per tap. An older save
+ *   starts counting at 0.
  */
 import * as z from 'zod/mini'
 import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
@@ -86,7 +89,7 @@ import {
 import { initialPrestigeState, type PrestigeRun, type PrestigeState } from './prestige'
 import { initialRent } from './rent'
 
-export const SAVE_VERSION = 10
+export const SAVE_VERSION = 11
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
@@ -98,6 +101,16 @@ export interface SaveState extends GameSnapshot {
   readonly grants: GrantsState
   /** Prestige runs and badges (src/engine/prestige.ts). */
   readonly prestige: PrestigeState
+  /**
+   * Taps that changed the game this run (an action, shift, buy, sale, event choice or claim;
+   * `countAction`). Starts at 0 and again at each prestige. Only ever counts up within a run.
+   */
+  readonly actions: number
+}
+
+/** The save after one more counted tap (see `SaveState.actions`). */
+export function countAction<S extends Pick<SaveState, 'actions'>>(save: S): S {
+  return { ...save, actions: save.actions + 1 }
 }
 
 const CashSchema = z.int().check(z.gte(0))
@@ -463,7 +476,7 @@ const GrantRecordSchema = z
     issuedAtMs: WholeSchema,
     issuedBy: z.literal('system'),
     campaignId: z.null(),
-    sync: z.literal('local'),
+    sync: z.enum(['local', 'synced']),
   })
   .check(
     z.refine(
@@ -601,6 +614,7 @@ export function createSaveSchema(config: EngineConfig) {
     goals: goalsStateSchema(config),
     grants: grantsStateSchema(config),
     prestige: prestigeStateSchema(config),
+    actions: WholeSchema,
   })
   return save.check(
     z.refine(
@@ -1187,6 +1201,8 @@ const LoadableSaveSchema = z.strictObject({
   goals: z.optional(z.unknown()),
   grants: z.optional(z.unknown()),
   prestige: z.optional(z.unknown()),
+  // Repairable: a v10 or older save has none (0); anything but a whole number becomes 0.
+  actions: z.optional(z.unknown()),
 })
 
 /** A v6 save's structure (S09): clout is one number, no flex state yet. */
@@ -1289,7 +1305,8 @@ export type LoadResult =
  * - an inconsistent grant log, goals or prestige keep what is usable (see `repairGrants`,
  *   `repairGoals`, `repairPrestige`). Which rewards were claimed is never stored on its own:
  *   it is the grant log's keys plus the clout ledger's grant references, so no repair can
- *   unclaim one.
+ *   unclaim one;
+ * - an action count that is not a whole number becomes 0.
  * Only a structurally unusable save (missing objects, unknown keys, cash or minute of the wrong
  * type or range) fails, and the caller starts fresh.
  */
@@ -1414,6 +1431,10 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   )
   if (prestigeRepaired && present(raw.prestige)) repaired.push('prestige')
 
+  const actions = orFresh(raw.actions, 0)
+  const validActions = typeof actions === 'number' && Number.isSafeInteger(actions) && actions >= 0
+  if (!validActions) repaired.push('actions')
+
   return {
     ok: true,
     save: {
@@ -1437,6 +1458,7 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
       goals,
       grants,
       prestige,
+      actions: validActions ? actions : 0,
     },
     repaired,
   }
@@ -1483,6 +1505,7 @@ export function initialSave(config: EngineConfig): SaveState {
     goals: initialGoalsState,
     grants: initialGrantsState,
     prestige: initialPrestigeState,
+    actions: 0,
   }
 }
 
@@ -1551,7 +1574,7 @@ function loadV6(raw: unknown, config: EngineConfig): LoadResult | null {
  * Every step goes through the v6 form, so v2 to v5 saves get the v6 upgrade too. A v7 save keeps
  * everything and starts with no recorded visits, no grants and no prestige. A v7 or v8 save
  * starts with no decor, nothing placed and an empty move log. A v7 to v9 save starts at home
- * with a fresh transit generator. Every older save
+ * with a fresh transit generator. A v7 to v10 save starts counting actions at 0. Every older save
  * then gets its goals derived from what it holds, at its current minute (`syncGoals`): a save
  * already at Icon starts with an unacknowledged Icon moment. Anything older or malformed
  * starts fresh. A save from a newer build throws `NewerSaveError`: it is
@@ -1622,9 +1645,9 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
     }
   }
   if (version === 6) loaded = loadV6(persisted, config)
-  // A v7 to v9 save is the current structure without the S15 (v7), S16 (v8) or S08 (v9)
-  // fields, which `loadSave` fills in.
-  if (version === 7 || version === 8 || version === 9) loaded = loadSave(persisted, config)
+  // A v7 to v10 save is the current structure without the S15 (v7), S16 (v8), S08 (v9) or
+  // S18c (v10) fields, which `loadSave` fills in.
+  if (version >= 7 && version <= 10) loaded = loadSave(persisted, config)
   if (loaded?.ok === true) {
     return { save: syncGoals(loaded.save, config).save, outcome: 'carried' }
   }

@@ -29,8 +29,8 @@ const valid: Inventory = {
 }
 
 describe('save v4 schema', () => {
-  it('is version 10 (v4 inventory, v5 events, v6 club nights, v7 clout ledger, v8 goals, v9 apartment, v10 location) and a fresh save has an empty inventory', () => {
-    expect(SAVE_VERSION).toBe(10)
+  it('is version 11 (v4 inventory, v5 events, v6 club nights, v7 clout ledger, v8 goals, v9 apartment, v10 location, v11 actions) and a fresh save has an empty inventory', () => {
+    expect(SAVE_VERSION).toBe(11)
     expect(initialSave(config).player.inventory).toEqual(emptyInventory)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
@@ -115,6 +115,7 @@ describe('save v3 -> v4', () => {
         goals: initialGoalsState,
         grants: initialGrantsState,
         prestige: initialPrestigeState,
+        actions: 0,
       },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)

@@ -557,6 +557,19 @@ export interface CloutCeilings {
 const MINUTES_PER_DAY = 24 * 60
 
 /**
+ * The most times `event` can fire in one game day: once ever when it is `once`, otherwise every
+ * cooldown, counting both ends of the day. Shared by the clout and cash ceilings (S18c).
+ */
+export function eventFiresPerGameDay(
+  event: EngineConfig['events']['catalog'][number],
+  config: EngineConfig,
+): number {
+  if (event.once === true) return 1
+  const cooldown = Math.max(1, event.cooldownMin ?? config.events.defaultCooldownMin)
+  return Math.floor(MINUTES_PER_DAY / cooldown) + 1
+}
+
+/**
  * The most clout each source can give in one action and in one game day, from config alone
  * (top style, the highest place multiplier, a viral flex, every club, every event at its
  * cooldown). S18c's save plausibility uses max(fixture x margin, these ceilings): the economy
@@ -601,10 +614,8 @@ export function cloutCeilings(config: EngineConfig): CloutCeilings {
       ),
     )
     const gain = scale(best, 'event')
-    const cooldown = Math.max(1, event.cooldownMin ?? config.events.defaultCooldownMin)
-    const firesPerDay = event.once === true ? 1 : Math.floor(MINUTES_PER_DAY / cooldown) + 1
     eventPerAction = Math.max(eventPerAction, gain)
-    eventPerDay += gain * firesPerDay
+    eventPerDay += gain * eventFiresPerGameDay(event, config)
   }
 
   const wearableClout = config.items.catalog

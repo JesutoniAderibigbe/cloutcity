@@ -54,7 +54,10 @@ function preV9(save: SaveState = base): Record<string, unknown> & {
   delete player.apartment
   delete player.location
   delete player.transit
-  return { ...save, player }
+  // Nor the S18c (v11) action count.
+  const out: Record<string, unknown> = { ...save, player }
+  delete out.actions
+  return out as Record<string, unknown> & { player: Record<string, unknown> }
 }
 
 function load(save: unknown) {
@@ -69,8 +72,8 @@ const withPlayer = (patch: Record<string, unknown>) => ({
 })
 
 describe('save v9', () => {
-  it('is version 10; a fresh save owns no decor, places nothing and has moved nowhere', () => {
-    expect(SAVE_VERSION).toBe(10)
+  it('is version 11; a fresh save owns no decor, places nothing and has moved nowhere', () => {
+    expect(SAVE_VERSION).toBe(11)
     const fresh = initialSave(config)
     expect(fresh.player.inventory.decor).toEqual([])
     expect(fresh.player.apartment).toEqual(initialApartment)

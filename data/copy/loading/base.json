@@ -20,6 +20,7 @@
     "loading.tour": "Loading the tour",
     "loading.me": "Loading your profile",
     "loading.safety": "Loading the safety message",
-    "loading.notices": "Loading a message from the moderators"
+    "loading.notices": "Loading a message from the moderators",
+    "loading.cloudSave": "Loading your cloud save"
   }
 }

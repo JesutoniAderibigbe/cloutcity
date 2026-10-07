@@ -37,12 +37,14 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean } = {}) {
     (env: SupabaseEnv, args: AttestationArgs) => Promise<ConnectResult>
   >(async () => results.shift() ?? { ok: true, reused: false })
   const loadAuth = vi.fn(async () => ({ connectAnonymous }))
+  const startSync = vi.fn(async () => {})
   let online = options.online ?? true
   let onlineListener: (() => void) | undefined
   const deps: GuestSessionDeps = {
     env: () => (options.env === undefined ? ENV : options.env),
     whenMapPlayable: () => playable,
     loadAuth,
+    startSync,
     isOnline: () => online,
     onceOnline: (listener) => {
       onlineListener = listener
@@ -59,6 +61,7 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean } = {}) {
     start,
     results,
     connectAnonymous,
+    startSync,
     loadAuth,
     onConnected: deps.onConnected,
     markPlayable,
@@ -142,6 +145,29 @@ describe('guest session (S05)', () => {
     expect(s.records.find((r) => r.msg === 'Guest session connected')?.context).toEqual({
       reused: true,
     })
+  })
+
+  it('starts cloud save sync once connected, and only then (S18c)', async () => {
+    const s = setup()
+    s.complete()
+    s.start()
+    await flush()
+    expect(s.startSync).not.toHaveBeenCalled()
+    s.markPlayable()
+    await flush()
+    expect(s.startSync).toHaveBeenCalledTimes(1)
+  })
+
+  it('a sync chunk that fails to load logs at info and keeps the session', async () => {
+    const s = setup()
+    s.startSync.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    s.complete()
+    s.start()
+    s.markPlayable()
+    await flush()
+    expect(s.status.getState().status).toBe('anonymous')
+    const record = s.records.find((r) => r.msg.startsWith('Cloud save sync did not load'))
+    expect(record?.level).toBe('info')
   })
 
   it('signs in at most once however often it is started', async () => {

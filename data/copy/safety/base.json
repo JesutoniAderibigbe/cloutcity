@@ -133,6 +133,8 @@
     "safety.rpc.idempotencyConflict": "That action clashed with another one. Reload and try again.",
     "safety.rpc.alreadyResolved": "Someone already handled this.",
     "safety.rpc.caseNotFound": "That case is gone.",
+    "safety.rpc.revisionConflict": "Your save changed somewhere else. Reload to get the latest one.",
+    "safety.rpc.versionRegressed": "Your account has a save from a newer version of the game. Reload to update.",
     "safety.rpc.unknown": "That didn't go through. Check your connection and try again."
   }
 }

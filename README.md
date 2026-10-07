@@ -18,14 +18,15 @@ npm run dev                       # http://localhost:3000
 No environment variables are needed to play: without Supabase the game runs local-only. Env
 files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names.
 
-| Variable                                                    | Used by                                                                                       | Default                              |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `NEXT_PUBLIC_LOG_LEVEL`                                     | `src/lib/log.ts` minimum level (`debug`, `info`, `warn`, `error`)                             | `debug` in dev, `info` in production |
-| `E2E_PORT`                                                  | Port Playwright serves the production build on                                                | `3100`                               |
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The guest's anonymous Supabase session (`src/lib/supabase/env.ts`); inlined at build time     | unset: local-only play               |
-| `E2E_SUPABASE_PORT`                                         | Port of the opt-in `npm run e2e:supabase` build                                               | `3110`                               |
-| `SUPABASE_SERVICE_ROLE_KEY`                                 | Server only (`src/server/supabase/service.ts`): the `/api/mod/*` routes; never `NEXT_PUBLIC_` | unset: `/mod` answers 503            |
-| `MODERATOR_EMAILS`                                          | Server only: comma-separated emails allowed into `/mod` (`src/server/moderation/auth.ts`)     | unset or empty: nobody               |
+| Variable                                                    | Used by                                                                                                                          | Default                                                            |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `NEXT_PUBLIC_LOG_LEVEL`                                     | `src/lib/log.ts` minimum level (`debug`, `info`, `warn`, `error`)                                                                | `debug` in dev, `info` in production                               |
+| `E2E_PORT`                                                  | Port Playwright serves the production build on                                                                                   | `3100`                                                             |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The guest's anonymous Supabase session (`src/lib/supabase/env.ts`); inlined at build time                                        | unset: local-only play                                             |
+| `E2E_SUPABASE_PORT`                                         | Port of the opt-in `npm run e2e:supabase` build                                                                                  | `3110`                                                             |
+| `SUPABASE_SERVICE_ROLE_KEY`                                 | Server only (`src/server/supabase/service.ts`): the `/api/mod/*` routes and cloud saves (POST `/api/save`); never `NEXT_PUBLIC_` | unset: `/mod` and `/api/save` answer 503, saves stay on the device |
+| `SUPABASE_URL`                                              | The project URL for the cloud-save server code, if it differs from `NEXT_PUBLIC_SUPABASE_URL`                                    | `NEXT_PUBLIC_SUPABASE_URL`                                         |
+| `MODERATOR_EMAILS`                                          | Server only: comma-separated emails allowed into `/mod` (`src/server/moderation/auth.ts`)                                        | unset or empty: nobody                                             |
 
 ## Scripts
 
@@ -234,15 +235,15 @@ by a zod schema in `src/lib/data/schemas/` (`src/lib/data/data.test.ts` fails if
 no schema or does not match it, if any other file type appears (only `SOURCES.md` and
 `README.md` are allowed next to data), or if a cross-file reference breaks).
 
-| Folder            | Holds                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `progression.json` (goals, grant caps, prestige rules), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings, the apartment's room, markers and picking) |
-| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                                                                                                                                |
-| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                                                                                                                               |
-| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway`, `blocks.<tier>`, `districts/<district>.<tier>` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                              |
-| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                                                                                                                   |
-| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                                                               |
-| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                                                                      |
+| Folder            | Holds                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `progression.json` (goals, grant caps, prestige rules), `sync.json` (cloud save timings, size limits and plausibility margin), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings, the apartment's room, markers and picking) |
+| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                                                                                                                                                                                                       |
+| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                                                                                                                                                                                                      |
+| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway`, `blocks.<tier>`, `districts/<district>.<tier>` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                                                                                                     |
+| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                                                                                                                                                                                          |
+| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                                                                                                                                             |
 
 - **Handles.** `data/config/handles.json` (handle rules, change and rate limits),
   `data/copy/handleWords.json` (guest-handle words) and `data/moderation/handle-blocklist.json`
@@ -418,6 +419,46 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   `data/copy/goals/base.json`, and run `npm test`.
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
+- **Save plausibility** (`plausibility.ts`, S18c): `checkUpload(prev, next, context, ceilings)`
+  checks an uploaded save against the last accepted one and returns accept, repair (forged goals,
+  badges, peak level, un-marked kept looks, unentitled premium clout are fixed with
+  `applyRepairs`) or reject (structural damage, forged or replayed grants, anything that went
+  back, clout or cash beyond the ceilings), plus the public view (level capped by account age,
+  career path (null until S16a), worn cosmetics and entitled premium items) and the grant
+  records to insert. Ceilings come from `plausibilityCeilings`: max(economy fixture × `sync.json`
+  margin, theoretical ceilings from config). Real time bounds the taps the save counts
+  (`SaveState.actions`, v9) and passive clock time (each tap moves the clock at most
+  `maxActionGameMinutes`, derived from config: the longest action at the worst stat penalties);
+  earnings must fit the counted taps at the bots' honest pace (`pace` in the economy baseline x
+  margin) plus a pace credit of one game day. The public level an account's age allows is a
+  separate display pace, `sync.plausibility.publicCloutPerRealMinute` (80: a public Icon takes at
+  least an hour); a public level behind the save's is a delay, never a refusal. The real-time
+  slack and the pace credit are per-player token buckets the server carries between uploads, and
+  each history row keeps them (DEC-19). Only an account with no save at all uploads under
+  first-upload rules (never rejected for real-time reasons).
+- **Cloud save sync** (S18c): once the guest session connects, `src/state/cloudSync.ts` (lazy)
+  restores the account's save or uploads this device's to POST `/api/save`
+  (`src/server/saves/handleUpload.ts`, Node, never cached), debounced (`sync.json`), queued
+  offline, flushed with a keepalive request when the tab hides, and paused when the server
+  refuses a save. The server stores accepted saves with `commit_save` (service role only: a
+  compare-and-swap on the revision, the upload rate limit, grant rows, the public profile
+  projection) and keeps refused ones aside with `quarantine_save`. The HUD's cloud chip (the More
+  panel on phones) shows the status; a conflict asks the player which save to keep. Keeping this
+  device's game is checked against the save both devices last shared (`save_at_revision` from the
+  history, with the credits it was stored with), not the other device's. If the history no longer
+  keeps that save, the kept game is checked from that revision's taps and clock minute, against the
+  time it was accepted and its credits, which a small untrimmed revision ledger keeps
+  (`private.save_revisions`, the newest `sync.revisionLedgerKeep` revisions per player, 5000 by
+  default, oldest pruned), while the kept game is in that revision's run and prestige; a revision
+  the ledger does not know (0: never synced), a ledger row without baselines, or a kept game in
+  another run is measured as a whole run from the account's creation with the current credits,
+  lenient by design (overrides are rate limited, earnings capped by the credit).
+  Either way the account's prestige and run must not be newer. A kept game from before
+  the account's last prestige cannot replace it (409 `branch-behind`; the panel offers the
+  account's game). Grant keys on the server stop a kept game from claiming a reward again.
+  Overrides are limited to `sync.plausibility.overrideMaxPerHour` an hour. After a refused save the panel offers the cloud game. Server code
+  lives in `src/server/` behind `import 'server-only'`; `src/server/server-boundary.test.ts`
+  proves browser code never reaches it.
 
 ## Economy simulation
 
@@ -430,9 +471,18 @@ $185 in each of weeks 2 to 4, and can afford the move to the Brooklyn 1BR betwee
 in `balance.json` `target.firstUpgradeGameDay`; no job goes broke, misses rent or misses a
 shift, and every job saves $80 to $230 a week.
 
+Two clout routines play alongside: a barista who flexes once a day (S13), and a max-clout routine
+(S18c) that flexes up to `clout.flex.maxPerGameDay` times a day at the best-multiplier places it
+can reach, buys and wears wearables for style when it can spare the cash, and takes the best club
+night its clout lets it into. For the honest pace every job runs with the plain and the max-clout
+routine; junior dev is taken the morning the player's level unlocks it (barista until then).
+
 The test also writes the result to `data/sim/economy-baseline.derived.json` (per-job results
-and the highest cash, clout and action counts per action, game hour and game day, which S18c
-uses as save-plausibility ceilings) and fails if a later change to the balance moves it. After
+and the highest cash, clout and action counts per action, game hour and game day, plus the
+honest pace: the highest cash and clout per tap of every job and routine, over the whole run or
+its best week,
+which S18c uses as save-plausibility ceilings) and fails if a later change to the balance moves
+it. After
 tuning `balance.json` on purpose, run `npm run econ:update`, check the target tests still pass,
 and log the change in the progress.md Tuning log.
 
