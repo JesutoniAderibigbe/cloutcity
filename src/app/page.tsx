@@ -1,6 +1,7 @@
 import { SoundControlMount } from '@/components/audio/SoundControlMount'
 import { SoundSheetMount } from '@/components/audio/SoundSheetMount'
 import { EventSheetMount } from '@/components/events/EventSheetMount'
+import { IconMomentMount } from '@/components/goals/IconMomentMount'
 import { CloutHudMount } from '@/components/hud/CloutHudMount'
 import { HudPanelButtonsMount } from '@/components/hud/HudPanelButtonsMount'
 import { HudPanelMount } from '@/components/hud/HudPanelMount'
@@ -15,7 +16,12 @@ import { copy } from '@/lib/copy'
 export default function HomePage() {
   return (
     <OverlayLayout
-      modal={<WelcomeMount />}
+      modal={
+        <>
+          <WelcomeMount />
+          <IconMomentMount />
+        </>
+      }
       slots={{
         hud: (
           <div className="flex h-full items-center justify-between gap-3 px-4">

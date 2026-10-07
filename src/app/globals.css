@@ -73,6 +73,32 @@ body {
   }
 }
 
+/* The Icon moment's celebration (src/components/goals/IconMoment.tsx): a few slow pulses of the
+   night palette behind the text, decorative only. Off under reduced motion. */
+.icon-moment-burst {
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 20% 15%, var(--color-pink-400) 0, transparent 40%),
+    radial-gradient(circle at 85% 30%, var(--color-taxi-400) 0, transparent 35%);
+  opacity: 0.18;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .icon-moment-burst {
+    animation: icon-moment-burst 1600ms ease-in-out 3;
+  }
+}
+
+@keyframes icon-moment-burst {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
 @keyframes level-up-pop {
   from {
     transform: scale(0.92);

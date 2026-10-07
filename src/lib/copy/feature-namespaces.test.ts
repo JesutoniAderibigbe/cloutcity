@@ -191,6 +191,98 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     })
   })
 
+  it('the clout HUD chunk: the Goals button label for any count (S15)', async () => {
+    await import('@/components/hud/CloutHudIsland')
+    const { copy } = await import('./index')
+    expect(copy('hud.goals')).toBe('Goals')
+    expect(copy('hud.goalsReadyOne')).toBe('Goals, 1 reward ready')
+    expect(copy('hud.goalsReady', { count: '2' })).toBe('Goals, 2 rewards ready')
+  })
+
+  it('the goals chunk: every goal line, status, reward and claim label (S15)', async () => {
+    await import('@/components/hud/GoalsPanel')
+    const goalsCopy = await import('@/lib/goalsCopy')
+    const { copy } = await import('./index')
+    const { engineConfig } = await import('@/engine/config')
+    const { goalsView, syncGoals } = await import('@/engine/goals')
+    const { grant } = await import('@/engine/grants')
+    const { initialSave } = await import('@/engine/save')
+    const { playerWithClout } = await import('@/engine/test-support')
+    for (const clout of [0, 150, 5000]) {
+      const base = initialSave(engineConfig)
+      let save = syncGoals(
+        { ...base, player: playerWithClout(base.player, clout, engineConfig) },
+        engineConfig,
+      ).save
+      const claimed = grant(
+        save,
+        { kind: 'goal_reward', goalId: 'reach-local', reward: { cash: 50, clout: 15 } },
+        1,
+        engineConfig,
+      )
+      if (claimed.ok) save = claimed.save
+      for (const busy of [null, 'probe-event']) {
+        const views = goalsView({ ...save, events: { ...save.events, active: busy } }, engineConfig)
+        for (const view of views) {
+          expect(goalsCopy.goalName(view.id)).not.toBe('')
+          expect(goalsCopy.goalHint(view.id)).not.toBe('')
+          expect(goalsCopy.goalProgressLabel(view)).not.toBe('')
+          expect(goalsCopy.goalStatusText(view)).not.toBe('')
+          expect(goalsCopy.rewardLine(view)).not.toBe('')
+          expect(goalsCopy.claimButton(view).label).not.toBe('')
+        }
+      }
+    }
+    for (const key of [
+      'goals.heading',
+      'goals.intro',
+      'goals.note',
+      'goals.capped',
+      'goals.claim.refused',
+      'goals.badges.heading',
+    ] as const) {
+      expect(copy(key)).not.toBe('')
+    }
+    expect(goalsCopy.claimedText('reach-local', { cash: 1, clout: 1, badge: null })).not.toBe('')
+    expect(copy('goals.run', { run: '2' })).not.toBe('')
+  })
+
+  it('the Icon moment chunk: the victory screen, share text and prestige lists (S15)', async () => {
+    await import('@/components/goals/IconMoment')
+    const goalsCopy = await import('@/lib/goalsCopy')
+    const { copy } = await import('./index')
+    const { cloutLevelName } = await import('@/lib/economyCopy')
+    const { engineConfig } = await import('@/engine/config')
+    for (const part of [...engineConfig.prestige.resets, ...engineConfig.prestige.keeps]) {
+      expect(goalsCopy.prestigePartName(part)).not.toBe('')
+    }
+    for (const badge of engineConfig.prestige.badgeIds) {
+      expect(copy('goals.icon.confirm.badge', { badge: goalsCopy.badgeName(badge) })).not.toBe('')
+    }
+    const level = cloutLevelName(engineConfig.clout.levels[0]?.id ?? '')
+    expect(copy('goals.icon.confirm.go', { level })).toBe('Start over at Nobody, keep your badges')
+    for (const key of [
+      'goals.icon.title',
+      'goals.icon.body',
+      'goals.icon.share',
+      'goals.icon.shared',
+      'goals.icon.copied',
+      'goals.icon.copyThis',
+      'goals.icon.prestige',
+      'goals.icon.keepPlaying',
+      'goals.icon.confirm.title',
+      'goals.icon.confirm.body',
+      'goals.icon.confirm.resets',
+      'goals.icon.confirm.keeps',
+      'goals.icon.confirm.back',
+      'goals.icon.confirm.refused',
+      'share.icon.text',
+      'share.footer',
+    ] as const) {
+      expect(copy(key)).not.toBe('')
+    }
+  })
+
   it('the level-up chunk: every level-up title, message, unlock line and close label', async () => {
     await import('@/components/hud/LevelUpToast')
     const copyFns = await import('@/lib/levelUpCopy')

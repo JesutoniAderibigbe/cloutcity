@@ -18,6 +18,7 @@ export function PanelDialog({
   panel,
   feature,
   onClose,
+  scrollBody = false,
   children,
 }: {
   readonly title: string
@@ -25,6 +26,11 @@ export function PanelDialog({
   /** The panel's lazy-feature marker (`cc-feature:<id>`, DEC-11), written literally by the caller. */
   readonly feature: string
   readonly onClose: () => void
+  /**
+   * A long panel (the goals list): the dialog fits its zone and its body scrolls under the
+   * title and Close button, which stay in view.
+   */
+  readonly scrollBody?: boolean
   readonly children: ReactNode
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -59,7 +65,9 @@ export function PanelDialog({
       aria-labelledby={titleId}
       data-hud-panel-dialog={panel}
       data-cc-feature={feature}
-      className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur"
+      className={`m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur ${
+        scrollBody ? 'max-h-[calc(100%-1rem)] min-h-0' : ''
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
         <h2
@@ -78,7 +86,13 @@ export function PanelDialog({
           {copy('place.sheet.close')}
         </button>
       </div>
-      {children}
+      {scrollBody ? (
+        <div className="flex min-h-0 flex-col gap-2 overflow-y-auto overscroll-contain">
+          {children}
+        </div>
+      ) : (
+        children
+      )}
     </div>
   )
 }

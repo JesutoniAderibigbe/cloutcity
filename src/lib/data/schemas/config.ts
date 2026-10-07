@@ -1,9 +1,15 @@
 /**
- * Schemas for /data/config. This file imports only `zod` and the dependency-free `../homes.ts` (no
- * path aliases) so Node can load it directly from `scripts/` with its built-in type stripping.
+ * Schemas for /data/config. This file imports only `zod` and the dependency-free `../homes.ts`,
+ * `../cloutSources.ts` and `../goalFacts.ts` (no path aliases) so Node can load it directly from `scripts/` with its built-in type stripping.
  */
 import { z } from 'zod'
 import { STYLED_SOURCES } from '../cloutSources.ts'
+import {
+  GOAL_FACTS,
+  PRESTIGE_MUST_KEEP,
+  PRESTIGE_MUST_RESET,
+  PRESTIGE_PARTS,
+} from '../goalFacts.ts'
 import { HOME_IDS, lowestRentHome } from '../homes.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
@@ -831,3 +837,148 @@ export const GeoConfigSchema = z
     },
   )
 export type GeoConfig = z.infer<typeof GeoConfigSchema>
+
+/** A goal's reward: whole dollars, whole clout points and, for the victory goal, a badge. */
+const GoalRewardSchema = z.strictObject({
+  cash: z.optional(dollars),
+  clout: z.optional(z.int().nonnegative()),
+  /** The run's prestige badge (`prestige.badgeIds`); only the victory goal may carry it. */
+  badge: z.optional(z.literal(true)),
+})
+
+const GoalSchema = z.strictObject({
+  id: z.string().regex(KEBAB_ID),
+  fact: z.enum(GOAL_FACTS),
+  /** For `clout-level` goals only: the `clout.levels` id the player's goal clout must hold. */
+  level: z.optional(z.string().regex(KEBAB_ID)),
+  /** False while the feature behind the goal is not built yet: shown as coming soon. */
+  available: z.optional(z.boolean()),
+  /** Reaching this goal is winning the game: the Icon moment and prestige (exactly one). */
+  victory: z.optional(z.literal(true)),
+  reward: GoalRewardSchema,
+})
+
+const gapPct = z.int().min(1).max(99)
+
+/**
+ * Goals, grants and prestige (S15, src/engine/goals.ts, grants.ts, prestige.ts). Every reward is
+ * paid by the one grant function, capped at `grants.capPctOfGap` percent of what the player
+ * still needs for their next progression goal (clout: the next level; cash: the next home's rent
+ * reserve plus move-in cost), and at most `grants.maxPerGrant`. A percentage below 100 means a
+ * grant can never by itself close the gap. All numbers are TUNE-5 placeholders.
+ *
+ * Rules that need the clout levels (level goals name real levels, one goal per level above the
+ * first, the victory goal at the top) are added by {@link createProgressionConfigSchema}.
+ */
+export const ProgressionConfigSchema = z
+  .strictObject({
+    goals: z.array(GoalSchema).min(1),
+    grants: z.strictObject({
+      capPctOfGap: z.strictObject({ cash: gapPct, clout: gapPct }),
+      maxPerGrant: z.strictObject({ cash: dollars, clout: z.int().nonnegative() }),
+      /** Grant records kept in the save (oldest dropped first). */
+      log: z.strictObject({ maxEntries: positiveInt }),
+    }),
+    prestige: z.strictObject({
+      /** The goal a run must reach before the player may prestige: the victory goal. */
+      requiresGoal: z.string().regex(KEBAB_ID),
+      /** The badge each run earns, in order; runs past the end earn the last one again. */
+      badgeIds: z.array(z.string().regex(KEBAB_ID)).min(1),
+      /** Whether goals pay their cash and clout again in later runs (the badge always does). */
+      rewardsRepeat: z.boolean(),
+      resets: z.array(z.enum(PRESTIGE_PARTS)),
+      keeps: z.array(z.enum(PRESTIGE_PARTS)),
+    }),
+  })
+  .refine(({ goals }) => new Set(goals.map((goal) => goal.id)).size === goals.length, {
+    error: 'goal ids must be unique',
+    path: ['goals'],
+  })
+  .refine(
+    ({ goals }) =>
+      goals.every((goal) => (goal.fact === 'clout-level') === (goal.level !== undefined)),
+    { error: 'a goal has a level exactly when its fact is clout-level', path: ['goals'] },
+  )
+  .refine(({ goals }) => goals.filter((goal) => goal.victory === true).length === 1, {
+    error: 'exactly one goal must be the victory goal',
+    path: ['goals'],
+  })
+  .refine(
+    ({ goals }) =>
+      goals.every(
+        (goal) => goal.reward.badge === undefined || (goal.victory === true && !goalPays(goal)),
+      ),
+    { error: 'only the victory goal carries a badge, and then no cash or clout', path: ['goals'] },
+  )
+  .refine(
+    ({ goals, grants }) =>
+      goals.every(
+        (goal) =>
+          (goal.reward.cash ?? 0) <= grants.maxPerGrant.cash &&
+          (goal.reward.clout ?? 0) <= grants.maxPerGrant.clout,
+      ),
+    { error: 'a goal reward exceeds grants.maxPerGrant', path: ['goals'] },
+  )
+  .refine(
+    ({ goals, prestige }) =>
+      goals.some((goal) => goal.id === prestige.requiresGoal && goal.victory === true),
+    { error: 'prestige.requiresGoal must be the victory goal', path: ['prestige', 'requiresGoal'] },
+  )
+  .refine(({ prestige }) => new Set(prestige.badgeIds).size === prestige.badgeIds.length, {
+    error: 'prestige.badgeIds must be unique',
+    path: ['prestige', 'badgeIds'],
+  })
+  .refine(
+    ({ prestige: { resets, keeps } }) => {
+      const listed = [...resets, ...keeps]
+      return (
+        listed.length === PRESTIGE_PARTS.length &&
+        PRESTIGE_PARTS.every((part) => listed.includes(part))
+      )
+    },
+    { error: 'every prestige part is listed once, in resets or keeps', path: ['prestige'] },
+  )
+  .refine(
+    ({ prestige: { resets, keeps } }) =>
+      PRESTIGE_MUST_RESET.every((part) => resets.includes(part)) &&
+      PRESTIGE_MUST_KEEP.every((part) => keeps.includes(part)),
+    {
+      error: `prestige must reset ${PRESTIGE_MUST_RESET.join(', ')} and keep ${PRESTIGE_MUST_KEEP.join(', ')}`,
+      path: ['prestige'],
+    },
+  )
+export type ProgressionConfig = z.infer<typeof ProgressionConfigSchema>
+
+function goalPays(goal: { readonly reward: { cash?: number; clout?: number } }): boolean {
+  return (goal.reward.cash ?? 0) > 0 || (goal.reward.clout ?? 0) > 0
+}
+
+/**
+ * {@link ProgressionConfigSchema} plus the rules that need `clout.levels` (balance.json): every
+ * level goal names a level above the first, every such level has exactly one goal, and the
+ * victory goal is the top level's.
+ */
+export function createProgressionConfigSchema(
+  levels: readonly { readonly id: string; readonly minClout: number }[],
+) {
+  const above = levels.slice(1).map((level) => level.id)
+  return ProgressionConfigSchema.refine(
+    ({ goals }) => {
+      const named = goals.flatMap((goal) => (goal.level === undefined ? [] : [goal.level]))
+      return (
+        named.every((id) => above.includes(id)) &&
+        above.every((id) => named.filter((name) => name === id).length === 1)
+      )
+    },
+    {
+      error: 'every clout level above the first has exactly one level goal, and no other',
+      path: ['goals'],
+    },
+  ).refine(
+    ({ goals }) => {
+      const victory = goals.find((goal) => goal.victory === true)
+      return victory?.level !== undefined && victory.level === levels.at(-1)?.id
+    },
+    { error: 'the victory goal must be the top clout level', path: ['goals'] },
+  )
+}

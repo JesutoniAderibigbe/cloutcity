@@ -15,18 +15,22 @@
  * - v6 (S09): adds `player.clubNights` (the night each club last paid out clout).
  * - v7 (S13): `player.clout` becomes the clout ledger (src/engine/clout.ts) and `player.flex`
  *   is added; event clout no longer waits in `events.pending` (it lands at once).
+ * - v8 (S15): adds `player.visited` (first visit per landmark), `goals` (run, goals reached,
+ *   the Icon moment), `grants` (the grant log) and `prestige` (count, badges, history). An
+ *   older save's goals are derived from what it holds at load (`syncGoals`).
  */
 import * as z from 'zod/mini'
 import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
 import { calendar, isSpeed, realMsPerGameMinute } from './clock'
 import {
   appendClout,
-  cloutLevel,
   cloutSums,
   currencyOf,
+  earnedOnlyLevel,
+  goalClout,
   initialCloutState,
-  itemClout,
   legacyCloutState,
+  playerLevel,
   type CloutEntry,
   type CloutState,
 } from './clout'
@@ -38,7 +42,16 @@ import {
   type ClubNights,
   type FlexState,
   type GameSnapshot,
+  type Visited,
 } from './game'
+import { initialGoalsState, syncGoals, victoryGoal, type GoalsState } from './goals'
+import {
+  goalGrantKey,
+  initialGrantsState,
+  parseGoalGrantKey,
+  type GrantRecord,
+  type GrantsState,
+} from './grants'
 import {
   ITEM_SLOTS,
   emptyInventory,
@@ -49,14 +62,21 @@ import {
   type Inventory,
   type OwnedWearable,
 } from './items'
+import { initialPrestigeState, type PrestigeRun, type PrestigeState } from './prestige'
 import { initialRent } from './rent'
 
-export const SAVE_VERSION = 7
+export const SAVE_VERSION = 8
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
   readonly speed: number
   readonly events: EventsState
+  /** Goals reached this run and the Icon moment (src/engine/goals.ts). */
+  readonly goals: GoalsState
+  /** The grant log (src/engine/grants.ts). */
+  readonly grants: GrantsState
+  /** Prestige runs and badges (src/engine/prestige.ts). */
+  readonly prestige: PrestigeState
 }
 
 const CashSchema = z.int().check(z.gte(0))
@@ -270,6 +290,157 @@ function inventoryIssue(inventory: Inventory, nowMinute: number, config: EngineC
   return null
 }
 
+/** Landmarks the config knows (memorials have no Visit), each first visited at a whole minute. */
+function isVisitablePlace(id: string, config: EngineConfig): boolean {
+  const category = config.places.get(id)
+  return category !== undefined && category !== 'memorial'
+}
+
+function visitedSchema(config: EngineConfig) {
+  return z
+    .record(z.string(), WholeSchema)
+    .check(
+      z.refine(
+        (visited) => Object.keys(visited).every((id) => isVisitablePlace(id, config)),
+        'Unknown place',
+      ),
+    )
+}
+
+const GrantAmountsSchema = z.strictObject({
+  cash: WholeSchema,
+  clout: WholeSchema,
+  badge: z.nullable(z.string()),
+})
+
+/** One grant record; its key must be the one its eligibility names, and it applied no more than asked or capped. */
+const GrantRecordSchema = z
+  .strictObject({
+    seq: z.int().check(z.gte(1)),
+    key: z.string(),
+    kind: z.literal('goal_reward'),
+    eligibility: z.strictObject({
+      rule: z.literal('goal-achieved'),
+      goalId: z.string(),
+      run: z.int().check(z.gte(1)),
+    }),
+    reason: z.string().check(z.minLength(1)),
+    requested: GrantAmountsSchema,
+    cap: z.strictObject({ cash: WholeSchema, clout: WholeSchema }),
+    applied: GrantAmountsSchema,
+    at: WholeSchema,
+    issuedAtMs: WholeSchema,
+    issuedBy: z.literal('system'),
+    campaignId: z.null(),
+    sync: z.literal('local'),
+  })
+  .check(
+    z.refine(
+      (record) =>
+        record.key === goalGrantKey(record.eligibility.goalId, record.eligibility.run) &&
+        record.applied.cash <= Math.min(record.requested.cash, record.cap.cash) &&
+        record.applied.clout <= Math.min(record.requested.clout, record.cap.clout) &&
+        record.applied.badge === record.requested.badge,
+      'Inconsistent grant record',
+    ),
+  )
+
+function grantsStateSchema(config: EngineConfig) {
+  return z.strictObject({
+    log: z.array(GrantRecordSchema).check(z.maxLength(config.grants.log.maxEntries)),
+    nextSeq: z.int().check(z.gte(1)),
+  })
+}
+
+/**
+ * Why a structurally valid grant log is inconsistent, or null: records out of order or not
+ * below `nextSeq`, a record granted after `nowMinute`, or a key granted twice.
+ */
+function grantsIssue(grants: GrantsState, nowMinute: number) {
+  let lastSeq = 0
+  const keys = new Set<string>()
+  for (const record of grants.log) {
+    if (record.seq <= lastSeq) return 'grant log out of order'
+    if (record.at > nowMinute) return 'grant recorded in the future'
+    if (keys.has(record.key)) return 'grant key repeated'
+    keys.add(record.key)
+    lastSeq = record.seq
+  }
+  if (grants.nextSeq <= lastSeq) return 'nextSeq behind the grant log'
+  return null
+}
+
+function goalsStateSchema(config: EngineConfig) {
+  const known = (id: string) => config.goals.some((goal) => goal.id === id)
+  return z.strictObject({
+    run: z.int().check(z.gte(1)),
+    achieved: z
+      .record(z.string(), WholeSchema)
+      .check(z.refine((achieved) => Object.keys(achieved).every(known), 'Unknown goal')),
+    icon: z.strictObject({ reachedAt: z.nullable(WholeSchema), acknowledged: z.boolean() }),
+  })
+}
+
+/** The highest run any claimed key names (the log's and the clout ledger's), at least 1. */
+function highestClaimedRun(grants: GrantsState, clout: CloutState): number {
+  const keys = [
+    ...grants.log.map((record) => record.key),
+    ...clout.ledger.flatMap((entry) => (entry.source === 'grant' ? [entry.ref.grantKey] : [])),
+  ]
+  return Math.max(1, ...keys.map((key) => parseGoalGrantKey(key)?.run ?? 1))
+}
+
+/**
+ * Why structurally valid goals are inconsistent, or null: a goal reached after `nowMinute`, a
+ * run behind a claimed key, or an Icon moment that does not match the victory goal.
+ */
+function goalsIssue(
+  goals: GoalsState,
+  grants: GrantsState,
+  clout: CloutState,
+  nowMinute: number,
+  config: EngineConfig,
+) {
+  if (Object.values(goals.achieved).some((minute) => minute > nowMinute)) {
+    return 'goal reached in the future'
+  }
+  if (goals.run < highestClaimedRun(grants, clout)) return 'run behind a claimed grant'
+  const victory = victoryGoal(config).id
+  const reachedAt = Object.hasOwn(goals.achieved, victory) ? goals.achieved[victory] : undefined
+  if ((goals.icon.reachedAt ?? undefined) !== reachedAt) return 'Icon moment out of step'
+  return null
+}
+
+function badgeSchema(config: EngineConfig) {
+  return z.string().check(z.refine((id) => config.prestige.badgeIds.includes(id), 'Unknown badge'))
+}
+
+function prestigeRunSchema(config: EngineConfig) {
+  return z.strictObject({
+    run: z.int().check(z.gte(1)),
+    endedAt: WholeSchema,
+    issuedAtMs: WholeSchema,
+    badge: badgeSchema(config),
+  })
+}
+
+function prestigeStateSchema(config: EngineConfig) {
+  return z.strictObject({
+    count: WholeSchema,
+    badges: z
+      .array(badgeSchema(config))
+      .check(z.refine((badges) => new Set(badges).size === badges.length, 'Repeated badge')),
+    history: z.array(prestigeRunSchema(config)),
+  })
+}
+
+/** Why a structurally valid prestige state is inconsistent, or null. */
+function prestigeIssue(prestige: PrestigeState, nowMinute: number) {
+  if (prestige.history.some((entry) => entry.endedAt > nowMinute)) return 'run ended in the future'
+  if (prestige.count < prestige.history.length) return 'count behind the history'
+  return null
+}
+
 export function createSaveSchema(config: EngineConfig) {
   const stat = z.int().check(z.gte(0), z.lte(config.stats.max))
   const save = z.strictObject({
@@ -289,9 +460,13 @@ export function createSaveSchema(config: EngineConfig) {
       }),
       inventory: inventorySchema(config),
       clubNights: clubNightsSchema(config),
+      visited: visitedSchema(config),
     }),
     speed: z.number().check(z.refine((speed) => isSpeed(speed, config), 'Unsupported speed')),
     events: eventsStateSchema(config),
+    goals: goalsStateSchema(config),
+    grants: grantsStateSchema(config),
+    prestige: prestigeStateSchema(config),
   })
   return save.check(
     z.refine(
@@ -305,6 +480,15 @@ export function createSaveSchema(config: EngineConfig) {
         ),
       { message: 'A club night in the future', path: ['player', 'clubNights'] },
     ),
+    z.refine(
+      (value) =>
+        !peakAboveEarned(
+          value.player.clout as CloutState,
+          value.player.inventory as Inventory,
+          config,
+        ),
+      { message: 'Peak level above earned clout', path: ['player', 'clout', 'peakLevel'] },
+    ),
     z.refine((value) => cloutIssue(value.player.clout as CloutState, value.clock.minute) === null, {
       message: 'Inconsistent clout ledger',
       path: ['player', 'clout'],
@@ -316,6 +500,30 @@ export function createSaveSchema(config: EngineConfig) {
         ),
       { message: 'A flex in the future', path: ['player', 'flex'] },
     ),
+    z.refine(
+      (value) =>
+        Object.values(value.player.visited).every((minute) => minute <= value.clock.minute),
+      { message: 'A visit in the future', path: ['player', 'visited'] },
+    ),
+    z.refine((value) => grantsIssue(value.grants as GrantsState, value.clock.minute) === null, {
+      message: 'Inconsistent grant log',
+      path: ['grants'],
+    }),
+    z.refine(
+      (value) =>
+        goalsIssue(
+          value.goals,
+          value.grants as GrantsState,
+          value.player.clout as CloutState,
+          value.clock.minute,
+          config,
+        ) === null,
+      { message: 'Inconsistent goals', path: ['goals'] },
+    ),
+    z.refine((value) => prestigeIssue(value.prestige, value.clock.minute) === null, {
+      message: 'Inconsistent prestige',
+      path: ['prestige'],
+    }),
   )
 }
 
@@ -417,11 +625,32 @@ function repairClout(
   return { clout: { ...clout, peakLevel }, repaired: true }
 }
 
-/** The level a clout state and inventory add up to (premium capped). */
+/** The level a clout state and inventory add up to (premium capped, Icon earned only). */
 function currentLevelIndex(clout: CloutState, inventory: Inventory, config: EngineConfig) {
-  const sums = cloutSums(clout)
-  const premium = Math.min(sums.premium, config.clout.caps.byCurrency.usd)
-  return cloutLevel(sums.earned + premium + itemClout({ inventory }, config), config).index
+  return playerLevel({ clout, inventory }, config).index
+}
+
+/**
+ * True when `peakLevel` claims the earned-only level (Icon) that goal clout has never held:
+ * a save from before "Icon is earned" (S15 fix cycle 1), or a tampered one.
+ */
+function peakAboveEarned(clout: CloutState, inventory: Inventory, config: EngineConfig) {
+  const earnedOnly = earnedOnlyLevel(config)
+  return (
+    earnedOnly !== null &&
+    clout.peakLevel >= earnedOnly.index &&
+    goalClout({ clout, inventory }, config) < earnedOnly.minClout
+  )
+}
+
+/**
+ * Lowers a peak level that claims Icon without the earned clout for it to the level below, so
+ * no level-up replays below it and Icon still lands (with the Icon moment) once it is earned.
+ */
+function capPeakToEarned(clout: CloutState, inventory: Inventory, config: EngineConfig) {
+  const earnedOnly = earnedOnlyLevel(config)
+  if (earnedOnly === null || !peakAboveEarned(clout, inventory, config)) return clout
+  return { ...clout, peakLevel: earnedOnly.index - 1 }
 }
 
 /**
@@ -542,6 +771,149 @@ function repairInventory(
   return { inventory: { wearables, gifts, outfit }, repaired: true }
 }
 
+/** First visits from an untrusted save: unknown places, memorials and bad minutes are dropped. */
+function repairVisited(
+  raw: unknown,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly visited: Visited; readonly repaired: boolean } {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    return { visited: {}, repaired: true }
+  }
+  const entries = Object.entries(raw as Record<string, unknown>)
+  const kept = entries.filter(
+    (entry): entry is [string, number] =>
+      isVisitablePlace(entry[0], config) &&
+      Number.isSafeInteger(entry[1]) &&
+      (entry[1] as number) >= 0 &&
+      (entry[1] as number) <= nowMinute,
+  )
+  return { visited: Object.fromEntries(kept), repaired: kept.length !== entries.length }
+}
+
+/**
+ * The grant log from an untrusted save, keeping every usable record: malformed records,
+ * records granted after `nowMinute`, records that break the `seq` order and repeats of a key
+ * already kept are dropped; the newest `grants.log.maxEntries` are kept; `nextSeq` moves past
+ * the last record.
+ */
+function repairGrants(
+  raw: unknown,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly grants: GrantsState; readonly repaired: boolean } {
+  const parsed = grantsStateSchema(config).safeParse(raw)
+  if (parsed.success && grantsIssue(parsed.data as GrantsState, nowMinute) === null) {
+    return { grants: parsed.data as GrantsState, repaired: false }
+  }
+  const source = recordOf(raw)
+  const kept: GrantRecord[] = []
+  const keys = new Set<string>()
+  for (const value of Array.isArray(source.log) ? source.log : []) {
+    const record = GrantRecordSchema.safeParse(value)
+    if (!record.success || record.data.at > nowMinute || keys.has(record.data.key)) continue
+    if (record.data.seq <= (kept.at(-1)?.seq ?? 0)) continue
+    keys.add(record.data.key)
+    kept.push(record.data as GrantRecord)
+  }
+  const log = kept.slice(-config.grants.log.maxEntries)
+  const lastSeq = kept.at(-1)?.seq ?? 0
+  const rawNext = source.nextSeq
+  const nextSeq =
+    typeof rawNext === 'number' && Number.isSafeInteger(rawNext) && rawNext > lastSeq
+      ? rawNext
+      : lastSeq + 1
+  return { grants: { log, nextSeq }, repaired: true }
+}
+
+/**
+ * Goals from an untrusted save: goals the config does not know (or that are coming soon) and
+ * minutes that are not whole numbers in 0..`nowMinute` are dropped; the run is at least 1 and
+ * never behind a claimed key (so a claimed reward can never be claimed again); the Icon moment
+ * follows the victory goal (reached at its minute, shown again if it was damaged).
+ */
+function repairGoals(
+  raw: unknown,
+  nowMinute: number,
+  grants: GrantsState,
+  clout: CloutState,
+  config: EngineConfig,
+): { readonly goals: GoalsState; readonly repaired: boolean } {
+  const parsed = goalsStateSchema(config).safeParse(raw)
+  if (
+    parsed.success &&
+    goalsIssue(parsed.data, grants, clout, nowMinute, config) === null &&
+    Object.keys(parsed.data.achieved).every(
+      (id) => config.goals.find((goal) => goal.id === id)?.available !== false,
+    )
+  ) {
+    return { goals: parsed.data, repaired: false }
+  }
+  const source = recordOf(raw)
+  const rawRun = source.run
+  const run = Math.max(
+    typeof rawRun === 'number' && Number.isSafeInteger(rawRun) && rawRun >= 1 ? rawRun : 1,
+    highestClaimedRun(grants, clout),
+  )
+  const achieved = Object.fromEntries(
+    Object.entries(recordOf(source.achieved)).filter(
+      (entry): entry is [string, number] =>
+        config.goals.some((goal) => goal.id === entry[0] && goal.available !== false) &&
+        Number.isSafeInteger(entry[1]) &&
+        (entry[1] as number) >= 0 &&
+        (entry[1] as number) <= nowMinute,
+    ),
+  )
+  const victory = victoryGoal(config).id
+  const reachedAt = Object.hasOwn(achieved, victory) ? (achieved[victory] ?? null) : null
+  const rawIcon = recordOf(source.icon)
+  const icon =
+    reachedAt === null
+      ? initialGoalsState.icon
+      : {
+          reachedAt,
+          acknowledged:
+            rawIcon.reachedAt === reachedAt && typeof rawIcon.acknowledged === 'boolean'
+              ? rawIcon.acknowledged
+              : false,
+        }
+  return { goals: { run, achieved, icon }, repaired: true }
+}
+
+/**
+ * Prestige from an untrusted save: badges the config does not know (and repeats) are dropped,
+ * as are malformed or future history entries; the count is at least the history's length.
+ */
+function repairPrestige(
+  raw: unknown,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly prestige: PrestigeState; readonly repaired: boolean } {
+  const parsed = prestigeStateSchema(config).safeParse(raw)
+  if (parsed.success && prestigeIssue(parsed.data, nowMinute) === null) {
+    return { prestige: parsed.data, repaired: false }
+  }
+  const source = recordOf(raw)
+  const badges: string[] = []
+  for (const badge of Array.isArray(source.badges) ? source.badges : []) {
+    if (typeof badge === 'string' && config.prestige.badgeIds.includes(badge)) {
+      if (!badges.includes(badge)) badges.push(badge)
+    }
+  }
+  const entrySchema = prestigeRunSchema(config)
+  const history: PrestigeRun[] = []
+  for (const value of Array.isArray(source.history) ? source.history : []) {
+    const entry = entrySchema.safeParse(value)
+    if (entry.success && entry.data.endedAt <= nowMinute) history.push(entry.data)
+  }
+  const rawCount = source.count
+  const count = Math.max(
+    typeof rawCount === 'number' && Number.isSafeInteger(rawCount) && rawCount >= 0 ? rawCount : 0,
+    history.length,
+  )
+  return { prestige: { count, badges, history }, repaired: true }
+}
+
 /**
  * The structure a current-version save must have to be usable at all. Fields that can be
  * repaired one by one (see `loadSave`) are only type-checked loosely here.
@@ -560,10 +932,16 @@ const LoadableSaveSchema = z.strictObject({
     inventory: z.unknown(),
     // Repairable: unusable entries are dropped (`repairClubNights`).
     clubNights: z.optional(z.unknown()),
+    // Repairable: unusable entries are dropped (`repairVisited`); a v7 save has none.
+    visited: z.optional(z.unknown()),
   }),
   speed: z.unknown(),
   // Repairable: a missing or unusable event state starts over (`repairEvents`).
   events: z.optional(z.unknown()),
+  // Repairable (`repairGoals`, `repairGrants`, `repairPrestige`); a v7 save has none.
+  goals: z.optional(z.unknown()),
+  grants: z.optional(z.unknown()),
+  prestige: z.optional(z.unknown()),
 })
 
 /** A v6 save's structure (S09): clout is one number, no flex state yet. */
@@ -656,8 +1034,14 @@ export type LoadResult =
  * - an inconsistent or malformed inventory keeps what is usable (see `repairInventory`);
  * - unusable event state starts over (see `repairEvents`);
  * - unusable club-night entries are dropped (see `repairClubNights`);
- * - an inconsistent clout ledger keeps what is usable (see `repairClout`);
- * - unusable flexes are dropped (see `repairFlex`).
+ * - an inconsistent clout ledger keeps what is usable (see `repairClout`), and a peak level at
+ *   Icon without the earned clout for it drops to the level below (`capPeakToEarned`);
+ * - unusable flexes are dropped (see `repairFlex`);
+ * - unusable first visits are dropped (see `repairVisited`);
+ * - an inconsistent grant log, goals or prestige keep what is usable (see `repairGrants`,
+ *   `repairGoals`, `repairPrestige`). Which rewards were claimed is never stored on its own:
+ *   it is the grant log's keys plus the clout ledger's grant references, so no repair can
+ *   unclaim one.
  * Only a structurally unusable save (missing objects, unknown keys, cash or minute of the wrong
  * type or range) fails, and the caller starts fresh.
  */
@@ -668,6 +1052,9 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   }
   const { clock, player, speed, events } = parsed.data
   const repaired: string[] = []
+  // Fields a v7 save does not have yet are filled in, not reported as repairs.
+  const present = (value: unknown) => value !== undefined
+  const orFresh = (value: unknown, fresh: unknown) => (value === undefined ? fresh : value)
 
   const inRange = (value: unknown): value is number =>
     typeof value === 'number' &&
@@ -714,16 +1101,49 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   )
   if (nightsRepaired) repaired.push('player.clubNights')
 
-  const { clout, repaired: cloutRepaired } = repairClout(
+  const { clout: repairedClout, repaired: cloutRepaired } = repairClout(
     player.clout,
     clock.minute,
     inventory,
     config,
   )
   if (cloutRepaired) repaired.push('player.clout')
+  const clout = capPeakToEarned(repairedClout, inventory, config)
+  if (clout !== repairedClout) repaired.push('player.clout.peakLevel')
 
   const { flex, repaired: flexRepaired } = repairFlex(player.flex, clock.minute, config)
   if (flexRepaired) repaired.push('player.flex')
+
+  const { visited, repaired: visitedRepaired } = repairVisited(
+    orFresh(player.visited, {}),
+    clock.minute,
+    config,
+  )
+  if (visitedRepaired && present(player.visited)) repaired.push('player.visited')
+
+  const raw = parsed.data
+  const { grants, repaired: grantsRepaired } = repairGrants(
+    orFresh(raw.grants, initialGrantsState),
+    clock.minute,
+    config,
+  )
+  if (grantsRepaired && present(raw.grants)) repaired.push('grants')
+
+  const { goals, repaired: goalsRepaired } = repairGoals(
+    orFresh(raw.goals, initialGoalsState),
+    clock.minute,
+    grants,
+    clout,
+    config,
+  )
+  if (goalsRepaired && present(raw.goals)) repaired.push('goals')
+
+  const { prestige, repaired: prestigeRepaired } = repairPrestige(
+    orFresh(raw.prestige, initialPrestigeState),
+    clock.minute,
+    config,
+  )
+  if (prestigeRepaired && present(raw.prestige)) repaired.push('prestige')
 
   return {
     ok: true,
@@ -738,9 +1158,13 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
         rent: { owed: player.rent.owed, missed },
         inventory,
         clubNights,
+        visited,
       },
       speed: validSpeed,
       events: repairEvents(events, config, repaired),
+      goals,
+      grants,
+      prestige,
     },
     repaired,
   }
@@ -775,6 +1199,9 @@ export function initialSave(config: EngineConfig): SaveState {
     ...initialSnapshot(config),
     speed: config.time.speeds[0] ?? 1,
     events: initialEventsState(),
+    goals: initialGoalsState,
+    grants: initialGrantsState,
+    prestige: initialPrestigeState,
   }
 }
 
@@ -838,8 +1265,11 @@ function loadV6(raw: unknown, config: EngineConfig): LoadResult | null {
  * home and no rent owed. A v3 save keeps everything and starts with no items. A v4 save keeps
  * everything and starts with fresh event state. A v5 save keeps everything and starts with no
  * club nights. A v6 save keeps everything, its clout carried into the ledger (`upgradeV6`).
- * Every step goes through the v6 form, so v2 to v5 saves get the v6 upgrade too. Anything
- * older or malformed starts fresh. A save from a newer build throws `NewerSaveError`: it is
+ * Every step goes through the v6 form, so v2 to v5 saves get the v6 upgrade too. A v7 save keeps
+ * everything and starts with no recorded visits, no grants and no prestige. Every older save
+ * then gets its goals derived from what it holds, at its current minute (`syncGoals`): a save
+ * already at Icon starts with an unacknowledged Icon moment. Anything older or malformed
+ * starts fresh. A save from a newer build throws `NewerSaveError`: it is
  * not loaded, and not overwritten unless the player plays on.
  */
 export function migrateSave(persisted: unknown, version: number, config: EngineConfig): Migration {
@@ -907,6 +1337,10 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
     }
   }
   if (version === 6) loaded = loadV6(persisted, config)
-  if (loaded?.ok === true) return { save: loaded.save, outcome: 'carried' }
+  // A v7 save is the current structure without the S15 fields, which `loadSave` fills in.
+  if (version === 7) loaded = loadSave(persisted, config)
+  if (loaded?.ok === true) {
+    return { save: syncGoals(loaded.save, config).save, outcome: 'carried' }
+  }
   return { save: fresh, outcome: 'fresh' }
 }

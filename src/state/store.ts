@@ -29,6 +29,8 @@ import {
   type OpenResult,
 } from '@/engine/events'
 import { advanceMinutes, tick } from '@/engine/game'
+import { findGoal, syncGoals, victoryGoal, type GoalsState } from '@/engine/goals'
+import { grant, type GrantResult } from '@/engine/grants'
 import {
   buyItem,
   equipItem,
@@ -46,6 +48,7 @@ import {
   type ShopBuyResult,
 } from '@/engine/placeActions'
 import type { Place } from '@/engine/places'
+import { prestige as startNextRun, type PrestigeResult } from '@/engine/prestige'
 import type { RentEvent } from '@/engine/rent'
 import {
   NewerSaveError,
@@ -113,6 +116,18 @@ export interface GameActions {
   dismissEventOutcome(): void
   /** Clears the last level-up (the level-up toast closed). */
   dismissLevelUp(): void
+  /**
+   * Claims a reached goal's reward through the grant function (src/engine/grants.ts): capped,
+   * logged and idempotent. A second claim replays the first and changes nothing.
+   */
+  claimGoalReward(goalId: string): GrantResult<PersistedState>
+  /**
+   * After Icon: grants the run's badge and starts the next run (src/engine/prestige.ts). Named
+   * apart from the persisted `prestige` state it changes.
+   */
+  startPrestige(): PrestigeResult<PersistedState>
+  /** The player closed the Icon moment; it does not show again this run. */
+  acknowledgeIconMoment(): void
   /**
    * The player's explicit choice to drop a save written by a newer build: starts a fresh game
    * and lets saving resume. Nothing else ever overwrites that save.
@@ -190,9 +205,9 @@ export function mergeGameState(
 
 /**
  * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout
- * ledger, flex state, home, rent, inventory, club nights), speed and event state. The sub-minute remainder alone is not, so a
- * visible tab does not write on every tick (a reload loses at most one game minute's worth of
- * carried real time).
+ * ledger, flex state, home, rent, inventory, club nights, visits), speed, event state, goals,
+ * the grant log and prestige. The sub-minute remainder alone is not, so a visible tab does not
+ * write on every tick (a reload loses at most one game minute's worth of carried real time).
  */
 function saveSignature(value: StorageValue<unknown> | null): string | undefined {
   if (value === null) return undefined
@@ -201,6 +216,9 @@ function saveSignature(value: StorageValue<unknown> | null): string | undefined 
     player?: unknown
     speed?: unknown
     events?: unknown
+    goals?: unknown
+    grants?: unknown
+    prestige?: unknown
   }
   return JSON.stringify([
     value.version,
@@ -208,6 +226,9 @@ function saveSignature(value: StorageValue<unknown> | null): string | undefined 
     state.player,
     state.speed,
     state.events,
+    state.goals,
+    state.grants,
+    state.prestige,
   ])
 }
 
@@ -257,170 +278,229 @@ function latestRent(events: readonly RentEvent[], current: RentEvent | null): Re
   return events.at(-1) ?? current
 }
 
-/** A new level-up replaces the one showing; no level-up leaves the toast as it is. */
-function levelUpPatch(levelUp: LevelUp | null): Partial<GameStatus> {
-  return levelUp === null ? {} : { lastLevelUp: levelUp }
+const ICON_LEVEL = victoryGoal(engineConfig).level
+
+/**
+ * A new level-up replaces the one showing; no level-up leaves the toast as it is. Reaching the
+ * victory level while the Icon moment is about to show adds no toast: the moment is the
+ * celebration.
+ */
+function levelUpPatch(levelUp: LevelUp | null, goals: GoalsState): Partial<GameStatus> {
+  if (levelUp === null) return {}
+  const iconMoment = goals.icon.reachedAt !== null && !goals.icon.acknowledged
+  return levelUp.to === ICON_LEVEL && iconMoment ? {} : { lastLevelUp: levelUp }
+}
+
+/** The persisted part of the state: what a save holds. */
+function persistedOf(state: PersistedState): PersistedState {
+  const { clock, player, speed, events, goals, grants, prestige: prestigeState } = state
+  return { clock, player, speed, events, goals, grants, prestige: prestigeState }
 }
 
 export function createGameStore(storage: PersistStorage<PersistedState>, logger: Logger = log) {
   const guard = guardStorage(storage)
   const store = createStore<GameState>()(
     persist(
-      (set, get) => ({
-        ...initialPersistedState(),
-        newerSavePresent: false,
-        eventOutcome: null,
-        lastRentEvent: null,
-        lastLevelUp: null,
-        tick: (realElapsedMs, visible) => {
-          const state = get()
-          const { snapshot, rent } = tick(
-            state,
-            realElapsedMs,
-            { visible, speed: state.speed },
-            engineConfig,
-          )
-          if (snapshot.clock !== state.clock) {
+      (set, get) => {
+        /**
+         * Applies a state-changing action's result, then records any goal it reached
+         * (src/engine/goals.ts `syncGoals`). Never on the passive tick: time alone reaches no goal.
+         */
+        const commit = (patch: Partial<GameState>, levelUp: LevelUp | null = null) => {
+          const { save } = syncGoals({ ...get(), ...patch }, engineConfig)
+          set({ ...patch, goals: save.goals, ...levelUpPatch(levelUp, save.goals) })
+        }
+        return {
+          ...initialPersistedState(),
+          newerSavePresent: false,
+          eventOutcome: null,
+          lastRentEvent: null,
+          lastLevelUp: null,
+          tick: (realElapsedMs, visible) => {
+            const state = get()
+            const { snapshot, rent } = tick(
+              state,
+              realElapsedMs,
+              { visible, speed: state.speed },
+              engineConfig,
+            )
+            if (snapshot.clock !== state.clock) {
+              set({
+                clock: snapshot.clock,
+                player: snapshot.player,
+                lastRentEvent: latestRent(rent, state.lastRentEvent),
+              })
+            }
+          },
+          performAction: (actionId) => {
+            const state = get()
+            const result = performAction(state, actionId, engineConfig)
+            if (result.ok) {
+              commit({
+                clock: result.snapshot.clock,
+                player: result.snapshot.player,
+                lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+              })
+            }
+            return result
+          },
+          workShift: (jobId) => {
+            const state = get()
+            const result = workShift(state, jobId, engineConfig)
+            if (result.ok) {
+              commit(
+                {
+                  clock: result.snapshot.clock,
+                  player: result.snapshot.player,
+                  lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+                },
+                result.levelUp,
+              )
+            }
+            return result
+          },
+          buyItem: (itemId) => {
+            const result = buyItem(get(), itemId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          buyAtShop: (place, itemId) => {
+            const result = buyAtShop(get(), place, itemId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          sellItem: (itemId) => {
+            const result = sellItem(get(), itemId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          equipItem: (itemId, slot) => {
+            const result = equipItem(get(), itemId, slot, engineConfig)
+            if (result.ok) set({ player: result.snapshot.player })
+            return result
+          },
+          unequipSlot: (slot) => {
+            const result = unequipSlot(get(), slot)
+            if (result.ok) set({ player: result.snapshot.player })
+            return result
+          },
+          consumeGift: (itemId, target) => {
+            const result = consumeGift(get(), itemId, target, engineConfig)
+            if (result.ok) set({ player: result.snapshot.player })
+            return result
+          },
+          performPlaceAction: (place, actionId) => {
+            const state = get()
+            const result = performPlaceAction(state, place, actionId, engineConfig)
+            if (result.ok) {
+              commit(
+                {
+                  clock: result.snapshot.clock,
+                  player: result.snapshot.player,
+                  lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+                },
+                result.levelUp,
+              )
+            }
+            return result
+          },
+          advanceMinutes: (minutes) => {
+            const state = get()
+            const { snapshot, rent } = advanceMinutes(state, minutes, engineConfig)
             set({
               clock: snapshot.clock,
               player: snapshot.player,
               lastRentEvent: latestRent(rent, state.lastRentEvent),
             })
-          }
-        },
-        performAction: (actionId) => {
-          const state = get()
-          const result = performAction(state, actionId, engineConfig)
-          if (result.ok) {
+          },
+          setSpeed: (speed) => {
+            if (!isSpeed(speed, engineConfig))
+              throw new RangeError(`Unsupported clock speed: ${speed}`)
+            set({ speed })
+          },
+          rollForEvent: (context) => {
+            const state = get()
+            const { events, event } = rollEvent(state, state.events, context, engineConfig)
+            set({ events })
+            return event?.id ?? null
+          },
+          openEvent: (eventId, context) => {
+            const state = get()
+            const result = openEvent(state, state.events, eventId, context, engineConfig)
+            if (result.ok) set({ events: result.events, eventOutcome: null })
+            return result
+          },
+          chooseEventOption: (choiceId) => {
+            const state = get()
+            const result = chooseEventOption(state, state.events, choiceId, engineConfig)
+            if (result.ok) {
+              commit(
+                {
+                  clock: result.snapshot.clock,
+                  player: result.snapshot.player,
+                  events: result.events,
+                  eventOutcome: result.outcome,
+                  lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+                },
+                result.levelUp,
+              )
+            }
+            return result
+          },
+          dismissEventOutcome: () => set({ eventOutcome: null }),
+          dismissLevelUp: () => set({ lastLevelUp: null }),
+          claimGoalReward: (goalId) => {
+            const state = persistedOf(get())
+            const goal = findGoal(goalId, engineConfig)
+            // Unknown ids still go through the grant function, which refuses them.
+            const reward = goal?.reward ?? {}
+            const result = grant(
+              state,
+              { kind: 'goal_reward', goalId, reward },
+              Date.now(),
+              engineConfig,
+            )
+            if (result.ok && !result.replayed) {
+              const { player, grants, prestige: prestigeState } = result.save
+              set({ player, grants, prestige: prestigeState })
+            }
+            return result
+          },
+          startPrestige: () => {
+            const result = startNextRun(persistedOf(get()), Date.now(), engineConfig)
+            if (result.ok) {
+              set({
+                ...result.save,
+                eventOutcome: null,
+                lastLevelUp: null,
+                lastRentEvent: null,
+              })
+            }
+            return result
+          },
+          acknowledgeIconMoment: () => {
+            const { goals } = get()
+            if (goals.icon.reachedAt === null || goals.icon.acknowledged) return
+            set({ goals: { ...goals, icon: { ...goals.icon, acknowledged: true } } })
+          },
+          discardNewerSaveAndStartFresh: () => {
+            guard.release()
+            logger.info("Discarding a saved game from a newer build at the player's request")
             set({
-              clock: result.snapshot.clock,
-              player: result.snapshot.player,
-              lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+              ...initialPersistedState(),
+              newerSavePresent: false,
+              eventOutcome: null,
+              lastRentEvent: null,
+              lastLevelUp: null,
             })
-          }
-          return result
-        },
-        workShift: (jobId) => {
-          const state = get()
-          const result = workShift(state, jobId, engineConfig)
-          if (result.ok) {
-            set({
-              clock: result.snapshot.clock,
-              player: result.snapshot.player,
-              lastRentEvent: latestRent(result.rent, state.lastRentEvent),
-              ...levelUpPatch(result.levelUp),
-            })
-          }
-          return result
-        },
-        buyItem: (itemId) => {
-          const result = buyItem(get(), itemId, engineConfig)
-          if (result.ok) set({ player: result.snapshot.player, ...levelUpPatch(result.levelUp) })
-          return result
-        },
-        buyAtShop: (place, itemId) => {
-          const result = buyAtShop(get(), place, itemId, engineConfig)
-          if (result.ok) set({ player: result.snapshot.player, ...levelUpPatch(result.levelUp) })
-          return result
-        },
-        sellItem: (itemId) => {
-          const result = sellItem(get(), itemId, engineConfig)
-          if (result.ok) set({ player: result.snapshot.player, ...levelUpPatch(result.levelUp) })
-          return result
-        },
-        equipItem: (itemId, slot) => {
-          const result = equipItem(get(), itemId, slot, engineConfig)
-          if (result.ok) set({ player: result.snapshot.player })
-          return result
-        },
-        unequipSlot: (slot) => {
-          const result = unequipSlot(get(), slot)
-          if (result.ok) set({ player: result.snapshot.player })
-          return result
-        },
-        consumeGift: (itemId, target) => {
-          const result = consumeGift(get(), itemId, target, engineConfig)
-          if (result.ok) set({ player: result.snapshot.player })
-          return result
-        },
-        performPlaceAction: (place, actionId) => {
-          const state = get()
-          const result = performPlaceAction(state, place, actionId, engineConfig)
-          if (result.ok) {
-            set({
-              clock: result.snapshot.clock,
-              player: result.snapshot.player,
-              lastRentEvent: latestRent(result.rent, state.lastRentEvent),
-              ...levelUpPatch(result.levelUp),
-            })
-          }
-          return result
-        },
-        advanceMinutes: (minutes) => {
-          const state = get()
-          const { snapshot, rent } = advanceMinutes(state, minutes, engineConfig)
-          set({
-            clock: snapshot.clock,
-            player: snapshot.player,
-            lastRentEvent: latestRent(rent, state.lastRentEvent),
-          })
-        },
-        setSpeed: (speed) => {
-          if (!isSpeed(speed, engineConfig))
-            throw new RangeError(`Unsupported clock speed: ${speed}`)
-          set({ speed })
-        },
-        rollForEvent: (context) => {
-          const state = get()
-          const { events, event } = rollEvent(state, state.events, context, engineConfig)
-          set({ events })
-          return event?.id ?? null
-        },
-        openEvent: (eventId, context) => {
-          const state = get()
-          const result = openEvent(state, state.events, eventId, context, engineConfig)
-          if (result.ok) set({ events: result.events, eventOutcome: null })
-          return result
-        },
-        chooseEventOption: (choiceId) => {
-          const state = get()
-          const result = chooseEventOption(state, state.events, choiceId, engineConfig)
-          if (result.ok) {
-            set({
-              clock: result.snapshot.clock,
-              player: result.snapshot.player,
-              events: result.events,
-              eventOutcome: result.outcome,
-              lastRentEvent: latestRent(result.rent, state.lastRentEvent),
-              ...levelUpPatch(result.levelUp),
-            })
-          }
-          return result
-        },
-        dismissEventOutcome: () => set({ eventOutcome: null }),
-        dismissLevelUp: () => set({ lastLevelUp: null }),
-        discardNewerSaveAndStartFresh: () => {
-          guard.release()
-          logger.info("Discarding a saved game from a newer build at the player's request")
-          set({
-            ...initialPersistedState(),
-            newerSavePresent: false,
-            eventOutcome: null,
-            lastRentEvent: null,
-            lastLevelUp: null,
-          })
-        },
-      }),
+          },
+        }
+      },
       {
         name: STORE_KEY,
         version: STORE_VERSION,
         storage: guard.storage,
-        partialize: ({ clock, player, speed, events }): PersistedState => ({
-          clock,
-          player,
-          speed,
-          events,
-        }),
+        partialize: (state): PersistedState => persistedOf(state),
         migrate: (persisted, version) => migrateGameState(persisted, version, logger),
         merge: (persisted, current) => mergeGameState(persisted, current, logger),
         onRehydrateStorage: () => (_state, error) => {

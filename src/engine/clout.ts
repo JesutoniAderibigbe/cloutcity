@@ -5,6 +5,9 @@
  *
  *   total = earned + item clout + min(premium, clout.caps.byCurrency.usd)
  *
+ * Levels read the total, except Icon (the victory goal's level), which also needs goal clout
+ * (earned minus granted, plus items, never premium) at its threshold: `levelClout`.
+ *
  * - `earned` is the sum of the ledger's in-game sources (paycheck, flex, club, event, grant,
  *   legacy, repair). It never drops below 0.
  * - Item clout is the `cloutValue` of every wearable owned right now (gifts excluded). It is
@@ -75,7 +78,7 @@ export interface CloutRefs {
   }
   readonly club: { readonly venueId: string; readonly night: number }
   readonly event: { readonly eventId: string; readonly choiceId: string }
-  /** Reserved for S15's grant function (idempotency key); never counts toward goals. */
+  /** The grant's idempotency key (src/engine/grants.ts); goal clout subtracts grant clout. */
   readonly grant: { readonly grantKey: string }
   readonly legacy: Readonly<Record<string, never>>
   readonly repair: Readonly<Record<string, never>>
@@ -230,22 +233,73 @@ export function cloutBreakdown(player: PlayerState, config: EngineConfig): Clout
   }
 }
 
-/** The player's clout: what every gate (borough, job, club door, event) reads. */
+/** The player's clout: what the HUD counts and what event conditions read. */
 export function totalClout(player: PlayerState, config: EngineConfig): number {
   return cloutBreakdown(player, config).total
 }
 
-/** The player's current clout level. */
-export function playerLevel(player: PlayerState, config: EngineConfig): CloutLevel {
-  return cloutLevel(totalClout(player, config), config)
+/**
+ * The clout goals measure (S15, ECON-1): earned clout without what grants added, plus item
+ * clout, never premium. Never below 0 (a loss can eat into granted clout).
+ */
+export function goalClout(
+  player: Pick<PlayerState, 'clout' | 'inventory'>,
+  config: EngineConfig,
+): number {
+  const sums = cloutSums(player.clout)
+  return Math.max(0, sums.earned - (sums.bySource.grant ?? 0)) + itemClout(player, config)
+}
+
+/**
+ * The level only earned clout opens ("Icon is earned", S15 fix cycle 1): the level of the
+ * victory goal (data/config/progression.json), or null when this config has none of its levels.
+ */
+export function earnedOnlyLevel(config: EngineConfig): CloutLevel | null {
+  const victory = config.goals.find((goal) => goal.victory === true)
+  return victory?.level === undefined ? null : (findCloutLevel(victory.level, config) ?? null)
+}
+
+/**
+ * The clout a player's level is judged on. Every level up to the one below Icon reads the total
+ * (earned, items, capped premium and grants); Icon also needs goal clout (`goalClout`) at its
+ * threshold, so grants and premium can carry a player to the edge of Icon but never over it.
+ * Below that, this is the total held just under Icon. Gates read it, so `cloutLevel` of it is
+ * always `playerLevel`.
+ */
+export function levelClout(
+  player: Pick<PlayerState, 'clout' | 'inventory'>,
+  config: EngineConfig,
+): number {
+  const sums = cloutSums(player.clout)
+  const total =
+    sums.earned +
+    itemClout(player, config) +
+    Math.min(sums.premium, config.clout.caps.byCurrency.usd)
+  const earnedOnly = earnedOnlyLevel(config)
+  if (earnedOnly === null || total < earnedOnly.minClout) return total
+  return goalClout(player, config) >= earnedOnly.minClout ? total : earnedOnly.minClout - 1
+}
+
+/** The player's current clout level (Icon only on earned clout: see `levelClout`). */
+export function playerLevel(
+  player: Pick<PlayerState, 'clout' | 'inventory'>,
+  config: EngineConfig,
+): CloutLevel {
+  return cloutLevel(levelClout(player, config), config)
 }
 
 export interface CloutProgress {
   readonly total: number
+  /**
+   * The clout the meter counts toward `next`: the total, except when the total has reached the
+   * earned-only level (Icon) but goal clout has not, where it is goal clout, so the bar shows
+   * how far earned clout still has to go instead of sitting full.
+   */
+  readonly counted: number
   readonly level: CloutLevel
   /** The next level up, or null at the top level. */
   readonly next: CloutLevel | null
-  /** Clout above the current level's threshold. */
+  /** Counted clout above the current level's threshold (0 when goal clout is below it). */
   readonly intoLevel: number
   /** Clout between the current level's threshold and the next one's (0 at the top). */
   readonly levelSpan: number
@@ -254,19 +308,33 @@ export interface CloutProgress {
   readonly atMax: boolean
 }
 
-/** How far the player is toward the next level (the HUD meter). */
+/**
+ * How far the player is toward the next level (the HUD meter). Toward Icon, once the total holds
+ * Icon's threshold, progress counts goal clout: grants and premium never fill the Icon bar.
+ */
 export function cloutProgress(player: PlayerState, config: EngineConfig): CloutProgress {
   const total = totalClout(player, config)
-  const level = cloutLevel(total, config)
+  const level = playerLevel(player, config)
   const nextDef = config.clout.levels[level.index + 1]
-  const intoLevel = total - level.minClout
   if (nextDef === undefined) {
-    return { total, level, next: null, intoLevel, levelSpan: 0, pct: 100, atMax: true }
+    const intoLevel = total - level.minClout
+    return {
+      total,
+      counted: total,
+      level,
+      next: null,
+      intoLevel,
+      levelSpan: 0,
+      pct: 100,
+      atMax: true,
+    }
   }
   const next = { id: nextDef.id, index: level.index + 1, minClout: nextDef.minClout }
+  const counted = total >= next.minClout ? goalClout(player, config) : total
+  const intoLevel = Math.max(0, counted - level.minClout)
   const levelSpan = next.minClout - level.minClout
   const pct = Math.min(100, Math.max(0, Math.floor((intoLevel * 100) / levelSpan)))
-  return { total, level, next, intoLevel, levelSpan, pct, atMax: false }
+  return { total, counted, level, next, intoLevel, levelSpan, pct, atMax: false }
 }
 
 /** What reaching a level opens up, from config. */

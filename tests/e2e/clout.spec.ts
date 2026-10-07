@@ -160,11 +160,13 @@ test.describe('clout, flexing and levels', () => {
 // src/state/store.ts STORE_KEY and src/engine/save.ts SAVE_VERSION, not imported: Playwright's
 // loader cannot load the store's JSON imports.
 const STORE_KEY = 'cloutcity:game'
-const SAVE_VERSION = 7
+const SAVE_VERSION = 8
 
 /**
  * A save whose player holds `earned` clout but has only ever reached Nobody, so the next gain
- * past Icon is one level-up listing every unlock on the way: the longest toast there is.
+ * past Icon is one level-up listing every unlock on the way: the longest toast there is. Its
+ * run has already reached Icon and seen the Icon moment (S15), so the level-up shows as a toast
+ * rather than the victory screen taking over (tests/e2e/icon-moment.spec.ts covers that).
  */
 async function seedUnreachedClout(page: Page, earned: number) {
   const save = {
@@ -188,6 +190,13 @@ async function seedUnreachedClout(page: Page, earned: number) {
       },
       speed: 1,
       events: { active: null, history: {}, pending: [], rngState: 0 },
+      goals: {
+        run: 1,
+        achieved: { 'reach-icon': NOON },
+        icon: { reachedAt: NOON, acknowledged: true },
+      },
+      grants: { log: [], nextSeq: 1 },
+      prestige: { count: 0, badges: [], history: [] },
     },
     version: SAVE_VERSION,
   }

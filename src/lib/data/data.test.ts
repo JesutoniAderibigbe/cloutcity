@@ -19,8 +19,10 @@ import {
   ModerationConfigSchema,
   OnboardingConfigSchema,
   PerfConfigSchema,
+  ProgressionConfigSchema,
   RealtimeConfigSchema,
   ThemeConfigSchema,
+  createProgressionConfigSchema,
 } from './schemas/config'
 import {
   EventsFileSchema,
@@ -44,7 +46,7 @@ import {
   ZoneShapesFileSchema,
   ZonesFileSchema,
 } from './schemas/world'
-import { audio, balance, layout, onboarding, perf, realtime, theme } from './config'
+import { audio, balance, layout, onboarding, perf, progression, realtime, theme } from './config'
 import {
   audioManifest,
   events,
@@ -74,6 +76,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/moderation.json': ModerationConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
+  'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/realtime.json': RealtimeConfigSchema,
   'config/theme.json': ThemeConfigSchema,
   'copy/superlatives.json': SuperlativesSchema,
@@ -395,6 +398,121 @@ describe('config/theme.json', () => {
       ThemeConfigSchema.safeParse({ colors: { 'pink-400': '#ff4fa3' }, themeColor: 'nope-1' })
         .success,
     ).toBe(false)
+  })
+})
+
+describe('config/progression.json (S15)', () => {
+  const schema = createProgressionConfigSchema(balance.clout.levels)
+  const valid = () => structuredClone(readJson('config/progression.json')) as ProgressionShape
+  type ProgressionShape = {
+    goals: {
+      id: string
+      fact: string
+      level?: string
+      available?: boolean
+      victory?: true
+      reward: { cash?: number; clout?: number; badge?: true }
+    }[]
+    grants: {
+      capPctOfGap: { cash: number; clout: number }
+      maxPerGrant: { cash: number; clout: number }
+    }
+    prestige: { requiresGoal: string; badgeIds: string[]; resets: string[]; keeps: string[] }
+  }
+  const goal = (file: ProgressionShape, id: string) => {
+    const found = file.goals.find((entry) => entry.id === id)
+    if (found === undefined) throw new Error(`no goal ${id}`)
+    return found
+  }
+
+  it('lists the S15 goals: five firsts and one goal per clout level above Nobody', () => {
+    expect(progression.goals.map((entry) => entry.id)).toEqual([
+      'first-paycheck',
+      'first-outfit',
+      'first-landmark-visit',
+      'first-club-night',
+      'first-friend',
+      'reach-local',
+      'reach-scene-regular',
+      'reach-known',
+      'reach-famous',
+      'reach-icon',
+    ])
+    expect(progression.prestige.requiresGoal).toBe('reach-icon')
+  })
+
+  it('accepts the shipped file and the intra-file rules on their own', () => {
+    expect(schema.safeParse(valid()).success).toBe(true)
+    expect(ProgressionConfigSchema.safeParse(valid()).success).toBe(true)
+  })
+
+  it.each<[string, (file: ProgressionShape) => void]>([
+    ['a duplicate goal id', (file) => void (goal(file, 'first-outfit').id = 'first-paycheck')],
+    ['a goal id that is not kebab case', (file) => void (goal(file, 'first-outfit').id = 'Bad_Id')],
+    ['an unknown fact', (file) => void (goal(file, 'first-outfit').fact = 'first-kiss')],
+    ['a level on a non-level goal', (file) => void (goal(file, 'first-outfit').level = 'local')],
+    ['a level goal without a level', (file) => void delete goal(file, 'reach-local').level],
+    ['a level that does not exist', (file) => void (goal(file, 'reach-local').level = 'mayor')],
+    ['two goals for one level', (file) => void (goal(file, 'reach-known').level = 'local')],
+    ['no victory goal', (file) => void delete goal(file, 'reach-icon').victory],
+    ['two victory goals', (file) => void (goal(file, 'reach-famous').victory = true)],
+    [
+      'a victory goal below the top level',
+      (file) => {
+        delete goal(file, 'reach-icon').victory
+        goal(file, 'reach-famous').victory = true
+        file.prestige.requiresGoal = 'reach-famous'
+      },
+    ],
+    ['a badge on another goal', (file) => void (goal(file, 'first-outfit').reward.badge = true)],
+    ['cash beside the badge', (file) => void (goal(file, 'reach-icon').reward.cash = 10)],
+    [
+      'an item reward',
+      (file) => void Object.assign(goal(file, 'first-outfit').reward, { itemId: 'denim-jacket' }),
+    ],
+    [
+      'a cash reward over maxPerGrant',
+      (file) => void (goal(file, 'first-outfit').reward.cash = file.grants.maxPerGrant.cash + 1),
+    ],
+    [
+      'a clout reward over maxPerGrant',
+      (file) => void (goal(file, 'first-outfit').reward.clout = file.grants.maxPerGrant.clout + 1),
+    ],
+    ['a fractional reward', (file) => void (goal(file, 'first-outfit').reward.cash = 2.5)],
+    ['a cap of 0 percent', (file) => void (file.grants.capPctOfGap.cash = 0)],
+    ['a cap of 100 percent', (file) => void (file.grants.capPctOfGap.clout = 100)],
+    [
+      'prestige requiring a non-victory goal',
+      (file) => void (file.prestige.requiresGoal = 'reach-local'),
+    ],
+    ['a repeated badge id', (file) => void file.prestige.badgeIds.push('prestige-1')],
+    ['a part listed twice', (file) => void file.prestige.keeps.push('cash')],
+    ['a part not listed', (file) => void (file.prestige.resets = file.prestige.resets.slice(1))],
+    [
+      'keeping clout',
+      (file) => {
+        file.prestige.resets = file.prestige.resets.filter((part) => part !== 'clout')
+        file.prestige.keeps.push('clout')
+      },
+    ],
+    [
+      'resetting premium clout',
+      (file) => {
+        file.prestige.keeps = file.prestige.keeps.filter((part) => part !== 'premium')
+        file.prestige.resets.push('premium')
+      },
+    ],
+  ])('rejects %s', (_label, mutate) => {
+    const file = valid()
+    mutate(file)
+    expect(schema.safeParse(file).success).toBe(false)
+  })
+
+  it('may move a part that is not pinned (inventory) from resets to keeps', () => {
+    const file = valid()
+    file.prestige.resets = file.prestige.resets.filter((part) => part !== 'inventory')
+    file.prestige.keeps.push('inventory')
+    expect(schema.safeParse(file).success).toBe(true)
   })
 })
 

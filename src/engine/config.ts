@@ -3,18 +3,20 @@
  * tests can pass their own; the game passes `engineConfig`, built from data/config/balance.json
  * (validated by BalanceConfigSchema in src/lib/data/data.test.ts).
  *
- * The JSON (balance, the item catalog, data/events/events.json validated by EventsFileSchema,
+ * The JSON (balance, progression (validated by createProgressionConfigSchema), the item catalog, data/events/events.json validated by EventsFileSchema,
  * and the landmark and venue lists) is read directly rather than through src/lib/data/config.ts
  * so the engine stays off classic zod and out of the shell JS budget
  * (src/lib/client-imports.test.ts).
  */
 import balanceJson from '@data/config/balance.json'
+import progressionJson from '@data/config/progression.json'
 import eventsJson from '@data/events/events.json'
 import itemsJson from '@data/items/items.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
 import { STYLED_SOURCES, type StyledSourceId } from '@/lib/data/cloutSources'
-import type { BalanceConfig, BoroughAccessRule } from '@/lib/data/schemas/config'
+import { GOAL_FACTS, PRESTIGE_PARTS, type GoalFact, type PrestigePart } from '@/lib/data/goalFacts'
+import type { BalanceConfig, BoroughAccessRule, ProgressionConfig } from '@/lib/data/schemas/config'
 import type { Borough, GameEvent, LocationCategory } from '@/lib/data/schemas/content'
 import { catalogFromJson, type ItemDef } from './itemCatalog'
 
@@ -22,6 +24,9 @@ import { catalogFromJson, type ItemDef } from './itemCatalog'
 export type HomeId = keyof BalanceConfig['rentPerWeek']
 /** A job: a key of `jobs.hourlyWage`. */
 export type JobId = keyof BalanceConfig['jobs']['hourlyWage']
+
+/** A goal (data/config/progression.json, src/engine/goals.ts). */
+export type GoalDef = ProgressionConfig['goals'][number]
 
 export interface EngineConfig {
   readonly time: BalanceConfig['time']
@@ -54,6 +59,12 @@ export interface EngineConfig {
    * judges place rules (memorials, government buildings) on this, never on what a caller says.
    */
   readonly places: ReadonlyMap<string, LocationCategory>
+  /** Goals and their rewards (src/engine/goals.ts), in display order. */
+  readonly goals: readonly GoalDef[]
+  /** How grants are capped and how many records the save keeps (src/engine/grants.ts). */
+  readonly grants: ProgressionConfig['grants']
+  /** What prestige requires, earns, resets and keeps (src/engine/prestige.ts). */
+  readonly prestige: ProgressionConfig['prestige']
 }
 
 /**
@@ -120,6 +131,65 @@ function cloutRules(json: typeof balanceJson.clout): BalanceConfig['clout'] {
   return { ...json, style: { ...json.style, appliesTo } }
 }
 
+/**
+ * JSON imports widen string unions (`fact`, prestige parts) and literals (`victory`, `badge`), so
+ * the progression rules are narrowed here; anything else throws at load (fail fast).
+ * createProgressionConfigSchema checks the same file in data.test.ts.
+ */
+function progressionRules(json: typeof progressionJson) {
+  const where = 'config/progression.json'
+  const fact = (id: string, value: string): GoalFact => {
+    if (!(GOAL_FACTS as readonly string[]).includes(value)) {
+      throw new Error(`${where}: goal "${id}" has an unknown fact "${value}"`)
+    }
+    return value as GoalFact
+  }
+  const parts = (list: readonly string[]): PrestigePart[] =>
+    list.map((part) => {
+      if (!(PRESTIGE_PARTS as readonly string[]).includes(part)) {
+        throw new Error(`${where}: unknown prestige part "${part}"`)
+      }
+      return part as PrestigePart
+    })
+  const goals: GoalDef[] = json.goals.map((raw) => {
+    const entry = raw as {
+      id: string
+      fact: string
+      level?: string
+      available?: boolean
+      victory?: boolean
+      reward: { cash?: number; clout?: number; badge?: boolean }
+    }
+    const { cash, clout, badge } = entry.reward
+    if (entry.victory === false || badge === false) {
+      throw new Error(`${where}: goal "${entry.id}" sets victory or badge to false`)
+    }
+    return {
+      id: entry.id,
+      fact: fact(entry.id, entry.fact),
+      ...(entry.level === undefined ? {} : { level: entry.level }),
+      ...(entry.available === undefined ? {} : { available: entry.available }),
+      ...(entry.victory === true ? { victory: true as const } : {}),
+      reward: {
+        ...(cash === undefined ? {} : { cash }),
+        ...(clout === undefined ? {} : { clout }),
+        ...(badge === true ? { badge: true as const } : {}),
+      },
+    }
+  })
+  return {
+    goals,
+    grants: json.grants,
+    prestige: {
+      ...json.prestige,
+      resets: parts(json.prestige.resets),
+      keeps: parts(json.prestige.keeps),
+    },
+  }
+}
+
+const progression = progressionRules(progressionJson)
+
 export const engineConfig: EngineConfig = {
   time: balanceJson.time,
   stats: balanceJson.stats,
@@ -138,4 +208,7 @@ export const engineConfig: EngineConfig = {
   events: { ...balanceJson.events, catalog: eventsJson.events as readonly GameEvent[] },
   places: placeCategories(landmarksJson.landmarks, venuesJson.venues),
   place: balanceJson.place,
+  goals: progression.goals,
+  grants: progression.grants,
+  prestige: progression.prestige,
 }
