@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import type { Locator, Page } from '@playwright/test'
 import type { HudTestHook } from '@/components/hud/hudTestHook'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
+import { waitForMapSettled } from './helpers/scene'
 
 // S10a: the shop in a thrift store's place sheet, the inventory and rent panels from the HUD,
 // and a shift with its lock and energy states. Places open through the S09 test hook (the same
@@ -20,6 +21,7 @@ async function boot(page: Page) {
   await page.waitForFunction(
     () => window.__cloutcityPlaces !== undefined && window.__cloutcityTest?.hud !== undefined,
   )
+  await waitForMapSettled(page)
 }
 
 const hudState = (page: Page) =>

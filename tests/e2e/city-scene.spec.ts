@@ -442,9 +442,7 @@ async function expectWithinMidBudget(page: Page, view: string): Promise<void> {
 }
 
 test.describe('3D city scene: limits, budgets and layout under stress', () => {
-  test('desktop: budgets hold at max zoom-out and at max zoom-in over Manhattan', async ({
-    page,
-  }, testInfo) => {
+  test('desktop: budgets hold at max zoom-out', async ({ page }, testInfo) => {
     test.skip(!!testInfo.project.use.hasTouch, 'mouse gestures run on the desktop project')
     await page.goto('/')
     await waitForScene(page)
@@ -457,11 +455,16 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
     expect(out.distance).toBeCloseTo(scene.camera.maxDistanceM, -1)
     expectNearFollowsDistance(out)
     await expectWithinMidBudget(page, 'max-zoom-out')
+  })
+
+  test('desktop: budgets hold at max zoom-in over Manhattan', async ({ page }, testInfo) => {
+    test.skip(!!testInfo.project.use.hasTouch, 'mouse gestures run on the desktop project')
+    await page.goto('/')
+    await waitForScene(page)
+    const { centre } = await freeArea(page)
 
     // From the default view, drag the map until the target is over Midtown Manhattan, then zoom
     // all the way in there. The ground scale (metres per pixel) is measured from each drag.
-    await page.reload()
-    await waitForScene(page)
     const midtown = project({ lat: 40.754, lng: -73.984 })
     let metresPerPx = 5
     for (let i = 0; i < 6; i++) {
@@ -493,6 +496,28 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
     await expectWithinMidBudget(page, 'max-zoom-in-manhattan')
   })
 
+  test('mobile: extreme two-finger tilts both ways stay inside the polar limits', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!testInfo.project.use.hasTouch, 'touch gestures run on the mobile project')
+    await page.goto('/')
+    await waitForScene(page)
+    const { centre, top, bottom } = await freeArea(page)
+    const pair = (c: Point, gap: number): Point[] => [
+      { x: c.x - gap, y: c.y },
+      { x: c.x + gap, y: c.y },
+    ]
+    for (const dy of [-(bottom - top) + 40, bottom - top - 40]) {
+      await touchGesture(
+        page,
+        pair(centre, 60),
+        pair(centre, 60).map((p) => ({ x: p.x, y: p.y + dy })),
+      )
+      expectInsideLimits(await camera(page))
+    }
+    await settle(page)
+  })
+
   test('mobile: pinches at the extent edge while fully tilted keep every limit', async ({
     page,
   }, testInfo) => {
@@ -513,11 +538,9 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
         pair(centre, 60).map((p) => ({ x: p.x + dx, y: p.y + dy })),
       )
 
-    // Tilt as far as it goes both ways (extreme gestures), each time inside the polar limits.
-    for (const dy of [-(bottom - top) + 40, bottom - top - 40]) {
-      await twoFingerDrag(0, dy)
-      expectInsideLimits(await camera(page))
-    }
+    // Tilt as far as it goes (an extreme gesture), inside the polar limits.
+    await twoFingerDrag(0, bottom - top - 40)
+    expectInsideLimits(await camera(page))
 
     // Pan to the north-west edge of the extent with long one-finger drags.
     // Zoomed out first so a few drags cover the whole extent.
