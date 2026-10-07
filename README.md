@@ -526,6 +526,30 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   reach the database through a generated block in the migration: after changing any of them, run
   `npm run handles:sql` and add a migration with the new block
   (`scripts/moderation/blocklist-sql.test.ts` fails until the newest block matches).
+- **Safety** (S18b). `block_player` (ends the friendship and roommate link, returns an undo token
+  valid for `blockUndoSeconds`), `unblock_player`, `mute_player`, `unmute_player`,
+  `list_my_blocks`, `list_my_mutes`, `submit_report`, `list_my_reports`, `acknowledge_notice`
+  and `submit_appeal`. Players read only their own `blocks`, `mutes` and `account_notices`;
+  reports, content holds, sanctions, appeals and the moderation audit live in the `private`
+  schema. `private.can_view(viewer, target)` hides blocked pairs (both ways) and suspended or
+  banned players; `private.public_handle` shows `Player` for a handle under a content hold.
+  The limits come from `data/config/moderation.json`, copied into `private.moderation_settings`
+  (after changing the JSON, add a migration that updates that row; the integration suite fails
+  until they match). The note filter is `private.contains_contact_info`, twinned in
+  `src/lib/safety/textFilter.ts`.
+- **Standing gate.** Right after the attestation gate, every client RPC calls
+  `perform private.require_good_standing(v_uid, 'interact' | 'social');` or carries
+  `@standing-exempt: <reason>` on a line of its comment (`catalog.test.ts` enforces it).
+  `interact` is refused while suspended or banned; `social` also while restricted.
+- **Moderation** (S18b). The `mod_*` RPCs are service-role only (the `/mod` server routes call
+  them): each takes the moderator's user id, the case (the reported player's id; the appeal id
+  for `mod_resolve_appeal`), an idempotency key and a correlation id, and writes exactly one row
+  to the append-only `private.moderation_audit`. `moderator_reset_handle` is no longer callable
+  through the API; `mod_reset_handle` wraps it with the audit row.
+- **Retention.** `private.purge_expired_safety_data()` applies `moderation.json` `retention` and
+  never touches a player with any report under legal hold. The migration enables `pg_cron` and
+  schedules it daily at 08:17 UTC (`cron.job`, job `purge-expired-safety-data`); on a hosted
+  project check it under Integrations > Cron. The periods await legal review (SEC-12).
 - **RPC errors** raise SQLSTATE `PTxyz` (PostgREST answers HTTP `xyz`) with a machine-code message
   (`RPC_ERRORS` in `attestation.ts`; `parseRpcError()` reads it).
 - **Browser bundle.** `@supabase/supabase-js` may reach browser code only through a dynamic

@@ -141,6 +141,12 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   `npx supabase start` only for test:integration / e2e:supabase, then `npx supabase stop`. Never quit
   Docker or touch non-cloutcity containers (the user has other projects there).
 
+- Wave testing (user request 2026-10-07): per task, run typecheck, lint, the FULL unit suite, build, budget
+  and only the task's own/affected e2e specs (no full e2e, no per-task bug-hunter). At the end of each
+  wave the orchestrator merges every lane into `integration/wave-N`, runs the full gates once, and one
+  bug-hunter covers the whole wave plus fix cycles before fast-forwarding dev. Exception: security,
+  money and server tasks (S18a/b/c, S19+, S25–S28) keep their own bug-hunter.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.

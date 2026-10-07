@@ -411,13 +411,18 @@ describe('quarantine and moderator resets', () => {
     })
     expect(refused.error).not.toBeNull()
 
-    const { data, error } = await serviceClient().rpc('moderator_reset_handle', {
+    // S18b: the service role goes through the audited mod_reset_handle; the function itself
+    // is only reachable from SQL (tests/integration/moderation.test.ts covers the audited path).
+    const viaApi = await serviceClient().rpc('moderator_reset_handle', {
       p_user_id: a.id,
       p_reason: 'impersonation report',
     })
-    expect(error).toBeNull()
+    expect(viaApi.error).not.toBeNull()
+    const [reset] = await sql<{ handle: string }[]>`
+      select public.moderator_reset_handle(${a.id}, 'impersonation report') as handle
+    `
     const profile = await myProfile(a)
-    expect(profile.handle).toBe(data)
+    expect(profile.handle).toBe(reset?.handle)
     expect(profile.handle_generated).toBe(true)
     expect(await handleRow(handle)).toMatchObject({ quarantine_until: null })
     expect((await handleRow(handle))?.retired_at).not.toBeNull()
@@ -434,17 +439,12 @@ describe('quarantine and moderator resets', () => {
 
   it('moderator_reset_handle refuses a missing reason or an unknown player', async () => {
     const guest = await newAttestedGuest()
-    const service = serviceClient()
-    const blank = await service.rpc('moderator_reset_handle', {
-      p_user_id: guest.id,
-      p_reason: ' ',
-    })
-    expectRpcError(blank.error, 'invalid_argument', 'PT400')
-    const unknown = await service.rpc('moderator_reset_handle', {
-      p_user_id: '00000000-0000-4000-8000-000000000000',
-      p_reason: 'test',
-    })
-    expectRpcError(unknown.error, 'invalid_target', 'PT400')
+    await expect(sql`select public.moderator_reset_handle(${guest.id}, ' ')`).rejects.toThrow(
+      'invalid_argument',
+    )
+    await expect(
+      sql`select public.moderator_reset_handle('00000000-0000-4000-8000-000000000000', 'test')`,
+    ).rejects.toThrow('invalid_target')
   })
 })
 
@@ -544,11 +544,7 @@ describe('what other players see', () => {
     expect((await setHandle(owner, released)).error).toBeNull()
     await backdateChanges(owner, 25)
     expect((await setHandle(owner, retired)).error).toBeNull()
-    const reset = await serviceClient().rpc('moderator_reset_handle', {
-      p_user_id: owner.id,
-      p_reason: 'test',
-    })
-    expect(reset.error).toBeNull()
+    await sql`select public.moderator_reset_handle(${owner.id}, 'test')`
 
     const errors: ({ code?: string; message: string } | null)[] = []
     for (const handle of [unused, released, retired, 'x', '']) {
