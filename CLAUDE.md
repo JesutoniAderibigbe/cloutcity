@@ -251,12 +251,12 @@ Further rules:
 - Warm night-city palette: deep indigo, hot pink, taxi yellow, plus a day palette (user decision
   2026-10-07): the interface and the 3D lighting follow the personal game clock's day/night keyframes
   (S04f, S04g). Both palettes meet WCAG 2.2 AA. Palette tokens live in `/data/config/theme.json`.
-- **Hand-made 3D models (user decision 2026-10-07, DEC-24).** Target polish at or above lagoslife/
-  sflife/anambralive. Characters, furniture, decor, vehicles, street props and generic buildings come
-  from professional hand-made low-poly packs with a CC0 licence (e.g. KayKit, Quaternius, Kenney),
-  pinned by version and hash and listed in a SOURCES.md. New York landmarks and signature pieces get
-  custom-made models later (3D artist or AI, licence confirmed in writing); until then landmarks use the
-  code-built placeholder kit. Never photos, scans, or models with unclear licences.
+- **Hand-made 3D models (user decision 2026-10-07, DEC-24): free CC0 packs only.** Target polish at or
+  above lagoslife/sflife/anambralive. Characters, furniture, decor, vehicles, street props and buildings
+  come from professional hand-made low-poly packs with a CC0 licence (e.g. KayKit, Quaternius, Kenney,
+  Poly Pizza CC0), pinned by version and hash and listed in a SOURCES.md. No commissioned or
+  AI-generated models. New York landmarks stay styled stand-ins: the code-built landmark kit, dressed
+  with CC0 pack parts where they fit. Never photos, scans, or models with unclear licences.
 - Models ship as compressed glTF (meshopt geometry, KTX2/WebP textures) through a reproducible asset
   script, with per-asset triangle and byte budgets in perf.json. Model loading lives in lazy chunks; if
   the asset bytes threaten a perf.json budget, measure and raise it with the user, never edit silently.
