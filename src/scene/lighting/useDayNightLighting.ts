@@ -4,11 +4,11 @@
  * every minute maps to the keyframe itself, so readers that depend on it neither re-render the
  * scene nor redraw it.
  */
-import { useMemo } from 'react'
+import { useCallback, useMemo, useSyncExternalStore } from 'react'
 import { lightingAt } from '@/lib/dayNight/lightingAt'
 import type { DayNightModel, Lighting } from '@/lib/dayNight/types'
 import { useReducedMotion } from '@/lib/useReducedMotion'
-import { useMinuteOfDay } from '@/state/dayClock'
+import { dayClockStore } from '@/state/dayClock'
 
 /**
  * The minute whose lighting stands for `minute`'s: the keyframe's own minute while it shows
@@ -21,10 +21,22 @@ export function canonicalMinute(minute: number, model: DayNightModel, step: bool
   return keyframe === undefined ? lighting.minute : keyframe.atMinute
 }
 
-/** `unknownMinute` stands in until the HUD has read the save. */
+/**
+ * `unknownMinute` stands in until the HUD has read the save. The caller subscribes to the
+ * canonical minute, not the clock's: the clock ticks every game minute, and a re-render of the
+ * canvas's React tree makes react-three-fiber draw a frame, so an idle map would draw one per
+ * game minute.
+ */
 export function useDayNightLighting(model: DayNightModel, unknownMinute: number): Lighting {
-  const minute = useMinuteOfDay() ?? unknownMinute
   const step = useReducedMotion()
-  const canonical = canonicalMinute(minute, model, step)
+  const canonicalNow = useCallback(
+    () => canonicalMinute(dayClockStore.getState().minuteOfDay ?? unknownMinute, model, step),
+    [model, step, unknownMinute],
+  )
+  const serverCanonical = useCallback(
+    () => canonicalMinute(unknownMinute, model, step),
+    [model, step, unknownMinute],
+  )
+  const canonical = useSyncExternalStore(dayClockStore.subscribe, canonicalNow, serverCanonical)
   return useMemo(() => lightingAt(canonical, model, { step }), [canonical, model, step])
 }
