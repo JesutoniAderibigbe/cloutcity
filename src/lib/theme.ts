@@ -62,5 +62,14 @@ export function scenePalette(): ScenePalette {
     },
     chip: { fill: tokenHex(scene.chip.fill), ink: tokenHex(scene.chip.ink) },
     toonRamp: [...scene.toonRamp],
+    buildings: {
+      wall: tokenHex(scene.buildings.wall),
+      roof: tokenHex(scene.buildings.roof),
+      window: tokenHex(scene.buildings.window),
+      block: tokenHex(scene.buildings.block),
+    },
+    landmarks: Object.fromEntries(
+      Object.entries(scene.landmarks).map(([role, token]) => [role, tokenHex(token)]),
+    ) as ScenePalette['landmarks'],
   }
 }

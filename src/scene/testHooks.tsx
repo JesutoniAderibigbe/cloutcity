@@ -16,7 +16,9 @@ import { qualityStore, selectActiveTier } from '@/state/quality'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import { PLAYER_AVATAR_NAME } from './avatar/buildAvatar'
 import { radToDeg } from './camera/limits'
+import type { BuildingsHandle, BuildingsState } from './buildings/Buildings'
 import type { BoroughView, CityObjects } from './City'
+import type { LandmarksHandle, LandmarksState } from './landmarks/Landmarks'
 import type { PinKind, PinStyle } from './geo/schema'
 import { continuousSince } from './quality/continuity'
 import { SUN_LIGHT_NAME } from './SunLight'
@@ -117,6 +119,13 @@ export interface SceneTestHook {
   restoreContext(): boolean
   quality(): SceneQualityState
   gl(): SceneGlState
+  /**
+   * District buildings and blocks (S04d): per-district load state, what the view draws, the
+   * tier's density and distances, windows and the night glow; null before the layer exists.
+   */
+  buildings(): BuildingsState | null
+  /** Modelled landmarks (S07a): build state, current level, triangles, screen points. */
+  landmarks(): LandmarksState | null
 }
 
 declare global {
@@ -134,10 +143,14 @@ const vec = (v: Vec3): Vec3 => ({ x: v.x, y: v.y, z: v.z })
 export function TestHooks({
   readyRef,
   cityRef,
+  buildingsRef,
+  landmarksRef,
   quality,
 }: {
   readonly readyRef: RefObject<boolean>
   readonly cityRef: RefObject<CityObjects | null>
+  readonly buildingsRef: RefObject<BuildingsHandle | null>
+  readonly landmarksRef: RefObject<LandmarksHandle | null>
   readonly quality: SceneQuality
 }) {
   const gl = useThree((state) => state.gl)
@@ -248,12 +261,14 @@ export function TestHooks({
           outlines: scene.getObjectByName('subway-casing')?.visible === true,
         }
       },
+      buildings: () => buildingsRef.current?.state() ?? null,
+      landmarks: () => landmarksRef.current?.state() ?? null,
     }
     window.__cloutcityTest = { ...window.__cloutcityTest, scene: hook }
     return () => {
       delete window.__cloutcityTest?.scene
     }
-  }, [gl, camera, controls, get, scene, readyRef, cityRef, quality])
+  }, [gl, camera, controls, get, scene, readyRef, cityRef, buildingsRef, landmarksRef, quality])
 
   return null
 }

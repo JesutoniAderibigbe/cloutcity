@@ -17,6 +17,9 @@ import {
   pinColor,
   pinHeight,
   PIN_HEAD,
+  PIN_LOOKS,
+  buildBadgePinGeometry,
+  pinLook,
 } from './buildPins'
 
 const palette = scenePalette()
@@ -35,6 +38,7 @@ describe('pin geometry', () => {
     for (const [kind, geometry] of [
       ['venue', buildVenuePinGeometry(sceneConfig.pins.radialSegments)],
       ['landmark', buildLandmarkPinGeometry()],
+      ['badge', buildBadgePinGeometry()],
     ] as const) {
       geometry.computeBoundingBox()
       const box = geometry.boundingBox
@@ -48,14 +52,18 @@ describe('pin geometry', () => {
 })
 
 describe('buildPins', () => {
-  it('draws every place in two instanced meshes, venues and landmarks', () => {
+  it('draws every place in three instanced meshes: venues, landmarks and model badges', () => {
     const pins = build()
     const venues = mesh(pins.group, 'pins-venue')
     const landmarks = mesh(pins.group, 'pins-landmark')
-    const kinds = placesLayer.pins.map((pin) => pin.kind)
-    expect(venues.count).toBe(kinds.filter((kind) => kind === 'venue').length)
-    expect(landmarks.count).toBe(kinds.filter((kind) => kind === 'landmark').length)
-    expect(venues.count + landmarks.count).toBe(placesLayer.pins.length)
+    const badges = mesh(pins.group, 'pins-badge')
+    const looks = placesLayer.pins.map(pinLook)
+    expect(venues.count).toBe(looks.filter((look) => look === 'venue').length)
+    expect(landmarks.count).toBe(looks.filter((look) => look === 'landmark').length)
+    // Every modelled landmark's pin is a badge (S07a).
+    expect(badges.count).toBe(placesLayer.pins.filter((pin) => pin.badge === true).length)
+    expect(badges.count).toBeGreaterThan(0)
+    expect(venues.count + landmarks.count + badges.count).toBe(placesLayer.pins.length)
     expect(pins.pins.map((pin) => pin.id).sort()).toEqual(placesLayer.pins.map((p) => p.id).sort())
     pins.dispose()
   })
@@ -63,10 +71,10 @@ describe('buildPins', () => {
   it('colours each pin by kind, and teasers and memorials by style', () => {
     const pins = build()
     const color = new Color()
-    for (const kind of ['venue', 'landmark'] as const) {
-      const instanced = mesh(pins.group, `pins-${kind}`)
+    for (const look of PIN_LOOKS) {
+      const instanced = mesh(pins.group, `pins-${look}`)
       pins.pins
-        .filter((pin) => pin.kind === kind)
+        .filter((pin) => pinLook(pin) === look)
         .forEach((pin, i) => {
           instanced.getColorAt(i, color)
           expect(color.getHexString(), pin.id).toBe(

@@ -4,6 +4,7 @@
  * here: they are palette tokens in data/config/theme.json (`scene`).
  */
 import { z } from 'zod'
+import { LandmarkSceneConfigSchema } from './landmarkModels'
 
 const metres = z.number().positive()
 const ratio = z.number().positive()
@@ -257,6 +258,56 @@ export const SceneConfigSchema = z.strictObject({
       opacity: z.number().gt(0).max(1),
       liftM: z.number().nonnegative(),
     }),
+  }),
+  /** The landmark kit's levels of detail and look per quality tier (S07a). */
+  landmarks: LandmarkSceneConfigSchema,
+  /**
+   * District buildings and procedural blocks (S04d). Windows are a mask texture repeated over
+   * the district walls (one cell per `floorM` storey and `windowSpacingM` of wall), glowing with
+   * the shared night-glow uniform (src/scene/lighting/nightGlow.ts, driven by S04f's day/night
+   * rig); view distances are multiplied by the tier's lodDistanceScale.
+   */
+  buildings: z.strictObject({
+    floorM: metres,
+    windowSpacingM: metres,
+    /** The window's share of its cell, across and up. */
+    windowWidth: z.number().gt(0).lt(1),
+    windowHeight: z.number().gt(0).lt(1),
+    /** Share of windows lit at night. */
+    litShare: z.number().min(0).max(1),
+    /**
+     * The window mask texture repeats every this many cells each way, so lit and dark windows
+     * vary within the tile.
+     */
+    windowTileCells: z.int().min(1).max(16),
+    /** The window pattern costs fragment work: off where the tier has no headroom. */
+    windows: z.strictObject({ low: z.boolean(), mid: z.boolean(), high: z.boolean() }),
+    /** Per-building spread of the facade's brightness (0.12 = plus or minus 12%). */
+    wallJitter: z.number().min(0).max(0.5),
+    /** Beyond these distances from the camera, districts and blocks are not drawn. */
+    viewM: z.strictObject({ districts: metres, blocks: metres }),
+    /** A district loads once the camera is this close to its draw distance. */
+    loadMarginM: z.number().nonnegative(),
+    /** The longest a build slice runs before it gives the browser a turn. */
+    buildSliceMs: z.number().positive(),
+  }),
+  /**
+   * Name chips of the modelled landmarks (S07a): one flat rounded plate per landmark, floating
+   * above its model's top and `offsetM` south of its pin, all in one mesh and one atlas, shown
+   * within `landmarks.labelMaxDistanceM` of the camera target. Text comes from the server's copy
+   * (generic labels for generic-name landmarks), never from the model data.
+   */
+  landmarkChips: z.strictObject({
+    widthM: metres,
+    heightM: metres,
+    offsetM: z.number().nonnegative(),
+    liftM: z.number().nonnegative(),
+    atlasWidthPx: z.int().min(64).max(2048),
+    cellHeightPx: z.int().min(16).max(256),
+    fontScale: ratio.max(1),
+    textMaxWidth: ratio.max(1),
+    cornerRadius: z.number().min(0).max(0.5),
+    alphaTest: z.number().gt(0).lt(1),
   }),
 })
 export type SceneConfig = z.infer<typeof SceneConfigSchema>

@@ -44,3 +44,21 @@ export function yieldToMain(): Promise<void> {
     channel.port2.postMessage(null)
   })
 }
+
+/**
+ * A cooperative time slicer for long builds (S04d, S07a): call the returned function between
+ * small units of work; it resolves at once while the current slice is under `sliceMs` and
+ * otherwise gives the browser a turn (`yieldFn`, yieldToMain by default) and starts a new slice.
+ */
+export function createSlicer(
+  sliceMs: number,
+  yieldFn: () => Promise<void> = yieldToMain,
+  now: () => number = () => performance.now(),
+): () => Promise<void> {
+  let start = now()
+  return async () => {
+    if (now() - start < sliceMs) return
+    await yieldFn()
+    start = now()
+  }
+}

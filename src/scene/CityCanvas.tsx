@@ -26,10 +26,12 @@ import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
 import { FreeRowFraming } from './camera/FreeRowFraming'
 import { nearFar } from './camera/limits'
+import { Buildings, type BuildingsHandle } from './buildings/Buildings'
 import { buildCity, City, type CityObjects } from './City'
 import { landTopY } from './geo/buildLand'
 import type { GeoLoadFailure } from './geo/load'
 import { safeParseGeoBase } from './geo/schema'
+import { Landmarks, type LandmarksHandle } from './landmarks/Landmarks'
 import { TierMonitor } from './quality/TierMonitor'
 import { TierSettingsContext, type ActiveTierSettings } from './quality/tierSettings'
 import { yieldToMain } from './schedule'
@@ -52,7 +54,7 @@ const GL = {
 
 export interface CityCanvasProps extends Pick<
   SceneProps,
-  'palette' | 'config' | 'homesLocal' | 'startHome' | 'boundsLocal' | 'quality'
+  'palette' | 'config' | 'homesLocal' | 'startHome' | 'boundsLocal' | 'quality' | 'buildings'
 > {
   /**
    * The downloaded geo body, validated here before the canvas mounts; null while it downloads
@@ -64,6 +66,8 @@ export interface CityCanvasProps extends Pick<
   readonly label: string
   /** The "expanding soon" chip text, rendered by the server. */
   readonly expandingSoon: string
+  /** Landmark name chip text by id, rendered by the server (S07a). */
+  readonly landmarkNames: Readonly<Record<string, string>>
   readonly onReady: () => void
   /** The WebGL context was lost: the map shows nothing until it is restored. */
   readonly onContextLost: () => void
@@ -159,8 +163,10 @@ function CityScene3D({
   startHome,
   boundsLocal,
   quality,
+  buildings,
   label,
   expandingSoon,
+  landmarkNames,
   onReady,
   onContextLost,
   onContextRestored,
@@ -173,6 +179,10 @@ function CityScene3D({
   // The camera starts over the player's home and the avatar stands there (S05).
   const home = homesLocal[usePlayerHome() ?? startHome]
   const cityRef = useRef<CityObjects | null>(null)
+  const buildingsRef = useRef<BuildingsHandle | null>(null)
+  const landmarksRef = useRef<LandmarksHandle | null>(null)
+  // District buildings and landmark models start after the city's first frame (PERF-4).
+  const [cityReady, setCityReady] = useState(false)
   // The shell records the device's tier before mounting the canvas; low until then.
   const tier = useActiveTier() ?? 'low'
   const settings: ActiveTierSettings = useMemo(
@@ -191,6 +201,14 @@ function CityScene3D({
   useEffect(() => {
     if (!parsed.ok) onInvalidGeo({ reason: 'geo-invalid', paths: parsed.paths })
   }, [parsed, onInvalidGeo])
+
+  const pinLifts = useMemo(
+    () =>
+      new Map(
+        parsed.ok ? parsed.geo.places.pins.map((pin) => [pin.id, pin.liftM ?? 0] as const) : [],
+      ),
+    [parsed],
+  )
 
   // Built before the canvas mounts, yielding between layers (PERF-4). A build error is
   // rethrown during render so the scene's error boundary handles it like any scene failure.
@@ -263,8 +281,30 @@ function CityScene3D({
             cityRef={cityRef}
             onReady={() => {
               readyRef.current = true
+              setCityReady(true)
               onReady()
             }}
+          />
+          <Buildings
+            assets={buildings}
+            palette={palette}
+            config={config}
+            groundY={groundY}
+            gradientMap={built.gradientMap}
+            dimmedBoroughs={built.dimmed}
+            active={cityReady}
+            handleRef={buildingsRef}
+          />
+          <Landmarks
+            landmarks={parsed.geo.landmarks.models}
+            palette={palette}
+            config={config}
+            groundY={groundY}
+            gradientMap={built.gradientMap}
+            active={cityReady}
+            names={landmarkNames}
+            pinLifts={pinLifts}
+            handleRef={landmarksRef}
           />
           <PlayerAvatar
             at={home}
@@ -281,7 +321,13 @@ function CityScene3D({
           <TierMonitor stepDown={quality.stepDown} paused={hidden} />
           <FocusRedraw hidden={hidden} />
           <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
-          <TestHooks readyRef={readyRef} cityRef={cityRef} quality={quality} />
+          <TestHooks
+            readyRef={readyRef}
+            cityRef={cityRef}
+            buildingsRef={buildingsRef}
+            landmarksRef={landmarksRef}
+            quality={quality}
+          />
         </TierSettingsContext>
       </Canvas>
     </div>

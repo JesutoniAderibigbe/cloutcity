@@ -3,11 +3,9 @@
  * and touch nothing; `--check --offline` against a valid cache passes without the network.
  */
 import { spawnSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { CACHE_DIR, readLock } from './build'
+import { readCache, readLock } from './build'
 
 const ROOT = join(import.meta.dirname, '../..')
 const run = (...args: string[]) =>
@@ -18,15 +16,7 @@ const run = (...args: string[]) =>
   })
 
 const lock = await readLock()
-const cacheValid =
-  lock !== undefined &&
-  lock.sources.every((entry) => {
-    const path = join(CACHE_DIR, entry.file)
-    return (
-      existsSync(path) &&
-      createHash('sha256').update(readFileSync(path)).digest('hex') === entry.sha256
-    )
-  })
+const cacheValid = lock !== undefined && (await readCache(lock)).valid
 
 describe('geo:build CLI', () => {
   it.each([

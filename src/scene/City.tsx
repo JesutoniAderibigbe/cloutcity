@@ -12,7 +12,7 @@
  */
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Group, InstancedMesh, Mesh, MeshBasicMaterial } from 'three'
+import { Group, InstancedMesh, Mesh, MeshBasicMaterial, type Texture } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
@@ -50,6 +50,10 @@ export interface CityObjects {
   readonly group: Group
   readonly pins: PinObjects
   readonly boroughs: readonly BoroughView[]
+  /** The shared toon ramp: district buildings and landmarks shade with the same steps. */
+  readonly gradientMap: Texture
+  /** Boroughs drawn as "expanding soon" land. */
+  readonly dimmed: ReadonlySet<BoroughId>
   /** Rescales station markers and pins and toggles line letters for a camera distance. */
   applyDistance(distance: number): void
   /** Shows or hides the outlines (the subway casing), per quality tier. */
@@ -198,6 +202,8 @@ export async function buildCity(
     group,
     pins,
     boroughs,
+    gradientMap: materials.gradientMap,
+    dimmed,
     setOutlines(visible) {
       if (casing !== null) casing.visible = visible
     },

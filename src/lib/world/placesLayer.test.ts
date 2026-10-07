@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { scene } from '@/lib/data/config'
 import { project } from '@/lib/geo/projection'
+import { landmarkPinLifts, landmarksLayer } from './landmarksLayer'
 import { boroughRenderState, boroughs, findPlace, mapPlaces } from './places'
 import { buildPlacesLayer, placesLayer } from './placesLayer'
 
@@ -13,8 +15,31 @@ describe('places layer (S04c)', () => {
       expect(Math.abs(pin.x - at.x), pin.id).toBeLessThanOrEqual(0.5)
       expect(Math.abs(pin.y - at.y), pin.id).toBeLessThanOrEqual(0.5)
       expect(Number.isInteger(pin.x) && Number.isInteger(pin.y)).toBe(true)
-      expect(pin.liftM).toBeUndefined()
     }
+  })
+
+  it('lifts each modelled landmark pin clear of its model as a badge (S07a); others stay put', () => {
+    const lifts = landmarkPinLifts()
+    const landTop = scene.land.heightM - scene.land.baseM
+    for (const pin of placesLayer.pins) {
+      const lift = lifts.get(pin.id)
+      if (lift === undefined || pin.kind !== 'landmark') {
+        expect(pin.liftM, pin.id).toBeUndefined()
+        expect(pin.badge, pin.id).toBeUndefined()
+        continue
+      }
+      expect(pin.badge, pin.id).toBe(true)
+      expect(pin.liftM ?? 0, pin.id).toBe(lift)
+      const entry = landmarksLayer.models.find((m) => m.id === pin.id)
+      if (entry === undefined) throw new Error(`no model ${pin.id}`)
+      // The pin's base sits at or above the model's top.
+      const base = entry.model.archetype.endsWith('Bridge') ? 0 : landTop
+      const top = base + entry.frame.pinLiftM * scene.landmarks.heightScale
+      expect(landTop + (pin.liftM ?? 0), pin.id).toBeGreaterThanOrEqual(top)
+    }
+    expect(placesLayer.pins.filter((pin) => pin.badge === true)).toHaveLength(
+      landmarksLayer.models.length,
+    )
   })
 
   it('lists every borough in boroughs.json order with its render state', () => {

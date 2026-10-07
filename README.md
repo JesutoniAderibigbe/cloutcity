@@ -204,7 +204,7 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
 | `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `progression.json` (goals, grant caps, prestige rules), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings, the apartment's room, markers and picking) |
 | `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                                                                                                                                |
 | `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                                                                                                                               |
-| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                                                                              |
+| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway`, `blocks.<tier>`, `districts/<district>.<tier>` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                              |
 | `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                                                                                                                   |
 | `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                                                               |
 | `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                                                                      |
@@ -414,8 +414,16 @@ objects and Sets arrays. `console.*` is a lint error everywhere else.
 
 `npm run geo:build` (`scripts/geo/build.ts`) downloads the sources pinned in
 `scripts/geo/sources.lock.json` (DCP borough boundaries clipped to shoreline and 2020 NTAs, MTA
-subway static GTFS) into `.cache/geo/`, then writes simplified, integer-metre layers to
-`data/geo` and `data/zones`. The output is deterministic: `npm run geo:build -- --check` rebuilds
+subway static GTFS, MapPLUTO density statistics per community district, and NYC OTI building
+footprints for each district in `geo.json` `districts`, paged and hashed page by page) into
+`.cache/geo/`, then writes simplified, integer-metre layers to `data/geo` and `data/zones`. District
+building masses go to `data/geo/districts/<district>.<tier>.derived.json` and the procedural low
+blocks elsewhere to `data/geo/blocks.<tier>.derived.json`; the build fails if a tier's total
+exceeds `perf.json` `districtBuildingsGzKB` or `buildingTrianglesMax`. The same build derives the
+landmark frames (`data/landmarks/frames.derived.json`, from DCP LION street centerlines) first,
+and drops every footprint whose centroid lies in a landmark's `landmarks[].exclusion` rectangle
+and every block that would touch one.
+The output is deterministic: `npm run geo:build -- --check` rebuilds
 in memory and fails if a committed file differs, and `npm test` rebuilds from the cache when it
 is present. `--update` accepts changed upstream files and rewrites the lock; `--offline` never
 touches the network. Parameters live in `data/config/geo.json`; sources, terms, transformations
@@ -525,7 +533,23 @@ camera starts over it).
   `next/dynamic` (`ssr: false`), so the shell is interactive first, and starts the geo request at
   hydration. The geo layers come from the prerendered route `/geo/base?v=<geoVersion>`
   (`src/app/geo/base/route.ts`) and are validated in the 3D chunk with `zod/mini`
-  (`src/scene/geo/schema.ts`, kept in step with the classic schemas by its tests).
+  (`src/scene/geo/schema.ts`, kept in step with the classic schemas by its tests). Format v3
+  carries the `landmarks` layer (model parameters and frames, `src/lib/world/landmarksLayer.ts`).
+- **Buildings (S04d).** After the city's first frame, `src/scene/buildings/Buildings.tsx` loads
+  the active tier's districts near the view from `/geo/districts/<tier>/<id>?v=<hash>` and the
+  blocks from `/geo/blocks/<tier>?v=<hash>` (prerendered; URLs from
+  `src/lib/data/districts.ts` `districtAssets(tier)` / `districtAssetUrls(tier)`), builds each
+  district as one merged mesh in time slices, and draws only what is within the tier's distance
+  (`scene.json` `buildings.viewM` times `lodDistanceScale`), at its `buildingDensity` (the most
+  prominent masses first). Blocks are one instanced mesh per borough with only the in-view
+  instances drawn. District walls carry a window mask that glows with the shared night-glow
+  uniform (`src/scene/lighting/nightGlow.ts`).
+- **Landmarks (S07a).** `src/scene/landmarks/Landmarks.tsx` builds the code-built kit models
+  (`buildLandmark`) after the first frame, nearest first, each in a drei `Detailed` with the
+  tier's levels and distances (`scene.json` `landmarks.lod`); teaser landmarks on "expanding
+  soon" land use the dimmed material; name chips show copy names only. `landmarkSource(id)`
+  (`src/scene/landmarks/source.ts`) is where Blender models (DEC-25) take over per landmark.
+  Modelled landmarks' pins are badges lifted over the model (`liftM`).
 - **Config.** Camera start, zoom/tilt/turn limits, layer heights, line widths, marker and chip
   sizes and lights live in `data/config/scene.json`; scene colours are palette tokens in the
   `scene` block of `data/config/theme.json` (resolved to hex on the server). Toon shading uses one
@@ -544,7 +568,8 @@ camera starts over it).
   structured warning; the shell keeps working. `SceneErrorBoundary` only catches unexpected
   renderer errors.
 - **Test hooks.** With `NEXT_PUBLIC_TEST_HOOKS=1` at build time, `window.__cloutcityTest.scene`
-  exposes `ready`, `frames()`, `pendingFrames()`, `camera()`, `renderInfo()` and `player()` (`src/scene/testHooks.tsx`). The e2e
+  exposes `ready`, `frames()`, `pendingFrames()`, `camera()`, `renderInfo()`, `player()`,
+  `buildings()` and `landmarks()` among others (`src/scene/testHooks.tsx`). The e2e
   web server sets it and builds into `.next-e2e` (`NEXT_DIST_DIR`, read by `next.config.ts`), so
   the hook never reaches `.next`; in every other build its code is removed as dead code.
 

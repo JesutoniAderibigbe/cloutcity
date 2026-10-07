@@ -41,13 +41,17 @@ import {
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
 import { SceneConfigSchema } from './schemas/scene'
+import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
+  BlocksFileSchema,
   BoroughsFileSchema,
+  BuildingsFileSchema,
   GeoBoundsSchema,
   GeoManifestSchema,
   LandFileSchema,
+  LandmarkFramesFileSchema,
   ParksFileSchema,
   SubwayFileSchema,
   WaterFileSchema,
@@ -105,7 +109,9 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'homes/interiors.json': HomeInteriorsFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
+  'landmarks/frames.derived.json': LandmarkFramesFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
+  'landmarks/models.json': LandmarkModelsFileSchema,
   'moderation/handle-blocklist.json': HandleBlocklistSchema,
   'premium/premium.json': PremiumFileSchema,
   'sim/economy-baseline.derived.json': EconomyBaselineSchema,
@@ -115,6 +121,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
 }
 
 function schemaFor(file: string): z.ZodType | undefined {
+  if (/^geo\/districts\/[a-z0-9-]+\.[a-z]+\.derived\.json$/.test(file)) return BuildingsFileSchema
+  if (/^geo\/blocks\.[a-z]+\.derived\.json$/.test(file)) return BlocksFileSchema
   if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
   if (/^copy\/[\w-]+\/[\w-]+\.json$/.test(file)) return SlangPackSchema
   return SCHEMAS[file]
@@ -281,6 +289,15 @@ describe('config/perf.json', () => {
       // S04e: the service worker script and its install-time precache (not in CLAUDE.md's table).
       serviceWorkerGzKB: 15,
       precacheGzKB: 1000,
+      buildingTrianglesMax: { low: 160_000, mid: 300_000, high: 480_000 },
+      landmarkTrianglesMax: {
+        bridge: { low: 1200, mid: 3500, high: 7000 },
+        building: { low: 600, mid: 1800, high: 3500 },
+        station: { low: 600, mid: 1800, high: 3500 },
+        government: { low: 600, mid: 1800, high: 3500 },
+      },
+      landmarkTrianglesOverride: {},
+      landmarkLodRatioMax: 0.5,
     })
   })
 

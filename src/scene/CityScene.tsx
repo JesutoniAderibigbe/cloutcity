@@ -15,10 +15,13 @@ import '@/lib/copy/ns/map'
 import { balance, perf, scene } from '@/lib/data/config'
 import { QUALITY_TIERS, type QualityTier } from '@/lib/data/schemas/config'
 import { geoBounds, homes } from '@/lib/data/content'
+import { districtAssets } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
 import { HOME_IDS } from '@/lib/data/homes'
 import { project } from '@/lib/geo/projection'
 import { scenePalette } from '@/lib/theme'
+import { landmarksLayer } from '@/lib/world/landmarksLayer'
+import { mapPlaces, placeName } from '@/lib/world/places'
 import { ApartmentMount } from './apartment/ApartmentMount'
 import { boundsToLocal } from './camera/limits'
 import { CitySceneClient } from './CitySceneClient'
@@ -48,6 +51,16 @@ function sceneQuality(): SceneQuality {
   }
 }
 
+/** The modelled landmarks' names from copy (generic labels where trademarked, LEGAL-1). */
+function landmarkNames(): Record<string, string> {
+  const modelled = new Set(landmarksLayer.models.map((entry) => entry.id))
+  return Object.fromEntries(
+    mapPlaces()
+      .filter((place) => modelled.has(place.id))
+      .map((place) => [place.id, placeName(place)]),
+  )
+}
+
 export function CityScene() {
   const overlayRows = overlayGridTemplateRows(overlayLayout)
   const props: SceneProps = {
@@ -61,6 +74,9 @@ export function CityScene() {
     startHome: balance.start.home,
     boundsLocal: boundsToLocal(geoBounds),
     quality: sceneQuality(),
+    buildings: Object.fromEntries(
+      QUALITY_TIERS.map((tier) => [tier, districtAssets(tier)]),
+    ) as SceneProps['buildings'],
     overlayRows,
     freeRow: FREE_SCENE_GRID_ROW,
     copy: {
@@ -71,6 +87,7 @@ export function CityScene() {
       lost: copy('map.lost'),
       fallback: copy('map.fallback'),
       expandingSoon: copy('map.expandingSoon'),
+      landmarkNames: landmarkNames(),
     },
   }
   return (
