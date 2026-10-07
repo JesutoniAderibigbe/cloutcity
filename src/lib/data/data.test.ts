@@ -34,7 +34,9 @@ import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './sche
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
+  BlocksFileSchema,
   BoroughsFileSchema,
+  BuildingsFileSchema,
   GeoBoundsSchema,
   GeoManifestSchema,
   LandFileSchema,
@@ -95,6 +97,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
 }
 
 function schemaFor(file: string): z.ZodType | undefined {
+  if (/^geo\/districts\/[a-z0-9-]+\.[a-z]+\.derived\.json$/.test(file)) return BuildingsFileSchema
+  if (/^geo\/blocks\.[a-z]+\.derived\.json$/.test(file)) return BlocksFileSchema
   if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
   if (/^copy\/[\w-]+\/[\w-]+\.json$/.test(file)) return SlangPackSchema
   return SCHEMAS[file]
@@ -224,6 +228,7 @@ describe('config/perf.json', () => {
       audioLazyGzKB: { low: 600, mid: 1000, high: 1400 },
       audioFileMaxKB: 600,
       audioRuntimeJsGzKB: 20,
+      buildingTrianglesMax: { low: 160_000, mid: 300_000, high: 480_000 },
     })
   })
 

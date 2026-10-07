@@ -13,6 +13,10 @@
   --color-taxi-400: var(--palette-taxi-400);
   --color-ink-50: var(--palette-ink-50);
   --color-ink-300: var(--palette-ink-300);
+  --color-building-700: var(--palette-building-700);
+  --color-roof-500: var(--palette-roof-500);
+  --color-window-300: var(--palette-window-300);
+  --color-block-800: var(--palette-block-800);
 }
 
 @theme {

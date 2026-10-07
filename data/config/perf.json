@@ -29,5 +29,6 @@
   },
   "audioLazyGzKB": { "low": 600, "mid": 1000, "high": 1400 },
   "audioFileMaxKB": 600,
-  "audioRuntimeJsGzKB": 20
+  "audioRuntimeJsGzKB": 20,
+  "buildingTrianglesMax": { "low": 160000, "mid": 300000, "high": 480000 }
 }

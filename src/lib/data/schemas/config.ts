@@ -1,9 +1,12 @@
 /**
- * Schemas for /data/config. This file imports only `zod` and the dependency-free `../homes.ts` (no
- * path aliases) so Node can load it directly from `scripts/` with its built-in type stripping.
+ * Schemas for /data/config. This file imports only `zod` and dependency-free modules by relative
+ * `.ts` paths (no path aliases) so Node can load it directly from `scripts/` with its built-in
+ * type stripping.
  */
 import { z } from 'zod'
 import { STYLED_SOURCES } from '../cloutSources.ts'
+import { BUILDING_DISTRICT_IDS } from '../../geo/sources.ts'
+import { distanceM, project } from '../../geo/projection.ts'
 import { HOME_IDS, lowestRentHome } from '../homes.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
@@ -73,6 +76,11 @@ export const PerfConfigSchema = z.strictObject({
   audioFileMaxKB: positive,
   /** The lazily loaded audio runtime chunk (src/lib/audio/runtime.ts). */
   audioRuntimeJsGzKB: positive,
+  /**
+   * Triangles of every district's building masses plus the procedural blocks, per tier, as the
+   * geo build counts them (TUNE-7 placeholders). Part of `trianglesMax`, not on top of it.
+   */
+  buildingTrianglesMax: perTier(positiveInt),
 })
 export type PerfConfig = z.infer<typeof PerfConfigSchema>
 
@@ -788,6 +796,82 @@ export type AudioConfig = z.infer<typeof AudioConfigSchema>
 
 const metres = z.number().positive()
 
+const GEO_BOROUGHS = ['manhattan', 'bronx', 'brooklyn', 'queens', 'staten-island'] as const
+
+export const GeoDistrictSchema = z.strictObject({
+  id: z.enum(BUILDING_DISTRICT_IDS),
+  label: z.string().min(1),
+  borough: z.enum(GEO_BOROUGHS),
+  /** WGS84 centre, inside the NYC extent. */
+  center: z.strictObject({
+    lat: z.number().min(40.4).max(41),
+    lng: z.number().min(-74.3).max(-73.6),
+  }),
+  radiusM: metres,
+})
+export type GeoDistrict = z.infer<typeof GeoDistrictSchema>
+
+/** How one quality tier simplifies the district footprints. */
+export const BuildingTierSchema = z.strictObject({
+  /** Douglas-Peucker tolerance for each output ring. */
+  simplifyM: metres,
+  /** Footprints smaller than this (true m², after projection) are dropped. */
+  minAreaM2: metres,
+  /** Footprints lower than this (after the feet-to-metres conversion) are dropped. */
+  minHeightM: z.number().nonnegative(),
+  /** Heights are rounded to multiples of this; touching footprints in one bin may merge. */
+  heightBinM: metres,
+  /** Merge touching footprints of the same height bin into one mass. */
+  merge: z.boolean(),
+})
+export type BuildingTier = z.infer<typeof BuildingTierSchema>
+
+export const BuildingTiersSchema = z
+  .strictObject({
+    /** Height used when HEIGHT_ROOF is missing or zero. */
+    defaultHeightM: metres,
+    /** Footprints are snapped to this grid before merging. */
+    quantumM: z.literal(1),
+    tiers: perTier(BuildingTierSchema),
+  })
+  .refine(
+    ({ tiers }) =>
+      tiers.low.simplifyM >= tiers.mid.simplifyM &&
+      tiers.mid.simplifyM >= tiers.high.simplifyM &&
+      tiers.low.minAreaM2 >= tiers.mid.minAreaM2 &&
+      tiers.mid.minAreaM2 >= tiers.high.minAreaM2,
+    { error: 'lower tiers must simplify at least as much as higher ones', path: ['tiers'] },
+  )
+export type BuildingTiers = z.infer<typeof BuildingTiersSchema>
+
+/** Procedural low blocks outside the districts, one jittered grid per tier and borough. */
+export const BlocksConfigSchema = z.strictObject({
+  /** Seed for src/engine/rng.ts; changing it reshuffles every block. */
+  seed: z.int().nonnegative(),
+  /** Storey height: a block is its zone's average floors times this. */
+  floorM: metres,
+  /** Random offset of a block from its grid point, as a fraction of the spacing. */
+  jitter: z.number().min(0).max(0.5),
+  /** Random spread of the floor count around the zone average (0.4 = plus or minus 40%). */
+  heightJitter: z.number().min(0).max(0.9),
+  /** Floor-area ratio at which every grid point gets a block; lower FAR fills proportionally. */
+  fullFar: positive,
+  /** Block side as a fraction of the grid spacing. */
+  footprintFraction: z.number().gt(0).max(1),
+  spacingM: perTier(metres),
+  /** The build fails when a tier places more blocks than this. */
+  maxInstances: perTier(positiveInt),
+  /** Grid rotation per borough, degrees counter-clockwise from east (Manhattan's street grid). */
+  gridAngleDeg: z.strictObject({
+    manhattan: z.number().min(-90).max(90),
+    bronx: z.number().min(-90).max(90),
+    brooklyn: z.number().min(-90).max(90),
+    queens: z.number().min(-90).max(90),
+    'staten-island': z.number().min(-90).max(90),
+  }),
+})
+export type BlocksConfig = z.infer<typeof BlocksConfigSchema>
+
 /**
  * Parameters of `npm run geo:build` (scripts/geo). Distances in metres, weights and areas in
  * square metres. Changing any of them changes the committed geo outputs: rebuild them.
@@ -814,7 +898,28 @@ export const GeoConfigSchema = z
     stationAreaFallbackM: metres,
     /** How far the sea extends beyond data/geo/bounds.json. */
     waterMarginM: metres,
+    /**
+     * Districts with real building masses (S04d): footprints whose centroid lies inside the
+     * circle are kept. `label` names the district in SOURCES.md and build logs only; player-facing
+     * names come from copy.
+     */
+    districts: z.array(GeoDistrictSchema).min(1),
+    buildingTiers: BuildingTiersSchema,
+    blocks: BlocksConfigSchema,
   })
+  .refine((geo) => new Set(geo.districts.map((d) => d.id)).size === geo.districts.length, {
+    error: 'district ids must be unique',
+    path: ['districts'],
+  })
+  .refine(
+    (geo) =>
+      geo.districts.every((a, i) =>
+        geo.districts
+          .slice(i + 1)
+          .every((b) => distanceM(project(a.center), project(b.center)) > a.radiusM + b.radiusM),
+      ),
+    { error: 'district circles must not overlap', path: ['districts'] },
+  )
   .refine(
     (geo) =>
       geo.stationOnLineToleranceM >
