@@ -4,18 +4,27 @@
  * - Shell JS of route `/`: every script the prerendered `/` HTML makes a modern browser run
  *   (external chunks plus inline scripts; `nomodule` polyfills excluded), gzipped, against
  *   `shellJsGzKB`.
- * - 3D chunk JS: the files of the lazy `next/dynamic` scene import, read from the route's
- *   react-loadable-manifest.json (minus any file the shell already loads), gzipped, against
- *   `sceneChunkJsGzKB`.
+ * - 3D chunk JS: the files Turbopack's loader in the shell fetches for the scene's lazy import,
+ *   minus files the shell already loads, gzipped, against `sceneChunkJsGzKB`. The import is found
+ *   by the scene's feature marker (`cc-feature:city-scene`), cross-checked against the route's
+ *   react-loadable-manifest.json, and must hold the build's only copy of three.
+ * - Total JS to playable: the shell, the boot islands ({@link BOOT_ISLAND_FEATURES}) and the 3D
+ *   chunk, each file once, against `totalJsToPlayableGzKB`.
+ * - Base geo: the prerendered `/geo/base` body, gzipped, against `baseGeoGzKB`.
+ * - District buildings: once the build prerenders `/geo/districts/<tier>/<id>` (S04d), each
+ *   tier's districts plus its `/geo/blocks/<tier>` body against `districtBuildingsGzKB`.
+ * - PERF-3: modules Turbopack copies into more than one chunk, reported only.
  *
+ * Every lookup has a positive control: a marker, loader or manifest entry that cannot be found
+ * fails the run, so a change in the build format cannot turn a check into a silent pass.
  * scripts/shell-guard.ts runs next and checks the boot path and that no test hook ships.
  * Run after `npm run build`. Sizes use KB = 1000 bytes, the stricter reading of the budget.
  */
-import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { readdir, readFile, stat } from 'node:fs/promises'
+import { join, relative } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { z } from 'zod'
-import { PerfConfigSchema } from '../src/lib/data/schemas/config.ts'
+import { PerfConfigSchema, QUALITY_TIERS } from '../src/lib/data/schemas/config.ts'
 
 export interface ScriptRefs {
   /** `src` values of external scripts, in document order, deduplicated. */
@@ -53,14 +62,22 @@ export function extractScripts(html: string): ScriptRefs {
 
 /** Maps a `/_next/static/...` URL to its file under the build dir; other URLs are rejected. */
 export function staticFilePath(src: string, distDir: string): string {
+  return join(distDir, staticChunkName(src))
+}
+
+/**
+ * A `/_next/static/...` script URL as a path relative to the build dir (`static/chunks/a.js`),
+ * the form Turbopack's loaders and the loadable manifest use. Other URLs are rejected.
+ */
+export function staticChunkName(src: string): string {
   const path = src.split(/[?#]/)[0] ?? ''
   const prefix = '/_next/static/'
   if (!path.startsWith(prefix)) {
     throw new Error(`Unexpected script source outside ${prefix}: ${src}`)
   }
-  const relative = decodeURIComponent(path.slice(prefix.length))
-  if (relative.split('/').includes('..')) throw new Error(`Refusing path traversal: ${src}`)
-  return join(distDir, 'static', relative)
+  const relativePath = decodeURIComponent(path.slice(prefix.length))
+  if (relativePath.split('/').includes('..')) throw new Error(`Refusing path traversal: ${src}`)
+  return `static/${relativePath}`
 }
 
 export function gzipBytes(content: string | Uint8Array): number {
@@ -79,54 +96,317 @@ export function checkBudget(name: string, actualBytes: number, limitKB: number):
   return { name, actualKB, limitKB, ok: actualBytes <= limitKB * 1000 }
 }
 
-// Only the field this script enforces is read, through the shared perf.json schema; the whole
+// Only the fields this script enforces are read, through the shared perf.json schema; the whole
 // file is validated by src/lib/data/data.test.ts.
-const ShellLimitSchema = z.object({ shellJsGzKB: PerfConfigSchema.shape.shellJsGzKB })
+const LimitsSchema = z.object({
+  shellJsGzKB: PerfConfigSchema.shape.shellJsGzKB,
+  sceneChunkJsGzKB: PerfConfigSchema.shape.sceneChunkJsGzKB,
+  totalJsToPlayableGzKB: PerfConfigSchema.shape.totalJsToPlayableGzKB,
+  baseGeoGzKB: PerfConfigSchema.shape.baseGeoGzKB,
+  districtBuildingsGzKB: PerfConfigSchema.shape.districtBuildingsGzKB,
+})
+export type BudgetLimits = z.infer<typeof LimitsSchema>
 
-export function readShellLimit(perf: unknown): number {
-  const result = ShellLimitSchema.safeParse(perf)
+/** The limits from perf.json; throws naming every invalid field. */
+export function readLimits(perf: unknown): BudgetLimits {
+  const result = LimitsSchema.safeParse(perf)
   if (!result.success) {
-    throw new Error('data/config/perf.json: shellJsGzKB must be a positive number')
+    const fields = [...new Set(result.error.issues.map((issue) => issue.path.join('.')))]
+    throw new Error(`data/config/perf.json: invalid or missing ${fields.join(', ')}`)
   }
-  return result.data.shellJsGzKB
+  return result.data
 }
 
-const SceneLimitSchema = z.object({
-  sceneChunkJsGzKB: PerfConfigSchema.shape.sceneChunkJsGzKB,
-})
-
-export function readSceneChunkLimit(perf: unknown): number {
-  const result = SceneLimitSchema.safeParse(perf)
-  if (!result.success) {
-    throw new Error('data/config/perf.json: sceneChunkJsGzKB must be a positive number')
+/**
+ * True when `marker` appears whole: not as the start of a longer id (`cc-feature:event` inside
+ * `cc-feature:event-sheet`), which would report the wrong feature or hide a missing one.
+ */
+export function hasMarker(text: string, marker: string): boolean {
+  let at = text.indexOf(marker)
+  while (at !== -1) {
+    if (!/^-?[a-z0-9]/.test(text.slice(at + marker.length, at + marker.length + 2))) return true
+    at = text.indexOf(marker, at + 1)
   }
-  return result.data.sceneChunkJsGzKB
+  return false
+}
+
+/** Every static JS chunk of a build, by name relative to the build dir (`static/chunks/a.js`). */
+export type Chunks = ReadonlyMap<string, string>
+
+/** The feature marker the 3D scene's root renders (src/scene/CityCanvas.tsx). */
+export const SCENE_FEATURE = 'cc-feature:city-scene'
+
+export interface BootIsland {
+  /** A feature marker in the island's chunk, or for `nested`, in a chunk the island loads. */
+  readonly marker: string
+  /** The module the island's `lazyIsland(..., { eager: true })` imports (checked by a test). */
+  readonly module: string
+  /**
+   * The island renders no marker of its own (it renders nothing until it has something to show),
+   * so it is found as the boot chunk that lazily loads the marked feature.
+   */
+  readonly nested?: true
+}
+
+/**
+ * The islands that load as soon as the shell runs (`lazyIsland` with `eager: true`). They count
+ * toward total JS to playable. scripts/budget.test.ts checks this list against src.
+ */
+export const BOOT_ISLAND_FEATURES: readonly BootIsland[] = [
+  { marker: 'cc-feature:welcome', module: 'src/components/welcome/WelcomeGate.tsx' },
+  { marker: 'cc-feature:sound-control', module: 'src/components/audio/SoundControl.tsx' },
+  { marker: 'cc-feature:clout-hud', module: 'src/components/hud/CloutHudIsland.tsx' },
+  { marker: 'cc-feature:hud-panel-buttons', module: 'src/components/hud/HudPanelButtons.tsx' },
+  { marker: 'cc-feature:level-up', module: 'src/components/hud/LevelUpToast.tsx' },
+  {
+    marker: 'cc-feature:event-sheet',
+    module: 'src/components/events/EventSheetHost.tsx',
+    nested: true,
+  },
+]
+
+/** A Turbopack chunk loader: the files one dynamic import fetches before it runs. */
+export interface Loader {
+  /** The chunk the loader is in. */
+  readonly chunk: string
+  readonly files: readonly string[]
+}
+
+// Turbopack (Next 16) compiles `import()` to `<r>.v(t=>Promise.all([<files>].map(t=><r>.l(t)))
+// .then(()=>t(<module id>)))`, with the files as JSON strings relative to the build dir.
+const LOADER = /\.v\(\s*[\w$]+\s*=>\s*Promise\.all\(\s*(\[[^\]]*\])\s*\.map\(/g
+const LoaderFilesSchema = z.array(z.string().regex(/^static\/[\w\-./]+$/))
+
+/** The chunk loaders in a chunk; throws on a loader whose file list cannot be read. */
+export function findLoaders(chunk: string, text: string): Loader[] {
+  const loaders: Loader[] = []
+  for (const match of text.matchAll(LOADER)) {
+    let files: unknown
+    try {
+      files = JSON.parse(match[1] ?? '')
+    } catch {
+      files = undefined
+    }
+    const result = LoaderFilesSchema.safeParse(files)
+    if (!result.success || result.data.some((file) => file.split('/').includes('..'))) {
+      throw new Error(`${chunk}: unreadable chunk loader (has the Turbopack format changed?)`)
+    }
+    loaders.push({ chunk, files: result.data })
+  }
+  return loaders
+}
+
+function chunksWithMarker(chunks: Chunks, marker: string): string[] {
+  return [...chunks].filter(([, text]) => hasMarker(text, marker)).map(([name]) => name)
+}
+
+function onlyOne<T>(items: readonly T[], what: string): T {
+  if (items.length !== 1 || items[0] === undefined) {
+    throw new Error(`expected exactly one ${what}, found ${items.length}`)
+  }
+  return items[0]
+}
+
+function jsFiles(files: readonly string[], exclude: ReadonlySet<string>): string[] {
+  return [...new Set(files)].filter((file) => file.endsWith('.js') && !exclude.has(file)).sort()
+}
+
+/** `REVISION` as three's bundled module exports it (`"REVISION",0,"182"`). */
+const THREE_REVISION = /"REVISION",\s*0,\s*"(\d+)"/g
+
+/** Every copy of three in the build, as [chunk, revision]. */
+export function threeRevisions(chunks: Chunks): [string, string][] {
+  const found: [string, string][] = []
+  for (const [name, text] of chunks) {
+    for (const match of text.matchAll(THREE_REVISION)) found.push([name, match[1] ?? ''])
+  }
+  return found
 }
 
 /** `server/app/page/react-loadable-manifest.json` as Turbopack writes it (Next 16). */
 const LoadableManifestSchema = z.record(z.string(), z.object({ files: z.array(z.string().min(1)) }))
 
+export interface BuildInput {
+  readonly chunks: Chunks
+  /** The shell's external scripts, as chunk names. */
+  readonly shell: readonly string[]
+}
+
+export interface SceneSet {
+  /** The 3D chunk's files, minus the shell's. */
+  readonly files: readonly string[]
+  readonly threeRevision: string
+}
+
 /**
- * The lazily loaded JS of route `/`: every `.js` file of every dynamic import in the manifest,
- * deduplicated, minus files the shell already loads (they count once, in the shell). Paths are
- * relative to the build directory (`static/chunks/...`). Fails fast on an unexpected format or
- * an empty result, so a build change cannot turn the check into a silent pass.
+ * The files of the scene's lazy import. Fails unless exactly one chunk renders the scene marker,
+ * exactly one shell loader fetches it, the loadable manifest lists the same JS for that import,
+ * and the build holds exactly one copy of three, inside this set.
  */
-export function sceneChunkFiles(manifest: unknown, shellScripts: readonly string[]): string[] {
-  const result = LoadableManifestSchema.safeParse(manifest)
-  if (!result.success) throw new Error('react-loadable-manifest.json: unexpected format')
-  const shell = new Set(shellScripts.map((src) => src.split(/[?#]/)[0]?.replace(/^\/_next\//, '')))
-  const files = new Set<string>()
-  for (const entry of Object.values(result.data)) {
-    for (const file of entry.files) {
-      if (file.split('/').includes('..')) throw new Error(`Refusing path traversal: ${file}`)
-      if (file.endsWith('.js') && !shell.has(file)) files.add(file)
+export function sceneSet(input: BuildInput, manifest: unknown): SceneSet {
+  try {
+    return findSceneSet(input, manifest)
+  } catch (error) {
+    throw new Error(`3D chunk: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+function fail(message: string): never {
+  throw new Error(message)
+}
+
+function findSceneSet(input: BuildInput, manifest: unknown): SceneSet {
+  const shell = new Set(input.shell)
+  const markerChunk = onlyOne(
+    chunksWithMarker(input.chunks, SCENE_FEATURE),
+    `chunk with ${SCENE_FEATURE}`,
+  )
+  const loaders = input.shell
+    .flatMap((name) => findLoaders(name, input.chunks.get(name) ?? ''))
+    .filter((loader) => loader.files.includes(markerChunk))
+  const loader = onlyOne(loaders, `shell chunk loader fetching ${markerChunk}`)
+
+  const parsed = LoadableManifestSchema.safeParse(manifest)
+  if (!parsed.success) fail('react-loadable-manifest.json has an unexpected format')
+  const entries = Object.values(parsed.data).filter((entry) => entry.files.includes(markerChunk))
+  const entry = onlyOne(entries, `react-loadable-manifest.json entry for ${markerChunk}`)
+  const fromLoader = jsFiles(loader.files, new Set())
+  const fromManifest = jsFiles(entry.files, new Set())
+  if (fromLoader.join() !== fromManifest.join()) {
+    fail(`the shell loader (${fromLoader.join(', ')}) and the loadable manifest disagree`)
+  }
+
+  const revisions = threeRevisions(input.chunks)
+  if (revisions.length === 0) fail("three's REVISION not found: has the bundle format changed?")
+  if (revisions.length > 1) {
+    fail(`three is bundled more than once: ${revisions.map(([name, r]) => `${name} r${r}`)}`)
+  }
+  const [threeChunk, threeRevision] = onlyOne(revisions, 'copy of three')
+  const files = jsFiles(loader.files, shell)
+  if (!files.includes(threeChunk)) fail(`three (${threeChunk}) is outside the 3D chunk`)
+  for (const file of files) {
+    if (!input.chunks.has(file)) fail(`${file} is missing from the build`)
+  }
+  return { files, threeRevision }
+}
+
+/**
+ * The files each boot island's loader in the shell fetches, minus the shell's. Fails unless every
+ * island's marker is in exactly one chunk and exactly one shell loader fetches that chunk (for a
+ * nested island: the chunk holding the marked feature's loader).
+ */
+export function bootIslandFiles(
+  input: BuildInput,
+  islands: readonly BootIsland[] = BOOT_ISLAND_FEATURES,
+): Map<string, string[]> {
+  const shell = new Set(input.shell)
+  const shellLoaders = input.shell.flatMap((name) =>
+    findLoaders(name, input.chunks.get(name) ?? ''),
+  )
+  const result = new Map<string, string[]>()
+  for (const island of islands) {
+    const label = `boot island ${island.module}`
+    try {
+      const markerChunk = onlyOne(
+        chunksWithMarker(input.chunks, island.marker),
+        `chunk with ${island.marker}`,
+      )
+      let target = markerChunk
+      if (island.nested === true) {
+        const hosts = [...input.chunks.keys()].filter((name) =>
+          findLoaders(name, input.chunks.get(name) ?? '').some((loader) =>
+            loader.files.includes(markerChunk),
+          ),
+        )
+        target = onlyOne(hosts, `chunk whose loader fetches ${markerChunk}`)
+      }
+      const loader = onlyOne(
+        shellLoaders.filter((candidate) => candidate.files.includes(target)),
+        `shell chunk loader fetching ${target}`,
+      )
+      const files = jsFiles(loader.files, shell)
+      for (const file of files) {
+        if (!input.chunks.has(file)) throw new Error(`${file} is missing from the build`)
+      }
+      result.set(island.module, files)
+    } catch (error) {
+      throw new Error(`${label}: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
-  if (files.size === 0) {
-    throw new Error('react-loadable-manifest.json lists no lazy JS for /: is the 3D scene mounted?')
+  return result
+}
+
+/** The `/geo/base` body's top-level layers (src/app/geo/base/route.ts). */
+const GeoBaseBodySchema = z.looseObject({
+  format: z.string().min(1),
+  land: z.unknown(),
+  water: z.unknown(),
+  parks: z.unknown(),
+  subway: z.unknown(),
+})
+
+/** Checks that `body` is the base geo route's JSON, so the budget measures the right file. */
+export function assertGeoBaseBody(body: string): void {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(body)
+  } catch {
+    parsed = undefined
   }
-  return [...files].sort()
+  const result = GeoBaseBodySchema.safeParse(parsed)
+  const layers = ['land', 'water', 'parks', 'subway'] as const
+  if (!result.success || layers.some((layer) => !(layer in result.data))) {
+    throw new Error('/geo/base body is not the base geo JSON (format, land, water, parks, subway)')
+  }
+}
+
+export interface DuplicateReport {
+  /** Modules found with the same id and code in more than one chunk. */
+  readonly modules: number
+  /** Gzipped bytes of every copy past the first, each module compressed on its own. */
+  readonly extraGzBytes: number
+  /** The largest duplicates: [module id, chunk count, extra gz bytes]. */
+  readonly top: readonly (readonly [string, number, number])[]
+}
+
+// A module in a Turbopack chunk: `,<id>,<factory>` inside the chunk's `.push([...])`.
+const MODULE_START = /[,[](\d+),(?=(?:[\w$]+|\([\w$,]*\))=>|function\b)/g
+
+/** The modules of a chunk by id, each with its code (up to the next module). */
+export function chunkModules(text: string): Map<string, string> {
+  const starts = [...text.matchAll(MODULE_START)]
+  const modules = new Map<string, string>()
+  starts.forEach((match, index) => {
+    // The last module ends where the chunk's `.push([...])` closes.
+    const close = text.lastIndexOf('])')
+    const end = starts[index + 1]?.index ?? (close > match.index ? close : text.length)
+    modules.set(match[1] ?? '', text.slice(match.index + match[0].length, end))
+  })
+  return modules
+}
+
+/** PERF-3: modules copied into more than one chunk. Report only; it never fails the budget. */
+export function duplicateModules(chunks: Chunks): DuplicateReport {
+  const copies = new Map<string, { code: string; count: number }>()
+  for (const text of chunks.values()) {
+    for (const [id, code] of chunkModules(text)) {
+      const key = `${id}\u0000${code}`
+      const seen = copies.get(key)
+      copies.set(key, { code, count: (seen?.count ?? 0) + 1 })
+    }
+  }
+  const duplicates = [...copies]
+    .filter(([, entry]) => entry.count > 1)
+    .map(([key, entry]) => {
+      const id = key.split('\u0000')[0] ?? ''
+      return [id, entry.count, gzipBytes(entry.code) * (entry.count - 1)] as const
+    })
+    .sort((a, b) => b[2] - a[2])
+  return {
+    modules: duplicates.length,
+    extraGzBytes: duplicates.reduce((sum, [, , bytes]) => sum + bytes, 0),
+    top: duplicates.slice(0, 3),
+  }
 }
 
 function report(result: BudgetResult, detail: string): string {
@@ -134,52 +414,147 @@ function report(result: BudgetResult, detail: string): string {
   return `${status} ${result.name}: ${result.actualKB} KB gz (limit ${result.limitKB} KB)\n  ${detail}`
 }
 
+const kb = (bytes: number) => (bytes / 1000).toFixed(1)
+
+async function readOrExplain(path: string, missing: string): Promise<string> {
+  try {
+    return await readFile(path, 'utf8')
+  } catch {
+    throw new Error(missing)
+  }
+}
+
+async function readChunks(distDir: string): Promise<Map<string, string>> {
+  const staticDir = join(distDir, 'static')
+  const entries = await readdir(staticDir, { recursive: true, withFileTypes: true })
+  const chunks = new Map<string, string>()
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith('.js')) continue
+    const path = join(entry.parentPath, entry.name)
+    chunks.set(relative(distDir, path).split('\\').join('/'), await readFile(path, 'utf8'))
+  }
+  return chunks
+}
+
+async function isDirectory(path: string): Promise<boolean> {
+  return (await stat(path).catch(() => undefined))?.isDirectory() === true
+}
+
+/** Per tier: the gzipped district and block bodies, or null before S04d's routes exist. */
+async function districtBytes(appDir: string): Promise<Map<string, [number, number]> | null> {
+  const districtsDir = join(appDir, 'geo/districts')
+  if (!(await isDirectory(districtsDir))) return null
+  const perTier = new Map<string, [number, number]>()
+  for (const tier of QUALITY_TIERS) {
+    const tierDir = join(districtsDir, tier)
+    const bodies = (await isDirectory(tierDir))
+      ? (await readdir(tierDir)).filter((name) => name.endsWith('.body'))
+      : []
+    if (bodies.length === 0) {
+      throw new Error(`/geo/districts is built but has no ${tier} district bodies in ${tierDir}`)
+    }
+    let bytes = 0
+    for (const name of bodies) bytes += gzipBytes(await readFile(join(tierDir, name)))
+    const blocks = await readFile(join(appDir, 'geo/blocks', `${tier}.body`)).catch(() => null)
+    if (blocks !== null) bytes += gzipBytes(blocks)
+    perTier.set(tier, [bytes, bodies.length])
+  }
+  return perTier
+}
+
 async function main(): Promise<void> {
   const root = process.cwd()
   const distDir = join(root, '.next')
+  const appDir = join(distDir, 'server/app')
   const perf: unknown = JSON.parse(await readFile(join(root, 'data/config/perf.json'), 'utf8'))
-  const limitKB = readShellLimit(perf)
-  const sceneLimitKB = readSceneChunkLimit(perf)
+  const limits = readLimits(perf)
 
-  let html: string
-  try {
-    html = await readFile(join(distDir, 'server/app/index.html'), 'utf8')
-  } catch {
-    throw new Error('No prerendered / found in .next/server/app/index.html. Run `npm run build`.')
-  }
-
+  const html = await readOrExplain(
+    join(appDir, 'index.html'),
+    'No prerendered / found in .next/server/app/index.html. Run `npm run build`.',
+  )
   const { external, inline } = extractScripts(html)
   if (external.length === 0) throw new Error('No external scripts found for /: unexpected build')
+  const shellFiles = external.map(staticChunkName)
 
-  let externalBytes = 0
-  for (const src of external) {
-    externalBytes += gzipBytes(await readFile(staticFilePath(src, distDir)))
+  const chunks = await readChunks(distDir)
+  const gz = new Map<string, number>()
+  const gzOf = (file: string) => {
+    const text = chunks.get(file)
+    if (text === undefined) throw new Error(`${file} is referenced but missing from the build`)
+    const bytes = gz.get(file) ?? gzipBytes(text)
+    gz.set(file, bytes)
+    return bytes
   }
+  const sum = (files: Iterable<string>) => [...files].reduce((total, f) => total + gzOf(f), 0)
+
+  const externalBytes = sum(shellFiles)
   const inlineBytes = gzipBytes(inline.join('\n'))
-  const shell = checkBudget('Shell JS (/)', externalBytes + inlineBytes, limitKB)
+  const shell = checkBudget('Shell JS (/)', externalBytes + inlineBytes, limits.shellJsGzKB)
 
-  let manifest: unknown
-  try {
-    manifest = JSON.parse(
-      await readFile(join(distDir, 'server/app/page/react-loadable-manifest.json'), 'utf8'),
-    )
-  } catch {
-    throw new Error('No .next/server/app/page/react-loadable-manifest.json. Run `npm run build`.')
-  }
-  const sceneFiles = sceneChunkFiles(manifest, external)
-  let sceneBytes = 0
-  for (const file of sceneFiles) sceneBytes += gzipBytes(await readFile(join(distDir, file)))
-  const scene = checkBudget('3D chunk JS (lazy)', sceneBytes, sceneLimitKB)
+  const manifest: unknown = JSON.parse(
+    await readOrExplain(
+      join(appDir, 'page/react-loadable-manifest.json'),
+      'No .next/server/app/page/react-loadable-manifest.json. Run `npm run build`.',
+    ),
+  )
+  const input = { chunks, shell: shellFiles }
+  const scene3d = sceneSet(input, manifest)
+  const scene = checkBudget('3D chunk JS (lazy)', sum(scene3d.files), limits.sceneChunkJsGzKB)
 
+  const boot = bootIslandFiles(input)
+  const playable = new Set([...shellFiles, ...[...boot.values()].flat(), ...scene3d.files])
+  const bootOnly = [...new Set([...boot.values()].flat())].filter(
+    (file) => !scene3d.files.includes(file),
+  )
+  const total = checkBudget(
+    'Total JS to playable',
+    sum(playable) + inlineBytes,
+    limits.totalJsToPlayableGzKB,
+  )
+
+  const geoBody = await readOrExplain(
+    join(appDir, 'geo/base.body'),
+    'No prerendered /geo/base found in .next/server/app/geo/base.body. Run `npm run build`.',
+  )
+  assertGeoBaseBody(geoBody)
+  const geo = checkBudget('Base geo (/geo/base)', gzipBytes(geoBody), limits.baseGeoGzKB)
+
+  const results = [shell, scene, total, geo]
   const lines = [
     report(
       shell,
-      `${external.length} chunks: ${(externalBytes / 1000).toFixed(1)} KB gz; inline: ${(inlineBytes / 1000).toFixed(1)} KB gz`,
+      `${external.length} chunks: ${kb(externalBytes)} KB gz; inline: ${kb(inlineBytes)} KB gz`,
     ),
-    report(scene, `${sceneFiles.length} chunks: ${sceneFiles.join(', ')}`),
+    report(scene, `three r${scene3d.threeRevision}; ${scene3d.files.join(', ')}`),
+    report(
+      total,
+      `shell ${shell.actualKB} KB + ${boot.size} boot islands ${kb(sum(bootOnly))} KB + 3D ${scene.actualKB} KB (shared files counted once); ${playable.size} files`,
+    ),
+    report(geo, `${kb(geoBody.length)} KB raw`),
   ]
+
+  const districts = await districtBytes(appDir)
+  if (districts === null) {
+    lines.push('SKIP District buildings: this build has no /geo/districts routes yet (S04d)')
+  } else {
+    for (const [tier, [bytes, count]] of districts) {
+      const limit =
+        limits.districtBuildingsGzKB[tier as keyof BudgetLimits['districtBuildingsGzKB']]
+      const result = checkBudget(`District buildings (${tier})`, bytes, limit)
+      results.push(result)
+      lines.push(report(result, `${count} districts plus /geo/blocks/${tier}`))
+    }
+  }
+
+  const duplicates = duplicateModules(chunks)
+  const top = duplicates.top.map(([id, count, bytes]) => `#${id} ×${count} +${kb(bytes)} KB`)
+  lines.push(
+    `INFO PERF-3 duplicate modules (report only): ${duplicates.modules} modules in more than one chunk, about ${kb(duplicates.extraGzBytes)} KB gz extra${top.length > 0 ? `; largest ${top.join(', ')}` : ''}`,
+  )
+
   process.stdout.write(`${lines.join('\n')}\n`)
-  if (!shell.ok || !scene.ok) process.exitCode = 1
+  if (results.some((result) => !result.ok)) process.exitCode = 1
 }
 
 if (import.meta.main) {
