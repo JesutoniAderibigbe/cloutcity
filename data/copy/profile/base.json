@@ -1,0 +1,10 @@
+{
+  "strings": {
+    "profile.handle.error.tooShort": "That handle is too short. Add a few more characters.",
+    "profile.handle.error.tooLong": "That handle is too long. Trim it down a little.",
+    "profile.handle.error.characters": "Use only letters, numbers and underscores.",
+    "profile.handle.error.start": "Start your handle with a letter.",
+    "profile.handle.error.underscores": "No double underscores, and no underscore at the end.",
+    "profile.handle.error.letters": "Add a few more letters to your handle."
+  }
+}

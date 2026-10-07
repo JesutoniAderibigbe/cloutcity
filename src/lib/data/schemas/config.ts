@@ -193,6 +193,55 @@ export const ModerationConfigSchema = z.strictObject({
 })
 export type ModerationConfig = z.infer<typeof ModerationConfigSchema>
 
+/**
+ * data/config/handles.json (S18a). The database enforces these: the migration's generated seed
+ * (scripts/moderation/blocklist-sql.ts) copies them into private.handle_settings, and the
+ * format rule is the pattern src/lib/handles/normalise.ts builds from them.
+ */
+export const HandlesConfigSchema = z
+  .strictObject({
+    minLength: positiveInt,
+    maxLength: positiveInt,
+    /** Letters a handle needs, so it reads as a name rather than a number. */
+    minLetters: positiveInt,
+    /** Guest handles: AdjectiveNoun plus `digits` digits; `fallbackDigits` after `attempts` misses. */
+    generated: z.strictObject({
+      digits: positiveInt,
+      fallbackDigits: positiveInt,
+      attempts: positiveInt,
+    }),
+    /**
+     * The first `freeChanges` changes are not limited. After that, at most `perWindow` changes in
+     * any `windowDays`, at least `minIntervalHours` apart.
+     */
+    changes: z.strictObject({
+      freeChanges: z.int().nonnegative(),
+      perWindow: positiveInt,
+      windowDays: positiveInt,
+      minIntervalHours: positiveInt,
+    }),
+    /** A released handle stays reserved for this long, so nobody can take over a known name. */
+    quarantineDays: positiveInt,
+    rateLimits: z.strictObject({
+      /** check_handle and set_handle, per player. */
+      checkHandle: RateLimitSchema,
+      /** get_public_profile and get_public_profiles, per player. */
+      publicProfile: RateLimitSchema,
+    }),
+    /** Most ids get_public_profiles accepts in one call. */
+    publicProfilesMaxIds: positiveInt,
+  })
+  .refine((config) => config.minLength <= config.maxLength, {
+    error: 'minLength must not exceed maxLength',
+  })
+  .refine((config) => config.minLetters <= config.minLength, {
+    error: 'minLetters must not exceed minLength',
+  })
+  .refine((config) => config.generated.digits < config.generated.fallbackDigits, {
+    error: 'fallbackDigits must be more than digits',
+  })
+export type HandlesConfig = z.infer<typeof HandlesConfigSchema>
+
 const dollars = z.int().nonnegative()
 /** Whole percent, 0..99: resale is always worth less than the price. */
 const percent = z.int().min(0).max(99)

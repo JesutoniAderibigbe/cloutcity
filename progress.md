@@ -137,6 +137,10 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
 - Only one browser (e2e/playwright) suite runs machine-wide at a time (heavy.sh takes an `e2e` lock):
   two parallel suites starved SwiftShader and failed 61 timing tests in a 31-minute run.
 
+- The local Supabase stack is stopped by default (user request, to save CPU). Start it with
+  `npx supabase start` only for test:integration / e2e:supabase, then `npx supabase stop`. Never quit
+  Docker or touch non-cloutcity containers (the user has other projects there).
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.

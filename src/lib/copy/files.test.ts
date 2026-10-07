@@ -1,6 +1,7 @@
 /**
- * The copy files on disk (S05c): data/copy/<ns>/base.json, optional data/copy/<ns>/<pack>.json
- * and data/copy/superlatives.json, and the namespace modules that register them.
+ * The copy files on disk (S05c): data/copy/<ns>/base.json, optional data/copy/<ns>/<pack>.json,
+ * data/copy/superlatives.json and data/copy/handleWords.json (S18a), and the namespace modules
+ * that register them.
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -8,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 import copyConfigJson from '@data/config/copy.json'
 import { CopyConfigSchema } from '@/lib/data/schemas/config'
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from '@/lib/data/schemas/copy'
+import { HandleWordsSchema } from '@/lib/data/schemas/handles'
 import { placeholdersOf } from '@/lib/placeholders'
 import { BOOT_NAMESPACES } from './index'
 import { registeredNamespace, registeredNamespaces } from './registry'
@@ -37,14 +39,18 @@ function baseStrings(namespace: string): Record<string, string> {
 }
 
 describe('copy files', () => {
-  it('data/copy holds only namespace directories and superlatives.json', () => {
+  it('data/copy holds only namespace directories, superlatives.json and handleWords.json', () => {
     const files = readdirSync(COPY_DIR, { withFileTypes: true })
       .filter((entry) => !entry.isDirectory())
       .map((entry) => entry.name)
-    expect(files).toEqual(['superlatives.json'])
+      .sort()
+    expect(files).toEqual(['handleWords.json', 'superlatives.json'])
     expect(
       SuperlativesSchema.safeParse(readJson(join(COPY_DIR, 'superlatives.json'))).success,
     ).toBe(true)
+    expect(HandleWordsSchema.safeParse(readJson(join(COPY_DIR, 'handleWords.json'))).success).toBe(
+      true,
+    )
   })
 
   it('the copy config names its active pack among its packs', () => {

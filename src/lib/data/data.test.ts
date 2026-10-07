@@ -14,6 +14,7 @@ import {
   type BalanceConfig,
   CopyConfigSchema,
   GeoConfigSchema,
+  HandlesConfigSchema,
   JOB_IDS,
   LayoutConfigSchema,
   ModerationConfigSchema,
@@ -34,6 +35,7 @@ import {
   VenuesFileSchema,
 } from './schemas/content'
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
+import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
 import { SceneConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
@@ -74,6 +76,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,
   'config/geo.json': GeoConfigSchema,
+  'config/handles.json': HandlesConfigSchema,
   'config/layout.json': LayoutConfigSchema,
   'config/moderation.json': ModerationConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
@@ -82,6 +85,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/realtime.json': RealtimeConfigSchema,
   'config/scene.json': SceneConfigSchema,
   'config/theme.json': ThemeConfigSchema,
+  'copy/handleWords.json': HandleWordsSchema,
   'copy/superlatives.json': SuperlativesSchema,
   'events/events.json': EventsFileSchema,
   'geo/bounds.json': GeoBoundsSchema,
@@ -94,6 +98,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
+  'moderation/handle-blocklist.json': HandleBlocklistSchema,
   'premium/premium.json': PremiumFileSchema,
   'sim/economy-baseline.derived.json': EconomyBaselineSchema,
   'venues/venues.json': VenuesFileSchema,
@@ -156,6 +161,7 @@ describe('/data files', () => {
     'homes',
     'config',
     'copy',
+    'moderation',
   ])('/data/%s has at least one data file', (folder) => {
     expect(files.some((file) => file.startsWith(`${folder}/`))).toBe(true)
   })

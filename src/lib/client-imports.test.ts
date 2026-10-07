@@ -6,7 +6,8 @@
  * test follows their runtime imports (type-only imports are erased, so they are skipped) and
  * fails if any reachable module imports `zod` or a classic-zod module under src/lib/data/.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -56,9 +57,12 @@ function resolveLocal(spec: string, from: string): string | undefined {
 
 /**
  * Modules that pull classic zod into whatever imports them. geo.ts also inlines ~430 KB of
- * derived geo JSON; the scene must fetch those layers as static assets instead.
+ * derived geo JSON; the scene must fetch those layers as static assets instead. Anything under
+ * data/moderation/ (the handle blocklist, S18a) is server data: shipping it would hand players
+ * the list of words the filter looks for.
  */
-const FORBIDDEN_LOCAL = /^src\/lib\/data\/(config|content|geo|parse|schemas\/.*)\.ts$/
+const FORBIDDEN_LOCAL =
+  /^(?:src\/lib\/data\/(config|content|geo|parse|schemas\/.*)\.ts|data\/moderation\/.*)$/
 
 function violations(entries: readonly string[]): string[] {
   const found: string[] = []
@@ -158,6 +162,30 @@ describe('browser code stays off classic zod (shell JS budget)', () => {
       expect(FORBIDDEN_LOCAL.test(file), file).toBe(true)
     }
     expect(FORBIDDEN_LOCAL.test('src/lib/data/geometry.ts')).toBe(false)
+  })
+
+  it('the forbidden list covers the handle blocklist and its loaders (S18a)', () => {
+    for (const file of [
+      'data/moderation/handle-blocklist.json',
+      'src/lib/data/schemas/handles.ts',
+    ]) {
+      expect(FORBIDDEN_LOCAL.test(file), file).toBe(true)
+    }
+    expect(FORBIDDEN_LOCAL.test('data/config/handles.json')).toBe(false)
+    expect(FORBIDDEN_LOCAL.test('src/lib/handles/filter.ts')).toBe(false)
+  })
+
+  it('a client module importing the blocklist is caught (self-check)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'client-imports-probe-'))
+    try {
+      const probe = join(dir, 'probe.ts')
+      writeFileSync(probe, "import list from '@data/moderation/handle-blocklist.json'\n")
+      expect(violations([probe])).toEqual([
+        `${relative(ROOT, probe)} imports data/moderation/handle-blocklist.json`,
+      ])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 
   it('the import scanner sees what it must (self-check)', () => {
