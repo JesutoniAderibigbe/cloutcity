@@ -33,6 +33,7 @@ function fakeBackend(record: Partial<PlayerRecord> | null = {}) {
   const quarantined: QuarantineArgs[] = []
   let outcome: CommitOutcome | null = null
   const history = new Map<number, HistorySave>()
+  let overrides = 0
   const player: PlayerRecord | null =
     record === null
       ? null
@@ -48,6 +49,11 @@ function fakeBackend(record: Partial<PlayerRecord> | null = {}) {
     userIdFor: vi.fn(async (token: string) => (token === 'good' ? USER : null)),
     load: vi.fn(async () => player),
     saveAt: vi.fn(async (_user: string, revision: number) => history.get(revision) ?? null),
+    consumeOverride: vi.fn(async () =>
+      ++overrides > sync.plausibility.overrideMaxPerHour
+        ? ('rate-limited' as const)
+        : ('ok' as const),
+    ),
     commit: vi.fn(async (args: CommitArgs) => {
       commits.push(args)
       const accepted: CommitOutcome = {
@@ -302,6 +308,8 @@ describe('keep this device (H2): checked against the save both devices shared', 
         saveVersion: SAVE_VERSION,
         data: ancestor,
         acceptedAt: new Date(NOW - 30 * 60_000).toISOString(),
+        burstCreditMinutes: sync.plausibility.burstRealMinutes,
+        paceCredit: serverCeilings().paceCreditCap,
       })
     }
     return fake
@@ -334,13 +342,36 @@ describe('keep this device (H2): checked against the save both devices shared', 
     expect(quarantined).toHaveLength(1)
   })
 
-  it('a shared save the history no longer keeps is checked with first-upload rules', async () => {
+  it('a shared save the history no longer keeps: a whole run against real time, never first-upload rules', async () => {
     const { backend } = setup(false)
-    const result = await upload(backend, body(mine(), { baseRevision: 3, overrideFromRevision: 2 }))
-    expect(result.status).toBe(200)
-    const rich = { ...mine(), player: { ...mine().player, cash: 1_000_000 } }
+    // As far along as the account's save (the same grant claimed): accepted.
+    const kept = await upload(
+      backend,
+      body(claimed(), { baseRevision: 3, overrideFromRevision: 2 }),
+    )
+    expect(kept.status).toBe(200)
+    const rich = { ...claimed(), player: { ...claimed().player, cash: 1_000_000 } }
     const refused = await upload(backend, body(rich, { baseRevision: 3, overrideFromRevision: 2 }))
     expect(refused.status).toBe(422)
+  })
+
+  it('without the shared save, a kept game behind the account in grants is refused (forward-only)', async () => {
+    const { backend, quarantined } = setup(false)
+    const result = await upload(backend, body(mine(), { baseRevision: 3, overrideFromRevision: 2 }))
+    expect(result.status).toBe(422)
+    expect(quarantined[0]?.findings).toContain('regressed')
+  })
+
+  it('"keep this device" is rate limited per hour (429)', async () => {
+    const { backend } = setup(true)
+    const statuses: number[] = []
+    for (let i = 0; i <= sync.plausibility.overrideMaxPerHour; i++) {
+      statuses.push(
+        (await upload(backend, body(mine(), { baseRevision: 3, overrideFromRevision: 2 }))).status,
+      )
+    }
+    expect(statuses.at(-1)).toBe(429)
+    expect(statuses.slice(0, -1).every((status) => status !== 429)).toBe(true)
   })
 
   it('an override at or past the head is not a branch: 400', async () => {

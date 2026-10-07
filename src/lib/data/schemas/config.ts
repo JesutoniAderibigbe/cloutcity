@@ -313,10 +313,13 @@ export const SyncConfigSchema = z
        */
       burstRealMinutes: positive,
       /**
-       * Taps a person makes in a real minute of honest play (the bot replay's 4 s a tap): the
-       * pace the public level cap allows for an account's age (DEC-19).
+       * Clout other players may see an account gain per real minute of its age (the public
+       * level cap, DEC-19). Kept apart from the upload pace: a public level behind the save's is
+       * a display delay, never a refusal. (Icon − every wearable's clout) ÷ this ≥ 60 minutes.
        */
-      honestTapsPerRealMinute: positive,
+      publicCloutPerRealMinute: positive,
+      /** "Keep this device" uploads a player may make in an hour (H2 overrides; 429 beyond). */
+      overrideMaxPerHour: positiveInt,
     }),
   })
   .refine((sync) => sync.debounceMs <= sync.maxWaitMs, {
@@ -331,14 +334,6 @@ export const SyncConfigSchema = z
     error: 'keepaliveMaxBytes must not exceed maxSaveBytes',
     path: ['keepaliveMaxBytes'],
   })
-  .refine(
-    (sync) =>
-      sync.plausibility.honestTapsPerRealMinute <= sync.plausibility.maxActionsPerRealMinute,
-    {
-      error: 'honestTapsPerRealMinute must not exceed maxActionsPerRealMinute',
-      path: ['plausibility', 'honestTapsPerRealMinute'],
-    },
-  )
   .refine((sync) => sync.minUploadIntervalMs * sync.maxUploadsPerMinute <= 60_000, {
     error: 'maxUploadsPerMinute must fit in a minute at minUploadIntervalMs',
     path: ['maxUploadsPerMinute'],

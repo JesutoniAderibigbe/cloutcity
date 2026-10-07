@@ -362,6 +362,9 @@ isOneToOne: true
               "saved_at": string,"saved_revision": number
             }[]
                            },
+"consume_save_override":
+{ Args: { "p_max": number,"p_user_id": string }; Returns: undefined
+                           },
 "get_my_profile":
 { Args: Record<PropertyKey, never>; Returns: {
               "avatar": Json,"career_path": string,"free_handle_change": boolean,"handle": string,"handle_changes_left": number,"handle_generated": boolean,"next_handle_change_at": string,"public_level": string
@@ -427,7 +430,7 @@ isOneToOne: true
                            },
 "save_at_revision":
 { Args: { "p_revision": number,"p_user_id": string }; Returns: {
-              "accepted_at": string,"data": Json,"revision": number,"save_version": number
+              "accepted_at": string,"burst_credit_minutes": number,"data": Json,"pace_credit_cash": number,"pace_credit_clout": number,"revision": number,"save_version": number
             }[]
                            },
 "send_friend_boost":

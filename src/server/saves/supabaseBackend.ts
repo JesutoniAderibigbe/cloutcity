@@ -83,7 +83,23 @@ export function supabaseSaveBackend(client: ServiceClient): SaveBackend {
       const [row] = data
       return row === undefined
         ? null
-        : { saveVersion: row.save_version, data: row.data, acceptedAt: row.accepted_at }
+        : {
+            saveVersion: row.save_version,
+            data: row.data,
+            acceptedAt: row.accepted_at,
+            burstCreditMinutes: row.burst_credit_minutes,
+            paceCredit: { cash: row.pace_credit_cash, clout: row.pace_credit_clout },
+          }
+    },
+
+    async consumeOverride(userId) {
+      const { error } = await client.rpc('consume_save_override', {
+        p_user_id: userId,
+        p_max: sync.plausibility.overrideMaxPerHour,
+      })
+      if (error === null) return 'ok'
+      if (error.message === 'rate_limited') return 'rate-limited'
+      throw new BackendError('consume_save_override', error)
     },
 
     async commit(args): Promise<CommitOutcome> {

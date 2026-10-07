@@ -452,6 +452,40 @@ describe('keep this device (H2) against the real history', () => {
     expect(row?.revision).toBe(2)
   })
 
+  it('each history row keeps the credits its save was stored with (F2)', async () => {
+    const { guest } = await branched()
+    const rows = await sql<{ revision: number; burst: number; cash: number; clout: number }[]>`
+      select h.revision::int as revision, h.burst_credit_minutes as burst,
+        h.pace_credit_cash as cash, h.pace_credit_clout as clout
+      from private.save_history h where h.user_id = ${guest.id} order by h.id
+    `
+    const [save] = await sql<{ burst: number; cash: number; clout: number }[]>`
+      select burst_credit_minutes as burst, pace_credit_cash as cash, pace_credit_clout as clout
+      from public.saves where user_id = ${guest.id}
+    `
+    expect(rows.map((row) => row.revision)).toEqual([1, 2])
+    expect(rows.at(-1)).toMatchObject({ burst: save?.burst, cash: save?.cash, clout: save?.clout })
+  })
+
+  it('consume_save_override is for the service role only, and limits overrides per hour', async () => {
+    const guest = await newAttestedGuest()
+    const denied = await guest.client.rpc('consume_save_override', {
+      p_user_id: guest.id,
+      p_max: 99,
+    })
+    expect(denied.error).not.toBeNull()
+    const service = serviceClient()
+    for (let i = 0; i < 2; i++) {
+      const { error } = await service.rpc('consume_save_override', {
+        p_user_id: guest.id,
+        p_max: 2,
+      })
+      expect(error).toBeNull()
+    }
+    const { error } = await service.rpc('consume_save_override', { p_user_id: guest.id, p_max: 2 })
+    expectRpcError(error, 'rate_limited', 'PT429')
+  })
+
   it('save_at_revision is for the service role only', async () => {
     const guest = await newAttestedGuest()
     const { error } = await guest.client.rpc('save_at_revision', {

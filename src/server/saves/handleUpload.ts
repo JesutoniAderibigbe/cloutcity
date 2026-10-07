@@ -7,11 +7,13 @@
  * 3. The account has attested (403) and the save format is this server's (409 `version`).
  * 4. The upload is based on the cloud's current revision (409 `conflict`, with the head's
  *    metadata only: the device reads the save itself with its own session).
- * 5. "Keep this device" (`overrideFromRevision`, H2): the upload is checked against the save
- *    both devices last shared (`save_at_revision`, from the history) rather than the other
- *    device's, as a branch (grants the other branch claimed too are not a replay); if the
- *    history no longer keeps it, against nothing, with first-upload rules. It is stored on top of
- *    the current head, which stays in the history.
+ * 5. "Keep this device" (`overrideFromRevision`, H2; rate limited per hour, 429): the upload is
+ *    checked against the save both devices last shared (`save_at_revision`, from the history,
+ *    with its stored credits) rather than the other device's, as a branch (grants the other
+ *    branch claimed too are not a replay). If the history no longer keeps it, the upload is
+ *    checked as a whole run against the account's age, the current credits and the current
+ *    save's forward-only fields; first-upload rules apply only to an account with no save. It is
+ *    stored on top of the current head, which stays in the history.
  * 6. Save plausibility (src/engine/plausibility.ts `checkUpload`): a rejected save goes to
  *    `quarantine_save` (422); otherwise `commit_save` stores it with its repairs, the new grant
  *    rows and the public projection (INT-10), under a compare-and-swap on the revision and the
@@ -56,11 +58,13 @@ export interface StoredSave extends CloudCopy {
   readonly paceCredit: CashClout
 }
 
-/** A save the history keeps (`save_at_revision`). */
+/** A save the history keeps (`save_at_revision`), with the credits it was stored with. */
 export interface HistorySave {
   readonly saveVersion: number
   readonly data: unknown
   readonly acceptedAt: string
+  readonly burstCreditMinutes: number
+  readonly paceCredit: CashClout
 }
 
 /** What the server holds for a player. */
@@ -115,6 +119,8 @@ export interface SaveBackend {
   load(userId: string): Promise<PlayerRecord | null>
   /** The save the history keeps at `revision`, or null once it has been trimmed. */
   saveAt(userId: string, revision: number): Promise<HistorySave | null>
+  /** Counts a "keep this device" upload against the player's hourly limit. */
+  consumeOverride(userId: string): Promise<'ok' | 'rate-limited'>
   commit(args: CommitArgs): Promise<CommitOutcome>
   quarantine(args: QuarantineArgs): Promise<'ok' | 'rate-limited'>
 }
@@ -203,38 +209,60 @@ export async function handleUpload(
     return reply(409, { ok: false, code: 'conflict', head: headOf(stored) })
   }
 
-  // "Keep this device": the base is the save both devices last shared, if the history has it.
+  // "Keep this device": the base is the save both devices last shared, with the credits it was
+  // stored with. Once the account has a save, first-upload rules never apply: a shared save the
+  // history no longer keeps makes the upload a whole run checked against the account's age, the
+  // current credits, and the current save's forward-only fields.
   const override = body.overrideFromRevision ?? null
   let base: Pick<CloudCopy, 'saveVersion' | 'data' | 'acceptedAt'> | null = stored
+  let burst = stored?.burstCreditMinutes ?? ceilings.burstRealMinutes
+  let pace: CashClout | null = stored?.paceCredit ?? null
+  let head: SaveState | undefined
   if (override !== null) {
     if (stored === null || override >= stored.revision) {
       return reply(400, { ok: false, code: 'invalid' })
     }
-    base = await backend.saveAt(userId, override)
+    if ((await backend.consumeOverride(userId)) === 'rate-limited') {
+      return reply(429, { ok: false, code: 'rate-limited', retryAfterMs: 3_600_000 })
+    }
+    const ancestor = await backend.saveAt(userId, override)
+    if (ancestor !== null) {
+      base = ancestor
+      burst = ancestor.burstCreditMinutes
+      pace = ancestor.paceCredit
+    } else {
+      base = null
+      const current = previousSave(stored)
+      if (current === 'newer') {
+        return reply(409, { ok: false, code: 'version', serverVersion: SAVE_VERSION })
+      }
+      head = current ?? undefined
+    }
   }
   const prev = previousSave(base)
   if (prev === 'newer') {
     return reply(409, { ok: false, code: 'version', serverVersion: SAVE_VERSION })
   }
 
+  const accountAgeMinutes = Math.max(0, nowMs - Date.parse(player.createdAt)) / 60_000
   const acceptedAtMs = base?.acceptedAt == null ? nowMs : Date.parse(base.acceptedAt)
   const verdict = checkUpload(
     prev,
     body.save,
     {
-      realMinutesSinceAccept: Math.max(0, nowMs - acceptedAtMs) / 60_000,
-      // A branch's play is measured from the shared save, with full credit.
-      burstCreditMinutes:
-        override === null
-          ? (stored?.burstCreditMinutes ?? ceilings.burstRealMinutes)
-          : ceilings.burstRealMinutes,
-      paceCredit: override === null ? (stored?.paceCredit ?? null) : null,
-      accountAgeMinutes: Math.max(0, nowMs - Date.parse(player.createdAt)) / 60_000,
+      // A branch without its shared save is a whole run: every real minute since the account
+      // was created.
+      realMinutesSinceAccept:
+        head !== undefined ? accountAgeMinutes : Math.max(0, nowMs - acceptedAtMs) / 60_000,
+      burstCreditMinutes: burst,
+      paceCredit: pace,
+      accountAgeMinutes,
       serverGrantKeys: player.grantKeys,
       entitledItemIds: player.entitledItemIds,
-      // A trimmed common ancestor: checked like a first upload (structure and facts, no real time).
-      firstUpload: base === null,
+      // Only an account with no save at all uploads under first-upload rules.
+      firstUpload: stored === null,
       branch: override !== null,
+      ...(head === undefined ? {} : { head }),
     },
     ceilings,
     engineConfig,

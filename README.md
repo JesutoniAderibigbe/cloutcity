@@ -377,10 +377,12 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   (`SaveState.actions`, v9) and passive clock time (each tap moves the clock at most
   `maxActionGameMinutes`, derived from config: the longest action at the worst stat penalties);
   earnings must fit the counted taps at the bots' honest pace (`pace` in the economy baseline x
-  margin) plus a small pace credit; the public level an account's age allows follows the same
-  pace at `honestTapsPerRealMinute`. The real-time slack and the pace credit are per-player token
-  buckets the server carries between uploads (DEC-19). The first upload is never rejected for
-  real-time reasons.
+  margin) plus a pace credit of one game day. The public level an account's age allows is a
+  separate display pace, `sync.plausibility.publicCloutPerRealMinute` (80: a public Icon takes at
+  least an hour); a public level behind the save's is a delay, never a refusal. The real-time
+  slack and the pace credit are per-player token buckets the server carries between uploads, and
+  each history row keeps them (DEC-19). Only an account with no save at all uploads under
+  first-upload rules (never rejected for real-time reasons).
 - **Cloud save sync** (S18c): once the guest session connects, `src/state/cloudSync.ts` (lazy)
   restores the account's save or uploads this device's to POST `/api/save`
   (`src/server/saves/handleUpload.ts`, Node, never cached), debounced (`sync.json`), queued
@@ -390,7 +392,10 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   projection) and keeps refused ones aside with `quarantine_save`. The HUD's cloud chip (the More
   panel on phones) shows the status; a conflict asks the player which save to keep. Keeping this
   device's game is checked against the save both devices last shared (`save_at_revision` from the
-  history), not the other device's; after a refused save the panel offers the cloud game. Server code
+  history, with the credits it was stored with), not the other device's; if the history no longer
+  keeps it, as a whole run against the account's age, the current credits and the current save's
+  forward-only fields. Overrides are limited to `sync.plausibility.overrideMaxPerHour` an hour.
+  After a refused save the panel offers the cloud game. Server code
   lives in `src/server/` behind `import 'server-only'`; `src/server/server-boundary.test.ts`
   proves browser code never reaches it.
 
@@ -405,14 +410,16 @@ $185 in each of weeks 2 to 4, and can afford the move to the Brooklyn 1BR betwee
 in `balance.json` `target.firstUpgradeGameDay`; no job goes broke, misses rent or misses a
 shift, and every job saves $80 to $230 a week.
 
-Two clout bots play alongside: a barista who flexes once a day (S13), and a max-clout barista
-(S18c) who flexes up to `clout.flex.maxPerGameDay` times a day at the best-multiplier places it
+Two clout routines play alongside: a barista who flexes once a day (S13), and a max-clout routine
+(S18c) that flexes up to `clout.flex.maxPerGameDay` times a day at the best-multiplier places it
 can reach, buys and wears wearables for style when it can spare the cash, and takes the best club
-night its clout lets it into.
+night its clout lets it into. For the honest pace every job runs with the plain and the max-clout
+routine; junior dev is taken the morning the player's level unlocks it (barista until then).
 
 The test also writes the result to `data/sim/economy-baseline.derived.json` (per-job results
 and the highest cash, clout and action counts per action, game hour and game day, plus the
-honest pace: the highest whole-run cash and clout per tap of every bot, max-clout included,
+honest pace: the highest cash and clout per tap of every job and routine, over the whole run or
+its best week,
 which S18c uses as save-plausibility ceilings) and fails if a later change to the balance moves
 it. After
 tuning `balance.json` on purpose, run `npm run econ:update`, check the target tests still pass,

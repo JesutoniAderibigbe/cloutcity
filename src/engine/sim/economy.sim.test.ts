@@ -87,6 +87,17 @@ const runMaxClout = (engine: EngineConfig, jobId: JobId = 'barista') =>
   )
 const maxCloutReport = runMaxClout(config)
 
+/**
+ * Every job a player can hold, with both routines (S18c honest pace): a job behind a clout level
+ * is taken when the player reaches it, working barista until then.
+ */
+const paceReports = (engine: EngineConfig) =>
+  jobIds(engine).flatMap((jobId) => [
+    runEconomyBot({ jobId, days: DAYS, upgradeTo }, engine),
+    runMaxClout(engine, jobId),
+  ])
+const allJobPaceReports = paceReports(config)
+
 /** A per-tap average, rounded up to a hundredth so the baseline stays readable. */
 const perTap = (value: number) => Math.ceil(value * 100) / 100
 
@@ -94,13 +105,14 @@ const perTap = (value: number) => Math.ceil(value * 100) / 100
 function baseline(
   all: readonly BotReport[],
   flexRuns: readonly BotReport[] = [flexReport],
-  maxCloutRuns: readonly BotReport[] = [maxCloutReport],
+  paceRuns: readonly BotReport[] = allJobPaceReports,
 ) {
   const max = (pick: (report: BotReport) => number) => Math.max(...all.map(pick))
   const cloutRuns = [...all, ...flexRuns]
   const cloutMax = (pick: (report: BotReport) => number) => Math.max(...cloutRuns.map(pick))
-  const paceRuns = [...cloutRuns, ...maxCloutRuns]
-  const paceMax = (pick: (report: BotReport) => number) => Math.max(...paceRuns.map(pick))
+  // The best of each run's whole-run pace and the best week it kept up.
+  const paceMax = (pick: (report: BotReport) => number) =>
+    Math.max(...[...cloutRuns, ...paceRuns].map(pick))
   const sources: Record<string, number> = {}
   for (const report of cloutRuns) {
     for (const [kind, gain] of Object.entries(report.cloutGainBySource)) {
@@ -134,11 +146,19 @@ function baseline(
       sources: Object.fromEntries(Object.entries(sources).sort(([a], [b]) => a.localeCompare(b))),
     },
     actions: { maxPerGameDay: max((report) => report.maxActionsPerGameDay) },
-    // Honest pace (S18c, DEC-19): what a tap earns on average over a whole run, at the best of
-    // every bot, the max-clout bot included.
+    // Honest pace (S18c, DEC-19): what a tap earns, over a whole run or the best week of it, at
+    // the best of every bot: every job a player can hold, plain and max-clout.
     pace: {
-      cashPerTap: perTap(paceMax((report) => report.cashGained / Math.max(1, report.taps))),
-      cloutPerTap: perTap(paceMax((report) => report.cloutGained / Math.max(1, report.taps))),
+      cashPerTap: perTap(
+        paceMax((report) =>
+          Math.max(report.cashGained / Math.max(1, report.taps), report.weekPace.cashPerTap),
+        ),
+      ),
+      cloutPerTap: perTap(
+        paceMax((report) =>
+          Math.max(report.cloutGained / Math.max(1, report.taps), report.weekPace.cloutPerTap),
+        ),
+      ),
     },
   }
 }
@@ -374,7 +394,27 @@ describe('economy simulation: clout', () => {
     expect(maxCloutReport.flexes).toBeLessThanOrEqual(DAYS * config.clout.flex.maxPerGameDay)
     const perTap = (report: BotReport) => report.cloutGained / report.taps
     expect(perTap(maxCloutReport)).toBeGreaterThan(perTap(flexReport))
-    expect(baseline(reports).pace.cloutPerTap).toBe(Math.ceil(perTap(maxCloutReport) * 100) / 100)
+  })
+
+  it('the honest pace covers every job with both routines, junior dev from when it unlocks', () => {
+    expect(allJobPaceReports.map((report) => report.jobId)).toEqual(
+      jobIds(config).flatMap((id) => [id, id]),
+    )
+    for (const report of allJobPaceReports) {
+      expect(report.minCash, report.jobId).toBeGreaterThanOrEqual(0)
+      expect(report.missedOrEvicted, report.jobId).toBe(0)
+    }
+    const { pace } = baseline(reports)
+    for (const report of allJobPaceReports) {
+      expect(pace.cashPerTap).toBeGreaterThanOrEqual(report.weekPace.cashPerTap)
+      expect(pace.cloutPerTap).toBeGreaterThanOrEqual(report.weekPace.cloutPerTap)
+      expect(pace.cloutPerTap).toBeGreaterThanOrEqual(report.cloutGained / report.taps)
+    }
+    // The max-clout junior dev reaches Local and takes the job.
+    const juniorMax = allJobPaceReports.find(
+      (report, i) => report.jobId === 'junior-dev' && i % 2 === 1,
+    )
+    expect(juniorMax?.levelReachedDay.local).toBeDefined()
   })
 
   it('the flex bot flexes once a day, as the place rules allow', () => {

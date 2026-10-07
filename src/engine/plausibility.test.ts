@@ -688,7 +688,7 @@ describe('ceilings', () => {
   })
 
   it('every term is max(fixture x margin, theoretical); real time bounds taps and passive time', () => {
-    const { margin, maxActionsPerRealMinute, burstRealMinutes, honestTapsPerRealMinute } =
+    const { margin, maxActionsPerRealMinute, burstRealMinutes, publicCloutPerRealMinute } =
       sync.plausibility
     const theory = cloutCeilings(config)
     for (const source of ['paycheck', 'flex', 'club', 'event'] as const) {
@@ -701,7 +701,7 @@ describe('ceilings', () => {
     expect(ceilings).toMatchObject({
       actionsPerRealMinute: maxActionsPerRealMinute,
       burstRealMinutes,
-      honestTapsPerRealMinute,
+      publicCloutPerRealMinute,
       maxActionGameMinutes: maxActionGameMinutes(config),
       pacePerTap: {
         cash: baseline.pace.cashPerTap * margin,
@@ -1117,7 +1117,7 @@ describe('honest pace (DEC-19, H1)', () => {
         config,
       ).save
       const verdict = check(null, forged, { firstUpload: true, accountAgeMinutes: minutes })
-      const honest = ceilings.pacePerTap.clout * sync.plausibility.honestTapsPerRealMinute * minutes
+      const honest = sync.plausibility.publicCloutPerRealMinute * minutes
       const allowed = cloutLevel(
         honest + ceilings.itemCloutMax + ceilings.grants.perRun.clout + ceilings.premiumCap,
         config,
@@ -1127,11 +1127,12 @@ describe('honest pace (DEC-19, H1)', () => {
     },
   )
 
-  it('reaching Icon publicly takes more than an hour of honest play', () => {
+  it('reaching Icon publicly takes at least an hour (publicCloutPerRealMinute, from config)', () => {
     const icon = findCloutLevel('icon', config)
     if (icon === undefined) throw new Error('no icon level')
-    const perMinute = ceilings.pacePerTap.clout * sync.plausibility.honestTapsPerRealMinute
-    expect((icon.minClout - ceilings.itemCloutMax) / perMinute / 60).toBeGreaterThan(1)
+    const minutes =
+      (icon.minClout - ceilings.itemCloutMax) / sync.plausibility.publicCloutPerRealMinute
+    expect(minutes).toBeGreaterThanOrEqual(60)
   })
 })
 

@@ -1,7 +1,7 @@
 /**
- * The economy bot (S12): plays the solo game for a number of game days with one entry job and
- * a sensible daily routine, through the engine's public functions only, and reports how the
- * money went. src/engine/sim/economy.sim.test.ts checks the report against the CLAUDE.md
+ * The economy bot (S12): plays the solo game for a number of game days with one job (an entry
+ * job, or junior dev once its clout level unlocks it) and a sensible daily routine, through the
+ * engine's public functions only, and reports how the money went. src/engine/sim/economy.sim.test.ts checks the report against the CLAUDE.md
  * target feel and writes the plausibility baseline S18c reads.
  *
  * Daily routine (the clock starts on day 1 at `time.startMinuteOfDay`):
@@ -69,7 +69,7 @@ import { initialGoalsState, syncGoals, type GoalsState } from '../goals'
 import { grant, initialGrantsState, type GrantsState } from '../grants'
 import { buyItem, equipItem, isWearable, shopItems } from '../items'
 import { canAffordMove, rentReserve } from '../housing'
-import { shiftAction, workShift } from '../jobs'
+import { jobLock, shiftAction, workShift } from '../jobs'
 import { performPlaceAction } from '../placeActions'
 import type { Place } from '../places'
 import { initialPrestigeState, type PrestigeState } from '../prestige'
@@ -88,10 +88,17 @@ const RIDE_MINUTES = 30
 const MINUTES_PER_HOUR = 60
 /** Cash the max-clout bot keeps beyond the rent reserve before it buys a wearable for style. */
 const STYLE_BUFFER = 60
+/** The window of `BotReport.weekPace`, in game days. */
+export const PACE_WEEK_DAYS = 7
 
 export interface EconomyBotOptions {
-  /** An entry job (no clout level needed); the bot never switches jobs. */
+  /**
+   * The job the bot works. A job behind a clout level (junior dev) is taken the first morning
+   * the player's level unlocks it; until then the bot works `whileLocked`.
+   */
   readonly jobId: JobId
+  /** The entry job worked until `jobId` unlocks (default barista, the lightest shifts). */
+  readonly whileLocked?: JobId
   /** Game days to play: day 1 to day `days`, ending with that day's sleep. */
   readonly days: number
   /** The home whose move the bot measures affordability for (src/engine/housing.ts). */
@@ -162,6 +169,12 @@ export interface BotReport {
   readonly cashGained: number
   /** Clout gained over the whole run: every step's gain, losses not netted. */
   readonly cloutGained: number
+  /**
+   * The highest pace the run kept up for a week: over every `PACE_WEEK_DAYS` consecutive game
+   * days, gains divided by taps, the best window (S18c: a job unlocked mid-run, such as junior
+   * dev, pays more per tap than the run's average shows).
+   */
+  readonly weekPace: { readonly cashPerTap: number; readonly cloutPerTap: number }
   readonly maxCloutGainPerAction: number
   readonly maxCloutGainPerGameDay: number
   /**
@@ -192,7 +205,9 @@ function hourMinute(hour: number): number {
 
 /** Plays `options.days` game days and reports the money (see the module comment). */
 export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig): BotReport {
-  const { jobId, days, upgradeTo } = options
+  const { days, upgradeTo } = options
+  const target = options.jobId
+  const fallback = options.whileLocked ?? 'barista'
   const perDay = minutesPerDay(config)
   const homeMeal = requireAction('home-meal', config)
   const coffee = requireAction('deli-coffee', config)
@@ -205,6 +220,8 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   }
 
   let snapshot = initialSnapshot(config)
+  /** The job worked today: the target once its clout level is reached (checked each morning). */
+  let jobId: JobId = jobLock(snapshot.player, target, config) === null ? target : fallback
   let minCash = snapshot.player.cash
   let flexes = 0
   let viralFlexes = 0
@@ -446,6 +463,7 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
       )
     }
     dayStart = (day - 1) * perDay
+    if (jobId !== target && jobLock(snapshot.player, target, config) === null) jobId = target
     waitUntil(at(WAKE_HOUR))
     eatIfHungry({ beforeShift: true, atHome: true })
     // No point riding in if not even the first shift would end by bedtime.
@@ -471,7 +489,7 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   }
 
   return {
-    jobId,
+    jobId: target,
     finalCash: snapshot.player.cash,
     minCash,
     shiftsWorked,
@@ -488,6 +506,10 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     taps,
     cashGained,
     cloutGained,
+    weekPace: {
+      cashPerTap: bestWeek(cashGainByDay, actionsByDay, days),
+      cloutPerTap: bestWeek(cloutGainByDay, actionsByDay, days),
+    },
     maxCloutGainPerAction,
     maxCloutGainPerGameDay: Math.max(0, ...cloutGainByDay.values()),
     cloutGainBySource,
@@ -498,6 +520,22 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     grants: granted,
     goalsReachedDay,
   }
+}
+
+/** The best `PACE_WEEK_DAYS`-day window of gains per tap (the whole run if it is shorter). */
+function bestWeek(gains: Map<number, number>, taps: Map<number, number>, days: number): number {
+  const span = Math.min(PACE_WEEK_DAYS, days)
+  let best = 0
+  for (let first = 1; first + span - 1 <= days; first++) {
+    let gained = 0
+    let tapped = 0
+    for (let day = first; day < first + span; day++) {
+      gained += gains.get(day) ?? 0
+      tapped += taps.get(day) ?? 0
+    }
+    if (tapped > 0) best = Math.max(best, gained / tapped)
+  }
+  return best
 }
 
 function requireAction(actionId: string, config: EngineConfig): ActionDef {

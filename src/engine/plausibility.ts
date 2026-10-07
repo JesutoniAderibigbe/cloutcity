@@ -33,8 +33,8 @@
  * 11. cash flow: cash is at most the previous cash plus the income ceilings (per game day, and
  *    one action's worth per counted tap), valid grants and what was sold, less what was bought
  *    (items, a move); else reject.
- * 12. public level: the level others see is capped by what the account's age allows at honest
- *    play (the honest tap rate at the bots' pace per tap).
+ * 12. public level: the level others see is capped by what the account's age allows at
+ *    `publicCloutPerRealMinute`. A public level behind the save's is only a delay.
  * 13. honest pace: what play brought in since the last accept (cash and clout) fits the counted
  *    taps at the bots' whole-run pace x margin, plus a small per-player credit the server carries
  *    (`checkHonestPace`); else reject.
@@ -189,8 +189,11 @@ export interface PlausibilityCeilings {
    * never waits for credit; past it, only counted taps at the honest pace refill it.
    */
   readonly paceCreditCap: CashClout
-  /** Taps a person makes in a real minute of honest play (the public level cap's pace). */
-  readonly honestTapsPerRealMinute: number
+  /**
+   * Clout honest play can show other players per real minute of account age (the public level
+   * cap). Set apart from the upload pace on purpose (`sync.plausibility.publicCloutPerRealMinute`).
+   */
+  readonly publicCloutPerRealMinute: number
 }
 
 /**
@@ -237,7 +240,7 @@ export function plausibilityCeilings(
   fixture: PlausibilityFixture,
   sync: Pick<SyncConfig, 'plausibility'>,
 ): PlausibilityCeilings {
-  const { margin, maxActionsPerRealMinute, burstRealMinutes, honestTapsPerRealMinute } =
+  const { margin, maxActionsPerRealMinute, burstRealMinutes, publicCloutPerRealMinute } =
     sync.plausibility
   const theory = cloutCeilings(config)
   const cash = cashCeilings(config)
@@ -287,7 +290,7 @@ export function plausibilityCeilings(
       cash: cashPerGameDay,
       clout: RATED_SOURCES.reduce((sum, source) => sum + clout[source].perGameDay, 0),
     },
-    honestTapsPerRealMinute,
+    publicCloutPerRealMinute,
   }
 }
 
@@ -319,6 +322,13 @@ export interface UploadContext {
    * the upload also carries are the other branch's claim of the same reward, not a replay.
    */
   readonly branch?: boolean
+  /**
+   * The account's current save, when `prev` is not it: a "keep this device" branch whose shared
+   * save the history no longer keeps (`prev` null). The upload is then checked as a whole run
+   * against real time (`realMinutesSinceAccept` is the account's age) and the credits carried,
+   * and its forward-only fields (prestige, run, grant sequence) against this save.
+   */
+  readonly head?: SaveState
 }
 
 /** Why a verdict is what it is. Reject codes are listed in `REJECTING`. */
@@ -469,15 +479,11 @@ export function checkUpload(
     prev,
     base,
     fromMinute: base === null ? runStart(save) : base.clock.minute,
-    realTime: prev !== null && !ctx.firstUpload,
+    realTime: !ctx.firstUpload,
     realMinutes: Math.max(0, ctx.realMinutesSinceAccept) + credit,
     actions: base === null ? null : save.actions - base.actions,
     earningTaps:
-      base !== null
-        ? save.actions - base.actions
-        : prev !== null && !ctx.firstUpload
-          ? save.actions
-          : null,
+      base !== null ? save.actions - base.actions : !ctx.firstUpload ? save.actions : null,
   }
 
   repair(checkGoals(save, base, ceilings, config), 'goal-without-fact')
@@ -495,6 +501,7 @@ export function checkUpload(
   const grants = checkGrants(save, window, ctx, ceilings, config)
   for (const finding of grants.findings) find(finding)
   if (prev !== null && regressed(prev, save, sameRun, config)) find('regressed')
+  if (ctx.head !== undefined && forwardRegressed(ctx.head, save)) find('regressed')
   const pace = checkPace(save, window, ceilings)
   for (const finding of pace.findings) find(finding)
   for (const finding of checkCloutRate(save, window, ceilings, config)) find(finding)
@@ -888,6 +895,19 @@ function checkGrants(
   return { findings, insert, cash }
 }
 
+/**
+ * Check 8 for a branch checked without its shared save: the fields that only move forward on
+ * every device (prestige, the run, the grant sequence) are not behind the account's save.
+ */
+function forwardRegressed(head: SaveState, save: SaveState): boolean {
+  return (
+    save.prestige.count < head.prestige.count ||
+    head.prestige.history.some((entry, i) => !sameJson(entry, save.prestige.history[i])) ||
+    save.goals.run < head.goals.run ||
+    save.grants.nextSeq < head.grants.nextSeq
+  )
+}
+
 /** Check 8: anything that only moves forward, moved back. */
 function regressed(prev: SaveState, save: SaveState, sameRun: boolean, config: EngineConfig) {
   const before = prev.player
@@ -941,23 +961,24 @@ function checkPace(
   ceilings: PlausibilityCeilings,
 ): { readonly findings: Finding[]; readonly usedMinutes: number } {
   const { prev } = window
-  if (!window.realTime || prev === null) return { findings: [], usedMinutes: 0 }
+  if (!window.realTime) return { findings: [], usedMinutes: 0 }
   const findings: Finding[] = []
   const tapRate = ceilings.actionsPerRealMinute
-  const entries = save.player.clout.nextSeq - prev.player.clout.nextSeq
+  // With no previous save (a branch the history no longer keeps), the whole run is the window.
+  const entries = prev === null ? 0 : save.player.clout.nextSeq - prev.player.clout.nextSeq
   const counted = window.actions ?? save.actions
   const tapMinutes = Math.max(0, counted, entries) / tapRate
   if (tapMinutes > window.realMinutes) findings.push('action-rate')
   // A fresh run in the window: the taps the previous run made after `prev` are counted nowhere,
   // so they are allowed for at the tap rate over the whole window.
   const clockTaps =
-    window.actions === null
-      ? save.actions + tapRate * window.realMinutes
-      : Math.max(0, window.actions)
-  const passive = Math.max(
-    0,
-    save.clock.minute - prev.clock.minute - clockTaps * ceilings.maxActionGameMinutes,
-  )
+    prev === null
+      ? save.actions
+      : window.actions === null
+        ? save.actions + tapRate * window.realMinutes
+        : Math.max(0, window.actions)
+  const from = prev === null ? window.fromMinute : prev.clock.minute
+  const passive = Math.max(0, save.clock.minute - from - clockTaps * ceilings.maxActionGameMinutes)
   const clockMinutes = passive / ceilings.passiveGameMinutesPerRealMinute
   if (clockMinutes > window.realMinutes) findings.push('clock-advance')
   return { findings, usedMinutes: Math.max(tapMinutes, clockMinutes) }
@@ -1131,7 +1152,8 @@ function checkHonestPace(
 
 /**
  * Check 12: the highest level an account this old can show. Every real minute of its age is
- * worth honest play (the honest tap rate at the honest pace per tap); this run's grants, every
+ * worth `publicCloutPerRealMinute` of clout (a display pace, kept apart from the upload pace: a
+ * public level lagging behind the save is a delay, never a refusal); this run's grants, every
  * wearable and capped premium come on top; Icon also needs that earned budget to cover it
  * (DEC-13).
  */
@@ -1141,8 +1163,7 @@ function publicLevelCap(
   ceilings: PlausibilityCeilings,
   config: EngineConfig,
 ): number {
-  const earned =
-    ceilings.pacePerTap.clout * ceilings.honestTapsPerRealMinute * Math.max(0, accountAgeMinutes)
+  const earned = ceilings.publicCloutPerRealMinute * Math.max(0, accountAgeMinutes)
   // Clout starts over each run (premium aside): only this run's grants count towards the level.
   const budget = earned + ceilings.itemCloutMax + ceilings.grants.perRun.clout + ceilings.premiumCap
   const cap = cloutLevel(budget, config).index

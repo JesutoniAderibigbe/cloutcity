@@ -13,6 +13,7 @@
     "margin": 1.5,
     "maxActionsPerRealMinute": 40,
     "burstRealMinutes": 5,
-    "honestTapsPerRealMinute": 15
+    "publicCloutPerRealMinute": 80,
+    "overrideMaxPerHour": 6
   }
 }
