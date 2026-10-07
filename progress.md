@@ -330,4 +330,15 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   outfits as looks only (0 clout/style/sell). Bug-hunter: HUD title at 390, double-claim/farming
   probes, prestige run 2 badge. Lane gates: unit 2376, integration 126, e2e 506 + 12 load timeouts
   (12/12 on re-run), shell 146.1 KB. Follow-ups: UX-8/11, SEC-9/10.
+- S04c (attempt 1, passed): instanced pins with screen-space picking (>=44 px, chooser), DOM Places panel
+  by borough, static SVG fallback and in-place context recovery, dimmed Bronx/SI with teaser pins.
+  Bug-hunter: flights yield to gestures, auto panel never closes HUD panels, Places button state.
+  Integrated through S05 (one-row HUD overflow at 390).
+- S05 (attempt 1, passed): guest start centred on the Queens home (homes.json) with avatar placeholder,
+  two-row HUD (HudFrame + HudLive boot island over a matching skeleton; More panel on narrow/short),
+  per-game-minute store writes, game clock after attestation, free-row camera framing (setViewOffset),
+  lazy anonymous Supabase auth + attest_and_consent with local fallback, OG/Twitter tagline meta,
+  "Map data" corner chip (UX-9), e2e:supabase opt-in config. Bug-hunter: attribution no longer truncated
+  at 390x480/320; ChunkLoadError counts as offline. Gates: unit 2638, e2e 602 + 24 load timeouts (green
+  on re-run), shell 148.9 KB, 3D 273.7 KB.
 

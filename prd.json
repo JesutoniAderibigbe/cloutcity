@@ -101,7 +101,7 @@
       ],
       "acceptance": "Points placed by real latitude and longitude render as instanced pins, are tappable with an on-screen hit area of at least 44 px and open a place sheet stub; a DOM Places panel lists every place grouped by borough, is fully keyboard navigable, offers the same actions as tapping in 3D and announces selection (A11Y-3); when WebGL is unavailable or the context is lost, the app shows the Places panel and a static stylised fallback and stays playable, and recovers when the context is restored; Playwright taps a point in the canvas (screen coordinates from the test hook) and the same place via the panel, and a WebGL-disabled run completes a place selection; axe passes; S07 render half (orchestrator note, approved S07 plan): pins come from src/lib/world/places.ts mapPlaces() with landmarks as placeholder markers until S07a/S07b; Bronx and Staten Island land renders dimmed per boroughRenderState with an 'expanding soon' label and teaser pins for bronx-ballpark and staten-island-ferry; the Places panel uses placeAccessibleName; a test hook reports per-borough land style and pin count; Playwright and axe prove locked places' names explain the lock.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -163,7 +163,7 @@
       ],
       "acceptance": "Opening the root URL in a fresh browser shows the shell, then the playable 3D NYC map centred on the player's Queens start within the perf.json budgets, with no signup; a player avatar placeholder stands at the start point; anonymous Supabase auth with a local-only fallback when env vars are missing (test runs with env vars absent); HUD with stats, clock, money, clout and the goal line 'Make it in New York', placed in the overlay safe zones; page title and meta use the tagline 'Tap In. Blow Up.'; Playwright test confirms.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
