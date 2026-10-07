@@ -9,7 +9,12 @@ import { describe, expect, it } from 'vitest'
 import { findCloutLevel, totalClout } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import { initialSnapshot, type GameSnapshot } from '@/engine/game'
-import { performPlaceAction, placeActions, type PlaceAction } from '@/engine/placeActions'
+import {
+  performPlaceAction,
+  placeActions,
+  type PlaceAction,
+  type PlaceActionBlock,
+} from '@/engine/placeActions'
 import { placeAllows, type PlaceHook } from '@/engine/places'
 import { withClout } from '@/engine/test-support'
 import { boroughAccess } from '@/engine/boroughs'
@@ -417,5 +422,24 @@ describe('slowed durations: the button says what the engine applies', () => {
     }
     // The probe really exercised the slowdown, not only base durations.
     expect(slowed).toBeGreaterThan(0)
+  })
+})
+
+describe('borough-locked reason never blank', () => {
+  it('falls back to plain locked-borough copy when the access says open', () => {
+    const anyPlace = venues[0]
+    if (anyPlace === undefined) throw new Error('no venues')
+    // The engine never reports an open borough as a block; a block that disagrees with its
+    // access (a crafted or stale value) must still give the player a reason, never ''.
+    const stale = {
+      code: 'borough-locked',
+      access: { status: 'open' },
+    } as unknown as PlaceActionBlock
+    for (const options of [plain, nyc]) {
+      const reason = placeBlockReason(stale, anyPlace, options)
+      expect(reason.trim()).not.toBe('')
+      expect(reason).not.toMatch(/[{}]/)
+      expect(reason).toBe(options.copy('place.blocked.boroughLocked'))
+    }
   })
 })

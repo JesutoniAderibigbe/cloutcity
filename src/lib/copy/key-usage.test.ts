@@ -93,6 +93,10 @@ describe('copy key usage (S05c)', () => {
         'clout',
         'housing',
         'rent',
+        // S10a: the shop section (ShopSection → shopCopy) renders in the place sheet.
+        'shop',
+        'items',
+        'inventory',
       ]),
     )
   })

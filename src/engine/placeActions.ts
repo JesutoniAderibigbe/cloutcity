@@ -41,6 +41,7 @@ import {
   viralChance,
 } from './flex'
 import type { GameSnapshot } from './game'
+import { buyItem, type ItemResult } from './items'
 import { isJobId, jobLock, shiftAction, shiftWage, workShift, type JobLock } from './jobs'
 import { isOpenAt, minuteOf, placeAllows, type Place } from './places'
 import type { RentEvent } from './rent'
@@ -485,4 +486,52 @@ export function performPlaceAction(
     levelUp: record.levelUp,
     statEffects: action.def.statEffects,
   }
+}
+
+/** Venue types that run a shop (S10a): they sell every item in `shopItems`. */
+export const SHOP_VENUE_TYPES = ['boutique', 'thrift'] as const
+
+/** True when `place` is a venue with a shop. */
+export function hasShop(place: Place): place is Venue {
+  return isVenue(place) && (SHOP_VENUE_TYPES as readonly string[]).includes(place.type)
+}
+
+/**
+ * Why the shop at `place` cannot sell right now (its borough is locked or it is closed on the
+ * personal clock), or null when it can. Same reasons and order as the place's actions.
+ */
+export function shopBlock(
+  place: Place,
+  snapshot: GameSnapshot,
+  config: EngineConfig,
+): PlaceActionBlock | null {
+  const access = boroughAccess(place.borough, totalClout(snapshot.player, config), config)
+  if (access.status !== 'open') return { code: 'borough-locked', access }
+  const hours = placeHoursNow(place, snapshot, config)
+  if (hours.status === 'closed') return { code: 'closed', opensAt: hours.opensAt }
+  return null
+}
+
+export type ShopBuyResult =
+  | ItemResult<{ readonly price: number; readonly levelUp: LevelUp | null }>
+  | { readonly ok: false; readonly error: { readonly code: 'NOT_A_SHOP' } }
+  | {
+      readonly ok: false
+      readonly error: { readonly code: 'BLOCKED'; readonly block: PlaceActionBlock }
+    }
+
+/**
+ * Buys one of `itemId` at the shop at `place`: the place must have a shop that is open to the
+ * player right now, then `buyItem`'s rules (funds, owned once, gift stack) apply.
+ */
+export function buyAtShop(
+  snapshot: GameSnapshot,
+  place: Place,
+  itemId: string,
+  config: EngineConfig,
+): ShopBuyResult {
+  if (!hasShop(place)) return { ok: false, error: { code: 'NOT_A_SHOP' } }
+  const block = shopBlock(place, snapshot, config)
+  if (block !== null) return { ok: false, error: { code: 'BLOCKED', block } }
+  return buyItem(snapshot, itemId, config)
 }

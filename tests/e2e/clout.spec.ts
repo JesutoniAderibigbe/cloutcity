@@ -318,7 +318,9 @@ test.describe('the HUD clout meter', () => {
     await boot(page)
     const hud = page.locator('[data-overlay-zone="hud"]')
     await expect(meter(page)).toBeVisible()
-    // The text's own extent, not its block box (which spans the header).
+    // The text's own extent, not its block box (which spans the header), clipped to that box:
+    // since S10a added the Inventory and Rent buttons to the row, the title and tagline
+    // truncate at phone widths, and the hidden overflow covers nothing.
     const textBox = (selector: string) =>
       hud
         .locator(selector)
@@ -326,8 +328,11 @@ test.describe('the HUD clout meter', () => {
         .evaluate((el) => {
           const range = document.createRange()
           range.selectNodeContents(el)
-          const { x, y, width, height } = range.getBoundingClientRect()
-          return { x, y, width, height }
+          const text = range.getBoundingClientRect()
+          const box = el.getBoundingClientRect()
+          const x = Math.max(text.x, box.x)
+          const right = Math.min(text.x + text.width, box.x + box.width)
+          return { x, y: text.y, width: Math.max(0, right - x), height: text.height }
         })
     const [zone, meterBox, title, tagline] = await Promise.all([
       hud.boundingBox(),

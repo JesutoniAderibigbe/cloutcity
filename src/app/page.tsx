@@ -2,6 +2,8 @@ import { SoundControlMount } from '@/components/audio/SoundControlMount'
 import { SoundSheetMount } from '@/components/audio/SoundSheetMount'
 import { EventSheetMount } from '@/components/events/EventSheetMount'
 import { CloutHudMount } from '@/components/hud/CloutHudMount'
+import { HudPanelButtonsMount } from '@/components/hud/HudPanelButtonsMount'
+import { HudPanelMount } from '@/components/hud/HudPanelMount'
 import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
@@ -23,8 +25,11 @@ export default function HomePage() {
               </h1>
               <p className="truncate text-xs text-ink-300">{copy('app.tagline')}</p>
             </header>
-            <div className="flex min-w-0 items-center gap-2">
+            {/* Below sm the controls are fixed-width icons, so the title truncates instead
+                (S05 splits the HUD into two rows); from sm up the sound control's text shrinks. */}
+            <div className="flex shrink-0 items-center gap-2 sm:min-w-0 sm:shrink">
               <CloutHudMount />
+              <HudPanelButtonsMount />
               <SoundControlMount />
             </div>
           </div>
@@ -34,6 +39,7 @@ export default function HomePage() {
           <>
             <EventSheetMount />
             <PlaceSheetMount />
+            <HudPanelMount />
             <SoundSheetMount />
           </>
         ),

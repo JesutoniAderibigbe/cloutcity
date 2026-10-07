@@ -24,13 +24,13 @@ export interface EventTestHook {
 }
 
 declare global {
+  /** Test hooks by feature; each hook module adds its own key (interface merging). */
+  interface CloutcityTestHooks {
+    events?: EventTestHook
+  }
   interface Window {
     __CLOUTCITY_E2E__?: boolean
     __cloutcityTest?: CloutcityTestHooks
-  }
-  /** One property per feature hook (merged with src/scene/testHooks.tsx). */
-  interface CloutcityTestHooks {
-    events?: EventTestHook
   }
 }
 

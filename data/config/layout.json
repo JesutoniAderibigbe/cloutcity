@@ -8,6 +8,7 @@
     "tabBarHeightPx": 64,
     "freeSceneMinHeightPx": 52,
     "toastMs": 6000,
-    "loadingRevealDelayMs": 300
+    "loadingRevealDelayMs": 300,
+    "actionCooldownMs": 300
   }
 }

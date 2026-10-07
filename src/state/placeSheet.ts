@@ -34,3 +34,10 @@ const serverPlaceId = () => null
 export function useOpenPlaceId(): string | null {
   return useSyncExternalStore(placeSheetStore.subscribe, openPlaceId, serverPlaceId)
 }
+
+/** Calls `listener` each time a place opens (S10a: the HUD panels make way). Returns unsubscribe. */
+export function onPlaceOpened(listener: () => void): () => void {
+  return placeSheetStore.subscribe((state, previous) => {
+    if (state.placeId !== null && state.placeId !== previous.placeId) listener()
+  })
+}

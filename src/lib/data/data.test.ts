@@ -45,7 +45,7 @@ import {
   ZoneShapesFileSchema,
   ZonesFileSchema,
 } from './schemas/world'
-import { audio, balance, onboarding, perf, realtime, theme } from './config'
+import { audio, balance, layout, onboarding, perf, realtime, theme } from './config'
 import {
   audioManifest,
   events,
@@ -272,6 +272,23 @@ describe('config/onboarding.json', () => {
     expect(parse({ consentVersion: 'v1' })).toBe(false)
     expect(parse({ birthYearSpan: 19 })).toBe(false)
     expect(parse({ extra: true })).toBe(false)
+  })
+})
+
+describe('config/layout.json', () => {
+  it('holds the 300 ms panel action cooldown', () => {
+    expect(layout.overlay.actionCooldownMs).toBe(300)
+  })
+
+  it('rejects a missing, zero, negative or fractional action cooldown', () => {
+    const valid = readJson('config/layout.json') as { overlay: Record<string, unknown> }
+    const parse = (patch: Record<string, unknown>) =>
+      LayoutConfigSchema.safeParse({ ...valid, overlay: { ...valid.overlay, ...patch } }).success
+    expect(parse({})).toBe(true)
+    expect(parse({ actionCooldownMs: undefined })).toBe(false)
+    expect(parse({ actionCooldownMs: 0 })).toBe(false)
+    expect(parse({ actionCooldownMs: -300 })).toBe(false)
+    expect(parse({ actionCooldownMs: 300.5 })).toBe(false)
   })
 })
 

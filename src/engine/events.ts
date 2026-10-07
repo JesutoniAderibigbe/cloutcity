@@ -23,6 +23,7 @@ import { calendar, type Rollovers } from './clock'
 import { engineConfig, type EngineConfig } from './config'
 import { recordClout, totalClout, type LevelUp } from './clout'
 import { advanceMinutes, type GameSnapshot } from './game'
+import type { RentEvent } from './rent'
 import { createRng, mixSeed, type Rng } from './rng'
 import { STAT_KEYS, applyStatChanges, type StatKey } from './stats'
 import type {
@@ -108,6 +109,8 @@ export type ChooseResult =
       readonly snapshot: GameSnapshot
       readonly events: EventsState
       readonly outcome: EventOutcome
+      /** Rent charged, missed or collected while the choice's time passed, in order. */
+      readonly rent: readonly RentEvent[]
       /** Set when the choice's clout lifted the player to a new level. */
       readonly levelUp: LevelUp | null
     }
@@ -430,5 +433,6 @@ export function chooseEventOption(
       rollovers: advanced.rollovers,
       cloutApplied: record.entry?.amount ?? 0,
     },
+    rent: advanced.rent,
   }
 }

@@ -4,6 +4,8 @@
     "hud.clout.progress": "{count} / {target}",
     "hud.clout.max": "{count}",
     "hud.clout.progressLabel": "Clout: {level}, {count} of {target} to {next}",
-    "hud.clout.maxLabel": "Clout: {level}, {count}. Top level reached."
+    "hud.clout.maxLabel": "Clout: {level}, {count}. Top level reached.",
+    "hud.inventory": "Inventory",
+    "hud.rent": "Rent"
   }
 }

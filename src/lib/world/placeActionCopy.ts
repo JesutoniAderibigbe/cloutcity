@@ -133,7 +133,11 @@ export function placeBlockReason(
   const { copy = activeCopy } = options
   switch (block.code) {
     case 'borough-locked':
-      return boroughClosedReason(place.borough, block.access, options) ?? ''
+      // An open borough never blocks, but if the access ever disagrees, say something plain.
+      return (
+        boroughClosedReason(place.borough, block.access, options) ??
+        copy('place.blocked.boroughLocked')
+      )
     case 'closed':
       return copy('place.hours.closed', { time: block.opensAt })
     case 'door':

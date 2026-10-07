@@ -3,13 +3,14 @@
  * the copy layer. Every price goes through `formatMoney`, never a hand-built "$" string.
  */
 import { engineConfig, type EngineConfig } from '@/engine/config'
-import { findItem, type ItemDef, type ItemSlot } from '@/engine/items'
+import { findItem, isWearable, type ItemDef, type ItemError, type ItemSlot } from '@/engine/items'
 import type { RarityTier } from '@/lib/data/schemas/config'
 import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from './copy'
 import { formatCount, formatMoney } from './format'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/inventory'
 import '@/lib/copy/ns/items'
+import '@/lib/copy/ns/place'
 import '@/lib/copy/ns/shop'
 
 export interface ShopCopyOptions {
@@ -123,4 +124,67 @@ export function giftCountLine(itemId: string, count: number, options: ShopCopyOp
     item: itemName(itemId, options),
     count: formatCount(count),
   })
+}
+
+/** The line under a shop item: "Top, Common, $28" (a gift says "Gift" for its slot). */
+export function shopItemDetails(itemId: string, options: ShopCopyOptions = {}): string {
+  const { copy = activeCopy, config = engineConfig } = options
+  const found = item(itemId, config)
+  return copy('shop.item.details', {
+    kind: isWearable(found) ? slotName(found.slot, options) : copy('shop.item.gift'),
+    rarity: rarityName(found.rarity, options),
+    price: formatMoney(found.price),
+  })
+}
+
+/** The line under an owned wearable: "Top, Common". */
+export function inventoryItemDetails(itemId: string, options: ShopCopyOptions = {}): string {
+  const { copy = activeCopy, config = engineConfig } = options
+  const found = item(itemId, config)
+  const rarity = rarityName(found.rarity, options)
+  if (!isWearable(found)) return rarity
+  return copy('inventory.item.details', { slot: slotName(found.slot, options), rarity })
+}
+
+export function stackFullLabel(itemId: string, max: number, options: ShopCopyOptions = {}) {
+  const { copy = activeCopy } = options
+  return copy('shop.buy.stackFull', { item: itemName(itemId, options), count: formatCount(max) })
+}
+
+/** "Sells for $14": an owned item's current resale value, from the engine. */
+export function resaleLine(amount: number, { copy = activeCopy }: ShopCopyOptions = {}) {
+  return copy('inventory.resale', { price: formatMoney(amount) })
+}
+
+export function equippedNotice(itemId: string, options: ShopCopyOptions = {}): string {
+  const { copy = activeCopy } = options
+  return copy('inventory.equipped', { item: itemName(itemId, options) })
+}
+
+export function unequippedNotice(itemId: string, options: ShopCopyOptions = {}): string {
+  const { copy = activeCopy } = options
+  return copy('inventory.unequipped', { item: itemName(itemId, options) })
+}
+
+/**
+ * The player-facing text for an engine item error. The UI disables what the engine would
+ * refuse, so these show only when the state moved under the UI.
+ */
+export function itemErrorText(error: ItemError, options: ShopCopyOptions = {}): string {
+  const { copy = activeCopy, config = engineConfig } = options
+  switch (error.code) {
+    case 'INSUFFICIENT_FUNDS':
+      return copy('place.blocked.funds', {
+        required: formatMoney(error.required),
+        available: formatMoney(error.available),
+      })
+    case 'ALREADY_OWNED':
+      return alreadyOwnedLabel(error.itemId, options)
+    case 'STACK_FULL':
+      return findItem(error.itemId, config) === undefined
+        ? copy('shop.error.failed')
+        : stackFullLabel(error.itemId, error.max, options)
+    default:
+      return copy('shop.error.failed')
+  }
 }

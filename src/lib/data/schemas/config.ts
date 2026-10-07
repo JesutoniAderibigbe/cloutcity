@@ -749,6 +749,12 @@ export const LayoutConfigSchema = z.strictObject({
      * flashes a placeholder (its status is announced at once).
      */
     loadingRevealDelayMs: z.int().nonnegative(),
+    /**
+     * After a sheet or panel action, pointer taps on its actions are ignored this long (ms), so
+     * the second tap of a drifting double tap cannot land on the row or button that replaced
+     * the one tapped. Keyboard activations are not delayed.
+     */
+    actionCooldownMs: positiveInt,
   }),
 })
 export type LayoutConfig = z.infer<typeof LayoutConfigSchema>

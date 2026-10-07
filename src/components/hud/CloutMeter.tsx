@@ -42,7 +42,7 @@ export function CloutMeter({ levelName, total, next, pct, atMax }: CloutMeterPro
         aria-label={label}
         max={100}
         value={atMax ? 100 : pct}
-        className="h-2 w-28 appearance-none overflow-hidden rounded-full bg-night-800 [&::-moz-progress-bar]:bg-pink-400 [&::-webkit-progress-bar]:bg-night-800 [&::-webkit-progress-value]:bg-pink-400"
+        className="h-2 w-20 appearance-none sm:w-28 overflow-hidden rounded-full bg-night-800 [&::-moz-progress-bar]:bg-pink-400 [&::-webkit-progress-bar]:bg-night-800 [&::-webkit-progress-value]:bg-pink-400"
       />
       <p aria-hidden="true" className="text-[11px] leading-none text-ink-300">
         {target === null

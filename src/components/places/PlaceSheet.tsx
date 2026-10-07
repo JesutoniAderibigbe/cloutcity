@@ -4,9 +4,10 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useModalOpen } from '@/components/overlay/modalState'
 import { engineConfig } from '@/engine/config'
 import type { GameSnapshot } from '@/engine/game'
-import { placeActions, type PlaceAction } from '@/engine/placeActions'
+import { hasShop, placeActions, type PlaceAction } from '@/engine/placeActions'
 import type { Place } from '@/engine/places'
 import { copy, isCopyKey, type CopyKey } from '@/lib/copy'
+import { rentNotice } from '@/lib/economyCopy'
 import { log } from '@/lib/log'
 import {
   placeActionAccessibleName,
@@ -19,6 +20,7 @@ import {
 import { findPlace, placeName } from '@/lib/world/places'
 import { closePlace } from '@/state/placeSheet'
 import { gameStore, useGameStore } from '@/state/store'
+import { ShopSection } from './ShopSection'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/boroughs'
 import '@/lib/copy/ns/club'
@@ -124,7 +126,12 @@ function PlaceCard({ place }: { readonly place: Place }) {
     busy.current = action.id
     const outcome = gameStore.getState().performPlaceAction(place, action.id)
     if (outcome.ok) {
-      setResult({ actionId: action.id, text: placeActionDone(outcome, place) })
+      // Rent that fell due while the action ran is part of what it did.
+      const text = [
+        placeActionDone(outcome, place),
+        ...outcome.rent.map((event) => rentNotice(event)),
+      ]
+      setResult({ actionId: action.id, text: text.join(' ') })
       return
     }
     // The UI only enables allowed actions, so a refusal here means the state moved under it.
@@ -253,6 +260,9 @@ function PlaceCard({ place }: { readonly place: Place }) {
           </div>
         </section>
       )}
+      {view.kind !== 'look-only' && hasShop(place) ? (
+        <ShopSection place={place} headingId={`${titleId}-shop`} />
+      ) : null}
     </div>
   )
 }

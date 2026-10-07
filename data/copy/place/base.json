@@ -37,6 +37,7 @@
     "place.effect.cloutEarnedTonight": "clout already earned here tonight",
     "place.done.clubNightRepeat": "You're in. You already earned clout here tonight, so this visit adds none: {effects}.",
     "place.busy.reason": "Done. Dismiss the result to do this again.",
-    "place.result.dismiss": "Dismiss"
+    "place.result.dismiss": "Dismiss",
+    "place.blocked.boroughLocked": "This borough isn't open to you yet."
   }
 }

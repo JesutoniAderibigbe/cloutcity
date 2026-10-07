@@ -34,7 +34,7 @@ const ALLOWED_FILES: readonly RegExp[] = [
   /^data\/copy\/superlatives\.json$/,
   /^data\/config\/copy\.json$/,
   /^src\/lib\/(log|format|placeholders)\.ts$/,
-  /^src\/state\/(placeSheet|mapPlayable)\.ts$/,
+  /^src\/state\/(placeSheet|mapPlayable|hudPanel)\.ts$/,
   /^src\/components\/audio\/soundSheet\.ts$/,
   // The 3D map's thin mount: WebGL probe, geo download, status and error boundary. The canvas
   // and everything three-based load through its next/dynamic import (the 3D chunk).
@@ -55,7 +55,8 @@ const DENIED_FILES: readonly RegExp[] = [
   /^src\/lib\/(shopCopy|economyCopy)\.ts$/,
   /^src\/lib\/forms\//,
   /^src\/components\/events\/(EventSheet|EventSheetHost|effectLabels|eventTestHook)\.tsx?$/,
-  /^src\/components\/places\/(PlaceSheet|placeTestHook)\.tsx?$/,
+  /^src\/components\/places\/(PlaceSheet|ShopSection|placeTestHook)\.tsx?$/,
+  /^src\/components\/hud\/(HudPanelButtons|InventoryPanel|RentPanel|PanelDialog|hudTestHook)\.tsx?$/,
   /^src\/components\/welcome\/(WelcomeGate|WelcomeCard|AgeLockNotice)\.tsx$/,
   /^src\/lib\/copy\/all\.ts$/,
   /^src\/scene\/(CityCanvas|City|materials|testHooks)\.tsx?$/,

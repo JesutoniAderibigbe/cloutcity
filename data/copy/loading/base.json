@@ -7,6 +7,9 @@
     "loading.soundSettings": "Loading sound settings",
     "loading.clout": "Loading your clout",
     "loading.levelUp": "Loading the level-up message",
+    "loading.hudPanels": "Loading the inventory and rent buttons",
+    "loading.inventory": "Loading your inventory",
+    "loading.rent": "Loading your rent",
     "loading.failed": "That didn't load. Check your connection and try again.",
     "loading.retry": "Try again"
   }
