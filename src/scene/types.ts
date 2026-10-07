@@ -23,6 +23,15 @@ export interface ScenePalette {
   readonly labelInk: string
   readonly ambientLight: string
   readonly sunLight: string
+  readonly pins: {
+    readonly venue: string
+    readonly landmark: string
+    readonly teaser: string
+    /** Memorial pins: a muted, respectful colour. */
+    readonly muted: string
+    readonly selected: string
+  }
+  readonly chip: { readonly fill: string; readonly ink: string }
   readonly toonRamp: readonly number[]
 }
 
@@ -33,11 +42,19 @@ export interface SceneCopy {
   readonly errorDevice: string
   /** The geo download failed or was invalid, or the scene failed to start. */
   readonly errorLoad: string
+  /** The WebGL context was lost: the map is paused until the browser restores it. */
+  readonly lost: string
+  /** Alt text of the static fallback map shown while the 3D map is unavailable. */
+  readonly fallback: string
+  /** The ground label on "expanding soon" boroughs. */
+  readonly expandingSoon: string
 }
 
 export interface SceneProps {
   /** /geo/base?v=<geoVersion>. */
   readonly geoUrl: string
+  /** /geo/fallback?v=<geoVersion>: the static stylised map for when the 3D map is unavailable. */
+  readonly fallbackUrl: string
   readonly palette: ScenePalette
   readonly config: SceneConfig
   /** Every home (data/homes/homes.json) projected to local metres. */
@@ -57,7 +74,8 @@ export interface SceneProps {
   readonly copy: SceneCopy
 }
 
-export type SceneStatus = 'loading' | 'ready' | 'error'
+/** `lost`: the WebGL context was lost after the map drew; it returns to `ready` once restored. */
+export type SceneStatus = 'loading' | 'ready' | 'error' | 'lost'
 
 /** Why the 3D map is unavailable: the device (no WebGL) or loading (download, data, start). */
 export type SceneFailure = 'device' | 'load'

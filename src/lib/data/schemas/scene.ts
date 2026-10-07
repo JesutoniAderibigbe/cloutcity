@@ -127,5 +127,66 @@ export const SceneConfigSchema = z.strictObject({
       .strictObject({ x: z.number(), y: z.number(), z: z.number() })
       .refine((d) => d.y > 0, { error: 'the sun must be above the horizon' }),
   }),
+  /** "Expanding soon" land and parks (S04c): their colour mixed this far towards the background. */
+  dimmed: z.strictObject({ towardBackground: z.number().gt(0).lt(1) }),
+  /** Place pins (S04c): instanced markers whose height follows the camera distance, clamped. */
+  pins: z
+    .strictObject({
+      liftM: z.number().nonnegative(),
+      heightPerDistance: ratio,
+      minHeightM: metres,
+      maxHeightM: metres,
+      /** Pins are rescaled when the distance changes by more than this factor. */
+      rescaleRatio: z.number().gt(1),
+      radialSegments: z.int().min(3),
+      /**
+       * Screen radius of a pin's tap target. At least 22 px, so the target is at least 44 px
+       * across (CLAUDE.md "Art direction": hit targets ≥ 44 px).
+       */
+      hitRadiusPx: z.number().min(22),
+      /** Pins this close to the nearest hit (in pixels) make the tap ambiguous: a chooser opens. */
+      ambiguityPx: z.number().nonnegative(),
+      /** A pointer that moves farther than this, or stays down longer, is a drag, not a tap. */
+      tapSlopPx: z.number().positive(),
+      tapMaxMs: z.int().positive(),
+      /** Selection ring radius as a fraction of the pin height. */
+      ringRadius: ratio,
+      ringSegments: z.int().min(8),
+    })
+    .refine((p) => p.minHeightM <= p.maxHeightM, {
+      error: 'minHeightM must not exceed maxHeightM',
+    }),
+  /** The camera move to a place picked outside the map (the Places panel, a hook). */
+  focus: z.strictObject({
+    tweenMs: z.int().nonnegative(),
+    /** The camera ends at most this far from the place. */
+    maxDistanceM: metres,
+  }),
+  /** "Expanding soon" ground chips on dimmed boroughs, drawn from a runtime atlas. */
+  chips: z.strictObject({
+    widthM: metres,
+    heightM: metres,
+    liftM: metres,
+    atlasWidthPx: z.int().min(64).max(2048),
+    atlasHeightPx: z.int().min(16).max(1024),
+    fontScale: z.number().gt(0).max(1),
+    textMaxWidth: z.number().gt(0).max(1),
+    cornerRadius: z.number().nonnegative().max(0.5),
+    alphaTest: z.number().gt(0).lt(1),
+  }),
+  /** The static SVG map (GET /geo/fallback) shown when the 3D map is unavailable. */
+  fallback: z.strictObject({
+    /** SVG user units are whole multiples of this many metres. */
+    metresPerUnit: metres,
+    /** Douglas-Peucker tolerance for outlines. */
+    toleranceM: metres,
+    /** Land and park polygons smaller than these are left out. */
+    minLandAreaM2: z.number().nonnegative(),
+    minParkAreaM2: z.number().nonnegative(),
+    dotRadiusM: metres,
+    labelSizeM: metres,
+    labelOpacity: z.number().gt(0).max(1),
+    dimmedLabelOpacity: z.number().gt(0).max(1),
+  }),
 })
 export type SceneConfig = z.infer<typeof SceneConfigSchema>

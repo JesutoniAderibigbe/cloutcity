@@ -18,7 +18,8 @@
     "sky-400": "#4cc9ff",
     "mint-400": "#5cf2b3",
     "orange-400": "#ff9a3d",
-    "lilac-300": "#c8a6ff"
+    "lilac-300": "#c8a6ff",
+    "stone-400": "#8f8aae"
   },
   "themeColor": "night-950",
   "scene": {
@@ -40,6 +41,17 @@
     "labelInk": "night-950",
     "ambientLight": "ink-50",
     "sunLight": "ink-50",
-    "toonRamp": [0.35, 0.65, 1]
+    "toonRamp": [0.35, 0.65, 1],
+    "pins": {
+      "venue": "pink-400",
+      "landmark": "taxi-400",
+      "teaser": "ink-300",
+      "muted": "stone-400",
+      "selected": "ink-50"
+    },
+    "chip": {
+      "fill": "night-800",
+      "ink": "ink-300"
+    }
   }
 }

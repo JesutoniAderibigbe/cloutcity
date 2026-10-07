@@ -4,10 +4,12 @@
  * grid, not by its content.
  *
  * - Phones: two rows of 44 px. Row 1: money, clock, speed, clout with the goal line. Row 2: the
- *   three stat meters under money and clock, the actions (sound, places, More) under the rest.
+ *   three stat meters under money and clock, the actions (sound, Places, More) under the rest.
  *   The clout column never drops below what the actions need (sound 110 + places 44 + More 44
  *   and their gaps, minus the speed column above them), so money and clock shrink first.
- * - `hud-wide` (≥ hudWideMinWidthPx): the same two rows with room for labels and every action.
+ * - `hud-wide` (≥ hudWideMinWidthPx): the same two rows with room for labels and every action;
+ *   money and clock stay 88 px so that at 640 px the actions (sound, gear, Places, Inventory,
+ *   Rent) still fit beside the stats.
  * - `hud-short` (a landscape phone): one row, everything side by side.
  * Heights: 2 × 44 + 4 gap + 2 × 6 padding = layout.json `hudHeightPx`; 44 + 2 × 6 =
  * `hudCompactHeightPx` (src/components/overlay/layers.test.ts).
@@ -18,7 +20,7 @@ export const HUD_GRID = [
   'grid-rows-[44px_44px]',
   'grid-cols-[minmax(56px,72px)_minmax(56px,68px)_44px_minmax(158px,1fr)]',
   "[grid-template-areas:'money_clock_speed_clout'_'stats_stats_actions_actions']",
-  'hud-wide:grid-cols-[96px_96px_44px_minmax(0,1fr)]',
+  'hud-wide:grid-cols-[88px_88px_44px_minmax(0,1fr)]',
   "hud-wide:[grid-template-areas:'money_clock_speed_clout'_'stats_stats_stats_actions']",
   'hud-short:grid-rows-[44px]',
   'hud-short:grid-cols-[72px_72px_44px_minmax(120px,1fr)_minmax(90px,220px)_auto]',

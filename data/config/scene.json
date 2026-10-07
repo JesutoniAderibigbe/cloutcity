@@ -76,5 +76,47 @@
       "y": 1,
       "z": 0.6
     }
+  },
+  "dimmed": {
+    "towardBackground": 0.55
+  },
+  "pins": {
+    "liftM": 2,
+    "heightPerDistance": 0.02,
+    "minHeightM": 10,
+    "maxHeightM": 420,
+    "rescaleRatio": 1.15,
+    "radialSegments": 6,
+    "hitRadiusPx": 24,
+    "ambiguityPx": 6,
+    "tapSlopPx": 8,
+    "tapMaxMs": 400,
+    "ringRadius": 0.55,
+    "ringSegments": 24
+  },
+  "focus": {
+    "tweenMs": 350,
+    "maxDistanceM": 3000
+  },
+  "chips": {
+    "widthM": 2400,
+    "heightM": 600,
+    "liftM": 8,
+    "atlasWidthPx": 512,
+    "atlasHeightPx": 128,
+    "fontScale": 0.42,
+    "textMaxWidth": 0.9,
+    "cornerRadius": 0.3,
+    "alphaTest": 0.5
+  },
+  "fallback": {
+    "metresPerUnit": 20,
+    "toleranceM": 50,
+    "minLandAreaM2": 150000,
+    "minParkAreaM2": 600000,
+    "dotRadiusM": 320,
+    "labelSizeM": 1500,
+    "labelOpacity": 0.85,
+    "dimmedLabelOpacity": 0.5
   }
 }

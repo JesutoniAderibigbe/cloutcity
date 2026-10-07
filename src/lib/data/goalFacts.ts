@@ -6,7 +6,8 @@
  *
  * Goal facts, each read from saved state (src/engine/goals.ts `syncGoals`):
  * - `first-paycheck`: the first paycheck's clout has been paid;
- * - `first-outfit`: the player owns at least one wearable;
+ * - `first-outfit`: the player owns at least one wearable bought this run (not a look kept
+ *   through prestige);
  * - `first-landmark-visit`: the player has visited a landmark (`player.visited`);
  * - `first-club-night`: a club has paid out a night's clout (`player.clubNights`);
  * - `first-friend`: a friend has accepted (friends arrive in a later task; until then the goal

@@ -1,0 +1,226 @@
+/**
+ * Place pins (S04c): one InstancedMesh per kind (a venue pin, a landmark obelisk placeholder
+ * until S07a/S07b models), so every place costs two draw calls in all, plus a selection ring
+ * under the open place. Per-instance colours carry the style (by kind, teaser on "expanding
+ * soon" land, muted memorial). Pin height follows the camera distance, clamped, like the station
+ * markers, so pins stay findable from street level to the whole-city view. three only, no React.
+ */
+import {
+  Color,
+  ConeGeometry,
+  CylinderGeometry,
+  Group,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  MeshToonMaterial,
+  OctahedronGeometry,
+  Quaternion,
+  RingGeometry,
+  Vector3,
+} from 'three'
+import type { BufferGeometry, Camera, Texture } from 'three'
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
+import type { SceneConfig } from '@/lib/data/schemas/scene'
+import { LAY_FLAT_X } from '../geo/coords'
+import type { GeoPin, PinKind } from '../geo/schema'
+import type { ScenePalette } from '../types'
+import type { ScreenPin } from './pick'
+
+/** Where on a unit-height pin its head sits: the point taps aim at. */
+export const PIN_HEAD = { venue: 0.8, landmark: 0.85 } as const satisfies Record<PinKind, number>
+
+/** Position, normal only, non-indexed: the shape every merged pin part must share. */
+function part(geometry: BufferGeometry): BufferGeometry {
+  geometry.deleteAttribute('uv')
+  return geometry.index === null ? geometry : geometry.toNonIndexed()
+}
+
+function merged(parts: BufferGeometry[], what: string): BufferGeometry {
+  const geometry = mergeGeometries(parts.map(part))
+  if (geometry === null) throw new Error(`pins: could not merge the ${what} geometry`)
+  for (const piece of parts) piece.dispose()
+  return geometry
+}
+
+/** A venue pin of unit height: a cone standing on its tip with a gem for a head. */
+export function buildVenuePinGeometry(radialSegments: number): BufferGeometry {
+  const stem = new ConeGeometry(0.16, 0.62, radialSegments, 1)
+  stem.rotateX(Math.PI)
+  stem.translate(0, 0.31, 0)
+  const head = new OctahedronGeometry(0.2, 0)
+  head.translate(0, PIN_HEAD.venue, 0)
+  return merged([stem, head], 'venue')
+}
+
+/** A landmark marker of unit height: a four-sided obelisk with a pointed cap (placeholder). */
+export function buildLandmarkPinGeometry(): BufferGeometry {
+  const shaft = new CylinderGeometry(0.07, 0.13, 0.78, 4, 1)
+  shaft.rotateY(Math.PI / 4)
+  shaft.translate(0, 0.39, 0)
+  const cap = new ConeGeometry(0.1, 0.22, 4, 1)
+  cap.rotateY(Math.PI / 4)
+  cap.translate(0, 0.89, 0)
+  return merged([shaft, cap], 'landmark')
+}
+
+/** Pin height for a camera distance, clamped. */
+export function pinHeight(distance: number, pins: SceneConfig['pins']): number {
+  return Math.min(pins.maxHeightM, Math.max(pins.minHeightM, distance * pins.heightPerDistance))
+}
+
+/** A pin's colour: its kind's, or its style's when it is a teaser or a memorial. */
+export function pinColor(pin: Pick<GeoPin, 'kind' | 'style'>, palette: ScenePalette): string {
+  if (pin.style === 'normal') return palette.pins[pin.kind]
+  return pin.style === 'teaser' ? palette.pins.teaser : palette.pins.muted
+}
+
+export interface PinObjects {
+  readonly group: Group
+  /** Every pin, venues first, in layer order. */
+  readonly pins: readonly GeoPin[]
+  /** Rescales the pins (and the ring) for a camera distance. */
+  applyDistance(distance: number): void
+  /** Shows the selection ring under a pin, or hides it (null or an unknown id). */
+  setSelected(id: string | null): void
+  selectedId(): string | null
+  /** The pin's ground point in scene space (x east, y up, z = -north). */
+  groundOf(id: string): Vector3 | null
+  /**
+   * Every pin head in front of the camera, in CSS pixels relative to a viewport of `width` x
+   * `height` (add the canvas offset for client coordinates).
+   */
+  screenPins(camera: Camera, width: number, height: number): ScreenPin[]
+  dispose(): void
+}
+
+const _matrix = new Matrix4()
+const _position = new Vector3()
+const _scale = new Vector3()
+const _identity = new Quaternion()
+const _head = new Vector3()
+
+export function buildPins(
+  pins: readonly GeoPin[],
+  palette: ScenePalette,
+  config: Pick<SceneConfig, 'pins'>,
+  groundY: number,
+  gradientMap: Texture,
+): PinObjects {
+  const settings = config.pins
+  const group = new Group()
+  group.name = 'pins'
+  const byKind = {
+    venue: pins.filter((pin) => pin.kind === 'venue'),
+    landmark: pins.filter((pin) => pin.kind === 'landmark'),
+  } as const satisfies Record<PinKind, GeoPin[]>
+  const ordered = [...byKind.venue, ...byKind.landmark]
+  const baseY = (pin: GeoPin) => groundY + settings.liftM + (pin.liftM ?? 0)
+
+  // White base colour: the instance colour carries each pin's style.
+  const material = new MeshToonMaterial({ color: new Color(1, 1, 1), gradientMap })
+  const geometries = {
+    venue: buildVenuePinGeometry(settings.radialSegments),
+    landmark: buildLandmarkPinGeometry(),
+  }
+  const meshes = {} as Record<PinKind, InstancedMesh>
+  const color = new Color()
+  for (const kind of ['venue', 'landmark'] as const) {
+    const list = byKind[kind]
+    const mesh = new InstancedMesh(geometries[kind], material, Math.max(1, list.length))
+    mesh.count = list.length
+    mesh.name = `pins-${kind}`
+    list.forEach((pin, i) => mesh.setColorAt(i, color.set(pinColor(pin, palette))))
+    if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
+    meshes[kind] = mesh
+    group.add(mesh)
+  }
+
+  const ringGeometry = new RingGeometry(
+    settings.ringRadius * 0.7,
+    settings.ringRadius,
+    settings.ringSegments,
+  )
+  ringGeometry.rotateX(LAY_FLAT_X)
+  ringGeometry.deleteAttribute('uv')
+  const ringMaterial = new MeshBasicMaterial({ color: palette.pins.selected })
+  const ring = new Mesh(ringGeometry, ringMaterial)
+  ring.name = 'pin-selection'
+  ring.visible = false
+  group.add(ring)
+
+  const byId = new Map(ordered.map((pin) => [pin.id, pin]))
+  let height = 0
+  let scaledFor = 0
+  let selected: string | null = null
+
+  const placeRing = () => {
+    const pin = selected === null ? undefined : byId.get(selected)
+    ring.visible = pin !== undefined
+    if (pin === undefined) return
+    ring.position.set(pin.x, baseY(pin), -pin.y)
+    ring.scale.setScalar(height)
+  }
+
+  const writeMatrices = () => {
+    _scale.setScalar(height)
+    for (const kind of ['venue', 'landmark'] as const) {
+      const mesh = meshes[kind]
+      byKind[kind].forEach((pin, i) => {
+        _position.set(pin.x, baseY(pin), -pin.y)
+        mesh.setMatrixAt(i, _matrix.compose(_position, _identity, _scale))
+      })
+      mesh.instanceMatrix.needsUpdate = true
+      // Instanced bounds follow the instances, so frustum culling stays right after a rescale.
+      mesh.computeBoundingSphere()
+    }
+    placeRing()
+  }
+
+  return {
+    group,
+    pins: ordered,
+    applyDistance(distance) {
+      const ratio =
+        scaledFor === 0 ? Infinity : Math.max(distance / scaledFor, scaledFor / distance)
+      if (ratio <= settings.rescaleRatio) return
+      scaledFor = distance
+      height = pinHeight(distance, settings)
+      writeMatrices()
+    },
+    setSelected(id) {
+      selected = id !== null && byId.has(id) ? id : null
+      placeRing()
+    },
+    selectedId: () => selected,
+    groundOf(id) {
+      const pin = byId.get(id)
+      return pin === undefined ? null : new Vector3(pin.x, groundY, -pin.y)
+    },
+    screenPins(camera, width, height_) {
+      const out: ScreenPin[] = []
+      // A tap can land before the frame that follows a camera move has rendered.
+      camera.updateMatrixWorld()
+      for (const pin of ordered) {
+        _head.set(pin.x, baseY(pin) + PIN_HEAD[pin.kind] * height, -pin.y).project(camera)
+        // Behind the camera or beyond the far plane: not on screen.
+        if (_head.z < -1 || _head.z > 1) continue
+        out.push({
+          id: pin.id,
+          x: ((_head.x + 1) / 2) * width,
+          y: ((1 - _head.y) / 2) * height_,
+        })
+      }
+      return out
+    },
+    dispose() {
+      geometries.venue.dispose()
+      geometries.landmark.dispose()
+      for (const mesh of Object.values(meshes)) mesh.dispose()
+      material.dispose()
+      ringGeometry.dispose()
+      ringMaterial.dispose()
+    },
+  }
+}

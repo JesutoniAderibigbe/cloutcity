@@ -27,6 +27,7 @@ export function CityScene() {
   const overlayRows = overlayGridTemplateRows(overlayLayout)
   const props: SceneProps = {
     geoUrl: `/geo/base?v=${geoVersion}`,
+    fallbackUrl: `/geo/fallback?v=${geoVersion}`,
     palette: scenePalette(),
     config: scene,
     homesLocal: Object.fromEntries(
@@ -43,6 +44,9 @@ export function CityScene() {
       loading: copy('map.loading'),
       errorDevice: copy('map.error.device'),
       errorLoad: copy('map.error.load'),
+      lost: copy('map.lost'),
+      fallback: copy('map.fallback'),
+      expandingSoon: copy('map.expandingSoon'),
     },
   }
   return (
@@ -53,6 +57,7 @@ export function CityScene() {
         mta={copy('map.attribution.mta')}
         compact={copy('map.attribution.compact')}
         credits={copy('map.attribution.credits')}
+        toggle={copy('map.attribution.toggle')}
         gridTemplateRows={overlayRows}
         row={FREE_SCENE_GRID_ROW}
       />

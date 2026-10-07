@@ -601,7 +601,80 @@ test.describe('shop on a phone', () => {
   }
 })
 
-// The HUD's layout at every width (nothing overlaps, 44 px targets): tests/e2e/hud-layout.spec.ts.
+test.describe('HUD row', () => {
+  test.beforeEach(async ({ page }) => {
+    await boot(page)
+  })
+
+  // S05 replaced the one-row HUD with a grid: two rows (one on a landscape phone). The title is a
+  // screen-reader heading now (UX-8), so the visible parts checked here are the live cells, the
+  // Goals button with the clout meter inside it, the Places button (S04c, visible at every width,
+  // A11Y-3) and every visible action. The intent is unchanged: nothing overlaps, everything fits
+  // the HUD zone, and every control is a 44 px target.
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+    { width: 390, height: 600 },
+    { width: 844, height: 390 },
+  ]) {
+    test(`at ${viewport.width}x${viewport.height} nothing in the HUD overlaps and every control fits it`, async ({
+      page,
+      checkA11y,
+    }) => {
+      await page.setViewportSize(viewport)
+      const zone = page.locator('[data-overlay-zone="hud"]')
+      const places = zone.locator('[data-places-button]')
+      await expect(places).toBeVisible()
+      await expect(zone.locator('[data-clout-meter]')).toBeVisible()
+      await expect(zone.locator('[data-cc-feature="cc-feature:sound-control"]')).toBeVisible()
+      await expect(zone.getByRole('heading', { level: 1, name: 'Clout City: NYC' })).toBeAttached()
+
+      const parts = [
+        ...['money', 'clock', 'stats'].map((cell) => ({
+          name: cell,
+          locator: zone.locator(`[data-hud-cell="${cell}"]`),
+        })),
+        ...(await zone.getByRole('button').filter({ visible: true }).all()).map(
+          (locator, index) => ({ name: `button ${index}`, locator }),
+        ),
+      ]
+      const row = await zone.boundingBox()
+      if (row === null) throw new Error('the HUD zone is not rendered')
+      const boxes = []
+      for (const part of parts) {
+        const box = await part.locator.boundingBox()
+        if (box === null) throw new Error(`${part.name} is not rendered`)
+        const name = (await part.locator.getAttribute('aria-label')) ?? part.name
+        expect(box.width, `${name} width`).toBeGreaterThan(0)
+        expect(box.x, `${name} left`).toBeGreaterThanOrEqual(row.x - 0.5)
+        expect(box.x + box.width, `${name} right`).toBeLessThanOrEqual(row.x + row.width + 0.5)
+        expect(box.y, `${name} top`).toBeGreaterThanOrEqual(row.y - 0.5)
+        expect(box.y + box.height, `${name} bottom`).toBeLessThanOrEqual(row.y + row.height + 0.5)
+        if (part.name.startsWith('button')) {
+          expect(box.height, `${name} height`).toBeGreaterThanOrEqual(44)
+          expect(box.width, `${name} width`).toBeGreaterThanOrEqual(44)
+        }
+        boxes.push({ name, box })
+      }
+      for (const [i, a] of boxes.entries()) {
+        for (const b of boxes.slice(i + 1)) {
+          const apart =
+            a.box.x + a.box.width <= b.box.x + 0.5 ||
+            b.box.x + b.box.width <= a.box.x + 0.5 ||
+            a.box.y + a.box.height <= b.box.y + 0.5 ||
+            b.box.y + b.box.height <= a.box.y + 0.5
+          expect(apart, `${a.name} overlaps ${b.name}`).toBe(true)
+        }
+      }
+      // Wide screens show the Places label; phones and landscape phones an icon (its label stays
+      // the accessible name).
+      await expect(places).toHaveAccessibleName('Places')
+      const label = await places.getByText('Places', { exact: true }).boundingBox()
+      expect((label?.width ?? 0) > 1, 'Places label shown').toBe(hudIsWide(page))
+      await checkA11y()
+    })
+  }
+})
 
 test.describe('lazy loading (DEC-11)', () => {
   test('the HUD panels load only when opened, never with the shell', async ({ page }) => {

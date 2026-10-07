@@ -13,9 +13,9 @@ interface Props {
 
 /**
  * Last line of defence for an unexpected failure inside the 3D scene (a renderer or chunk
- * error): the shell keeps working over the static background. Expected failures (no WebGL, a
- * failed or invalid geo download) never get here; CitySceneClient handles them before the
- * canvas mounts. The full no-WebGL path (the Places panel) is S04c.
+ * error): the shell keeps working over the static fallback map, with the Places panel open
+ * (CitySceneClient). Expected failures (no WebGL, a failed or invalid geo download) never get
+ * here; CitySceneClient handles them before the canvas mounts.
  */
 export class SceneErrorBoundary extends Component<Props, { failed: boolean }> {
   override state = { failed: false }

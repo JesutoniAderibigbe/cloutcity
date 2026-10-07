@@ -1,10 +1,18 @@
 /** Prestige (S15): the badge through the grant function, then a new run, atomically. */
 import { describe, expect, it } from 'vitest'
-import { appendClout, cloutSums, playerLevel, totalClout } from './clout'
+import {
+  appendClout,
+  cloutSums,
+  goalClout,
+  itemClout,
+  playerLevel,
+  styleScore,
+  totalClout,
+} from './clout'
 import { engineConfig as config, type EngineConfig } from './config'
 import { initialGoalsState, syncGoals } from './goals'
 import { grant } from './grants'
-import { buyItem, isWearable, shopItems } from './items'
+import { buyItem, equipItem, isWearable, sellItem, shopItems, unequipSlot } from './items'
 import { canPrestige, prestige } from './prestige'
 import { createSaveSchema, initialSave, type SaveState } from './save'
 import { playerWithClout } from './test-support'
@@ -93,12 +101,12 @@ describe('prestige', () => {
     expect(after.speed).toBe(2)
   })
 
-  it('resets cash, stats, home, rent, items, flexes, club nights, visits, events and goals', () => {
+  it('resets cash, stats, home, rent, gifts, flexes, club nights, visits, events and goals', () => {
     expect(after.player.cash).toBe(config.startCash)
     expect(after.player.stats).toEqual(fresh.player.stats)
     expect(after.player.home).toBe(config.startHome)
     expect(after.player.rent).toEqual({ owed: 0, missed: 0 })
-    expect(after.player.inventory).toEqual(fresh.player.inventory)
+    expect(after.player.inventory.gifts).toEqual([])
     expect(after.player.flex).toEqual({ rngState: 777, byPlace: {} })
     expect(after.player.clubNights).toEqual({})
     expect(after.player.visited).toEqual({})
@@ -174,17 +182,107 @@ describe('prestige', () => {
     expect(before).toEqual(copy)
   })
 
-  it('follows the config lists: inventory kept when keeps lists it', () => {
-    const keepItems: EngineConfig = {
+  it('follows the config lists: inventory starts over when resets lists it', () => {
+    const resetItems: EngineConfig = {
       ...config,
       prestige: {
         ...config.prestige,
-        resets: config.prestige.resets.filter((part) => part !== 'inventory'),
-        keeps: [...config.prestige.keeps, 'inventory'],
+        keeps: config.prestige.keeps.filter((part) => part !== 'inventory'),
+        resets: [...config.prestige.resets, 'inventory'],
       },
     }
-    const kept = prestige(iconSave(keepItems), MS, keepItems)
-    if (!kept.ok) throw new Error(kept.error.code)
-    expect(kept.save.player.inventory.wearables.map((owned) => owned.itemId)).toEqual([wearable.id])
+    const reset = prestige(iconSave(resetItems), MS, resetItems)
+    if (!reset.ok) throw new Error(reset.error.code)
+    expect(reset.save.player.inventory).toEqual(fresh.player.inventory)
+  })
+})
+
+describe('prestige keeps outfits as looks only (user ruling Q-8, ECON-1)', () => {
+  const gift = shopItems(config).find((item) => !isWearable(item))
+  if (gift === undefined) throw new Error('no gift')
+  /** Icon with the wearable equipped, a second wearable owned but never worn, and a gift. */
+  function dressedIcon(): SaveState {
+    const base = iconSave()
+    let snapshot: SaveState = base
+    const second = shopItems(config).find(
+      (item) => isWearable(item) && item.id !== wearable.id && item.slot !== wearable.slot,
+    )
+    if (second === undefined) throw new Error('no second wearable')
+    for (const id of [second.id, gift?.id ?? '']) {
+      const bought = buyItem(snapshot, id, config)
+      if (!bought.ok) throw new Error(bought.error.code)
+      snapshot = { ...snapshot, player: bought.snapshot.player }
+    }
+    const worn = equipItem(snapshot, wearable.id, wearable.slot, config)
+    if (!worn.ok) throw new Error(worn.error.code)
+    return syncGoals({ ...snapshot, player: worn.snapshot.player }, config).save
+  }
+
+  const before = dressedIcon()
+  const result = prestige(before, MS, config)
+  if (!result.ok) throw new Error(result.error.code)
+  const after = result.save
+  const { inventory } = after.player
+
+  it('keeps every owned wearable and the outfit, marked kept and worn; gifts start over', () => {
+    expect(config.prestige.keeps).toContain('inventory')
+    expect(inventory.wearables.map((owned) => owned.itemId)).toEqual(
+      before.player.inventory.wearables.map((owned) => owned.itemId),
+    )
+    expect(inventory.wearables.every((owned) => owned.prestigeKept === true && owned.worn)).toBe(
+      true,
+    )
+    expect(inventory.outfit).toEqual(before.player.inventory.outfit)
+    expect(inventory.outfit[wearable.slot]).toBe(wearable.id)
+    expect(inventory.gifts).toEqual([])
+    expect(schema.safeParse(after).success).toBe(true)
+  })
+
+  it('kept looks add 0 item clout and 0 style; goal and total clout carry nothing over', () => {
+    expect(itemClout(after.player, config)).toBe(0)
+    expect(styleScore(after.player, config)).toBe(0)
+    expect(goalClout(after.player, config)).toBe(0)
+    expect(totalClout(after.player, config)).toBe(120) // premium only
+    expect(syncGoals(after, config).newlyAchieved).toEqual([])
+  })
+
+  it('the shop refuses to buy a kept look back, and it cannot be bought twice', () => {
+    expect(sellItem(after, wearable.id, config)).toEqual({
+      ok: false,
+      error: { code: 'PRESTIGE_KEPT', itemId: wearable.id },
+    })
+    const rich = { ...after, player: { ...after.player, cash: 10_000 } }
+    expect(buyItem(rich, wearable.id, config)).toEqual({
+      ok: false,
+      error: { code: 'ALREADY_OWNED', itemId: wearable.id },
+    })
+  })
+
+  it('stays wearable: off and on again, with no stat effects landing again', () => {
+    const off = unequipSlot(after, wearable.slot)
+    if (!off.ok) throw new Error(off.error.code)
+    const on = equipItem(
+      { ...after, player: off.snapshot.player },
+      wearable.id,
+      wearable.slot,
+      config,
+    )
+    if (!on.ok) throw new Error(on.error.code)
+    expect(on.snapshot.player.inventory.outfit[wearable.slot]).toBe(wearable.id)
+    expect(on.snapshot.player.stats).toEqual(after.player.stats)
+  })
+
+  it('a wearable bought in the new run counts in full', () => {
+    const extra = shopItems(config).find(
+      (item) => isWearable(item) && !inventory.wearables.some((o) => o.itemId === item.id),
+    )
+    if (extra === undefined) throw new Error('no unowned wearable')
+    const bought = buyItem(
+      { ...after, player: { ...after.player, cash: 10_000 } },
+      extra.id,
+      config,
+    )
+    if (!bought.ok) throw new Error(bought.error.code)
+    expect(itemClout(bought.snapshot.player, config)).toBe(isWearable(extra) ? extra.cloutValue : 0)
   })
 })

@@ -187,19 +187,31 @@ function catalogItem(itemId: string, config: EngineConfig) {
   return config.items.catalog.find((item) => item.id === itemId)
 }
 
-/** The `cloutValue` of every wearable the player owns (worn or not). Gifts never count. */
+/**
+ * The `cloutValue` of every wearable the player owns (worn or not). Gifts never count, nor do
+ * wearables kept through prestige (looks only).
+ */
 export function itemClout(player: Pick<PlayerState, 'inventory'>, config: EngineConfig): number {
   return player.inventory.wearables.reduce(
-    (sum, owned) => sum + (catalogItem(owned.itemId, config)?.cloutValue ?? 0),
+    (sum, owned) =>
+      owned.prestigeKept === true
+        ? sum
+        : sum + (catalogItem(owned.itemId, config)?.cloutValue ?? 0),
     0,
   )
 }
 
-/** The outfit's style score: the `styleValue` of every item worn right now. */
+/** The outfit's style score: the `styleValue` of every item worn right now (kept looks add 0). */
 export function styleScore(player: Pick<PlayerState, 'inventory'>, config: EngineConfig): number {
+  const kept = new Set(
+    player.inventory.wearables.filter((owned) => owned.prestigeKept === true).map((o) => o.itemId),
+  )
   return Object.values(player.inventory.outfit).reduce(
     (sum, itemId) =>
-      sum + (itemId === undefined ? 0 : (catalogItem(itemId, config)?.styleValue ?? 0)),
+      sum +
+      (itemId === undefined || kept.has(itemId)
+        ? 0
+        : (catalogItem(itemId, config)?.styleValue ?? 0)),
     0,
   )
 }

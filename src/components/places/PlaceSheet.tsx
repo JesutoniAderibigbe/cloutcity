@@ -18,7 +18,7 @@ import {
   placeHoursLine,
 } from '@/lib/world/placeActionCopy'
 import { findPlace, placeName } from '@/lib/world/places'
-import { closePlace } from '@/state/placeSheet'
+import { announcePlace, closePlace, usePlaceOpenCount } from '@/state/placeSheet'
 import { gameStore, useGameStore } from '@/state/store'
 import { ShopSection } from './ShopSection'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -26,6 +26,7 @@ import '@/lib/copy/ns/boroughs'
 import '@/lib/copy/ns/club'
 import '@/lib/copy/ns/landmarks'
 import '@/lib/copy/ns/place'
+import '@/lib/copy/ns/places'
 import '@/lib/copy/ns/venues'
 
 /**
@@ -73,6 +74,13 @@ function PlaceCard({ place }: { readonly place: Place }) {
   const titleId = useId()
   const name = placeName(place)
   const lookOnly = view.kind === 'look-only'
+
+  // Every pick, from the map or the Places panel, is announced by name (A11Y-3), including a
+  // repeat pick of the open place (openPlace cleared the announcement).
+  const openCount = usePlaceOpenCount()
+  useEffect(() => {
+    announcePlace(copy('places.announce.opened', { place: name }))
+  }, [openCount, name])
 
   // On close, give focus back to what had it on open (or to the scene if that is gone). Runs
   // before the title takes focus, so it records the control the player was on.

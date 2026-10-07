@@ -2,12 +2,13 @@
 
 /**
  * The base city: borough land, water, parks, subway ribbons, station markers and line letters,
- * built once from the fetched geo layers into merged/instanced meshes (about a dozen draw
- * calls). Renders state only; the camera rig owns the view.
+ * plus the place pins and the "expanding soon" chips on dimmed boroughs (S04c), built once from
+ * the fetched geo layers into merged/instanced meshes (under twenty draw calls). Renders state
+ * only; the camera rig owns the view and PlacePins owns picking.
  */
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Group, InstancedMesh, Mesh } from 'three'
+import { Group, InstancedMesh, Mesh, MeshBasicMaterial } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
@@ -22,23 +23,45 @@ import {
 } from './geo/buildStations'
 import { buildSubwayGeometry, lineColors, subwaySegments } from './geo/buildSubway'
 import { createLabelAtlas } from './geo/labelAtlas'
-import type { GeoBase } from './geo/schema'
+import type { BoroughId, GeoBase } from './geo/schema'
 import { createCityMaterials } from './materials'
+import { buildChipGeometry, chipAnchor, createChipTexture } from './pins/buildChips'
+import { buildPins, type PinObjects } from './pins/buildPins'
+import { PlacePins } from './pins/PlacePins'
 import type { ScenePalette } from './types'
 
+/** How one borough is drawn (the test hook reports it). */
+export interface BoroughView {
+  readonly id: BoroughId
+  readonly land: 'normal' | 'dimmed'
+  readonly pinCount: number
+  /** Whether an "expanding soon" chip lies on it. */
+  readonly chip: boolean
+}
+
 /** The built scene graph plus the per-view updates the camera drives. */
-interface CityObjects {
+export interface CityObjects {
   readonly group: Group
-  /** Rescales station markers and toggles line letters for a camera distance. */
+  readonly pins: PinObjects
+  readonly boroughs: readonly BoroughView[]
+  /** Rescales station markers and pins and toggles line letters for a camera distance. */
   applyDistance(distance: number): void
   dispose(): void
 }
 
-function buildCity(geo: GeoBase, palette: ScenePalette, config: SceneConfig): CityObjects {
+function buildCity(
+  geo: GeoBase,
+  palette: ScenePalette,
+  config: SceneConfig,
+  expandingSoon: string,
+): CityObjects {
   const top = landTopY(config.land)
   const colorById = lineColors(geo.subway.lines, palette.subwayLines)
   const atlas = createLabelAtlas(geo.subway.lines, colorById, palette.labelInk, config.labels)
-  const materials = createCityMaterials(palette, config, atlas.texture)
+  const dimmed = new Set(
+    geo.places.boroughs.filter((borough) => borough.render === 'dimmed').map((b) => b.id),
+  )
+  const materials = createCityMaterials(palette, config, atlas.texture, dimmed)
   const group = new Group()
   group.name = 'city'
 
@@ -55,13 +78,17 @@ function buildCity(geo: GeoBase, palette: ScenePalette, config: SceneConfig): Ci
   water.name = 'water'
   group.add(water)
 
+  // Parks on dimmed land draw dimmed, in their own mesh per kind (one extra call each).
   const parkY = top + config.parks.liftM
-  for (const kind of ['park', 'cemetery'] as const) {
-    const polygons = polygonsOfKind(geo.parks.parks, kind)
-    if (polygons.length === 0) continue
-    const mesh = new Mesh(buildParkGeometry(polygons, parkY), materials[kind])
-    mesh.name = `parks-${kind}`
-    group.add(mesh)
+  for (const isDimmed of [false, true]) {
+    for (const kind of ['park', 'cemetery'] as const) {
+      const polygons = polygonsOfKind(geo.parks.parks, kind, { ids: dimmed, exclude: !isDimmed })
+      if (polygons.length === 0) continue
+      const material = isDimmed ? materials[`${kind}Dimmed`] : materials[kind]
+      const mesh = new Mesh(buildParkGeometry(polygons, parkY), material)
+      mesh.name = isDimmed ? `parks-${kind}-dimmed` : `parks-${kind}`
+      group.add(mesh)
+    }
   }
 
   const subwayGeometry = buildSubwayGeometry(
@@ -101,10 +128,52 @@ function buildCity(geo: GeoBase, palette: ScenePalette, config: SceneConfig): Ci
   labels.name = 'line-labels'
   group.add(labels)
 
+  const anchors = geo.land.boroughs.flatMap((borough) => {
+    if (!dimmed.has(borough.id)) return []
+    const anchor = chipAnchor(borough.polygons)
+    return anchor === null ? [] : [{ id: borough.id, anchor }]
+  })
+  const chipTexture = createChipTexture(
+    expandingSoon,
+    palette.chip.fill,
+    palette.chip.ink,
+    config.chips,
+  )
+  const chipMaterial = new MeshBasicMaterial({
+    map: chipTexture,
+    alphaTest: config.chips.alphaTest,
+  })
+  if (anchors.length > 0) {
+    const chips = new Mesh(
+      buildChipGeometry(
+        anchors.map((entry) => entry.anchor),
+        config.chips,
+        top + config.chips.liftM,
+      ),
+      chipMaterial,
+    )
+    chips.name = 'expanding-soon-chips'
+    group.add(chips)
+  }
+
+  const pins = buildPins(geo.places.pins, palette, config, top, materials.gradientMap)
+  group.add(pins.group)
+
+  const chipped = new Set(anchors.map((entry) => entry.id))
+  const boroughs: BoroughView[] = geo.places.boroughs.map((borough) => ({
+    id: borough.id,
+    land: borough.render,
+    pinCount: pins.pins.filter((pin) => pin.borough === borough.id).length,
+    chip: chipped.has(borough.id),
+  }))
+
   let scaledFor = 0
   return {
     group,
+    pins,
+    boroughs,
     applyDistance(distance) {
+      pins.applyDistance(distance)
       labels.visible = distance <= config.labels.maxDistanceM
       const ratio =
         scaledFor === 0 ? Infinity : Math.max(distance / scaledFor, scaledFor / distance)
@@ -123,6 +192,9 @@ function buildCity(geo: GeoBase, palette: ScenePalette, config: SceneConfig): Ci
         if (object instanceof Mesh) object.geometry.dispose()
       })
       stations.dispose()
+      pins.dispose()
+      chipMaterial.dispose()
+      chipTexture.dispose()
       materials.dispose()
     },
   }
@@ -133,12 +205,26 @@ interface CityProps {
   readonly geo: GeoBase
   readonly palette: ScenePalette
   readonly config: SceneConfig
+  /** The chip text (map.expandingSoon), rendered by the server. */
+  readonly expandingSoon: string
   /** Called once, after the first frame that shows the city. */
   readonly onReady: () => void
+  /** Receives the built city for the test hooks. */
+  readonly cityRef: RefObject<CityObjects | null>
 }
 
-export function City({ geo, palette, config, onReady }: CityProps) {
-  const city = useMemo(() => buildCity(geo, palette, config), [geo, palette, config])
+export function City({ geo, palette, config, expandingSoon, onReady, cityRef }: CityProps) {
+  const city = useMemo(
+    () => buildCity(geo, palette, config, expandingSoon),
+    [geo, palette, config, expandingSoon],
+  )
+
+  useEffect(() => {
+    cityRef.current = city
+    return () => {
+      if (cityRef.current === city) cityRef.current = null
+    }
+  }, [city, cityRef])
   const controls = useThree((state) => state.controls)
   const invalidate = useThree((state) => state.invalidate)
   const placed = useRef(false)
@@ -163,5 +249,10 @@ export function City({ geo, palette, config, onReady }: CityProps) {
     onReady()
   })
 
-  return <primitive object={city.group} />
+  return (
+    <>
+      <primitive object={city.group} />
+      <PlacePins pins={city.pins} config={config} groundY={landTopY(config.land)} />
+    </>
+  )
 }

@@ -9,6 +9,11 @@ import '@/lib/copy/ns/place'
 export const PANEL_BUTTON =
   'min-h-11 min-w-11 rounded-xl px-3 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
 
+/** Short screens (the sheet zone is tiny): a tighter frame for a scrolling panel. */
+const SHORT_SCREEN_FRAME =
+  '[@media(max-height:480px)]:m-1 [@media(max-height:480px)]:max-h-[calc(100%-0.5rem)] [@media(max-height:480px)]:gap-1 [@media(max-height:480px)]:p-2'
+const SHORT_SCREEN_BODY = '[@media(max-height:480px)]:gap-1'
+
 /**
  * The frame of a HUD panel in the sheet zone (S10a): a non-modal dialog like the place sheet,
  * so the map and HUD stay usable. Focus moves to the title on open and back to its HUD button
@@ -29,7 +34,9 @@ export function PanelDialog({
   readonly onClose: () => void
   /**
    * A long panel (the goals list): the dialog fits its zone and its body scrolls under the
-   * title and Close button, which stay in view.
+   * title and Close button, which stay in view. On a short screen (a phone held sideways, where
+   * the sheet zone is about 90 px since S04a reserved room for the map) the frame's margin,
+   * padding and gaps tighten, so the body keeps a strip that scrolls instead of none.
    */
   readonly scrollBody?: boolean
   readonly children: ReactNode
@@ -66,7 +73,7 @@ export function PanelDialog({
       data-hud-panel-dialog={panel}
       data-cc-feature={feature}
       className={`m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur ${
-        scrollBody ? 'max-h-[calc(100%-1rem)] min-h-0' : ''
+        scrollBody ? `max-h-[calc(100%-1rem)] min-h-0 ${SHORT_SCREEN_FRAME}` : ''
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -87,7 +94,9 @@ export function PanelDialog({
         </button>
       </div>
       {scrollBody ? (
-        <div className="flex min-h-0 flex-col gap-2 overflow-y-auto overscroll-contain">
+        <div
+          className={`flex min-h-0 flex-col gap-2 overflow-y-auto overscroll-contain ${SHORT_SCREEN_BODY}`}
+        >
           {children}
         </div>
       ) : (

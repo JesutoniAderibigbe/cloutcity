@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import type { PlaceTestHook } from '@/components/places/placeTestHook'
 import { expect, test } from './fixtures/test'
+import { waitForMapSettled } from './helpers/scene'
 
 // S13: flexing at a landmark earns clout, the HUD clout meter follows it, and crossing a level
 // shows the level-up toast in the toast zone. Places are opened and the player set up through
@@ -14,6 +15,26 @@ async function boot(page: Page) {
   })
   await page.goto('/')
   await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+  // The toast specs time a 6 s toast against a fake clock; the 3D map's start-up blocks the main
+  // thread for seconds on SwiftShader (FLAKE-3), so it must be over before anything is timed.
+  await waitForMapSettled(page)
+}
+
+/**
+ * Pauses the fake clock just ahead of the page's time. A busy main thread can let the page's
+ * clock pass the target before the pause lands ("Cannot fast-forward to the past"): read the
+ * clock again and retry, so the pause always lands in the future.
+ */
+async function pauseSoon(page: Page): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    const now = await page.evaluate(() => Date.now())
+    try {
+      await page.clock.pauseAt(now + 100)
+      return
+    } catch (error) {
+      if (attempt >= 5 || !/past/i.test(String(error))) throw error
+    }
+  }
 }
 
 async function openPlace(page: Page, id: string, minuteOfDay: number, clout: number) {
@@ -100,7 +121,7 @@ test.describe('clout, flexing and levels', () => {
     await card.getByRole('button', { name: /^Flex: / }).click()
     const toast = page.locator('[data-overlay-zone="toast"] [data-level-up="local"]')
     await expect(toast).toBeVisible()
-    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100)
+    await pauseSoon(page)
     await expect(toast).toContainText('New level: Local')
     await expect(toast).toContainText("Your name's starting to ring. Brooklyn noticed.")
     await expect(toast).toContainText(/Unlocked: Brooklyn/)
@@ -241,8 +262,7 @@ async function fitsTheToastZone(page: Page) {
 
 test.describe('the level-up toast', () => {
   // Clicks wait for animation frames, so the clock is paused only between clicks.
-  const pause = async (page: Page) =>
-    page.clock.pauseAt((await page.evaluate(() => Date.now())) + 100)
+  const pause = pauseSoon
 
   test('the longest unlock list fits the toast zone on a phone held either way', async ({
     page,
@@ -323,33 +343,43 @@ test.describe('the level-up toast', () => {
 })
 
 test.describe('the HUD clout meter', () => {
-  test('sits under the goal line inside the clout cell, clear of every other cell (S05)', async ({
-    page,
-  }) => {
-    await boot(page)
-    await expect(meter(page)).toBeVisible()
-    const box = (selector: string) => page.locator(selector).first().boundingBox()
-    const [cell, meterBox, goalLine] = await Promise.all([
-      box('[data-hud-cell="clout"]'),
-      box('[data-clout-meter]'),
-      box('[data-hud-goal-line]'),
-    ])
-    if (cell === null || meterBox === null || goalLine === null) {
-      throw new Error('missing HUD boxes')
-    }
-    expect(meterBox.x).toBeGreaterThanOrEqual(cell.x)
-    expect(meterBox.x + meterBox.width).toBeLessThanOrEqual(cell.x + cell.width + 0.5)
-    expect(meterBox.y + meterBox.height).toBeLessThanOrEqual(cell.y + cell.height + 0.5)
-    expect(meterBox.y).toBeGreaterThanOrEqual(goalLine.y + goalLine.height - 0.5)
-    for (const other of ['money', 'clock', 'speed', 'stats', 'actions']) {
-      const otherBox = await box(`[data-hud-cell="${other}"]`)
-      if (otherBox === null) throw new Error(`no ${other} cell`)
-      const apart =
-        otherBox.x + otherBox.width <= meterBox.x ||
-        meterBox.x + meterBox.width <= otherBox.x ||
-        otherBox.y + otherBox.height <= meterBox.y ||
-        meterBox.y + meterBox.height <= otherBox.y
-      expect(apart, other).toBe(true)
-    }
-  })
+  // S05: the meter moved from the one-row HUD's title area into the clout cell, under the goal
+  // line; the intent stays: it fits its place and covers nothing else, at every HUD layout.
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+    { width: 390, height: 600 },
+    { width: 844, height: 390 },
+  ] as const) {
+    test(`sits under the goal line inside the clout cell, clear of every other cell at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport)
+      await boot(page)
+      await expect(meter(page)).toBeVisible()
+      const box = (selector: string) => page.locator(selector).first().boundingBox()
+      const [cell, meterBox, goalLine] = await Promise.all([
+        box('[data-hud-cell="clout"]'),
+        box('[data-clout-meter]'),
+        box('[data-hud-goal-line]'),
+      ])
+      if (cell === null || meterBox === null || goalLine === null) {
+        throw new Error('missing HUD boxes')
+      }
+      expect(meterBox.x).toBeGreaterThanOrEqual(cell.x)
+      expect(meterBox.x + meterBox.width).toBeLessThanOrEqual(cell.x + cell.width + 0.5)
+      expect(meterBox.y + meterBox.height).toBeLessThanOrEqual(cell.y + cell.height + 0.5)
+      expect(meterBox.y).toBeGreaterThanOrEqual(goalLine.y + goalLine.height - 0.5)
+      for (const other of ['money', 'clock', 'speed', 'stats', 'actions']) {
+        const otherBox = await box(`[data-hud-cell="${other}"]`)
+        if (otherBox === null) throw new Error(`no ${other} cell`)
+        const apart =
+          otherBox.x + otherBox.width <= meterBox.x ||
+          meterBox.x + meterBox.width <= otherBox.x ||
+          otherBox.y + otherBox.height <= meterBox.y ||
+          meterBox.y + meterBox.height <= otherBox.y
+        expect(apart, other).toBe(true)
+      }
+    })
+  }
 })

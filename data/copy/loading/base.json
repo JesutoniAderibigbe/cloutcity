@@ -14,6 +14,7 @@
     "loading.goals": "Loading your goals",
     "loading.iconMoment": "Loading your Icon moment",
     "loading.hud": "Loading your stats",
-    "loading.more": "Loading more options"
+    "loading.more": "Loading more options",
+    "loading.places": "Loading the places list"
   }
 }

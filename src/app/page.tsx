@@ -7,6 +7,8 @@ import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
+import { PlacesButton } from '@/components/places/PlacesButton'
+import { PlacesPanelMount } from '@/components/places/PlacesPanelMount'
 import { WelcomeMount } from '@/components/welcome/WelcomeMount'
 import { CityScene } from '@/scene/CityScene'
 
@@ -20,12 +22,13 @@ export default function HomePage() {
         </>
       }
       slots={{
-        hud: <HudFrame />,
+        hud: <HudFrame places={<PlacesButton />} />,
         toast: <LevelUpToastMount />,
         sheet: (
           <>
             <EventSheetMount />
             <PlaceSheetMount />
+            <PlacesPanelMount />
             <HudPanelMount />
             <SoundSheetMount />
           </>

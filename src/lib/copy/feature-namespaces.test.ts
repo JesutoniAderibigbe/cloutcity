@@ -42,6 +42,7 @@ describe('feature copy renders with only its own namespaces loaded', () => {
       'loading.hud',
       'loading.more',
       'loading.levelUp',
+      'loading.places',
     ] as const
     for (const labelKey of loadingKeys) {
       for (const zone of ['hud', 'toast', 'sheet', 'modal'] as const) {
@@ -168,6 +169,37 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     // The sweep reached both branches (self-check).
     expect(blocks).toBeGreaterThan(0)
     expect(done).toBeGreaterThan(0)
+  })
+
+  it('the HUD Places button renders with the boot copy alone (S04c)', async () => {
+    const { PlacesButton } = await import('@/components/places/PlacesButton')
+    expect(await registered()).toEqual(['app', 'loading', 'nav', 'tabs'])
+    expect(renderToStaticMarkup(createElement(PlacesButton))).toContain('Places')
+  })
+
+  it('the places panel chunk: every borough and place, open, locked and expanding soon', async () => {
+    const { PlacesPanel } = await import('@/components/places/PlacesPanel')
+    const { mapPlaces, placeAccess, placeAccessibleName, boroughs, boroughClosedReason } =
+      await import('@/lib/world/places')
+    const markup = renderToStaticMarkup(createElement(PlacesPanel))
+    expect(markup).toContain('data-cc-feature="cc-feature:places-panel"')
+    for (const place of mapPlaces()) expect(markup).toContain(`data-place-button="${place.id}"`)
+    for (const clout of [0, 1_000_000]) {
+      for (const borough of boroughs)
+        boroughClosedReason(borough.id, placeAccess({ borough: borough.id }, clout))
+      for (const place of mapPlaces()) {
+        expect(placeAccessibleName(place, placeAccess(place, clout))).not.toBe('')
+      }
+    }
+    const { copy } = await import('./index')
+    for (const key of [
+      'places.panel.chooserTitle',
+      'places.panel.chooserHint',
+      'places.panel.showAll',
+      'places.announce.opened',
+    ] as const) {
+      expect(copy(key, { place: 'x' })).not.toBe('')
+    }
   })
 
   it('the HUD live chunk: the meter at every level, with and without a next level', async () => {

@@ -62,23 +62,42 @@ test('the sheet loads on demand, opening it stays silent, and each slider moves 
   await expect(opener).toBeFocused()
 })
 
-test('the sound control stays inside the HUD, at least 44 px', async ({ page }) => {
-  const hud = await page
-    .goto('/')
-    .then(() => page.locator('[data-overlay-zone="hud"]').boundingBox())
-  if (!hud) throw new Error('no HUD zone')
-  // The gear is in the HUD on wide screens only; on phones the More button stands in for it.
-  const names = hudIsWide(page) ? ['Turn on sound', 'Sound settings'] : ['Turn on sound', 'More']
-  for (const name of names) {
-    const box = await page.getByRole('button', { name, exact: true }).boundingBox()
-    if (!box) throw new Error(`${name} not rendered`)
-    expect(box.width, name).toBeGreaterThanOrEqual(44)
-    expect(box.height, name).toBeGreaterThanOrEqual(44)
-    expect(box.y, name).toBeGreaterThanOrEqual(hud.y)
-    expect(box.y + box.height, name).toBeLessThanOrEqual(hud.y + hud.height)
-    expect(box.x + box.width, name).toBeLessThanOrEqual(hud.x + hud.width)
-  }
-})
+// S05: the sound control sits in the HUD's actions cell beside the Places button (S04c); the
+// gear is in the HUD on wide screens only, and on phones the More button stands in for it.
+for (const viewport of [
+  { width: 390, height: 844 },
+  { width: 1280, height: 720 },
+  { width: 390, height: 600 },
+  { width: 844, height: 390 },
+] as const) {
+  test(`the sound control stays inside the HUD, at least 44 px, at ${viewport.width}x${viewport.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/')
+    await waitForMapSettled(page)
+    const hud = await page.locator('[data-overlay-zone="hud"]').boundingBox()
+    if (!hud) throw new Error('no HUD zone')
+    const names = hudIsWide(page)
+      ? ['Turn on sound', 'Sound settings', 'Places']
+      : ['Turn on sound', 'More', 'Places']
+    for (const name of names) {
+      const box = await page
+        .locator('[data-overlay-zone="hud"]')
+        .getByRole('button', { name, exact: true })
+        .boundingBox()
+      if (!box) throw new Error(`${name} not rendered`)
+      expect(box.width, name).toBeGreaterThanOrEqual(44)
+      expect(box.height, name).toBeGreaterThanOrEqual(44)
+      expect(box.y, name).toBeGreaterThanOrEqual(hud.y)
+      expect(box.y + box.height, name).toBeLessThanOrEqual(hud.y + hud.height)
+      expect(box.x, name).toBeGreaterThanOrEqual(hud.x)
+      expect(box.x + box.width, name).toBeLessThanOrEqual(hud.x + hud.width)
+    }
+    // Both lines of the control are visible text at every width (UX-7).
+    await expect(page.getByText('Tap for sound', { exact: true })).toBeVisible()
+  })
+}
 
 test('accessible with the sheet closed and open', async ({ page, checkA11y }) => {
   await page.goto('/')

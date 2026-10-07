@@ -37,6 +37,21 @@ const MIN_TRIANGLES = 50_000
 const READY_TIMEOUT_MS = 30_000
 const IDLE_WINDOW_MS = 2_000
 const ANGLE_EPSILON = 0.01
+/**
+ * Touch moves per long gesture in the edge-clamp specs (FLAKE-4). Each CDP touch move waits for
+ * a software-rendered frame of the zoomed-out city (seconds on a loaded SwiftShader), so a step
+ * costs a frame. A pan is linear in the finger travel, so one big move pans as far as many small
+ * ones; every finger still moves in its own pointer event and the clamp runs on each. A one-move
+ * pinch zooms out less than a stepped one (zoom-to-cursor re-anchors per move), so the spec that
+ * needs the full zoom-out keeps its stepped pinch, and the others assert where they end up.
+ */
+const GESTURE_STEPS = 1
+/**
+ * Full-width one-finger drags at full zoom-out that reach the extent edge from the Queens start:
+ * one drag pans about 12.5 km, the west and north-west edges are under two drags away, and a
+ * third leaves margin. Each spec asserts the edge was reached, so too few would fail, not pass.
+ */
+const EDGE_PANS = 3
 
 interface CameraState {
   position: { x: number; y: number; z: number }
@@ -336,8 +351,13 @@ test.describe('3D city scene', () => {
     // Fingers dragged right move the target west, until it stops at the west edge.
     const viewport = page.viewportSize()
     if (!viewport) throw new Error('no viewport')
-    for (let i = 0; i < 4; i++) {
-      await touchGesture(page, [{ x: 10, y: centre.y }], [{ x: viewport.width - 10, y: centre.y }])
+    for (let i = 0; i < EDGE_PANS; i++) {
+      await touchGesture(
+        page,
+        [{ x: 10, y: centre.y }],
+        [{ x: viewport.width - 10, y: centre.y }],
+        GESTURE_STEPS,
+      )
     }
     const edge = await camera(page)
     expectInsideLimits(edge)
@@ -391,14 +411,22 @@ test.describe('3D city scene', () => {
     await settle(page)
   })
 
-  test('the map attribution is visible in the free scene row and links to /credits', async ({
+  test('the map attribution is one tap away in the free scene row and links to /credits', async ({
     page,
     checkA11y,
   }) => {
     await page.goto('/')
     await waitForScene(page)
+    // UX-9: a compact "Map data" chip in the free row's corner; a tap shows the attribution.
     const attribution = page.locator('[data-map-attribution]')
     await expect(attribution).toBeVisible()
+    const chip = attribution.locator('summary')
+    await expect(chip).toHaveText(/Map data/)
+    const chipBox = await chip.boundingBox()
+    expect(chipBox?.height ?? 0).toBeGreaterThanOrEqual(44)
+    expect(chipBox?.width ?? Infinity).toBeLessThanOrEqual(140)
+    await expect(attribution.getByRole('link', { name: 'Credits' })).toBeHidden()
+    await chip.click()
     await expect(attribution).toContainText('Map: NYC Open Data (NYC DCP)')
     await expect(attribution).toContainText('not endorsed by the MTA, may be inaccurate')
     const box = await attribution.boundingBox()
@@ -542,6 +570,7 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
         page,
         pair(centre, 60),
         pair(centre, 60).map((p) => ({ x: p.x + dx, y: p.y + dy })),
+        GESTURE_STEPS,
       )
 
     // Tilt as far as it goes (an extreme gesture), inside the polar limits.
@@ -550,19 +579,22 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
 
     // Pan to the north-west edge of the extent with long one-finger drags.
     // Zoomed out first so a few drags cover the whole extent.
-    await touchGesture(page, pair(centre, 120), pair(centre, 4))
-    for (let i = 0; i < 5; i++) {
+    await touchGesture(page, pair(centre, 120), pair(centre, 4), GESTURE_STEPS)
+    for (let i = 0; i < EDGE_PANS; i++) {
       await touchGesture(
         page,
         [{ x: 20, y: top + 10 }],
         [{ x: viewport.width - 20, y: bottom - 10 }],
-        6,
+        GESTURE_STEPS,
       )
     }
     await settle(page)
     const edge = await camera(page)
     expectInsideLimits(edge)
     expectNearFollowsDistance(edge)
+    // At the north-west corner: the pinches below start at the extent edge.
+    expect(edge.target.x).toBeCloseTo(sw.x, 0)
+    expect(-edge.target.z).toBeCloseTo(ne.y, 0)
 
     // Pinch in and out at the screen corners (zoom-to-cursor pulls towards a point off the
     // extent); the target must stay clamped and the near plane must follow the distance.
@@ -571,11 +603,11 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
       { x: viewport.width - 60, y: bottom - 30 },
     ]
     for (const corner of corners) {
-      await touchGesture(page, pair(corner, 4), pair(corner, 55), 6)
+      await touchGesture(page, pair(corner, 4), pair(corner, 55), GESTURE_STEPS)
       const zoomedIn = await camera(page)
       expectInsideLimits(zoomedIn)
       expectNearFollowsDistance(zoomedIn)
-      await touchGesture(page, pair(corner, 55), pair(corner, 4), 6)
+      await touchGesture(page, pair(corner, 55), pair(corner, 4), GESTURE_STEPS)
       const zoomedOut = await camera(page)
       expectInsideLimits(zoomedOut)
       expectNearFollowsDistance(zoomedOut)
@@ -614,8 +646,21 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
       await waitForScene(page)
       const attribution = page.locator('[data-map-attribution]')
       await expect(attribution).toBeVisible()
-      const box = await attribution.boundingBox()
-      if (!box) throw new Error('attribution has no box')
+      // Opened (UX-9): the chip and its text together must still stay in the free scene row.
+      await attribution.locator('summary').click()
+      const box = await attribution.evaluate((element) => {
+        const rects = [...element.querySelectorAll('summary, summary ~ div')].map((child) =>
+          child.getBoundingClientRect(),
+        )
+        const x = Math.min(...rects.map((r) => r.left))
+        const y = Math.min(...rects.map((r) => r.top))
+        return {
+          x,
+          y,
+          width: Math.max(...rects.map((r) => r.right)) - x,
+          height: Math.max(...rects.map((r) => r.bottom)) - y,
+        }
+      })
       const { top, bottom } = await freeArea(page)
       expect(box.y, 'below the HUD').toBeGreaterThanOrEqual(top)
       expect(box.y + box.height, 'above the toast zone').toBeLessThanOrEqual(bottom)

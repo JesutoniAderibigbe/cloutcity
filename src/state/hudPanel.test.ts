@@ -27,7 +27,7 @@ describe('HUD panel store', () => {
   })
 
   it('opening a panel closes the place sheet', () => {
-    openPlace('rerun-racks')
+    openPlace('rerun-racks', { origin: 'panel' })
     openHudPanel('inventory')
     expect(placeSheetStore.getState().placeId).toBeNull()
   })
@@ -35,12 +35,12 @@ describe('HUD panel store', () => {
   it('onPlaceOpened fires when a place opens or changes, not on close', () => {
     let calls = 0
     const stop = onPlaceOpened(() => (calls += 1))
-    openPlace('rerun-racks')
-    openPlace('rerun-racks')
-    openPlace('glowmatic')
+    openPlace('rerun-racks', { origin: 'panel' })
+    openPlace('rerun-racks', { origin: 'panel' })
+    openPlace('glowmatic', { origin: 'panel' })
     closePlace()
     stop()
-    openPlace('rerun-racks')
+    openPlace('rerun-racks', { origin: 'panel' })
     expect(calls).toBe(2)
   })
 })

@@ -2,17 +2,21 @@
 
 /**
  * The 3D chunk's entry (loaded with next/dynamic, ssr: false, from CitySceneClient): the
- * react-three-fiber canvas with the city, the player's avatar, lights, camera rig and test hooks. Renders on demand
- * only, so an idle map draws zero frames.
+ * react-three-fiber canvas with the city, place pins, the player's avatar, lights, camera rig and
+ * test hooks. Renders on demand only, so an idle map draws zero frames.
+ *
+ * A lost WebGL context (S04c) is restored in place: three re-creates its GL state when the
+ * browser restores the context, so the canvas is never remounted; this only reports the loss
+ * and, after the first frame drawn again, the recovery.
  */
 import { useEffect, useMemo, useRef } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
 import { usePlayerHome } from '@/state/playerHome'
 import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
 import { nearFar } from './camera/limits'
-import { City } from './City'
+import { City, type CityObjects } from './City'
 import { landTopY } from './geo/buildLand'
 import type { GeoLoadFailure } from './geo/load'
 import { safeParseGeoBase } from './geo/schema'
@@ -39,7 +43,53 @@ export interface CityCanvasProps extends Pick<
   /** Called (once) instead of mounting the canvas when the body fails the schema. */
   readonly onInvalidGeo: (failure: GeoLoadFailure) => void
   readonly label: string
+  /** The "expanding soon" chip text, rendered by the server. */
+  readonly expandingSoon: string
   readonly onReady: () => void
+  /** The WebGL context was lost: the map shows nothing until it is restored. */
+  readonly onContextLost: () => void
+  /** A frame has drawn again after the context came back. */
+  readonly onContextRestored: () => void
+}
+
+function ContextWatcher({
+  onLost,
+  onRestored,
+}: {
+  readonly onLost: () => void
+  readonly onRestored: () => void
+}) {
+  const gl = useThree((state) => state.gl)
+  const invalidate = useThree((state) => state.invalidate)
+  const restored = useRef(false)
+
+  useEffect(() => {
+    const canvas = gl.domElement
+    // three's renderer listens first and calls preventDefault(), which is what lets the browser
+    // restore the context at all.
+    const lost = () => {
+      restored.current = false
+      onLost()
+    }
+    const back = () => {
+      restored.current = true
+      invalidate()
+    }
+    canvas.addEventListener('webglcontextlost', lost)
+    canvas.addEventListener('webglcontextrestored', back)
+    return () => {
+      canvas.removeEventListener('webglcontextlost', lost)
+      canvas.removeEventListener('webglcontextrestored', back)
+    }
+  }, [gl, invalidate, onLost])
+
+  useFrame(() => {
+    if (!restored.current) return
+    restored.current = false
+    onRestored()
+  })
+
+  return null
 }
 
 export default function CityCanvas({
@@ -52,11 +102,15 @@ export default function CityCanvas({
   boundsLocal,
   dprCap,
   label,
+  expandingSoon,
   onReady,
+  onContextLost,
+  onContextRestored,
 }: CityCanvasProps) {
   const readyRef = useRef(false)
   // The camera starts over the player's home and the avatar stands there (S05).
   const home = homesLocal[usePlayerHome() ?? startHome]
+  const cityRef = useRef<CityObjects | null>(null)
   // Validated outside the R3F root and without throwing: an invalid body is an expected
   // failure, reported to the shell instead of reaching React's error logging.
   const parsed = useMemo(() => safeParseGeoBase(geoBody), [geoBody])
@@ -98,6 +152,8 @@ export default function CityCanvas({
           geo={geo}
           palette={palette}
           config={config}
+          expandingSoon={expandingSoon}
+          cityRef={cityRef}
           onReady={() => {
             readyRef.current = true
             onReady()
@@ -110,7 +166,8 @@ export default function CityCanvas({
           toonRamp={palette.toonRamp}
           avatar={config.avatar}
         />
-        <TestHooks readyRef={readyRef} />
+        <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
+        <TestHooks readyRef={readyRef} cityRef={cityRef} />
       </Canvas>
     </div>
   )
