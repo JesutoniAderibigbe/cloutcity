@@ -207,8 +207,10 @@ export function CitySceneClient(props: SceneProps) {
             startHome={props.startHome}
             boundsLocal={props.boundsLocal}
             quality={props.quality}
+            buildings={props.buildings}
             label={copy.label}
             expandingSoon={copy.expandingSoon}
+            landmarkNames={copy.landmarkNames}
             onReady={onReady}
             onContextLost={onContextLost}
             onContextRestored={onContextRestored}

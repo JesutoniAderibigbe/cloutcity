@@ -30,17 +30,17 @@
     "walnut-700": "#5c4030",
     "leaf-600": "#3e7b45",
     "glass-700": "#46607a",
-    "building-700": "#3a2f7d",
-    "roof-500": "#6b5bd6",
+    "building-700": "#7b5a4a",
+    "roof-500": "#5b5d61",
     "window-300": "#ffd98a",
-    "block-800": "#2a2263",
-    "stone-300": "#c9c1e6",
-    "brick-500": "#b5576f",
-    "steel-400": "#7c8ad0",
-    "glass-400": "#5aa6d6",
-    "roof-600": "#4a3d94",
+    "block-800": "#9a9286",
+    "stone-300": "#d6ccb8",
+    "brick-500": "#9b4a3c",
+    "steel-400": "#6c7680",
+    "glass-400": "#7d9cb0",
+    "roof-600": "#4c5257",
     "lamp-200": "#ffe7a1",
-    "dim-500": "#57527c"
+    "dim-500": "#8a8780"
   },
   "themeColor": "night-950",
   "scene": {
@@ -98,8 +98,14 @@
       "roof": "roof-600",
       "accent": "taxi-400",
       "window": "lamp-200",
-      "outline": "night-950",
+      "outline": "charcoal-900",
       "dimmed": "dim-500"
+    },
+    "buildings": {
+      "wall": "building-700",
+      "roof": "roof-500",
+      "window": "window-300",
+      "block": "block-800"
     }
   }
 }

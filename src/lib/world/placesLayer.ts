@@ -5,6 +5,7 @@
  */
 import type { Borough } from '@/lib/data/schemas/content'
 import type { PinStyle } from '@/scene/geo/schema'
+import { landmarkPinLifts } from './landmarksLayer'
 import { boroughRenderState, boroughs, mapPlaces, type MapPlace } from './places'
 
 export interface PlacePin {
@@ -19,6 +20,11 @@ export interface PlacePin {
   readonly style: PinStyle
   /** Extra height above the land top (S07a lifts pins over landmark models). Omitted when 0. */
   readonly liftM?: number
+  /**
+   * The landmark has a 3D model (S07a): its pin is a compact badge floating over the model
+   * instead of the placeholder marker. Omitted otherwise.
+   */
+  readonly badge?: true
 }
 
 export interface BoroughRender {
@@ -46,9 +52,11 @@ export function buildPlacesLayer(): PlacesLayer {
     return { id: entry.id, render: state.state, teaserIds: [...state.teaserLandmarkIds] }
   })
   const renderOf = new Map(renders.map((render) => [render.id, render]))
+  const lifts = landmarkPinLifts()
   const pins = mapPlaces().map((place): PlacePin => {
     const render = renderOf.get(place.borough)
     if (render === undefined) throw new Error(`places layer: no borough "${place.borough}"`)
+    const lift = place.kind === 'landmark' ? lifts.get(place.id) : undefined
     return {
       id: place.id,
       kind: place.kind,
@@ -57,6 +65,8 @@ export function buildPlacesLayer(): PlacesLayer {
       x: Math.round(place.x),
       y: Math.round(place.y),
       style: pinStyle(place, render),
+      ...(lift === undefined ? {} : { badge: true as const }),
+      ...(lift === undefined || lift === 0 ? {} : { liftM: lift }),
     }
   })
   return { pins, boroughs: renders }

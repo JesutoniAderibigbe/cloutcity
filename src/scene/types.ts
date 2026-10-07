@@ -2,12 +2,14 @@
  * Serialisable props the server scene mount (CityScene.tsx) hands to the client scene. Types
  * only, so the client never imports a config loader.
  */
+import type { DistrictAssets } from '@/lib/data/districts'
 import type { HomeIdLiteral } from '@/lib/data/homes'
 import type { FpsStepDown, PerfConfig, QualityTier, TierPicker } from '@/lib/data/schemas/config'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
 import type { LocalBounds } from './camera/limits'
 import type { BoroughId } from './geo/schema'
+import type { LandmarkPalette } from './landmarks/types'
 
 /** Scene colours as hex, resolved from theme.json tokens on the server (src/lib/theme.ts). */
 export interface ScenePalette {
@@ -34,6 +36,16 @@ export interface ScenePalette {
   }
   readonly chip: { readonly fill: string; readonly ink: string }
   readonly toonRamp: readonly number[]
+  /** District buildings and procedural blocks (S04d). */
+  readonly buildings: {
+    readonly wall: string
+    readonly roof: string
+    /** The warm light of a lit window at night. */
+    readonly window: string
+    readonly block: string
+  }
+  /** The landmark kit's role colours (S07a). */
+  readonly landmarks: LandmarkPalette
 }
 
 export interface SceneCopy {
@@ -49,6 +61,11 @@ export interface SceneCopy {
   readonly fallback: string
   /** The ground label on "expanding soon" boroughs. */
   readonly expandingSoon: string
+  /**
+   * Name chip text per modelled landmark id (S07a): the landmark's copy name, which is its
+   * generic label where the real name is trademarked.
+   */
+  readonly landmarkNames: Readonly<Record<string, string>>
 }
 
 /** One quality tier's render settings (data/config/perf.json), resolved on the server. */
@@ -91,6 +108,8 @@ export interface SceneProps {
   /** data/geo/bounds.json in local metres: the camera target never leaves it. */
   readonly boundsLocal: LocalBounds
   readonly quality: SceneQuality
+  /** District building and block files per tier (S04d, src/lib/data/districts.ts). */
+  readonly buildings: Readonly<Record<QualityTier, DistrictAssets>>
   /** The overlay grid rows (src/components/overlay/layers.ts), for the scene's own status row. */
   readonly overlayRows: string
   /** The free scene row of that grid (no overlay zone covers it). */

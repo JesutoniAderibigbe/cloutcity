@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { whenIdle, yieldToMain } from './schedule'
+import { createSlicer, whenIdle, yieldToMain } from './schedule'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -45,5 +45,32 @@ describe('yieldToMain', () => {
   it('resolves through a MessageChannel task otherwise', async () => {
     vi.stubGlobal('window', {})
     await expect(yieldToMain()).resolves.toBeUndefined()
+  })
+})
+
+describe('createSlicer', () => {
+  it('yields only once a slice has run for sliceMs, then starts a new slice', async () => {
+    let now = 0
+    let yields = 0
+    const step = createSlicer(
+      8,
+      async () => {
+        yields++
+      },
+      () => now,
+    )
+    await step()
+    now = 7
+    await step()
+    expect(yields).toBe(0)
+    now = 8
+    await step()
+    expect(yields).toBe(1)
+    now = 15
+    await step()
+    expect(yields).toBe(1)
+    now = 16
+    await step()
+    expect(yields).toBe(2)
   })
 })

@@ -1,6 +1,7 @@
 import { BackSide, MeshBasicMaterial, MeshToonMaterial } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { PALETTE } from './kit.fixture'
+import { nightGlowSource } from '../lighting/nightGlow'
 import { createLandmarkMaterials } from './materials'
 import { DataTexture, NearestFilter, RedFormat } from 'three'
 
@@ -22,14 +23,17 @@ describe('createLandmarkMaterials', () => {
       'dispose',
       'outline',
       'windows',
+      'windowsGlow',
     ])
 
     expect(materials.body).toBeInstanceOf(MeshToonMaterial)
     expect(materials.body.vertexColors).toBe(true)
     expect(materials.body.gradientMap).toBe(gradient)
 
-    expect(materials.windows).toBeInstanceOf(MeshBasicMaterial)
+    expect(materials.windows).toBeInstanceOf(MeshToonMaterial)
     expect(materials.windows.vertexColors).toBe(true)
+    expect(`#${materials.windows.color.getHexString()}`).toBe(PALETTE.glass)
+    expect(materials.windowsGlow).toBe(false)
 
     expect(materials.outline).toBeInstanceOf(MeshBasicMaterial)
     expect(materials.outline.side).toBe(BackSide)
@@ -39,6 +43,17 @@ describe('createLandmarkMaterials', () => {
     expect(materials.dimmed.gradientMap).toBe(gradient)
     expect(materials.dimmed.vertexColors).toBe(false)
     expect(`#${materials.dimmed.color.getHexString()}`).toBe(PALETTE.dimmed)
+  })
+
+  it('binds the windows to the shared night glow, except for an excluded category', () => {
+    const uniform = { value: 0 }
+    const lit = createLandmarkMaterials(ramp(), PALETTE, { uniform, category: 'station' })
+    expect(lit.windowsGlow).toBe(true)
+    expect(nightGlowSource(lit.windows)).toBe('uniform')
+    expect(nightGlowSource(lit.body)).toBeUndefined()
+    const memorial = createLandmarkMaterials(ramp(), PALETTE, { uniform, category: 'memorial' })
+    expect(memorial.windowsGlow).toBe(false)
+    expect(nightGlowSource(memorial.windows)).toBeUndefined()
   })
 
   it('disposes its materials but not the shared ramp', () => {

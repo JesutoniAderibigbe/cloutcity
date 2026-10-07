@@ -26,7 +26,7 @@ const ALLOWED = [
   /^three\/addons\/utils\/BufferGeometryUtils\.js$/,
   /^\.\.?\//,
   /^@\/lib\/landmarks\/metrics$/,
-  /^@\/lib\/data\/schemas\/(?:landmarkModels|config)$/,
+  /^@\/lib\/data\/schemas\/(?:landmarkModels|config|scene)$/,
 ]
 
 describe('src/scene/landmarks', () => {

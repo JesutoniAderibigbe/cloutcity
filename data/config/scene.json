@@ -191,5 +191,37 @@
     },
     "labelMaxDistanceM": 6000,
     "outlineWidthM": 1.5
+  },
+  "buildings": {
+    "floorM": 3.3,
+    "windowSpacingM": 4,
+    "windowWidth": 0.5,
+    "windowHeight": 0.45,
+    "litShare": 0.55,
+    "windows": {
+      "low": false,
+      "mid": true,
+      "high": true
+    },
+    "wallJitter": 0.12,
+    "viewM": {
+      "districts": 9000,
+      "blocks": 9000
+    },
+    "loadMarginM": 1500,
+    "buildSliceMs": 8,
+    "windowTileCells": 4
+  },
+  "landmarkChips": {
+    "widthM": 1000,
+    "heightM": 200,
+    "offsetM": 260,
+    "liftM": 12,
+    "atlasWidthPx": 512,
+    "cellHeightPx": 96,
+    "fontScale": 0.5,
+    "textMaxWidth": 0.9,
+    "cornerRadius": 0.3,
+    "alphaTest": 0.5
   }
 }
