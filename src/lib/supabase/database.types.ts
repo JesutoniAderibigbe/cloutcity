@@ -388,8 +388,14 @@ isOneToOne: true
 "mod_ban":
 { Args: { "p_case": string,"p_correlation_id": string,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string,"p_reason": string }; Returns: Json
                            },
+"mod_case":
+{ Args: { "p_case": string,"p_moderator_id": string }; Returns: Json
+                           },
 "mod_dismiss":
 { Args: { "p_abusive": boolean,"p_case": string,"p_correlation_id": string,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string }; Returns: Json
+                           },
+"mod_queue":
+{ Args: { "p_limit": number,"p_moderator_id": string }; Returns: Json
                            },
 "mod_reset_handle":
 { Args: { "p_case": string,"p_correlation_id": string,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string,"p_reason": string }; Returns: Json

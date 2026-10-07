@@ -508,3 +508,102 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     }
   })
 })
+
+describe('S18a/S18b chunks render with only their own namespaces', () => {
+  it('the Me panel: the not-connected state for every reason, and the public card', async () => {
+    const { MePanel } = await import('@/components/profile/MePanel')
+    const { PublicCard } = await import('@/components/profile/PublicCard')
+    const { guestSessionStore } = await import('@/state/guestSession')
+    const reasons = ['no-config', 'offline', 'rate-limited', 'disabled', 'error'] as const
+    for (const reason of reasons) {
+      guestSessionStore.setState({ status: 'local', reason, reused: false })
+      expect(renderToStaticMarkup(createElement(MePanel))).toContain('cc-feature:me-panel')
+    }
+    for (const status of ['idle', 'connecting', 'refused'] as const) {
+      guestSessionStore.setState({ status, reason: null, reused: false })
+      renderToStaticMarkup(createElement(MePanel))
+    }
+    for (const [level, career] of [
+      ['nobody', null],
+      ['scene-regular', 'artist-dj'],
+      ['icon', 'founder-hustler'],
+    ] as const) {
+      const profile = {
+        handle: 'Bold_Bodega42',
+        public_level: level,
+        career_path: career,
+        avatar: {},
+        handle_generated: true,
+        free_handle_change: true,
+        handle_changes_left: 2,
+        next_handle_change_at: null,
+      }
+      expect(renderToStaticMarkup(createElement(PublicCard, { profile }))).toContain(
+        '@Bold_Bodega42',
+      )
+    }
+  })
+
+  it('the safety chunk: player actions in both layouts, the report form, the toast and notices', async () => {
+    const { PlayerActions } = await import('@/components/safety/PlayerActions')
+    const { ReportForm } = await import('@/components/safety/ReportForm')
+    const { CrisisPanel } = await import('@/components/safety/CrisisPanel')
+    const { BlockConfirm } = await import('@/components/safety/BlockConfirm')
+    const { unavailableSafetyApi } = await import('@/lib/supabase/safetyApi')
+    const api = unavailableSafetyApi()
+    const player = { id: 'p', handle: 'Rival' }
+    for (const layout of ['inline', 'menu'] as const) {
+      expect(renderToStaticMarkup(createElement(PlayerActions, { player, layout, api }))).toContain(
+        `data-player-actions="${layout}"`,
+      )
+    }
+    for (const kind of ['player', 'handle'] as const) {
+      renderToStaticMarkup(
+        createElement(ReportForm, {
+          handle: 'Rival',
+          target: 'p',
+          kind,
+          api,
+          onSubmitted() {},
+          onCancel() {},
+        }),
+      )
+    }
+    expect(renderToStaticMarkup(createElement(CrisisPanel))).toContain('988')
+    renderToStaticMarkup(
+      createElement(BlockConfirm, { handle: 'Rival', busy: false, onConfirm() {}, onCancel() {} }),
+    )
+  })
+
+  it('the notice modal and the toast', async () => {
+    const { AccountNotices } = await import('@/components/safety/AccountNotices')
+    const { SafetyToast } = await import('@/components/safety/SafetyToast')
+    const { setAccountNotices } = await import('@/state/accountNotices')
+    const { showSafetyToast } = await import('@/state/safetyToast')
+    const { unavailableSafetyApi } = await import('@/lib/supabase/safetyApi')
+    const { NOTICE_KINDS } = await import('@/lib/safety/reports')
+    for (const kind of NOTICE_KINDS) {
+      setAccountNotices(
+        [
+          {
+            id: kind,
+            kind,
+            reason: 'spam',
+            endsAt: '2026-10-14T00:00:00Z',
+            createdAt: '2026-10-07T00:00:00Z',
+            sanctionId: 's',
+          },
+        ],
+        unavailableSafetyApi(),
+      )
+      renderToStaticMarkup(createElement(AccountNotices))
+    }
+    showSafetyToast('Blocked', { label: 'Undo', untilMs: Date.now() + 1000, run() {} })
+    renderToStaticMarkup(createElement(SafetyToast))
+  })
+
+  it('the /mod console', async () => {
+    const { ModConsole } = await import('@/components/mod/ModConsole')
+    expect(renderToStaticMarkup(createElement(ModConsole))).toContain('Moderation')
+  })
+})

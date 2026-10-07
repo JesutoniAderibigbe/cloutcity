@@ -9,6 +9,8 @@
     "credits.mta.body": "Subway data: MTA New York City Transit static GTFS, obtained from an MTA server and stored on our own server. Lines and stations are simplified artwork derived from it. Clout City is not endorsed by, licensed by or affiliated with the MTA. This data may not be accurate, complete, timely or real time.",
     "credits.osm.heading": "OpenStreetMap",
     "credits.osm.body": "OpenStreetMap: not used.",
-    "credits.back": "Back to the map"
+    "credits.back": "Back to the map",
+    "credits.handles.heading": "Handle filter word lists",
+    "credits.handles.body": "The handle filter uses \"List of Dirty, Naughty, Obscene, and Otherwise Bad Words\" by Shutterstock and contributors (CC BY 4.0) and The Big Username Blocklist by Martin Sandström (MIT), plus words of our own. Both lists are modified: terms were reformatted, moved, added and removed. They are used on our server only."
   }
 }

@@ -18,12 +18,14 @@ npm run dev                       # http://localhost:3000
 No environment variables are needed to play: without Supabase the game runs local-only. Env
 files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names.
 
-| Variable                                                    | Used by                                                                                   | Default                              |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------ |
-| `NEXT_PUBLIC_LOG_LEVEL`                                     | `src/lib/log.ts` minimum level (`debug`, `info`, `warn`, `error`)                         | `debug` in dev, `info` in production |
-| `E2E_PORT`                                                  | Port Playwright serves the production build on                                            | `3100`                               |
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The guest's anonymous Supabase session (`src/lib/supabase/env.ts`); inlined at build time | unset: local-only play               |
-| `E2E_SUPABASE_PORT`                                         | Port of the opt-in `npm run e2e:supabase` build                                           | `3110`                               |
+| Variable                                                    | Used by                                                                                       | Default                              |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `NEXT_PUBLIC_LOG_LEVEL`                                     | `src/lib/log.ts` minimum level (`debug`, `info`, `warn`, `error`)                             | `debug` in dev, `info` in production |
+| `E2E_PORT`                                                  | Port Playwright serves the production build on                                                | `3100`                               |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The guest's anonymous Supabase session (`src/lib/supabase/env.ts`); inlined at build time     | unset: local-only play               |
+| `E2E_SUPABASE_PORT`                                         | Port of the opt-in `npm run e2e:supabase` build                                               | `3110`                               |
+| `SUPABASE_SERVICE_ROLE_KEY`                                 | Server only (`src/server/supabase/service.ts`): the `/api/mod/*` routes; never `NEXT_PUBLIC_` | unset: `/mod` answers 503            |
+| `MODERATOR_EMAILS`                                          | Server only: comma-separated emails allowed into `/mod` (`src/server/moderation/auth.ts`)     | unset or empty: nobody               |
 
 ## Scripts
 
@@ -545,7 +547,32 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   them): each takes the moderator's user id, the case (the reported player's id; the appeal id
   for `mod_resolve_appeal`), an idempotency key and a correlation id, and writes exactly one row
   to the append-only `private.moderation_audit`. `moderator_reset_handle` is no longer callable
-  through the API; `mod_reset_handle` wraps it with the audit row.
+  through the API; `mod_reset_handle` wraps it with the audit row. `mod_queue` (open cases by
+  priority with trusted-reporter and brigade flags, plus pending appeals) and `mod_case` (one
+  case's reports with notes and snapshots, holds, sanctions and history) feed the console.
+- **/mod console** (S18b part 2). `src/app/mod` is its own route, `noindex`, with its own
+  Supabase session (`storageKey: 'cloutcity-mod-auth'`, `src/lib/supabase/modAuth.ts`), so it
+  never touches the game's guest session. Sign-in is an emailed link: `POST /api/mod/sign-in`
+  answers the same 202 for every address and sends the link (after the response) only to one on
+  `MODERATOR_EMAILS`; it is rate limited per IP (`moderation.json` `console`, per server
+  instance). `GET /api/mod/queue`, `GET /api/mod/case/<player id>` and `POST /api/mod/action` need
+  `Authorization: Bearer <access token>`; `src/server/moderation/handlers.ts` checks it with
+  `auth.getUser`, then the email (confirmed, non-anonymous, on the list), and answers 401/403
+  otherwise. Every response is `no-store` and `noindex` and carries `X-Correlation-Id`, which is
+  also the audit row's correlation id. `/mod?case=<player id>` opens one case directly. Locally the
+  magic link lands on `site_url` (`supabase/config.toml`); add the `/mod` URL of your dev server
+  to `additional_redirect_urls` to land on the console, and set the hosted project's redirect
+  URLs the same way. `src/server/**` starts with `import 'server-only'`
+  (`src/lib/server-boundary.test.ts`; `npm run budget` also fails if a chunk names
+  `MODERATOR_EMAILS` or `SUPABASE_SERVICE_ROLE_KEY`).
+- **Player safety UI** (S18a/S18b part 2). The Me tab opens the Me panel
+  (`src/components/profile`): the public card, the handle form (live preview, debounced
+  `check_handle`, `data/config/profile.json` `handleCheckDebounceMs`) and the blocked and muted
+  lists, or an honest "playing solo" state without a session. Every player surface must use
+  `src/components/safety/PlayerActions.tsx` (Mute, Block with confirm, Report; Add friend joins
+  with S20) with the shared `safetyApi` (`src/lib/supabase/safetyApi.ts`). Moderator notices
+  load once the guest session connects and show as a modal with an appeal form. The e2e suite
+  drives PlayerActions through `window.__cloutcityTest.safety` with an in-memory API.
 - **Retention.** `private.purge_expired_safety_data()` applies `moderation.json` `retention` and
   never touches a player with any report under legal hold. The migration enables `pg_cron` and
   schedules it daily at 08:17 UTC (`cron.job`, job `purge-expired-safety-data`); on a hosted
