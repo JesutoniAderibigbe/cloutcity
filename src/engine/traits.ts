@@ -15,20 +15,18 @@
  */
 import type { TraitEffectKind } from '@/lib/data/avatarIds'
 import type { ActionDef } from './actions'
-import { changeAvailableAt } from './career'
 import type { EngineConfig } from './config'
-import type { GameSnapshot, PlayerState } from './game'
+import type { PlayerState } from './game'
 
 export type { TraitEffectKind }
 
 /** The number of traits the creator asks for. */
 export function traitPickCount(config: EngineConfig): number {
-  const step = config.creator.steps.find((entry) => entry.id === 'traits')
-  return step !== undefined && 'pick' in step ? step.pick : 0
+  return config.traits.pick
 }
 
 export function isTraitId(id: unknown, config: EngineConfig): id is string {
-  return typeof id === 'string' && config.traits.traits.some((trait) => trait.id === id)
+  return typeof id === 'string' && Object.hasOwn(config.traits.effects, id)
 }
 
 /** The summed percent the player's traits change `kind` by, capped at ±maxModifierPct. */
@@ -39,8 +37,7 @@ export function traitPct(
 ): number {
   let sum = 0
   for (const id of player.traits) {
-    const trait = config.traits.traits.find((entry) => entry.id === id)
-    for (const effect of trait?.effects ?? []) if (effect.kind === kind) sum += effect.pct
+    if (Object.hasOwn(config.traits.effects, id)) sum += config.traits.effects[id]?.[kind] ?? 0
   }
   const cap = config.traits.maxModifierPct
   return Math.min(cap, Math.max(-cap, sum))
@@ -95,50 +92,4 @@ export function traitAdjustedPrice(
   config: EngineConfig,
 ): number {
   return scaleByPct(price, traitPct(player, 'shop-price', config))
-}
-
-export type TraitsError =
-  | { readonly code: 'UNKNOWN_TRAIT'; readonly traitId: string }
-  | { readonly code: 'WRONG_TRAIT_COUNT'; readonly required: number; readonly given: number }
-  | { readonly code: 'REPEATED_TRAIT'; readonly traitId: string }
-  | { readonly code: 'CHANGE_COOLDOWN'; readonly availableAt: number }
-
-export type TraitsResult =
-  | { readonly ok: true; readonly snapshot: GameSnapshot; readonly changed: boolean }
-  | { readonly ok: false; readonly error: TraitsError }
-
-/**
- * Chooses the player's traits: exactly `traits.pick` known, different ids. The same set again
- * (in any order) changes nothing; a different set waits for the change cooldown.
- */
-export function chooseTraits(
-  snapshot: GameSnapshot,
-  traitIds: readonly string[],
-  config: EngineConfig,
-): TraitsResult {
-  const required = traitPickCount(config)
-  if (traitIds.length !== required) {
-    return { ok: false, error: { code: 'WRONG_TRAIT_COUNT', required, given: traitIds.length } }
-  }
-  for (const [i, id] of traitIds.entries()) {
-    if (!isTraitId(id, config)) return { ok: false, error: { code: 'UNKNOWN_TRAIT', traitId: id } }
-    if (traitIds.indexOf(id) !== i) {
-      return { ok: false, error: { code: 'REPEATED_TRAIT', traitId: id } }
-    }
-  }
-  const { player } = snapshot
-  const same =
-    player.traits.length === traitIds.length && traitIds.every((id) => player.traits.includes(id))
-  if (same) return { ok: true, snapshot, changed: false }
-  const now = snapshot.clock.minute
-  const availableAt = changeAvailableAt(player.traitsChangedAt, now, config)
-  if (availableAt !== null) return { ok: false, error: { code: 'CHANGE_COOLDOWN', availableAt } }
-  return {
-    ok: true,
-    snapshot: {
-      ...snapshot,
-      player: { ...player, traits: [...traitIds], traitsChangedAt: now },
-    },
-    changed: true,
-  }
 }

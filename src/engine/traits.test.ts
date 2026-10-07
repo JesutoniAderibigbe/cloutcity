@@ -9,10 +9,10 @@ import { engineConfig as config } from './config'
 import { initialSnapshot, type GameSnapshot } from './game'
 import { buyItem, shopPrice } from './items'
 import { shiftAction, workShift } from './jobs'
+import { chooseTraits } from './creatorFlow'
 import { placeActions } from './placeActions'
 import { atPlace } from './test-support'
 import {
-  chooseTraits,
   scaleByPct,
   traitAdjustedAction,
   traitAdjustedTrip,

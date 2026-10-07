@@ -1,10 +1,11 @@
 /**
  * Player-facing text for the "Make it you" creator (S16a), built only from the data that drives
  * the options (GR-10): option and colour names from data/avatar/options.json, trait effect lines
- * from each trait's `effects`, career lines from balance.json `career.paths` and neighborhood
+ * from each trait's `effects`, career lines from balance.json `career.paths` (keys `career.<camelId>.name|goal|bonus`) and neighborhood
  * names from data/homes/neighborhoods.json. No number is ever written into the copy itself.
  */
 import { engineConfig, type EngineConfig } from '@/engine/config'
+import { creatorConfig, type CreatorEngineConfig } from '@/engine/creatorConfig'
 import type { TraitEffectKind } from '@/lib/data/avatarIds'
 import type { CareerPathId } from '@/lib/data/schemas/config'
 import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from './copy'
@@ -19,6 +20,7 @@ import '@/lib/copy/ns/neighborhoods'
 export interface CreatorCopyOptions {
   readonly copy?: CopyFn
   readonly config?: EngineConfig
+  readonly creator?: CreatorEngineConfig
 }
 
 function requireKey(key: string, what: string): CopyKey {
@@ -36,7 +38,7 @@ export function optionName(nameKey: string, { copy = activeCopy }: CreatorCopyOp
   return copy(requireKey(nameKey, 'a look option'))
 }
 
-function trait(traitId: string, config: EngineConfig) {
+function trait(traitId: string, config: CreatorEngineConfig) {
   const found = config.traits.traits.find((entry) => entry.id === traitId)
   if (found === undefined) throw new Error(`Unknown trait "${traitId}"`)
   return found
@@ -44,14 +46,14 @@ function trait(traitId: string, config: EngineConfig) {
 
 /** "Early bird". */
 export function traitName(traitId: string, options: CreatorCopyOptions = {}): string {
-  const { copy = activeCopy, config = engineConfig } = options
-  return copy(requireKey(trait(traitId, config).nameKey, `trait ${traitId}`))
+  const { copy = activeCopy, creator = creatorConfig } = options
+  return copy(requireKey(trait(traitId, creator).nameKey, `trait ${traitId}`))
 }
 
 /** "Up before the bodega cat." */
 export function traitFlavor(traitId: string, options: CreatorCopyOptions = {}): string {
-  const { copy = activeCopy, config = engineConfig } = options
-  return copy(requireKey(trait(traitId, config).flavorKey, `trait ${traitId}`))
+  const { copy = activeCopy, creator = creatorConfig } = options
+  return copy(requireKey(trait(traitId, creator).flavorKey, `trait ${traitId}`))
 }
 
 /** The copy key of one effect line: `creator.effect.<kind><More|Less>`. */
@@ -61,8 +63,8 @@ export function traitEffectKey(kind: TraitEffectKind, pct: number): string {
 
 /** One line per effect of the trait, in data order: "Actions cost 10% less energy". */
 export function traitEffectLines(traitId: string, options: CreatorCopyOptions = {}): string[] {
-  const { copy = activeCopy, config = engineConfig } = options
-  return trait(traitId, config).effects.map((effect) =>
+  const { copy = activeCopy, creator = creatorConfig } = options
+  return trait(traitId, creator).effects.map((effect) =>
     copy(requireKey(traitEffectKey(effect.kind, effect.pct), `trait ${traitId}`), {
       pct: formatCount(Math.abs(effect.pct)),
     }),
@@ -71,20 +73,21 @@ export function traitEffectLines(traitId: string, options: CreatorCopyOptions = 
 
 /** "Streamer". */
 export function careerName(path: CareerPathId, options: CreatorCopyOptions = {}): string {
-  const { copy = activeCopy, config = engineConfig } = options
-  return copy(requireKey(config.career.paths[path].nameKey, `career ${path}`))
+  const { copy = activeCopy } = options
+  return copy(requireKey(`career.${camelSegment(path)}.name`, `career ${path}`))
 }
 
 /** The goal line while the path is chosen: "Make it in New York as a streamer". */
 export function careerGoalLine(path: CareerPathId, options: CreatorCopyOptions = {}): string {
-  const { copy = activeCopy, config = engineConfig } = options
-  return copy(requireKey(config.career.paths[path].goalKey, `career ${path}`))
+  const { copy = activeCopy } = options
+  return copy(requireKey(`career.${camelSegment(path)}.goal`, `career ${path}`))
 }
 
 /** The path's bonus, from its numbers: "Flex clout +20%". */
 export function careerBonusLine(path: CareerPathId, options: CreatorCopyOptions = {}): string {
   const { copy = activeCopy, config = engineConfig } = options
-  const { bonus, bonusKey } = config.career.paths[path]
+  const { bonus } = config.career.paths[path]
+  const bonusKey = `career.${camelSegment(path)}.bonus`
   const vars: Readonly<Record<string, string>> =
     bonus.kind === 'resale-pts' ? { pts: formatCount(bonus.pts) } : { pct: formatCount(bonus.pct) }
   return copy(requireKey(bonusKey, `career ${path}`), vars)

@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
+import { creatorConfig } from '@/engine/creatorConfig'
 import { homePoint } from '@/engine/neighborhoods'
 import { transitConfig } from '@/engine/transit/config'
 import { planTrip } from '@/engine/transit/plan'
@@ -52,7 +53,7 @@ describe('start neighborhoods (S16a)', () => {
       'flushing',
     ])
     expect(file.borough).toBe('queens')
-    expect(engineConfig.neighborhoods.map((n) => n.id)).toEqual(file.neighborhoods.map((n) => n.id))
+    expect(engineConfig.neighborhoods).toEqual(file.neighborhoods.map((n) => n.id))
   })
 
   it.each(file.neighborhoods.map((n) => [n.id, n] as const))(
@@ -110,18 +111,20 @@ describe('homePoint', () => {
   const sunnyside = file.neighborhoods.find((n) => n.id === 'sunnyside')
 
   it('is the default home point with no neighborhood, or for a home the neighborhood does not have', () => {
-    expect(homePoint('queens-room', null, homes, engineConfig)).toEqual(
+    expect(homePoint('queens-room', null, homes, creatorConfig.neighborhoods)).toEqual(
       homes['queens-room'].location,
     )
-    expect(homePoint('brooklyn-1br', 'sunnyside', homes, engineConfig)).toEqual(
+    expect(homePoint('brooklyn-1br', 'sunnyside', homes, creatorConfig.neighborhoods)).toEqual(
       homes['brooklyn-1br'].location,
     )
-    expect(homePoint('queens-room', 'nowhere', homes, engineConfig)).toEqual(
+    expect(homePoint('queens-room', 'nowhere', homes, creatorConfig.neighborhoods)).toEqual(
       homes['queens-room'].location,
     )
   })
 
   it("is the neighborhood's point for one of its startable homes", () => {
-    expect(homePoint('queens-room', 'sunnyside', homes, engineConfig)).toEqual(sunnyside?.home)
+    expect(homePoint('queens-room', 'sunnyside', homes, creatorConfig.neighborhoods)).toEqual(
+      sunnyside?.home,
+    )
   })
 })

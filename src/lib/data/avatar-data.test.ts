@@ -12,8 +12,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { creatorSteps } from '@/engine/creator'
 import { engineConfig } from '@/engine/config'
+import { creatorConfig } from '@/engine/creatorConfig'
+import { creatorSteps } from '@/engine/creatorFlow'
 import { resaleValue, shopItems } from '@/engine/items'
 import { scaleByPct } from '@/engine/traits'
 import { baseCopy } from '@/lib/copy/all'
@@ -165,15 +166,15 @@ describe('look options (D2, D5–D8)', () => {
   })
 
   it('the engine reads the same options and the defaults are a valid look', () => {
-    expect(engineConfig.avatar).toEqual(options)
-    expect(lookIssue(options.defaults, options)).toBeNull()
+    expect(creatorConfig.options).toEqual(options)
+    expect(lookIssue(options.defaults, engineConfig.avatar)).toBeNull()
   })
 })
 
 describe('every swatch and option has a human name (A11Y-1)', () => {
   /** Food words are never colour names (A11Y-1). */
   const FOOD =
-    /\b(cream|mustard|olive|honey|caramel|chestnut|espresso|chocolate|coffee|mocha|peach|cinnamon|almond|vanilla|butter|cocoa|toffee|oatmeal|cherry|lemon|plum|wine|apricot|salmon|sand|wheat|ginger)\b/i
+    /\b(cream|mustard|olive|honey|caramel|chestnut|espresso|chocolate|coffee|mocha|peach|cinnamon|almond|vanilla|butter|cocoa|toffee|oatmeal|cherry|lemon|plum|wine|apricot|salmon|wheat|ginger)\b/i
   const categories = {
     skinTones: options.skinTones,
     hairColors: options.hairColors,
@@ -202,6 +203,14 @@ describe('every swatch and option has a human name (A11Y-1)', () => {
   it('colour names use no food words (HUMAN REVIEW: skin-tone names)', () => {
     const swatches = [...options.skinTones, ...options.hairColors, ...options.garmentColors]
     for (const swatch of swatches) expect(strings[swatch.nameKey], swatch.id).not.toMatch(FOOD)
+  })
+
+  it('no model swatch or decor colour name is a food word either (HUMAN REVIEW)', () => {
+    const swatchKeys = Object.keys(strings).filter(
+      (key) => key.startsWith('models.color.') || /^colors\.\w+\.name$/.test(key),
+    )
+    expect(swatchKeys.length).toBeGreaterThan(20)
+    expect(swatchKeys.filter((key) => FOOD.test(strings[key] ?? ''))).toEqual([])
   })
 })
 
@@ -237,7 +246,8 @@ describe('traits (D16) and their copy (GR-10)', () => {
   it('are 8, each effect within ±10% (the cap)', () => {
     expect(traits.traits).toHaveLength(8)
     expect(traits.maxModifierPct).toBe(10)
-    expect(engineConfig.traits).toEqual(traits)
+    expect(creatorConfig.traits).toEqual(traits)
+    expect(Object.keys(engineConfig.traits.effects)).toEqual(traits.traits.map((t) => t.id))
   })
 
   it('every trait renders its name, flavour and one line per effect, numbers from data', () => {
@@ -297,16 +307,14 @@ describe('career paths (DEC-20) and the creator (D18)', () => {
       'neighborhood',
       'home',
     ])
-    expect(creatorSteps(engineConfig)).toEqual(['look', 'traits', 'dream', 'neighborhood', 'home'])
+    expect(creatorSteps(creatorConfig)).toEqual(['look', 'traits', 'dream', 'neighborhood', 'home'])
     expect(creator.steps.find((step) => step.id === 'traits')).toMatchObject({ pick: 2 })
     expect(creator.rolls).toEqual({ neighborhood: { scope: 'save' } })
     expect(creator.changeCooldownGameDays).toBe(7)
   })
 
   it('every neighborhood name renders from its id', () => {
-    for (const neighborhood of engineConfig.neighborhoods) {
-      expect(neighborhoodName(neighborhood.id)).not.toBe('')
-    }
+    for (const id of engineConfig.neighborhoods) expect(neighborhoodName(id)).not.toBe('')
   })
 })
 
@@ -326,7 +334,10 @@ describe('creator copy is generated, never hard-coded (GR-10)', () => {
         .flat()
         .flatMap((o) => (typeof o === 'object' && o !== null && 'nameKey' in o ? [o.nameKey] : [])),
       ...traits.traits.flatMap((t) => [t.nameKey, t.flavorKey]),
-      ...Object.values(balance.career.paths).flatMap((p) => [p.nameKey, p.goalKey, p.bonusKey]),
+      ...Object.keys(balance.career.paths).flatMap((id) => {
+        const camel = id.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
+        return ['name', 'goal', 'bonus'].map((part) => `career.${camel}.${part}`)
+      }),
     ]
     expect(named.filter((key) => strings[key as string] === undefined)).toEqual([])
   })

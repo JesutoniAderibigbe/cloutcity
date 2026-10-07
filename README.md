@@ -416,23 +416,29 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   listed in `prestige.resets`. To add a goal: add it to `progression.json` (a fact from
   `src/lib/data/goalFacts.ts`), add `goals.goal.<camelId>.name` and `.hint` to
   `data/copy/goals/base.json`, and run `npm test`.
-- **Look, traits, career and the creator** (S16a; `appearance.ts`, `traits.ts`, `career.ts`,
-  `creator.ts`, `neighborhoods.ts`): a look is option ids only (`data/avatar/options.json`, each
-  mapping to S04h catalog models and `theme.json` `models` tokens). Guests start with a random
-  look (`randomLook`, seeded from `crypto` by `src/state/randomSeed.ts`); `effectiveLook` lays
-  worn items over it and caps attachments; `publicAvatar` is the enums other players may see.
-  Traits (`data/avatar/traits.json`, pick 2) carry `effects[]` of ±10% on energy cost, mood
-  gains, shop prices and trip length; career paths (`balance.json` `career`) give a flex, event
-  (not nightlife), home-clout or resale bonus, never club, grant, premium or item clout. Both
-  changes wait `creator.changeCooldownGameDays` (`data/config/creator.json`, which also holds the
-  offer rule, the step registry with the disabled `origin` seam, and roll scopes).
-  `commitRoll` writes the neighborhood roll (`data/homes/neighborhoods.json`) before the reveal;
-  `homePoint` places the start home in the player's neighborhood. The store only counts actions
-  toward the creator offer; the creator's own actions (`src/state/creatorActions.ts`) load with
-  the creator, off the playable path, and the HUD publishes the drawn look for the 3D chunks
-  (`src/state/playerLook.ts`). To add a look option: add it to
-  `options.json` with a `nameKey` in `data/copy/avatar/` (colours in `data/copy/colors/`), and
-  run `npm test` (`src/lib/data/avatar-data.test.ts` resolves every model and token).
+- **Look, traits, career and the creator** (S16a). A look is option ids only
+  (`data/avatar/options.json`, each mapping to S04h catalog models and `theme.json` `models`
+  tokens). Traits (`data/avatar/traits.json`, pick 2) carry `effects[]` of ±10% on energy cost,
+  mood gains, shop prices and trip length; career paths (`balance.json` `career`) give a flex,
+  event (not nightlife), home-clout or resale bonus, never club, grant, premium or item clout;
+  both changes wait `changeCooldownGameDays` (`data/config/creator.json`, which also holds the
+  offer rule, the step registry with the disabled `origin` seam, and roll scopes). Copy keys
+  follow the ids (`career.<camelId>.name|goal|bonus`, `neighborhoods.<camelId>.name`).
+  - On the playable path the engine reads only the compact `data/avatar/engine.derived.json`
+    (ids, defaults, random chances, trait modifiers, offer and roll rules; PERF-6): `appearance.ts`
+    (`randomLook` for a guest's start, seeded from `crypto` by `src/state/randomSeed.ts`;
+    `repairLook`; `publicAvatar`), `traits.ts` and `career.ts` (the modifiers every action
+    applies) and `creator.ts` (the offer, counted by the store on every committed action). After
+    editing any S16a source file, run `npm run avatar:update` and commit the derived file.
+  - The creator and avatar chunks read the full files through `creatorConfig.ts`:
+    `creatorFlow.ts` (steps, `chooseLook`/`chooseTraits`/`chooseCareer`, `commitRoll`, which
+    writes the neighborhood roll before the reveal, and `moveIntoNeighborhood`), `avatarLook.ts`
+    (`effectiveLook`: worn items over the look, attachments capped) and `neighborhoods.ts`
+    (`homePoint`). `src/state/creatorActions.ts` applies the flow to the store, and the HUD
+    publishes the look and worn items for the 3D chunks (`src/state/playerLook.ts`).
+  - To add a look option: add it to `options.json` with a `nameKey` in `data/copy/avatar/`
+    (colours in `data/copy/colors/`), run `npm run avatar:update`, then `npm test`
+    (`src/lib/data/avatar-data.test.ts` resolves every model and token).
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
 

@@ -4,21 +4,26 @@
  * playable path; the store itself only counts actions toward the offer (`noteCreatorAction`).
  * Each one calls the engine and writes the result to the store, like the store's own actions.
  */
-import { chooseLook, randomLook, type Look, type LookResult } from '@/engine/appearance'
-import { chooseCareer, type CareerResult } from '@/engine/career'
+import { randomLook, type Look } from '@/engine/appearance'
 import { engineConfig } from '@/engine/config'
+import { creatorConfig } from '@/engine/creatorConfig'
 import {
+  chooseCareer,
+  chooseLook,
+  chooseTraits,
   commitRoll,
   completeCreator,
   dismissCreatorOffer,
   moveIntoNeighborhood,
   skipCreatorStep,
+  type CareerResult,
+  type LookResult,
   type MoveInResult,
   type RollResult,
-} from '@/engine/creator'
+  type TraitsResult,
+} from '@/engine/creatorFlow'
 import { syncGoals } from '@/engine/goals'
 import { createRng } from '@/engine/rng'
-import { chooseTraits, type TraitsResult } from '@/engine/traits'
 import { randomSeed } from './randomSeed'
 import { gameStore, levelUpPatch, persistedOf, type GameStore, type PersistedState } from './store'
 
@@ -80,7 +85,8 @@ export function creatorActions(store: GameStore = gameStore): CreatorActions {
       return result
     },
     moveIntoNeighborhood: (home) => {
-      const result = moveIntoNeighborhood(persistedOf(store.getState()), home, engineConfig)
+      const save = persistedOf(store.getState())
+      const result = moveIntoNeighborhood(save, home, engineConfig, creatorConfig)
       if (result.ok) store.setState({ player: result.save.player })
       return result
     },
@@ -89,7 +95,7 @@ export function creatorActions(store: GameStore = gameStore): CreatorActions {
       store.setState({ creator: dismissCreatorOffer(creator, clock.minute) })
     },
     skipStep: (step) => {
-      store.setState({ creator: skipCreatorStep(store.getState().creator, step, engineConfig) })
+      store.setState({ creator: skipCreatorStep(store.getState().creator, step, creatorConfig) })
     },
     complete: () => {
       const { creator, clock } = store.getState()

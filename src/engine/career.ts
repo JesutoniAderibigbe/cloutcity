@@ -10,14 +10,13 @@
  *   (src/engine/items.ts `resaleValue`); the balance schema keeps it below any discounted price.
  *
  * A chosen path can change again only after `creator.changeCooldownGameDays` game days (traits
- * share the cooldown, src/engine/traits.ts). Choosing the same path again changes nothing.
+ * share the cooldown). Choosing a path is the creator's (src/engine/creatorFlow.ts `chooseCareer`).
  */
 import { CAREER_PATHS, type CareerPathId } from '@/lib/data/avatarIds'
 import type { CloutSourceId } from '@/lib/data/cloutSources'
 import { minutesPerDay } from './clock'
-import { settleLevel, type LevelUp } from './clout'
 import type { EngineConfig } from './config'
-import type { GameSnapshot, PlayerState } from './game'
+import type { PlayerState } from './game'
 
 export { CAREER_PATHS, type CareerPathId }
 
@@ -85,43 +84,4 @@ export function resaleBonusPts(player: Pick<PlayerState, 'careerPath'>, config: 
   if (player.careerPath === null) return 0
   const { bonus } = config.career.paths[player.careerPath]
   return bonus.kind === 'resale-pts' ? bonus.pts : 0
-}
-
-export type CareerError =
-  | { readonly code: 'UNKNOWN_CAREER'; readonly careerPath: string }
-  | { readonly code: 'CHANGE_COOLDOWN'; readonly availableAt: number }
-
-export type CareerResult =
-  | {
-      readonly ok: true
-      readonly snapshot: GameSnapshot
-      readonly changed: boolean
-      /** An artist/DJ's home bonus can lift the level at once. */
-      readonly levelUp: LevelUp | null
-    }
-  | { readonly ok: false; readonly error: CareerError }
-
-/** Chooses (or changes) the Dream; see the module comment for the cooldown. */
-export function chooseCareer(
-  snapshot: GameSnapshot,
-  careerPath: string,
-  config: EngineConfig,
-): CareerResult {
-  if (!isCareerPath(careerPath)) {
-    return { ok: false, error: { code: 'UNKNOWN_CAREER', careerPath } }
-  }
-  const { player } = snapshot
-  if (player.careerPath === careerPath) {
-    return { ok: true, snapshot, changed: false, levelUp: null }
-  }
-  const now = snapshot.clock.minute
-  const availableAt = changeAvailableAt(player.careerChangedAt, now, config)
-  if (availableAt !== null) return { ok: false, error: { code: 'CHANGE_COOLDOWN', availableAt } }
-  const settled = settleLevel({ ...player, careerPath, careerChangedAt: now }, now, 'home', config)
-  return {
-    ok: true,
-    snapshot: { ...snapshot, player: settled.player },
-    changed: true,
-    levelUp: settled.levelUp,
-  }
 }

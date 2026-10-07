@@ -1,20 +1,14 @@
 /** The look (S16a): random starts, repairs, what is drawn and what other players see. */
 import { describe, expect, it } from 'vitest'
-import {
-  chooseLook,
-  effectiveLook,
-  fnv1a,
-  lookProblem,
-  publicAvatar,
-  randomLook,
-  repairLook,
-  type Look,
-} from './appearance'
+import { fnv1a, lookProblem, publicAvatar, randomLook, repairLook, type Look } from './appearance'
+import { effectiveLook } from './avatarLook'
 import { engineConfig as config } from './config'
+import { creatorConfig } from './creatorConfig'
+import { chooseLook } from './creatorFlow'
 import { initialSnapshot, type PlayerState } from './game'
 import type { Inventory } from './items'
 
-const options = config.avatar
+const options = creatorConfig.options
 const base: Look = config.avatar.defaults
 
 /** A player wearing `worn` (item ids, each owned and worn in its slot) over `look`. */
@@ -74,8 +68,10 @@ describe('randomLook', () => {
     const limited = {
       ...config,
       avatar: {
-        ...options,
-        hairStyles: [{ ...first, hairColors: ['black'] }],
+        ...config.avatar,
+        hairColorLimits: Object.fromEntries(
+          config.avatar.look.hairStyle.map((id) => [id, ['black']] as const),
+        ),
       },
     }
     for (let seed = 0; seed < 50; seed++) {
@@ -113,7 +109,7 @@ describe('repairLook', () => {
     if (first === undefined) throw new Error('no hairstyles')
     const limited = {
       ...config,
-      avatar: { ...options, hairStyles: [{ ...first, hairColors: ['grey'] }] },
+      avatar: { ...config.avatar, hairColorLimits: { [first.id]: ['grey'] } },
     }
     const { look } = repairLook({ ...base, hairStyle: first.id, hairColor: 'pink' }, limited)
     expect(look.hairColor).toBe('grey')
@@ -124,7 +120,7 @@ describe('effectiveLook', () => {
   const look: Look = { ...base, hairStyle: 'afro', headwear: 'none', facialHair: 'stubble' }
 
   it('draws the creator look with no items worn', () => {
-    const drawn = effectiveLook(wearing(look, []), config)
+    const drawn = effectiveLook(wearing(look, []), config, creatorConfig)
     expect(drawn.look).toEqual(look)
     expect(drawn.head).toBe('head-base')
     expect(drawn.body).toBe(options.outfits.find((o) => o.id === look.outfit)?.body)
@@ -137,6 +133,7 @@ describe('effectiveLook', () => {
     const drawn = effectiveLook(
       wearing(look, ['bodega-graphic-tee', 'cargo-pants', 'canvas-sneakers', 'subway-tote']),
       config,
+      creatorConfig,
     )
     expect(drawn.look).toMatchObject({
       outfit: 'outfit-03',
@@ -151,22 +148,22 @@ describe('effectiveLook', () => {
   })
 
   it('makeup has no visual (Q6)', () => {
-    expect(effectiveLook(wearing(look, ['tinted-lip-balm']), config)).toEqual(
-      effectiveLook(wearing(look, []), config),
+    expect(effectiveLook(wearing(look, ['tinted-lip-balm']), config, creatorConfig)).toEqual(
+      effectiveLook(wearing(look, []), config, creatorConfig),
     )
   })
 
   it('a covering that hides hair puts the base head on and hides the hair piece, keeping the style', () => {
     const covered: Look = { ...base, hairStyle: 'locs', headwear: 'hijab' }
-    const drawn = effectiveLook(wearing(covered, []), config)
+    const drawn = effectiveLook(wearing(covered, []), config, creatorConfig)
     expect(drawn.hairHidden).toBe(true)
     expect(drawn.head).toBe('head-base')
     expect(drawn.attachments).toEqual(['headwear-hijab'])
     expect(drawn.look.hairStyle).toBe('locs')
     const kenney: Look = { ...base, hairStyle: 'style-04', headwear: 'beanie' }
-    expect(effectiveLook(wearing(kenney, []), config).head).toBe('head-base')
+    expect(effectiveLook(wearing(kenney, []), config, creatorConfig).head).toBe('head-base')
     const cap: Look = { ...kenney, headwear: 'ballcap' }
-    expect(effectiveLook(wearing(cap, []), config).head).toBe('head-female-d')
+    expect(effectiveLook(wearing(cap, []), config, creatorConfig).head).toBe('head-female-d')
   })
 
   it('keeps at most four attachments, in priority order: items go first', () => {
@@ -178,14 +175,18 @@ describe('effectiveLook', () => {
       eyewear: 'glasses',
       ears: 'hearing-aid',
     }
-    const drawn = effectiveLook(wearing(full, ['gold-hoops']), config)
+    const drawn = effectiveLook(wearing(full, ['gold-hoops']), config, creatorConfig)
     expect(options.attachments.max).toBe(4)
     expect(drawn.attachments).toEqual(['headwear-ballcap', 'hair-afro', 'facial-goatee', 'glasses'])
   })
 
   it('the height option sets the root scale', () => {
-    expect(effectiveLook(wearing({ ...base, height: 'tall' }, []), config).scale).toBe(1.04)
-    expect(effectiveLook(wearing({ ...base, height: 'short' }, []), config).scale).toBe(0.96)
+    expect(
+      effectiveLook(wearing({ ...base, height: 'tall' }, []), config, creatorConfig).scale,
+    ).toBe(1.04)
+    expect(
+      effectiveLook(wearing({ ...base, height: 'short' }, []), config, creatorConfig).scale,
+    ).toBe(0.96)
   })
 })
 

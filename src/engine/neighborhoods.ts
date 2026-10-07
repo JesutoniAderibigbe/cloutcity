@@ -1,18 +1,16 @@
 /**
  * Start neighborhoods (S16a, data/homes/neighborhoods.json). The creator's roll picks one per
- * save (src/engine/creator.ts `commitRoll`); once the player moves in, the start home stands at
- * the neighborhood's point instead of its default one (data/homes/homes.json).
+ * save (src/engine/creatorFlow.ts `commitRoll`); once the player moves in, the start home stands
+ * at the neighborhood's point instead of its default one (data/homes/homes.json). It reads the
+ * neighborhoods' points, so only the creator and the map's lazy code call it.
  */
-import type { EngineConfig, HomeId, NeighborhoodDef } from './config'
+import type { HomeId } from './config'
+import type { NeighborhoodDef } from './creatorConfig'
 
 /** A WGS84 point. */
 export interface HomePointLatLng {
   readonly lat: number
   readonly lng: number
-}
-
-export function findNeighborhood(id: string, config: EngineConfig): NeighborhoodDef | undefined {
-  return config.neighborhoods.find((entry) => entry.id === id)
 }
 
 /**
@@ -24,8 +22,8 @@ export function homePoint(
   home: HomeId,
   neighborhood: string | null,
   defaults: Readonly<Record<HomeId, { readonly location: HomePointLatLng }>>,
-  config: EngineConfig,
+  neighborhoods: readonly NeighborhoodDef[],
 ): HomePointLatLng {
-  const entry = neighborhood === null ? undefined : findNeighborhood(neighborhood, config)
+  const entry = neighborhoods.find((candidate) => candidate.id === neighborhood)
   return entry !== undefined && entry.homes.includes(home) ? entry.home : defaults[home].location
 }

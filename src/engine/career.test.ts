@@ -1,6 +1,7 @@
 /** Career paths (S16a): each path's bonus, what it never touches, and the change cooldown. */
 import { describe, expect, it } from 'vitest'
-import { careerPct, chooseCareer, changeAvailableAt, type CareerPathId } from './career'
+import { careerPct, changeAvailableAt, type CareerPathId } from './career'
+import { chooseCareer } from './creatorFlow'
 import { minutesPerDay } from './clock'
 import { cloutCeilings, recordClout, type CloutChange } from './clout'
 import { engineConfig as config } from './config'

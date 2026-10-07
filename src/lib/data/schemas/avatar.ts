@@ -8,7 +8,15 @@
  * (src/engine/config.ts).
  */
 import { z } from 'zod'
-import { ATTACHMENT_KINDS, LOOK_FIELDS, TRAIT_EFFECT_KINDS, lookIssue } from '../avatarIds'
+import {
+  ATTACHMENT_KINDS,
+  LOOK_FIELDS,
+  ROLL_KINDS,
+  ROLL_SCOPES,
+  TRAIT_EFFECT_KINDS,
+  lookIssue,
+} from '../avatarIds'
+import { deriveAvatarIds } from '../avatarDerive'
 import { CopyKeyRefSchema, IdSchema } from './content'
 
 export { ATTACHMENT_KINDS, LOOK_FIELDS, TRAIT_EFFECT_KINDS, lookIssue }
@@ -152,7 +160,7 @@ export const AvatarOptionsSchema = z
       ),
     { error: 'a hairstyle limits hair colours to ones that exist', path: ['hairStyles'] },
   )
-  .refine((options) => lookIssue(options.defaults, options) === null, {
+  .refine((options) => lookIssue(options.defaults, deriveAvatarIds(options)) === null, {
     error: 'defaults must name an option in every field',
     path: ['defaults'],
   })
@@ -194,3 +202,42 @@ export const TraitsFileSchema = z
     { error: 'an effect is above maxModifierPct', path: ['traits'] },
   )
 export type TraitsFile = z.infer<typeof TraitsFileSchema>
+
+const idList = z.array(IdSchema)
+
+/**
+ * data/avatar/engine.derived.json: the compact tables the engine reads on the playable path
+ * (src/lib/data/avatarIds.ts `AvatarEngineTables`), derived from options.json, traits.json,
+ * creator.json and neighborhoods.json. src/lib/data/avatar-derived.test.ts checks it is in step.
+ */
+export const AvatarEngineTablesSchema = z.strictObject({
+  version: z.literal(1),
+  avatar: z.strictObject({
+    look: z.strictObject(
+      Object.fromEntries(LOOK_FIELDS.map((field) => [field, idList.min(1)])) as Record<
+        (typeof LOOK_FIELDS)[number],
+        typeof idList
+      >,
+    ),
+    hairColorLimits: z.record(IdSchema, idList.min(1)),
+    defaults: LookIdsSchema,
+    random: z.strictObject({
+      facialHair: probability,
+      eyewear: probability,
+      headwear: probability,
+      hearingAid: probability,
+    }),
+  }),
+  traits: z.strictObject({
+    maxModifierPct: z.int().min(1).max(10),
+    pick: z.int().min(1),
+    effects: z.record(IdSchema, z.partialRecord(z.enum(TRAIT_EFFECT_KINDS), z.int())),
+  }),
+  creator: z.strictObject({
+    offerAfterActions: z.int().min(1),
+    waitForTour: z.boolean(),
+    changeCooldownGameDays: z.int().min(1),
+    rolls: z.partialRecord(z.enum(ROLL_KINDS), z.enum(ROLL_SCOPES)),
+  }),
+  neighborhoods: idList.min(1),
+})

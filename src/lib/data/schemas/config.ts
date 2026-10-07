@@ -845,10 +845,7 @@ const CareerBonusSchema = z.discriminatedUnion('kind', [
 
 const CareerPathSchema = z
   .strictObject({
-    nameKey: z.string().regex(COPY_KEY),
-    /** The HUD goal line while this path is chosen. */
-    goalKey: z.string().regex(COPY_KEY),
-    bonusKey: z.string().regex(COPY_KEY),
+    // Name, goal line and bonus line: `career.<camelId>.name|goal|bonus` (src/lib/creatorCopy.ts).
     bonus: CareerBonusSchema,
   })
   .refine(

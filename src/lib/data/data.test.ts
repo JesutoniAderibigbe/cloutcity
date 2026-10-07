@@ -60,7 +60,7 @@ import {
   ZonesFileSchema,
 } from './schemas/world'
 import { ModelManifestSchema } from './schemas/assets'
-import { AvatarOptionsSchema, TraitsFileSchema } from './schemas/avatar'
+import { AvatarEngineTablesSchema, AvatarOptionsSchema, TraitsFileSchema } from './schemas/avatar'
 import { CreatorConfigSchema } from './schemas/creator'
 import { CatalogSchema } from '../../../scripts/assets/schema'
 import { audio, balance, layout, onboarding, perf, progression, realtime, theme } from './config'
@@ -87,6 +87,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'assets/catalog.json': CatalogSchema,
   'assets/manifest.json': ModelManifestSchema,
   'audio/manifest.json': AudioManifestSchema,
+  'avatar/engine.derived.json': AvatarEngineTablesSchema,
   'avatar/options.json': AvatarOptionsSchema,
   'avatar/traits.json': TraitsFileSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,

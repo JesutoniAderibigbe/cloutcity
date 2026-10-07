@@ -12,7 +12,7 @@
  * as HudSkeleton.
  */
 import { useEffect, useMemo } from 'react'
-import { effectiveLook } from '@/engine/appearance'
+import { publicAvatar } from '@/engine/appearance'
 import { minutesPerDay } from '@/engine/clock'
 import { cloutProgress } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
@@ -70,10 +70,7 @@ function useHudEffects() {
 
   useEffect(() => setPlayerHome(home), [home])
   useEffect(() => setPlayerSpot(location), [location])
-  useEffect(
-    () => setPlayerLook(effectiveLook({ look, inventory }, engineConfig)),
-    [look, inventory],
-  )
+  useEffect(() => setPlayerLook(publicAvatar({ look, inventory })), [look, inventory])
 
   useEffect(() => setMinuteOfDay(minuteOfDay), [minuteOfDay])
 

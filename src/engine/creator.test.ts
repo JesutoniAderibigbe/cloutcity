@@ -4,17 +4,16 @@
  */
 import { describe, expect, it } from 'vitest'
 import { engineConfig as config, type EngineConfig } from './config'
+import { creatorOfferShowing, initialCreatorState, noteCreatorAction } from './creator'
+import { creatorConfig, type CreatorEngineConfig } from './creatorConfig'
 import {
   commitRoll,
   completeCreator,
-  creatorOfferShowing,
   creatorSteps,
   dismissCreatorOffer,
-  initialCreatorState,
   moveIntoNeighborhood,
-  noteCreatorAction,
   skipCreatorStep,
-} from './creator'
+} from './creatorFlow'
 import { createRng, type Rng } from './rng'
 import { initialSave, type SaveState } from './save'
 
@@ -54,23 +53,27 @@ describe('the offer', () => {
     const done = completeCreator(due, 30)
     expect(creatorOfferShowing(done, { tourActive: false }, config)).toBe(false)
     expect(completeCreator(done, 40).completedAt).toBe(30)
-    const skipped = skipCreatorStep(skipCreatorStep(due, 'traits', config), 'traits', config)
+    const skipped = skipCreatorStep(
+      skipCreatorStep(due, 'traits', creatorConfig),
+      'traits',
+      creatorConfig,
+    )
     expect(skipped.skippedSteps).toEqual(['traits'])
-    expect(skipCreatorStep(due, 'origin', config)).toBe(due)
-    expect(skipCreatorStep(due, 'nonsense', config)).toBe(due)
+    expect(skipCreatorStep(due, 'origin', creatorConfig)).toBe(due)
+    expect(skipCreatorStep(due, 'nonsense', creatorConfig)).toBe(due)
   })
 })
 
 describe('step registry (D18)', () => {
   it('leaves the disabled origin seam out; S44 flips the flag to add it', () => {
-    expect(creatorSteps(config)).toEqual(['look', 'traits', 'dream', 'neighborhood', 'home'])
-    const withOrigin: EngineConfig = {
-      ...config,
+    expect(creatorSteps(creatorConfig)).toEqual(['look', 'traits', 'dream', 'neighborhood', 'home'])
+    const withOrigin: CreatorEngineConfig = {
+      ...creatorConfig,
       creator: {
-        ...config.creator,
-        steps: config.creator.steps.map((step) =>
+        ...creatorConfig.creator,
+        steps: creatorConfig.creator.steps.map((step) =>
           step.id === 'origin' ? { ...step, enabled: true } : step,
-        ) as EngineConfig['creator']['steps'],
+        ) as CreatorEngineConfig['creator']['steps'],
       },
     }
     expect(creatorSteps(withOrigin)).toEqual([
@@ -85,7 +88,7 @@ describe('step registry (D18)', () => {
 })
 
 describe('commitRoll', () => {
-  const ids = config.neighborhoods.map((n) => n.id)
+  const ids = config.neighborhoods
 
   it('draws a neighborhood once and writes it to the save before anything is shown', () => {
     const result = commitRoll(save, 'neighborhood', createRng(7), config)
@@ -118,7 +121,7 @@ describe('commitRoll', () => {
   it('a run-scoped roll is drawn again in a new run (S44 origin seam)', () => {
     const perRun: EngineConfig = {
       ...config,
-      creator: { ...config.creator, rolls: { neighborhood: { scope: 'run' } } },
+      creator: { ...config.creator, rolls: { neighborhood: 'run' } },
     }
     const first = commitRoll(save, 'neighborhood', createRng(1), perRun)
     if (!first.ok) throw new Error(first.error.code)
@@ -140,7 +143,7 @@ describe('commitRoll', () => {
     })
     const originOn: EngineConfig = {
       ...config,
-      creator: { ...config.creator, rolls: { ...config.creator.rolls, origin: { scope: 'run' } } },
+      creator: { ...config.creator, rolls: { ...config.creator.rolls, origin: 'run' } },
     }
     expect(commitRoll(save, 'origin', noDraws, originOn)).toEqual({
       ok: false,
@@ -166,21 +169,21 @@ describe('moveIntoNeighborhood', () => {
   })()
 
   it('needs the roll first', () => {
-    expect(moveIntoNeighborhood(save, 'queens-room', config)).toEqual({
+    expect(moveIntoNeighborhood(save, 'queens-room', config, creatorConfig)).toEqual({
       ok: false,
       error: { code: 'NOT_ROLLED' },
     })
   })
 
   it('settles the player in the rolled neighborhood with their current startable home', () => {
-    const result = moveIntoNeighborhood(rolled.save, 'queens-room', config)
+    const result = moveIntoNeighborhood(rolled.save, 'queens-room', config, creatorConfig)
     if (!result.ok) throw new Error(result.error.code)
     expect(result.save.player.neighborhood).toBe(rolled.roll.result)
     expect(result.save.player.location).toEqual(save.player.location)
   })
 
   it('refuses a home the neighborhood does not have, or one the player does not live in', () => {
-    expect(moveIntoNeighborhood(rolled.save, 'brooklyn-1br', config)).toMatchObject({
+    expect(moveIntoNeighborhood(rolled.save, 'brooklyn-1br', config, creatorConfig)).toMatchObject({
       ok: false,
       error: { code: 'HOME_NOT_HERE' },
     })
@@ -188,7 +191,7 @@ describe('moveIntoNeighborhood', () => {
       ...rolled.save,
       player: { ...rolled.save.player, home: 'brooklyn-1br' as const },
     }
-    expect(moveIntoNeighborhood(moved, 'queens-room', config)).toEqual({
+    expect(moveIntoNeighborhood(moved, 'queens-room', config, creatorConfig)).toEqual({
       ok: false,
       error: { code: 'NOT_YOUR_HOME', home: 'queens-room' },
     })

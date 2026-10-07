@@ -38,7 +38,7 @@ const runFlex = (extra: Extra, jobId: JobId = 'barista') =>
   runEconomyBot({ jobId, days: SIM_DAYS, upgradeTo, flex: { place: flexPlace }, ...extra }, config)
 const summed = (reports: readonly BotReport[]) => reports.reduce((sum, r) => sum + r.finalCash, 0)
 
-const traitIds = config.traits.traits.map((trait) => trait.id)
+const traitIds = Object.keys(config.traits.effects)
 const pairs = traitIds.flatMap((a, i) => traitIds.slice(i + 1).map((b) => [a, b] as const))
 const scored = pairs.map((pair) => ({ pair, cash: summed(runJobs({ traits: pair })) }))
 const best = scored.reduce((a, b) => (b.cash > a.cash ? b : a))

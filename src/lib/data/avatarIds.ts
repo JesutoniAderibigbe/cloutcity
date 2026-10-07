@@ -60,68 +60,77 @@ export type RollKind = (typeof ROLL_KINDS)[number]
 export const ROLL_SCOPES = ['save', 'run'] as const
 export type RollScope = (typeof ROLL_SCOPES)[number]
 
-interface Option {
-  readonly id: string
+/**
+ * What the engine needs of the look options on the playable path: the ids each field may hold,
+ * the hairstyles that limit their hair colours, the defaults and the random chances. Models,
+ * tokens and copy keys stay in data/avatar/options.json, which only the creator and the avatar
+ * chunks load (PERF-6).
+ */
+export interface AvatarIdTables {
+  readonly look: Readonly<Record<LookField, readonly string[]>>
+  readonly hairColorLimits: Readonly<Record<string, readonly string[]>>
+  readonly defaults: Readonly<Record<LookField, string>>
+  readonly random: {
+    readonly facialHair: number
+    readonly eyewear: number
+    readonly headwear: number
+    readonly hearingAid: number
+  }
 }
 
-/** The option lists a look is checked against (data/avatar/options.json). */
-export interface LookOptionLists {
-  readonly skinTones: readonly Option[]
-  readonly hairStyles: readonly (Option & { readonly hairColors?: readonly string[] })[]
-  readonly hairColors: readonly Option[]
-  readonly facialHair: readonly Option[]
-  readonly headwear: readonly Option[]
-  readonly eyewear: readonly Option[]
-  readonly ears: readonly Option[]
-  readonly outfits: readonly Option[]
-  readonly garmentColors: readonly Option[]
-  readonly shoeColors: readonly string[]
-  readonly heights: readonly Option[]
+/** Each trait's summed modifier per kind, the cap and the pick count (data/avatar/traits.json). */
+export interface TraitTables {
+  readonly maxModifierPct: number
+  readonly pick: number
+  readonly effects: Readonly<Record<string, Readonly<Partial<Record<TraitEffectKind, number>>>>>
+}
+
+/** The creator rules every action needs (data/config/creator.json). */
+export interface CreatorTables {
+  readonly offerAfterActions: number
+  /** The offer waits until the S06 tour is over. */
+  readonly waitForTour: boolean
+  readonly changeCooldownGameDays: number
+  readonly rolls: Readonly<Partial<Record<RollKind, RollScope>>>
+}
+
+/**
+ * data/avatar/engine.derived.json: the compact tables the engine reads on every load and
+ * action, derived from the S16a source files by `deriveAvatarEngineTables`
+ * (src/lib/data/avatar-derived.test.ts keeps the file in step; `npm run avatar:update`).
+ */
+export interface AvatarEngineTables {
+  readonly version: 1
+  readonly avatar: AvatarIdTables
+  readonly traits: TraitTables
+  readonly creator: CreatorTables
+  /** Start neighborhood ids, in data order (the neighborhood roll's pool). */
+  readonly neighborhoods: readonly string[]
 }
 
 /** The ids `field` may hold. A hairstyle may limit the hair colours (SLOT-1 fallback (c)). */
 export function lookFieldIds(
   field: LookField,
-  options: LookOptionLists,
+  tables: AvatarIdTables,
   hairStyle?: string,
 ): readonly string[] {
-  const ids = (list: readonly Option[]) => list.map((option) => option.id)
-  switch (field) {
-    case 'skin':
-      return ids(options.skinTones)
-    case 'hairStyle':
-      return ids(options.hairStyles)
-    case 'hairColor': {
-      const limit = options.hairStyles.find((style) => style.id === hairStyle)?.hairColors
-      return limit ?? ids(options.hairColors)
-    }
-    case 'facialHair':
-      return ids(options.facialHair)
-    case 'headwear':
-      return ids(options.headwear)
-    case 'eyewear':
-      return ids(options.eyewear)
-    case 'ears':
-      return ids(options.ears)
-    case 'outfit':
-      return ids(options.outfits)
-    case 'top':
-    case 'bottom':
-      return ids(options.garmentColors)
-    case 'shoes':
-      return options.shoeColors
-    case 'height':
-      return ids(options.heights)
+  if (
+    field === 'hairColor' &&
+    hairStyle !== undefined &&
+    Object.hasOwn(tables.hairColorLimits, hairStyle)
+  ) {
+    return tables.hairColorLimits[hairStyle] ?? []
   }
+  return tables.look[field]
 }
 
 /** The first field of `look` that names no option (or a hair colour its style does not offer), or null. */
 export function lookIssue(
   look: Readonly<Record<LookField, string>>,
-  options: LookOptionLists,
+  tables: AvatarIdTables,
 ): LookField | null {
   for (const field of LOOK_FIELDS) {
-    if (!lookFieldIds(field, options, look.hairStyle).includes(look[field])) return field
+    if (!lookFieldIds(field, tables, look.hairStyle).includes(look[field])) return field
   }
   return null
 }

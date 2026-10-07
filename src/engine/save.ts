@@ -635,14 +635,7 @@ const CareerPathSchema = z.nullable(z.enum(CAREER_PATHS))
 
 function neighborhoodSchema(config: EngineConfig) {
   return z.nullable(
-    z
-      .string()
-      .check(
-        z.refine(
-          (id) => config.neighborhoods.some((entry) => entry.id === id),
-          'Unknown neighborhood',
-        ),
-      ),
+    z.string().check(z.refine((id) => config.neighborhoods.includes(id), 'Unknown neighborhood')),
   )
 }
 
@@ -1352,7 +1345,7 @@ function repairIdentity(
   const neighborhood =
     typeof raw.neighborhood === 'string' &&
     raw.neighborhood === rolled &&
-    config.neighborhoods.some((entry) => entry.id === rolled)
+    config.neighborhoods.includes(rolled)
       ? raw.neighborhood
       : null
   if (neighborhood !== raw.neighborhood) repaired.push('neighborhood')
