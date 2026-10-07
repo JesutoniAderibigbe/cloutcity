@@ -40,7 +40,7 @@ async function readStatus(): Promise<Record<string, unknown>> {
     const reason = error instanceof Error ? error.message : String(error)
     throw new Error(
       `Local Supabase is not running (${reason.split('\n')[0]}). ` +
-        'Start it with `npx supabase start`, then `npx supabase db reset --local`.',
+        'Start it with `npx supabase start`, then `npx supabase migration up --local`.',
     )
   }
 }
@@ -82,7 +82,7 @@ async function assertMigrationsApplied(dbUrl: string): Promise<void> {
     `
     if (rows.length === 0) {
       throw new Error(
-        `The local database is missing migration ${newest}. Run \`npx supabase db reset --local\`.`,
+        `The local database is missing migration ${newest}. Run \`npx supabase migration up --local\`.`,
       )
     }
   } finally {

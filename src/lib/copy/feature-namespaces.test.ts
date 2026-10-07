@@ -327,6 +327,23 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     expect(Object.keys(outOfRange)).toEqual(['birthYear'])
   })
 
+  it('the handle form: every form error (S18a)', async () => {
+    const { fieldErrors } = await import('@/lib/forms/errors')
+    const { createHandleSchema } = await import('@/lib/forms/handle')
+    const { copy } = await import('./index')
+
+    const schema = createHandleSchema()
+    const keys = new Set<string>()
+    for (const handle of ['', 'a'.repeat(40), 'ab c', '9lives', 'a__b', 'A123']) {
+      const key = fieldErrors(schema, { handle }).handle
+      if (key !== undefined) {
+        keys.add(key)
+        expect(copy(key)).not.toBe('')
+      }
+    }
+    expect(keys.size).toBe(6)
+  })
+
   it('economy copy: every job, clout level, home and rent notice', async () => {
     const economy = await import('@/lib/economyCopy')
     const { engineConfig } = await import('@/engine/config')

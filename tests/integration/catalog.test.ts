@@ -9,7 +9,8 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
 import { newGuest, sql } from './helpers'
 
-const S18_TABLES = [
+/** Tables clients may read (their own or their party's rows, through RLS). */
+const CLIENT_READABLE_TABLES = [
   'entitlements',
   'friend_boosts',
   'friendships',
@@ -21,6 +22,9 @@ const S18_TABLES = [
   'roommates',
   'saves',
 ]
+
+/** Tables only the service role and security-definer functions touch (S18a: handles). */
+const SERVICE_ONLY_TABLES = ['handles']
 
 /** Functions allowed to skip the gate, each with a stated reason in its comment. */
 const EXEMPT = ['attest_and_consent', 'set_audio_choice']
@@ -93,7 +97,46 @@ function startsWithGate(source: string): boolean {
 
 describe('tables', () => {
   it('every S18 table exists', async () => {
-    expect(await publicTables()).toEqual(expect.arrayContaining(S18_TABLES))
+    expect(await publicTables()).toEqual(expect.arrayContaining(CLIENT_READABLE_TABLES))
+  })
+
+  it('every service-only table exists', async () => {
+    expect(await publicTables()).toEqual(expect.arrayContaining(SERVICE_ONLY_TABLES))
+  })
+
+  it('every public table is classified as client-readable or service-only', async () => {
+    const known = new Set([...CLIENT_READABLE_TABLES, ...SERVICE_ONLY_TABLES])
+    expect((await publicTables()).filter((name) => !known.has(name))).toEqual([])
+  })
+
+  it('service-only tables: RLS on, no policies, no client privilege, service role reads', async () => {
+    const rows = await sql<
+      { name: string; rls: boolean; policies: number; client: boolean; service: boolean }[]
+    >`
+      select c.relname as name, c.relrowsecurity as rls,
+        (select count(*)::int from pg_policies p
+          where p.schemaname = 'public' and p.tablename = c.relname) as policies,
+        exists (
+          select 1 from unnest(${CLIENT_ROLES}::text[]) as r(role)
+          cross join unnest(${['SELECT', ...WRITE_PRIVILEGES]}::text[]) as p(privilege)
+          where has_table_privilege(r.role, c.oid, p.privilege)
+            or (p.privilege in ('SELECT', 'INSERT', 'UPDATE', 'REFERENCES')
+              and has_any_column_privilege(r.role, c.oid, p.privilege))
+        ) as client,
+        has_table_privilege('service_role', c.oid, 'SELECT') as service
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public' and c.relname = any(${SERVICE_ONLY_TABLES})
+      order by 1
+    `
+    expect(rows).toEqual(
+      SERVICE_ONLY_TABLES.map((name) => ({
+        name,
+        rls: true,
+        policies: 0,
+        client: false,
+        service: true,
+      })),
+    )
   })
 
   it('every public table has row level security', async () => {
@@ -127,7 +170,7 @@ describe('tables', () => {
     expect(rows).toEqual([])
   })
 
-  it('anon reads only live_stats; authenticated reads exactly the S18 tables', async () => {
+  it('anon reads only live_stats; authenticated reads exactly the client-readable tables', async () => {
     const rows = await sql<{ role: string; name: string }[]>`
       select r.role, c.relname as name
       from pg_class c
@@ -139,7 +182,7 @@ describe('tables', () => {
     `
     expect(rows.filter((row) => row.role === 'anon').map((row) => row.name)).toEqual(['live_stats'])
     expect(rows.filter((row) => row.role === 'authenticated').map((row) => row.name)).toEqual(
-      S18_TABLES,
+      CLIENT_READABLE_TABLES,
     )
   })
 
@@ -151,13 +194,13 @@ describe('tables', () => {
     expect(rows).toEqual([])
   })
 
-  it('every S18 table has a read policy for authenticated', async () => {
+  it('every client-readable table has a read policy for authenticated', async () => {
     const rows = await sql<{ table: string }[]>`
       select distinct tablename as table from pg_policies
       where schemaname = 'public' and cmd = 'SELECT' and 'authenticated' = any(roles)
       order by 1
     `
-    expect(rows.map((row) => row.table)).toEqual(S18_TABLES)
+    expect(rows.map((row) => row.table)).toEqual(CLIENT_READABLE_TABLES)
   })
 
   it('no column stores a birth year or age', async () => {
@@ -271,6 +314,18 @@ describe('functions', () => {
   })
 })
 
+describe('service-only functions', () => {
+  it('moderator_reset_handle is executable by the service role only', async () => {
+    const [row] = await sql<{ anon: boolean; auth: boolean; service: boolean }[]>`
+      select
+        has_function_privilege('anon', 'public.moderator_reset_handle(uuid, text)', 'execute') as anon,
+        has_function_privilege('authenticated', 'public.moderator_reset_handle(uuid, text)', 'execute') as auth,
+        has_function_privilege('service_role', 'public.moderator_reset_handle(uuid, text)', 'execute') as service
+    `
+    expect(row).toEqual({ anon: false, auth: false, service: true })
+  })
+})
+
 describe('exposed schemas', () => {
   it('the API exposes only public and graphql_public (the gate scan covers public)', () => {
     const config = readFileSync(resolve(import.meta.dirname, '../../supabase/config.toml'), 'utf8')
@@ -291,7 +346,16 @@ describe('attestation gate: default deny', () => {
   it('every client RPC calls the gate first, or carries a stated exemption', async () => {
     const rpcs = await clientRpcs()
     expect(rpcs.map((fn) => fn.name)).toEqual(
-      expect.arrayContaining(['assert_attested', 'send_friend_boost', ...EXEMPT]),
+      expect.arrayContaining([
+        'assert_attested',
+        'send_friend_boost',
+        'get_my_profile',
+        'check_handle',
+        'set_handle',
+        'get_public_profile',
+        'get_public_profiles',
+        ...EXEMPT,
+      ]),
     )
     const ungated = rpcs
       .filter((fn) => !isExempt(fn) && !startsWithGate(fn.source))

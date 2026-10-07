@@ -111,6 +111,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"handles": {
+                  Row: {
+                    "claimed_at": string,"handle": string,"handle_key": string,"quarantine_until": string | null,"released_at": string | null,"retired_at": string | null,"retired_reason": string | null,"source": string,"user_id": string | null
+                  }
+                  Insert: {
+                    "claimed_at"?: string,"handle": string,"handle_key": string,"quarantine_until"?: string | null,"released_at"?: string | null,"retired_at"?: string | null,"retired_reason"?: string | null,"source": string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "claimed_at"?: string,"handle"?: string,"handle_key"?: string,"quarantine_until"?: string | null,"released_at"?: string | null,"retired_at"?: string | null,"retired_reason"?: string | null,"source"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "handles_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"live_stats": {
                   Row: {
                     "key": string,"updated_at": string,"value": number
@@ -126,13 +145,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "attestation_recorded_at": string | null,"attested": boolean,"attested_at": string | null,"audio_choice": string | null,"consent_version": string | null,"consented_at": string | null,"created_at": string,"id": string,"updated_at": string
+                    "attestation_recorded_at": string | null,"attested": boolean,"attested_at": string | null,"audio_choice": string | null,"avatar": NonNullable<Json>,"career_path": string | null,"consent_version": string | null,"consented_at": string | null,"created_at": string,"handle": string | null,"id": string,"public_level": string,"updated_at": string
                   }
                   Insert: {
-                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"id": string,"updated_at"?: string
+                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"handle"?: string | null,"id": string,"public_level"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"id"?: string,"updated_at"?: string
+                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"handle"?: string | null,"id"?: string,"public_level"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -240,10 +259,14 @@ isOneToOne: true
 "attested": boolean,
 "attested_at": string | null,
 "audio_choice": string | null,
+"avatar": NonNullable<Json>,
+"career_path": string | null,
 "consent_version": string | null,
 "consented_at": string | null,
 "created_at": string,
+"handle": string | null,
 "id": string,
+"public_level": string,
 "updated_at": string
             }
                           SetofOptions: {
@@ -252,6 +275,27 @@ isOneToOne: true
         isOneToOne: true
         isSetofReturn: false
       } },
+"check_handle":
+{ Args: { "p_handle": string }; Returns: string
+                           },
+"get_my_profile":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "avatar": Json,"career_path": string,"free_handle_change": boolean,"handle": string,"handle_changes_left": number,"handle_generated": boolean,"next_handle_change_at": string,"public_level": string
+            }[]
+                           },
+"get_public_profile":
+{ Args: { "p_handle": string }; Returns: {
+              "avatar": Json,"career_path": string,"handle": string,"public_level": string
+            }[]
+                           },
+"get_public_profiles":
+{ Args: { "p_ids": (string)[] }; Returns: {
+              "avatar": Json,"career_path": string,"handle": string,"id": string,"public_level": string
+            }[]
+                           },
+"moderator_reset_handle":
+{ Args: { "p_reason": string,"p_user_id": string }; Returns: string
+                           },
 "send_friend_boost":
 { Args: { "p_to": string }; Returns: {
               "boost_id": number,"ny_day": string
@@ -259,6 +303,11 @@ isOneToOne: true
                            },
 "set_audio_choice":
 { Args: { "p_choice": string }; Returns: undefined
+                           },
+"set_handle":
+{ Args: { "p_handle": string }; Returns: {
+              "avatar": Json,"career_path": string,"free_handle_change": boolean,"handle": string,"handle_changes_left": number,"handle_generated": boolean,"next_handle_change_at": string,"public_level": string
+            }[]
                            }
           }
           Enums: {

@@ -26,6 +26,7 @@ export type CopyKey =
   | keyof (typeof import('@data/copy/place/base.json'))['strings']
   | keyof (typeof import('@data/copy/places/base.json'))['strings']
   | keyof (typeof import('@data/copy/premium/base.json'))['strings']
+  | keyof (typeof import('@data/copy/profile/base.json'))['strings']
   | keyof (typeof import('@data/copy/rent/base.json'))['strings']
   | keyof (typeof import('@data/copy/share/base.json'))['strings']
   | keyof (typeof import('@data/copy/shop/base.json'))['strings']

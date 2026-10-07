@@ -196,6 +196,10 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
 | `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                    |
 | `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                           |
 
+- **Handles.** `data/config/handles.json` (handle rules, change and rate limits),
+  `data/copy/handleWords.json` (guest-handle words) and `data/moderation/handle-blocklist.json`
+  (the handle filter's terms, with `SOURCES.md`) are server data: the database gets them through
+  the migration's generated seed, and the blocklist is never imported by browser code.
 - **Loading.** Server code and scripts import validated data from `src/lib/data/config.ts` and
   `src/lib/data/content.ts`, which parse at import and fail fast with the file name. Client
   code must not pull in zod's classic build (it costs about 90 KB gz of shell JS): the copy
@@ -473,14 +477,15 @@ The Supabase CLI is a devDependency (`npx supabase ...`); Docker must be running
 
 ```bash
 npx supabase start              # first run pulls the images; prints URLs and local keys
-npx supabase db reset --local   # re-applies supabase/migrations and supabase/seed.sql
+npx supabase migration up --local  # applies new files in supabase/migrations
 npm run test:integration        # Vitest suites in tests/integration against the local stack
 npm run db:types                # regenerates src/lib/supabase/database.types.ts after a migration
 ```
 
 - **Shared stack.** The stack is named after `project_id` in `supabase/config.toml`, so every
-  checkout and worktree of this repo talks to the same containers and database. `db reset` wipes
-  it for all of them; `supabase stop && supabase start` is needed after editing `config.toml`.
+  checkout and worktree of this repo talks to the same containers and database. Apply new
+  migrations with `migration up`; never `db reset`, which wipes it for all of them.
+  `supabase stop && supabase start` is needed after editing `config.toml`.
 - **Integration tests** read the URLs and keys from `npx supabase status -o json` (no env file
   needed; `SUPABASE_API_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and
   `SUPABASE_DB_URL` override them). They fail fast if the stack is down or the newest local
@@ -498,6 +503,15 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   `v_uid := private.require_attestation();` or carry
   `comment on function ... is '@attestation-exempt: <reason>'`; `tests/integration/catalog.test.ts`
   enforces this and calls every gated RPC as an unattested guest.
+- **Handles** (S18a). Attesting gives a player a generated `AdjectiveNoun##` handle; `set_handle`
+  lets them choose one, `check_handle` answers the form's live availability check, and
+  `get_my_profile`, `get_public_profile` (by handle) and `get_public_profiles` (by ids) read
+  profiles. Other players only ever get `handle`, `public_level`, `career_path` and `avatar`.
+  `public.handles` is service-role only. The handle rules (`data/config/handles.json`), the
+  words (`data/copy/handleWords.json`) and the blocklist (`data/moderation/handle-blocklist.json`)
+  reach the database through a generated block in the migration: after changing any of them, run
+  `npm run handles:sql` and add a migration with the new block
+  (`scripts/moderation/blocklist-sql.test.ts` fails until the newest block matches).
 - **RPC errors** raise SQLSTATE `PTxyz` (PostgREST answers HTTP `xyz`) with a machine-code message
   (`RPC_ERRORS` in `attestation.ts`; `parseRpcError()` reads it).
 - **Browser bundle.** `@supabase/supabase-js` may reach browser code only through a dynamic

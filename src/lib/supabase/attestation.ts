@@ -46,7 +46,7 @@ export function toAttestationArgs(record: OnboardingRecord): AttestationArgs {
   }
 }
 
-/** Machine codes the S18 RPCs raise as their error message (with SQLSTATE PTxyz → HTTP xyz). */
+/** Machine codes the S18 and S18a RPCs raise as their error message (with SQLSTATE PTxyz → HTTP xyz). */
 export const RPC_ERRORS = [
   'not_authenticated',
   'attestation_required',
@@ -56,6 +56,14 @@ export const RPC_ERRORS = [
   'invalid_target',
   'not_friends',
   'boost_already_sent',
+  // S18a handles and profiles (supabase/migrations/*_s18a_handles_profile.sql).
+  'rate_limited',
+  'handle_invalid',
+  'handle_not_allowed',
+  'handle_taken',
+  'handle_change_limited',
+  'profile_not_found',
+  'too_many_ids',
 ] as const
 export type RpcErrorCode = (typeof RPC_ERRORS)[number]
 
