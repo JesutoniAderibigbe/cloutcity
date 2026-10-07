@@ -37,6 +37,11 @@
  * the flex ends by bedtime; it goes through `performPlaceAction`, so every place rule applies.
  * Clout is measured as the player's total (src/engine/clout.ts `totalClout`), and gains are
  * attributed to the ledger sources of the entries each step wrote.
+ *
+ * Goals (S15): with the `claimAll` option the bot records goals after every step and claims
+ * every reward it has reached at once, through the grant function (src/engine/grants.ts), so
+ * the sim shows what goal rewards do to the economy. Claims are not steps: their cash and clout
+ * are not counted as gains per action or per day (the baseline measures play, not grants).
  */
 import {
   applyAction,
@@ -46,14 +51,18 @@ import {
   type ActionDef,
 } from '../actions'
 import { calendar, minutesPerDay } from '../clock'
-import { cloutLevel, totalClout } from '../clout'
+import { playerLevel, totalClout } from '../clout'
 import type { EngineConfig, HomeId, JobId } from '../config'
 import { flexAction } from '../flex'
+import { initialEventsState } from '../events'
 import { advanceMinutes, initialSnapshot, type GameSnapshot } from '../game'
+import { initialGoalsState, syncGoals, type GoalsState } from '../goals'
+import { grant, initialGrantsState, type GrantsState } from '../grants'
 import { canAffordMove, rentReserve } from '../housing'
 import { shiftAction, workShift } from '../jobs'
 import { performPlaceAction } from '../placeActions'
 import type { Place } from '../places'
+import { initialPrestigeState, type PrestigeState } from '../prestige'
 import type { RentEvent } from '../rent'
 
 /** Hunger at or below this sends the bot to eat. */
@@ -77,6 +86,8 @@ export interface EconomyBotOptions {
   readonly upgradeTo: HomeId
   /** Flex once a day at this place (a landmark or venue that allows it). */
   readonly flex?: { readonly place: Place }
+  /** Claim every goal reward as soon as it is reached (S15). Off by default. */
+  readonly claimAll?: boolean
 }
 
 export interface BotReport {
@@ -125,6 +136,10 @@ export interface BotReport {
   readonly levelReachedDay: Readonly<Record<string, number>>
   readonly flexes: number
   readonly viralFlexes: number
+  /** Goal rewards claimed (`claimAll` only): how many, and the cash and clout they applied. */
+  readonly grants: { readonly count: number; readonly cash: number; readonly clout: number }
+  /** Goals reached, by id, with the game day each was reached on (`claimAll` only). */
+  readonly goalsReachedDay: Readonly<Record<string, number>>
 }
 
 interface Step {
@@ -155,7 +170,7 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   let flexes = 0
   let viralFlexes = 0
   const levelReachedDay: Record<string, number> = {
-    [cloutLevel(totalClout(snapshot.player, config), config).id]: 1,
+    [playerLevel(snapshot.player, config).id]: 1,
   }
   let shiftsWorked = 0
   let shiftsMissed = 0
@@ -170,6 +185,13 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   const cloutGainByDay = new Map<number, number>()
   const actionsByDay = new Map<number, number>()
   const cloutGainBySource: Record<string, number> = {}
+  let progress: {
+    goals: GoalsState
+    grants: GrantsState
+    prestige: PrestigeState
+  } = { goals: initialGoalsState, grants: initialGrantsState, prestige: initialPrestigeState }
+  const granted = { count: 0, cash: 0, clout: 0 }
+  const goalsReachedDay: Record<string, number> = {}
 
   const dayOf = (minute: number) => calendar(minute, config).day
   const now = () => snapshot.clock.minute
@@ -204,7 +226,7 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     for (const [source, gain] of bySource) {
       cloutGainBySource[source] = Math.max(cloutGainBySource[source] ?? 0, gain)
     }
-    const level = cloutLevel(cloutAfter, config).id
+    const level = playerLevel(after.player, config).id
     if (!Object.hasOwn(levelReachedDay, level)) levelReachedDay[level] = endDay
     if (counts) add(actionsByDay, startDay, 1)
 
@@ -212,9 +234,33 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     if (step.rent.some((event) => event.kind === 'paid')) paidCash.push(after.player.cash)
     minCash = Math.min(minCash, after.player.cash)
     snapshot = after
+    if (options.claimAll === true) claimRewards(endDay)
     if (firstAffordableDay === null && canAffordMove(snapshot.player, upgradeTo, config)) {
       firstAffordableDay = endDay
     }
+  }
+
+  /** See "Goals" in the module comment. */
+  function claimRewards(day: number): void {
+    const synced = syncGoals({ ...snapshot, ...progress }, config)
+    for (const id of synced.newlyAchieved) goalsReachedDay[id] = day
+    let save = { ...synced.save, events: initialEventsState() }
+    for (const goal of config.goals) {
+      // The real time a claim is issued only goes into the audit record: the minute will do.
+      const result = grant(
+        save,
+        { kind: 'goal_reward', goalId: goal.id, reward: goal.reward },
+        snapshot.clock.minute,
+        config,
+      )
+      if (!result.ok || result.replayed) continue
+      save = result.save
+      granted.count += 1
+      granted.cash += result.record.applied.cash
+      granted.clout += result.record.applied.clout
+    }
+    snapshot = { clock: save.clock, player: save.player }
+    progress = { goals: save.goals, grants: save.grants, prestige: save.prestige }
   }
 
   /** Performs a catalog action; returns false (changing nothing) when the engine refuses. */
@@ -352,6 +398,8 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     levelReachedDay,
     flexes,
     viralFlexes,
+    grants: granted,
+    goalsReachedDay,
   }
 }
 

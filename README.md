@@ -186,15 +186,15 @@ by a zod schema in `src/lib/data/schemas/` (`src/lib/data/data.test.ts` fails if
 no schema or does not match it, if any other file type appears (only `SOURCES.md` and
 `README.md` are allowed next to data), or if a cross-file reference breaks).
 
-| Folder            | Holds                                                                                                                                                                                                                                                        |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings) |
-| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                             |
-| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                            |
-| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                           |
-| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                |
-| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                            |
-| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                   |
+| Folder            | Holds                                                                                                                                                                                                                                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `progression.json` (goals, grant caps, prestige rules), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings) |
+| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                                                                                     |
+| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                                                                                    |
+| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                                   |
+| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                                                                        |
+| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                    |
+| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                           |
 
 - **Loading.** Server code and scripts import validated data from `src/lib/data/config.ts` and
   `src/lib/data/content.ts`, which parse at import and fail fast with the file name. Client
@@ -282,7 +282,7 @@ out-of-range fields are repaired (speed to 1x, remainder to 0, stats clamped and
 only a structurally unusable save is replaced by a fresh state. A save from a newer build is
 never overwritten: the store sets `newerSavePresent` and writes nothing until
 `discardNewerSaveAndStartFresh()` is called. Only meaningful changes (minute, cash, stats,
-speed, event state) are written, not every tick. If localStorage is unavailable (private
+speed, event state, goals, grants, prestige) are written, not every tick. If localStorage is unavailable (private
 browsing, blocked site data, full quota) the store keeps working in memory for the session.
 
 The store holds an engine snapshot and calls the engine for every change (`tick`,
@@ -330,6 +330,22 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
 - **Housing** (`housing.ts`): `canAffordMove(player, home)` is true when cash, less the rent
   reserve (`rentReserve`: rent owed plus this week's rent for the current home), covers the
   home's move-in cost (`balance.json` `housing.moveInCost`; the lowest-rent home has none).
+- **Goals, grants and prestige** (`goals.ts`, `grants.ts`, `prestige.ts`, rules in
+  `data/config/progression.json`): goals are facts read from the save (first paycheck, outfit,
+  landmark visit, club night, one per clout level; first friend is coming soon), recorded by
+  `syncGoals` after every state-changing store action. Level goals read goal clout (earned minus
+  granted, plus items, never premium), so granted value never counts toward a goal (ECON-1).
+  Icon is earned: every clout level reads total clout except Icon (the victory goal's level),
+  which also needs goal clout at its threshold, so the Icon level-up and the victory screen land
+  together and grants or premium clout never reach Icon (`levelClout` in `clout.ts`).
+  Every reward goes through `grant()`: the engine builds the key (`goal:<id>:r<run>`), a repeat
+  replays the original record, every grant is logged (`grants.log`, local until S18c
+  re-validates it with `toServerGrantRow`), and amounts are capped at a percentage of the gap to
+  the next level (clout) and the next home (cash). Reaching Icon shows the victory screen
+  (`src/components/goals/IconMoment.tsx`); prestige grants the run's badge and resets the parts
+  listed in `prestige.resets`. To add a goal: add it to `progression.json` (a fact from
+  `src/lib/data/goalFacts.ts`), add `goals.goal.<camelId>.name` and `.hint` to
+  `data/copy/goals/base.json`, and run `npm test`.
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
 

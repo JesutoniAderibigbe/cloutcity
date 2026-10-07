@@ -22,16 +22,21 @@ const eventSource = (eventId: string) => ({ type: 'event', eventId, choiceId: 'a
 function v6Save(clout: number, extra: { inventory?: unknown; events?: unknown } = {}) {
   const player: Record<string, unknown> = { ...base.player, clout }
   delete player.flex
+  delete player.visited
   if (extra.inventory !== undefined) player.inventory = extra.inventory
-  return { ...base, player, events: extra.events ?? base.events }
+  const v6: Record<string, unknown> = { ...base, player, events: extra.events ?? base.events }
+  delete v6.goals
+  delete v6.grants
+  delete v6.prestige
+  return v6
 }
 
 const level = (id: string) => config.clout.levels.findIndex((entry) => entry.id === id)
 const minOf = (id: string) => config.clout.levels[level(id)]?.minClout ?? Number.NaN
 
 describe('save v7', () => {
-  it('is version 7 and a fresh save has an empty ledger and no flexes', () => {
-    expect(SAVE_VERSION).toBe(7)
+  it('is version 8 (S15 after S13) and a fresh save has an empty ledger and no flexes', () => {
+    expect(SAVE_VERSION).toBe(8)
     expect(initialSave(config).player.clout).toEqual(initialCloutState)
     expect(initialSave(config).player.flex).toEqual(initialFlexState)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
@@ -121,7 +126,7 @@ describe('v6 -> v7', () => {
     expect(schema.safeParse(migrated.save).success).toBe(true)
   })
 
-  it('every version v1 to v6 lands in the v7 form', () => {
+  it('every version v1 to v6 lands in the current form', () => {
     const v3 = {
       clock: base.clock,
       player: {
@@ -203,7 +208,13 @@ describe('repairs on load', () => {
   })
 
   it('clamps peakLevel into the levels; a non-number becomes the current level', () => {
+    // Clamped to the top level, then (S15 fix cycle 1, "Icon is earned") down to the level
+    // below it: this ledger has no earned clout to hold Icon.
     expect(load(valid({ peakLevel: 99 })).save.player.clout.peakLevel).toBe(
+      config.clout.levels.length - 2,
+    )
+    const earnedIcon = legacyCloutState(minOf('icon'), 0)
+    expect(load({ ...earnedIcon, peakLevel: 99 }).save.player.clout.peakLevel).toBe(
       config.clout.levels.length - 1,
     )
     expect(load(valid({ peakLevel: -4 })).save.player.clout.peakLevel).toBe(0)

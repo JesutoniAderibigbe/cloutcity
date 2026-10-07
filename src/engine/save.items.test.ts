@@ -4,7 +4,10 @@ import { legacyCloutState } from './clout'
 import { engineConfig as config } from './config'
 import { initialEventsState } from './events'
 import { initialFlexState } from './game'
+import { initialGoalsState } from './goals'
+import { initialGrantsState } from './grants'
 import { emptyInventory, type Inventory } from './items'
+import { initialPrestigeState } from './prestige'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
 const schema = createSaveSchema(config)
@@ -24,8 +27,8 @@ const valid: Inventory = {
 }
 
 describe('save v4 schema', () => {
-  it('is version 7 (v4 inventory, v5 events, v6 club nights, v7 clout ledger) and a fresh save has an empty inventory', () => {
-    expect(SAVE_VERSION).toBe(7)
+  it('is version 8 (v4 inventory, v5 events, v6 club nights, v7 clout ledger, v8 goals) and a fresh save has an empty inventory', () => {
+    expect(SAVE_VERSION).toBe(8)
     expect(initialSave(config).player.inventory).toEqual(emptyInventory)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
@@ -101,8 +104,12 @@ describe('save v3 -> v4', () => {
           flex: initialFlexState,
           inventory: emptyInventory,
           clubNights: {},
+          visited: {},
         },
         events: initialEventsState(),
+        goals: initialGoalsState,
+        grants: initialGrantsState,
+        prestige: initialPrestigeState,
       },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)

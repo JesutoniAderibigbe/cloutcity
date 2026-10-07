@@ -6,7 +6,10 @@ import '@/lib/copy/ns/hud'
 export interface CloutMeterProps {
   /** The current level's display name ("Local"). */
   readonly levelName: string
-  /** The player's total clout. */
+  /**
+   * The clout counted toward the next level: the player's total, or their earned (goal) clout
+   * on the way to Icon once the total alone would hold it (src/engine/clout.ts `cloutProgress`).
+   */
   readonly total: number
   /** The next level's name and threshold, or null at the top level. */
   readonly next: { readonly name: string; readonly minClout: number } | null
@@ -34,8 +37,11 @@ export function CloutMeter({ levelName, total, next, pct, atMax }: CloutMeterPro
       data-cc-feature="cc-feature:clout-hud"
       className="flex min-w-0 shrink-0 flex-col items-end gap-1"
     >
+      {/* Below sm the HUD row is full (S15 added the Goals button): the word "Clout" gives way
+          so a long level name ("Scene Regular") never squeezes the title to nothing. The bar's
+          accessible name still starts with it. S05 splits the HUD into two rows. */}
       <p aria-hidden="true" className="flex gap-1.5 text-xs leading-none font-bold">
-        <span className="text-ink-300">{copy('hud.clout.label')}</span>
+        <span className="hidden text-ink-300 sm:inline">{copy('hud.clout.label')}</span>
         <span className="text-taxi-400">{levelName}</span>
       </p>
       <progress

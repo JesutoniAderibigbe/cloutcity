@@ -12,6 +12,8 @@
     "loading.rent": "Loading your rent",
     "loading.failed": "That didn't load. Check your connection and try again.",
     "loading.retry": "Try again",
+    "loading.goals": "Loading your goals",
+    "loading.iconMoment": "Loading your Icon moment",
     "loading.places": "Loading the places list"
   }
 }

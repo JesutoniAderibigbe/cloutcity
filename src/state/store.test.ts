@@ -79,6 +79,7 @@ describe('game store persistence', () => {
       rent: { owed: 0, missed: 0 },
       inventory: { wearables: [], gifts: [], outfit: {} },
       clubNights: {},
+      visited: {},
     })
     expect(state.lastLevelUp).toBeNull()
     expect(state.clock).toEqual({ minute: 480, remainderMs: 0 })
@@ -93,7 +94,15 @@ describe('game store persistence', () => {
     expect(after.version).toBe(STORE_VERSION)
     expect(after.state.player.cash).toBe(START_CASH - BODEGA)
     expect(after.state.clock.minute).toBe(500)
-    expect(Object.keys(after.state).sort()).toEqual(['clock', 'events', 'player', 'speed'])
+    expect(Object.keys(after.state).sort()).toEqual([
+      'clock',
+      'events',
+      'goals',
+      'grants',
+      'player',
+      'prestige',
+      'speed',
+    ])
   })
 
   it('rehydrates a new store from what an earlier one saved', () => {
@@ -198,6 +207,7 @@ describe('game store persistence', () => {
         rent: { owed: 280, missed: 1 },
         inventory: { wearables: [], gifts: [], outfit: {} },
         clubNights: {},
+        visited: {},
       },
       speed: 1,
     })
@@ -282,9 +292,9 @@ describe('storage unavailable', () => {
     const game = createGameStore(storage, logger)
     game.getState().performAction('bodega-breakfast')
     expect(game.getState().player.cash).toBe(START_CASH - BODEGA)
-    const { clock, player, speed, events } = game.getState()
+    const { clock, player, speed, events, goals, grants, prestige } = game.getState()
     expect(storage.getItem(STORE_KEY)).toEqual({
-      state: { clock, player, speed, events },
+      state: { clock, player, speed, events, goals, grants, prestige },
       version: STORE_VERSION,
     })
   })
@@ -485,6 +495,7 @@ describe('jobs and rent in the store', () => {
       rent: { owed: 0, missed: 0 },
       inventory: { wearables: [], gifts: [], outfit: {} },
       clubNights: {},
+      visited: {},
     })
     expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
@@ -635,8 +646,12 @@ describe('items in the store', () => {
     delete v3player.inventory
     delete v3player.clubNights
     delete v3player.flex
+    delete v3player.visited
     const v3: Record<string, unknown> = { ...fresh, player: v3player }
     delete v3.events
+    delete v3.goals
+    delete v3.grants
+    delete v3.prestige
     local.setItem(STORE_KEY, JSON.stringify({ state: v3, version: 3 }))
     const game = setup(local).store()
     expect(game.getState().player.cash).toBe(321)

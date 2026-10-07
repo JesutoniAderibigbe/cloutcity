@@ -248,7 +248,9 @@ Further rules:
 
 ## Art direction
 - Stylised low-poly 3D with a flat, bold sticker/toon look: a shared gradient ramp (MeshToonMaterial), inverted-hull outlines on mid/high tiers, and flat emissive lit windows at night.
-- Warm night-city palette: deep indigo, hot pink, taxi yellow. Palette tokens live in `/data/config/theme.json`.
+- Warm night-city palette: deep indigo, hot pink, taxi yellow, plus a day palette (user decision
+  2026-10-07): the interface and the 3D lighting follow the personal game clock's day/night keyframes
+  (S04f, S04g). Both palettes meet WCAG 2.2 AA. Palette tokens live in `/data/config/theme.json`.
 - Landmarks are code-built low-poly models in the same style. Never photos, scans or downloaded models with unclear licenses. Only permissively licensed (CC0/MIT) assets, each listed in a SOURCES.md.
 - Emoji and SVG are allowed in the DOM UI. Chunky, thumb-friendly UI (hit targets ≥ 44 px). Snappy animations, juicy feedback on every purchase and clout gain.
 - Respect `prefers-reduced-motion`: travel cuts instead of animating, and there is no camera shake.

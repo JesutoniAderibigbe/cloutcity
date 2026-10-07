@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { engineConfig } from '@/engine/config'
-import { findItem, isWearable, resaleValue, type ItemResult } from '@/engine/items'
+import { findItem, isPrestigeKept, isWearable, resaleValue, type ItemResult } from '@/engine/items'
 import { copy } from '@/lib/copy'
 import { log } from '@/lib/log'
 import {
@@ -11,6 +11,7 @@ import {
   giftCountLine,
   giftUsedOnSelfNotice,
   inventoryItemDetails,
+  keptSellLabel,
   itemErrorText,
   itemName,
   resaleLine,
@@ -99,11 +100,14 @@ export function InventoryPanel() {
           <ul aria-busy={coolingDown} className="flex flex-col gap-1.5">
             {wearables.map(({ owned, def }) => {
               const worn = inventory.outfit[def.slot] === def.id
+              // Kept through prestige (Q-8): a look only, with no resale value.
+              const kept = isPrestigeKept(owned)
               const resale = resaleValue(def, owned.acquiredMinute, minute, engineConfig)
               return (
                 <li
                   key={def.id}
                   data-inventory-item={def.id}
+                  data-prestige-kept={kept ? '' : undefined}
                   className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-night-950/60 p-2"
                 >
                   <div className="min-w-0">
@@ -116,7 +120,9 @@ export function InventoryPanel() {
                       ) : null}
                     </p>
                     <p className="text-xs text-ink-300">{inventoryItemDetails(def.id)}</p>
-                    <p className="text-xs text-ink-300">{resaleLine(resale)}</p>
+                    <p className="text-xs text-ink-300">
+                      {kept ? copy('inventory.kept') : resaleLine(resale)}
+                    </p>
                   </div>
                   <div className="flex gap-1.5">
                     {worn ? (
@@ -158,9 +164,12 @@ export function InventoryPanel() {
                       type="button"
                       onKeyDown={onKeyDown}
                       onPointerDown={onPointerDown}
-                      aria-label={sellLabel(def.id, resale)}
-                      onClick={(event) => act(event, def.id, () => sell(def.id))}
-                      className={ACTION}
+                      aria-label={kept ? keptSellLabel(def.id) : sellLabel(def.id, resale)}
+                      aria-disabled={kept ? true : undefined}
+                      onClick={(event) => {
+                        if (!kept) act(event, def.id, () => sell(def.id))
+                      }}
+                      className={`${ACTION} ${kept ? 'cursor-not-allowed text-ink-300' : ''}`}
                     >
                       {copy('inventory.sell.button')}
                     </button>
