@@ -111,7 +111,8 @@ Unit tests sit next to the code as *.test.ts.
   - **What they can never see:** email, real name, real-world location, cash, inventory, friend list, chat.
   - **The app never requests device geolocation.**
   - **Ghost mode** removes a player from snapshots and stops their broadcasts.
-- **Out of scope** (still in force after DEC-4 and DEC-5): no player-to-player transfer of cash or items, no trading, no gifting between players, no group or crew chat, no free-text messaging with non-friends, no voice chat, and no way to raise the chat limit. Do not build these, even partially.
+- **Player economy** (user ruling 2026-10-07, DEC-38, reverses the earlier ban): players may send in-game cash to each other, run shops that sell to other players, hire each other through a board with server-held escrow, and rob each other (PvP). Every movement of cash or items between players is server-authoritative (a server ledger entry, never a client save edit), rate-limited, capped in `/data/config`, logged for moderation, and covered by S18c plausibility. Anti-black-market rules: no real-money value is ever attached to in-game cash by us; reports of selling game money for real money are a ban reason; new accounts have lower caps. Premium items are still never transferable.
+- **Out of scope** (still in force): no group or crew chat, no free-text messaging with non-friends, no voice chat, and no way to raise the chat limit. Do not build these, even partially.
 - Every Supabase table has Row Level Security. That includes policies on `realtime.messages` for every private topic.
 
 ## Map and landmarks
@@ -196,13 +197,14 @@ Further rules:
   - They may add clout and style, but total clout from premium items is capped by `premiumCloutCap` in `/data/config`, and premium clout alone can never reach Icon.
   - Other players see a premium cosmetic only when the server holds the entitlement.
 - Never sell in-game cash, energy, time skips or clout directly for real money.
-- Gifts are consumed (a money sink): used on NPCs during events or on yourself, never sent to other players.
+- Gifts are consumed (a money sink): used on NPCs during events, on yourself, or sent to another player through the server-authoritative player economy (DEC-38).
 - **Grants** (goal rewards, referral rewards, any operator compensation) all go through one grant function. Grants are idempotent, audited, eligibility-targeted, and capped relative to the next progression goal. Granted value never counts toward goal progress.
 
 ## Safety rules (adults only, shared world)
 **Content.** (User ruling 2026-10-06.)
 - Nightlife and alcohol references are allowed as flavour (clubs, bars, last call). Drinking is never rewarded, required, or tied to a stat boost.
-- No drug references. No sexual content. No real-money gambling mechanics.
+- No drug references. No sexual content (player dating, DEC-39, is allowed as mutual-consent relationship labels, dates and gifts, never sexual content).
+- No real-money gambling mechanics. Casino games with in-game cash are allowed (user ruling 2026-10-07, DEC-37) only because in-game cash is never sold for real money; no casino action can be paid for with real money or premium items, and odds and limits live in `/data/config` and are shown to the player.
 - No mocking of any group. No slurs.
 - Profanity stays mild ("damn" level) in our copy. Crime stays mild and cartoonish.
 
