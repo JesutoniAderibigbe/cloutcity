@@ -114,7 +114,7 @@ for (const viewport of VIEWPORTS) {
       const visible = (name: string) =>
         zone(page).getByRole('button', { name, exact: true }).filter({ visible: true })
       await expect(moreButton(page)).toHaveCount(wide ? 0 : 1)
-      for (const name of ['Inventory', 'Rent', 'Sound settings']) {
+      for (const name of ['Inventory', 'Rent', 'Settings']) {
         await expect(visible(name), name).toHaveCount(wide ? 1 : 0)
       }
       if (wide) return
@@ -124,7 +124,7 @@ for (const viewport of VIEWPORTS) {
       await expect(panel).toBeVisible()
       await expect(moreButton(page)).toHaveAttribute('aria-expanded', 'true')
       await expect(panel.getByRole('heading', { name: 'More' })).toBeFocused()
-      for (const name of ['Inventory', 'Rent', 'Sound settings']) {
+      for (const name of ['Inventory', 'Rent', 'Settings']) {
         const item = panel.getByRole('button', { name, exact: true })
         await expect(item).toBeVisible()
         expect((await boxOf(item, name)).height).toBeGreaterThanOrEqual(44)
@@ -144,8 +144,8 @@ for (const viewport of VIEWPORTS) {
 
       // So does the sound settings sheet.
       await moreButton(page).click()
-      await panel.getByRole('button', { name: 'Sound settings', exact: true }).click()
-      const sound = page.getByRole('region', { name: 'Sound' })
+      await panel.getByRole('button', { name: 'Settings', exact: true }).click()
+      const sound = page.getByRole('region', { name: 'Settings' })
       await expect(sound).toBeVisible()
       await page.keyboard.press('Escape')
       await expect(sound).toHaveCount(0)

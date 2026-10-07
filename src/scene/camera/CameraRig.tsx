@@ -15,6 +15,7 @@ import { PerspectiveCamera } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
+import { beginContinuous, endContinuous } from '../quality/continuity'
 import { clampTarget, degToRad, initialPose, nearFar, type LocalBounds } from './limits'
 
 interface CameraRigProps {
@@ -83,7 +84,13 @@ export function CameraRig({ camera: rig, start, bounds, groundY }: CameraRigProp
       applyClip()
       invalidate()
     }
+    // A gesture keeps the scene animating: the runtime step-down measures FPS only then
+    // (src/scene/quality/TierMonitor.tsx).
+    const onStart = () => beginContinuous('gesture')
+    const onEnd = () => endContinuous('gesture')
     controls.addEventListener('change', onChange)
+    controls.addEventListener('start', onStart)
+    controls.addEventListener('end', onEnd)
     controls.update()
     applyClip()
     set({ controls })
@@ -91,6 +98,9 @@ export function CameraRig({ camera: rig, start, bounds, groundY }: CameraRigProp
 
     return () => {
       controls.removeEventListener('change', onChange)
+      controls.removeEventListener('start', onStart)
+      controls.removeEventListener('end', onEnd)
+      endContinuous('gesture')
       controls.dispose()
       set({ controls: null })
     }

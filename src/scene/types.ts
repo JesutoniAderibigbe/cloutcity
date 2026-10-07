@@ -3,6 +3,7 @@
  * only, so the client never imports a config loader.
  */
 import type { HomeIdLiteral } from '@/lib/data/homes'
+import type { FpsStepDown, PerfConfig, QualityTier, TierPicker } from '@/lib/data/schemas/config'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
 import type { LocalBounds } from './camera/limits'
@@ -50,6 +51,29 @@ export interface SceneCopy {
   readonly expandingSoon: string
 }
 
+/** One quality tier's render settings (data/config/perf.json), resolved on the server. */
+export interface TierRenderSettings {
+  readonly dprCap: number
+  /** Read when the canvas is created: a tier change applies it on the next load. */
+  readonly antialias: boolean
+  readonly shadows: PerfConfig['shadows'][QualityTier]
+  /** The directional light's shadow map size; 0 where the tier has no such light. */
+  readonly shadowMapSizePx: number
+  /** Outlines: the subway casing today, inverted-hull outlines with S04d/S07a. */
+  readonly outlines: boolean
+  /** Share of district buildings drawn (S04d). */
+  readonly buildingDensity: number
+  /** Multiplies detail-level switch distances (S04d, S07a). */
+  readonly lodDistanceScale: number
+}
+
+/** The quality tier rules and per-tier settings the client scene needs (S04b). */
+export interface SceneQuality {
+  readonly picker: TierPicker
+  readonly stepDown: FpsStepDown
+  readonly tiers: Readonly<Record<QualityTier, TierRenderSettings>>
+}
+
 export interface SceneProps {
   /** /geo/base?v=<geoVersion>. */
   readonly geoUrl: string
@@ -66,7 +90,7 @@ export interface SceneProps {
   readonly startHome: HomeIdLiteral
   /** data/geo/bounds.json in local metres: the camera target never leaves it. */
   readonly boundsLocal: LocalBounds
-  readonly dprCap: number
+  readonly quality: SceneQuality
   /** The overlay grid rows (src/components/overlay/layers.ts), for the scene's own status row. */
   readonly overlayRows: string
   /** The free scene row of that grid (no overlay zone covers it). */

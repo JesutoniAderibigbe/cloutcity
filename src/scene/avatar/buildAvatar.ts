@@ -71,6 +71,8 @@ export function buildAvatar(
 
   const bodyMesh = new Mesh(body, bodyMaterial)
   bodyMesh.name = `${PLAYER_AVATAR_NAME}-body`
+  // Seen only where the tier's sun casts a shadow (src/scene/SunLight.tsx).
+  bodyMesh.castShadow = true
   const ringMesh = new Mesh(ring, ringMaterial)
   ringMesh.name = `${PLAYER_AVATAR_NAME}-ring`
   ringMesh.renderOrder = 3

@@ -3,7 +3,7 @@ import { audio, gainOf, installAudioProbe, probeOf } from './fixtures/audio'
 import { waitForMapSettled } from './helpers/scene'
 import { hudIsWide, hudOpener, openFromHud } from './helpers/hud'
 
-// Sound settings (S05b): loaded on demand, native controls, live changes per channel.
+// Settings sheet, sound part (S05b): loaded on demand, native controls, live changes per channel.
 
 test('the sheet loads on demand, opening it stays silent, and each slider moves only its channel', async ({
   page,
@@ -18,10 +18,10 @@ test('the sheet loads on demand, opening it stays silent, and each slider moves 
   })
 
   // On phones the gear is in the More panel (S05); the HUD gear shows on wide screens.
-  const opener = hudOpener(page, 'Sound settings')
+  const opener = hudOpener(page, 'Settings')
   if (hudIsWide(page)) await expect(opener).toHaveAttribute('aria-expanded', 'false')
-  await openFromHud(page, 'Sound settings')
-  const sheet = page.getByRole('region', { name: 'Sound' })
+  await openFromHud(page, 'Settings')
+  const sheet = page.getByRole('region', { name: 'Settings' })
   await expect(sheet).toBeVisible()
   if (hudIsWide(page)) await expect(opener).toHaveAttribute('aria-expanded', 'true')
   expect(scripts.length, 'the sheet chunk loads on the first tap').toBeGreaterThan(0)
@@ -79,7 +79,7 @@ for (const viewport of [
     const hud = await page.locator('[data-overlay-zone="hud"]').boundingBox()
     if (!hud) throw new Error('no HUD zone')
     const names = hudIsWide(page)
-      ? ['Turn on sound', 'Sound settings', 'Places']
+      ? ['Turn on sound', 'Settings', 'Places']
       : ['Turn on sound', 'More', 'Places']
     for (const name of names) {
       const box = await page
@@ -103,12 +103,12 @@ test('accessible with the sheet closed and open', async ({ page, checkA11y }) =>
   await page.goto('/')
   await waitForMapSettled(page)
   await checkA11y()
-  await openFromHud(page, 'Sound settings')
-  await expect(page.getByRole('region', { name: 'Sound' })).toBeVisible()
+  await openFromHud(page, 'Settings')
+  await expect(page.getByRole('region', { name: 'Settings' })).toBeVisible()
   await checkA11y()
-  await page.getByRole('button', { name: 'Close sound settings' }).click()
-  await expect(page.getByRole('region', { name: 'Sound' })).toHaveCount(0)
-  await expect(hudOpener(page, 'Sound settings')).toBeFocused()
+  await page.getByRole('button', { name: 'Close settings' }).click()
+  await expect(page.getByRole('region', { name: 'Settings' })).toHaveCount(0)
+  await expect(hudOpener(page, 'Settings')).toBeFocused()
 })
 
 interface Box {
@@ -131,8 +131,8 @@ test('the sound settings and an event can be open together without overlapping (
   await waitForMapSettled(page)
   await page.waitForFunction(() => window.__cloutcityTest?.events !== undefined)
   await waitForMapSettled(page)
-  await openFromHud(page, 'Sound settings')
-  const sheet = page.getByRole('region', { name: 'Sound' })
+  await openFromHud(page, 'Settings')
+  const sheet = page.getByRole('region', { name: 'Settings' })
   await expect(sheet).toBeVisible()
 
   const opened = await page.evaluate(() =>
@@ -167,7 +167,7 @@ test('the sound settings and an event can be open together without overlapping (
   await dialog.getByRole('button', { name: /Pet the cat/ }).click()
   await dialog.getByRole('button', { name: 'Continue' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.getByRole('region', { name: 'Sound' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Settings' })).toBeVisible()
 })
 
 test('a long track title stays on one truncated line inside the HUD, clear of the other cells', async ({
@@ -222,8 +222,8 @@ test('volumes saved by a newer build are shown and never overwritten', async ({ 
   }, newer)
   await page.goto('/')
   await waitForMapSettled(page)
-  await openFromHud(page, 'Sound settings')
-  const sheet = page.getByRole('region', { name: 'Sound' })
+  await openFromHud(page, 'Settings')
+  const sheet = page.getByRole('region', { name: 'Settings' })
   await expect(sheet.getByRole('slider', { name: 'Master' })).toHaveValue('55')
   await expect(sheet.getByRole('slider', { name: 'City sounds' })).toHaveValue('25')
   await sheet.getByRole('slider', { name: 'Music' }).fill('80')
@@ -242,8 +242,8 @@ test('a corrupt sound save falls back to the defaults without a console error', 
   })
   await page.goto('/')
   await waitForMapSettled(page)
-  await openFromHud(page, 'Sound settings')
+  await openFromHud(page, 'Settings')
   await expect(
-    page.getByRole('region', { name: 'Sound' }).getByRole('slider', { name: 'Master' }),
+    page.getByRole('region', { name: 'Settings' }).getByRole('slider', { name: 'Master' }),
   ).toHaveValue('80')
 })

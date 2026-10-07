@@ -75,7 +75,17 @@
       "x": -0.4,
       "y": 1,
       "z": 0.6
+    },
+    "shadow": {
+      "extentPerDistance": 0.9,
+      "lightPerDistance": 2,
+      "depthPerDistance": 4,
+      "bias": -0.0005,
+      "normalBias": 0.02
     }
+  },
+  "startup": {
+    "idleTimeoutMs": 300
   },
   "dimmed": {
     "towardBackground": 0.55

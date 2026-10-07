@@ -71,7 +71,7 @@ function Toast({ levelUp }: { readonly levelUp: LevelUp }) {
       data-level-up={levelUp.to}
       data-cc-feature="cc-feature:level-up"
       data-paused={paused ? '' : undefined}
-      className="level-up-pop mx-2 flex items-center gap-2 rounded-2xl border border-pink-400 bg-night-900/95 px-3 py-1 shadow-lg backdrop-blur"
+      className="level-up-pop mx-2 flex items-center gap-2 rounded-2xl border border-pink-400 bg-night-900/95 px-3 py-1 shadow-lg"
     >
       {/* Title and message share one flow so the longest level-up (every unlock on the way to
           Icon) still fits the 72 px toast zone at 390 px (UX-1). */}

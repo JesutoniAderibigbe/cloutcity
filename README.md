@@ -37,6 +37,7 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                                                         |
 | `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                                                             |
 | `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)                                             |
+| `npm run e2e:perf`                | Cold, warm and per-tier render budgets under the `cc-mid-4g` throttle (`tests/perf/*.perf.ts`); medians in `test-results/perf/report.json`                           |
 | `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                                                      |
 | `npm run budget`                  | Gzipped shell JS, 3D chunk, total JS to playable, base geo and district assets against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
 | `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                             |
@@ -431,7 +432,7 @@ never fails the run. Every lookup fails loudly when it finds nothing, so a chang
 format cannot turn a check into a silent pass.
 
 Draw calls, triangles and idle frames at the default view are asserted by
-`tests/e2e/city-scene.spec.ts`. Audio has its own budgets
+`tests/e2e/city-scene.spec.ts`, and per tier by `npm run e2e:perf`. Audio has its own budgets
 (`audioLazyGzKB` per tier for the first music track, the ambience and the tier's preloaded sfx,
 per encoding; `audioFileMaxKB`), checked by `src/lib/data/data.test.ts`; `audioRuntimeJsGzKB` is
 measured by hand until the budget script covers its lazy chunk.
@@ -441,9 +442,27 @@ measured by hand until the budget script covers its lazy chunk.
 `src/lib/quality/tier.ts` picks low, mid or high from them with the `tierPicker` thresholds
 (unknown signals are neutral; data saver forces low); `src/lib/quality/stepDown.ts` decides
 runtime step-downs (never up) and the active tier. `src/state/quality.ts` persists only the
-settings override (`cloutcity:quality`). `playwright.perf.config.ts` and `tests/perf/` hold the
-`e2e:perf` harness: CDP network and CPU throttling, and a machine-wide lock with a load wait so
-only one perf run measures at a time.
+settings override (`cloutcity:quality`); it loads in its own chunk, outside the shell.
+
+At run time the 3D map's shell mount (`src/scene/CitySceneClient.tsx`) probes the device
+(`src/scene/webgl.ts`) with the thresholds and per-tier settings `CityScene` passes as server
+props, records the pick in the store, and mounts the canvas when the main thread is idle. The
+canvas (`src/scene/CityCanvas.tsx`) applies the active tier: DPR cap and outlines (the subway
+casing) live, PCFShadowMap shadows from one directional sun on the high tier only
+(`src/scene/SunLight.tsx`), antialiasing on the next load; building density and LOD scale are
+exposed to scene parts through `useTierSettings()` (`src/scene/quality/tierSettings.ts`).
+`TierMonitor` runs drei's `PerformanceMonitor` only inside the continuous-rendering window that
+gestures and camera flights open (`beginContinuous` / `endContinuous` in
+`src/scene/quality/continuity.ts`), so an idle on-demand map never reads as a low frame rate.
+Audio plays the active tier. The Settings sheet (gear, or More on phones) has a Graphics choice:
+Auto (the detected tier), Low, Mid or High; a data-saver request disables Mid and High.
+
+Start-up marks (User Timing): `cc:shell-interactive`, `cc:playable` and the `cc:3d:*` steps
+(`src/lib/perfMarks.ts`). `playwright.perf.config.ts` and `tests/perf/` hold the `e2e:perf`
+harness: CDP network and CPU throttling, a machine-wide lock with a load wait so only one perf
+run measures at a time, and specs for cold loads (median of `perfRun.coldRuns`), warm loads
+(the HTTP cache; the app has no service worker yet) and each tier's draw calls, triangles and
+renderer settings. The run writes its medians to `test-results/perf/report.json`.
 
 **Shell diet (S05c, DEC-11).** The shell of `/` carries only the boot path: the layout, overlay
 system, HUD, tab bar, the copy core with its boot namespaces, and the island mounts. Everything

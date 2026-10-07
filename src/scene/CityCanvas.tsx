@@ -5,31 +5,44 @@
  * react-three-fiber canvas with the city, place pins, the player's avatar, lights, camera rig and
  * test hooks. Renders on demand only, so an idle map draws zero frames.
  *
+ * Quality tiers (S04b): the active tier (src/state/quality.ts) sets the DPR cap, outlines and
+ * shadows live, and antialiasing when the WebGL context is created; TierMonitor steps it down
+ * when the frame rate stays low. The city is built (yielding to the browser) before the canvas
+ * mounts, and its shaders compile before its first frame (PERF-4).
+ *
  * A lost WebGL context (S04c) is restored in place: three re-creates its GL state when the
  * browser restores the context, so the canvas is never remounted; this only reports the loss
  * and, after the first frame drawn again, the recovery.
  */
-import { useEffect, useMemo, useRef } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { addAfterEffect, Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
+import { PLAYABLE_MARK, perfMark } from '@/lib/perfMarks'
 import { usePlayerHome } from '@/state/playerHome'
+import { useActiveTier } from '@/state/quality'
 import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
 import { FreeRowFraming } from './camera/FreeRowFraming'
 import { nearFar } from './camera/limits'
-import { City, type CityObjects } from './City'
+import { buildCity, City, type CityObjects } from './City'
 import { landTopY } from './geo/buildLand'
 import type { GeoLoadFailure } from './geo/load'
 import { safeParseGeoBase } from './geo/schema'
+import { TierMonitor } from './quality/TierMonitor'
+import { TierSettingsContext, type ActiveTierSettings } from './quality/tierSettings'
+import { yieldToMain } from './schedule'
+import { SunLight } from './SunLight'
 import { TestHooks } from './testHooks'
 import type { SceneProps } from './types'
 
+perfMark('cc:3d:chunk')
+
 // R3F turns a boolean `shadows` into PCFSoftShadowMap, which three 0.182 deprecates with a
-// console warning; an object leaves the type explicit (and shadows off until S04b's tiers).
-const SHADOWS = { enabled: false, type: PCFShadowMap }
+// console warning (and CLAUDE.md never allows): both values name PCFShadowMap explicitly.
+const SHADOWS_ON = { enabled: true, type: PCFShadowMap }
+const SHADOWS_OFF = { enabled: false, type: PCFShadowMap }
 
 const GL = {
-  antialias: true,
   alpha: false,
   stencil: false,
   powerPreference: 'high-performance',
@@ -37,10 +50,13 @@ const GL = {
 
 export interface CityCanvasProps extends Pick<
   SceneProps,
-  'palette' | 'config' | 'homesLocal' | 'startHome' | 'boundsLocal' | 'dprCap'
+  'palette' | 'config' | 'homesLocal' | 'startHome' | 'boundsLocal' | 'quality'
 > {
-  /** The downloaded geo body, validated here before the canvas mounts. */
-  readonly geoBody: unknown
+  /**
+   * The downloaded geo body, validated here before the canvas mounts; null while it downloads
+   * (the chunk is rendered early so it loads in parallel, and renders nothing until then).
+   */
+  readonly geo: { readonly body: unknown } | null
   /** Called (once) instead of mounting the canvas when the body fails the schema. */
   readonly onInvalidGeo: (failure: GeoLoadFailure) => void
   readonly label: string
@@ -93,7 +109,37 @@ function ContextWatcher({
   return null
 }
 
-export default function CityCanvas({
+/**
+ * Marks the first frame that has drawn the city with the player's avatar placed: the map is
+ * playable (`cc:playable`, timed by `npm run e2e:perf`). Runs after each frame is rendered.
+ */
+function PlayableMark({
+  readyRef,
+  placedRef,
+}: {
+  readonly readyRef: { readonly current: boolean }
+  readonly placedRef: { readonly current: boolean }
+}) {
+  useEffect(() => {
+    const stop = addAfterEffect(() => {
+      if (!readyRef.current || !placedRef.current) return
+      perfMark('cc:3d:first-frame')
+      perfMark(PLAYABLE_MARK)
+      stop()
+    })
+    return stop
+  }, [readyRef, placedRef])
+  return null
+}
+
+export default function CityCanvas({ geo, ...props }: CityCanvasProps) {
+  return geo === null ? null : <CityScene3D geoBody={geo.body} {...props} />
+}
+
+type CityScene3DProps = Omit<CityCanvasProps, 'geo'> & { readonly geoBody: unknown }
+
+/** The canvas itself, mounted once the geo body has arrived and the device's tier is known. */
+function CityScene3D({
   geoBody,
   onInvalidGeo,
   palette,
@@ -101,75 +147,126 @@ export default function CityCanvas({
   homesLocal,
   startHome,
   boundsLocal,
-  dprCap,
+  quality,
   label,
   expandingSoon,
   onReady,
   onContextLost,
   onContextRestored,
-}: CityCanvasProps) {
+}: CityScene3DProps) {
+  perfMark('cc:3d:mount')
   const readyRef = useRef(false)
+  const placedRef = useRef(false)
   // The camera starts over the player's home and the avatar stands there (S05).
   const home = homesLocal[usePlayerHome() ?? startHome]
   const cityRef = useRef<CityObjects | null>(null)
+  // The shell records the device's tier before mounting the canvas; low until then.
+  const tier = useActiveTier() ?? 'low'
+  const settings: ActiveTierSettings = useMemo(
+    () => ({ tier, ...quality.tiers[tier] }),
+    [tier, quality.tiers],
+  )
+  // Antialiasing is fixed when the WebGL context is created: a change applies on the next load.
+  const [gl] = useState(() => ({ ...GL, antialias: settings.antialias }))
   // Validated outside the R3F root and without throwing: an invalid body is an expected
   // failure, reported to the shell instead of reaching React's error logging.
-  const parsed = useMemo(() => safeParseGeoBase(geoBody), [geoBody])
+  const parsed = useMemo(() => {
+    const result = safeParseGeoBase(geoBody)
+    perfMark('cc:3d:parsed')
+    return result
+  }, [geoBody])
   useEffect(() => {
     if (!parsed.ok) onInvalidGeo({ reason: 'geo-invalid', paths: parsed.paths })
   }, [parsed, onInvalidGeo])
+
+  // Built before the canvas mounts, yielding between layers (PERF-4). A build error is
+  // rethrown during render so the scene's error boundary handles it like any scene failure.
+  const [built, setBuilt] = useState<CityObjects | Error | null>(null)
+  useEffect(() => {
+    if (!parsed.ok) return
+    let active = true
+    let city: CityObjects | null = null
+    buildCity(parsed.geo, palette, config, expandingSoon, yieldToMain).then(
+      (result) => {
+        if (!active) {
+          result.dispose()
+          return
+        }
+        perfMark('cc:3d:built')
+        city = result
+        setBuilt(result)
+      },
+      (error: unknown) => {
+        if (active) setBuilt(error instanceof Error ? error : new Error('city build failed'))
+      },
+    )
+    return () => {
+      active = false
+      city?.dispose()
+      setBuilt(null)
+    }
+  }, [parsed, palette, config, expandingSoon])
+  if (built instanceof Error) throw built
+
   const { camera, lights } = config
   const groundY = landTopY(config.land)
   const clip = nearFar(camera.distanceM, camera)
-  const sun = lights.sunDirection
+  const shadows = settings.shadows === 'pcf-directional'
 
-  if (!parsed.ok) return null
-  const geo = parsed.geo
+  if (!parsed.ok || built === null) return null
 
   return (
     <div
       role="img"
       aria-label={label}
       data-cc-feature="cc-feature:city-scene"
+      data-quality-tier={tier}
       className="absolute inset-0"
     >
       <Canvas
         frameloop="demand"
-        dpr={[1, dprCap]}
+        dpr={[1, settings.dprCap]}
         flat
-        shadows={SHADOWS}
-        gl={GL}
+        shadows={shadows ? SHADOWS_ON : SHADOWS_OFF}
+        gl={gl}
         camera={{ fov: camera.fovDeg, near: clip.near, far: clip.far }}
+        onCreated={() => perfMark('cc:3d:gl')}
       >
-        <color attach="background" args={[palette.background]} />
-        <ambientLight color={palette.ambientLight} intensity={lights.ambientIntensity} />
-        <directionalLight
-          color={palette.sunLight}
-          intensity={lights.sunIntensity}
-          position={[sun.x, sun.y, sun.z]}
-        />
-        <CameraRig camera={camera} start={home} bounds={boundsLocal} groundY={groundY} />
-        <FreeRowFraming />
-        <City
-          geo={geo}
-          palette={palette}
-          config={config}
-          expandingSoon={expandingSoon}
-          cityRef={cityRef}
-          onReady={() => {
-            readyRef.current = true
-            onReady()
-          }}
-        />
-        <PlayerAvatar
-          at={home}
-          groundY={groundY}
-          color={palette.player}
-          toonRamp={palette.toonRamp}
-          avatar={config.avatar}
-        />
-        <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
-        <TestHooks readyRef={readyRef} cityRef={cityRef} />
+        <TierSettingsContext value={settings}>
+          <color attach="background" args={[palette.background]} />
+          <ambientLight color={palette.ambientLight} intensity={lights.ambientIntensity} />
+          <SunLight
+            color={palette.sunLight}
+            lights={lights}
+            shadowMapSizePx={shadows ? settings.shadowMapSizePx : 0}
+          />
+          <CameraRig camera={camera} start={home} bounds={boundsLocal} groundY={groundY} />
+          <FreeRowFraming />
+          <City
+            city={built}
+            config={config}
+            outlines={settings.outlines}
+            cityRef={cityRef}
+            onReady={() => {
+              readyRef.current = true
+              onReady()
+            }}
+          />
+          <PlayerAvatar
+            at={home}
+            groundY={groundY}
+            color={palette.player}
+            toonRamp={palette.toonRamp}
+            avatar={config.avatar}
+            onPlaced={() => {
+              placedRef.current = true
+            }}
+          />
+          <PlayableMark readyRef={readyRef} placedRef={placedRef} />
+          <TierMonitor stepDown={quality.stepDown} />
+          <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
+          <TestHooks readyRef={readyRef} cityRef={cityRef} quality={quality} />
+        </TierSettingsContext>
       </Canvas>
     </div>
   )

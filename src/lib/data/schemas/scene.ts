@@ -126,6 +126,29 @@ export const SceneConfigSchema = z.strictObject({
     sunDirection: z
       .strictObject({ x: z.number(), y: z.number(), z: z.number() })
       .refine((d) => d.y > 0, { error: 'the sun must be above the horizon' }),
+    /**
+     * The high tier's directional shadow (S04b, perf.json `shadows`). The light follows the
+     * camera target so its shadow map covers the view; sizes are multiples of the camera
+     * distance so the shadow stays sharp at every zoom.
+     */
+    shadow: z.strictObject({
+      /** Half the width of the square the shadow map covers. */
+      extentPerDistance: ratio,
+      /** How far towards the sun the light sits from the target. */
+      lightPerDistance: ratio,
+      /** Depth of the shadow camera, from the light. */
+      depthPerDistance: ratio,
+      bias: z.number().max(0),
+      normalBias: z.number().nonnegative(),
+    }),
+  }),
+  /**
+   * How the 3D map starts (S04b, PERF-4): the canvas mounts when the main thread is idle (or
+   * after `idleTimeoutMs` at the latest), and the city build yields to the browser between
+   * layers so taps and other islands are not blocked for its whole length.
+   */
+  startup: z.strictObject({
+    idleTimeoutMs: z.int().positive(),
   }),
   /** "Expanding soon" land and parks (S04c): their colour mixed this far towards the background. */
   dimmed: z.strictObject({ towardBackground: z.number().gt(0).lt(1) }),

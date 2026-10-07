@@ -171,9 +171,7 @@ function PlaceCard({ place }: { readonly place: Place }) {
       data-cc-feature="cc-feature:place-sheet"
       data-look-only={lookOnly ? '' : undefined}
       className={`m-2 flex flex-col gap-2 rounded-2xl border p-3 shadow-lg ${
-        lookOnly
-          ? 'border-night-700 bg-night-950'
-          : 'border-night-700 bg-night-900/95 backdrop-blur'
+        lookOnly ? 'border-night-700 bg-night-950' : 'border-night-700 bg-night-900/95'
       }`}
     >
       <div className="flex items-start justify-between gap-2">

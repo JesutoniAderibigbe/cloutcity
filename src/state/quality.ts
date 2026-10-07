@@ -10,6 +10,7 @@
  * overwritten. Like the other stores, it hydrates synchronously when this module loads in a
  * browser, and storage problems never throw (src/state/storage.ts).
  */
+import { useSyncExternalStore } from 'react'
 import { persist, type PersistStorage } from 'zustand/middleware'
 import { createStore } from 'zustand/vanilla'
 import * as z from 'zod/mini'
@@ -122,3 +123,18 @@ export type QualityStore = ReturnType<typeof createQualityStore>
 export const qualityStore: QualityStore = createQualityStore(
   createSafeJsonStorage<PersistedQuality>(browserLocalStorage),
 )
+
+const qualityNow = () => qualityStore.getState()
+const qualityAtStart = () => qualityStore.getInitialState()
+const activeNow = () => selectActiveTier(qualityStore.getState())
+const serverActive = () => null
+
+/** The whole quality state (the settings sheet). */
+export function useQualityState(): QualityState {
+  return useSyncExternalStore(qualityStore.subscribe, qualityNow, qualityAtStart)
+}
+
+/** The tier in use, or null before the shell has probed the device (and on the server). */
+export function useActiveTier(): QualityTier | null {
+  return useSyncExternalStore(qualityStore.subscribe, activeNow, serverActive)
+}

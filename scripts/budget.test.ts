@@ -199,6 +199,25 @@ describe('sceneSet', () => {
     expect(() => sceneSet(longer, MANIFEST)).toThrow(/found 0/)
   })
 
+  it('accepts a second shell loader of the scene chunk (the preload) only when it fetches the same files', () => {
+    const sceneFiles = ['static/chunks/tiny.js', 'static/chunks/scene.js', 'static/chunks/zod.js']
+    const withPreload = (files: string[]) => {
+      const base = build()
+      const shell = base.chunks.get('static/chunks/shell.js') ?? ''
+      return build({
+        'static/chunks/shell.js': shell.replace('])', `${loader(files, 2136)}])`),
+      })
+    }
+    expect(sceneSet(withPreload([...sceneFiles].reverse()), MANIFEST).files).toEqual([
+      'static/chunks/scene.js',
+      'static/chunks/tiny.js',
+      'static/chunks/zod.js',
+    ])
+    expect(() => sceneSet(withPreload(['static/chunks/scene.js']), MANIFEST)).toThrow(
+      /shell chunk loaders fetching static\/chunks\/scene\.js disagree/,
+    )
+  })
+
   it('fails when no shell loader fetches the scene chunk (format drift)', () => {
     const noLoader = build({ 'static/chunks/shell.js': 'push([0,1,t=>{}])' })
     expect(() => sceneSet(noLoader, MANIFEST)).toThrow(/shell chunk loader fetching/)

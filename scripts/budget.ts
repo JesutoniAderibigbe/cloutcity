@@ -155,7 +155,7 @@ export interface BootIsland {
 export const BOOT_ISLAND_FEATURES: readonly BootIsland[] = [
   { marker: 'cc-feature:welcome', module: 'src/components/welcome/WelcomeGate.tsx' },
   { marker: 'cc-feature:sound-control', module: 'src/components/audio/SoundControl.tsx' },
-  { marker: 'cc-feature:clout-hud', module: 'src/components/hud/CloutHudIsland.tsx' },
+  { marker: 'cc-feature:clout-hud', module: 'src/components/hud/HudLive.tsx' },
   { marker: 'cc-feature:hud-panel-buttons', module: 'src/components/hud/HudPanelButtons.tsx' },
   { marker: 'cc-feature:level-up', module: 'src/components/hud/LevelUpToast.tsx' },
   {
@@ -240,7 +240,7 @@ export interface SceneSet {
 
 /**
  * The files of the scene's lazy import. Fails unless exactly one chunk renders the scene marker,
- * exactly one shell loader fetches it, the loadable manifest lists the same JS for that import,
+ * the shell loaders fetching it (at least one) all fetch the same files, the loadable manifest lists the same JS for that import,
  * and the build holds exactly one copy of three, inside this set.
  */
 export function sceneSet(input: BuildInput, manifest: unknown): SceneSet {
@@ -264,7 +264,13 @@ function findSceneSet(input: BuildInput, manifest: unknown): SceneSet {
   const loaders = input.shell
     .flatMap((name) => findLoaders(name, input.chunks.get(name) ?? ''))
     .filter((loader) => loader.files.includes(markerChunk))
-  const loader = onlyOne(loaders, `shell chunk loader fetching ${markerChunk}`)
+  // The scene mount also preloads the canvas chunk with its own import() (S04b, PERF-4): every
+  // loader of the marker chunk must then fetch the same files.
+  const fileSets = [...new Set(loaders.map((loader) => jsFiles(loader.files, new Set()).join()))]
+  if (fileSets.length > 1) {
+    fail(`shell chunk loaders fetching ${markerChunk} disagree: ${fileSets.join(' | ')}`)
+  }
+  const loader = onlyOne(loaders.slice(0, 1), `shell chunk loader fetching ${markerChunk}`)
 
   const parsed = LoadableManifestSchema.safeParse(manifest)
   if (!parsed.success) fail('react-loadable-manifest.json has an unexpected format')

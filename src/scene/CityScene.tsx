@@ -13,6 +13,7 @@ import { copy } from '@/lib/copy'
 // namespace never ships in the shell (DEC-11).
 import '@/lib/copy/ns/map'
 import { balance, perf, scene } from '@/lib/data/config'
+import { QUALITY_TIERS, type QualityTier } from '@/lib/data/schemas/config'
 import { geoBounds, homes } from '@/lib/data/content'
 import { geoVersion } from '@/lib/data/geo'
 import { HOME_IDS } from '@/lib/data/homes'
@@ -21,7 +22,30 @@ import { scenePalette } from '@/lib/theme'
 import { boundsToLocal } from './camera/limits'
 import { CitySceneClient } from './CitySceneClient'
 import { MapAttribution } from './MapAttribution'
-import type { SceneProps } from './types'
+import type { SceneProps, SceneQuality, TierRenderSettings } from './types'
+
+function tierSettings(tier: QualityTier): TierRenderSettings {
+  return {
+    dprCap: perf.dprCap[tier],
+    antialias: perf.antialias[tier],
+    shadows: perf.shadows[tier],
+    shadowMapSizePx: perf.shadowMapSizePx[tier],
+    outlines: perf.outlines[tier],
+    buildingDensity: perf.buildingDensity[tier],
+    lodDistanceScale: perf.lodDistanceScale[tier],
+  }
+}
+
+/** The tier picker's thresholds and every tier's settings, so the client loads no config. */
+function sceneQuality(): SceneQuality {
+  return {
+    picker: perf.tierPicker,
+    stepDown: perf.fpsStepDown,
+    tiers: Object.fromEntries(
+      QUALITY_TIERS.map((tier) => [tier, tierSettings(tier)]),
+    ) as SceneQuality['tiers'],
+  }
+}
 
 export function CityScene() {
   const overlayRows = overlayGridTemplateRows(overlayLayout)
@@ -35,8 +59,7 @@ export function CityScene() {
     ) as SceneProps['homesLocal'],
     startHome: balance.start.home,
     boundsLocal: boundsToLocal(geoBounds),
-    // Quality tiers arrive with S04b; until then every device gets the mid tier's cap.
-    dprCap: perf.dprCap.mid,
+    quality: sceneQuality(),
     overlayRows,
     freeRow: FREE_SCENE_GRID_ROW,
     copy: {

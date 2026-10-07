@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { defineConfig } from '@playwright/test'
-import { E2E_DIST_DIR, WEBGL_LAUNCH_ARGS } from './playwright.config'
+import { E2E_DIST_DIR, SUPABASE_BLANK_ENV, WEBGL_LAUNCH_ARGS } from './playwright.config'
 import { PerfConfigSchema } from './src/lib/data/schemas/config'
 
 /**
@@ -11,7 +11,9 @@ import { PerfConfigSchema } from './src/lib/data/schemas/config'
  * applies the network and CPU throttle itself (tests/perf/throttle.ts) before navigating.
  *
  * It serves the e2e build (the scene test hooks report draw calls and triangles) on the lane's
- * E2E_PORT, like playwright.config.ts.
+ * E2E_PORT, like playwright.config.ts, local-only (blank Supabase variables), so no sign-in
+ * traffic competes with the load being measured. The specs (`tests/perf/*.perf.ts`) write
+ * their medians to test-results/perf/report.json.
  */
 const perf = PerfConfigSchema.parse(JSON.parse(readFileSync('data/config/perf.json', 'utf8')))
 // PerfConfigSchema checks that perfRun.profile names a throttle profile.
@@ -23,7 +25,7 @@ const BASE_URL = `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: 'tests/perf',
-  testMatch: '**/*.spec.ts',
+  testMatch: '**/*.perf.ts',
   globalSetup: './tests/perf/global-setup.ts',
   fullyParallel: false,
   workers: 1,
@@ -53,6 +55,6 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
-    env: { NEXT_PUBLIC_TEST_HOOKS: '1', NEXT_DIST_DIR: E2E_DIST_DIR },
+    env: { NEXT_PUBLIC_TEST_HOOKS: '1', NEXT_DIST_DIR: E2E_DIST_DIR, ...SUPABASE_BLANK_ENV },
   },
 })
