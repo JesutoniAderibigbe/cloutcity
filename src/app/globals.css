@@ -1,31 +1,104 @@
 @import 'tailwindcss';
 
-/* DOM palette: the interface colours and the item swatch colours. Values live in
-   data/config/theme.json `colors`; the root layout writes each token to `--palette-<token>` on
-   <html>, and Tailwind maps it to `--color-<token>` here. `inline` makes utilities use the
-   palette variable directly. 3D-only colours (theme.json `world`, `models`, `sky`) never become
-   CSS variables. src/lib/theme.test.ts keeps this list in sync with theme.json. */
-@theme inline {
-  --color-night-950: var(--palette-night-950);
-  --color-night-900: var(--palette-night-900);
-  --color-night-800: var(--palette-night-800);
-  --color-night-700: var(--palette-night-700);
-  --color-pink-400: var(--palette-pink-400);
-  --color-taxi-400: var(--palette-taxi-400);
-  --color-ink-50: var(--palette-ink-50);
-  --color-ink-300: var(--palette-ink-300);
-  --color-sky-400: var(--palette-sky-400);
-  --color-mint-400: var(--palette-mint-400);
-  --color-orange-400: var(--palette-orange-400);
-  --color-lilac-300: var(--palette-lilac-300);
-  --color-teal-700: var(--palette-teal-700);
-  --color-sand-200: var(--palette-sand-200);
-  --color-charcoal-800: var(--palette-charcoal-800);
-  --color-cream-100: var(--palette-cream-100);
+/* Interface colours (S04g, DEC-26): light frosted cards by day, dark glass by night, taxi yellow
+   as the one accent. The stock Tailwind palette is removed, so only these semantic colours exist
+   (`bg-surface`, `text-fg`, `outline-focus`, ...). Values live in data/config/theme.json `ui`;
+   the root layout writes both themes as `--ui-day-<token>` and `--ui-night-<token>` on <html>, and
+   the root's `data-theme` (day until the HUD island knows the game clock) picks one set below.
+   src/lib/theme.test.ts keeps these lists in sync with theme.json. */
+@theme {
+  --color-*: initial;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
-@theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+@theme inline {
+  --color-canvas: var(--ui-canvas);
+  --color-glass: var(--ui-glass);
+  --color-surface: var(--ui-surface);
+  --color-raised: var(--ui-raised);
+  --color-pressed: var(--ui-pressed);
+  --color-track: var(--ui-track);
+  --color-scrim: var(--ui-scrim);
+  --color-line: var(--ui-line);
+  --color-line-strong: var(--ui-line-strong);
+  --color-fg: var(--ui-fg);
+  --color-muted: var(--ui-muted);
+  --color-taxi: var(--ui-taxi);
+  --color-on-taxi: var(--ui-on-taxi);
+  --color-taxi-ink: var(--ui-taxi-ink);
+  --color-danger: var(--ui-danger);
+  --color-success: var(--ui-success);
+  --color-focus: var(--ui-focus);
+  --color-meter: var(--ui-meter);
+}
+
+:root {
+  color-scheme: light;
+  --ui-canvas: var(--ui-day-canvas);
+  --ui-glass: var(--ui-day-glass);
+  --ui-surface: var(--ui-day-surface);
+  --ui-raised: var(--ui-day-raised);
+  --ui-pressed: var(--ui-day-pressed);
+  --ui-track: var(--ui-day-track);
+  --ui-scrim: var(--ui-day-scrim);
+  --ui-line: var(--ui-day-line);
+  --ui-line-strong: var(--ui-day-line-strong);
+  --ui-fg: var(--ui-day-fg);
+  --ui-muted: var(--ui-day-muted);
+  --ui-taxi: var(--ui-day-taxi);
+  --ui-on-taxi: var(--ui-day-on-taxi);
+  --ui-taxi-ink: var(--ui-day-taxi-ink);
+  --ui-danger: var(--ui-day-danger);
+  --ui-success: var(--ui-day-success);
+  --ui-focus: var(--ui-day-focus);
+  --ui-meter: var(--ui-day-meter);
+  --ui-glass-alpha: var(--ui-day-glass-alpha);
+}
+
+:root[data-theme='night'] {
+  color-scheme: dark;
+  --ui-canvas: var(--ui-night-canvas);
+  --ui-glass: var(--ui-night-glass);
+  --ui-surface: var(--ui-night-surface);
+  --ui-raised: var(--ui-night-raised);
+  --ui-pressed: var(--ui-night-pressed);
+  --ui-track: var(--ui-night-track);
+  --ui-scrim: var(--ui-night-scrim);
+  --ui-line: var(--ui-night-line);
+  --ui-line-strong: var(--ui-night-line-strong);
+  --ui-fg: var(--ui-night-fg);
+  --ui-muted: var(--ui-night-muted);
+  --ui-taxi: var(--ui-night-taxi);
+  --ui-on-taxi: var(--ui-night-on-taxi);
+  --ui-taxi-ink: var(--ui-night-taxi-ink);
+  --ui-danger: var(--ui-night-danger);
+  --ui-success: var(--ui-night-success);
+  --ui-focus: var(--ui-night-focus);
+  --ui-meter: var(--ui-night-meter);
+  --ui-glass-alpha: var(--ui-night-glass-alpha);
+}
+
+/* Bars, sheets and cards over the map. Solid by default; frosted (translucent, with a backdrop
+   blur) only where the HUD island sets data-glass="blur": mid and high tiers, no data saver, no
+   reduced transparency (PERF-2: a backdrop blur over the WebGL canvas costs frames). */
+@utility glass {
+  background-color: var(--color-surface);
+
+  :root[data-glass='blur'] & {
+    background-color: color-mix(in srgb, var(--color-glass) var(--ui-glass-alpha), transparent);
+    backdrop-filter: blur(var(--ui-glass-blur));
+  }
+}
+
+/* A theme switch cross-fades colours only (no layout shift) while the HUD island holds
+   data-theme-fading on the root. Zero specificity, so a component's own transition still wins;
+   under reduced motion the island never sets it, and the rule further down makes any transition
+   instant anyway. */
+:where(:root[data-theme-fading]) :where(*, *::before, *::after) {
+  transition-property:
+    color, background-color, border-color, outline-color, fill, stroke, box-shadow;
+  transition-duration: var(--ui-fade-ms);
+  transition-timing-function: ease-in-out;
 }
 
 /* HUD layouts (S05). The thresholds are data/config/layout.json `hudWideMinWidthPx` and
@@ -57,8 +130,8 @@ body {
 }
 
 body {
-  background-color: var(--color-night-950);
-  color: var(--color-ink-50);
+  background-color: var(--color-canvas);
+  color: var(--color-fg);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
@@ -121,13 +194,13 @@ body {
   }
 }
 
-/* The Icon moment's celebration (src/components/goals/IconMoment.tsx): a few slow pulses of the
-   night palette behind the text, decorative only. Off under reduced motion. */
+/* The Icon moment's celebration (src/components/goals/IconMoment.tsx): a few slow pulses of taxi
+   yellow behind the text, decorative only. Off under reduced motion. */
 .icon-moment-burst {
   border-radius: inherit;
   background:
-    radial-gradient(circle at 20% 15%, var(--color-pink-400) 0, transparent 40%),
-    radial-gradient(circle at 85% 30%, var(--color-taxi-400) 0, transparent 35%);
+    radial-gradient(circle at 20% 15%, var(--color-taxi) 0, transparent 40%),
+    radial-gradient(circle at 85% 30%, var(--color-taxi) 0, transparent 35%);
   opacity: 0.18;
 }
 

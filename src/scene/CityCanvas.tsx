@@ -22,7 +22,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { addAfterEffect, Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
-import { withSkyColors } from '@/lib/dayNight/resolveDayNight'
+import { joinSkyColors } from '@/lib/dayNight/joinSky'
 import { PLAYABLE_MARK, perfMark } from '@/lib/perfMarks'
 import { usePlayerHome } from '@/state/playerHome'
 import { useSceneFocus } from '@/state/sceneFocus'
@@ -235,7 +235,7 @@ function CityScene3D({
   // One set for the scene's life: the city build, the rig and every glowing material share it.
   const [dayNightUniforms] = useState(createDayNightUniforms)
   const dayNight = useMemo(
-    () => withSkyColors(config.dayNight, skyColors),
+    () => joinSkyColors(config.dayNight, skyColors),
     [config.dayNight, skyColors],
   )
   const lighting = useDayNightLighting(dayNight, config.dayNight.unknownMinute)

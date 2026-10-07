@@ -21,7 +21,7 @@ import '@/lib/copy/ns/travel'
 type TripDriver = typeof import('@/state/tripDriver')
 
 const BUTTON =
-  'min-h-11 rounded-xl px-3 py-2 text-left font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
+  'min-h-11 rounded-xl px-3 py-2 text-left font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 interface DriverLoad {
   readonly driver: TripDriver | null
@@ -77,13 +77,13 @@ export function TravelSection({
   const { driver, failed, retry } = useTripDriver()
   return (
     <section aria-labelledby={headingId} data-get-there="" className="flex flex-col gap-1.5">
-      <h3 id={headingId} className="text-xs font-bold text-ink-300 uppercase">
+      <h3 id={headingId} className="text-xs font-bold text-muted uppercase">
         {copy('travel.getThere.heading')}
       </h3>
       {driver === null && failed ? (
         <RetryRow onRetry={retry} />
       ) : driver === null ? (
-        <p role="status" className="text-sm text-ink-300">
+        <p role="status" className="text-sm text-muted">
           {copy('travel.status.loading')}
         </p>
       ) : (
@@ -96,7 +96,7 @@ export function TravelSection({
 function RetryRow({ onRetry, note }: { readonly onRetry: () => void; readonly note?: string }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <p role="status" className="text-sm text-ink-300">
+      <p role="status" className="text-sm text-muted">
         {note ?? copy('travel.status.failed')}
       </p>
       <button
@@ -104,7 +104,7 @@ function RetryRow({ onRetry, note }: { readonly onRetry: () => void; readonly no
         data-travel-retry=""
         onClick={onRetry}
         aria-label={copy('travel.retryLabel')}
-        className={`${BUTTON} min-w-11 shrink-0 bg-night-800 text-center text-ink-50`}
+        className={`${BUTTON} min-w-11 shrink-0 bg-raised text-center text-fg`}
       >
         {copy('travel.retry')}
       </button>
@@ -150,7 +150,7 @@ function TravelRows({
   if (plan === null || rows === null) return null
   if (rows.options.length === 0) {
     return (
-      <p role="status" className="text-sm text-ink-300">
+      <p role="status" className="text-sm text-muted">
         {copy('travel.status.loading')}
       </p>
     )
@@ -176,17 +176,17 @@ function TravelRows({
                 data-trip-mode={option.mode}
                 aria-label={tripOptionAccessibleName(shown, place)}
                 onClick={() => take(option.mode)}
-                className={`${BUTTON} flex w-full flex-col bg-night-800 text-ink-50 enabled:hover:bg-night-700 disabled:opacity-70`}
+                className={`${BUTTON} flex w-full flex-col bg-raised text-fg enabled:hover:bg-pressed disabled:opacity-70`}
               >
                 <span>{tripModeAction(option.mode)}</span>
-                <span className="text-xs font-normal text-ink-300">
+                <span className="text-xs font-normal text-muted">
                   {tripOptionDetails(option)}
                   {status === 'failed' && option.route !== null
                     ? `, ${copy('travel.option.estimate')}`
                     : ''}
                 </span>
                 {block === null ? null : (
-                  <span className="text-xs font-normal text-taxi-400">
+                  <span className="text-xs font-normal text-taxi-ink">
                     {tripBlockReason(block, place)}
                   </span>
                 )}
@@ -196,7 +196,7 @@ function TravelRows({
         })}
       </ul>
       {refusal === null ? null : (
-        <p role="status" className="text-sm font-semibold text-taxi-400">
+        <p role="status" className="text-sm font-semibold text-taxi-ink">
           {tripBlockReason(refusal, place)}
         </p>
       )}

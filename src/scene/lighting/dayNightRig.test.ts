@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { Color } from 'three'
 import { lightingAt } from '@/lib/dayNight/lightingAt'
 import { lightingKey } from '@/lib/dayNight/lightingKey'
-import { dayNightModel } from '@/lib/theme'
+import { scene } from '@/lib/data/config'
+import { joinSkyColors } from '@/lib/dayNight/joinSky'
+import { dayNightModel, skyColors } from '@/lib/theme'
 import { applyUniforms } from './DayNightRig'
 import { createDayNightUniforms } from './nightGlow'
 import { canonicalMinute } from './useDayNightLighting'
@@ -42,6 +44,12 @@ describe('canonical minute (S04f: redraw only when the lighting changes)', () =>
         expect({ ...canonical, minute: 0 }).toEqual({ ...own, minute: 0 })
       }
     }
+  })
+})
+
+describe('the 3D chunk joins the keyframes with the sky colours', () => {
+  it('builds the same model the server resolves', () => {
+    expect(joinSkyColors(scene.dayNight, skyColors())).toEqual(model)
   })
 })
 

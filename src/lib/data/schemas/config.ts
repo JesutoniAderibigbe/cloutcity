@@ -289,7 +289,7 @@ const HEX_COLOR = /^#[0-9a-f]{6}$/i
 const TOKEN_NAME = /^[a-z]+-\d{2,3}$/
 
 const tokenRef = z.string().regex(TOKEN_NAME)
-/** A palette token name (`pink-400`), never a hex value; theme.json must define it. */
+/** A palette token name (`taxi-400`), never a hex value; theme.json must define it. */
 export const PaletteTokenRefSchema = tokenRef
 
 /**
@@ -422,10 +422,46 @@ function clashingTokens(a: Record<string, string>, b: Record<string, string>): s
 }
 
 /**
+ * The interface's semantic colours (S04g), the only Tailwind colours (`bg-surface`, `text-fg`,
+ * ...): each theme of `ui` maps every one to a `colors` token, and globals.css switches them with
+ * the root's `data-theme`.
+ */
+export const UI_TOKENS = [
+  'canvas',
+  'glass',
+  'surface',
+  'raised',
+  'pressed',
+  'track',
+  'scrim',
+  'line',
+  'line-strong',
+  'fg',
+  'muted',
+  'taxi',
+  'on-taxi',
+  'taxi-ink',
+  'danger',
+  'success',
+  'focus',
+  'meter',
+] as const
+export type UiToken = (typeof UI_TOKENS)[number]
+
+const UiPaletteSchema = z.strictObject(
+  Object.fromEntries(UI_TOKENS.map((token) => [token, tokenRef])) as Record<
+    UiToken,
+    typeof tokenRef
+  >,
+)
+const dayNight = <T extends z.ZodType>(value: T) => z.strictObject({ day: value, night: value })
+
+/**
  * The palettes (DEC-26 real-world colours):
- * - `colors`: the DOM palette, the only tokens written as CSS variables (`--palette-<token>`,
- *   Tailwind `--color-<token>`, see globals.css): the interface colours and the item swatch
- *   colours (product colours, data/items/items.json variants).
+ * - `colors`: the DOM palette: interface colours (S04g) and item swatch colours (product
+ *   colours, data/items/items.json variants; the root layout writes those as `--palette-<token>`).
+ * - `ui`: the light day and dark-glass night interface (S04g), as `colors` tokens, with the
+ *   cross-fade and the frosted glass settings.
  * - `world`: 3D-only raw colours (land, haze, subway ribbons, room surfaces, the keyframe skies).
  * - `sky`: per day/night keyframe (scene.json `dayNight`), its colour slots as world tokens.
  * - `scene`: the city's colour roles as world or models tokens.
@@ -434,8 +470,17 @@ function clashingTokens(a: Record<string, string>, b: Record<string, string>): s
 export const ThemeConfigSchema = z
   .strictObject({
     colors: palette,
-    /** Token used for the browser/PWA theme colour and the page background. */
-    themeColor: z.string(),
+    ui: z.strictObject({
+      day: UiPaletteSchema,
+      night: UiPaletteSchema,
+      /** How long a theme switch cross-fades (instant under reduced motion). */
+      crossFadeMs: z.int().nonnegative().max(2000),
+      /** Glass opacity over the map where the backdrop blurs (mid and high tiers). */
+      glassAlpha: dayNight(z.number().gt(0).max(1)),
+      glassBlurPx: z.number().nonnegative().max(40),
+    }),
+    /** Tokens for the browser/PWA theme colour per interface theme (the manifest takes day). */
+    themeColor: dayNight(z.string()),
     world: palette,
     sky: z.strictObject({
       dawn: SkyKeyframeSchema,
@@ -455,10 +500,17 @@ export const ThemeConfigSchema = z
      */
     models: palette,
   })
-  .refine((theme) => theme.themeColor in theme.colors, {
-    error: 'themeColor must name a token in colors',
+  .refine((theme) => Object.values(theme.themeColor).every((token) => token in theme.colors), {
+    error: 'themeColor must name tokens in colors',
     path: ['themeColor'],
   })
+  .refine(
+    (theme) =>
+      [theme.ui.day, theme.ui.night].every((ui) =>
+        Object.values(ui).every((token) => token in theme.colors),
+      ),
+    { error: 'every ui colour must name a token in colors', path: ['ui'] },
+  )
   .refine((theme) => Object.keys(theme.world).every((token) => !(token in theme.models)), {
     error: 'world and models must not share a token name',
     path: ['world'],

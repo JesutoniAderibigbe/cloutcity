@@ -15,8 +15,9 @@
  * `hudCompactHeightPx` (src/components/overlay/layers.test.ts).
  */
 export const HUD_GRID = [
-  // A solid tint (no backdrop blur, PERF-2) keeps the numbers readable over any part of the map.
-  'grid h-full gap-1 bg-night-950/80 px-2 py-1.5',
+  // Glass (S04g): solid on the low tier, data saver and reduced transparency; frosted with a
+  // backdrop blur only on mid and high (PERF-2). Either keeps the numbers readable over the map.
+  'glass grid h-full gap-1 px-2 py-1.5',
   'grid-rows-[44px_44px]',
   'grid-cols-[minmax(56px,72px)_minmax(56px,68px)_44px_minmax(158px,1fr)]',
   "[grid-template-areas:'money_clock_speed_clout'_'stats_stats_actions_actions']",

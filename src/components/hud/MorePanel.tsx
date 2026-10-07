@@ -51,7 +51,7 @@ export function MorePanel() {
               type="button"
               data-more-item={item.key}
               onClick={item.open}
-              className={`${PANEL_BUTTON} w-full bg-night-800 text-left text-ink-50`}
+              className={`${PANEL_BUTTON} w-full bg-raised text-left text-fg`}
             >
               {item.label}
             </button>

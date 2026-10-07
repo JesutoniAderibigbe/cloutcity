@@ -3,7 +3,7 @@
 import { copy } from '@/lib/copy'
 import { HUD_CELL } from './hudLayout'
 
-const BAR = 'rounded-full bg-night-800 motion-safe:animate-pulse'
+const BAR = 'rounded-full bg-raised motion-safe:animate-pulse'
 
 /**
  * The HUD's live cells before their island has loaded (S05): the same grid areas and boxes as
@@ -25,7 +25,7 @@ export function HudSkeleton() {
         <div className={`h-3.5 w-14 ${BAR}`} />
       </div>
       <div aria-hidden="true" data-hud-cell="speed" className={HUD_CELL.speed}>
-        <div className={`h-11 w-11 rounded-xl bg-night-800`} />
+        <div className={`h-11 w-11 rounded-xl bg-raised`} />
       </div>
       <div
         aria-hidden="true"

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { copy, type CopyKey } from '@/lib/copy'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/credits'
+import { StoredTheme } from '@/components/legal/StoredTheme'
 
 export const metadata: Metadata = { title: copy('credits.title') }
 
@@ -18,15 +19,14 @@ export default function CreditsPage() {
     // The shell locks page scroll (globals.css), so this page scrolls inside its own box.
     <div className="h-full overflow-y-auto overscroll-contain">
       <main className="mx-auto max-w-2xl px-4 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <h1 className="text-2xl font-extrabold tracking-tight text-pink-400">
-          {copy('credits.title')}
-        </h1>
-        <p className="mt-2 text-sm text-ink-300">{copy('credits.intro')}</p>
+        <StoredTheme />
+        <h1 className="text-2xl font-extrabold tracking-tight text-fg">{copy('credits.title')}</h1>
+        <p className="mt-2 text-sm text-muted">{copy('credits.intro')}</p>
         {SECTIONS.map((section) => (
           <section key={section.heading} className="mt-6">
-            <h2 className="text-lg font-bold text-ink-50">{copy(section.heading)}</h2>
+            <h2 className="text-lg font-bold text-fg">{copy(section.heading)}</h2>
             {section.body.map((key) => (
-              <p key={key} className="mt-2 text-sm leading-relaxed text-ink-300">
+              <p key={key} className="mt-2 text-sm leading-relaxed text-muted">
                 {copy(key)}
               </p>
             ))}
@@ -34,7 +34,7 @@ export default function CreditsPage() {
         ))}
         <Link
           href="/"
-          className="mt-8 inline-flex min-h-11 items-center rounded-lg bg-night-800 px-4 font-semibold text-taxi-400 focus-visible:outline-2 focus-visible:outline-taxi-400"
+          className="mt-8 inline-flex min-h-11 items-center rounded-lg bg-raised px-4 font-semibold text-taxi-ink focus-visible:outline-2 focus-visible:outline-focus"
         >
           {copy('credits.back')}
         </Link>

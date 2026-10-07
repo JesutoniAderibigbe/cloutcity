@@ -557,21 +557,39 @@ describe('data/audio/manifest.json and public/audio', () => {
 })
 
 describe('config/theme.json', () => {
-  it('has the night palette: deep indigo, hot pink, taxi yellow and neutrals', () => {
-    expect(Object.keys(theme.colors)).toEqual(
-      expect.arrayContaining(['night-950', 'pink-400', 'taxi-400', 'ink-50']),
-    )
+  it('has the real-world interface (DEC-26): one taxi yellow, no indigo or hot pink in the UI', () => {
+    expect(theme.colors['taxi-400']).toBe('#f5b800')
+    expect(theme.models['taxi-400']).toBe('#f5b800')
+    for (const ui of [theme.ui.day, theme.ui.night]) {
+      expect(ui.taxi).toBe('taxi-400')
+      for (const token of Object.values(ui))
+        expect(token).not.toMatch(/^(night|pink|indigo|violet)-/)
+    }
+    expect(
+      Object.keys(theme.colors).filter((token) => /^(night|indigo|violet)-/.test(token)),
+    ).toEqual([])
   })
 
-  it('rejects a bad hex and a themeColor that names no token', () => {
-    expect(
-      ThemeConfigSchema.safeParse({ colors: { 'pink-400': 'pink' }, themeColor: 'pink-400' })
-        .success,
-    ).toBe(false)
-    expect(
-      ThemeConfigSchema.safeParse({ colors: { 'pink-400': '#ff4fa3' }, themeColor: 'nope-1' })
-        .success,
-    ).toBe(false)
+  it('rejects a bad hex, a themeColor that names no token and a ui colour that names none', () => {
+    const valid = () =>
+      structuredClone(readJson('config/theme.json')) as {
+        colors: Record<string, string>
+        themeColor: { day: string; night: string }
+        ui: { day: Record<string, string> }
+      }
+    expect(ThemeConfigSchema.safeParse(valid()).success).toBe(true)
+    const badHex = valid()
+    badHex.colors['taxi-400'] = 'yellow'
+    expect(ThemeConfigSchema.safeParse(badHex).success).toBe(false)
+    const badThemeColor = valid()
+    badThemeColor.themeColor.night = 'nope-1'
+    expect(ThemeConfigSchema.safeParse(badThemeColor).success).toBe(false)
+    const badUi = valid()
+    badUi.ui.day.fg = 'nope-100'
+    expect(ThemeConfigSchema.safeParse(badUi).success).toBe(false)
+    const missingToken = valid()
+    delete missingToken.ui.day.meter
+    expect(ThemeConfigSchema.safeParse(missingToken).success).toBe(false)
   })
 })
 

@@ -42,7 +42,7 @@ export function CloutMeter({ levelName, total, next, pct, atMax }: CloutMeterPro
           says it all, so the visible text is hidden from screen readers. */}
       <span
         aria-hidden="true"
-        className="max-w-[45%] shrink-0 truncate text-[11px] leading-none font-bold text-taxi-400"
+        className="max-w-[45%] shrink-0 truncate text-[11px] leading-none font-bold text-taxi-ink"
       >
         {levelName}
       </span>
@@ -50,9 +50,9 @@ export function CloutMeter({ levelName, total, next, pct, atMax }: CloutMeterPro
         aria-label={label}
         max={100}
         value={atMax ? 100 : pct}
-        className="h-1.5 min-w-6 flex-1 appearance-none overflow-hidden rounded-full bg-night-950 [&::-moz-progress-bar]:bg-pink-400 [&::-webkit-progress-bar]:bg-night-950 [&::-webkit-progress-value]:bg-pink-400"
+        className="h-1.5 min-w-6 flex-1 appearance-none overflow-hidden rounded-full bg-track [&::-moz-progress-bar]:bg-meter [&::-webkit-progress-bar]:bg-track [&::-webkit-progress-value]:bg-meter"
       />
-      <span aria-hidden="true" className="shrink-0 text-[11px] leading-none text-ink-300">
+      <span aria-hidden="true" className="shrink-0 text-[11px] leading-none text-muted">
         {target === null
           ? copy('hud.clout.max', { count })
           : copy('hud.clout.progress', { count, target })}

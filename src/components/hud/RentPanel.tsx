@@ -27,16 +27,16 @@ export function RentPanel() {
       feature="cc-feature:rent-panel"
       onClose={closeHudPanel}
     >
-      <div className="flex flex-col gap-1 text-sm text-ink-50">
+      <div className="flex flex-col gap-1 text-sm text-fg">
         <p>{homeLine(home)}</p>
         <p data-rent-next-due="">{nextRentDueLine(home, dueDay)}</p>
         <p data-rent-owed="">{rentOwedLine(owed)}</p>
       </div>
       <section aria-label={copy('rent.lastNotice.heading')} className="flex flex-col gap-1">
-        <h3 className="text-xs font-bold text-ink-300 uppercase">
+        <h3 className="text-xs font-bold text-muted uppercase">
           {copy('rent.lastNotice.heading')}
         </h3>
-        <p role="status" data-rent-notice="" className="text-sm font-semibold text-taxi-400">
+        <p role="status" data-rent-notice="" className="text-sm font-semibold text-taxi-ink">
           {lastRentEvent === null ? copy('rent.lastNotice.none') : rentNotice(lastRentEvent)}
         </p>
       </section>

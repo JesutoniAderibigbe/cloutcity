@@ -47,9 +47,9 @@ import { PANEL_BUTTON, PanelDialog, PanelStatus } from './PanelDialog'
 import '@/lib/copy/ns/home'
 import '@/lib/copy/ns/hud'
 
-const ACTION = `${PANEL_BUTTON} bg-night-800 text-center text-sm text-ink-50 enabled:hover:bg-night-700`
-const ROW = 'flex flex-col gap-1.5 rounded-xl bg-night-950/60 p-2'
-const SECTION_HEADING = 'text-xs font-bold text-ink-300 uppercase'
+const ACTION = `${PANEL_BUTTON} bg-raised text-center text-sm text-fg enabled:hover:bg-pressed`
+const ROW = 'flex flex-col gap-1.5 rounded-xl bg-canvas/60 p-2'
+const SECTION_HEADING = 'text-xs font-bold text-muted uppercase'
 const KINDS: readonly DecorFit[] = ['wall', 'floor', 'surface']
 
 /**
@@ -75,12 +75,12 @@ function VariantRadios({
 }) {
   return (
     <fieldset className="flex flex-col gap-1">
-      <legend className="text-xs text-ink-300">{variantLegend(def.id)}</legend>
+      <legend className="text-xs text-muted">{variantLegend(def.id)}</legend>
       <div className="flex flex-wrap gap-1.5">
         {def.decor.variants.map((variant) => (
           <label
             key={variant.id}
-            className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-xl bg-night-800 px-2 text-sm text-ink-50 has-[:checked]:bg-pink-400 has-[:checked]:text-night-950 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-taxi-400"
+            className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-xl bg-raised px-2 text-sm text-fg has-[:checked]:bg-taxi has-[:checked]:text-on-taxi has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus"
           >
             <input
               type="radio"
@@ -88,11 +88,11 @@ function VariantRadios({
               value={variant.id}
               checked={owned.variant === variant.id}
               onChange={() => onChange(variant.id)}
-              className="h-4 w-4 accent-night-950"
+              className="h-4 w-4 accent-on-taxi"
             />
             <span
               aria-hidden="true"
-              className="h-3.5 w-3.5 rounded-full border border-night-950"
+              className="h-3.5 w-3.5 rounded-full border border-line-strong"
               style={{ backgroundColor: `var(--palette-${variant.token})` }}
             />
             {variantName(def.id, variant.id)}
@@ -297,10 +297,10 @@ export function HomePanel() {
       scrollBody
     >
       <div className="flex flex-col gap-0.5">
-        <p className="text-sm text-ink-50" data-home-current="">
+        <p className="text-sm text-fg" data-home-current="">
           {currentHomeLine(home)}
         </p>
-        <p className="text-sm font-bold text-taxi-400" data-home-score="">
+        <p className="text-sm font-bold text-taxi-ink" data-home-score="">
           {homeScoreLine(player)}
         </p>
       </div>
@@ -344,7 +344,7 @@ export function HomePanel() {
               data-home-kind={kind}
               className="flex flex-col gap-1.5"
             >
-              <h4 className="text-sm font-bold text-pink-400">{decorKindHeading(kind)}</h4>
+              <h4 className="text-sm font-bold text-fg">{decorKindHeading(kind)}</h4>
               <ul aria-busy={coolingDown} className="flex flex-col gap-1.5">
                 {ofKind.map((slot) => {
                   const itemId = apartment.placed[slot.id]
@@ -363,13 +363,13 @@ export function HomePanel() {
                       data-home-slot={slot.id}
                       data-selected={isSelected ? '' : undefined}
                       tabIndex={-1}
-                      className={`${ROW} focus:outline-2 focus:outline-taxi-400 ${
-                        isSelected ? 'ring-2 ring-pink-400' : ''
+                      className={`${ROW} focus:outline-2 focus:outline-focus ${
+                        isSelected ? 'ring-2 ring-taxi-ink' : ''
                       }`}
                     >
                       <div className="min-w-0">
-                        <p className="font-semibold text-ink-50">{slotName(home, slot.id)}</p>
-                        <p className="text-xs text-ink-300">
+                        <p className="font-semibold text-fg">{slotName(home, slot.id)}</p>
+                        <p className="text-xs text-muted">
                           {itemId === undefined || owned === undefined
                             ? copy('home.slot.empty')
                             : slotHoldsLine(itemId, owned.variant)}
@@ -385,7 +385,7 @@ export function HomePanel() {
                             onClick={(event) =>
                               act(event, `place-${slot.id}`, () => placeHeld(held, slot.id))
                             }
-                            className={`${ACTION} bg-pink-400 text-night-950 enabled:hover:bg-pink-400`}
+                            className={`${ACTION} bg-taxi text-on-taxi enabled:hover:bg-taxi`}
                           >
                             {copy('home.slot.placeHere')}
                           </button>
@@ -439,9 +439,9 @@ export function HomePanel() {
       <section aria-label={copy('home.storage.heading')} className="flex flex-col gap-1.5">
         <h3 className={SECTION_HEADING}>{copy('home.storage.heading')}</h3>
         {inventory.decor.length === 0 ? (
-          <p className="text-sm text-ink-300">{copy('home.storage.none')}</p>
+          <p className="text-sm text-muted">{copy('home.storage.none')}</p>
         ) : stored.length === 0 ? (
-          <p className="text-sm text-ink-300">{copy('home.storage.empty')}</p>
+          <p className="text-sm text-muted">{copy('home.storage.empty')}</p>
         ) : (
           <ul aria-busy={coolingDown} className="flex flex-col gap-1.5">
             {stored.map((owned) => {
@@ -451,8 +451,8 @@ export function HomePanel() {
               return (
                 <li key={owned.itemId} data-home-stored={owned.itemId} className={ROW}>
                   <div className="min-w-0">
-                    <p className="font-semibold text-ink-50">{itemName(owned.itemId)}</p>
-                    <p className="text-xs text-ink-300">{fitsLine(owned.itemId)}</p>
+                    <p className="font-semibold text-fg">{itemName(owned.itemId)}</p>
+                    <p className="text-xs text-muted">{fitsLine(owned.itemId)}</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     <button
@@ -464,7 +464,7 @@ export function HomePanel() {
                       onClick={(event) =>
                         act(event, `pick-${owned.itemId}`, () => pickUp(owned.itemId))
                       }
-                      className={`${ACTION} ${holding ? 'bg-pink-400 text-night-950' : ''}`}
+                      className={`${ACTION} ${holding ? 'bg-taxi text-on-taxi' : ''}`}
                     >
                       {copy(holding ? 'home.storage.putDown' : 'home.storage.pickUp')}
                     </button>
@@ -491,10 +491,10 @@ export function HomePanel() {
               return (
                 <li key={id} data-home-move={id} className={ROW}>
                   <div className="min-w-0">
-                    <p className="font-semibold text-ink-50">{homeName(id)}</p>
-                    <p className="text-xs text-ink-300">{moveDetails(id)}</p>
+                    <p className="font-semibold text-fg">{homeName(id)}</p>
+                    <p className="text-xs text-muted">{moveDetails(id)}</p>
                     {lock === null ? null : (
-                      <p className="text-xs text-taxi-400">{homeLockReason(lock)}</p>
+                      <p className="text-xs text-taxi-ink">{homeLockReason(lock)}</p>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -512,7 +512,7 @@ export function HomePanel() {
                           pendingFocus.current = `[data-home-move="${id}"] [data-home-confirm]`
                         })
                       }}
-                      className={`${ACTION} ${lock === null ? '' : 'cursor-not-allowed text-ink-300'}`}
+                      className={`${ACTION} ${lock === null ? '' : 'cursor-not-allowed text-muted'}`}
                     >
                       {moveButtonText(id)}
                     </button>
@@ -523,7 +523,7 @@ export function HomePanel() {
                       aria-label={moveButtonText(id)}
                       className="flex flex-col gap-1.5"
                     >
-                      <p className="text-sm text-ink-50" data-home-confirm-text="">
+                      <p className="text-sm text-fg" data-home-confirm-text="">
                         {moveConfirmText(id)}
                       </p>
                       <div className="flex flex-wrap gap-1.5">
@@ -532,7 +532,7 @@ export function HomePanel() {
                           data-home-confirm=""
                           {...buttonGuard}
                           onClick={(event) => act(event, `confirm-${id}`, () => move(id))}
-                          className={`${ACTION} bg-pink-400 text-night-950 enabled:hover:bg-pink-400`}
+                          className={`${ACTION} bg-taxi text-on-taxi enabled:hover:bg-taxi`}
                         >
                           {copy('home.move.confirmButton')}
                         </button>

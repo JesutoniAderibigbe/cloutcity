@@ -20,8 +20,8 @@ import '@/lib/copy/ns/tour'
 
 /**
  * The first-run tour (S06, GR-9) in the overlay's banner zone: one line of coach-mark text over
- * the live map with Next or Skip, and a pink ring on the control the step is about. It never
- * takes focus, holds nothing inert and runs no timers: each step moves on what the player does
+ * the live map with Next or Skip, and a focus-coloured ring on the control the step is about. It
+ * never takes focus, holds nothing inert and runs no timers: each step moves on what the player does
  * (opening Places, picking the place, buying there), so play is never blocked.
  *
  * A feature island loaded once the map is playable (TourMount). On load it settles this device's
@@ -72,7 +72,7 @@ function focusHelpOpener() {
 }
 
 const BUTTON =
-  'min-h-11 min-w-11 shrink-0 rounded-xl px-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
+  'min-h-11 min-w-11 shrink-0 rounded-xl px-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 function TourCard({ record, ui }: { readonly record: ActiveTour; readonly ui: TourUi }) {
   const { step } = record
@@ -103,17 +103,17 @@ function TourCard({ record, ui }: { readonly record: ActiveTour; readonly ui: To
       data-cc-notice="tour"
       data-cc-feature="cc-feature:tour"
       data-tour-step={step}
-      className="mx-2 flex h-full items-center gap-2 rounded-2xl border border-pink-400 bg-night-900/95 px-2"
+      className="mx-2 flex h-full items-center gap-2 rounded-2xl border border-taxi glass px-2"
     >
       <style>{highlight}</style>
       <span
         aria-hidden="true"
-        className="shrink-0 rounded-full bg-night-800 px-1.5 text-[0.6875rem] leading-5 font-bold text-pink-400"
+        className="shrink-0 rounded-full bg-raised px-1.5 text-[0.6875rem] leading-5 font-bold text-taxi-ink"
       >
         {copy('tour.progress', { step: number, total })}
       </span>
       <span className="sr-only">{copy('tour.progressLabel', { step: number, total })}</span>
-      <p role="status" className="line-clamp-2 min-w-0 flex-1 text-xs leading-tight text-ink-50">
+      <p role="status" className="line-clamp-2 min-w-0 flex-1 text-xs leading-tight text-fg">
         {text}
       </p>
       {advance ? (
@@ -124,7 +124,7 @@ function TourCard({ record, ui }: { readonly record: ActiveTour; readonly ui: To
             tourStore.getState().dispatch({ type: 'next', ui }, TOUR_TARGET)
             if (step === 'done') focusHelpOpener()
           }}
-          className={`${BUTTON} bg-pink-400 text-night-950`}
+          className={`${BUTTON} bg-taxi text-on-taxi`}
         >
           {copy(step === 'done' ? 'tour.done' : 'tour.next')}
         </button>
@@ -138,7 +138,7 @@ function TourCard({ record, ui }: { readonly record: ActiveTour; readonly ui: To
             tourStore.getState().dispatch({ type: 'skip' }, TOUR_TARGET)
             focusHelpOpener()
           }}
-          className={`${BUTTON} bg-night-800 text-ink-50`}
+          className={`${BUTTON} bg-raised text-fg`}
         >
           {copy('tour.skip')}
         </button>
