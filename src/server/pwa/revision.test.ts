@@ -10,6 +10,7 @@ import {
   additionalPrecacheEntries,
   audioVersionOf,
   buildRevision,
+  dropOptionalChunks,
   precacheGlobs,
   serviceWorkerConfig,
 } from './revision'
@@ -71,6 +72,7 @@ describe('serviceWorkerConfig', () => {
     expect(config.audioCache).toBe(`cc-audio-${audioVersionOf(audioManifestJson)}`)
     expect(config.modelsCache).toBe(`cc-models-${modelManifestJson.assetVersion}`)
     expect(config.revision).toMatch(/^[0-9a-f]{16}$/)
+    expect(config.chunksCache).toBe(`cc-chunks-${config.revision}`)
   })
 
   it("bakes in each tier's district URLs exactly as the scene loads them", () => {
@@ -101,5 +103,39 @@ describe('precacheGlobs', () => {
     for (const glob of precacheGlobs()) {
       expect(glob).not.toMatch(/models|audio|glb|public\/\*\*/)
     }
+  })
+})
+
+describe('dropOptionalChunks (PERF-7)', () => {
+  const files: Record<string, string> = {
+    '.next/static/chunks/boot.js': 'console.log("shell")',
+    '.next/static/chunks/loader.js': 'x="EXT_meshopt_compression"',
+    '.next/static/chunks/showcase.js': 'data-cc-feature="cc-feature:model-showcase"',
+    '.next/static/chunks/decor.js': 'Error(`apartment decor models: ${w}`)',
+    '.next/static/chunks/mod.js': '"data-mod-error":""',
+    '.next/static/chunks/supabase.js': 'class GoTrueClient{}',
+    '.next/static/css/a.css': 'EXT_meshopt_compression',
+    'public/icons/icon.svg': '<svg/>',
+  }
+  const entries = Object.keys(files).map((url) => ({ url, revision: null, size: 1 }))
+
+  it('drops chunks carrying an optional marker and keeps everything else', async () => {
+    const read = (path: string) => files[path] ?? ''
+    const { manifest, warnings } = await dropOptionalChunks(read)(entries)
+    expect(manifest.map((entry) => entry.url)).toEqual([
+      '.next/static/chunks/boot.js',
+      '.next/static/css/a.css',
+      'public/icons/icon.svg',
+    ])
+    expect(warnings).toEqual([])
+  })
+
+  it('reads only JS chunks', async () => {
+    const read: string[] = []
+    await dropOptionalChunks((path) => {
+      read.push(path)
+      return files[path] ?? ''
+    })(entries)
+    expect(read.every((path) => path.endsWith('.js'))).toBe(true)
   })
 })

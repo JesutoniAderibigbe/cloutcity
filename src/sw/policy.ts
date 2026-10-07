@@ -10,7 +10,10 @@
  *  - `cc-audio-<version>`: our own audio files, cache-first, only once the runtime fetches them
  *    (after the player's audio choice); never precached;
  *  - `cc-models-<version>`: the hand-made 3D models (S04h), cache-first, only once the scene
- *    loads them; never precached (they load on demand, tier by tier, after the map is playable).
+ *    loads them; never precached (they load on demand, tier by tier, after the map is playable);
+ *  - `cc-chunks-<revision>`: the build's JS chunks the precache leaves out (PERF-7: the model
+ *    runtime, the model showcase, the apartment's decor models, the /mod console, supabase-js), cache-first
+ *    once they load; precached chunks are answered by the precache before this route.
  * Everything else goes to the network untouched. Same-origin only, GET only, and a response
  * that is private, personalised or not a plain 200 is never stored ({@link refuseSensitive}).
  */
@@ -19,7 +22,7 @@
 export const CACHE_PREFIX = 'cc-'
 
 /** The runtime caches, by kind. Each name carries the content version it holds. */
-export const RUNTIME_CACHE_KINDS = ['geo', 'audio', 'models'] as const
+export const RUNTIME_CACHE_KINDS = ['geo', 'audio', 'models', 'chunks'] as const
 export type RuntimeCacheKind = (typeof RUNTIME_CACHE_KINDS)[number]
 
 const VERSION = /^[a-z0-9]{1,64}$/
@@ -78,6 +81,17 @@ export const MODEL_PATH = /^\/models\/[a-z0-9-]+\.(?:low|mid|high)\.[0-9a-f]{8}\
 /** A versioned model file: same-origin GET, no query (the name is the version). */
 export function isVersionedModel({ url, method, sameOrigin }: RequestFacts): boolean {
   return sameOrigin && method === 'GET' && url.search === '' && MODEL_PATH.test(url.pathname)
+}
+
+/** A build JS chunk: content-hashed, so its URL never changes content. */
+export const CHUNK_PATH = /^\/_next\/static\/chunks\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*\.js$/
+
+/**
+ * A same-origin build chunk the precache does not hold (PERF-7): GET, no query. Precached chunks
+ * never reach this route (Serwist answers them from the precache first).
+ */
+export function isBuildChunk({ url, method, sameOrigin }: RequestFacts): boolean {
+  return sameOrigin && method === 'GET' && url.search === '' && CHUNK_PATH.test(url.pathname)
 }
 
 /**
@@ -181,6 +195,8 @@ export interface ServiceWorkerConfig {
   readonly geoCache: string
   readonly audioCache: string
   readonly modelsCache: string
+  /** `cc-chunks-<revision>`: chunks left out of the precache, per build (PERF-7). */
+  readonly chunksCache: string
   /**
    * Per tier, the district and block URLs the worker fetches on a warm request
    * (`districtAssetUrls(tier)`, src/lib/data/districts.ts): the same versioned URLs the scene

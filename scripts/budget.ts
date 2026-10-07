@@ -33,6 +33,10 @@
  *   glTF loader kept out of the shell JS, and the model runtime's own lazy chunk reported
  *   (scripts/budget-models.ts).
  *
+ * - Optional chunks (PERF-7): the large optional chunks src/lib/pwa/lazyChunks.ts names (the model
+ *   runtime, the model showcase, the apartment's decor models, the /mod console, supabase-js) exist in the
+ *   build and none is precached; the worker caches them at runtime.
+ *
  * Every lookup has a positive control: a marker, loader or manifest entry that cannot be found
  * fails the run, so a change in the build format cannot turn a check into a silent pass.
  * scripts/shell-guard.ts runs next and checks the boot path and that no test hook ships.
@@ -44,6 +48,7 @@ import { gzipSync } from 'node:zlib'
 import { z } from 'zod'
 import { PerfConfigSchema, QUALITY_TIERS } from '../src/lib/data/schemas/config.ts'
 import { loaderLeaks, modelBudgetLines } from './budget-models.ts'
+import { OPTIONAL_CHUNK_MARKERS } from '../src/lib/pwa/lazyChunks.ts'
 
 export interface ScriptRefs {
   /** `src` values of external scripts, in document order, deduplicated. */
@@ -412,6 +417,34 @@ export function precacheProblems(
     problems.push('does not precache the versioned base geo (/geo/base?v=)')
   }
   return problems
+}
+
+/**
+ * PERF-7 positive control: every optional-chunk marker (src/lib/pwa/lazyChunks.ts) is found in
+ * at least one built chunk (so a renamed marker or a changed build cannot pass silently), and no
+ * chunk carrying one is precached. Returns the PASS/FAIL line and whether it passed.
+ */
+export function optionalChunkLine(
+  chunks: ReadonlyMap<string, string>,
+  urls: readonly string[],
+): { readonly ok: boolean; readonly text: string } {
+  const precached = new Set(urls)
+  const counts: string[] = []
+  const problems: string[] = []
+  for (const { id, marker } of OPTIONAL_CHUNK_MARKERS) {
+    const files = [...chunks].filter(([, text]) => text.includes(marker)).map(([name]) => name)
+    if (files.length === 0) problems.push(`no built chunk carries the ${id} marker`)
+    for (const file of files) {
+      if (precached.has(`/_next/${file}`)) problems.push(`precaches ${file} (${id})`)
+    }
+    counts.push(`${id} ${files.length}`)
+  }
+  return problems.length === 0
+    ? {
+        ok: true,
+        text: `PASS Optional chunks left out of the precache (PERF-7): ${counts.join(', ')} chunks, cached at runtime`,
+      }
+    : { ok: false, text: `FAIL Optional chunks (PERF-7): ${problems.join('; ')}` }
 }
 
 const WARM_URL = /"(\/geo\/(?:districts|blocks)\/(low|mid|high)\b[^"]*\?v=[0-9a-f]+)"/g
@@ -814,6 +847,10 @@ async function main(): Promise<void> {
       lines.push(report(result, `${count} districts plus /geo/blocks/${tier}`))
     }
   }
+
+  const optional = optionalChunkLine(chunks, urls)
+  lines.push(optional.text)
+  if (!optional.ok) process.exitCode = 1
 
   const readJson = async (file: string): Promise<unknown> =>
     JSON.parse(await readFile(join(root, file), 'utf8'))

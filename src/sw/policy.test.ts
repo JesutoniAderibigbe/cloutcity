@@ -7,6 +7,7 @@ import {
   MODEL_PATH,
   NAVIGATION_DENYLIST,
   WARM_TIER_MESSAGE,
+  isBuildChunk,
   isOwnAudio,
   isPageNavigation,
   isSensitive,
@@ -149,12 +150,43 @@ describe('isVersionedModel', () => {
   })
 })
 
+describe('isBuildChunk (PERF-7)', () => {
+  it('matches same-origin GET build chunks', () => {
+    expect(isBuildChunk(facts('/_next/static/chunks/0dl6_4ojh8p_-.js'))).toBe(true)
+    expect(isBuildChunk(facts('/_next/static/chunks/app/page-1a2b.js'))).toBe(true)
+  })
+
+  it('refuses queries, other origins, other methods, other types and other paths', () => {
+    expect(isBuildChunk(facts('/_next/static/chunks/a.js?v=1'))).toBe(false)
+    expect(isBuildChunk(facts('/_next/static/chunks/a.js', { sameOrigin: false }))).toBe(false)
+    expect(isBuildChunk(facts('/_next/static/chunks/a.js', { method: 'POST' }))).toBe(false)
+    expect(isBuildChunk(facts('/_next/static/chunks/a.css'))).toBe(false)
+    expect(isBuildChunk(facts('/_next/static/media/a.js'))).toBe(false)
+    expect(isBuildChunk(facts('/api/_next/static/chunks/a.js'))).toBe(false)
+    expect(isBuildChunk(facts('/_next/static/chunks/../../api/a.js'))).toBe(false)
+  })
+
+  it('never overlaps the geo, audio, model or navigation rules', () => {
+    const chunk = facts('/_next/static/chunks/a.js')
+    expect(isVersionedGeo(chunk) || isOwnAudio(chunk) || isVersionedModel(chunk)).toBe(false)
+    expect(isPageNavigation(chunk)).toBe(false)
+  })
+
+  it('has a per-build cache the activate cleanup removes once a newer build takes over', () => {
+    expect(runtimeCacheName('chunks', '0123456789abcdef')).toBe('cc-chunks-0123456789abcdef')
+    expect(staleCacheNames(['cc-chunks-old', 'cc-chunks-new'], ['cc-chunks-new'])).toEqual([
+      'cc-chunks-old',
+    ])
+  })
+})
+
 describe('warmTierUrls', () => {
   const config: ServiceWorkerConfig = {
     revision: 'r',
     geoCache: 'cc-geo-a',
     audioCache: 'cc-audio-a',
     modelsCache: 'cc-models-a',
+    chunksCache: 'cc-chunks-a',
     districtUrls: {
       low: [
         '/geo/districts/low/queens?v=abc',

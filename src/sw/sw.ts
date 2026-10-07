@@ -6,7 +6,8 @@
  * - Precache: the build's static assets, the pages and the versioned geo, served cache-first;
  *   entries a new build dropped are deleted when it activates.
  * - Runtime: versioned geo, our own audio and the content-named 3D models, cache-first, each in
- *   a versioned `cc-` cache (models are never precached: they load on demand, per tier);
+ *   a versioned `cc-` cache (models are never precached: they load on demand, per tier); the
+ *   build chunks the precache leaves out (PERF-7), cache-first in `cc-chunks-<revision>`;
  *   page navigations network-only with `/offline` when the network fails. Nothing else is
  *   handled, so `/api`, `/mod`, other origins and non-GET requests never touch a cache.
  * - Tier warm: once the map is playable a page sends CC_WARM_TIER with its quality tier, and the
@@ -21,6 +22,7 @@
 import { CacheFirst, NetworkOnly, Serwist, type PrecacheEntry, type SerwistPlugin } from 'serwist'
 import {
   WARM_TIER_DONE,
+  isBuildChunk,
   isOwnAudio,
   isPageNavigation,
   isVersionedGeo,
@@ -79,6 +81,11 @@ const serwist = new Serwist({
       handler: new CacheFirst({ cacheName: config.modelsCache, plugins: [neverCacheSensitive] }),
     },
     {
+      // PERF-7: chunks the precache leaves out (src/lib/pwa/lazyChunks.ts), once they load.
+      matcher: (options) => isBuildChunk(facts(options)),
+      handler: new CacheFirst({ cacheName: config.chunksCache, plugins: [neverCacheSensitive] }),
+    },
+    {
       matcher: (options) => isPageNavigation(facts(options)),
       handler: new NetworkOnly(),
     },
@@ -94,7 +101,7 @@ self.addEventListener('fetch', serwist.handleFetch)
 
 // Versioned runtime caches from older builds are deleted once this worker takes over.
 self.addEventListener('activate', (event) => {
-  const current = [config.geoCache, config.audioCache, config.modelsCache]
+  const current = [config.geoCache, config.audioCache, config.modelsCache, config.chunksCache]
   event.waitUntil(
     caches
       .keys()
