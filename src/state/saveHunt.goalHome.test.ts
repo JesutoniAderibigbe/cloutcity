@@ -147,3 +147,70 @@ it('H-2b taking decor down after claiming a level goal it helped reach is not re
   )
   expect(verdict.outcome).not.toBe('reject')
 })
+
+it('H-2c decor bought, placed, claimed against and sold within one upload window is not rejected', () => {
+  const quiet = createLogger({ level: 'error', sink: () => {} })
+  const store = createGameStore(
+    createSafeJsonStorage<PersistedState>(() => new MemoryStorage(), quiet),
+    quiet,
+  )
+  const s = () => store.getState()
+  const fresh = initialSave(config)
+  // Accepted save: 92 flex clout in the start home (home clout 0), no decor at all.
+  const prev: SaveState = {
+    ...fresh,
+    clock: { minute: 2 * 1440 + 14 * 60, remainderMs: 0 },
+    player: {
+      ...fresh.player,
+      cash: 200,
+      clout: {
+        ...fresh.player.clout,
+        compacted: { entries: 23, bySource: { flex: 92 } },
+        nextSeq: 24,
+        firstPaycheckPaid: true,
+      },
+    },
+    goals: { ...fresh.goals, achieved: { 'first-paycheck': 100 } },
+    actions: 40,
+  }
+  const first = checkUpload(
+    null,
+    prev,
+    {
+      realMinutesSinceAccept: 0,
+      burstCreditMinutes: 0,
+      accountAgeMinutes: 60,
+      serverGrantKeys: [],
+      entitledItemIds: [],
+      firstUpload: true,
+    },
+    ceilings,
+    config,
+  )
+  expect(first.outcome).not.toBe('reject')
+  expect(s().adoptCloudSave(JSON.parse(JSON.stringify(first.save)), SAVE_VERSION)).toBe(true)
+  // All within one window: buy, place (home clout 0 -> 8, goal clout 100), claim, sell.
+  expect(s().buyItem('thrift-flatweave-rug').ok).toBe(true)
+  expect(s().placeDecor('thrift-flatweave-rug', 'floor-1').ok).toBe(true)
+  expect(s().goals.achieved['reach-local']).toBeDefined()
+  expect(s().claimGoalReward('reach-local').ok).toBe(true)
+  expect(s().sellItem('thrift-flatweave-rug').ok).toBe(true)
+  // No trace of the rug is left in the save the server sees.
+  expect(s().player.inventory.decor).toEqual(first.save?.player.inventory.decor)
+  const verdict = checkUpload(
+    first.save,
+    JSON.parse(JSON.stringify(persistedOf(s()))),
+    {
+      realMinutesSinceAccept: 1,
+      burstCreditMinutes: 5,
+      accountAgeMinutes: 61,
+      serverGrantKeys: [],
+      entitledItemIds: [],
+      firstUpload: false,
+    },
+    ceilings,
+    config,
+  )
+  expect(verdict.outcome).not.toBe('reject')
+  expect(verdict.findings).not.toContain('goal-without-fact')
+})

@@ -628,8 +628,10 @@ function itemCloutGone(
 /**
  * Home clout that may have been held in the window but is gone now (H-2): what the home lost
  * since `base` (a move to a cheaper home, decor taken down, sold or evicted), plus the score of
- * counting decor the player owns but has not placed or sold since `base`, at most
- * `home.maxClout` (the whole cap for a fresh run or a first upload).
+ * counting decor the player owns but has not placed or sold since `base`, and at least what
+ * would fill the home to `home.maxClout` (decor bought, placed and sold within the window shows
+ * nowhere); at most `home.maxClout`, the whole cap for a fresh run or a first upload. Private
+ * checks only (goal facts, the peak level): earnings checks never read it.
  */
 function homeCloutGone(save: SaveState, base: SaveState | null, config: EngineConfig): number {
   const cap = config.home.maxClout
@@ -647,7 +649,9 @@ function homeCloutGone(save: SaveState, base: SaveState | null, config: EngineCo
     .filter((entry) => !isPrestigeKept(entry) && !owned.has(entry.itemId))
     .reduce((sum, entry) => sum + score(entry.itemId), 0)
   const lost = Math.max(0, homeClout(base.player, config) - homeClout(save.player, config))
-  return Math.min(cap, lost + unplaced + sold)
+  // Decor bought, placed and sold inside one window leaves no trace (no ledger entry): the
+  // window may always have held the home up to the cap.
+  return Math.min(cap, Math.max(lost + unplaced + sold, cap - homeClout(save.player, config)))
 }
 
 /**
