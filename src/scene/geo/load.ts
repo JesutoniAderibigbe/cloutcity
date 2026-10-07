@@ -1,0 +1,46 @@
+/**
+ * Downloads the base geo layers (once per URL) before the 3D canvas mounts. The shell starts
+ * it at hydration, so the download runs in parallel with the 3D chunk; the body is validated
+ * in that chunk (CityCanvas, with schema.ts), so the shell carries no schema code.
+ *
+ * Never rejects: a failed download and a body that is not JSON are expected outcomes (offline,
+ * a bad deploy), reported as a result so nothing throws into React and the scene can fall back
+ * without an uncaught error.
+ */
+export type GeoLoadFailure =
+  | { readonly reason: 'geo-network' }
+  | { readonly reason: 'geo-http'; readonly status: number }
+  | { readonly reason: 'geo-json' }
+  | { readonly reason: 'geo-invalid'; readonly paths: readonly string[] }
+
+export type GeoDownload =
+  | { readonly ok: true; readonly body: unknown }
+  | { readonly ok: false; readonly failure: GeoLoadFailure }
+
+const requests = new Map<string, Promise<GeoDownload>>()
+
+async function download(url: string): Promise<GeoDownload> {
+  let response: Response
+  try {
+    response = await fetch(url)
+  } catch {
+    return { ok: false, failure: { reason: 'geo-network' } }
+  }
+  if (!response.ok) {
+    return { ok: false, failure: { reason: 'geo-http', status: response.status } }
+  }
+  try {
+    return { ok: true, body: (await response.json()) as unknown }
+  } catch {
+    return { ok: false, failure: { reason: 'geo-json' } }
+  }
+}
+
+export function loadGeoBase(url: string): Promise<GeoDownload> {
+  let request = requests.get(url)
+  if (request === undefined) {
+    request = download(url)
+    requests.set(url, request)
+  }
+  return request
+}

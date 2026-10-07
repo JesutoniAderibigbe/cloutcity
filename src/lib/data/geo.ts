@@ -1,9 +1,10 @@
 /**
  * Validated geo layers from /data/geo and /data/zones (written by `npm run geo:build`), for the
  * engine and tests. Uses classic zod and pulls in about 430 KB of JSON: never import it into
- * shell or client components (S04a/S04e decide how the scene receives the layers, preferably
- * as fetched static assets). Zone metadata is in content.ts.
+ * shell or client components: the scene fetches the base layers from the static route
+ * /geo/base (src/app/geo/base/route.ts) instead. Zone metadata is in content.ts.
  */
+import { createHash } from 'node:crypto'
 import landJson from '@data/geo/land.derived.json'
 import manifestJson from '@data/geo/manifest.derived.json'
 import parksJson from '@data/geo/parks.derived.json'
@@ -34,3 +35,17 @@ export const geoManifest = parseDataFile(
   GeoManifestSchema,
   manifestJson,
 )
+
+/**
+ * Short content hash of the base geo layers, from their manifest sha256s. The scene fetches
+ * /geo/base?v=<geoVersion>, so a geo rebuild changes the URL and no stale copy is reused.
+ */
+export const geoVersion = createHash('sha256')
+  .update(
+    geoManifest.files
+      .filter((file) => file.group === 'base')
+      .map((file) => `${file.path}:${file.sha256}`)
+      .join('\n'),
+  )
+  .digest('hex')
+  .slice(0, 12)

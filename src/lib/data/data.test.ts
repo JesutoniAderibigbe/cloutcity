@@ -28,6 +28,7 @@ import {
   VenuesFileSchema,
 } from './schemas/content'
 import { BaseCopySchema, SlangPackSchema } from './schemas/copy'
+import { SceneConfigSchema } from './schemas/scene'
 import {
   AudioManifestSchema,
   GeoBoundsSchema,
@@ -55,6 +56,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/moderation.json': ModerationConfigSchema,
   'config/perf.json': PerfConfigSchema,
   'config/realtime.json': RealtimeConfigSchema,
+  'config/scene.json': SceneConfigSchema,
   'config/theme.json': ThemeConfigSchema,
   'copy/base.json': BaseCopySchema,
   'events/events.json': EventsFileSchema,

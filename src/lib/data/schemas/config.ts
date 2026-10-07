@@ -62,17 +62,74 @@ export type PerfConfig = z.infer<typeof PerfConfigSchema>
 const HEX_COLOR = /^#[0-9a-f]{6}$/i
 const TOKEN_NAME = /^[a-z]+-\d{2,3}$/
 
+const tokenRef = z.string().regex(TOKEN_NAME)
+
+/**
+ * The 3D city's colours, as palette token names (never hex), so the scene and the DOM share one
+ * palette. Land keys are the borough ids (BOROUGHS in content.ts; this file imports only zod).
+ */
+export const ScenePaletteRefsSchema = z.strictObject({
+  background: tokenRef,
+  water: tokenRef,
+  land: z.strictObject({
+    manhattan: tokenRef,
+    brooklyn: tokenRef,
+    queens: tokenRef,
+    bronx: tokenRef,
+    'staten-island': tokenRef,
+  }),
+  park: tokenRef,
+  cemetery: tokenRef,
+  /** Cycled over the subway lines sorted by id: our own colours, never the MTA's. */
+  subwayLines: z.array(tokenRef).min(1),
+  subwayCasing: tokenRef,
+  station: tokenRef,
+  /** Letter colour on the line chips (the chip itself takes its line's colour). */
+  labelInk: tokenRef,
+  ambientLight: tokenRef,
+  sunLight: tokenRef,
+  /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
+  toonRamp: z.array(z.number().gt(0).max(1)).min(2),
+})
+export type ScenePaletteRefs = z.infer<typeof ScenePaletteRefsSchema>
+
+/** Every token name a scene palette references. */
+export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
+  return [
+    scene.background,
+    scene.water,
+    ...Object.values(scene.land),
+    scene.park,
+    scene.cemetery,
+    ...scene.subwayLines,
+    scene.subwayCasing,
+    scene.station,
+    scene.labelInk,
+    scene.ambientLight,
+    scene.sunLight,
+  ]
+}
+
 /** Palette tokens. Each becomes the Tailwind colour `--color-<token>` (see globals.css). */
 export const ThemeConfigSchema = z
   .strictObject({
     colors: z.record(z.string().regex(TOKEN_NAME), z.string().regex(HEX_COLOR)),
     /** Token used for the browser/PWA theme colour and the page background. */
     themeColor: z.string(),
+    scene: ScenePaletteRefsSchema,
   })
   .refine((theme) => theme.themeColor in theme.colors, {
     error: 'themeColor must name a token in colors',
     path: ['themeColor'],
   })
+  .refine((theme) => scenePaletteTokens(theme.scene).every((token) => token in theme.colors), {
+    error: 'every scene colour must name a token in colors',
+    path: ['scene'],
+  })
+  .refine(
+    (theme) => theme.scene.toonRamp.every((step, i, ramp) => i === 0 || step > (ramp[i - 1] ?? 0)),
+    { error: 'toonRamp must increase', path: ['scene', 'toonRamp'] },
+  )
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>
 
 const RateLimitSchema = z.strictObject({ max: positiveInt, windowMs: positiveInt })
@@ -238,6 +295,11 @@ export const LayoutConfigSchema = z.strictObject({
     sheetMaxHeightVh: positive,
     sheetMaxWidthPx: positive,
     tabBarHeightPx: positive,
+    /**
+     * The free scene row never shrinks below this, so the map stays visible and the map
+     * attribution with its 44 px credits link always fits (banner, toast and sheet shrink first).
+     */
+    freeSceneMinHeightPx: z.number().min(44),
   }),
 })
 export type LayoutConfig = z.infer<typeof LayoutConfigSchema>

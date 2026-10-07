@@ -5,6 +5,7 @@ import layoutJson from '@data/config/layout.json'
 import moderationJson from '@data/config/moderation.json'
 import perfJson from '@data/config/perf.json'
 import realtimeJson from '@data/config/realtime.json'
+import sceneJson from '@data/config/scene.json'
 import themeJson from '@data/config/theme.json'
 import { parseDataFile } from './parse'
 import {
@@ -16,6 +17,7 @@ import {
   RealtimeConfigSchema,
   ThemeConfigSchema,
 } from './schemas/config'
+import { SceneConfigSchema } from './schemas/scene'
 
 export const balance = parseDataFile('config/balance.json', BalanceConfigSchema, balanceJson)
 export const copyConfig = parseDataFile('config/copy.json', CopyConfigSchema, copyJson)
@@ -28,3 +30,4 @@ export const moderation = parseDataFile(
 export const perf = parseDataFile('config/perf.json', PerfConfigSchema, perfJson)
 export const realtime = parseDataFile('config/realtime.json', RealtimeConfigSchema, realtimeJson)
 export const theme = parseDataFile('config/theme.json', ThemeConfigSchema, themeJson)
+export const scene = parseDataFile('config/scene.json', SceneConfigSchema, sceneJson)

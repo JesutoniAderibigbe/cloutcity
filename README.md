@@ -25,16 +25,16 @@ gitignored; later tasks document their variables here.
 
 ## Scripts
 
-| Script                            | What it does                                                                                                         |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                              |
-| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                          |
-| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error |
-| `npm run format:check` / `format` | Prettier check / write                                                                                               |
-| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                     |
-| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                      |
-| `npm run budget`                  | Gzipped shell JS of `/` against `data/config/perf.json` (run after `npm run build`)                                  |
-| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                             |
+| Script                            | What it does                                                                                                                            |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                 |
+| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                             |
+| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                    |
+| `npm run format:check` / `format` | Prettier check / write                                                                                                                  |
+| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                        |
+| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT`                                                         |
+| `npm run budget`                  | Gzipped shell JS of `/` and the lazy 3D chunk against `data/config/perf.json`, and no test hooks in `.next` (run after `npm run build`) |
+| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                |
 
 Gate order used by the build loop:
 `npm run format:check && npm run typecheck && npm run lint && npm test && npm run build && npm run e2e && npm run budget`
@@ -46,6 +46,12 @@ Gate order used by the build loop:
   The fixture fails any test that logs a console warning or error or throws an uncaught page
   error (PERF-1), and provides `checkA11y()`, an axe scan that fails on serious or critical
   violations (A11Y-2).
+- A test that provokes a console message on purpose (a failure path) lists it with
+  `test.use({ expectedConsole: [...] })`: each entry names the exact console type and the text
+  (a string matched exactly, or a RegExp; an object argument such as a `src/lib/log.ts` record is
+  also matched as JSON) and optionally an exact `count`. Matching messages are let through, but
+  every entry must appear, and anything else still fails. Wrap two or more entries as
+  `[[a, b], { scope: 'test' }]` (Playwright reads a bare two-entry array as a fixture tuple).
 - Screenshot baselines live in `tests/e2e/__screenshots__/` and are per platform. After an
   intended visual change, review the diff and run `npx playwright test --update-snapshots`.
 
@@ -72,7 +78,8 @@ Source: [Using Chromium with SwiftShader](https://chromium.googlesource.com/chro
 SwiftShader logs one ANGLE performance note per composited WebGL frame,
 `GL Driver Message (OpenGL, Performance, ...): GPU stall due to ReadPixels`. It comes from the
 software compositor, never appears on a hardware GPU, and is the only message the console guard
-ignores (matched exactly, and only at warning level). The guard also keeps listening for
+ignores (matched exactly, with or without ANGLE's final " (this message will no longer repeat)"
+suffix, and only at warning level). The guard also keeps listening for
 `consoleSettleMs` (default 250 ms, a fixture option) after each test body so late async
 warnings still fail the test. Headless FPS is meaningless on SwiftShader: assert bytes, timings,
 draw calls and triangles instead.
@@ -84,7 +91,9 @@ in `playwright.config.ts`, and compare them with the Chromium doc linked above.
 
 All UI over the scene goes through `src/components/overlay/OverlayLayout.tsx`. It reserves
 named zones as rows of one CSS grid (banner, HUD, free scene area, toast, sheet, tab bar), so
-zones cannot overlap; content that does not fit scrolls inside its own zone. Zone sizes live in
+zones cannot overlap; content that does not fit scrolls inside its own zone. The free scene area
+never shrinks below `freeSceneMinHeightPx` (room for the map attribution and its 44 px credits
+link); on short viewports banner, toast and sheet shrink first. Zone sizes live in
 `data/config/layout.json`. The bottom tab bar (`src/components/nav/BottomTabs.tsx`) sits in the
 `tabs` zone with safe-area padding.
 
@@ -187,11 +196,53 @@ build, the scene and the engine; `src/lib/data/geo.ts` loads the layers for serv
 ## Performance budget
 
 `data/config/perf.json` holds every budget from `CLAUDE.md`, per tier where tiered, plus the
-`cc-mid-4g` throttle profile and the FPS step-down rule. `npm run budget` reads `shellJsGzKB`
-through the shared schema (KB = 1000 bytes) and sums the
-gzipped size of every script the prerendered `/` makes a modern browser run (Next.js chunks
-plus inline scripts; `nomodule` polyfills excluded). Enforcement of the other budgets joins it in
-later tasks.
+`cc-mid-4g` throttle profile and the FPS step-down rule. `npm run budget` (after `npm run build`,
+KB = 1000 bytes) checks:
+
+- `shellJsGzKB`: the gzipped size of every script the prerendered `/` makes a modern browser run
+  (Next.js chunks plus inline scripts; `nomodule` polyfills excluded);
+- `sceneChunkJsGzKB`: the lazy 3D chunk, i.e. the files of the `next/dynamic` scene import listed
+  in `.next/server/app/page/react-loadable-manifest.json` (minus any file the shell already
+  loads); the script fails if the manifest is missing or lists no lazy JS;
+- that no file in `.next/static` contains the e2e test-hook marker `__CLOUTCITY_TEST__`.
+
+Draw calls, triangles and idle frames at the default view are asserted by
+`tests/e2e/city-scene.spec.ts`. Enforcement of the other budgets joins in later tasks.
+
+## 3D city scene
+
+`src/scene/` renders the base city with react-three-fiber: extruded borough land, the water
+plane, parks and cemeteries, subway ribbons with a dark casing, instanced station markers and
+plain line-letter chips at each line's terminals (our own colours and style, never MTA bullets).
+It is about a dozen draw calls at the default view.
+
+- **Loading.** `src/scene/CityScene.tsx` (server) resolves config, palette tokens, the projected
+  start and bounds and copy into small props. `CitySceneClient.tsx` loads the canvas with
+  `next/dynamic` (`ssr: false`), so the shell is interactive first, and starts the geo request at
+  hydration. The geo layers come from the prerendered route `/geo/base?v=<geoVersion>`
+  (`src/app/geo/base/route.ts`) and are validated in the 3D chunk with `zod/mini`
+  (`src/scene/geo/schema.ts`, kept in step with the classic schemas by its tests).
+- **Config.** Camera start, zoom/tilt/turn limits, layer heights, line widths, marker and chip
+  sizes and lights live in `data/config/scene.json`; scene colours are palette tokens in the
+  `scene` block of `data/config/theme.json` (resolved to hex on the server). Toon shading uses one
+  shared gradient ramp (`toonRamp`).
+- **Camera.** three's `MapControls` (`src/scene/camera/CameraRig.tsx`): one finger or left drag
+  pans, pinch or wheel zooms towards the pointer, two fingers or right drag rotate and tilt; the
+  target stays inside `data/geo/bounds.json`. Rendering is on demand (`frameloop="demand"`), so an
+  idle map draws zero frames.
+- **Attribution.** `src/scene/MapAttribution.tsx` shows the NYC Open Data and MTA lines in the free
+  scene row of the overlay grid (a one-line form when the row is short, via a container query in
+  `globals.css`); `/credits` has the full text.
+- **Failures.** Before the canvas mounts, the shell checks for WebGL2 and downloads the geo body
+  (`src/scene/geo/load.ts`, which never rejects); the 3D chunk validates it without throwing. No
+  WebGL, a failed download, a non-JSON body or a schema failure each show the error status
+  (`map.error.device` or `map.error.load`) over the static background and log exactly one
+  structured warning; the shell keeps working. `SceneErrorBoundary` only catches unexpected
+  renderer errors.
+- **Test hooks.** With `NEXT_PUBLIC_TEST_HOOKS=1` at build time, `window.__CLOUTCITY_TEST__.scene`
+  exposes `ready`, `frames()`, `camera()` and `renderInfo()` (`src/scene/testHooks.tsx`). The e2e
+  web server sets it and builds into `.next-e2e` (`NEXT_DIST_DIR`, read by `next.config.ts`), so
+  the hook never reaches `.next`; in every other build its code is removed as dead code.
 
 ## PWA
 
@@ -207,7 +258,7 @@ initialised. Nothing needs a running stack yet; see `progress.md` for when to `n
 
 ## Ignored paths
 
-`.gitignore` covers env files, build output (`.next/`, `out/`), test artefacts
+`.gitignore` covers env files, build output (`.next/`, `.next-e2e/` for the e2e build, `out/`), test artefacts
 (`test-results/`, `playwright-report/`, `coverage/`) and the geo download cache (`.cache/`:
 the raw NYC Open Data and MTA files `npm run geo:build` downloads, kept unmodified).
 

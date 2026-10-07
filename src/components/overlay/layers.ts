@@ -32,20 +32,24 @@ export const ZONE_GRID_ROW: Readonly<Record<OverlayZone, number>> = {
   tabs: 7,
 }
 
+/** Grid row of the free scene area between the HUD and the toast zone (no overlay zone). */
+export const FREE_SCENE_GRID_ROW = 4
+
 /**
  * Rows: top safe-area inset, banner, HUD, free scene area, toast, sheet, tab bar (which also
  * absorbs the bottom safe-area inset so its background reaches the screen edge).
  *
  * Banner, toast and sheet are `minmax(0, max)`: the grid fills them to their max before the free
- * area gets anything, and on a short viewport (landscape phone) they shrink instead of pushing
- * the tab bar off screen. HUD and tab bar never shrink.
+ * area gets more than its minimum, and on a short viewport (landscape phone) they shrink instead
+ * of pushing the tab bar off screen. HUD, tab bar and the free area's minimum
+ * (`freeSceneMinHeightPx`, room for the map attribution) never shrink.
  */
 export function overlayGridTracks(config: OverlayLayoutConfig): readonly string[] {
   return [
     'env(safe-area-inset-top, 0px)',
     `minmax(0, ${config.bannerHeightPx}px)`,
     `${config.hudHeightPx}px`,
-    'minmax(0, 1fr)',
+    `minmax(${config.freeSceneMinHeightPx}px, 1fr)`,
     `minmax(0, ${config.toastHeightPx}px)`,
     `minmax(0, ${config.sheetMaxHeightVh}dvh)`,
     `calc(${config.tabBarHeightPx}px + env(safe-area-inset-bottom, 0px))`,

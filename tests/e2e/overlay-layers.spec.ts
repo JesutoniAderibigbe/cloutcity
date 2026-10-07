@@ -61,6 +61,15 @@ async function fillZonesWithPlaceholders(page: Page): Promise<void> {
   }, ZONES)
 }
 
+/**
+ * The lazy 3D map (S04a) draws behind the zones and is still loading or already drawn depending
+ * on timing, so screenshots hide its canvas and loading status: these baselines cover the
+ * overlay layout (static background and map attribution included), not the map, which
+ * city-scene.spec.ts covers through its test hook.
+ */
+const HIDE_SCENE =
+  '[data-scene-root] canvas, [data-scene-root] [role="status"] { visibility: hidden !important; }'
+
 test.describe('overlay layer system', () => {
   test('reserves non-overlapping safe zones inside the viewport', async ({ page }) => {
     await page.goto('/')
@@ -118,12 +127,14 @@ test.describe('overlay layer system', () => {
     }, ZONES)
     expect(strays).toEqual([])
 
+    await page.addStyleTag({ content: HIDE_SCENE })
     await expect(page).toHaveScreenshot('overlay-zones-filled.png')
   })
 
   test('the shell as shipped matches its screenshot', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
+    await page.addStyleTag({ content: HIDE_SCENE })
     await expect(page).toHaveScreenshot('overlay-shell.png')
   })
 })

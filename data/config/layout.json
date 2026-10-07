@@ -5,6 +5,7 @@
     "toastHeightPx": 72,
     "sheetMaxHeightVh": 40,
     "sheetMaxWidthPx": 560,
-    "tabBarHeightPx": 64
+    "tabBarHeightPx": 64,
+    "freeSceneMinHeightPx": 52
   }
 }

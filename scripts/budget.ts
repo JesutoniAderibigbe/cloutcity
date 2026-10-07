@@ -1,12 +1,18 @@
 /**
- * `npm run budget`: checks built bundle sizes against data/config/perf.json.
+ * `npm run budget`: checks the built bundle in `.next` against data/config/perf.json.
  *
- * S01 scope: shell JS of route `/`, i.e. every script the prerendered `/` HTML makes a modern
- * browser run (external chunks plus inline scripts; `nomodule` polyfills excluded), gzipped,
- * against `shellJsGzKB`. Run after `npm run build`.
- * Sizes use KB = 1000 bytes, the stricter reading of the budget.
+ * - Shell JS of route `/`: every script the prerendered `/` HTML makes a modern browser run
+ *   (external chunks plus inline scripts; `nomodule` polyfills excluded), gzipped, against
+ *   `shellJsGzKB`.
+ * - 3D chunk JS: the files of the lazy `next/dynamic` scene import, read from the route's
+ *   react-loadable-manifest.json (minus any file the shell already loads), gzipped, against
+ *   `sceneChunkJsGzKB`.
+ * - No test hooks: no static chunk may contain the e2e test-hook marker (the e2e build writes
+ *   to its own distDir, `.next-e2e`; see src/scene/testHooks.tsx).
+ *
+ * Run after `npm run build`. Sizes use KB = 1000 bytes, the stricter reading of the budget.
  */
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { z } from 'zod'
@@ -86,11 +92,73 @@ export function readShellLimit(perf: unknown): number {
   return result.data.shellJsGzKB
 }
 
+const SceneLimitSchema = z.object({
+  sceneChunkJsGzKB: PerfConfigSchema.shape.sceneChunkJsGzKB,
+})
+
+export function readSceneChunkLimit(perf: unknown): number {
+  const result = SceneLimitSchema.safeParse(perf)
+  if (!result.success) {
+    throw new Error('data/config/perf.json: sceneChunkJsGzKB must be a positive number')
+  }
+  return result.data.sceneChunkJsGzKB
+}
+
+/** `server/app/page/react-loadable-manifest.json` as Turbopack writes it (Next 16). */
+const LoadableManifestSchema = z.record(z.string(), z.object({ files: z.array(z.string().min(1)) }))
+
+/**
+ * The lazily loaded JS of route `/`: every `.js` file of every dynamic import in the manifest,
+ * deduplicated, minus files the shell already loads (they count once, in the shell). Paths are
+ * relative to the build directory (`static/chunks/...`). Fails fast on an unexpected format or
+ * an empty result, so a build change cannot turn the check into a silent pass.
+ */
+export function sceneChunkFiles(manifest: unknown, shellScripts: readonly string[]): string[] {
+  const result = LoadableManifestSchema.safeParse(manifest)
+  if (!result.success) throw new Error('react-loadable-manifest.json: unexpected format')
+  const shell = new Set(shellScripts.map((src) => src.split(/[?#]/)[0]?.replace(/^\/_next\//, '')))
+  const files = new Set<string>()
+  for (const entry of Object.values(result.data)) {
+    for (const file of entry.files) {
+      if (file.split('/').includes('..')) throw new Error(`Refusing path traversal: ${file}`)
+      if (file.endsWith('.js') && !shell.has(file)) files.add(file)
+    }
+  }
+  if (files.size === 0) {
+    throw new Error('react-loadable-manifest.json lists no lazy JS for /: is the 3D scene mounted?')
+  }
+  return [...files].sort()
+}
+
+/** Marks the e2e-only scene test hook (src/scene/testHooks.tsx); never in a shipped build. */
+export const TEST_HOOK_MARKER = '__CLOUTCITY_TEST__'
+
+/** Static JS files (relative to `static/`) that contain the test-hook marker. */
+export async function filesWithTestHooks(distDir: string): Promise<string[]> {
+  const staticDir = join(distDir, 'static')
+  const entries = await readdir(staticDir, { recursive: true, withFileTypes: true })
+  const found: string[] = []
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith('.js')) continue
+    const file = join(entry.parentPath, entry.name)
+    if ((await readFile(file, 'utf8')).includes(TEST_HOOK_MARKER)) {
+      found.push(file.slice(staticDir.length + 1))
+    }
+  }
+  return found.sort()
+}
+
+function report(result: BudgetResult, detail: string): string {
+  const status = result.ok ? 'PASS' : 'FAIL'
+  return `${status} ${result.name}: ${result.actualKB} KB gz (limit ${result.limitKB} KB)\n  ${detail}`
+}
+
 async function main(): Promise<void> {
   const root = process.cwd()
   const distDir = join(root, '.next')
   const perf: unknown = JSON.parse(await readFile(join(root, 'data/config/perf.json'), 'utf8'))
   const limitKB = readShellLimit(perf)
+  const sceneLimitKB = readSceneChunkLimit(perf)
 
   let html: string
   try {
@@ -107,14 +175,35 @@ async function main(): Promise<void> {
     externalBytes += gzipBytes(await readFile(staticFilePath(src, distDir)))
   }
   const inlineBytes = gzipBytes(inline.join('\n'))
-  const result = checkBudget('Shell JS (/)', externalBytes + inlineBytes, limitKB)
+  const shell = checkBudget('Shell JS (/)', externalBytes + inlineBytes, limitKB)
+
+  let manifest: unknown
+  try {
+    manifest = JSON.parse(
+      await readFile(join(distDir, 'server/app/page/react-loadable-manifest.json'), 'utf8'),
+    )
+  } catch {
+    throw new Error('No .next/server/app/page/react-loadable-manifest.json. Run `npm run build`.')
+  }
+  const sceneFiles = sceneChunkFiles(manifest, external)
+  let sceneBytes = 0
+  for (const file of sceneFiles) sceneBytes += gzipBytes(await readFile(join(distDir, file)))
+  const scene = checkBudget('3D chunk JS (lazy)', sceneBytes, sceneLimitKB)
+
+  const leaks = await filesWithTestHooks(distDir)
 
   const lines = [
-    `${result.ok ? 'PASS' : 'FAIL'} ${result.name}: ${result.actualKB} KB gz (limit ${result.limitKB} KB)`,
-    `  ${external.length} chunks: ${(externalBytes / 1000).toFixed(1)} KB gz; inline: ${(inlineBytes / 1000).toFixed(1)} KB gz`,
+    report(
+      shell,
+      `${external.length} chunks: ${(externalBytes / 1000).toFixed(1)} KB gz; inline: ${(inlineBytes / 1000).toFixed(1)} KB gz`,
+    ),
+    report(scene, `${sceneFiles.length} chunks: ${sceneFiles.join(', ')}`),
+    leaks.length === 0
+      ? 'PASS No test hooks in .next/static'
+      : `FAIL Test hooks (${TEST_HOOK_MARKER}) in .next/static: ${leaks.join(', ')}`,
   ]
   process.stdout.write(`${lines.join('\n')}\n`)
-  if (!result.ok) process.exitCode = 1
+  if (!shell.ok || !scene.ok || leaks.length > 0) process.exitCode = 1
 }
 
 if (import.meta.main) {

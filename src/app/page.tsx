@@ -1,6 +1,7 @@
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { copy } from '@/lib/copy'
+import { CityScene } from '@/scene/CityScene'
 
 export default function HomePage() {
   return (
@@ -17,11 +18,7 @@ export default function HomePage() {
         tabs: <BottomTabs />,
       }}
     >
-      {/* Scene placeholder until the 3D city lands in S04a. */}
-      <div
-        aria-hidden="true"
-        className="h-full w-full bg-gradient-to-b from-night-800 via-night-900 to-night-950"
-      />
+      <CityScene />
     </OverlayLayout>
   )
 }
