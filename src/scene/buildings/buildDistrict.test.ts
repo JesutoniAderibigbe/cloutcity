@@ -11,14 +11,14 @@ import {
   massNoise,
   massTriangles,
   massesFor,
+  pick,
 } from './buildDistrict'
 import { DistrictBuildingsMiniSchema, type DistrictBuildings } from './schema'
 
 const noYield = async () => undefined
 const COLORS = {
-  wall: '#7b5a4a',
+  walls: ['#7b5a4a', '#9a9286'],
   roof: '#5b5d61',
-  accent: '#9a9286',
   jitter: 0.1,
   windowTile: { u: 16, v: 13.2 },
 }
@@ -156,6 +156,16 @@ describe('buildDistrictGeometry', () => {
     expect(massNoise(5)).toBe(massNoise(5))
     expect(massNoise(5)).toBeGreaterThanOrEqual(0)
     expect(massNoise(5)).toBeLessThan(1)
+  })
+
+  it('picks each facade from the walls by the mass noise, so a district mixes them', () => {
+    expect(pick(['a', 'b', 'c'], 0)).toBe('a')
+    expect(pick(['a', 'b', 'c'], 0.5)).toBe('b')
+    expect(pick(['a', 'b', 'c'], 0.999)).toBe('c')
+    expect(pick(['a', 'b', 'c'], 1)).toBe('c')
+    expect(() => pick([], 0.5)).toThrow()
+    const walls = Array.from({ length: 64 }, (_, m) => pick(['a', 'b', 'c', 'd'], massNoise(m)))
+    expect(new Set(walls).size).toBe(4)
   })
 
   it('builds a real committed district within its build-time triangle count', async () => {

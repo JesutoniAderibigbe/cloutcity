@@ -364,10 +364,18 @@ export const ScenePaletteRefsSchema = z.strictObject({
   /** The landmark kit's role palette (S07a). */
   landmarks: LandmarkPaletteRefsSchema,
   /**
-   * District buildings and procedural blocks (S04d): facades, roofs, the warm light of lit
-   * windows at night, and the low blocks outside the districts.
+   * District buildings and procedural blocks (S04d): facades (one picked per mass: brick,
+   * brownstone, limestone, concrete, glass; repeat a token to weight it), roofs, the warm light
+   * of lit windows at night, the low blocks outside the districts (one picked per block), and
+   * the single colour blocks on "expanding soon" land are dimmed from.
    */
-  buildings: z.strictObject({ wall: tokenRef, roof: tokenRef, window: tokenRef, block: tokenRef }),
+  buildings: z.strictObject({
+    walls: z.array(tokenRef).min(1),
+    roof: tokenRef,
+    window: tokenRef,
+    blocks: z.array(tokenRef).min(1),
+    dimmedBlock: tokenRef,
+  }),
 })
 export type ScenePaletteRefs = z.infer<typeof ScenePaletteRefsSchema>
 
@@ -389,7 +397,11 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     ...Object.values(scene.travel),
     ...Object.values(scene.apartment),
     ...Object.values(scene.landmarks),
-    ...Object.values(scene.buildings),
+    ...scene.buildings.walls,
+    scene.buildings.roof,
+    scene.buildings.window,
+    ...scene.buildings.blocks,
+    scene.buildings.dimmedBlock,
   ]
 }
 

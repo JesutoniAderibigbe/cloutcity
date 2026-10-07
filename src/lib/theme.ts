@@ -139,10 +139,11 @@ export function scenePalette(): ScenePalette {
     },
     toonRamp: [...scene.toonRamp],
     buildings: {
-      wall: tokenHex(scene.buildings.wall),
+      walls: scene.buildings.walls.map(tokenHex),
       roof: tokenHex(scene.buildings.roof),
       window: tokenHex(scene.buildings.window),
-      block: tokenHex(scene.buildings.block),
+      blocks: scene.buildings.blocks.map(tokenHex),
+      dimmedBlock: tokenHex(scene.buildings.dimmedBlock),
     },
     landmarks: Object.fromEntries(
       Object.entries(scene.landmarks).map(([role, token]) => [role, tokenHex(token)]),

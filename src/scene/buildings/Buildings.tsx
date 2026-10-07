@@ -117,15 +117,14 @@ export function Buildings({
       groundY,
       config: config.buildings,
       districtColors: {
-        wall: palette.buildings.wall,
+        walls: palette.buildings.walls,
         roof: palette.buildings.roof,
-        accent: palette.buildings.block,
         jitter: config.buildings.wallJitter,
         windowTile: windowTile(config.buildings),
       },
       blockColors: {
-        block: palette.buildings.block,
-        dimmed: `#${dimmedColor(palette.buildings.block, palette.haze, config.dimmed.towardBackground).getHexString()}`,
+        blocks: palette.buildings.blocks,
+        dimmed: `#${dimmedColor(palette.buildings.dimmedBlock, palette.haze, config.dimmed.towardBackground).getHexString()}`,
         jitter: config.buildings.wallJitter,
       },
       dimmedBoroughs,
