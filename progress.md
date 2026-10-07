@@ -147,6 +147,9 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   bug-hunter covers the whole wave plus fix cycles before fast-forwarding dev. Exception: security,
   money and server tasks (S18a/b/c, S19+, S25–S28) keep their own bug-hunter.
 
+- Art direction (DEC-24, user 2026-10-07): hand-made 3D models (CC0 packs now, custom NYC landmarks
+  later); S04h asset pipeline added; landmarks keep the code-built kit as placeholders.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.

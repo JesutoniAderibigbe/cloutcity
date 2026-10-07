@@ -125,8 +125,8 @@ Unit tests sit next to the code as *.test.ts.
   - Keep raw MTA files unmodified in the gitignored download cache.
 - **Rendering.** The map is a **stylised 3D city** rendered with react-three-fiber:
   - extruded land, a water plane, parks, subway ribbons
-  - low-poly district buildings and code-built low-poly landmarks
-  - toon/sticker shading in the night palette
+  - district buildings, street props and landmarks (see Art direction for model sources)
+  - toon/sticker shading in the night and day palettes
 - **No third-party tiles, no Google Maps, no map SDKs, no photos or photogrammetry of real places.**
 - **Quality tiers.**
   - Tiers are low, mid and high, chosen automatically from device signals, stepped down at runtime by FPS, and overridable in settings.
@@ -251,7 +251,15 @@ Further rules:
 - Warm night-city palette: deep indigo, hot pink, taxi yellow, plus a day palette (user decision
   2026-10-07): the interface and the 3D lighting follow the personal game clock's day/night keyframes
   (S04f, S04g). Both palettes meet WCAG 2.2 AA. Palette tokens live in `/data/config/theme.json`.
-- Landmarks are code-built low-poly models in the same style. Never photos, scans or downloaded models with unclear licenses. Only permissively licensed (CC0/MIT) assets, each listed in a SOURCES.md.
+- **Hand-made 3D models (user decision 2026-10-07, DEC-24).** Target polish at or above lagoslife/
+  sflife/anambralive. Characters, furniture, decor, vehicles, street props and generic buildings come
+  from professional hand-made low-poly packs with a CC0 licence (e.g. KayKit, Quaternius, Kenney),
+  pinned by version and hash and listed in a SOURCES.md. New York landmarks and signature pieces get
+  custom-made models later (3D artist or AI, licence confirmed in writing); until then landmarks use the
+  code-built placeholder kit. Never photos, scans, or models with unclear licences.
+- Models ship as compressed glTF (meshopt geometry, KTX2/WebP textures) through a reproducible asset
+  script, with per-asset triangle and byte budgets in perf.json. Model loading lives in lazy chunks; if
+  the asset bytes threaten a perf.json budget, measure and raise it with the user, never edit silently.
 - Emoji and SVG are allowed in the DOM UI. Chunky, thumb-friendly UI (hit targets ≥ 44 px). Snappy animations, juicy feedback on every purchase and clout gain.
 - Respect `prefers-reduced-motion`: travel cuts instead of animating, and there is no camera shake.
 

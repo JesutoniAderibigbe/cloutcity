@@ -144,6 +144,20 @@
       "attempts": 0
     },
     {
+      "id": "S04h",
+      "phase": 1,
+      "title": "Hand-made 3D asset pipeline (CC0 packs)",
+      "acceptance": "Per DEC-24 (user decision 2026-10-07): a reproducible `npm run assets:build` script downloads pinned CC0 hand-made low-poly packs (each with version, URL, sha256 and licence recorded in data/assets/SOURCES.md; a test fails on any asset without a CC0/MIT licence entry), selects the models listed in data/assets/catalog.json, re-colours or re-materials them to the theme palettes on the shared toon ramp, and writes compressed glTF (meshopt geometry, KTX2 or WebP textures) under public/models with a manifest hashed into the asset version; per-asset triangle and byte budgets live in perf.json and the build fails over them; runtime loading uses the pinned three/drei loaders in lazy chunks only (never the shell), with instancing for repeats and disposal on unmount; a showcase test hook renders each catalog model for screenshots at 390 and 1280; npm run budget reports model bytes per tier against the bytes-to-playable budgets and the build reports (never silently changes) any budget pressure; zero console warnings.",
+      "requires": [
+        "network",
+        "webgl"
+      ],
+      "review": true,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
       "id": "S04e",
       "phase": 1,
       "title": "Offline and caching",
