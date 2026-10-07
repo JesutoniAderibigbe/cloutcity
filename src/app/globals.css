@@ -13,6 +13,17 @@
   --color-taxi-400: var(--palette-taxi-400);
   --color-ink-50: var(--palette-ink-50);
   --color-ink-300: var(--palette-ink-300);
+  --color-sea-900: var(--palette-sea-900);
+  --color-indigo-500: var(--palette-indigo-500);
+  --color-indigo-600: var(--palette-indigo-600);
+  --color-violet-600: var(--palette-violet-600);
+  --color-slate-600: var(--palette-slate-600);
+  --color-teal-700: var(--palette-teal-700);
+  --color-violet-800: var(--palette-violet-800);
+  --color-sky-400: var(--palette-sky-400);
+  --color-mint-400: var(--palette-mint-400);
+  --color-orange-400: var(--palette-orange-400);
+  --color-lilac-300: var(--palette-lilac-300);
 }
 
 @theme {
@@ -20,8 +31,8 @@
 }
 
 /* Lock the app shell to the visual viewport: no page scroll, rubber-band bounce or double-tap
-   zoom. Pinch zoom stays available (WCAG 1.4.4); the 3D canvas claims its own gestures with
-   touch-action: none when it lands (S04a). */
+   zoom. Pinch zoom stays available (WCAG 1.4.4); the 3D canvas claims its own gestures: the camera
+   controls set touch-action: none on it (src/scene/camera/CameraRig.tsx). */
 html,
 body {
   height: 100%;
@@ -35,6 +46,28 @@ body {
   color: var(--color-ink-50);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Map attribution (src/scene/MapAttribution.tsx): the free scene row is a size container, and
+   when it is too short for the two-line attribution (landscape phones) the one-line form shows
+   instead, so the chip never spills over the HUD or other zones. 5.5rem fits the two-line form
+   with its padding at 11 px text; the row's minimum (layout.json) fits the one-line form. */
+.map-attribution-row {
+  container-type: size;
+}
+
+.map-attribution-compact {
+  display: none;
+}
+
+@container (max-height: 5.5rem) {
+  .map-attribution-full {
+    display: none;
+  }
+
+  .map-attribution-compact {
+    display: block;
+  }
 }
 
 /* A lazy feature's loading skeleton (src/components/overlay/ZoneLoading.tsx) stays invisible for

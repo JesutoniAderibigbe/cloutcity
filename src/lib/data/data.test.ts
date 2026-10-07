@@ -33,6 +33,7 @@ import {
   VenuesFileSchema,
 } from './schemas/content'
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
+import { SceneConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
@@ -78,6 +79,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/perf.json': PerfConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/realtime.json': RealtimeConfigSchema,
+  'config/scene.json': SceneConfigSchema,
   'config/theme.json': ThemeConfigSchema,
   'copy/superlatives.json': SuperlativesSchema,
   'events/events.json': EventsFileSchema,

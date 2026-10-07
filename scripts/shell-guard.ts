@@ -22,13 +22,9 @@ import { extractScripts, gzipBytes, staticFilePath } from './budget.ts'
 
 /**
  * Window properties the e2e test hooks install (src/components/{events,places}/*TestHook.ts,
- * src/lib/audio/testHook.ts).
+ * src/scene/testHooks.tsx, src/lib/audio/testHook.ts).
  */
-export const TEST_HOOK_MARKERS = [
-  '__cloutcityTest',
-  '__cloutcityPlaces',
-  '__CLOUTCITY_TEST__',
-] as const
+export const TEST_HOOK_MARKERS = ['__cloutcityTest', '__cloutcityPlaces'] as const
 
 const MARKER = /cc-feature:[a-z0-9]+(?:-[a-z0-9]+)*/g
 const ZOD_MARKER = '$ZodType'

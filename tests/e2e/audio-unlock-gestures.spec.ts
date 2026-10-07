@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import { SILENT, audio, installAudioProbe, probeOf, trackAudioRequests } from './fixtures/audio'
 import { T0, YEAR, welcomeDialog } from './fixtures/welcome'
+import { waitForMapSettled } from './helpers/scene'
 
 // GR-13 edges (S05b): which gestures count as the deliberate tap on the sound choice, and how
 // sound comes back after the browser suspends it. The shared fixture seeds a returning player
@@ -28,6 +29,7 @@ for (const key of ['Enter', 'Space'] as const) {
   test(`${key} on the focused sound control turns sound on`, async ({ page }) => {
     await installAudioProbe(page)
     await page.goto('/')
+    await waitForMapSettled(page)
     // The page is inert until the welcome island decides; a focus() before that is lost.
     await waitForWelcomeGate(page)
     await turnOn(page).focus()
@@ -48,6 +50,7 @@ test('under "My own music" no music file is fetched, even after sound is on', as
   await installAudioProbe(page)
   const requests = trackAudioRequests(page)
   await page.goto('/')
+  await waitForMapSettled(page)
   await turnOn(page).click()
   await expect.poll(() => audio.ready(page)).toBe(true)
   await expect.poll(() => audio.playing(page).then((p) => p.ambience)).not.toBeNull()
@@ -62,6 +65,7 @@ test('keyboard arrows on a volume slider while sound is off are a deliberate cho
 }) => {
   await installAudioProbe(page)
   await page.goto('/')
+  await waitForMapSettled(page)
   await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
   const sheet = page.getByRole('region', { name: 'Sound' })
   await expect(sheet).toBeVisible()
@@ -81,6 +85,7 @@ test('the "My own music" checkbox while sound is off turns sound on with music p
 }) => {
   await installAudioProbe(page)
   await page.goto('/')
+  await waitForMapSettled(page)
   await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
   const checkbox = page
     .getByRole('region', { name: 'Sound' })
@@ -99,6 +104,7 @@ test('after the browser suspends sound, the control offers "Tap for sound" and o
   await keepContexts(page)
   await installAudioProbe(page)
   await page.goto('/')
+  await waitForMapSettled(page)
   await turnOn(page).click()
   await expect.poll(() => audio.ready(page)).toBe(true)
   const toggle = page.getByRole('button', { name: 'My own music' })
@@ -126,6 +132,7 @@ test.describe('first visit', () => {
     await installAudioProbe(page)
     await page.clock.setFixedTime(T0)
     await page.goto('/')
+    await waitForMapSettled(page)
     const dialog = welcomeDialog(page)
     await dialog.getByRole('combobox', { name: 'Year you were born' }).selectOption(`${YEAR - 30}`)
     await dialog.getByRole('checkbox').check()
@@ -144,6 +151,7 @@ test.describe('first visit', () => {
     const requests = trackAudioRequests(page)
     await page.clock.setFixedTime(T0)
     await page.goto('/')
+    await waitForMapSettled(page)
     await expect(welcomeDialog(page)).toBeVisible()
     // The control is there (its boot island has loaded), but the card is modal: the HUD behind
     // it is inert, so these clicks cannot reach it.

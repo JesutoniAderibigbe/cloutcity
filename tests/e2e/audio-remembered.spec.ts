@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures/test'
 import { SILENT, audio, installAudioProbe, probeOf, trackAudioRequests } from './fixtures/audio'
 import { storedOnboarding } from './fixtures/welcome'
+import { waitForMapSettled } from './helpers/scene'
 
 // A returning player (the shared fixture seeds a completed card with "I'll bring my own") hears
 // nothing until they tap the sound control; their choice is remembered (S05b, GR-13).
@@ -11,6 +12,7 @@ test('stays silent until the sound control is tapped, and remembers "My own musi
   await installAudioProbe(page)
   const requests = trackAudioRequests(page)
   await page.goto('/')
+  await waitForMapSettled(page)
 
   const control = page.getByRole('button', { name: 'Turn on sound' })
   await expect(control).toBeVisible()
@@ -45,6 +47,7 @@ test('stays silent until the sound control is tapped, and remembers "My own musi
   ).toBeChecked()
 
   await page.reload()
+  await waitForMapSettled(page)
   await expect(page.getByRole('button', { name: 'Turn on sound' })).toHaveAccessibleDescription(
     'Your music',
   )

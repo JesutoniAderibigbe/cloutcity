@@ -3,8 +3,8 @@
  * as the way to play. Audio waits for it so sound never competes with the map for bandwidth
  * (CLAUDE.md "Performance budgets": audio is excluded from the bytes to playable).
  *
- * Until S04a lands, the scene placeholder marks the map playable on mount; then the 3D scene's
- * ready and error callbacks do.
+ * The 3D scene's mount (src/scene/CitySceneClient.tsx) marks it when the first frame has drawn
+ * or the scene has failed (no WebGL, or the geo or 3D chunk could not load).
  */
 
 export interface MapPlayableSignal {

@@ -76,29 +76,29 @@ type Gains = Record<'master' | 'music' | 'sfx' | 'ambience' | 'voice', number>
 
 /** The e2e audio hook (src/lib/audio/testHook.ts); throws until the runtime has loaded. */
 export const audio = {
-  ready: (page: Page) => page.evaluate(() => window.__CLOUTCITY_TEST__?.audio !== undefined),
+  ready: (page: Page) => page.evaluate(() => window.__cloutcityTest?.audio !== undefined),
   contextState: (page: Page) =>
-    page.evaluate(() => window.__CLOUTCITY_TEST__?.audio?.contextState() ?? 'no-runtime'),
+    page.evaluate(() => window.__cloutcityTest?.audio?.contextState() ?? 'no-runtime'),
   gains: (page: Page): Promise<Gains> =>
     page.evaluate(() => {
-      const hook = window.__CLOUTCITY_TEST__?.audio
+      const hook = window.__cloutcityTest?.audio
       if (hook === undefined) throw new Error('audio runtime not loaded')
       return hook.gains()
     }),
   targetGains: (page: Page): Promise<Gains> =>
     page.evaluate(() => {
-      const hook = window.__CLOUTCITY_TEST__?.audio
+      const hook = window.__cloutcityTest?.audio
       if (hook === undefined) throw new Error('audio runtime not loaded')
       return hook.targetGains()
     }),
   playing: (page: Page) =>
     page.evaluate(
-      () => window.__CLOUTCITY_TEST__?.audio?.playing() ?? { music: null, ambience: null },
+      () => window.__cloutcityTest?.audio?.playing() ?? { music: null, ambience: null },
     ),
   sfxStarted: (page: Page) =>
-    page.evaluate(() => window.__CLOUTCITY_TEST__?.audio?.sfxStarted() ?? -1),
+    page.evaluate(() => window.__cloutcityTest?.audio?.sfxStarted() ?? -1),
   playSfx: (page: Page, id: 'ui-tap' | 'purchase' | 'clout-up') =>
-    page.evaluate((sfx) => window.__CLOUTCITY_TEST__?.audio?.playSfx(sfx), id),
+    page.evaluate((sfx) => window.__cloutcityTest?.audio?.playSfx(sfx), id),
 }
 
 /** The squared slider curve of src/lib/audio/mixer.ts, as float32 like AudioParam.value. */

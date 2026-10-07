@@ -46,7 +46,7 @@ export function InventoryPanel() {
   // Held keys, double clicks, a drifting double tap: a second activation must never land on the
   // button that replaced the one tapped (Wear becomes Take off in place; a removed row lets the
   // next row's button slide under the finger).
-  const { guard: act, onKeyDown, coolingDown } = useActionGuard()
+  const { guard: act, onKeyDown, onPointerDown, coolingDown } = useActionGuard()
 
   // An action that removes the focused row (selling the last copy) would drop focus on the
   // body; keep it in the panel instead.
@@ -123,6 +123,7 @@ export function InventoryPanel() {
                       <button
                         type="button"
                         onKeyDown={onKeyDown}
+                        onPointerDown={onPointerDown}
                         aria-label={unequipLabel(def.id, def.slot)}
                         onClick={(event) =>
                           act(event, def.id, () =>
@@ -139,6 +140,7 @@ export function InventoryPanel() {
                       <button
                         type="button"
                         onKeyDown={onKeyDown}
+                        onPointerDown={onPointerDown}
                         aria-label={equipLabel(def.id, def.slot)}
                         onClick={(event) =>
                           act(event, def.id, () =>
@@ -155,6 +157,7 @@ export function InventoryPanel() {
                     <button
                       type="button"
                       onKeyDown={onKeyDown}
+                      onPointerDown={onPointerDown}
                       aria-label={sellLabel(def.id, resale)}
                       onClick={(event) => act(event, def.id, () => sell(def.id))}
                       className={ACTION}
@@ -193,6 +196,7 @@ export function InventoryPanel() {
                     <button
                       type="button"
                       onKeyDown={onKeyDown}
+                      onPointerDown={onPointerDown}
                       aria-label={giftOnSelfLabel(def.id)}
                       onClick={(event) =>
                         act(event, def.id, () =>
@@ -208,6 +212,7 @@ export function InventoryPanel() {
                     <button
                       type="button"
                       onKeyDown={onKeyDown}
+                      onPointerDown={onPointerDown}
                       aria-label={sellLabel(def.id, resale)}
                       onClick={(event) => act(event, def.id, () => sell(def.id))}
                       className={ACTION}

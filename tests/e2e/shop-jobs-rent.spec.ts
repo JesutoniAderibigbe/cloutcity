@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import type { Locator, Page } from '@playwright/test'
 import type { HudTestHook } from '@/components/hud/hudTestHook'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
+import { waitForMapSettled } from './helpers/scene'
 
 // S10a: the shop in a thrift store's place sheet, the inventory and rent panels from the HUD,
 // and a shift with its lock and energy states. Places open through the S09 test hook (the same
@@ -20,6 +21,7 @@ async function boot(page: Page) {
   await page.waitForFunction(
     () => window.__cloutcityPlaces !== undefined && window.__cloutcityTest?.hud !== undefined,
   )
+  await waitForMapSettled(page)
 }
 
 const hudState = (page: Page) =>
@@ -977,4 +979,52 @@ test.describe('held keys and the pointer cooldown', () => {
     await expect(rowOf(page, second.id)).toHaveCount(0)
     expect((await hudState(page)).owned).toEqual([])
   })
+
+  // UX-6: on a slow phone the two taps of a double tap arrive frames apart on the same button
+  // (with `detail` 1, or 2: a touch tap count spans more than the cooldown). Within the cooldown
+  // after Wear ran, a touch tap inside that button is ignored though it now says Take off;
+  // after the cooldown it acts.
+  for (const gapMs of [100, 250, 350]) {
+    test(`a second touch tap on Wear ${gapMs} ms later ${gapMs < COOLDOWN_MS ? 'is ignored' : 'takes it off'}`, async ({
+      page,
+    }) => {
+      test.skip(!test.info().project.use.hasTouch, 'touch taps need a touch screen')
+      const { wearables } = await shopList(page)
+      const [item] = wearables
+      if (item === undefined) throw new Error('no wearable')
+      await buyThrough(page, [item.id], 1000)
+      await openInventory(page)
+      const { x, y } = await centre(rowOf(page, item.id).getByRole('button', { name: /^Wear / }))
+      // The page's clock: when the first tap's click ran, and when the second finger came down.
+      await page.evaluate(() => {
+        const times = { clicks: [] as number[], downs: [] as number[] }
+        Object.assign(window, { __taps: times })
+        document.addEventListener('click', () => times.clicks.push(performance.now()), true)
+        document.addEventListener('pointerdown', (event) => times.downs.push(event.timeStamp), true)
+      })
+      await page.touchscreen.tap(x, y)
+      await expect(rowOf(page, item.id).getByRole('button', { name: /^Take off / })).toBeVisible()
+      await pause(page, gapMs)
+      await page.touchscreen.tap(x, y)
+      await settle(page)
+      const taps = await page.evaluate(
+        () => (window as { __taps?: { clicks: number[]; downs: number[] } }).__taps,
+      )
+      const ran = taps?.clicks[0]
+      const down = taps?.downs[1]
+      if (ran === undefined || down === undefined) throw new Error('taps were not seen')
+      const gap = down - ran
+      expect(gap).toBeGreaterThanOrEqual(gapMs)
+      test.info().annotations.push({ type: 'tap gap', description: `${Math.round(gap)} ms` })
+      const outfit = async () => Object.values((await hudState(page)).outfit)
+      // A short pause can overrun on a starved test machine; the rule is about the real gap,
+      // so the expectation follows it (and the annotation records it).
+      if (gap < COOLDOWN_MS) {
+        await pause(page, COOLDOWN_MS)
+        expect(await outfit()).toContain(item.id)
+      } else {
+        await expect.poll(outfit).not.toContain(item.id)
+      }
+    })
+  }
 })

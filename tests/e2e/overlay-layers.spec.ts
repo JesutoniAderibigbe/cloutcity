@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
+import { hideSceneForScreenshot } from './helpers/scene'
 
 // UX-1: overlays never cover each other. Runs at mobile-390 and desktop-1280.
 
@@ -120,6 +121,7 @@ test.describe('overlay layer system', () => {
     }, ZONES)
     expect(strays).toEqual([])
 
+    await hideSceneForScreenshot(page)
     await expect(page).toHaveScreenshot('overlay-zones-filled.png')
   })
 
@@ -127,6 +129,7 @@ test.describe('overlay layer system', () => {
     await page.goto('/')
     await waitForWelcomeGate(page)
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
+    await hideSceneForScreenshot(page)
     await expect(page).toHaveScreenshot('overlay-shell.png')
   })
 })

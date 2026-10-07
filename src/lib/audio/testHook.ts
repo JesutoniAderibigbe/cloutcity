@@ -1,5 +1,5 @@
 /**
- * Test-mode hook for the e2e suite: the live mixer on `window.__CLOUTCITY_TEST__.audio`. Only
+ * Test-mode hook for the e2e suite: the live mixer on `window.__cloutcityTest.audio`. Only
  * builds with NEXT_PUBLIC_TEST_HOOKS=1 (inlined at build time; the e2e build sets it and writes
  * to its own distDir) install it: the lazy audio runtime imports this module behind that check,
  * so in every other build it is dead code and never ships (scripts/shell-guard.ts checks).
@@ -21,14 +21,13 @@ export interface AudioTestHook {
 }
 
 declare global {
-  interface Window {
-    // At S04a integration this merges with the scene hook's declaration into one
-    // `{ scene?: SceneTestHook; audio?: AudioTestHook }` (OPEN-ISSUES INT-4).
-    __CLOUTCITY_TEST__?: { scene?: unknown; audio?: AudioTestHook }
+  /** One property per feature hook (merged with the events and scene hooks' declarations). */
+  interface CloutcityTestHooks {
+    audio?: AudioTestHook
   }
 }
 
 export function installAudioTestHook(hook: AudioTestHook): void {
   if (process.env.NEXT_PUBLIC_TEST_HOOKS !== '1') return
-  window.__CLOUTCITY_TEST__ = { ...window.__CLOUTCITY_TEST__, audio: hook }
+  window.__cloutcityTest = { ...window.__cloutcityTest, audio: hook }
 }

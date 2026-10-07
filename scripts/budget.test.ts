@@ -1,6 +1,14 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { checkBudget, extractScripts, gzipBytes, readShellLimit, staticFilePath } from './budget'
+import {
+  checkBudget,
+  extractScripts,
+  gzipBytes,
+  readSceneChunkLimit,
+  readShellLimit,
+  sceneChunkFiles,
+  staticFilePath,
+} from './budget'
 
 describe('extractScripts', () => {
   it('collects external chunks once and inline bodies, skipping data blocks and nomodule', () => {
@@ -56,5 +64,34 @@ describe('gzipBytes', () => {
   it('compresses repetitive input below its raw size', () => {
     const raw = 'a'.repeat(10_000)
     expect(gzipBytes(raw)).toBeLessThan(raw.length)
+  })
+})
+
+describe('readSceneChunkLimit', () => {
+  it('reads a positive limit and rejects anything else', () => {
+    expect(readSceneChunkLimit({ sceneChunkJsGzKB: 350 })).toBe(350)
+    expect(() => readSceneChunkLimit({})).toThrow(/sceneChunkJsGzKB/)
+    expect(() => readSceneChunkLimit({ sceneChunkJsGzKB: 0 })).toThrow()
+  })
+})
+
+describe('sceneChunkFiles', () => {
+  it('collects the lazy JS once, skipping shell scripts, CSS and duplicates', () => {
+    const manifest = {
+      '1': { id: 1, files: ['static/chunks/scene.js', 'static/chunks/shared.js'] },
+      '2': { id: 2, files: ['static/chunks/scene.js', 'static/css/scene.css'] },
+    }
+    expect(sceneChunkFiles(manifest, ['/_next/static/chunks/shared.js?v=1'])).toEqual([
+      'static/chunks/scene.js',
+    ])
+  })
+
+  it('fails fast on an unknown format, an empty manifest or path traversal', () => {
+    expect(() => sceneChunkFiles([], [])).toThrow(/format/)
+    expect(() => sceneChunkFiles({ '1': { files: 'x.js' } }, [])).toThrow(/format/)
+    expect(() => sceneChunkFiles({}, [])).toThrow(/no lazy JS/)
+    expect(() => sceneChunkFiles({ '1': { files: ['static/../../x.js'] } }, [])).toThrow(
+      /traversal/,
+    )
   })
 })

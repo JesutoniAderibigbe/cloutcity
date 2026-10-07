@@ -15,22 +15,37 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
-/** A fake project with one 20 KB-ish chunk referenced from the prerendered `/`. */
-function fakeProject(perf: unknown, withBuild = true): string {
+/** Incompressible-ish JS, so the gzipped size is predictable (well over 1 KB). */
+function noisyChunk(seed: number): string {
+  let body = ''
+  for (let i = 0; i < 4000; i += 1) body += (((i + seed) * 2654435761) >>> 0).toString(36)
+  return `var x="${body}";`
+}
+
+/** Limits every fake project gets unless a test overrides them. */
+const DEFAULT_PERF = { shellJsGzKB: 180, sceneChunkJsGzKB: 350 }
+
+/**
+ * A fake project: one shell chunk referenced from the prerendered `/` and one lazy 3D chunk
+ * listed in the route's react-loadable-manifest.json (the format Next 16 / Turbopack writes).
+ */
+function fakeProject(perf: Record<string, unknown>, withBuild = true): string {
   const root = mkdtempSync(join(tmpdir(), 'budget-'))
   dirs.push(root)
   mkdirSync(join(root, 'data/config'), { recursive: true })
-  writeFileSync(join(root, 'data/config/perf.json'), JSON.stringify(perf))
+  writeFileSync(join(root, 'data/config/perf.json'), JSON.stringify({ ...DEFAULT_PERF, ...perf }))
   if (withBuild) {
-    mkdirSync(join(root, '.next/server/app'), { recursive: true })
+    mkdirSync(join(root, '.next/server/app/page'), { recursive: true })
     mkdirSync(join(root, '.next/static/chunks'), { recursive: true })
-    // Incompressible-ish content so the gzipped size is predictable (well over 1 KB).
-    let body = ''
-    for (let i = 0; i < 4000; i += 1) body += ((i * 2654435761) >>> 0).toString(36)
-    writeFileSync(join(root, '.next/static/chunks/main.js'), `var x="${body}";`)
+    writeFileSync(join(root, '.next/static/chunks/main.js'), noisyChunk(0))
+    writeFileSync(join(root, '.next/static/chunks/scene.js'), noisyChunk(7))
     writeFileSync(
       join(root, '.next/server/app/index.html'),
       '<html><body><script src="/_next/static/chunks/main.js" async=""></script><script>self.__next_f=[]</script></body></html>',
+    )
+    writeFileSync(
+      join(root, '.next/server/app/page/react-loadable-manifest.json'),
+      JSON.stringify({ '2135': { id: 2135, files: ['static/chunks/scene.js'] } }),
     )
   }
   return root
@@ -69,5 +84,23 @@ describe('budget CLI', () => {
     const root = fakeProject({ shellJsGzKB: 180 })
     rmSync(join(root, '.next/static/chunks/main.js'))
     expect(runBudget(root).status).toBe(1)
+  })
+
+  it('prints PASS for the 3D chunk and fails when it is over its limit', () => {
+    expect(runBudget(fakeProject({})).stdout).toMatch(/^PASS 3D chunk JS/m)
+    const over = runBudget(fakeProject({ sceneChunkJsGzKB: 1 }))
+    expect(over.stdout).toMatch(/^FAIL 3D chunk JS/m)
+    expect(over.status).toBe(1)
+  })
+
+  it('exits non-zero when the loadable manifest is missing or lists no lazy JS', () => {
+    const missing = fakeProject({})
+    rmSync(join(missing, '.next/server/app/page/react-loadable-manifest.json'))
+    expect(runBudget(missing).stderr).toMatch(/react-loadable-manifest/)
+    expect(runBudget(missing).status).toBe(1)
+
+    const empty = fakeProject({})
+    writeFileSync(join(empty, '.next/server/app/page/react-loadable-manifest.json'), '{}')
+    expect(runBudget(empty).status).toBe(1)
   })
 })

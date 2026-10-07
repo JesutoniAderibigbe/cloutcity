@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import type { EventContext } from '@/engine/events'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
+import { waitForMapSettled } from './helpers/scene'
 
 // S14: an event opens as a modal in the overlay sheet zone, the player picks an option by
 // touch, click or keyboard, and the outcome lands in the game state. Events are opened through
@@ -32,6 +33,7 @@ async function boot(page: Page) {
   await page.goto('/')
   await waitForWelcomeGate(page)
   await page.waitForFunction(() => window.__cloutcityTest?.events !== undefined)
+  await waitForMapSettled(page)
 }
 
 function openEvent(page: Page, eventId: string, context: EventContext) {

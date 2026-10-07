@@ -75,7 +75,7 @@
       ],
       "acceptance": "The react-three-fiber canvas is lazy-loaded with no SSR so the DOM shell is interactive before the 3D chunk arrives; borough land extruded from /data/geo, water plane, parks, subway lines as ribbons in our own colours with plain line letters and stations as markers (no MTA logos or bullets); toon shading via a shared gradient ramp and palette tokens from config/theme.json; camera rig with one-finger pan, pinch zoom and limited two-finger rotate and tilt, bounded to the NYC extent with zoom limits; frameloop is on demand (test hook frame counter shows zero frames over 2 s idle); zero console warnings with the pinned three version (if R3F triggers three deprecation warnings, pin three to the newest version that does not and record it in progress.md); required map attribution visible on the map; a test-mode hook exposes camera state and renderer.info; Playwright pans and zooms on mobile-390 and asserts camera state; draw calls and triangles at the default view are within the mid-tier budget.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
@@ -275,7 +275,7 @@
       "requires": [],
       "acceptance": "Inside the S09 location action sheet (lazy-loaded per DEC-11): boutique and thrift venues show a shop listing every for-sale item with copy name, slot, rarity, price via formatMoney and a Buy button whose disabled state explains why (owned, can't afford: shortfall) in its accessible name; an inventory panel reachable from the HUD lists owned wearables and gifts with Equip/Unequip, Sell (showing the current resale value) and Use on yourself; job-site and other job venues offer Work a shift for each job they list, with locked jobs showing the why-locked copy in the button's accessible name and an out-of-energy state; rent status (next due day, amount owed, last rent notice) shows in a HUD or phone panel using the S11 copy helpers; every action goes through the store and shows the engine's outcome or typed error in voice; all controls are native, 44 px targets, axe-clean, inside the overlay system (UX-1); Playwright on mobile-390 and desktop-1280 buys an item, equips it, sells it, works a shift and sees cash and clock change, and sees a rent payment notice after advancing past a rent day via a test hook.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },

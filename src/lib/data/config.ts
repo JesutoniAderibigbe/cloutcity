@@ -8,6 +8,7 @@ import onboardingJson from '@data/config/onboarding.json'
 import perfJson from '@data/config/perf.json'
 import progressionJson from '@data/config/progression.json'
 import realtimeJson from '@data/config/realtime.json'
+import sceneJson from '@data/config/scene.json'
 import themeJson from '@data/config/theme.json'
 import { parseDataFile } from './parse'
 import {
@@ -22,6 +23,7 @@ import {
   createProgressionConfigSchema,
   ThemeConfigSchema,
 } from './schemas/config'
+import { SceneConfigSchema } from './schemas/scene'
 
 export const audio = parseDataFile('config/audio.json', AudioConfigSchema, audioJson)
 export const balance = parseDataFile('config/balance.json', BalanceConfigSchema, balanceJson)
@@ -45,3 +47,4 @@ export const progression = parseDataFile(
 )
 export const realtime = parseDataFile('config/realtime.json', RealtimeConfigSchema, realtimeJson)
 export const theme = parseDataFile('config/theme.json', ThemeConfigSchema, themeJson)
+export const scene = parseDataFile('config/scene.json', SceneConfigSchema, sceneJson)

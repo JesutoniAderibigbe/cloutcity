@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures/test'
 import { audio, gainOf, installAudioProbe, probeOf } from './fixtures/audio'
+import { waitForMapSettled } from './helpers/scene'
 
 // Sound settings (S05b): loaded on demand, native controls, live changes per channel.
 
@@ -8,6 +9,7 @@ test('the sheet loads on demand, opening it stays silent, and each slider moves 
 }) => {
   await installAudioProbe(page)
   await page.goto('/')
+  await waitForMapSettled(page)
   await page.waitForLoadState('networkidle')
   const scripts: string[] = []
   page.on('request', (request) => {
@@ -76,6 +78,7 @@ test('the sound control stays inside the HUD, at least 44 px', async ({ page }) 
 
 test('accessible with the sheet closed and open', async ({ page, checkA11y }) => {
   await page.goto('/')
+  await waitForMapSettled(page)
   await checkA11y()
   await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
   await expect(page.getByRole('region', { name: 'Sound' })).toBeVisible()
@@ -102,7 +105,9 @@ test('the sound settings and an event can be open together without overlapping (
     window.__CLOUTCITY_E2E__ = true
   })
   await page.goto('/')
+  await waitForMapSettled(page)
   await page.waitForFunction(() => window.__cloutcityTest?.events !== undefined)
+  await waitForMapSettled(page)
   await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
   const sheet = page.getByRole('region', { name: 'Sound' })
   await expect(sheet).toBeVisible()
@@ -146,6 +151,7 @@ test('a long track title stays on one truncated line inside the HUD, clear of th
   page,
 }) => {
   await page.goto('/')
+  await waitForMapSettled(page)
   await page.getByRole('button', { name: 'Turn on sound' }).click()
   const toggle = page.getByRole('button', { name: 'My own music' })
   await toggle.click()
@@ -196,6 +202,7 @@ test('volumes saved by a newer build are shown and never overwritten', async ({ 
     }
   }, newer)
   await page.goto('/')
+  await waitForMapSettled(page)
   await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
   const sheet = page.getByRole('region', { name: 'Sound' })
   await expect(sheet.getByRole('slider', { name: 'Master' })).toHaveValue('55')
@@ -215,6 +222,7 @@ test('a corrupt sound save falls back to the defaults without a console error', 
     )
   })
   await page.goto('/')
+  await waitForMapSettled(page)
   await page.getByRole('button', { name: 'Sound settings', exact: true }).click()
   await expect(
     page.getByRole('region', { name: 'Sound' }).getByRole('slider', { name: 'Master' }),

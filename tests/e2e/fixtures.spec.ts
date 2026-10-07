@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test'
 import { completedOnboardingSeed } from './fixtures/onboarding-seed'
 import { expect, test } from './fixtures/test'
 import { storedOnboarding, welcomeDialog } from './fixtures/welcome'
@@ -99,6 +100,25 @@ test.describe('console guard coverage (PERF-1)', () => {
     }, SWIFTSHADER_NOTE)
   })
 
+  test('ignores the SwiftShader note with the exact ANGLE "no longer repeat" suffix', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await page.evaluate((note) => {
+      // eslint-disable-next-line no-console -- reproducing the browser's own message
+      console.warn(note)
+    }, `${SWIFTSHADER_NOTE} (this message will no longer repeat)`)
+  })
+
+  test('does not ignore the suffixed note when logged as an error', async ({ page }) => {
+    test.fail()
+    await page.goto('/')
+    await page.evaluate((note) => {
+      // eslint-disable-next-line no-console -- deliberately provoking the guard
+      console.error(note)
+    }, `${SWIFTSHADER_NOTE} (this message will no longer repeat)`)
+  })
+
   const nearMisses: ReadonlyArray<readonly [string, string]> = [
     [
       'a different GL Driver Message',
@@ -109,6 +129,16 @@ test.describe('console guard coverage (PERF-1)', () => {
     ['the note followed by a second line', `${SWIFTSHADER_NOTE}\nTypeError: x is undefined`],
     ['the note with another severity', SWIFTSHADER_NOTE.replace('High)', 'Medium)')],
     ['the note without a context address', SWIFTSHADER_NOTE.replace(/^\[[^\]]+\]/, '')],
+    [
+      'the suffixed note with trailing content',
+      `${SWIFTSHADER_NOTE} (this message will no longer repeat); then something else broke`,
+    ],
+    ['a different parenthesised suffix', `${SWIFTSHADER_NOTE} (this message will repeat)`],
+    ['the suffix without its space', `${SWIFTSHADER_NOTE}(this message will no longer repeat)`],
+    [
+      'the suffix twice',
+      `${SWIFTSHADER_NOTE} (this message will no longer repeat) (this message will no longer repeat)`,
+    ],
   ]
   for (const [label, text] of nearMisses) {
     test(`does not ignore ${label}`, async ({ page }) => {
@@ -170,6 +200,120 @@ test('console guard fails on console.error emitted 100 ms after the test body en
       // eslint-disable-next-line no-console -- deliberately provoking the guard
       console.error('fixture self-test error after the body ended')
     }, 100)
+  })
+})
+
+// `expectedConsole`: an expected message is let through only if it really appears (exact type
+// and text), and anything else still fails.
+const EXPECTED_WARNING = 'fixture self-test: expected warning'
+
+const logWarning = (page: Page, text: string, times = 1) =>
+  page.evaluate(
+    ([message, n]) => {
+      // eslint-disable-next-line no-console -- reproducing an expected warning
+      for (let i = 0; i < n; i++) console.warn(message)
+    },
+    [text, times] as const,
+  )
+
+test.describe('console guard expectedConsole (PERF-1)', () => {
+  test.describe('with one expected warning', () => {
+    test.use({ expectedConsole: [{ type: 'warning', text: EXPECTED_WARNING }] })
+
+    test('lets the expected warning through', async ({ page }) => {
+      await page.goto('/')
+      await logWarning(page, EXPECTED_WARNING)
+    })
+
+    test('fails when the expected warning never appears', async ({ page }) => {
+      test.fail()
+      await page.goto('/')
+    })
+
+    test('still fails on an unexpected warning next to the expected one', async ({ page }) => {
+      test.fail()
+      await page.goto('/')
+      await logWarning(page, EXPECTED_WARNING)
+      await logWarning(page, 'fixture self-test: something else')
+    })
+
+    test('does not match the same text at another level', async ({ page }) => {
+      test.fail()
+      await page.goto('/')
+      await page.evaluate((text) => {
+        // eslint-disable-next-line no-console -- deliberately provoking the guard
+        console.error(text)
+      }, EXPECTED_WARNING)
+    })
+
+    test('does not match a string expectation by substring', async ({ page }) => {
+      test.fail()
+      await page.goto('/')
+      await logWarning(page, `${EXPECTED_WARNING}!`)
+    })
+
+    test('still fails on an uncaught page error', async ({ page }) => {
+      test.fail()
+      await page.goto('/')
+      await logWarning(page, EXPECTED_WARNING)
+      await page.evaluate(() => {
+        setTimeout(() => {
+          throw new Error('fixture self-test error')
+        }, 0)
+      })
+      await page.waitForTimeout(50)
+    })
+  })
+
+  test.describe('with an exact count', () => {
+    test.use({ expectedConsole: [{ type: 'warning', text: EXPECTED_WARNING, count: 1 }] })
+
+    test('fails when the warning appears more often than expected', async ({ page }) => {
+      test.fail()
+      await page.goto('/')
+      await logWarning(page, EXPECTED_WARNING, 2)
+    })
+  })
+
+  test.describe('with two expected messages', () => {
+    test.use({
+      expectedConsole: [
+        [
+          { type: 'warning', text: EXPECTED_WARNING },
+          { type: 'error', text: 'fixture self-test: expected error' },
+        ],
+        { scope: 'test' },
+      ],
+    })
+
+    test('lets both through when both appear', async ({ page }) => {
+      await page.goto('/')
+      await logWarning(page, EXPECTED_WARNING)
+      await page.evaluate(() => {
+        // eslint-disable-next-line no-console -- reproducing an expected error
+        console.error('fixture self-test: expected error')
+      })
+    })
+
+    test('fails when only one of them appears', async ({ page }) => {
+      test.fail()
+      await page.goto('/')
+      await logWarning(page, EXPECTED_WARNING)
+    })
+  })
+
+  test.describe('with a pattern for a structured logger record', () => {
+    test.use({
+      expectedConsole: [{ type: 'warning', text: /^\{"level":"warn","msg":"probe record"\}$/ }],
+    })
+
+    test('matches an object argument by its JSON', async ({ page }) => {
+      await page.goto('/')
+      await page.evaluate(() => {
+        // eslint-disable-next-line no-console -- reproducing a log.ts record
+        console.warn({ level: 'warn', msg: 'probe record' })
+      })
+    })
   })
 })
 

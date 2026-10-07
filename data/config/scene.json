@@ -1,0 +1,72 @@
+{
+  "camera": {
+    "start": {
+      "lat": 40.7471,
+      "lng": -73.9456
+    },
+    "fovDeg": 45,
+    "distanceM": 4500,
+    "minDistanceM": 250,
+    "maxDistanceM": 40000,
+    "polarDeg": {
+      "default": 48,
+      "min": 12,
+      "max": 60
+    },
+    "azimuthDeg": {
+      "default": 0,
+      "min": -40,
+      "max": 40
+    },
+    "nearPerDistance": 0.01,
+    "nearMinM": 1,
+    "nearMaxM": 500,
+    "farPerMaxDistance": 2.5
+  },
+  "land": {
+    "heightM": 60,
+    "baseM": 30
+  },
+  "water": {
+    "extraM": 20000
+  },
+  "parks": {
+    "liftM": 1
+  },
+  "subway": {
+    "liftM": 4,
+    "lineWidthPx": 3,
+    "casing": true,
+    "casingWidthPx": 6
+  },
+  "stations": {
+    "radialSegments": 8,
+    "heightM": 10,
+    "radiusPerDistance": 0.004,
+    "minRadiusM": 6,
+    "maxRadiusM": 120,
+    "rescaleRatio": 1.15
+  },
+  "labels": {
+    "maxDistanceM": 12000,
+    "chipSizeM": 150,
+    "chipGapM": 20,
+    "offsetM": 160,
+    "liftM": 6,
+    "atlasCellPx": 64,
+    "alphaTest": 0.5,
+    "chipFill": 0.9,
+    "cornerRadius": 0.22,
+    "fontScale": 0.58,
+    "textMaxWidth": 0.78
+  },
+  "lights": {
+    "ambientIntensity": 0.55,
+    "sunIntensity": 0.9,
+    "sunDirection": {
+      "x": -0.4,
+      "y": 1,
+      "z": 0.6
+    }
+  }
+}

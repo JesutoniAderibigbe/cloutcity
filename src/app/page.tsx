@@ -8,10 +8,10 @@ import { HudPanelMount } from '@/components/hud/HudPanelMount'
 import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
-import { ScenePlaceholder } from '@/components/overlay/ScenePlaceholder'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
 import { WelcomeMount } from '@/components/welcome/WelcomeMount'
 import { copy } from '@/lib/copy'
+import { CityScene } from '@/scene/CityScene'
 
 export default function HomePage() {
   return (
@@ -52,8 +52,7 @@ export default function HomePage() {
         tabs: <BottomTabs />,
       }}
     >
-      {/* Scene placeholder until the 3D city lands in S04a; it marks the map playable. */}
-      <ScenePlaceholder />
+      <CityScene />
     </OverlayLayout>
   )
 }

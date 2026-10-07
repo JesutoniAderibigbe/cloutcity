@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures/test'
 import { audio, gainOf, installAudioProbe, trackAudioRequests } from './fixtures/audio'
 import { T0, YEAR, answerWelcomeCard } from './fixtures/welcome'
+import { waitForMapSettled } from './helpers/scene'
 
 // "My own music" mutes our music only: sound effects and city sounds keep playing (S05b).
 
@@ -12,6 +13,7 @@ async function start(page: Page, choice: 'Play our music' | "I'll bring my own")
   const requests = trackAudioRequests(page)
   await page.clock.setFixedTime(T0)
   await page.goto('/')
+  await waitForMapSettled(page)
   await answerWelcomeCard(page, { birthYear: YEAR - 30, consent: true, audio: choice })
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect.poll(() => audio.ready(page)).toBe(true)

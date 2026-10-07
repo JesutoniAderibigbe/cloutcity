@@ -3,6 +3,7 @@ import type { EventContext } from '@/engine/events'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import { ONBOARDING_KEY } from './fixtures/onboarding-seed'
 import { passWelcomeCard, welcomeDialog } from './fixtures/welcome'
+import { waitForMapSettled } from './helpers/scene'
 
 // S05c (DEC-11): the shell of / carries only the boot path. Every other feature loads in its own
 // chunk on first use, with a loading state inside its overlay zone; the welcome card loads as a
@@ -19,12 +20,18 @@ const BODEGA: EventContext = {
 const EVENT_MARKER = 'cc-feature:event-sheet'
 const WELCOME_MARKER = 'cc-feature:welcome'
 const PLACE_MARKER = 'cc-feature:place-sheet'
+const MAP_MARKER = 'cc-feature:city-scene'
 
 /** Controls chunk requests outside the shell: pass, hold until released, or fail. */
 class ChunkGate {
   mode: 'pass' | 'hold' | 'fail' = 'pass'
   /** When set, only chunks whose body contains this text are held or failed. */
   only: string | null = null
+  /**
+   * Keeps the 3D map's chunk in flight for good, so the map never starts. For a test about the
+   * overlay islands alone: starting the map on SwiftShader costs seconds of main thread.
+   */
+  holdMap = false
   /** Bodies of the non-shell chunks served so far, in request order. */
   readonly served: string[] = []
   private releaseHeld: () => void = () => {}
@@ -53,6 +60,7 @@ class ChunkGate {
       if (shell.has(path)) return route.continue()
       const response = await route.fetch()
       const body = await response.text()
+      if (gate.holdMap && body.includes(MAP_MARKER)) return new Promise<void>(() => {})
       const targeted = gate.only === null || body.includes(gate.only)
       if (targeted && gate.mode === 'fail') return route.abort('failed')
       if (targeted && gate.mode === 'hold') await gate.held
@@ -63,7 +71,7 @@ class ChunkGate {
   }
 }
 
-async function bootWithHooks(page: Page) {
+async function bootWithHooks(page: Page, map: 'settled' | 'held' = 'settled') {
   await page.addInitScript(() => {
     window.__CLOUTCITY_E2E__ = true
   })
@@ -71,6 +79,7 @@ async function bootWithHooks(page: Page) {
   await page.waitForFunction(
     () => window.__cloutcityTest?.events !== undefined && window.__cloutcityPlaces !== undefined,
   )
+  if (map === 'settled') await waitForMapSettled(page)
 }
 
 const sheetZone = (page: Page) => page.locator('[data-overlay-zone="sheet"]')
@@ -230,7 +239,8 @@ test.describe('welcome boot island: what loads behind it', () => {
     checkA11y,
   }) => {
     const gate = await ChunkGate.install(page)
-    await bootWithHooks(page)
+    gate.holdMap = true
+    await bootWithHooks(page, 'held')
     await waitForWelcomeGate(page)
     await page.evaluate(
       (context) => window.__cloutcityTest?.events?.open('bodega-cat', context),
@@ -269,6 +279,7 @@ test.describe('welcome boot island: what loads behind it', () => {
     await page.goto('/', { waitUntil: 'commit' })
     await expect(welcomeLoading(page)).toBeVisible()
     await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+    await waitForMapSettled(page)
     await page.evaluate(() => window.__cloutcityPlaces?.open('steam-vent-coffee'))
 
     const sheet = page.locator('[data-place-sheet="steam-vent-coffee"]')
@@ -346,6 +357,7 @@ test.describe('welcome boot island: offline', () => {
     gate.only = WELCOME_MARKER
     gate.mode = 'fail'
     await page.goto('/')
+    await waitForMapSettled(page)
 
     const modal = page.locator('[data-overlay-modal]')
     const retry = modal.getByRole('button', { name: 'Try again' })

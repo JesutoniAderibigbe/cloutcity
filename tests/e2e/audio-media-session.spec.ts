@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures/test'
 import { audio, installAudioProbe, probeOf } from './fixtures/audio'
 import { T0, YEAR, answerWelcomeCard } from './fixtures/welcome'
+import { waitForMapSettled } from './helpers/scene'
 
 // Our sounds never take over the media session: no metadata, no playback state, no media
 // elements, so the player's own music app keeps its lock-screen controls (S05b).
@@ -11,6 +12,7 @@ test('music plays without claiming the media session', async ({ page }) => {
   await installAudioProbe(page)
   await page.clock.setFixedTime(T0)
   await page.goto('/')
+  await waitForMapSettled(page)
   await answerWelcomeCard(page, { birthYear: YEAR - 30, consent: true, audio: 'Play our music' })
   await expect.poll(() => audio.ready(page)).toBe(true)
   await expect.poll(() => audio.playing(page).then((p) => p.music)).not.toBeNull()
@@ -30,6 +32,7 @@ test('after a crossfade to the next track, still no media session and no media e
   await installAudioProbe(page)
   await page.clock.install({ time: T0 })
   await page.goto('/')
+  await waitForMapSettled(page)
   await answerWelcomeCard(page, { birthYear: YEAR - 30, consent: true, audio: 'Play our music' })
   await expect.poll(() => audio.ready(page)).toBe(true)
   await expect.poll(() => audio.playing(page).then((p) => p.music)).not.toBeNull()

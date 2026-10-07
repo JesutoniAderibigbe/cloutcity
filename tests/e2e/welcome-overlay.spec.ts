@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures/test'
+import { hideSceneForScreenshot } from './helpers/scene'
 import {
   T0,
   WELCOME_TITLE,
@@ -144,6 +145,7 @@ test('with reduced motion the card works the same', async ({ page }) => {
 test('the welcome card matches its screenshot', async ({ page }) => {
   await page.goto('/')
   await expect(welcomeDialog(page)).toBeVisible()
+  await hideSceneForScreenshot(page)
   await expect(page).toHaveScreenshot('welcome-card.png')
 })
 
@@ -151,6 +153,7 @@ test('the welcome card with every error matches its screenshot', async ({ page }
   await page.goto('/')
   await welcomeDialog(page).getByRole('button', { name: 'Start playing' }).click()
   await expect(welcomeDialog(page).getByRole('combobox')).toBeFocused()
+  await hideSceneForScreenshot(page)
   await expect(page).toHaveScreenshot('welcome-card-errors.png')
 })
 
@@ -158,6 +161,7 @@ test('the lock screen matches its screenshot', async ({ page }) => {
   await page.goto('/')
   await answerWelcomeCard(page, { birthYear: YEAR - 5, consent: true, audio: 'Play our music' })
   await expect(page.getByRole('dialog', { name: "Come back when you're 18." })).toBeVisible()
+  await hideSceneForScreenshot(page)
   await expect(page).toHaveScreenshot('welcome-card-locked.png')
 })
 

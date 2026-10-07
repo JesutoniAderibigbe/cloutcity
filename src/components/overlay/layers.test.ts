@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  FREE_SCENE_GRID_ROW,
   MODAL_GRID_ROW,
   OVERLAY_LAYER_ORDER,
   OVERLAY_ZONES,
@@ -18,7 +19,7 @@ describe('overlay layers', () => {
   it('puts zones in top-to-bottom order around the free scene row', () => {
     const tracks = overlayGridTracks(overlayLayout)
     expect(tracks).toHaveLength(7)
-    expect(tracks[3]).toBe('minmax(0, 1fr)')
+    expect(tracks[3]).toBe(`minmax(${overlayLayout.freeSceneMinHeightPx}px, 1fr)`)
     expect(ZONE_GRID_ROW.banner).toBeLessThan(ZONE_GRID_ROW.hud)
     expect(ZONE_GRID_ROW.hud).toBeLessThan(4)
     expect(ZONE_GRID_ROW.toast).toBeGreaterThan(4)
@@ -33,6 +34,10 @@ describe('overlay layers', () => {
     expect(tracks[6]).toContain('env(safe-area-inset-bottom')
   })
 
+  it('keeps a free scene row tall enough for the map attribution and its 44 px link', () => {
+    expect(overlayLayout.freeSceneMinHeightPx).toBeGreaterThanOrEqual(44)
+  })
+
   it('stacks the scene below every zone', () => {
     for (const layer of OVERLAY_LAYER_ORDER.filter((l) => l !== 'scene')) {
       expect(layerZIndex(layer)).toBeGreaterThan(layerZIndex('scene'))
@@ -45,7 +50,7 @@ describe('overlay layers', () => {
     }
     const [start, end] = MODAL_GRID_ROW.split(' / ').map(Number)
     expect(start).toBe(ZONE_GRID_ROW.hud + 1)
+    expect(start).toBe(FREE_SCENE_GRID_ROW)
     expect(end).toBe(ZONE_GRID_ROW.tabs)
-    expect(overlayGridTracks(overlayLayout)[(start ?? 0) - 1]).toBe('minmax(0, 1fr)')
   })
 })

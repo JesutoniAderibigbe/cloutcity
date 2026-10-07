@@ -7,7 +7,38 @@
     "pink-400": "#ff4fa3",
     "taxi-400": "#ffd23f",
     "ink-50": "#f6f4ff",
-    "ink-300": "#b9b3e6"
+    "ink-300": "#b9b3e6",
+    "sea-900": "#0a1433",
+    "indigo-500": "#4b3fa8",
+    "indigo-600": "#3f348f",
+    "violet-600": "#4a3285",
+    "slate-600": "#383f80",
+    "teal-700": "#1f6b66",
+    "violet-800": "#33245c",
+    "sky-400": "#4cc9ff",
+    "mint-400": "#5cf2b3",
+    "orange-400": "#ff9a3d",
+    "lilac-300": "#c8a6ff"
   },
-  "themeColor": "night-950"
+  "themeColor": "night-950",
+  "scene": {
+    "background": "night-950",
+    "water": "sea-900",
+    "land": {
+      "manhattan": "indigo-500",
+      "brooklyn": "indigo-600",
+      "queens": "violet-600",
+      "bronx": "slate-600",
+      "staten-island": "night-700"
+    },
+    "park": "teal-700",
+    "cemetery": "violet-800",
+    "subwayLines": ["pink-400", "taxi-400", "sky-400", "mint-400", "orange-400", "lilac-300"],
+    "subwayCasing": "night-950",
+    "station": "ink-50",
+    "labelInk": "night-950",
+    "ambientLight": "ink-50",
+    "sunLight": "ink-50",
+    "toonRamp": [0.35, 0.65, 1]
+  }
 }
