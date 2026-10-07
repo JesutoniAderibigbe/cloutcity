@@ -16,6 +16,8 @@ import {
 import { unlockAudioFromGesture } from '@/lib/audio/unlock'
 import { onboardingConfig, onboardingStore } from '@/state/onboarding'
 import { startGuestSession } from '@/state/session'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/welcome'
 
 interface WelcomeCardProps {
   readonly titleId: string

@@ -25,7 +25,7 @@ import {
 import { mixerGains, type Gains } from './mixer'
 import { attachMusicRetry } from './loadRuntime'
 import { attachSfxPlayer } from './sfx'
-import { installAudioTestHook, type AudioTestHook } from './testHook'
+import type { AudioTestHook } from './testHook'
 import { audioTier } from './tier'
 import type { AudioConfig } from '@/lib/data/schemas/config'
 import { log, type Logger } from '@/lib/log'
@@ -471,7 +471,12 @@ export function attach(context: AudioContext): AudioRuntime {
     clearTimer: (handle) => clearTimeout(handle),
     attachSfx: attachSfxPlayer,
     attachMusicRetry,
-    installTestHook: installAudioTestHook,
+    installTestHook: (hook) => {
+      // Inlined at build time (next.config.ts): production builds drop the hook entirely, and
+      // test builds load it from its own chunk.
+      if (process.env.NEXT_PUBLIC_TEST_HOOKS !== '1') return
+      void import('./testHook').then((module) => module.installAudioTestHook(hook))
+    },
     logger: log,
   })
   active = { context, runtime }

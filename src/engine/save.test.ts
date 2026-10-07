@@ -8,7 +8,7 @@ const schema = createSaveSchema(config)
 
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(5)
+    expect(SAVE_VERSION).toBe(6)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -182,6 +182,7 @@ describe('save v3: clout, home and rent', () => {
           home: config.startHome,
           rent: { owed: 0, missed: 0 },
           inventory: emptyInventory,
+          clubNights: {},
         },
         events: initialEventsState(),
       },
@@ -250,7 +251,7 @@ describe('save v3: tampered and edge saves', () => {
     'a home of %j is repaired to the start home',
     (home) => {
       const persisted = fromJson(
-        `{"cash":9,"stats":{"energy":1,"hunger":2,"mood":3},"clout":4,"home":${JSON.stringify(home)},"rent":{"owed":5,"missed":1},"inventory":{"wearables":[],"gifts":[],"outfit":{}}}`,
+        `{"cash":9,"stats":{"energy":1,"hunger":2,"mood":3},"clout":4,"home":${JSON.stringify(home)},"rent":{"owed":5,"missed":1},"inventory":{"wearables":[],"gifts":[],"outfit":{}},"clubNights":{}}`,
       )
       const result = loadSave(persisted, config)
       if (!result.ok) throw new Error('expected a repaired save')
@@ -262,6 +263,7 @@ describe('save v3: tampered and edge saves', () => {
         home: config.startHome,
         rent: { owed: 5, missed: 1 },
         inventory: emptyInventory,
+        clubNights: {},
       })
       expect(schema.safeParse(result.save).success).toBe(true)
     },
@@ -317,6 +319,7 @@ describe('save v3: tampered and edge saves', () => {
         home: config.startHome,
         rent: { owed: 0, missed: 0 },
         inventory: emptyInventory,
+        clubNights: {},
       },
       speed: 1,
       events: initialEventsState(),
@@ -336,18 +339,25 @@ describe('event state in the save (v5)', () => {
   const base = initialSave(config)
   const eventId = config.events.catalog[0]?.id ?? 'missing'
   const source = { type: 'event', eventId, choiceId: 'a' } as const
-  const v4: Record<string, unknown> = { ...base }
+  // A v4 save has neither event state nor club nights (v6).
+  const v4Player: Record<string, unknown> = { ...base.player }
+  delete v4Player.clubNights
+  const v4: Record<string, unknown> = { ...base, player: v4Player }
   delete v4.events
 
   it('v4 -> v5 keeps the clock, player and speed, and starts event state fresh', () => {
     const progressed = {
       ...v4,
       clock: { minute: 4321, remainderMs: 12 },
-      player: { ...base.player, cash: 77, clout: 9 },
+      player: { ...v4Player, cash: 77, clout: 9 },
       speed: 2,
     }
     expect(migrateSave(progressed, 4, config)).toEqual({
-      save: { ...progressed, events: initialEventsState() },
+      save: {
+        ...progressed,
+        player: { ...progressed.player, clubNights: {} },
+        events: initialEventsState(),
+      },
       outcome: 'carried',
     })
   })
@@ -356,7 +366,7 @@ describe('event state in the save (v5)', () => {
     const damaged = {
       ...v4,
       clock: { minute: 60, remainderMs: -5 },
-      player: { ...base.player, stats: { energy: 400, hunger: 1, mood: 1 } },
+      player: { ...v4Player, stats: { energy: 400, hunger: 1, mood: 1 } },
       speed: 9,
     }
     const { save, outcome } = migrateSave(damaged, 4, config)
@@ -370,8 +380,8 @@ describe('event state in the save (v5)', () => {
     expect(migrateSave({ player: { cash: 1 } }, 4, config).outcome).toBe('fresh')
   })
 
-  it('a save of every version so far (v1 to v5) loads, carrying its progress', () => {
-    const player = base.player
+  it('a save of every version so far (v1 to v6) loads, carrying its progress', () => {
+    const player = v4Player
     const saves: Record<number, unknown> = {
       1: { player: { cash: 501 } },
       2: { clock: base.clock, player: { cash: 502, stats: player.stats }, speed: 1 },
@@ -381,6 +391,7 @@ describe('event state in the save (v5)', () => {
         speed: 1,
       },
       4: { ...v4, player: { ...player, cash: 504 } },
+      5: { ...base, player: { ...player, cash: 505 } },
     }
     for (const [version, persisted] of Object.entries(saves)) {
       const migrated = migrateSave(persisted, Number(version), config)
@@ -388,9 +399,9 @@ describe('event state in the save (v5)', () => {
       expect(migrated.save.player.cash, `v${version}`).toBe(500 + Number(version))
       expect(schema.safeParse(migrated.save).success, `v${version}`).toBe(true)
     }
-    const v5 = { ...base, player: { ...player, cash: 505 } }
-    const loaded = loadSave(JSON.parse(JSON.stringify(v5)), config)
-    expect(loaded.ok && loaded.save.player.cash).toBe(505)
+    const v6 = { ...base, player: { ...base.player, cash: 506 } }
+    const loaded = loadSave(JSON.parse(JSON.stringify(v6)), config)
+    expect(loaded.ok && loaded.save.player.cash).toBe(506)
     expect(loaded.ok && loaded.repaired).toEqual([])
   })
 
@@ -484,5 +495,73 @@ describe('event state in the save (v5)', () => {
     if (!result.ok) throw new Error('expected a repaired save')
     expect(result.save.events).toEqual({ ...events, active: null, history: { [eventId]: 20 } })
     expect(result.repaired).toEqual(['events.active', 'events.history'])
+  })
+})
+
+describe('club nights in the save (v6)', () => {
+  const base = initialSave(config)
+  const clubId = Object.keys(config.place.clubs)[0] ?? 'missing'
+  const v5Player: Record<string, unknown> = { ...base.player }
+  delete v5Player.clubNights
+  const v5 = { ...base, player: v5Player }
+
+  it('a fresh save has no club nights', () => {
+    expect(base.player.clubNights).toEqual({})
+  })
+
+  it('v5 -> v6 keeps everything and starts with no club nights', () => {
+    const progressed = {
+      ...v5,
+      clock: { minute: 9000, remainderMs: 0 },
+      player: { ...v5Player, cash: 88, clout: 120 },
+    }
+    expect(migrateSave(progressed, 5, config)).toEqual({
+      save: { ...progressed, player: { ...progressed.player, clubNights: {} } },
+      outcome: 'carried',
+    })
+    expect(migrateSave({ ...progressed, admin: true }, 5, config).outcome).toBe('fresh')
+  })
+
+  it('round-trips a club night', () => {
+    const save = {
+      ...base,
+      clock: { minute: 5 * 1440, remainderMs: 0 },
+      player: { ...base.player, clubNights: { [clubId]: 5 } },
+    }
+    const loaded = loadSave(JSON.parse(JSON.stringify(save)), config)
+    expect(loaded).toEqual({ ok: true, save, repaired: [] })
+    expect(schema.safeParse(save).success).toBe(true)
+  })
+
+  it.each([
+    ['an unknown club', { 'no-such-club': 1 }],
+    ['a future night', { [clubId]: 99 }],
+    ['a negative night', { [clubId]: -1 }],
+    ['a fractional night', { [clubId]: 1.5 }],
+    ['a string night', { [clubId]: '1' }],
+  ])('drops %s and keeps the rest of the save', (_label, clubNights) => {
+    const result = loadSave({ ...base, player: { ...base.player, cash: 42, clubNights } }, config)
+    if (!result.ok) throw new Error('expected a repaired save')
+    expect(result.repaired).toEqual(['player.clubNights'])
+    expect(result.save.player.clubNights).toEqual({})
+    expect(result.save.player.cash).toBe(42)
+  })
+
+  it.each([null, [], 'x', undefined])('replaces club nights of %j with none', (clubNights) => {
+    const result = loadSave({ ...base, player: { ...base.player, clubNights } }, config)
+    expect(result.ok && result.save.player.clubNights).toEqual({})
+    expect(result.ok && result.repaired).toEqual(['player.clubNights'])
+  })
+
+  it('a "__proto__" key from JSON is dropped without polluting anything', () => {
+    const persisted = JSON.parse(
+      JSON.stringify({ ...base, player: { ...base.player, clubNights: {} } }).replace(
+        '"clubNights":{}',
+        '"clubNights":{"__proto__":{"polluted":1}}',
+      ),
+    ) as unknown
+    const result = loadSave(persisted, config)
+    expect(result.ok && result.save.player.clubNights).toEqual({})
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
   })
 })

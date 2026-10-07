@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { EventContext } from '@/engine/events'
 import { createLogger, type LogRecord } from '@/lib/log'
+import { engineConfig } from '@/engine/config'
 import { toNpcId } from '@/engine/items'
 import { createSafeJsonStorage } from './storage'
 import {
@@ -56,6 +57,9 @@ const saved = (local: Storage) => JSON.parse(local.getItem(STORE_KEY) ?? 'null')
 
 const fresh = initialPersistedState()
 const saveOf = (cash: number): PersistedState => ({ ...fresh, player: { ...fresh.player, cash } })
+/** The shipped bodega breakfast's price (balance.json is tuned, so tests read it). */
+const BODEGA = engineConfig.actions.catalog['bodega-breakfast']?.cashCost ?? Number.NaN
+const START_CASH = engineConfig.startCash
 
 describe('game store persistence', () => {
   it('starts from the balance anchors', () => {
@@ -68,6 +72,7 @@ describe('game store persistence', () => {
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
       inventory: { wearables: [], gifts: [], outfit: {} },
+      clubNights: {},
     })
     expect(state.clock).toEqual({ minute: 480, remainderMs: 0 })
     expect(state.speed).toBe(1)
@@ -79,7 +84,7 @@ describe('game store persistence', () => {
     expect(game.getState().performAction('bodega-breakfast').ok).toBe(true)
     const after = saved(local!) as { state: PersistedState; version: number }
     expect(after.version).toBe(STORE_VERSION)
-    expect(after.state.player.cash).toBe(144)
+    expect(after.state.player.cash).toBe(START_CASH - BODEGA)
     expect(after.state.clock.minute).toBe(500)
     expect(Object.keys(after.state).sort()).toEqual(['clock', 'events', 'player', 'speed'])
   })
@@ -184,6 +189,7 @@ describe('game store persistence', () => {
         home: 'queens-room',
         rent: { owed: 280, missed: 1 },
         inventory: { wearables: [], gifts: [], outfit: {} },
+        clubNights: {},
       },
       speed: 1,
     })
@@ -227,7 +233,7 @@ describe('store actions call the engine', () => {
     const game = store()
     const ok = game.getState().performAction('bodega-breakfast')
     expect(ok.ok).toBe(true)
-    expect(game.getState().player.cash).toBe(144)
+    expect(game.getState().player.cash).toBe(START_CASH - BODEGA)
     const before = game.getState()
     const unknown = game.getState().performAction('teleport')
     expect(unknown).toEqual({ ok: false, error: { code: 'UNKNOWN_ACTION', actionId: 'teleport' } })
@@ -241,7 +247,7 @@ describe('store actions call the engine', () => {
     const result = game.getState().performAction('bodega-breakfast')
     expect(result).toEqual({
       ok: false,
-      error: { code: 'INSUFFICIENT_FUNDS', required: 6, available: 5 },
+      error: { code: 'INSUFFICIENT_FUNDS', required: BODEGA, available: 5 },
     })
     expect(game.getState().player.cash).toBe(5)
     expect(game.getState().clock.minute).toBe(480)
@@ -254,7 +260,7 @@ describe('storage unavailable', () => {
     const game = store()
     game.getState().performAction('bodega-breakfast')
     game.getState().performAction('bodega-breakfast')
-    expect(game.getState().player.cash).toBe(138)
+    expect(game.getState().player.cash).toBe(START_CASH - 2 * BODEGA)
     expect(records.filter((r) => r.level === 'info')).toHaveLength(1)
     expect(records.filter((r) => r.level === 'warn' || r.level === 'error')).toEqual([])
   })
@@ -267,7 +273,7 @@ describe('storage unavailable', () => {
     }, logger)
     const game = createGameStore(storage, logger)
     game.getState().performAction('bodega-breakfast')
-    expect(game.getState().player.cash).toBe(144)
+    expect(game.getState().player.cash).toBe(START_CASH - BODEGA)
     const { clock, player, speed, events } = game.getState()
     expect(storage.getItem(STORE_KEY)).toEqual({
       state: { clock, player, speed, events },
@@ -279,7 +285,7 @@ describe('storage unavailable', () => {
     const { store } = setup(undefined)
     const game = store()
     game.getState().performAction('bodega-breakfast')
-    expect(game.getState().player.cash).toBe(144)
+    expect(game.getState().player.cash).toBe(START_CASH - BODEGA)
   })
 
   it('switches to memory mid-session when a write starts failing', () => {
@@ -291,7 +297,7 @@ describe('storage unavailable', () => {
       throw new DOMException('full', 'QuotaExceededError')
     }
     game.getState().performAction('bodega-breakfast')
-    expect(game.getState().player.cash).toBe(138)
+    expect(game.getState().player.cash).toBe(START_CASH - 2 * BODEGA)
     expect(records.filter((r) => r.level === 'info')).toHaveLength(1)
     expect(records.filter((r) => r.level === 'warn' || r.level === 'error')).toEqual([])
   })
@@ -395,7 +401,7 @@ describe('saving is guarded', () => {
     expect(game.getState().newerSavePresent).toBe(false)
     expect(saved(local)).toEqual({ state: fresh, version: STORE_VERSION })
     game.getState().performAction('bodega-breakfast')
-    expect((saved(local) as { state: PersistedState }).state.player.cash).toBe(144)
+    expect((saved(local) as { state: PersistedState }).state.player.cash).toBe(START_CASH - BODEGA)
   })
 
   it('a normal load is not flagged as a newer save', () => {
@@ -469,6 +475,7 @@ describe('jobs and rent in the store', () => {
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
       inventory: { wearables: [], gifts: [], outfit: {} },
+      clubNights: {},
     })
     expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
@@ -617,6 +624,7 @@ describe('items in the store', () => {
     const local = new MemoryStorage()
     const v3player: Record<string, unknown> = { ...saveOf(321).player }
     delete v3player.inventory
+    delete v3player.clubNights
     const v3: Record<string, unknown> = { ...fresh, player: v3player }
     delete v3.events
     local.setItem(STORE_KEY, JSON.stringify({ state: v3, version: 3 }))

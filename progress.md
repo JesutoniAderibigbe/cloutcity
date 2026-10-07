@@ -113,6 +113,21 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   draw calls and triangles.
 - docs/local/ is gitignored: put OPEN-ISSUES pointers into iteration notes.
 
+- Shell diet (S05c): the shell of / carries only the boot path (≤ shellJsGzKB − shellHeadroomGzKB, 160 KB);
+  features load via lazyIsland with their own copy namespace (data/copy/<ns>/), registered by
+  importing src/lib/copy/ns/<ns>.ts. copy() throws CopyNamespaceNotLoadedError for an unloaded
+  namespace. Tests/server import @/lib/copy/all. Test hooks need NEXT_PUBLIC_TEST_HOOKS=1 (e2e build).
+- The page is inert from the first byte until the modal island settles (boot hold); e2e waits via
+  waitForWelcomeGate().
+- Auto-mode may deny `git rebase` in lanes: integrate by committing the lane and merging dev into it
+  (non-destructive), then fast-forward dev.
+
+- Supabase (S18): stock default privileges are wide open; migration 1 revokes them, so every table and
+  RPC needs an explicit GRANT (catalog test catches gaps). Client RPCs start with
+  `v_uid := private.require_attestation();` or carry `@attestation-exempt: <reason>` (update EXEMPT in
+  catalog.test.ts). SQLSTATE PTxyz → HTTP xyz; supabase-js returns {code, message}. One local stack is
+  shared by all checkouts: `db reset` affects every lane. `npm run test:integration` needs it running.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.
@@ -148,6 +163,15 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
 (none yet: phase, qa-mafia verdicts, report paths, PR link)
 
 ## Tuning log
+- S12 economy sim (TUNE-3): target missed (barista $372, retail $484, delivery $586/wk; free naps =
+  unlimited energy; barista dominated). Costs-only fix, wages fixed: hunger decay 5→6/h; home-meal
+  $4→$8; bodega-breakfast $6→$10; sleep +80→+55 energy; nap +15→+4 energy; new deli-coffee 10 min $12
+  +20 energy; shift energy retail 15→25, delivery 25→40 (barista 15); housing.moveInCost brooklyn-1br
+  $400, manhattan-loft $1000 (placeholder). Bot: 2 shifts/day, 2 rides/day at $3, deli coffee before
+  shifts, never sleeps at 0 energy, skips work that would not end by 22:00. Result (30 days): retail
+  (best) weeks 2–4 $140/$140/$140, affordable day 13, final $884; barista $112×3, day 14, $752;
+  delivery $106/$114/$106, day 14, $748; min cash $147, no misses or evictions. Baseline:
+  data/sim/economy-baseline.derived.json (npm run econ:update).
 - S03 placeholders (TUNE-1): decay per game hour energy 3, hunger 5, mood 2; start stats 100/80/70;
   at-zero penalties (hunger 0: +3 energy/+4 mood drain per h; energy 0: +3 mood drain, 1.5x duration;
   mood 0: 1.25x duration); catalog sleep 480 min +80 energy +5 mood, nap 60 min +15 energy,
@@ -228,4 +252,27 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   cycle (category bypass, newer-save info log). Gates on dev: 1530 unit, 232 e2e, shell 174.6 KB.
   OPEN-ISSUES: INT-3 two RNG modules (rng.ts vs transit random.ts) still to merge; clout/item event
   effects stay pending until S13/S10a wire them.
+- S09 (passed on lane-e, fast-forwarded onto dev; lane gates on this exact tree: 1667 unit, 270
+  e2e, shell 175.6 KB): place action sheet via openPlace(id), hours, club door + cover, club clout
+  once per club per night (save v6), landmark Visit + flexMultiplier config, memorial info only,
+  busy state until dismissed. Pending: S12 merge broke 3 tests (events decay, taxi centroid sweep) —
+  rebase lane-c/S12 onto dev and fix; S05c next (plan approved, all defaults); hold S05b (177.7 KB)
+  and S04a until S05c merges.
+- S12 (passed on lane-c, rebased onto dev as one commit; lane gates on this tree: 1741 unit, 270 e2e,
+  shell 175.7 KB): deterministic 30-day economy bot per entry job, target + exact-baseline drift
+  layers, ±1 sweep robustness, plausibility fixture for S18c, src/engine/housing.ts canAffordMove,
+  shared HOME_IDS tie-break. Fix cycles: bot schedule robustness (midnight wrap), re-tune; integration:
+  event tests pin their stats block, zone-centroid taxi sweep gets a documented 30 s limit.
+  OPEN-ISSUES: TUNE-3 placeholders (Manhattan move-in), mood sits at 0 for the bot most evenings.
+- S05c (attempt 1, passed): shell of / 175.6 → 141.1 KB gz via boot islands (welcome + onboarding +
+  zod/mini; store + engine + catalogs + event host ≈46 KB eager), lazy EventSheet/PlaceSheet with
+  in-zone loading and retry, copy split per namespace, shell-boundary.test + scripts/shell-guard.ts
+  (20 KB headroom). Integrated by merging dev into the lane (rebase denied by auto mode). Bug-hunter:
+  18+ gate now fail-closed from the first byte (boot hold), whole-id marker matching, per-feature
+  namespace coverage test. Dev gates: unit 1884, e2e 291 + 1 load flake (FLAKE-1, 30/30 in isolation).
+- S18 (attempt 1, passed): ten tables with RLS and explicit grants, profile trigger + attest_and_consent,
+  private.require_attestation gate + catalog default-deny scan, send_friend_boost one per sender per NY
+  day, service-role-only money tables (livemode=false), Vitest integration harness. Bug-hunter: gate
+  scanner hardened against comments/strings, exposed-schema guard, 17 security probes (124 integration
+  tests). Follow-ups SEC-4..8 in OPEN-ISSUES. Dev gates: unit 1895, integration 124, e2e 292.
 

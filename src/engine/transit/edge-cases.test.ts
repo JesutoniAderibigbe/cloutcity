@@ -178,13 +178,15 @@ describe('reaching every place by taxi (bridges and tunnels in config)', () => {
     expect(failures).toEqual([])
   }, 30_000)
 
+  // Inherently heavy like the sweep above: one taxi plan per zone (71, ~0.75 s unloaded), so the
+  // default 5 s limit trips when the machine is busy. The limit is not hiding a slow planner.
   it('drives to Times Square from every zone centroid', () => {
     const failures = zonesJson.zones.flatMap((zone) => {
       const result = taxiTo(zone.centroid, PLACES.timesSquare)
       return result.ok ? [] : [`${zone.id} ${zone.name}: ${result.error.code}`]
     })
     expect(failures).toEqual([])
-  })
+  }, 30_000)
 
   it('drives along the Rockaway peninsula (Far Rockaway to Rockaway Park)', () => {
     const r = route(taxiTo(nearStation('h11'), nearStation('h15')))

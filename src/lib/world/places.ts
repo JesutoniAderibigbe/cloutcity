@@ -14,11 +14,16 @@ import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
 import { boroughAccess, type BoroughAccess } from '@/engine/boroughs'
 import { engineConfig, type EngineConfig } from '@/engine/config'
-import { baseCopy, copy as activeCopy, type CopyFn, type CopyKey } from '@/lib/copy'
+import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from '@/lib/copy'
 import type { BoroughsFile } from '@/lib/data/schemas/world'
 import type { Borough, Landmark, Venue } from '@/lib/data/schemas/content'
 import { cloutLevelName } from '@/lib/economyCopy'
 import { project } from '@/lib/geo/projection'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/boroughs'
+import '@/lib/copy/ns/landmarks'
+import '@/lib/copy/ns/places'
+import '@/lib/copy/ns/venues'
 
 export const venues = venuesJson.venues as readonly Venue[]
 export const landmarks = landmarksJson.landmarks as readonly Landmark[]
@@ -104,10 +109,6 @@ export function placeAccess(
   return boroughAccess(place.borough, clout, config)
 }
 
-function isCopyKey(key: string): key is CopyKey {
-  return Object.hasOwn(baseCopy.strings, key)
-}
-
 function requireKey(key: string | undefined, what: string): CopyKey {
   if (key === undefined || !isCopyKey(key)) throw new Error(`No copy key "${key}" for ${what}`)
   return key
@@ -162,4 +163,13 @@ export function placeAccessibleName(
   const name = placeName(place, options)
   const reason = boroughClosedReason(place.borough, access, options)
   return reason === null ? name : copy('places.locked.label', { place: name, reason })
+}
+
+const placesById: ReadonlyMap<string, Venue | Landmark> = new Map(
+  [...venues, ...landmarks].map((place) => [place.id, place]),
+)
+
+/** The venue or landmark with `id`, or undefined when there is none. */
+export function findPlace(id: string): Venue | Landmark | undefined {
+  return placesById.get(id)
 }

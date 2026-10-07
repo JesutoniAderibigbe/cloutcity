@@ -30,3 +30,26 @@ export function findCloutLevel(levelId: string, config: EngineConfig): CloutLeve
   const level = config.clout.levels[index]
   return level === undefined ? undefined : { id: level.id, index, minClout: level.minClout }
 }
+
+/**
+ * A clout gain the engine applies to the player. `source` says what earned it; S13 replaces
+ * `applyCloutGain` with the clout ledger (caps, premium limit, audit), so every place that
+ * earns clout goes through this one function.
+ */
+export interface CloutGain {
+  readonly kind: 'clout'
+  /** Whole clout points, never negative. */
+  readonly amount: number
+  readonly source: 'club'
+}
+
+/** Adds a clout gain to the player's clout. */
+export function applyCloutGain<P extends { readonly clout: number }>(
+  player: P,
+  gain: CloutGain,
+): P {
+  if (!Number.isSafeInteger(gain.amount) || gain.amount < 0) {
+    throw new RangeError(`A clout gain must be a whole, non-negative number: ${gain.amount}`)
+  }
+  return { ...player, clout: player.clout + gain.amount }
+}

@@ -38,6 +38,8 @@ import {
   type ItemResult,
 } from '@/engine/items'
 import { workShift, type ShiftResult } from '@/engine/jobs'
+import { performPlaceAction, type PlaceActionResult } from '@/engine/placeActions'
+import type { Place } from '@/engine/places'
 import {
   NewerSaveError,
   SAVE_VERSION,
@@ -73,6 +75,11 @@ export interface GameActions {
   unequipSlot(slot: string): ItemResult
   /** Uses one gift on yourself or an NPC; it is consumed. Never another player. */
   consumeGift(itemId: string, target: GiftTarget): ReturnType<typeof consumeGift>
+  /**
+   * Does one action from a place's action sheet. The engine re-checks the borough, opening
+   * hours, club door, job lock, funds and energy; the state changes only when the result is ok.
+   */
+  performPlaceAction(place: Place, actionId: string): PlaceActionResult
   /** Sets the passive clock speed (one of balance `time.speeds`, i.e. 1x or 2x). */
   setSpeed(speed: number): void
   /**
@@ -269,6 +276,11 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         consumeGift: (itemId, target) => {
           const result = consumeGift(get(), itemId, target, engineConfig)
           if (result.ok) set({ player: result.snapshot.player })
+          return result
+        },
+        performPlaceAction: (place, actionId) => {
+          const result = performPlaceAction(get(), place, actionId, engineConfig)
+          if (result.ok) set({ clock: result.snapshot.clock, player: result.snapshot.player })
           return result
         },
         setSpeed: (speed) => {

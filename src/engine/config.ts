@@ -30,6 +30,10 @@ export interface EngineConfig {
   /** Whole dollars per rent week, by home. */
   readonly rentPerWeek: BalanceConfig['rentPerWeek']
   readonly rent: BalanceConfig['rent']
+  /** Move-in costs (src/engine/housing.ts). */
+  readonly housing: BalanceConfig['housing']
+  /** Food range and the subway fare, in whole dollars. */
+  readonly costs: BalanceConfig['costs']
   readonly clout: BalanceConfig['clout']
   /** Shop, resale and gift-stack rules, plus the cash item catalog (data/items/items.json). */
   readonly items: BalanceConfig['items'] & { readonly catalog: readonly ItemDef[] }
@@ -39,6 +43,8 @@ export interface EngineConfig {
   readonly startCash: number
   /** The home a new player starts in. */
   readonly startHome: HomeId
+  /** Place actions, club doors, landmark visits and flex multipliers (src/engine/placeActions.ts). */
+  readonly place: BalanceConfig['place']
   /** Event tuning plus the event catalog (data/events, validated by EventsFileSchema). */
   readonly events: BalanceConfig['events'] & { readonly catalog: readonly GameEvent[] }
   /**
@@ -105,6 +111,8 @@ export const engineConfig: EngineConfig = {
   jobs: balanceJson.jobs,
   rentPerWeek,
   rent: balanceJson.rent,
+  housing: balanceJson.housing,
+  costs: balanceJson.costs,
   clout: balanceJson.clout,
   items: { ...balanceJson.items, catalog: catalogFromJson(itemsJson.items) },
   boroughs: boroughRules(balanceJson.boroughs),
@@ -113,4 +121,5 @@ export const engineConfig: EngineConfig = {
   // JSON imports widen string unions to `string`; data.test.ts validates the file itself.
   events: { ...balanceJson.events, catalog: eventsJson.events as readonly GameEvent[] },
   places: placeCategories(landmarksJson.landmarks, venuesJson.venues),
+  place: balanceJson.place,
 }

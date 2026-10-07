@@ -1,8 +1,9 @@
 /**
- * Schemas for /data/config. This file imports only `zod` (no path aliases, no other modules) so
- * Node can load it directly from `scripts/` with its built-in type stripping.
+ * Schemas for /data/config. This file imports only `zod` and the dependency-free `../homes.ts` (no
+ * path aliases) so Node can load it directly from `scripts/` with its built-in type stripping.
  */
 import { z } from 'zod'
+import { HOME_IDS, lowestRentHome } from '../homes.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
 export const QualityTierSchema = z.enum(QUALITY_TIERS)
@@ -32,6 +33,11 @@ export const ThrottleProfileSchema = z.strictObject({
 export const PerfConfigSchema = z.strictObject({
   /** Shell JS of route `/`, before the 3D chunk. Read by `npm run budget`. */
   shellJsGzKB: positive,
+  /**
+   * Room the shell keeps below `shellJsGzKB` for features still to land (S05c): the shell may
+   * use at most shellJsGzKB minus this. Read by scripts/shell-guard.ts.
+   */
+  shellHeadroomGzKB: z.number().nonnegative(),
   sceneChunkJsGzKB: positive,
   totalJsToPlayableGzKB: positive,
   baseGeoGzKB: positive,
@@ -116,7 +122,7 @@ export const RARITY_TIERS = ['common', 'medium', 'rare'] as const
 export const RarityTierSchema = z.enum(RARITY_TIERS)
 export type RarityTier = z.infer<typeof RarityTierSchema>
 
-export const HOME_IDS = ['queens-room', 'brooklyn-1br', 'manhattan-loft'] as const
+export { HOME_IDS }
 export const JOB_IDS = ['barista', 'retail', 'delivery', 'junior-dev'] as const
 
 /** Player needs, 0..stats.max. Hunger is fullness: high is fed, 0 is starving. */
@@ -277,6 +283,58 @@ export const TransitConfigSchema = z.strictObject({
 })
 export type TransitConfig = z.infer<typeof TransitConfigSchema>
 
+const KEBAB_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const COPY_KEY = /^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)+$/
+
+/**
+ * A club's door and what a night inside does (S09). The door refuses anyone below
+ * `minCloutLevel` (a `clout.levels` id) with the in-voice `refusalKey` copy; inside, the cover
+ * is paid up front, the night lasts `durationMin` and ends with `moodGain` and `cloutGain`.
+ */
+export const ClubRuleSchema = z.strictObject({
+  coverCharge: dollars,
+  minCloutLevel: z.string().regex(KEBAB_ID),
+  refusalKey: z.string().regex(COPY_KEY),
+  durationMin: positiveInt,
+  energyCost: statPoints,
+  // Positive so a repeat entry (no clout) still says what the night gave.
+  moodGain: positiveInt,
+  cloutGain: positiveInt,
+})
+export type ClubRule = z.infer<typeof ClubRuleSchema>
+
+/**
+ * What a player can do at a place (S09, src/engine/placeActions.ts). Ids of venues, venue
+ * types and landmarks are checked against data/venues and data/landmarks in
+ * src/lib/world/placeActions-content.test.ts (this file cannot import the content schemas).
+ */
+export const PlaceConfigSchema = z.strictObject({
+  /**
+   * Actions offered at each venue type, by id: a key of `actions.catalog` or of `actions`
+   * below. Shifts come from a venue's `jobIds` and the club night from `clubs`, not from here.
+   */
+  venueActions: z.record(z.string().regex(KEBAB_ID), z.array(z.string().regex(KEBAB_ID))),
+  /** Actions only places offer (a coffee, a meal out), shaped like `actions.catalog`. */
+  actions: z.record(z.string().regex(KEBAB_ID), ActionDefSchema),
+  /** Door and night rules for every club venue, by venue id. */
+  clubs: z.record(z.string().regex(KEBAB_ID), ClubRuleSchema),
+  /** The Visit action at any landmark that allows `visit` (never a memorial). */
+  visit: z.strictObject({
+    durationMin: positiveInt,
+    energyCost: statPoints,
+    moodGain: positiveInt,
+  }),
+  /**
+   * How much a flex at a landmark counts (read by S13), by landmark id; others get `default`.
+   * Landmarks that do not allow `flex` (memorials included) have no multiplier at all.
+   */
+  flexMultiplier: z.strictObject({
+    default: positive,
+    byLandmark: z.record(z.string().regex(KEBAB_ID), positive),
+  }),
+})
+export type PlaceConfig = z.infer<typeof PlaceConfigSchema>
+
 /** CLAUDE.md "Balance anchors". Money is whole in-game dollars. */
 export const BalanceConfigSchema = z
   .strictObject({
@@ -327,6 +385,15 @@ export const BalanceConfigSchema = z
       }),
       /** Jobs locked until the player reaches a clout level (an id in `clout.levels`). */
       requiredCloutLevel: z.partialRecord(z.enum(JOB_IDS), z.string()),
+    }),
+    /**
+     * Moving home (S12 measures it, S16 spends it). `moveInCost` is the whole dollars a player
+     * needs on top of their rent reserve (rent owed plus this week's rent) to move into a home.
+     * Every home except the lowest-rent one has a cost; the lowest-rent home (where an eviction
+     * lands; on a tie, the first in HOME_IDS, as the engine's cheapestHome) has none.
+     */
+    housing: z.strictObject({
+      moveInCost: z.partialRecord(z.enum(HOME_IDS), dollars),
     }),
     /**
      * Missed rent. Each consecutive due date the player cannot pay in full adds that week's
@@ -388,6 +455,8 @@ export const BalanceConfigSchema = z
       bronx: BoroughAccessRuleSchema,
       'staten-island': BoroughAccessRuleSchema,
     }),
+    /** Place actions, club doors, landmark visits and flex multipliers (S09). */
+    place: PlaceConfigSchema,
   })
   .refine((balance) => new Set(balance.rarityTiers).size === RARITY_TIERS.length, {
     error: 'rarityTiers must list each tier once',
@@ -458,6 +527,16 @@ export const BalanceConfigSchema = z
       ),
     { error: 'a clout-gated borough must name a level in clout.levels', path: ['boroughs'] },
   )
+  .refine(
+    (balance) => {
+      const cheapest = lowestRentHome(balance.rentPerWeek)
+      return HOME_IDS.every((id) => (id === cheapest) === !(id in balance.housing.moveInCost))
+    },
+    {
+      error: 'housing.moveInCost needs every home except the lowest-rent one, and not that one',
+      path: ['housing', 'moveInCost'],
+    },
+  )
   .refine((balance) => balance.rent.lateFees.length === balance.rent.evictAfterMissed - 1, {
     error: 'rent.lateFees needs one fee for each miss before eviction',
     path: ['rent', 'lateFees'],
@@ -472,6 +551,57 @@ export const BalanceConfigSchema = z
       path: ['clout', 'levels'],
     },
   )
+  .refine(
+    ({ actions, place }) =>
+      Object.values(place.venueActions).every((ids) =>
+        ids.every((id) => Object.hasOwn(actions.catalog, id) || Object.hasOwn(place.actions, id)),
+      ),
+    {
+      error: 'place.venueActions must name actions in actions.catalog or place.actions',
+      path: ['place', 'venueActions'],
+    },
+  )
+  .refine(
+    ({ actions, place }) =>
+      Object.keys(place.actions).every((id) => !Object.hasOwn(actions.catalog, id)),
+    { error: 'place.actions must not reuse an actions.catalog id', path: ['place', 'actions'] },
+  )
+  .refine(
+    ({ actions, stats, place }) =>
+      [
+        ...Object.values(place.actions).map((action) => ({
+          durationMin: action.durationMin,
+          energyCost: action.energyCost,
+          effects: STAT_KEYS.map((key) => action.statEffects[key] ?? 0),
+        })),
+        ...Object.values(place.clubs).map((club) => ({
+          durationMin: club.durationMin,
+          energyCost: club.energyCost,
+          effects: [club.moodGain],
+        })),
+        {
+          durationMin: place.visit.durationMin,
+          energyCost: place.visit.energyCost,
+          effects: [place.visit.moodGain],
+        },
+      ].every(
+        (action) =>
+          action.durationMin <= actions.maxDurationMin &&
+          action.energyCost <= stats.max &&
+          action.effects.every((effect) => Math.abs(effect) <= stats.max),
+      ),
+    { error: 'a place action exceeds maxDurationMin or stats.max', path: ['place'] },
+  )
+  .refine(
+    ({ clout, place }) =>
+      Object.values(place.clubs).every((club) =>
+        clout.levels.some((level) => level.id === club.minCloutLevel),
+      ),
+    {
+      error: 'place.clubs minCloutLevel must name a level in clout.levels',
+      path: ['place', 'clubs'],
+    },
+  )
 export type BalanceConfig = z.infer<typeof BalanceConfigSchema>
 
 export const LayoutConfigSchema = z.strictObject({
@@ -482,14 +612,35 @@ export const LayoutConfigSchema = z.strictObject({
     sheetMaxHeightVh: positive,
     sheetMaxWidthPx: positive,
     tabBarHeightPx: positive,
+    /**
+     * A lazily loaded feature's loading skeleton stays invisible this long, so a fast load never
+     * flashes a placeholder (its status is announced at once).
+     */
+    loadingRevealDelayMs: z.int().nonnegative(),
   }),
 })
 export type LayoutConfig = z.infer<typeof LayoutConfigSchema>
 
-export const CopyConfigSchema = z.strictObject({
-  /** Active slang pack id (a file in data/copy/packs). Swapping it needs no code change. */
-  slangPack: z.string().regex(/^[a-z0-9-]+$/),
-})
+const PACK_ID = /^[a-z0-9-]+$/
+
+export const CopyConfigSchema = z
+  .strictObject({
+    /** Active slang pack id. Swapping it needs no code change. */
+    slangPack: z.string().regex(PACK_ID),
+    /**
+     * Every slang pack. A pack overrides a namespace with data/copy/<namespace>/<pack>.json;
+     * a namespace it does not override has no file for it.
+     */
+    packs: z.array(z.string().regex(PACK_ID)).min(1),
+  })
+  .refine((config) => config.packs.includes(config.slangPack), {
+    error: 'slangPack must be one of packs',
+    path: ['slangPack'],
+  })
+  .refine((config) => new Set(config.packs).size === config.packs.length, {
+    error: 'packs must not repeat',
+    path: ['packs'],
+  })
 export type CopyConfig = z.infer<typeof CopyConfigSchema>
 
 /** The welcome card: the 18+ check, the under-age lock and the consent version (S05a). */

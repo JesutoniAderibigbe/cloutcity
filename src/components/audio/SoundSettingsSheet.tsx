@@ -2,9 +2,10 @@
 
 /**
  * Sound settings (S05b): "My own music" and one volume per channel plus master, applied live.
- * A non-modal region (a labelled <section>) in the sheet zone; Escape or the close button closes it and focus goes back
- * to the gear. Opening it never starts audio; changing a setting while sound is still off is a
- * deliberate tap, so it also turns sound on (GR-13).
+ * A non-modal region (a labelled <section>) in the sheet zone; Escape or the close button
+ * closes it and focus goes back to the gear. Opening it never starts audio; changing a setting
+ * while sound is still off is a deliberate tap, so it also turns sound on (GR-13). A feature
+ * island: it loads on the first gear tap (SoundSheetMount).
  */
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { MIXER_CHANNELS, type MixerChannel } from '@/lib/audio/channels'
@@ -17,6 +18,7 @@ import { audioSettingsStore } from '@/state/audioSettings'
 import { audioStatusStore } from '@/state/audioStatus'
 import { onboardingStore } from '@/state/onboarding'
 import { SOUND_SETTINGS_SHEET_ID, closeSoundSheet } from './soundSheet'
+import '@/lib/copy/ns/audio'
 
 const LABEL: Readonly<Record<MixerChannel, CopyKey>> = {
   master: 'audio.settings.master',
@@ -66,6 +68,7 @@ export function SoundSettingsSheet() {
       ref={region}
       id={SOUND_SETTINGS_SHEET_ID}
       aria-labelledby={TITLE_ID}
+      data-cc-feature="cc-feature:sound-settings"
       className="flex min-h-full flex-col gap-3 rounded-t-3xl border border-night-700 bg-night-900 p-4"
     >
       <header className="flex items-center justify-between gap-2">

@@ -1,8 +1,8 @@
 /**
  * Test-mode hook for the e2e suite: the live mixer on `window.__CLOUTCITY_TEST__.audio`. Only
  * builds with NEXT_PUBLIC_TEST_HOOKS=1 (inlined at build time; the e2e build sets it and writes
- * to its own distDir) install it. In every other build the body is dead code and is removed, so
- * the hook never ships. Imported only by the lazy audio runtime.
+ * to its own distDir) install it: the lazy audio runtime imports this module behind that check,
+ * so in every other build it is dead code and never ships (scripts/shell-guard.ts checks).
  */
 import type { SfxId } from './channels'
 import type { Gains } from './mixer'

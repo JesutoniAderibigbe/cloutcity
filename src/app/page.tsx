@@ -1,16 +1,17 @@
-import { SoundControl } from '@/components/audio/SoundControl'
-import { SoundSheetSlot } from '@/components/audio/SoundSheetSlot'
+import { SoundControlMount } from '@/components/audio/SoundControlMount'
+import { SoundSheetMount } from '@/components/audio/SoundSheetMount'
 import { EventSheetMount } from '@/components/events/EventSheetMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { ScenePlaceholder } from '@/components/overlay/ScenePlaceholder'
-import { WelcomeGate } from '@/components/welcome/WelcomeGate'
+import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
+import { WelcomeMount } from '@/components/welcome/WelcomeMount'
 import { copy } from '@/lib/copy'
 
 export default function HomePage() {
   return (
     <OverlayLayout
-      modal={<WelcomeGate />}
+      modal={<WelcomeMount />}
       slots={{
         hud: (
           <div className="flex h-full items-center justify-between gap-2 px-4">
@@ -20,13 +21,14 @@ export default function HomePage() {
               </h1>
               <p className="truncate text-xs text-ink-300">{copy('app.tagline')}</p>
             </header>
-            <SoundControl />
+            <SoundControlMount />
           </div>
         ),
         sheet: (
           <>
             <EventSheetMount />
-            <SoundSheetSlot />
+            <PlaceSheetMount />
+            <SoundSheetMount />
           </>
         ),
         tabs: <BottomTabs />,

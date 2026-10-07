@@ -8,7 +8,7 @@ import { T0, YEAR, answerWelcomeCard } from './fixtures/welcome'
 test.use({
   onboarding: 'fresh',
   // The specs cut the network on purpose; the browser reports each refused request.
-  expectedConsoleErrors: [/^Failed to load resource: net::ERR_INTERNET_DISCONNECTED$/],
+  injectedConsoleErrors: [/^Failed to load resource: net::ERR_INTERNET_DISCONNECTED$/],
 })
 
 test('music that fails to load offers a retry that plays it', async ({ page }) => {

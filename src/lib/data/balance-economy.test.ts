@@ -1,8 +1,9 @@
-/** S11 balance config: jobs, rent escalation and clout levels. */
+/** Balance config for the economy: jobs, rent escalation and clout levels (S11), housing (S12). */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
+import { cheapestHome } from '@/engine/rent'
 import { BalanceConfigSchema, JOB_IDS, type BalanceConfig } from './schemas/config'
 import { balance } from './config'
 
@@ -89,5 +90,49 @@ describe('clout levels config', () => {
   ])('rejects %s', (_label, levels) => {
     const jobs = { ...valid.jobs, requiredCloutLevel: {} }
     expect(parses({ jobs, clout: { levels } })).toBe(false)
+  })
+})
+
+describe('housing config', () => {
+  const moveIn = (moveInCost: Record<string, number>) =>
+    parses({ housing: { moveInCost } } as Partial<BalanceConfig>)
+
+  it('prices every home but the lowest-rent one, and the engine reads the same numbers', () => {
+    expect(Object.keys(balance.housing.moveInCost).sort()).toEqual([
+      'brooklyn-1br',
+      'manhattan-loft',
+    ])
+    expect(engineConfig.housing).toEqual(balance.housing)
+    expect(engineConfig.costs).toEqual(balance.costs)
+  })
+
+  it.each([
+    [
+      'a cost for the lowest-rent home',
+      { 'queens-room': 0, 'brooklyn-1br': 400, 'manhattan-loft': 1000 },
+    ],
+    ['a missing home', { 'brooklyn-1br': 400 }],
+    ['an unknown home', { 'brooklyn-1br': 400, 'manhattan-loft': 1000, 'bronx-studio': 300 }],
+    ['a negative cost', { 'brooklyn-1br': -1, 'manhattan-loft': 1000 }],
+    ['a fractional cost', { 'brooklyn-1br': 400.5, 'manhattan-loft': 1000 }],
+  ])('rejects %s', (_label, moveInCost) => {
+    expect(moveIn(moveInCost)).toBe(false)
+  })
+
+  it('follows the lowest rent when it moves', () => {
+    const rentPerWeek = { 'queens-room': 600, 'brooklyn-1br': 520, 'manhattan-loft': 1100 }
+    const housing = { moveInCost: { 'queens-room': 300, 'manhattan-loft': 1000 } }
+    expect(parses({ rentPerWeek, housing })).toBe(true)
+    expect(parses({ rentPerWeek })).toBe(false)
+  })
+
+  it('on a tie for the lowest rent, exempts the same home the engine evicts to', () => {
+    const rentPerWeek = { 'queens-room': 520, 'brooklyn-1br': 280, 'manhattan-loft': 280 }
+    const evictTo = cheapestHome({ ...engineConfig, rentPerWeek })
+    expect(evictTo).toBe('brooklyn-1br')
+    const others = { 'queens-room': 300, 'manhattan-loft': 1000 }
+    expect(parses({ rentPerWeek, housing: { moveInCost: others } })).toBe(true)
+    const wrongOne = { 'queens-room': 300, 'brooklyn-1br': 400 }
+    expect(parses({ rentPerWeek, housing: { moveInCost: wrongOne } })).toBe(false)
   })
 })

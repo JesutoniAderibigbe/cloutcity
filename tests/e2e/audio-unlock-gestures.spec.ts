@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from './fixtures/test'
+import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import { SILENT, audio, installAudioProbe, probeOf, trackAudioRequests } from './fixtures/audio'
 import { T0, YEAR, welcomeDialog } from './fixtures/welcome'
 
@@ -28,6 +28,8 @@ for (const key of ['Enter', 'Space'] as const) {
   test(`${key} on the focused sound control turns sound on`, async ({ page }) => {
     await installAudioProbe(page)
     await page.goto('/')
+    // The page is inert until the welcome island decides; a focus() before that is lost.
+    await waitForWelcomeGate(page)
     await turnOn(page).focus()
     expect(await probeOf(page)).toEqual(SILENT)
     await page.keyboard.press(key)
@@ -143,7 +145,9 @@ test.describe('first visit', () => {
     await page.clock.setFixedTime(T0)
     await page.goto('/')
     await expect(welcomeDialog(page)).toBeVisible()
-    // The card is modal: the HUD behind it is inert, so these clicks cannot reach it.
+    // The control is there (its boot island has loaded), but the card is modal: the HUD behind
+    // it is inert, so these clicks cannot reach it.
+    await expect(turnOn(page)).toBeAttached()
     await turnOn(page)
       .click({ timeout: 1000, force: true })
       .catch(() => undefined)

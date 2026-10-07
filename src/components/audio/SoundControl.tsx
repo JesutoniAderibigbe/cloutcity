@@ -6,6 +6,9 @@
  * unlocked it reads "Tap for sound" with the remembered choice, and that first tap only turns
  * sound on (GR-13). If music (or the whole runtime) failed to load, it says so and a tap retries.
  * The gear opens the sound settings.
+ *
+ * A boot island (SoundControlMount): it and the zod-backed stores it reads load in their own
+ * chunk right after the shell (DEC-11).
  */
 import { useSyncExternalStore } from 'react'
 import { copy, isCopyKey } from '@/lib/copy'
@@ -22,6 +25,7 @@ import {
   setSoundSheetOpen,
   soundSheetStore,
 } from './soundSheet'
+import '@/lib/copy/ns/audio'
 
 const LINE_2_ID = 'sound-control-now-playing'
 
@@ -109,7 +113,11 @@ export function SoundControl() {
           : copy('audio.hud.ownMusic')
 
   return (
-    <div className="flex min-w-0 shrink items-center gap-1.5" data-sound-control={view.kind}>
+    <div
+      className="flex min-w-0 shrink items-center gap-1.5"
+      data-sound-control={view.kind}
+      data-cc-feature="cc-feature:sound-control"
+    >
       <button
         type="button"
         onClick={onMain}
