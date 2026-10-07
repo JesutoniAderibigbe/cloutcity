@@ -1,8 +1,8 @@
 /**
- * The default day/night model, in the shapes scene.json `dayNight` and theme.json `sky` take.
- * PLACEHOLDER values (fixture.json): S04f part 1 moves them into those files and tunes them in
- * the showcase; until then the scene and tests read them from here. Colour tokens are named
- * `<keyframe>-<slot>`.
+ * A fixed day/night model for the pure module's unit tests, in the shapes scene.json `dayNight`
+ * and theme.json `sky` take (the game reads those files: src/lib/theme.ts `dayNightModel`). Kept
+ * separate so tuning the real keyframes never moves these tests. Test-only: not exported from
+ * the module's index, so no bundle carries it. Colour tokens are named `<keyframe>-<slot>`.
  */
 import fixtureJson from './fixture.json'
 import { resolveDayNight } from './resolveDayNight'

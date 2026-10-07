@@ -32,6 +32,11 @@
     "mid": 400000,
     "high": 800000
   },
+  "programsMax": {
+    "low": 10,
+    "mid": 11,
+    "high": 15
+  },
   "apartment": {
     "drawCallsMax": {
       "low": 24,

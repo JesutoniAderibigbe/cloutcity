@@ -1,5 +1,12 @@
 import type { CSSProperties } from 'react'
-import { theme } from '@/lib/data/config'
+import { scene, theme } from '@/lib/data/config'
+import {
+  resolveDayNight,
+  resolveSkyColors,
+  type DayNightModel,
+  type SkyColors,
+  type ThemeDayNight,
+} from '@/lib/dayNight'
 import type { ScenePalette } from '@/scene/types'
 
 /** CSS custom property that carries one palette token (consumed by globals.css). */
@@ -21,11 +28,30 @@ export function themeColorHex(): string {
   return hex
 }
 
-/** Hex of one palette token; theme.json's schema guarantees every scene reference exists. */
+/** The world palette: 3D-only colours plus the models' real-material colours (DEC-26). */
+const worldColors: Readonly<Record<string, string>> = { ...theme.world, ...theme.models }
+
+/** Hex of one world token; theme.json's schema guarantees every scene reference exists. */
 function tokenHex(token: string): string {
-  const hex = theme.colors[token]
-  if (hex === undefined) throw new Error(`theme.json: unknown palette token "${token}"`)
+  const hex = worldColors[token]
+  if (hex === undefined) throw new Error(`theme.json: unknown world token "${token}"`)
   return hex
+}
+
+const themeDayNight: ThemeDayNight = { colors: worldColors, sky: theme.sky }
+
+/**
+ * Each day/night keyframe's colours (S04f), resolved to hex on the server: the 3D chunk joins
+ * them with the keyframes of the scene config it already gets, so neither the theme nor the
+ * keyframes travel twice.
+ */
+export function skyColors(): SkyColors {
+  return resolveSkyColors(themeDayNight)
+}
+
+/** The day/night model the city lights by (scene.json keyframes, theme.json sky colours). */
+export function dayNightModel(): DayNightModel {
+  return resolveDayNight(scene.dayNight, themeDayNight)
 }
 
 /**
@@ -35,7 +61,7 @@ function tokenHex(token: string): string {
 export function scenePalette(): ScenePalette {
   const { scene } = theme
   return {
-    background: tokenHex(scene.background),
+    haze: tokenHex(scene.haze),
     water: tokenHex(scene.water),
     land: {
       manhattan: tokenHex(scene.land.manhattan),
@@ -51,8 +77,6 @@ export function scenePalette(): ScenePalette {
     station: tokenHex(scene.station),
     player: tokenHex(scene.player),
     labelInk: tokenHex(scene.labelInk),
-    ambientLight: tokenHex(scene.ambientLight),
-    sunLight: tokenHex(scene.sunLight),
     pins: {
       venue: tokenHex(scene.pins.venue),
       landmark: tokenHex(scene.pins.landmark),

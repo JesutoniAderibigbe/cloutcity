@@ -3,9 +3,10 @@
  * only, so the client never imports a config loader.
  */
 import type { DistrictAssets } from '@/lib/data/districts'
+import type { SkyColors } from '@/lib/dayNight/types'
 import type { HomeIdLiteral } from '@/lib/data/homes'
 import type { FpsStepDown, PerfConfig, QualityTier, TierPicker } from '@/lib/data/schemas/config'
-import type { SceneConfig } from '@/lib/data/schemas/scene'
+import type { CitySceneConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
 import type { LocalBounds } from './camera/limits'
 import type { BoroughId } from './geo/schema'
@@ -13,7 +14,8 @@ import type { LandmarkPalette } from './landmarks/types'
 
 /** Scene colours as hex, resolved from theme.json tokens on the server (src/lib/theme.ts). */
 export interface ScenePalette {
-  readonly background: string
+  /** The fixed neutral "expanding soon" land dims towards (the sky changes with the time). */
+  readonly haze: string
   readonly water: string
   readonly land: Readonly<Record<BoroughId, string>>
   readonly park: string
@@ -24,8 +26,6 @@ export interface ScenePalette {
   /** The player's avatar placeholder and its ring (S05). */
   readonly player: string
   readonly labelInk: string
-  readonly ambientLight: string
-  readonly sunLight: string
   readonly pins: {
     readonly venue: string
     readonly landmark: string
@@ -105,7 +105,9 @@ export interface SceneProps {
   /** /geo/fallback?v=<geoVersion>: the static stylised map for when the 3D map is unavailable. */
   readonly fallbackUrl: string
   readonly palette: ScenePalette
-  readonly config: SceneConfig
+  /** Each day/night keyframe's colours, resolved (S04f, src/lib/theme.ts `skyColors`). */
+  readonly skyColors: SkyColors
+  readonly config: CitySceneConfig
   /** Every home (data/homes/homes.json) projected to local metres. */
   readonly homesLocal: Readonly<Record<HomeIdLiteral, LocalPoint>>
   /**

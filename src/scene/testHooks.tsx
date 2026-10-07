@@ -9,7 +9,9 @@
  */
 import { useEffect, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
-import { DirectionalLight, PCFShadowMap, Vector3 } from 'three'
+import { DirectionalLight, Mesh, PCFShadowMap, Vector3, type Object3D } from 'three'
+import { lightingKey } from '@/lib/dayNight/lightingKey'
+import type { KeyframeId, Lighting, UiTheme } from '@/lib/dayNight/types'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { TierReason } from '@/lib/quality/tier'
 import { qualityStore, selectActiveTier } from '@/state/quality'
@@ -20,6 +22,7 @@ import type { BuildingsHandle, BuildingsState } from './buildings/Buildings'
 import type { BoroughView, CityObjects } from './City'
 import type { LandmarksHandle, LandmarksState } from './landmarks/Landmarks'
 import type { PinKind, PinStyle } from './geo/schema'
+import { nightGlowSource } from './lighting/nightGlow'
 import { continuousSince } from './quality/continuity'
 import { SUN_LIGHT_NAME } from './SunLight'
 import type { SceneQuality } from './types'
@@ -95,6 +98,23 @@ export interface SceneGlState {
   readonly outlines: boolean
 }
 
+/** The day/night rig's current lighting (S04f). */
+export interface SceneLightingState {
+  /** Quantised minute of day the lighting is for. */
+  readonly minute: number
+  readonly mode: 'blend' | 'step'
+  readonly keyframe: KeyframeId
+  readonly next: KeyframeId
+  /** Blend fraction towards `next` (0 during a hold and in step mode). */
+  readonly t: number
+  /** The shared `uNightGlow` uniform's value. */
+  readonly nightGlow: number
+  readonly ui: UiTheme
+  /** The lighting key: the scene redraws only when it changes. */
+  readonly key: string
+  readonly sun: { readonly intensity: number; readonly shadowIntensity: number }
+}
+
 export interface SceneTestHook {
   /** True once a frame has drawn the city. */
   readonly ready: boolean
@@ -126,6 +146,16 @@ export interface SceneTestHook {
   buildings(): BuildingsState | null
   /** Modelled landmarks (S07a): build state, current level, triangles, screen points. */
   landmarks(): LandmarksState | null
+  /** The day/night lighting (S04f). */
+  lighting(): SceneLightingState
+  /** Shader programs the renderer holds (renderer.info.programs). */
+  programs(): number
+  /**
+   * Names of the meshes whose material carries the night glow (S04f), or of their nearest named
+   * group, sorted. A memorial never appears; memorial pins share the pin meshes but their
+   * per-instance glow is zero.
+   */
+  glowingMeshes(): string[]
 }
 
 declare global {
@@ -146,12 +176,14 @@ export function TestHooks({
   buildingsRef,
   landmarksRef,
   quality,
+  lighting,
 }: {
   readonly readyRef: RefObject<boolean>
   readonly cityRef: RefObject<CityObjects | null>
   readonly buildingsRef: RefObject<BuildingsHandle | null>
   readonly landmarksRef: RefObject<LandmarksHandle | null>
   readonly quality: SceneQuality
+  readonly lighting: Lighting
 }) {
   const gl = useThree((state) => state.gl)
   const camera = useThree((state) => state.camera)
@@ -263,12 +295,55 @@ export function TestHooks({
       },
       buildings: () => buildingsRef.current?.state() ?? null,
       landmarks: () => landmarksRef.current?.state() ?? null,
+      lighting: () => {
+        const sun = scene.getObjectByName(SUN_LIGHT_NAME)
+        return {
+          minute: lighting.minute,
+          mode: lighting.mode,
+          keyframe: lighting.keyframe,
+          next: lighting.next,
+          t: lighting.t,
+          nightGlow: lighting.nightGlow,
+          ui: lighting.ui,
+          key: lightingKey(lighting),
+          sun:
+            sun instanceof DirectionalLight
+              ? { intensity: sun.intensity, shadowIntensity: sun.shadow.intensity }
+              : { intensity: 0, shadowIntensity: 0 },
+        }
+      },
+      programs: () => gl.info.programs?.length ?? 0,
+      glowingMeshes: () => {
+        const names = new Set<string>()
+        scene.traverse((object) => {
+          if (!(object instanceof Mesh)) return
+          const materials = Array.isArray(object.material) ? object.material : [object.material]
+          if (!materials.some((material) => nightGlowSource(material) !== undefined)) return
+          // Kit-built landmark parts are unnamed: report the nearest named group (its id).
+          let named: Object3D | null = object
+          while (named !== null && named.name === '') named = named.parent
+          names.add(named?.name ?? '')
+        })
+        return [...names].sort()
+      },
     }
     window.__cloutcityTest = { ...window.__cloutcityTest, scene: hook }
     return () => {
       delete window.__cloutcityTest?.scene
     }
-  }, [gl, camera, controls, get, scene, readyRef, cityRef, buildingsRef, landmarksRef, quality])
+  }, [
+    gl,
+    camera,
+    controls,
+    get,
+    scene,
+    readyRef,
+    cityRef,
+    buildingsRef,
+    landmarksRef,
+    quality,
+    lighting,
+  ])
 
   return null
 }

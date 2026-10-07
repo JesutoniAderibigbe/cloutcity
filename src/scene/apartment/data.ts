@@ -1,7 +1,8 @@
 /**
  * The apartment's data for its 3D chunk (S16): each home's interior (data/homes/interiors.json),
- * the scene's `apartment` block (data/config/scene.json), the room palette and decor colours
- * (data/config/theme.json) and the per-tier budgets (data/config/perf.json). The files are
+ * the scene's `apartment` block (data/config/scene.json), the room palette, decor colours and
+ * the day/night keyframes the room's light follows (data/config/theme.json, scene.json
+ * `dayNight`, S04f) and the per-tier budgets (data/config/perf.json). The files are
  * validated with their zod schemas in src/lib/data (data.test.ts, homes-data.test.ts); this chunk
  * reads the raw JSON so no config loader or classic zod ships to the browser, and narrows the
  * loosely typed JSON imports here, throwing at load on anything unexpected (fail fast).
@@ -12,6 +13,8 @@ import sceneJson from '@data/config/scene.json'
 import themeJson from '@data/config/theme.json'
 import type { DecorFit } from '@/engine/itemCatalog'
 import type { HomeIdLiteral } from '@/lib/data/homes'
+import { resolveDayNight } from '@/lib/dayNight/resolveDayNight'
+import type { DayNightModel, SceneDayNight, ThemeDayNight } from '@/lib/dayNight/types'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 
@@ -43,7 +46,7 @@ export interface RoomInterior {
   readonly slots: readonly RoomSlot[]
 }
 
-/** The room's colours as hex, resolved from theme.json `scene.apartment` tokens. */
+/** The room's colours as hex, resolved from theme.json `scene.apartment` world tokens. */
 export interface RoomPalette {
   readonly background: string
   readonly floor: string
@@ -57,8 +60,8 @@ export interface RoomPalette {
   readonly markerActive: string
   readonly markerSelected: string
   readonly blob: string
-  readonly ambientLight: string
-  readonly sunLight: string
+  /** Warm lamp light mixed into the ambient at night. */
+  readonly lamp: string
 }
 
 const KINDS: readonly string[] = ['wall', 'floor', 'surface']
@@ -119,29 +122,46 @@ export const tapOptions = { slopPx: sceneJson.pins.tapSlopPx, maxMs: sceneJson.p
 export const toonRamp: readonly number[] = themeJson.scene.toonRamp
 
 const colors: Readonly<Record<string, string>> = themeJson.colors
+const worldColors: Readonly<Record<string, string>> = { ...themeJson.world, ...themeJson.models }
 
-/** A palette token's hex; theme.json's schema guarantees every token a scene names exists. */
+/** A decor colour token's hex (item variants name DOM palette tokens, theme.json `colors`). */
 export function tokenHex(token: string): string {
   return colors[token] ?? fail(`unknown palette token "${token}"`)
+}
+
+/** A room colour token's hex (theme.json `world` or `models`). */
+function worldHex(token: string): string {
+  return worldColors[token] ?? fail(`unknown world token "${token}"`)
+}
+
+/**
+ * The city's day/night model, resolved here like the rest of this chunk's data (resolveDayNight
+ * checks ids, order and tokens, failing at load).
+ */
+export const dayNightModel: DayNightModel = resolveDayNight(
+  sceneJson.dayNight as SceneDayNight,
+  { colors: worldColors, sky: themeJson.sky } as ThemeDayNight,
+)
+export const dayNightConfig: { readonly room: SceneConfig['dayNight']['room'] } = {
+  room: sceneJson.dayNight.room,
 }
 
 const refs = themeJson.scene.apartment
 
 export const roomPalette: RoomPalette = {
-  background: tokenHex(refs.background),
-  floor: tokenHex(refs.floor),
-  wall: tokenHex(refs.wall),
-  trim: tokenHex(refs.trim),
-  furniture: tokenHex(refs.furniture),
-  plant: tokenHex(refs.plant),
-  glow: tokenHex(refs.glow),
-  window: tokenHex(refs.window),
-  marker: tokenHex(refs.marker),
-  markerActive: tokenHex(refs.markerActive),
-  markerSelected: tokenHex(refs.markerSelected),
-  blob: tokenHex(refs.blob),
-  ambientLight: tokenHex(refs.ambientLight),
-  sunLight: tokenHex(refs.sunLight),
+  background: worldHex(refs.background),
+  floor: worldHex(refs.floor),
+  wall: worldHex(refs.wall),
+  trim: worldHex(refs.trim),
+  furniture: worldHex(refs.furniture),
+  plant: worldHex(refs.plant),
+  glow: worldHex(refs.glow),
+  window: worldHex(refs.window),
+  marker: worldHex(refs.marker),
+  markerActive: worldHex(refs.markerActive),
+  markerSelected: worldHex(refs.markerSelected),
+  blob: worldHex(refs.blob),
+  lamp: worldHex(refs.lamp),
 }
 
 export interface TierBudget {

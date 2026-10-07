@@ -13,16 +13,16 @@
  * the server's copy only. Each landmark's model comes from landmarkSource(id): the kit today,
  * Blender glTF later (DEC-25).
  */
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
 import { Detailed } from '@react-three/drei/core/Detailed'
 import { Mesh, MeshBasicMaterial, Vector3, type LOD, type Texture } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { QualityTier } from '@/lib/data/schemas/config'
-import type { SceneConfig } from '@/lib/data/schemas/scene'
+import type { CitySceneConfig } from '@/lib/data/schemas/scene'
 import { log } from '@/lib/log'
 import type { GeoLandmark } from '../geo/schema'
-import { isNightGlowExcluded, useNightGlow } from '../lighting/nightGlow'
+import { DayNightContext, isNightGlowExcluded, useNightGlow } from '../lighting/nightGlow'
 import { useTierSettings } from '../quality/tierSettings'
 import { createSlicer } from '../schedule'
 import type { ScenePalette } from '../types'
@@ -64,7 +64,7 @@ export interface LandmarksHandle {
 interface LandmarksProps {
   readonly landmarks: readonly GeoLandmark[]
   readonly palette: ScenePalette
-  readonly config: SceneConfig
+  readonly config: CitySceneConfig
   readonly groundY: number
   /** The city's shared toon ramp. */
   readonly gradientMap: Texture
@@ -107,6 +107,8 @@ export function Landmarks({
   // Windows glow with the shared night-glow uniform (S04f contract); a landmark whose category
   // must never glow (a memorial) gets the same materials without it.
   const glow = useNightGlow()
+  // Name chips are unlit: they share the rig's tint colour, so they dim with the night (S04f).
+  const unlitTint = useContext(DayNightContext).unlitTint.value
   const needsPlain = landmarks.some((entry) => isNightGlowExcluded(entry.category))
   const materials = useMemo(
     () => createLandmarkMaterials(gradientMap, palette.landmarks, { uniform: glow }),
@@ -205,11 +207,12 @@ export function Landmarks({
       map: texture,
       alphaTest: config.landmarkChips.alphaTest,
     })
+    material.color = unlitTint
     const mesh = new Mesh(buildNameChipGeometry(list, config.landmarkChips), material)
     mesh.name = 'landmark-name-chips'
     mesh.raycast = noRaycast
     return { mesh, texture, material, texts: list.map((chip) => chip.text) }
-  }, [built, entries, names, pinLifts, groundY, config.landmarkChips, palette.chip])
+  }, [built, entries, names, pinLifts, groundY, config.landmarkChips, palette.chip, unlitTint])
   useEffect(
     () => () => {
       chips?.mesh.geometry.dispose()

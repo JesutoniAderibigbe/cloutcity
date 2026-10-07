@@ -11,6 +11,9 @@
  * when the frame rate stays low. The city is built (yielding to the browser) before the canvas
  * mounts, and its shaders compile before its first frame (PERF-4).
  *
+ * The light follows the personal game clock (S04f, lighting/DayNightRig.tsx): the rig wraps the
+ * scene so every glowing material reads its shared night-glow uniform.
+ *
  * A lost WebGL context (S04c) is restored in place: three re-creates its GL state when the
  * browser restores the context, so the canvas is never remounted; this only reports the loss
  * and, after the first frame drawn again, the recovery.
@@ -19,6 +22,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { addAfterEffect, Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
+import { withSkyColors } from '@/lib/dayNight/resolveDayNight'
 import { PLAYABLE_MARK, perfMark } from '@/lib/perfMarks'
 import { usePlayerHome } from '@/state/playerHome'
 import { useSceneFocus } from '@/state/sceneFocus'
@@ -37,7 +41,9 @@ import { Landmarks, type LandmarksHandle } from './landmarks/Landmarks'
 import { TierMonitor } from './quality/TierMonitor'
 import { TierSettingsContext, type ActiveTierSettings } from './quality/tierSettings'
 import { yieldToMain } from './schedule'
-import { SunLight } from './SunLight'
+import { DayNightRig } from './lighting/DayNightRig'
+import { createDayNightUniforms } from './lighting/nightGlow'
+import { useDayNightLighting } from './lighting/useDayNightLighting'
 import { TestHooks } from './testHooks'
 import { TravelAnimator } from './travel/TravelAnimator'
 import type { SceneProps } from './types'
@@ -58,6 +64,7 @@ const GL = {
 export interface CityCanvasProps extends Pick<
   SceneProps,
   | 'palette'
+  | 'skyColors'
   | 'config'
   | 'homesLocal'
   | 'startHome'
@@ -168,6 +175,7 @@ function CityScene3D({
   geoBody,
   onInvalidGeo,
   palette,
+  skyColors,
   config,
   homesLocal,
   startHome,
@@ -224,6 +232,14 @@ function CityScene3D({
     [parsed],
   )
 
+  // One set for the scene's life: the city build, the rig and every glowing material share it.
+  const [dayNightUniforms] = useState(createDayNightUniforms)
+  const dayNight = useMemo(
+    () => withSkyColors(config.dayNight, skyColors),
+    [config.dayNight, skyColors],
+  )
+  const lighting = useDayNightLighting(dayNight, config.dayNight.unknownMinute)
+
   // Built before the canvas mounts, yielding between layers (PERF-4). A build error is
   // rethrown during render so the scene's error boundary handles it like any scene failure.
   const [built, setBuilt] = useState<CityObjects | Error | null>(null)
@@ -231,7 +247,7 @@ function CityScene3D({
     if (!parsed.ok) return
     let active = true
     let city: CityObjects | null = null
-    buildCity(parsed.geo, palette, config, expandingSoon, yieldToMain).then(
+    buildCity(parsed.geo, palette, config, expandingSoon, yieldToMain, dayNightUniforms).then(
       (result) => {
         if (!active) {
           result.dispose()
@@ -250,7 +266,7 @@ function CityScene3D({
       city?.dispose()
       setBuilt(null)
     }
-  }, [parsed, palette, config, expandingSoon])
+  }, [parsed, palette, config, expandingSoon, dayNightUniforms])
   const placeId = spot?.kind === 'place' ? spot.placeId : null
   const rest = useMemo(() => {
     if (placeId === null || built === null || built instanceof Error) return home
@@ -259,7 +275,7 @@ function CityScene3D({
   }, [placeId, built, home])
   if (built instanceof Error) throw built
 
-  const { camera, lights } = config
+  const { camera } = config
   const groundY = landTopY(config.land)
   const clip = nearFar(camera.distanceM, camera)
   const shadows = settings.shadows === 'pcf-directional'
@@ -285,80 +301,84 @@ function CityScene3D({
         onCreated={() => perfMark('cc:3d:gl')}
       >
         <TierSettingsContext value={settings}>
-          <color attach="background" args={[palette.background]} />
-          <ambientLight color={palette.ambientLight} intensity={lights.ambientIntensity} />
-          <SunLight
-            color={palette.sunLight}
-            lights={lights}
+          <DayNightRig
+            lighting={lighting}
+            uniforms={dayNightUniforms}
+            target={built}
+            fog={config.dayNight.fog}
+            lights={config.lights}
+            distanceM={camera.distanceM}
             shadowMapSizePx={shadows ? settings.shadowMapSizePx : 0}
-          />
-          <CameraRig camera={camera} start={rest} bounds={boundsLocal} groundY={groundY} />
-          <FreeRowFraming />
-          <City
-            city={built}
-            config={config}
-            outlines={settings.outlines}
-            cityRef={cityRef}
-            onReady={() => {
-              readyRef.current = true
-              setCityReady(true)
-              onReady()
-            }}
-          />
-          <Buildings
-            assets={buildings}
-            palette={palette}
-            config={config}
-            groundY={groundY}
-            gradientMap={built.gradientMap}
-            dimmedBoroughs={built.dimmed}
-            active={cityReady}
-            handleRef={buildingsRef}
-          />
-          <Landmarks
-            landmarks={parsed.geo.landmarks.models}
-            palette={palette}
-            config={config}
-            groundY={groundY}
-            gradientMap={built.gradientMap}
-            active={cityReady}
-            names={landmarkNames}
-            pinLifts={pinLifts}
-            handleRef={landmarksRef}
-          />
-          <PlayerAvatar
-            at={rest}
-            groupRef={avatarRef}
-            groundY={groundY}
-            color={palette.player}
-            toonRamp={palette.toonRamp}
-            avatar={config.avatar}
-            onPlaced={() => {
-              placedRef.current = true
-            }}
-          />
-          <TravelAnimator
-            avatarRef={avatarRef}
-            groundY={groundY}
-            palette={palette.travel}
-            config={config.travel}
-            avatar={config.avatar}
-            animation={travelAnimation}
-            enabled={cityReady && !hidden}
-            trail={tier !== 'low' || config.travel.trailOnLow}
-          />
-          <PlayableMark readyRef={readyRef} placedRef={placedRef} />
-          {/* The apartment has the screen: nothing to measure, no frames forced. */}
-          <TierMonitor stepDown={quality.stepDown} paused={hidden} />
-          <FocusRedraw hidden={hidden} />
-          <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
-          <TestHooks
-            readyRef={readyRef}
-            cityRef={cityRef}
-            buildingsRef={buildingsRef}
-            landmarksRef={landmarksRef}
-            quality={quality}
-          />
+          >
+            <CameraRig camera={camera} start={rest} bounds={boundsLocal} groundY={groundY} />
+            <FreeRowFraming />
+            <City
+              city={built}
+              config={config}
+              outlines={settings.outlines}
+              cityRef={cityRef}
+              onReady={() => {
+                readyRef.current = true
+                setCityReady(true)
+                onReady()
+              }}
+            />
+            <Buildings
+              assets={buildings}
+              palette={palette}
+              config={config}
+              groundY={groundY}
+              gradientMap={built.gradientMap}
+              dimmedBoroughs={built.dimmed}
+              active={cityReady}
+              handleRef={buildingsRef}
+            />
+            <Landmarks
+              landmarks={parsed.geo.landmarks.models}
+              palette={palette}
+              config={config}
+              groundY={groundY}
+              gradientMap={built.gradientMap}
+              active={cityReady}
+              names={landmarkNames}
+              pinLifts={pinLifts}
+              handleRef={landmarksRef}
+            />
+            <PlayerAvatar
+              at={rest}
+              groupRef={avatarRef}
+              groundY={groundY}
+              color={palette.player}
+              toonRamp={palette.toonRamp}
+              avatar={config.avatar}
+              onPlaced={() => {
+                placedRef.current = true
+              }}
+            />
+            <TravelAnimator
+              avatarRef={avatarRef}
+              groundY={groundY}
+              palette={palette.travel}
+              config={config.travel}
+              avatar={config.avatar}
+              animation={travelAnimation}
+              enabled={cityReady && !hidden}
+              trail={tier !== 'low' || config.travel.trailOnLow}
+            />
+            <PlayableMark readyRef={readyRef} placedRef={placedRef} />
+            {/* The apartment has the screen: nothing to measure, no frames forced. */}
+            <TierMonitor stepDown={quality.stepDown} paused={hidden} />
+            <FocusRedraw hidden={hidden} />
+            <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
+            <TestHooks
+              readyRef={readyRef}
+              cityRef={cityRef}
+              buildingsRef={buildingsRef}
+              landmarksRef={landmarksRef}
+              quality={quality}
+              lighting={lighting}
+            />
+          </DayNightRig>
         </TierSettingsContext>
       </Canvas>
     </div>

@@ -12,10 +12,10 @@
  */
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Group, InstancedMesh, Mesh, MeshBasicMaterial, type Texture } from 'three'
+import { Color, Group, InstancedMesh, Mesh, MeshBasicMaterial, type Texture } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
-import type { SceneConfig } from '@/lib/data/schemas/scene'
+import type { CitySceneConfig } from '@/lib/data/schemas/scene'
 import { buildLandGeometry, buildWaterGeometry, landTopY } from './geo/buildLand'
 import { buildLabelGeometry, terminalChips } from './geo/buildLabels'
 import { buildParkGeometry, polygonsOfKind } from './geo/buildParks'
@@ -28,6 +28,8 @@ import {
 import { buildSubwayGeometry, lineColors, subwaySegments } from './geo/buildSubway'
 import { createLabelAtlas } from './geo/labelAtlas'
 import type { BoroughId, GeoBase } from './geo/schema'
+import type { KeyframeColors } from '@/lib/dayNight/types'
+import type { DayNightUniforms } from './lighting/nightGlow'
 import { createCityMaterials } from './materials'
 import { buildChipGeometry, chipAnchor, createChipTexture } from './pins/buildChips'
 import { buildPins, type PinObjects } from './pins/buildPins'
@@ -58,6 +60,12 @@ export interface CityObjects {
   applyDistance(distance: number): void
   /** Shows or hides the outlines (the subway casing), per quality tier. */
   setOutlines(visible: boolean): void
+  /**
+   * Follows the day/night cycle (S04f): the harbour takes the keyframe's water colour, and the
+   * unlit overlays (subway ribbons and casing, line letters, ground chips) dim with the light so
+   * they never glare at night.
+   */
+  applyDayNight(colors: Pick<KeyframeColors<string>, 'water' | 'unlitTint'>): void
   dispose(): void
 }
 
@@ -69,9 +77,10 @@ export interface CityObjects {
 export async function buildCity(
   geo: GeoBase,
   palette: ScenePalette,
-  config: SceneConfig,
+  config: CitySceneConfig,
   expandingSoon: string,
   pause: () => Promise<void>,
+  dayNight: DayNightUniforms,
 ): Promise<CityObjects> {
   const top = landTopY(config.land)
   const colorById = lineColors(geo.subway.lines, palette.subwayLines)
@@ -183,7 +192,14 @@ export async function buildCity(
   }
 
   await pause()
-  const pins = buildPins(geo.places.pins, palette, config, top, materials.gradientMap)
+  const pins = buildPins(
+    geo.places.pins,
+    palette,
+    config,
+    top,
+    materials.gradientMap,
+    dayNight.uNightGlow,
+  )
   pins.group.traverse((object) => {
     if (object instanceof Mesh) object.castShadow = true
   })
@@ -197,6 +213,8 @@ export async function buildCity(
     chip: chipped.has(borough.id),
   }))
 
+  const casingColor = materials.subwayCasing.color.clone()
+  const tint = new Color()
   let scaledFor = 0
   return {
     group,
@@ -206,6 +224,12 @@ export async function buildCity(
     dimmed,
     setOutlines(visible) {
       if (casing !== null) casing.visible = visible
+    },
+    applyDayNight(colors) {
+      materials.water.color.set(colors.water)
+      tint.set(colors.unlitTint)
+      for (const unlit of [materials.subway, materials.label, chipMaterial]) unlit.color.copy(tint)
+      materials.subwayCasing.color.copy(casingColor).multiply(tint)
     },
     applyDistance(distance) {
       pins.applyDistance(distance)
@@ -238,7 +262,7 @@ export async function buildCity(
 interface CityProps {
   /** Built by the canvas (buildCity), which also disposes of it. */
   readonly city: CityObjects
-  readonly config: SceneConfig
+  readonly config: CitySceneConfig
   /** The tier's outlines setting. */
   readonly outlines: boolean
   /** Called once, after the first frame that shows the city. */

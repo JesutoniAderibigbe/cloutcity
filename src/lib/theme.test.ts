@@ -1,8 +1,10 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { theme } from '@/lib/data/config'
-import { paletteStyle, paletteVar, themeColorHex } from './theme'
+import { balance, scene, theme } from '@/lib/data/config'
+import { lightingAt } from '@/lib/dayNight/lightingAt'
+import { uiThemeAt } from '@/lib/dayNight/uiThemeAt'
+import { dayNightModel, paletteStyle, paletteVar, themeColorHex } from './theme'
 
 const SRC = join(import.meta.dirname, '..')
 const css = readFileSync(join(SRC, 'app/globals.css'), 'utf8')
@@ -33,5 +35,40 @@ describe('theme tokens', () => {
       /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|oklch\(/i.test(readFileSync(file, 'utf8')),
     )
     expect(offenders).toEqual([])
+  })
+})
+
+describe('day/night model (S04f)', () => {
+  const model = dayNightModel()
+
+  it('runs on a game day of 1440 minutes, the length the keyframes are written for', () => {
+    expect(balance.time.gameDayHours * 60).toBe(1440)
+  })
+
+  it('resolves every keyframe of scene.json with its sky colours from theme.json', () => {
+    expect(model.keyframes.map((keyframe) => keyframe.id)).toEqual(
+      scene.dayNight.keyframes.map((keyframe) => keyframe.id),
+    )
+    for (const keyframe of model.keyframes) {
+      for (const hex of Object.values(keyframe.colors)) expect(hex).toMatch(/^#[0-9a-f]{6}$/)
+    }
+  })
+
+  it('is day at the unknown minute a new game starts with, with no night glow', () => {
+    const start = lightingAt(scene.dayNight.unknownMinute, model)
+    expect(start.ui).toBe('day')
+    expect(start.nightGlow).toBe(0)
+  })
+
+  it('switches the interface on the same keyframes as the scene, for every minute', () => {
+    for (let minute = 0; minute < 1440; minute++) {
+      expect(uiThemeAt(minute, model)).toBe(lightingAt(minute, model).ui)
+    }
+  })
+
+  it('glows fully at night and never by day', () => {
+    expect(lightingAt(21 * 60, model).nightGlow).toBe(1)
+    expect(lightingAt(3 * 60, model).nightGlow).toBe(1)
+    expect(lightingAt(12 * 60, model).nightGlow).toBe(0)
   })
 })

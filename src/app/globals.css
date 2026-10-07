@@ -1,9 +1,10 @@
 @import 'tailwindcss';
 
-/* Night palette. Values live in data/config/theme.json; the root layout writes each token to
-   `--palette-<token>` on <html>, and Tailwind maps it to `--color-<token>` here. `inline` makes
-   utilities use the palette variable directly. src/lib/theme.test.ts keeps this list in sync
-   with theme.json. */
+/* DOM palette: the interface colours and the item swatch colours. Values live in
+   data/config/theme.json `colors`; the root layout writes each token to `--palette-<token>` on
+   <html>, and Tailwind maps it to `--color-<token>` here. `inline` makes utilities use the
+   palette variable directly. 3D-only colours (theme.json `world`, `models`, `sky`) never become
+   CSS variables. src/lib/theme.test.ts keeps this list in sync with theme.json. */
 @theme inline {
   --color-night-950: var(--palette-night-950);
   --color-night-900: var(--palette-night-900);
@@ -13,40 +14,14 @@
   --color-taxi-400: var(--palette-taxi-400);
   --color-ink-50: var(--palette-ink-50);
   --color-ink-300: var(--palette-ink-300);
-  --color-sea-900: var(--palette-sea-900);
-  --color-indigo-500: var(--palette-indigo-500);
-  --color-indigo-600: var(--palette-indigo-600);
-  --color-violet-600: var(--palette-violet-600);
-  --color-slate-600: var(--palette-slate-600);
-  --color-stone-400: var(--palette-stone-400);
-  --color-teal-700: var(--palette-teal-700);
-  --color-violet-800: var(--palette-violet-800);
   --color-sky-400: var(--palette-sky-400);
   --color-mint-400: var(--palette-mint-400);
   --color-orange-400: var(--palette-orange-400);
   --color-lilac-300: var(--palette-lilac-300);
-  /* Real-material neutrals (DEC-26), first used by the apartment (S16). */
-  --color-charcoal-900: var(--palette-charcoal-900);
-  --color-charcoal-800: var(--palette-charcoal-800);
-  --color-concrete-400: var(--palette-concrete-400);
-  --color-plaster-100: var(--palette-plaster-100);
-  --color-cream-100: var(--palette-cream-100);
+  --color-teal-700: var(--palette-teal-700);
   --color-sand-200: var(--palette-sand-200);
-  --color-oak-500: var(--palette-oak-500);
-  --color-walnut-700: var(--palette-walnut-700);
-  --color-leaf-600: var(--palette-leaf-600);
-  --color-glass-700: var(--palette-glass-700);
-  --color-building-700: var(--palette-building-700);
-  --color-roof-500: var(--palette-roof-500);
-  --color-window-300: var(--palette-window-300);
-  --color-block-800: var(--palette-block-800);
-  --color-stone-300: var(--palette-stone-300);
-  --color-brick-500: var(--palette-brick-500);
-  --color-steel-400: var(--palette-steel-400);
-  --color-glass-400: var(--palette-glass-400);
-  --color-roof-600: var(--palette-roof-600);
-  --color-lamp-200: var(--palette-lamp-200);
-  --color-dim-500: var(--palette-dim-500);
+  --color-charcoal-800: var(--palette-charcoal-800);
+  --color-cream-100: var(--palette-cream-100);
 }
 
 @theme {

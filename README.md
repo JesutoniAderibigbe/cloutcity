@@ -288,10 +288,25 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
   `src/lib/format.ts`. Anywhere else under `src/`, ESLint rejects any reference to `Intl`,
   the `toLocale*String` / `toFixed` / `toPrecision` methods however they are reached, and
   hand-built dollar amounts (`` `$${x}` ``, `'$' + x`, `$` before a JSX expression).
-- **Theme.** `data/config/theme.json` holds the palette. The root layout writes each token to a
+- **Theme.** `data/config/theme.json` holds the palettes (DEC-26 real-world colours): `colors`
+  (the DOM palette: interface colours and item swatch colours), `world` (3D-only colours: land,
+  haze, subway ribbons, room surfaces, keyframe skies), `sky` (each day/night keyframe's colour
+  slots), `scene` (the city's colour roles, as `world` or `models` tokens) and `models` (the
+  hand-made models' materials). Only `colors` reaches CSS: the root layout writes each token to a
   `--palette-<token>` variable on `<html>`, and `src/app/globals.css` maps it to the Tailwind
-  colour `--color-<token>` (`bg-night-900`, `text-taxi-400`, ...). A new token needs a line in
-  both; `src/lib/theme.test.ts` checks they match and that no source file hardcodes a colour.
+  colour `--color-<token>`. A new DOM token needs a line in both; `src/lib/theme.test.ts` checks
+  they match and that no source file hardcodes a colour.
+- **Day and night (S04f).** The city's light follows the personal game clock: `scene.json`
+  `dayNight` holds six keyframes (dawn, morning, day, golden, dusk, night) with their minute, hold,
+  sun pose and intensities, the fog and the room scales; their colours are `theme.json` `sky`.
+  `src/lib/dayNight` blends them (pure; smoothstep in linear light, quantised to
+  `quantizeMinutes`, stepped under reduced motion). The HUD island writes the minute of day to
+  `src/state/dayClock.ts`; in the 3D chunk `src/scene/lighting/DayNightRig.tsx` owns the
+  background, fog, hemisphere, ambient and sun (all mounted from the first frame, so no shader
+  recompiles with the time), redraws only when the lighting key changes, and writes the shared
+  `uNightGlow` uniform that lit windows, landmark windows, pins and model emissive read
+  (`src/scene/lighting/nightGlow.ts`; memorials never glow). `perf.json` `programsMax` caps the
+  shader programs per tier.
 
 ## Places: boroughs, venues and landmarks
 
@@ -584,8 +599,9 @@ camera starts over it).
   (`src/scene/landmarks/source.ts`) is where Blender models (DEC-25) take over per landmark.
   Modelled landmarks' pins are badges lifted over the model (`liftM`).
 - **Config.** Camera start, zoom/tilt/turn limits, layer heights, line widths, marker and chip
-  sizes and lights live in `data/config/scene.json`; scene colours are palette tokens in the
-  `scene` block of `data/config/theme.json` (resolved to hex on the server). Toon shading uses one
+  sizes, the shadow and the day/night keyframes live in `data/config/scene.json`; scene colours
+  are world tokens in the `scene` block of `data/config/theme.json` (resolved to hex on the
+  server). Toon shading uses one
   shared gradient ramp (`toonRamp`).
 - **Camera.** three's `MapControls` (`src/scene/camera/CameraRig.tsx`): one finger or left drag
   pans, pinch or wheel zooms towards the pointer, two fingers or right drag rotate and tilt; the

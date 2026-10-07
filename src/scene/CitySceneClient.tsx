@@ -218,6 +218,7 @@ export function CitySceneClient(props: SceneProps) {
             geo={state.status === 'starting' ? { body: state.body } : null}
             onInvalidGeo={onInvalidGeo}
             palette={props.palette}
+            skyColors={props.skyColors}
             config={props.config}
             homesLocal={props.homesLocal}
             startHome={props.startHome}

@@ -167,6 +167,12 @@ export const PerfConfigSchema = z
     drawCallsMax: perTier(positiveInt),
     trianglesMax: perTier(positiveInt),
     /**
+     * Shader programs the city's renderer holds once its models have loaded
+     * (`renderer.info.programs`, S04f): the day/night cycle changes uniforms only, so the count
+     * is the same at every time of day. Set from a measurement + 10% (Q9).
+     */
+    programsMax: perTier(positiveInt),
+    /**
      * The apartment interior (S16), per tier: `renderer.info.render` draw calls and triangles of
      * the room with every slot filled. `avatarReserve` is kept free inside both caps for the 3D
      * avatar standing in the room (S16a), so the room alone must stay within the cap minus it.
@@ -287,11 +293,17 @@ const tokenRef = z.string().regex(TOKEN_NAME)
 export const PaletteTokenRefSchema = tokenRef
 
 /**
- * The 3D city's colours, as palette token names (never hex), so the scene and the DOM share one
- * palette. Land keys are the borough ids (BOROUGHS in content.ts; this file imports only zod).
+ * The 3D city's colours, as token names (never hex) of the world palette (theme.json `world`
+ * and `models`, DEC-26 real-world colours). Land keys are the borough ids (BOROUGHS in
+ * content.ts; this file imports only zod).
  */
 export const ScenePaletteRefsSchema = z.strictObject({
-  background: tokenRef,
+  /**
+   * The neutral haze "expanding soon" land is dimmed towards (S04c). Fixed: the sky colour
+   * changes with the time of day, the dimmed land must not.
+   */
+  haze: tokenRef,
+  /** The harbour's daytime colour (the day/night cycle tints it per keyframe, `sky.*.water`). */
   water: tokenRef,
   land: z.strictObject({
     manhattan: tokenRef,
@@ -310,8 +322,6 @@ export const ScenePaletteRefsSchema = z.strictObject({
   player: tokenRef,
   /** Letter colour on the line chips (the chip itself takes its line's colour). */
   labelInk: tokenRef,
-  ambientLight: tokenRef,
-  sunLight: tokenRef,
   /**
    * Place pins (S04c): by kind, teaser pins on "expanding soon" land, a muted colour for memorial
    * pins (the key avoids the word, which no config file may name), the selection ring.
@@ -329,8 +339,9 @@ export const ScenePaletteRefsSchema = z.strictObject({
   travel: z.strictObject({ taxi: tokenRef, train: tokenRef, trail: tokenRef }),
   /**
    * The apartment interior (S16): room surfaces, decor second colours, the window pane, slot
-   * markers (idle, a slot the held item fits, the selected slot), blob shadows and the static
-   * lights. Decor main colours come from each item's variants (data/items/items.json).
+   * markers (idle, a slot the held item fits, the selected slot), blob shadows, and the warm
+   * lamp light mixed into the room's ambient at night (S04f). Decor main colours come from each
+   * item's variants (data/items/items.json, `colors`).
    */
   apartment: z.strictObject({
     background: tokenRef,
@@ -346,8 +357,7 @@ export const ScenePaletteRefsSchema = z.strictObject({
     markerActive: tokenRef,
     markerSelected: tokenRef,
     blob: tokenRef,
-    ambientLight: tokenRef,
-    sunLight: tokenRef,
+    lamp: tokenRef,
   }),
   /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
   toonRamp: z.array(z.number().gt(0).max(1)).min(2),
@@ -364,7 +374,7 @@ export type ScenePaletteRefs = z.infer<typeof ScenePaletteRefsSchema>
 /** Every token name a scene palette references. */
 export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
   return [
-    scene.background,
+    scene.haze,
     scene.water,
     ...Object.values(scene.land),
     scene.park,
@@ -374,8 +384,6 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     scene.station,
     scene.player,
     scene.labelInk,
-    scene.ambientLight,
-    scene.sunLight,
     ...Object.values(scene.pins),
     ...Object.values(scene.chip),
     ...Object.values(scene.travel),
@@ -385,12 +393,58 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
   ]
 }
 
-/** Palette tokens. Each becomes the Tailwind colour `--color-<token>` (see globals.css). */
+const KEYFRAME_COLOR_SLOTS = [
+  'sky',
+  'fog',
+  'sun',
+  'ambient',
+  'hemisphereSky',
+  'hemisphereGround',
+  'unlitTint',
+  'water',
+] as const
+
+/** One day/night keyframe's colour slots (src/lib/dayNight/types.ts `KeyframeColors`). */
+const SkyKeyframeSchema = z.strictObject(
+  Object.fromEntries(KEYFRAME_COLOR_SLOTS.map((slot) => [slot, tokenRef])) as Record<
+    (typeof KEYFRAME_COLOR_SLOTS)[number],
+    typeof tokenRef
+  >,
+)
+
+const palette = z.record(z.string().regex(TOKEN_NAME), z.string().regex(HEX_COLOR))
+
+/** Tokens of both palettes with the same name must be the same colour (one taxi yellow). */
+function clashingTokens(a: Record<string, string>, b: Record<string, string>): string[] {
+  return Object.keys(a).filter(
+    (token) => token in b && a[token]?.toLowerCase() !== b[token]?.toLowerCase(),
+  )
+}
+
+/**
+ * The palettes (DEC-26 real-world colours):
+ * - `colors`: the DOM palette, the only tokens written as CSS variables (`--palette-<token>`,
+ *   Tailwind `--color-<token>`, see globals.css): the interface colours and the item swatch
+ *   colours (product colours, data/items/items.json variants).
+ * - `world`: 3D-only raw colours (land, haze, subway ribbons, room surfaces, the keyframe skies).
+ * - `sky`: per day/night keyframe (scene.json `dayNight`), its colour slots as world tokens.
+ * - `scene`: the city's colour roles as world or models tokens.
+ * - `models`: the hand-made models' real-material colours (S04h).
+ */
 export const ThemeConfigSchema = z
   .strictObject({
-    colors: z.record(z.string().regex(TOKEN_NAME), z.string().regex(HEX_COLOR)),
+    colors: palette,
     /** Token used for the browser/PWA theme colour and the page background. */
     themeColor: z.string(),
+    world: palette,
+    sky: z.strictObject({
+      dawn: SkyKeyframeSchema,
+      morning: SkyKeyframeSchema,
+      day: SkyKeyframeSchema,
+      golden: SkyKeyframeSchema,
+      dusk: SkyKeyframeSchema,
+      night: SkyKeyframeSchema,
+    }),
     scene: ScenePaletteRefsSchema,
     /**
      * Real-world colours for the hand-made 3D models (S04h, DEC-26): `npm run assets:build`
@@ -399,16 +453,36 @@ export const ThemeConfigSchema = z
      * `models.color.taxi400`). Separate from `colors`: these never
      * become Tailwind classes.
      */
-    models: z.record(z.string().regex(TOKEN_NAME), z.string().regex(HEX_COLOR)),
+    models: palette,
   })
   .refine((theme) => theme.themeColor in theme.colors, {
     error: 'themeColor must name a token in colors',
     path: ['themeColor'],
   })
-  .refine((theme) => scenePaletteTokens(theme.scene).every((token) => token in theme.colors), {
-    error: 'every scene colour must name a token in colors',
-    path: ['scene'],
+  .refine((theme) => Object.keys(theme.world).every((token) => !(token in theme.models)), {
+    error: 'world and models must not share a token name',
+    path: ['world'],
   })
+  .refine(
+    (theme) =>
+      clashingTokens(theme.colors, theme.models).length === 0 &&
+      clashingTokens(theme.colors, theme.world).length === 0,
+    { error: 'a token in colors and in world or models must be the same colour', path: ['colors'] },
+  )
+  .refine(
+    (theme) =>
+      scenePaletteTokens(theme.scene).every(
+        (token) => token in theme.world || token in theme.models,
+      ),
+    { error: 'every scene colour must name a token in world or models', path: ['scene'] },
+  )
+  .refine(
+    (theme) =>
+      Object.values(theme.sky).every((slots) =>
+        Object.values(slots).every((token) => token in theme.world || token in theme.models),
+      ),
+    { error: 'every sky colour must name a token in world or models', path: ['sky'] },
+  )
   .refine(
     (theme) => theme.scene.toonRamp.every((step, i, ramp) => i === 0 || step > (ramp[i - 1] ?? 0)),
     { error: 'toonRamp must increase', path: ['scene', 'toonRamp'] },

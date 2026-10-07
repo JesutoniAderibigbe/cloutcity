@@ -242,6 +242,9 @@ describe('config/perf.json', () => {
       playableWarmMs: 2500,
       drawCallsMax: { low: 60, mid: 120, high: 200 },
       trianglesMax: { low: 150_000, mid: 400_000, high: 800_000 },
+      // S04f (Q9): measured shader programs at the default view after the models load (low 9,
+      // mid 10, high 13, day and night alike) + 10%, rounded up. A new cap, not a raised one.
+      programsMax: { low: 10, mid: 11, high: 15 },
       // S16 apartment caps (TUNE-8 placeholders), with room kept for S16a's avatar.
       apartment: {
         drawCallsMax: { low: 24, mid: 32, high: 56 },

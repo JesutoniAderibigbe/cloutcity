@@ -26,6 +26,8 @@ import { buildApartment, type ApartmentObjects, type SlotFill } from './buildApa
 import { roomBounds } from './buildRoom'
 import {
   apartmentConfig,
+  dayNightConfig,
+  dayNightModel,
   roomInterior,
   roomPalette,
   tapOptions,
@@ -36,6 +38,7 @@ import {
 } from './data'
 import { boundingSphere, cameraPosition, fitDistance, type Sphere } from './fit'
 import { lightingAt } from './lighting'
+import { useReducedMotion } from '@/lib/useReducedMotion'
 import { createPlaceholderVisuals } from './visuals'
 import type { ApartmentViewProps, SlotTap } from './types'
 
@@ -112,7 +115,14 @@ function RoomLights({
   readonly minute: number
   readonly tier: QualityTier
 }) {
-  const lighting = lightingAt(minute, apartmentConfig.lights, roomPalette)
+  const step = useReducedMotion()
+  const lighting = lightingAt(minute, {
+    model: dayNightModel,
+    room: dayNightConfig.room,
+    lights: apartmentConfig.lights,
+    palette: roomPalette,
+    step,
+  })
   const sphere = roomSphere(interior)
   const { direction } = lighting.sun
   const length = Math.hypot(direction.x, direction.y, direction.z)

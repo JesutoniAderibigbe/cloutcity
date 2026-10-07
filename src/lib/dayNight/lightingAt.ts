@@ -94,6 +94,7 @@ function mixColors(
     hemisphereSky: mixHexLinear(a.hemisphereSky, b.hemisphereSky, t),
     hemisphereGround: mixHexLinear(a.hemisphereGround, b.hemisphereGround, t),
     unlitTint: mixHexLinear(a.unlitTint, b.unlitTint, t),
+    water: mixHexLinear(a.water, b.water, t),
   }
 }
 
