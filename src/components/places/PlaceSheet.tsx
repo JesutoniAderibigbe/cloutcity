@@ -376,7 +376,12 @@ function PlaceCard({ place }: { readonly place: Place }) {
                             })
                           : placeActionAccessibleName(action, place, snapshot)
                       }
-                      onClick={() => run(action)}
+                      onClick={(event) => {
+                        // The second click of a mouse double click: the sheet grows with the
+                        // result, so it can land on the next action, which must not run.
+                        if (event.detail > 1) return
+                        run(action)
+                      }}
                       className={`${BUTTON} flex w-full flex-col bg-raised text-fg enabled:hover:bg-pressed disabled:opacity-70`}
                     >
                       <span>{placeActionName(action)}</span>
