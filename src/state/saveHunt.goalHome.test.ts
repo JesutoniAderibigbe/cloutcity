@@ -1,0 +1,149 @@
+/**
+ * Slice-end bug hunt, H-2: a level goal reached partly on home clout, its reward claimed, then the
+ * home clout lost before the next upload (a move to a cheaper home, decor taken down): honest, so
+ * accepted. Also the icon-policy fuzz seed that first found it.
+ */
+import { expect, it } from 'vitest'
+import { engineConfig as config } from '@/engine/config'
+import { goalClout } from '@/engine/clout'
+import { placeActions } from '@/engine/placeActions'
+import { checkUpload } from '@/engine/plausibility'
+import { initialSave, SAVE_VERSION, type SaveState } from '@/engine/save'
+import { createLogger } from '@/lib/log'
+import { ceilings, MemoryStorage, places } from '@/lib/testing/saveHunt'
+import { createSafeJsonStorage } from './storage'
+import { createGameStore, persistedOf, type PersistedState } from './store'
+
+it('H-2 moving to a cheaper home after claiming a level goal is not rejected', () => {
+  const quiet = createLogger({ level: 'error', sink: () => {} })
+  const store = createGameStore(
+    createSafeJsonStorage<PersistedState>(() => new MemoryStorage(), quiet),
+    quiet,
+  )
+  const s = () => store.getState()
+  const fresh = initialSave(config)
+  // Accepted save: 72 flex clout, living in Brooklyn (home clout 10): goal clout 97.
+  const prev: SaveState = {
+    ...fresh,
+    clock: { minute: 2 * 1440 + 14 * 60, remainderMs: 0 },
+    player: {
+      ...fresh.player,
+      cash: 700,
+      home: 'brooklyn-1br',
+      location: { kind: 'place', placeId: 'queensboro-bridge' },
+      clout: {
+        ...fresh.player.clout,
+        compacted: { entries: 18, bySource: { flex: 87 } },
+        nextSeq: 19,
+        firstPaycheckPaid: true,
+      },
+    },
+    goals: { ...fresh.goals, achieved: { 'first-paycheck': 100 } },
+    actions: 40,
+  }
+  // It was accepted (first upload).
+  const first = checkUpload(
+    null,
+    prev,
+    {
+      realMinutesSinceAccept: 0,
+      burstCreditMinutes: 0,
+      accountAgeMinutes: 60,
+      serverGrantKeys: [],
+      entitledItemIds: [],
+      firstUpload: true,
+    },
+    ceilings,
+    config,
+  )
+  expect(first.outcome).not.toBe('reject')
+  expect(s().adoptCloudSave(JSON.parse(JSON.stringify(first.save)), SAVE_VERSION)).toBe(true)
+  expect(goalClout(s().player, config)).toBe(97)
+
+  const bridge = places.find((p) => p.id === 'queensboro-bridge')!
+  const view = placeActions(bridge, s(), config)
+  const flex = view.kind === 'actions' ? view.actions.find((a) => a.kind === 'flex')! : undefined
+  expect(s().performPlaceAction(bridge, flex!.id).ok).toBe(true)
+  expect(s().goals.achieved['reach-local']).toBeDefined()
+  expect(s().claimGoalReward('reach-local').ok).toBe(true)
+  expect(s().moveHome('queens-room').ok).toBe(true) // downsizing: home clout 10 -> 0
+
+  const verdict = checkUpload(
+    first.save,
+    JSON.parse(JSON.stringify(persistedOf(s()))),
+    {
+      realMinutesSinceAccept: 1,
+      burstCreditMinutes: 5,
+      accountAgeMinutes: 61,
+      serverGrantKeys: [],
+      entitledItemIds: [],
+      firstUpload: false,
+    },
+    ceilings,
+    config,
+  )
+  expect(verdict.outcome).not.toBe('reject')
+})
+
+it('H-2b taking decor down after claiming a level goal it helped reach is not rejected', () => {
+  const quiet = createLogger({ level: 'error', sink: () => {} })
+  const store = createGameStore(
+    createSafeJsonStorage<PersistedState>(() => new MemoryStorage(), quiet),
+    quiet,
+  )
+  const s = () => store.getState()
+  const fresh = initialSave(config)
+  // Accepted save: 92 flex clout in the start home (home clout 0).
+  const prev: SaveState = {
+    ...fresh,
+    clock: { minute: 2 * 1440 + 14 * 60, remainderMs: 0 },
+    player: {
+      ...fresh.player,
+      cash: 200,
+      clout: {
+        ...fresh.player.clout,
+        compacted: { entries: 23, bySource: { flex: 92 } },
+        nextSeq: 24,
+        firstPaycheckPaid: true,
+      },
+    },
+    goals: { ...fresh.goals, achieved: { 'first-paycheck': 100 } },
+    actions: 40,
+  }
+  const first = checkUpload(
+    null,
+    prev,
+    {
+      realMinutesSinceAccept: 0,
+      burstCreditMinutes: 0,
+      accountAgeMinutes: 60,
+      serverGrantKeys: [],
+      entitledItemIds: [],
+      firstUpload: true,
+    },
+    ceilings,
+    config,
+  )
+  expect(first.outcome).not.toBe('reject')
+  expect(s().adoptCloudSave(JSON.parse(JSON.stringify(first.save)), SAVE_VERSION)).toBe(true)
+  expect(s().buyItem('thrift-flatweave-rug').ok).toBe(true)
+  expect(s().placeDecor('thrift-flatweave-rug', 'floor-1').ok).toBe(true) // home clout 0 -> 8: goal clout 100
+  expect(s().goals.achieved['reach-local']).toBeDefined()
+  expect(s().claimGoalReward('reach-local').ok).toBe(true)
+  expect(s().removeDecor('floor-1').ok).toBe(true) // back to storage
+  const verdict = checkUpload(
+    first.save,
+    JSON.parse(JSON.stringify(persistedOf(s()))),
+    {
+      realMinutesSinceAccept: 1,
+      burstCreditMinutes: 5,
+      accountAgeMinutes: 61,
+      serverGrantKeys: [],
+      entitledItemIds: [],
+      firstUpload: false,
+    },
+    ceilings,
+    config,
+  )
+  expect(verdict.outcome).not.toBe('reject')
+})

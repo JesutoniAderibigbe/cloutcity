@@ -535,7 +535,9 @@ Two clout routines play alongside: a barista who flexes once a day (S13), and a 
 (S18c) that flexes up to `clout.flex.maxPerGameDay` times a day at the best-multiplier places it
 can reach, buys and wears wearables for style when it can spare the cash, and takes the best club
 night its clout lets it into. For the honest pace every job runs with the plain and the max-clout
-routine; junior dev is taken the morning the player's level unlocks it (barista until then).
+routine, and with their lean versions (skip meals: a shift whenever the engine allows one, else
+sleep; the fewest taps per dollar); junior dev is taken the morning the player's level unlocks it
+(barista until then).
 
 The test also writes the result to `data/sim/economy-baseline.derived.json` (per-job results
 and the highest cash, clout and action counts per action, game hour and game day, plus the

@@ -572,7 +572,9 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
             )
             if (result.ok && !result.replayed) {
               const { player, grants, prestige: prestigeState } = result.save
-              set({ player, grants, prestige: prestigeState, actions: state.actions + 1 })
+              // Through `commit` (N-1): the claim is a tap, a level-up it causes shows its
+              // toast, and goals are synced like after any other action.
+              commit({ player, grants, prestige: prestigeState }, result.levelUp)
             }
             return result
           },

@@ -79,7 +79,8 @@ import {
   type GrantRecord,
 } from './grants'
 import { moveInCost } from './housing'
-import { emptyInventory, findItem, isPrestigeKept, type Inventory } from './items'
+import { homeClout } from './home'
+import { emptyInventory, findItem, isDecor, isPrestigeKept, type Inventory } from './items'
 import { jobIds, shiftWage } from './jobs'
 import { rentFor } from './rent'
 import { applyRepairs, type Repair } from './repairs'
@@ -624,7 +625,35 @@ function itemCloutGone(
     .reduce((sum, entry) => sum + (findItem(entry.itemId, config)?.cloutValue ?? 0), 0)
 }
 
-/** The most goal clout the run can have held since `base`: now, plus what it lost or sold. */
+/**
+ * Home clout that may have been held in the window but is gone now (H-2): what the home lost
+ * since `base` (a move to a cheaper home, decor taken down, sold or evicted), plus the score of
+ * counting decor the player owns but has not placed or sold since `base`, at most
+ * `home.maxClout` (the whole cap for a fresh run or a first upload).
+ */
+function homeCloutGone(save: SaveState, base: SaveState | null, config: EngineConfig): number {
+  const cap = config.home.maxClout
+  if (base === null) return cap
+  const score = (itemId: string) => {
+    const item = findItem(itemId, config)
+    return item !== undefined && isDecor(item) ? item.decor.homeScore : 0
+  }
+  const placed = new Set(Object.values(save.player.apartment.placed))
+  const owned = new Set(save.player.inventory.decor.map((entry) => entry.itemId))
+  const unplaced = save.player.inventory.decor
+    .filter((entry) => !isPrestigeKept(entry) && !placed.has(entry.itemId))
+    .reduce((sum, entry) => sum + score(entry.itemId), 0)
+  const sold = base.player.inventory.decor
+    .filter((entry) => !isPrestigeKept(entry) && !owned.has(entry.itemId))
+    .reduce((sum, entry) => sum + score(entry.itemId), 0)
+  const lost = Math.max(0, homeClout(base.player, config) - homeClout(save.player, config))
+  return Math.min(cap, lost + unplaced + sold)
+}
+
+/**
+ * The most goal clout the run can have held since `base`: now, plus what it lost or sold, and
+ * the home clout it may have lost.
+ */
 function goalCloutEver(
   save: SaveState,
   base: SaveState | null,
@@ -634,7 +663,8 @@ function goalCloutEver(
   return (
     goalClout(save.player, config) +
     lossesSince(save, base) +
-    itemCloutGone(save, base, ceilings, config)
+    itemCloutGone(save, base, ceilings, config) +
+    homeCloutGone(save, base, config)
   )
 }
 
@@ -719,12 +749,15 @@ function checkBadges(save: SaveState, ctx: UploadContext, config: EngineConfig):
     .map((badge) => ({ kind: 'drop-badge', badge }))
 }
 
-/** Check 4 (SEC-10): wearables from an earlier run that lost their look-only mark. */
+/** Check 4 (SEC-10): wearables and decor (H-4) from an earlier run that lost their look-only mark. */
 function checkKept(save: SaveState, prev: SaveState | null): Repair[] {
   const lastEnded = save.prestige.history.at(-1)?.endedAt
   const prestiged = prev !== null && prev.prestige.history.length < save.prestige.history.length
-  const before = new Map(prev?.player.inventory.wearables.map((owned) => [owned.itemId, owned]))
-  return save.player.inventory.wearables
+  const held = (inventory: Inventory) => [...inventory.wearables, ...inventory.decor]
+  const before = new Map(
+    (prev === null ? [] : held(prev.player.inventory)).map((entry) => [entry.itemId, entry]),
+  )
+  return held(save.player.inventory)
     .filter((owned) => {
       if (isPrestigeKept(owned)) return false
       if (lastEnded !== undefined && owned.acquiredMinute < lastEnded) return true
@@ -760,7 +793,8 @@ function checkPeak(
     cloutLevel(
       totalClout(save.player, config) +
         lossesSince(save, base) +
-        itemCloutGone(save, base, ceilings, config),
+        itemCloutGone(save, base, ceilings, config) +
+        homeCloutGone(save, base, config),
       config,
     ).index,
   )
@@ -1073,7 +1107,7 @@ function itemTrade(
   before: Inventory,
   after: Inventory,
   config: EngineConfig,
-): { readonly bought: number; readonly sold: number } {
+): { readonly bought: number; readonly sold: number; readonly giftsGone: number } {
   const price = (itemId: string) => findItem(itemId, config)?.price ?? 0
   const sellValue = (itemId: string) => findItem(itemId, config)?.sellValue ?? 0
   const copy = (owned: { itemId: string; acquiredMinute: number }) =>
@@ -1099,13 +1133,16 @@ function itemTrade(
   }
   const count = (inventory: Inventory, itemId: string) =>
     inventory.gifts.find((stack) => stack.itemId === itemId)?.count ?? 0
+  // Gifts that are gone were sold or used up (`consumeGift`, H-5): their resale value counts only
+  // as far as cash shows it (`cashFlows`).
+  let giftsGone = 0
   const giftIds = new Set([...before.gifts, ...after.gifts].map((stack) => stack.itemId))
   for (const itemId of giftIds) {
     const change = count(after, itemId) - count(before, itemId)
     if (change > 0) bought += change * price(itemId)
-    else sold += -change * sellValue(itemId)
+    else giftsGone += -change * sellValue(itemId)
   }
-  return { bought, sold }
+  return { bought, sold, giftsGone }
 }
 
 /**
@@ -1138,7 +1175,9 @@ function cashFlows(
     home !== start.home && rentFor(home, config) > rentFor(start.home, config)
       ? moveInCost(home, config)
       : 0
-  const otherwise = start.cash + grantCash + trade.sold - trade.bought - moved
+  // A gift used up is not a sale: its resale value counts only up to the cash the window gained.
+  const giftSales = Math.min(trade.giftsGone, Math.max(0, save.player.cash - start.cash))
+  const otherwise = start.cash + grantCash + trade.sold + giftSales - trade.bought - moved
   // What play must have brought in to end at this cash (spending only lowers it).
   const needed = Math.max(0, save.player.cash - otherwise)
   return { ok: needed <= income, income: needed }

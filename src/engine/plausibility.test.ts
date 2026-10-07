@@ -14,7 +14,7 @@ import { engineConfig as config, transitBalance } from './config'
 import { initialEventsState } from './events'
 import { syncGoals } from './goals'
 import { goalGrantKey, grant, grantCeilings, prestigeBadge, type GrantRecord } from './grants'
-import { buyItem, isGift, isWearable, shopItems } from './items'
+import { buyItem, isDecor, isGift, isWearable, shopItems, type DecorDef } from './items'
 import {
   applyRepairs,
   cashCeilings,
@@ -27,7 +27,7 @@ import {
   type Verdict,
 } from './plausibility'
 import { prestige } from './prestige'
-import { createSaveSchema, initialSave, type SaveState } from './save'
+import { createSaveSchema, initialSave, loadSave, type SaveState } from './save'
 import { runEconomyBot, type BotStep } from './sim/economyBot'
 import { maxCloutPlaces } from './sim/maxCloutPlaces'
 import { playerWithClout } from './test-support'
@@ -1255,5 +1255,66 @@ describe('a branch without its shared save (N3)', () => {
       },
     )
     expect(verdict.findings).not.toContain('regressed')
+  })
+})
+
+describe('slice-end hunt fixes (H-4, H-5, T-1)', () => {
+  it('H-4: decor from an earlier run that lost its look-only mark is marked again', () => {
+    const { after } = prestiged()
+    const rug = shopItems(config).find((item) => isDecor(item))
+    if (rug === undefined) throw new Error('no decor')
+    const next = clone(after)
+    // Bought before the last prestige, but not marked as kept: its home score would count again.
+    next.player.inventory.decor = [
+      ...next.player.inventory.decor,
+      { itemId: rug.id, acquiredMinute: 0, variant: (rug as DecorDef).decor.variants[0]?.id ?? '' },
+    ]
+    const verdict = check(null, next, { firstUpload: true })
+    expect(verdict.repairs).toContainEqual({ kind: 'mark-kept', itemId: rug.id })
+    expect(
+      verdict.save?.player.inventory.decor.find((owned) => owned.itemId === rug.id)?.prestigeKept,
+    ).toBe(true)
+  })
+
+  it('H-5: gifts used up are not sales: their value cannot pay for a purchase', () => {
+    const prev = lateRun()
+    const gift = shopItems(config).find((item) => isGift(item))
+    const wearable = shopItems(config).find(
+      (item) =>
+        isWearable(item) && !prev.player.inventory.wearables.some((o) => o.itemId === item.id),
+    )
+    if (gift === undefined || wearable === undefined) throw new Error('no gift or wearable')
+    const withGifts = clone(prev)
+    withGifts.player.inventory.gifts = [{ itemId: gift.id, count: config.items.maxGiftStack }]
+    const base = check(prev, withGifts, { serverGrantKeys: serverKeys(prev) }).save ?? prev
+    // Every gift used up, a wearable bought, and cash kept as if the gifts had paid for it.
+    const next = later(base)
+    next.player.inventory.gifts = []
+    next.player.inventory.wearables = [
+      ...next.player.inventory.wearables,
+      { itemId: wearable.id, acquiredMinute: next.clock.minute, worn: false },
+    ]
+    next.player.cash =
+      base.player.cash - wearable.price + gift.sellValue * config.items.maxGiftStack
+    // The used-up gifts are worth more than the wearable: the old rule let them pay for it.
+    expect(gift.sellValue * config.items.maxGiftStack).toBeGreaterThan(wearable.price)
+    const verdict = check(base, next, { serverGrantKeys: serverKeys(prev) })
+    expect(verdict.findings).toContain('cash-flow')
+  })
+
+  it('T-1: a ledger or grant sequence at the safe-integer limit is repaired, not fatal', () => {
+    const save = clone(lateRun())
+    const [entry] = save.player.clout.ledger
+    if (entry === undefined) throw new Error('no ledger entry')
+    save.player.clout.ledger = [
+      ...save.player.clout.ledger,
+      { ...entry, seq: Number.MAX_SAFE_INTEGER },
+    ]
+    save.player.clout.nextSeq = Number.MAX_SAFE_INTEGER
+    const loaded = loadSave(JSON.parse(JSON.stringify(save)), config)
+    expect(loaded.ok).toBe(true)
+    if (!loaded.ok) return
+    expect(schema.safeParse(loaded.save).success).toBe(true)
+    expect(loaded.save.player.clout.nextSeq).toBeLessThan(Number.MAX_SAFE_INTEGER)
   })
 })
