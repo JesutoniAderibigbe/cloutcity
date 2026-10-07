@@ -58,7 +58,9 @@ export function MapAttribution({
               <br />
               {mta}
             </p>
-            <p className="map-attribution-compact truncate">{compact}</p>
+            {/* Wraps rather than truncates: it is required attribution, so it must be readable
+                in full. Two 11 px lines fit beside the 44 px Credits target. */}
+            <p className="map-attribution-compact">{compact}</p>
             <a
               href="/credits"
               className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-md px-2 font-semibold text-ink-50 underline focus-visible:outline-2 focus-visible:outline-taxi-400"
