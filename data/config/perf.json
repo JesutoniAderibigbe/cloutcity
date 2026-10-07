@@ -1,5 +1,6 @@
 {
   "shellJsGzKB": 180,
+  "shellHeadroomGzKB": 20,
   "sceneChunkJsGzKB": 350,
   "totalJsToPlayableGzKB": 550,
   "baseGeoGzKB": 400,

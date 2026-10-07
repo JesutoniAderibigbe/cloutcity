@@ -3,16 +3,19 @@
  * unlocked, built from the engine's `LevelUp` through the copy layer.
  */
 import type { LevelUp } from '@/engine/clout'
-import { baseCopy, copy as activeCopy, type CopyFn, type CopyKey } from './copy'
+import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from './copy'
 import { cloutLevelName, jobName } from './economyCopy'
 import { boroughs, findPlace, placeName } from './world/places'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/boroughs'
+import '@/lib/copy/ns/clout'
 
 export interface LevelUpCopyOptions {
   readonly copy?: CopyFn
 }
 
 function requireKey(key: string, what: string): CopyKey {
-  if (!Object.hasOwn(baseCopy.strings, key)) throw new Error(`No copy key "${key}" for ${what}`)
+  if (!isCopyKey(key)) throw new Error(`No copy key "${key}" for ${what}`)
   return key as CopyKey
 }
 

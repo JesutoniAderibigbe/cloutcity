@@ -13,10 +13,13 @@ import type {
   PlaceActionResult,
   PlaceHoursNow,
 } from '@/engine/placeActions'
-import { baseCopy, copy as activeCopy, type CopyFn, type CopyKey } from '@/lib/copy'
+import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from '@/lib/copy'
 import { cloutLevelName, jobLockedLabel, jobName } from '@/lib/economyCopy'
 import { formatCount, formatMoney } from '@/lib/format'
 import { boroughClosedReason, placeName, type MapPlace } from './places'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/club'
+import '@/lib/copy/ns/place'
 
 export interface PlaceActionCopyOptions {
   readonly copy?: CopyFn
@@ -28,8 +31,8 @@ type PlaceRef = Pick<MapPlace, 'id' | 'nameKey' | 'borough'>
 const MINUTES_PER_HOUR = 60
 
 function requireKey(key: string, what: string): CopyKey {
-  if (!Object.hasOwn(baseCopy.strings, key)) throw new Error(`No copy key "${key}" for ${what}`)
-  return key as CopyKey
+  if (!isCopyKey(key)) throw new Error(`No copy key "${key}" for ${what}`)
+  return key
 }
 
 /** `street-meal` → `streetMeal`, the copy-key segment for a kebab-case id. */

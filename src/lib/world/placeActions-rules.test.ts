@@ -13,7 +13,8 @@ import { performPlaceAction, placeActions, type PlaceAction } from '@/engine/pla
 import { placeAllows, type PlaceHook } from '@/engine/places'
 import { withClout } from '@/engine/test-support'
 import { boroughAccess } from '@/engine/boroughs'
-import { baseCopy, createCopy, slangPacks } from '@/lib/copy'
+import { createCopy } from '@/lib/copy'
+import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { cloutLevelName } from '@/lib/economyCopy'
 import {
   formatDuration,

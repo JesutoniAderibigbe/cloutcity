@@ -1,0 +1,9 @@
+{
+  "strings": {
+    "inventory.equip.label": "Wear {item} ({slot})",
+    "inventory.unequip.label": "Take off {item} ({slot})",
+    "inventory.gift.useOnSelf.label": "Use {item} on yourself",
+    "inventory.gift.usedOnSelf": "You used {item} on yourself.",
+    "inventory.gift.count": "{item}: {count} left"
+  }
+}

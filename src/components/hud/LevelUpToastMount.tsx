@@ -1,20 +1,16 @@
 'use client'
 
-import { lazy, Suspense } from 'react'
-import { useHydrated } from '@/components/overlay/useHydrated'
+import { lazyIsland } from '@/components/overlay/lazyIsland'
 
-// DEC-11: the shell carries only this mount. The toast, with the store it subscribes to,
-// loads in its own chunk after hydration.
-const LevelUpToast = lazy(() =>
-  import('./LevelUpToast').then((module) => ({ default: module.LevelUpToast })),
+// DEC-11: the shell carries only this mount. The toast, with the game store it subscribes to and
+// the clout copy, is a boot island: a level-up can land as soon as play starts. Nothing shows
+// while it loads, because most of the time there is no level-up to show.
+const LevelUpToast = lazyIsland(
+  () => import('./LevelUpToast').then((module) => module.LevelUpToast),
+  { zone: 'toast', labelKey: 'loading.levelUp', eager: true, quiet: true },
 )
 
 /** The toast zone's level-up slot: nothing on the server, the lazily loaded toast after. */
 export function LevelUpToastMount() {
-  if (!useHydrated()) return null
-  return (
-    <Suspense fallback={null}>
-      <LevelUpToast />
-    </Suspense>
-  )
+  return <LevelUpToast />
 }

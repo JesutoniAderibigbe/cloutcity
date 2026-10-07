@@ -8,6 +8,8 @@ import type { LevelUp } from '@/engine/clout'
 import { copy } from '@/lib/copy'
 import { levelUpCloseLabel, levelUpMessage, levelUpTitle, levelUpUnlocked } from '@/lib/levelUpCopy'
 import { gameStore, useGameStore } from '@/state/store'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/clout'
 
 /**
  * The level-up toast (S13), in the overlay toast zone, whose live region announces it. It
@@ -67,6 +69,7 @@ function Toast({ levelUp }: { readonly levelUp: LevelUp }) {
     <div
       ref={ref}
       data-level-up={levelUp.to}
+      data-cc-feature="cc-feature:level-up"
       data-paused={paused ? '' : undefined}
       className="level-up-pop mx-2 flex items-center gap-2 rounded-2xl border border-pink-400 bg-night-900/95 px-3 py-1 shadow-lg backdrop-blur"
     >

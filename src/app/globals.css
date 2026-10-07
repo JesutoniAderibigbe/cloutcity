@@ -37,6 +37,24 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* A lazy feature's loading skeleton (src/components/overlay/ZoneLoading.tsx) stays invisible for
+   the reveal delay (data/config/layout.json, written to --overlay-loading-delay by the overlay
+   layout), so a fast load never flashes a placeholder. Under reduced motion the rule below turns
+   the fade into an instant reveal after the same delay. */
+@keyframes cc-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cc-reveal {
+  opacity: 0;
+  animation: cc-reveal 150ms ease-out var(--overlay-loading-delay, 0ms) forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

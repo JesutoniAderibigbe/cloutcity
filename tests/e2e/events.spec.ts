@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import type { EventContext } from '@/engine/events'
-import { expect, test } from './fixtures/test'
+import { expect, test, waitForWelcomeGate } from './fixtures/test'
 
 // S14: an event opens as a modal in the overlay sheet zone, the player picks an option by
 // touch, click or keyboard, and the outcome lands in the game state. Events are opened through
@@ -30,6 +30,7 @@ async function boot(page: Page) {
     window.__CLOUTCITY_E2E__ = true
   })
   await page.goto('/')
+  await waitForWelcomeGate(page)
   await page.waitForFunction(() => window.__cloutcityTest?.events !== undefined)
 }
 
@@ -222,10 +223,11 @@ async function seedSave(page: Page, value: string) {
 }
 
 test.describe('events: edge cases', () => {
-  test('the empty sheet zone lets touches through before the event chunk loads, and after', async ({
+  test('the empty sheet zone lets touches through before the event host loads, and after', async ({
     page,
   }) => {
-    // Hold back the event sheet chunk (the only chunk that renders `data-choice`).
+    // Hold back the boot island with the game store (the only chunk that names its save key).
+    // The event host, and so the test hook, cannot run until it loads.
     let release: () => void = () => {}
     const released = new Promise<void>((resolve) => {
       release = resolve
@@ -234,7 +236,7 @@ test.describe('events: edge cases', () => {
     await page.route('**/_next/static/chunks/**/*.js', async (route) => {
       const response = await route.fetch()
       const body = await response.text()
-      if (body.includes('data-choice')) {
+      if (body.includes(STORE_KEY)) {
         held = true
         await released
       }
@@ -243,9 +245,10 @@ test.describe('events: edge cases', () => {
     await page.addInitScript(() => {
       window.__CLOUTCITY_E2E__ = true
     })
-    await page.goto('/')
+    // A held boot-island chunk delays the load event, so do not wait for it.
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
-    await expect.poll(() => held, { message: 'the event chunk is requested at boot' }).toBe(true)
+    await expect.poll(() => held, { message: 'the store chunk is requested at boot' }).toBe(true)
     expect(await page.evaluate(() => window.__cloutcityTest?.events)).toBeUndefined()
     expect(await sheetPassesThrough(page), 'before the chunk loads').toBe(true)
 

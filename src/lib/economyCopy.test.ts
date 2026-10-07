@@ -3,7 +3,8 @@ import { engineConfig, type EngineConfig } from '@/engine/config'
 import { jobIds, jobLock } from '@/engine/jobs'
 import { homeIds } from '@/engine/rent'
 import { initialSnapshot } from '@/engine/game'
-import { baseCopy, createCopy, findLiteralSuperlatives, slangPacks } from './copy'
+import { createCopy, findLiteralSuperlatives } from '@/lib/copy'
+import { baseCopy, slangPacks } from '@/lib/copy/all'
 import {
   cloutLevelName,
   homeName,

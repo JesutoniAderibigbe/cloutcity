@@ -34,6 +34,11 @@ export const ThrottleProfileSchema = z.strictObject({
 export const PerfConfigSchema = z.strictObject({
   /** Shell JS of route `/`, before the 3D chunk. Read by `npm run budget`. */
   shellJsGzKB: positive,
+  /**
+   * Room the shell keeps below `shellJsGzKB` for features still to land (S05c): the shell may
+   * use at most shellJsGzKB minus this. Read by scripts/shell-guard.ts.
+   */
+  shellHeadroomGzKB: z.number().nonnegative(),
   sceneChunkJsGzKB: positive,
   totalJsToPlayableGzKB: positive,
   baseGeoGzKB: positive,
@@ -667,14 +672,35 @@ export const LayoutConfigSchema = z.strictObject({
     sheetMaxHeightVh: positive,
     sheetMaxWidthPx: positive,
     tabBarHeightPx: positive,
+    /**
+     * A lazily loaded feature's loading skeleton stays invisible this long, so a fast load never
+     * flashes a placeholder (its status is announced at once).
+     */
+    loadingRevealDelayMs: z.int().nonnegative(),
   }),
 })
 export type LayoutConfig = z.infer<typeof LayoutConfigSchema>
 
-export const CopyConfigSchema = z.strictObject({
-  /** Active slang pack id (a file in data/copy/packs). Swapping it needs no code change. */
-  slangPack: z.string().regex(/^[a-z0-9-]+$/),
-})
+const PACK_ID = /^[a-z0-9-]+$/
+
+export const CopyConfigSchema = z
+  .strictObject({
+    /** Active slang pack id. Swapping it needs no code change. */
+    slangPack: z.string().regex(PACK_ID),
+    /**
+     * Every slang pack. A pack overrides a namespace with data/copy/<namespace>/<pack>.json;
+     * a namespace it does not override has no file for it.
+     */
+    packs: z.array(z.string().regex(PACK_ID)).min(1),
+  })
+  .refine((config) => config.packs.includes(config.slangPack), {
+    error: 'slangPack must be one of packs',
+    path: ['slangPack'],
+  })
+  .refine((config) => new Set(config.packs).size === config.packs.length, {
+    error: 'packs must not repeat',
+    path: ['packs'],
+  })
 export type CopyConfig = z.infer<typeof CopyConfigSchema>
 
 /** The welcome card: the 18+ check, the under-age lock and the consent version (S05a). */

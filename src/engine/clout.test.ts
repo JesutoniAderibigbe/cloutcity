@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { CLOUT_SOURCES } from '@/lib/data/cloutSources'
-import { baseCopy } from '@/lib/copy'
+import { baseCopy } from '@/lib/copy/all'
 import {
   appendClout,
   cloutBreakdown,

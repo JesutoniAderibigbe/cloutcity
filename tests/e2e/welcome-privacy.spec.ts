@@ -1,5 +1,5 @@
 import type { BrowserContext, Page, Request } from '@playwright/test'
-import { expect, test } from './fixtures/test'
+import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import {
   T0,
   YEAR,
@@ -113,7 +113,14 @@ for (const { name, answers, outcome } of PATHS) {
     }
     // Let late effects and log calls land, then reload so boot-time code runs too.
     await page.reload()
-    await expect(page.locator('main')).toBeAttached()
+    await waitForWelcomeGate(page)
+    // Let the gate's boot effect (which starts the guest session) run and log.
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    )
     await console.settle()
 
     const year = yearPattern(answers.birthYear ?? 0)

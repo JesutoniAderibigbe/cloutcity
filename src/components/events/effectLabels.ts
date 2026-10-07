@@ -1,9 +1,11 @@
 import { copy, type CopyKey } from '@/lib/copy'
 import { formatCount, formatMoney } from '@/lib/format'
 import type { EventEffect } from '@/lib/data/schemas/content'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/events'
 
 /**
- * Renders a copy key named by event data. The keys are checked against data/copy/base.json by
+ * Renders a copy key named by event data. The keys are checked against data/copy/events/base.json by
  * src/lib/data/events.test.ts, so the cast cannot reach a player as a missing string.
  */
 export function eventText(key: string): string {

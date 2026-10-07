@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { expect, test } from './fixtures/test'
+import { expect, test, waitForWelcomeGate } from './fixtures/test'
 
 // UX-1: overlays never cover each other. Runs at mobile-390 and desktop-1280.
 
@@ -64,6 +64,7 @@ async function fillZonesWithPlaceholders(page: Page): Promise<void> {
 test.describe('overlay layer system', () => {
   test('reserves non-overlapping safe zones inside the viewport', async ({ page }) => {
     await page.goto('/')
+    await waitForWelcomeGate(page)
     const viewport = page.viewportSize()
     if (!viewport) throw new Error('viewport size is not set')
     const boxes = await zoneBoxes(page)
@@ -91,6 +92,7 @@ test.describe('overlay layer system', () => {
 
   test('oversized content stays inside its own zone', async ({ page }) => {
     await page.goto('/')
+    await waitForWelcomeGate(page)
     const before = await zoneBoxes(page)
     await fillZonesWithPlaceholders(page)
     const after = await zoneBoxes(page)
@@ -123,6 +125,7 @@ test.describe('overlay layer system', () => {
 
   test('the shell as shipped matches its screenshot', async ({ page }) => {
     await page.goto('/')
+    await waitForWelcomeGate(page)
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
     await expect(page).toHaveScreenshot('overlay-shell.png')
   })
@@ -143,6 +146,7 @@ test.describe('overlay layer system on cramped viewports', () => {
     }) => {
       await page.setViewportSize(size)
       await page.goto('/')
+      await waitForWelcomeGate(page)
 
       // The real tab bar first (the placeholder fill below replaces it).
       const nav = page.getByRole('navigation', { name: 'Main' })

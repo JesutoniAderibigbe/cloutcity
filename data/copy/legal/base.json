@@ -1,0 +1,14 @@
+{
+  "strings": {
+    "legal.placeholderNotice": "Placeholder: pending legal review",
+    "legal.back": "Back to the city",
+    "legal.terms.title": "Terms",
+    "legal.terms.intro": "These terms cover your use of Clout City: NYC, a game set in a shared, live version of New York City.",
+    "legal.terms.age": "Clout City: NYC is for players 18 and over. If you are under 18, you may not play.",
+    "legal.terms.conduct": "Treat other players with respect. Play fair and keep it friendly.",
+    "legal.privacy.title": "Privacy Policy",
+    "legal.privacy.intro": "This policy explains what Clout City: NYC keeps about you.",
+    "legal.privacy.stored": "On this device we store that you confirmed you are 18 or over and when, the version of the Terms and Privacy Policy you agreed to and when, and your sound choice.",
+    "legal.privacy.birthYear": "We never store, log or send the year you were born. It is used only to check your age on the welcome card."
+  }
+}

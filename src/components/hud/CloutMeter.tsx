@@ -1,5 +1,7 @@
 import { copy } from '@/lib/copy'
 import { formatCount } from '@/lib/format'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/hud'
 
 export interface CloutMeterProps {
   /** The current level's display name ("Local"). */
@@ -27,7 +29,11 @@ export function CloutMeter({ levelName, total, next, pct, atMax }: CloutMeterPro
       : copy('hud.clout.progressLabel', { level: levelName, count, target, next: next.name })
 
   return (
-    <div data-clout-meter="" className="flex min-w-0 shrink-0 flex-col items-end gap-1">
+    <div
+      data-clout-meter=""
+      data-cc-feature="cc-feature:clout-hud"
+      className="flex min-w-0 shrink-0 flex-col items-end gap-1"
+    >
       <p aria-hidden="true" className="flex gap-1.5 text-xs leading-none font-bold">
         <span className="text-ink-300">{copy('hud.clout.label')}</span>
         <span className="text-taxi-400">{levelName}</span>
