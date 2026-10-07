@@ -141,11 +141,12 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   `npx supabase start` only for test:integration / e2e:supabase, then `npx supabase stop`. Never quit
   Docker or touch non-cloutcity containers (the user has other projects there).
 
-- Wave testing (user request 2026-10-07): per task, run typecheck, lint, the FULL unit suite, build, budget
-  and only the task's own/affected e2e specs (no full e2e, no per-task bug-hunter). At the end of each
-  wave the orchestrator merges every lane into `integration/wave-N`, runs the full gates once, and one
-  bug-hunter covers the whole wave plus fix cycles before fast-forwarding dev. Exception: security,
-  money and server tasks (S18a/b/c, S19+, S25–S28) keep their own bug-hunter.
+- Build-first mode (user request 2026-10-07): per task run ONLY typecheck, lint, the full unit suite,
+  build and budget (no e2e, no per-task bug-hunter). The orchestrator merges each finished task to
+  `integration/slice` on those fast gates (small, frequent merges). At the end of the playable slice:
+  one full e2e run, bug-hunters fix everything found, qa-mafia, then merge to dev and open the PR.
+  Tasks are marked passed only after the slice-end tests pass. Exception: security/money/server tasks
+  (S18a/b/c, S19+, S25–S28) keep their own bug-hunter before merging.
 
 - Art direction (DEC-24, user 2026-10-07): hand-made 3D models from free CC0 packs only (no custom
   or AI models); S04h asset pipeline added; landmarks use the code-built kit as styled stand-ins.
