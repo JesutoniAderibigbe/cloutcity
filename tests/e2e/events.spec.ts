@@ -201,6 +201,9 @@ const STORE_KEY = 'cloutcity:game'
 // goals, grants and prestige), not imported for the same reason. A seeded save without the v8
 // fields loads with them fresh.
 const SAVE_VERSION = 8
+// The version every load re-saves as (src/engine/save.ts SAVE_VERSION: v9 apartment, v10 location and
+// transit, v11 cloud sync), not imported for the same reason.
+const CURRENT_SAVE_VERSION = 11
 
 /** True when a click at the centre of the sheet zone lands outside every overlay zone. */
 function sheetPassesThrough(page: Page) {
@@ -395,7 +398,7 @@ test.describe('events: edge cases', () => {
       .poll(() =>
         page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '{}').version, STORE_KEY),
       )
-      .toBe(SAVE_VERSION)
+      .toBe(CURRENT_SAVE_VERSION)
   })
 
   test('a save from a newer build is not overwritten by opening or resolving an event', async ({
