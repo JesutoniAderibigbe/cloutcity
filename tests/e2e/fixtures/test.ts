@@ -164,6 +164,13 @@ export const test = base.extend<Fixtures>({
  */
 export async function waitForWelcomeGate(page: Page): Promise<void> {
   await page.locator('[data-welcome-gate]').waitFor({ state: 'attached' })
+  // The marker commits before the loading card's modal presence is released (a later effect),
+  // so for a closed gate also wait for the page to leave `inert`: a focus() in between is lost.
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-welcome-dialog]') !== null ||
+      document.querySelector('[data-overlay-background]:not([inert])') !== null,
+  )
 }
 
 export { expect }

@@ -44,6 +44,19 @@ export interface GuardInput {
   readonly maxShellGzBytes: number
 }
 
+/**
+ * True when `marker` appears whole: not as the start of a longer id (`cc-feature:event` inside
+ * `cc-feature:event-sheet`), which would report the wrong feature or hide a missing one.
+ */
+function hasMarker(text: string, marker: string): boolean {
+  let at = text.indexOf(marker)
+  while (at !== -1) {
+    if (!/^-?[a-z0-9]/.test(text.slice(at + marker.length, at + marker.length + 2))) return true
+    at = text.indexOf(marker, at + 1)
+  }
+  return false
+}
+
 /** True when `key` appears as a whole string literal (any quote, JSON-escaped or not). */
 function hasKeyLiteral(text: string, key: string): boolean {
   for (const quote of ['"', "'", '`', '\\"']) {
@@ -57,7 +70,7 @@ export function shellGuardFailures(input: GuardInput): string[] {
   const failures: string[] = []
   for (const chunk of input.shell) {
     for (const marker of input.markers) {
-      if (chunk.text.includes(marker)) failures.push(`${chunk.name}: feature module ${marker}`)
+      if (hasMarker(chunk.text, marker)) failures.push(`${chunk.name}: feature module ${marker}`)
     }
     const keys = input.featureKeys.filter((key) => hasKeyLiteral(chunk.text, key))
     if (keys.length > 0) {
@@ -77,7 +90,7 @@ export function shellGuardFailures(input: GuardInput): string[] {
   }
   if (input.markers.length === 0) failures.push('no cc-feature markers found in src')
   for (const marker of input.markers) {
-    if (!input.others.some((chunk) => chunk.text.includes(marker))) {
+    if (!input.others.some((chunk) => hasMarker(chunk.text, marker))) {
       failures.push(`${marker} is in no lazy chunk: the scan cannot see that feature`)
     }
   }

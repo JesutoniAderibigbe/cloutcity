@@ -38,6 +38,26 @@ describe('shellGuardFailures', () => {
     ])
   })
 
+  it('matches markers whole: one id that prefixes another is neither found nor hidden by it', () => {
+    const sheet = { name: 'chunks/sheet.js', text: '"cc-feature:event-sheet"' }
+    const input: GuardInput = {
+      ...passing,
+      markers: ['cc-feature:event', 'cc-feature:event-sheet'],
+      others: [sheet, { name: 'chunks/event.js', text: '"cc-feature:event"' }],
+    }
+    // Only the longer id is in the shell: the shorter one must not be reported for it.
+    expect(
+      shellGuardFailures({
+        ...input,
+        shell: [{ name: 'chunks/shell.js', text: 'copy("tabs.map");"cc-feature:event-sheet"' }],
+      }),
+    ).toEqual(['chunks/shell.js: feature module cc-feature:event-sheet'])
+    // The shorter id's chunk is missing: the longer id's chunk must not count as seeing it.
+    expect(shellGuardFailures({ ...input, others: [sheet] })).toEqual([
+      'cc-feature:event is in no lazy chunk: the scan cannot see that feature',
+    ])
+  })
+
   it.each([
     '"events.ui.continue"',
     "'events.ui.continue'",

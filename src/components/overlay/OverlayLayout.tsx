@@ -53,7 +53,7 @@ export function OverlayLayout({ children, slots, modal }: OverlayLayoutProps) {
 
   return (
     <div className="fixed inset-0 overflow-hidden">
-      <OverlayBackground>
+      <OverlayBackground holdForModal={modal !== undefined}>
         {/* tabIndex -1: focus lands here when a modal closes. */}
         <main
           tabIndex={-1}

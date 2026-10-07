@@ -67,4 +67,30 @@ describe('copy namespaces', () => {
     registerCopy('tabs', { strings: { 'tabs.map': 'City' } }, {})
     expect(copy('tabs.map')).toBe('City')
   })
+
+  it('with slangPack "plain" every key renders its base text, the nyc files ignored', async () => {
+    vi.doMock('@data/config/copy.json', () => ({
+      default: { slangPack: 'plain', packs: ['nyc', 'plain'] },
+    }))
+    try {
+      const { copy, copyParts } = await freshCore()
+      await import('./ns/voice')
+      await import('./ns/welcome')
+      const { baseCopy, slangPacks } = await import('./all')
+      const nyc = slangPacks.nyc?.strings ?? {}
+      // A key the nyc pack overrides renders base text under plain.
+      expect(nyc['voice.bodega']).toBeDefined()
+      expect(copy('voice.bodega')).toBe(baseCopy.strings['voice.bodega'])
+      expect(copy('voice.bodega')).not.toBe(nyc['voice.bodega'])
+      for (const [key, text] of Object.entries(baseCopy.strings)) {
+        if (/\{/.test(text)) continue
+        expect(copy(key as Parameters<typeof copy>[0]), key).toBe(text)
+      }
+      expect(copyParts('welcome.consent.label')).toEqual(
+        expect.arrayContaining([{ kind: 'slot', name: 'terms' }]),
+      )
+    } finally {
+      vi.doUnmock('@data/config/copy.json')
+    }
+  })
 })

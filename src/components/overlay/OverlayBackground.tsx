@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, type ReactNode } from 'react'
-import { useModalOpen } from './modalState'
+import { useModalHold, useModalOpen } from './modalState'
 
 /**
  * The scene and every overlay zone. While a modal is open it is inert (no focus, clicks or
@@ -9,9 +9,19 @@ import { useModalOpen } from './modalState'
  * When the last modal closes and focus went with it, focus moves to the scene's <main> so
  * keyboard and screen-reader users are not left on a removed element. Focus that something else
  * has already taken (a dialog restored behind the welcome island's loading card) stays put.
+ * With a modal slot it is inert from the first server-rendered byte until that slot's island
+ * has decided, so nothing behind the 18+ gate is reachable before hydration either.
  */
-export function OverlayBackground({ children }: { readonly children: ReactNode }) {
-  const modalOpen = useModalOpen()
+export function OverlayBackground({
+  children,
+  holdForModal = false,
+}: {
+  readonly children: ReactNode
+  /** The page has a modal slot: stay inert until its island has decided (modalState.ts). */
+  readonly holdForModal?: boolean
+}) {
+  const held = useModalHold(holdForModal)
+  const modalOpen = useModalOpen() || held
   const root = useRef<HTMLDivElement>(null)
   const wasOpen = useRef(false)
 

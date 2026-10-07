@@ -13,6 +13,7 @@ import {
 } from 'react'
 import type { CopyKey } from '@/lib/copy'
 import { log } from '@/lib/log'
+import { useModalSettled } from './modalState'
 import { useHydrated } from './useHydrated'
 import { ZoneLoadFailed, ZoneLoading, type IslandZone } from './ZoneLoading'
 
@@ -68,6 +69,18 @@ export function lazyIsland<P extends object>(
     return pending
   }
 
+  // The modal slot's island releases the page's boot hold (modalState.ts) once it has loaded and
+  // rendered: its own modal presence, if any, is registered in the same commit (a child's
+  // effects run first), so the page never leaves `inert` in between.
+  const settling = (Component: ComponentType<P>): ComponentType<P> => {
+    if (zone !== 'modal') return Component
+    function Settled(props: P) {
+      useModalSettled()
+      return <Component {...props} />
+    }
+    return Settled
+  }
+
   function LoadFailed() {
     return <ZoneLoadFailed zone={zone} onRetry={useContext(RetryContext)} />
   }
@@ -77,7 +90,7 @@ export function lazyIsland<P extends object>(
   const build = () =>
     lazy(() =>
       start().then(
-        (component) => ({ default: component }),
+        (component) => ({ default: settling(component) }),
         (error: unknown) => {
           log.info('A feature failed to load; offering a retry', {
             zone,
