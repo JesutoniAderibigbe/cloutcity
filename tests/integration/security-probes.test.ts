@@ -9,7 +9,9 @@ import type postgres from 'postgres'
 import { describe, expect, inject, it } from 'vitest'
 import {
   anonClient,
+  asRequest,
   befriend,
+  errorOf,
   expectRpcError,
   newAttestedGuest,
   newGuest,
@@ -18,43 +20,6 @@ import {
   welcomeRecord,
 } from './helpers'
 import { toAttestationArgs } from '@/lib/supabase/attestation'
-
-const rollback = new Error('rollback')
-
-/**
- * Runs `body` inside a transaction as the given database role with the given JWT claims, the
- * way PostgREST does for a request, then rolls back. In one transaction now() is fixed, so the
- * exact clock edges can be hit.
- */
-async function asRequest<T>(
-  role: 'anon' | 'authenticated' | 'service_role',
-  claims: Record<string, unknown>,
-  body: (tx: postgres.TransactionSql) => Promise<T>,
-): Promise<T> {
-  let result: T | undefined
-  await expect(
-    sql.begin(async (tx) => {
-      await tx`select set_config('request.jwt.claims', ${JSON.stringify(claims)}, true)`
-      await tx.unsafe(`set local role ${role}`)
-      result = await body(tx)
-      throw rollback
-    }),
-  ).rejects.toBe(rollback)
-  return result as T
-}
-
-/** The error a statement raised inside a savepoint (so the transaction carries on), or null. */
-async function errorOf(
-  tx: postgres.TransactionSql,
-  run: (sp: postgres.TransactionSql) => Promise<unknown>,
-) {
-  try {
-    await tx.savepoint(run)
-    return null
-  } catch (error) {
-    return error as { message: string; code: string }
-  }
-}
 
 describe('attest_and_consent under pressure', () => {
   it('10 concurrent calls: all succeed, one attestation time and one recorded time win', async () => {

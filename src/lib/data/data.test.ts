@@ -262,7 +262,20 @@ describe('config/realtime.json and moderation', () => {
     const valid = readJson('config/realtime.json') as Record<string, unknown>
     expect(RealtimeConfigSchema.safeParse({ ...valid, shardSize: 0 }).success).toBe(false)
     expect(RealtimeConfigSchema.safeParse({ ...valid, shardSize: 16.5 }).success).toBe(false)
-    expect(ModerationConfigSchema.safeParse({ autoHideReports: 0 }).success).toBe(false)
+    const moderationValid = readJson('config/moderation.json') as Record<string, unknown>
+    expect(ModerationConfigSchema.safeParse(moderationValid).success).toBe(true)
+    expect(
+      ModerationConfigSchema.safeParse({ ...moderationValid, autoHideReports: 0 }).success,
+    ).toBe(false)
+    expect(
+      ModerationConfigSchema.safeParse({ ...moderationValid, noteMaxChars: 2.5 }).success,
+    ).toBe(false)
+    expect(
+      ModerationConfigSchema.safeParse({
+        ...moderationValid,
+        retention: { evidenceDays: 900, reportRowDays: 730, auditDays: 730, appealDays: 180 },
+      }).success,
+    ).toBe(false)
   })
 })
 

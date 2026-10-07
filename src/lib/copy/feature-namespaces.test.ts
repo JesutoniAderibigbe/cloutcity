@@ -344,6 +344,27 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     expect(keys.size).toBe(6)
   })
 
+  it('the report form: every form error (S18b)', async () => {
+    const { fieldErrors } = await import('@/lib/forms/errors')
+    const { createReportSchema } = await import('@/lib/forms/report')
+    const { copy } = await import('./index')
+
+    const schema = createReportSchema('player')
+    const keys = new Set<string>()
+    for (const values of [
+      { reason: '', note: '' },
+      { reason: 'spam', note: 'x'.repeat(1000) },
+      { reason: 'spam', note: 'www.example.com' },
+    ]) {
+      for (const key of Object.values(fieldErrors(schema, values))) {
+        if (key === undefined) continue
+        keys.add(key)
+        expect(copy(key)).not.toBe('')
+      }
+    }
+    expect(keys.size).toBe(3)
+  })
+
   it('economy copy: every job, clout level, home and rent notice', async () => {
     const economy = await import('@/lib/economyCopy')
     const { engineConfig } = await import('@/engine/config')

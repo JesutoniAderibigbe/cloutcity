@@ -46,7 +46,7 @@ export function toAttestationArgs(record: OnboardingRecord): AttestationArgs {
   }
 }
 
-/** Machine codes the S18 and S18a RPCs raise as their error message (with SQLSTATE PTxyz → HTTP xyz). */
+/** Machine codes the S18, S18a and S18b RPCs raise as their error message (with SQLSTATE PTxyz → HTTP xyz). */
 export const RPC_ERRORS = [
   'not_authenticated',
   'attestation_required',
@@ -64,6 +64,24 @@ export const RPC_ERRORS = [
   'handle_change_limited',
   'profile_not_found',
   'too_many_ids',
+  // S18b safety and moderation (supabase/migrations/*_s18b_safety.sql, *_s18b_moderation.sql).
+  'account_banned',
+  'account_suspended',
+  'account_restricted',
+  'block_limit',
+  'mute_limit',
+  'invalid_reason',
+  'note_too_long',
+  'note_contact_info',
+  'self_report',
+  'notice_not_found',
+  'not_appealable',
+  'appeal_too_long',
+  'appeal_exists',
+  'not_moderator',
+  'idempotency_conflict',
+  'already_resolved',
+  'case_not_found',
 ] as const
 export type RpcErrorCode = (typeof RPC_ERRORS)[number]
 
