@@ -1,6 +1,17 @@
 import type { Page } from '@playwright/test'
 import type { PlaceTestHook } from '@/components/places/placeTestHook'
 import { expect, test } from './fixtures/test'
+import { waitForMapSettled } from './helpers/scene'
+
+/**
+ * The place hook is installed and the 3D map has finished starting: on SwiftShader the map's
+ * start keeps the main thread busy for seconds (PERF-4), so the overlay checks below wait for
+ * it instead of racing it.
+ */
+async function ready(page: Page) {
+  await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+  await waitForMapSettled(page)
+}
 
 // S15: the Goals panel opens from the HUD, a reached goal's reward is claimed through the grant
 // function for exactly the amount its button names, and the claim survives a reload. The goal is
@@ -12,7 +23,7 @@ async function boot(page: Page) {
     window.__CLOUTCITY_E2E__ = true
   })
   await page.goto('/')
-  await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+  await ready(page)
 }
 
 const state = (page: Page) =>
@@ -104,7 +115,7 @@ test.describe('goals and rewards', () => {
     await expect(dialog.getByRole('heading', { name: 'Goals' })).toBeFocused()
 
     await page.reload()
-    await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+    await ready(page)
     expect((await state(page)).cash).toBe(after.cash)
     await goalsButton(page).click()
     const reloaded = panel(page).locator('[data-goal="first-landmark-visit"]')

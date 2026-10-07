@@ -1,6 +1,17 @@
 import type { Page } from '@playwright/test'
 import type { PlaceTestHook } from '@/components/places/placeTestHook'
 import { expect, test } from './fixtures/test'
+import { waitForMapSettled } from './helpers/scene'
+
+/**
+ * The place hook is installed and the 3D map has finished starting: on SwiftShader the map's
+ * start keeps the main thread busy for seconds (PERF-4), so the overlay checks below wait for
+ * it instead of racing it.
+ */
+async function ready(page: Page) {
+  await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+  await waitForMapSettled(page)
+}
 
 // S15: reaching Icon shows the victory screen (a modal) instead of a level-up toast, with a
 // share hook, Keep playing (never shown again this run, across reloads) and a two-step prestige
@@ -82,7 +93,7 @@ async function boot(page: Page) {
     window.__CLOUTCITY_E2E__ = true
   })
   await page.goto('/')
-  await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+  await ready(page)
 }
 
 const state = (page: Page) =>
@@ -160,7 +171,7 @@ test.describe('the Icon moment', () => {
     await expect(meter(page)).toHaveAccessibleName(/^Clout: Icon, /)
 
     await page.reload()
-    await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+    await ready(page)
     await expect(meter(page)).toHaveAccessibleName(/^Clout: Icon, /)
     await expect(page.locator('[data-icon-moment]')).toHaveCount(0)
   })
@@ -189,7 +200,7 @@ test.describe('the Icon moment', () => {
     expect((await state(page)).cash).toBe(150)
 
     await page.reload()
-    await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+    await ready(page)
     await expect(meter(page)).toHaveAccessibleName('Clout: Nobody, 0 of 100 to Local')
     expect((await state(page)).cash).toBe(150)
     await page
@@ -240,7 +251,7 @@ test.describe('the Icon moment: keyboard, focus, run 2, motion', () => {
     await expect(page.locator('[data-icon-moment]')).toHaveCount(0)
     await expect(goalsButton(page)).toBeFocused()
     await page.reload()
-    await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+    await ready(page)
     await expect(meter(page)).toHaveAccessibleName(/^Clout: Icon, /)
     await expect(page.locator('[data-icon-moment]')).toHaveCount(0)
   })
@@ -379,6 +390,10 @@ test.describe('the Icon moment: the HUD island fails to load', () => {
       if (shell.has(new URL(route.request().url()).pathname)) return route.continue()
       const response = await route.fetch()
       const body = await response.text()
+      // The 3D map's chunk stays in flight: this test is about the HUD island, and starting the
+      // map on SwiftShader blocks the main thread for seconds (PERF-4), long enough to delay the
+      // island's failure past the retry check (as lazy-features.spec.ts `holdMap` does).
+      if (body.includes('cc-feature:city-scene')) return new Promise<void>(() => {})
       if (gate.fail && body.includes('cc-feature:clout-hud')) return route.abort('failed')
       return route.fulfill({ response, body })
     })
