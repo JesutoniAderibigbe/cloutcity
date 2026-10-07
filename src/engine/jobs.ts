@@ -6,9 +6,12 @@
  * during a shift is charged before the shift's pay lands.
  *
  * A job listed in `jobs.requiredCloutLevel` is locked until the player reaches that level.
+ *
+ * The first shift a player ever completes also pays `clout.sources.firstPaycheck` clout
+ * (once per player, recorded in the clout ledger as a `paycheck` entry).
  */
 import { applyAction, type ActionDef, type ActionError, type ActionResult } from './actions'
-import { cloutLevel, findCloutLevel } from './clout'
+import { findCloutLevel, playerLevel, recordClout, type LevelUp } from './clout'
 import type { EngineConfig, JobId } from './config'
 import type { GameSnapshot, PlayerState } from './game'
 
@@ -53,7 +56,7 @@ export function jobLock(player: PlayerState, jobId: JobId, config: EngineConfig)
   if (required === undefined) {
     throw new Error(`jobs.requiredCloutLevel.${jobId}: unknown clout level "${requiredId}"`)
   }
-  const current = cloutLevel(player.clout, config)
+  const current = playerLevel(player, config)
   if (current.index >= required.index) return null
   return { jobId, requiredLevel: required.id, currentLevel: current.id }
 }
@@ -67,6 +70,9 @@ export type ShiftResult =
   | (Extract<ActionResult, { ok: true }> & {
       /** Whole dollars credited when the shift ended. */
       readonly wage: number
+      /** Clout the shift earned: the first paycheck's, otherwise 0. */
+      readonly cloutGained: number
+      readonly levelUp: LevelUp | null
     })
   | { readonly ok: false; readonly error: ShiftError }
 
@@ -84,9 +90,24 @@ export function workShift(
   if (!result.ok) return result
   const wage = shiftWage(jobId, config)
   const { player } = result.snapshot
+  const paid: GameSnapshot = {
+    ...result.snapshot,
+    player: { ...player, cash: player.cash + wage },
+  }
+  if (paid.player.clout.firstPaycheckPaid) {
+    return { ...result, snapshot: paid, wage, cloutGained: 0, levelUp: null }
+  }
+  const record = recordClout(
+    paid,
+    { source: 'paycheck', amount: config.clout.sources.firstPaycheck, ref: { jobId } },
+    config,
+  )
+  const clout = { ...record.player.clout, firstPaycheckPaid: true }
   return {
     ...result,
-    snapshot: { ...result.snapshot, player: { ...player, cash: player.cash + wage } },
+    snapshot: { ...paid, player: { ...record.player, clout } },
     wage,
+    cloutGained: record.entry?.amount ?? 0,
+    levelUp: record.levelUp,
   }
 }

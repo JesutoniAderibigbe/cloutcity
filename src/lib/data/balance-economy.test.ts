@@ -89,7 +89,46 @@ describe('clout levels config', () => {
     ['no levels', []],
   ])('rejects %s', (_label, levels) => {
     const jobs = { ...valid.jobs, requiredCloutLevel: {} }
-    expect(parses({ jobs, clout: { levels } })).toBe(false)
+    expect(parses({ jobs, clout: { ...valid.clout, levels } })).toBe(false)
+  })
+})
+
+describe('clout rules config (S13, TUNE-4 placeholders)', () => {
+  const clout = (patch: Partial<BalanceConfig['clout']>) =>
+    parses({ clout: { ...valid.clout, ...patch } })
+
+  it('ships a valid set', () => {
+    expect(clout({})).toBe(true)
+  })
+
+  it('rejects a premium cap that would let premium clout alone reach the top level', () => {
+    const top = valid.clout.levels.at(-1)?.minClout ?? 0
+    expect(clout({ caps: { byCurrency: { usd: top } } })).toBe(false)
+    expect(clout({ caps: { byCurrency: { usd: top - 1 } } })).toBe(true)
+  })
+
+  it('rejects style on a source it may not multiply, or listed twice', () => {
+    const style = valid.clout.style
+    expect(clout({ style: { ...style, appliesTo: ['item'] as never } })).toBe(false)
+    expect(clout({ style: { ...style, appliesTo: ['premium'] as never } })).toBe(false)
+    expect(clout({ style: { ...style, appliesTo: ['flex', 'flex'] } })).toBe(false)
+    // Nightlife is flavour only: style can never multiply club clout.
+    expect(clout({ style: { ...style, appliesTo: ['club'] as never } })).toBe(false)
+  })
+
+  it('rejects flexing at clubs', () => {
+    const flex = valid.clout.flex
+    expect(clout({ flex: { ...flex, venueTypes: ['boutique', 'club'] } })).toBe(false)
+    expect(clout({ flex: { ...flex, venueTypes: ['boutique'] } })).toBe(true)
+  })
+
+  it('rejects viral chances outside 0..1 or a base above the cap', () => {
+    const viral = valid.clout.flex.viral
+    const flex = (patch: Partial<typeof viral>) =>
+      clout({ flex: { ...valid.clout.flex, viral: { ...viral, ...patch } } })
+    expect(flex({ maxChance: 1.5 })).toBe(false)
+    expect(flex({ baseChance: -0.1 })).toBe(false)
+    expect(flex({ baseChance: 0.5, maxChance: 0.4 })).toBe(false)
   })
 })
 

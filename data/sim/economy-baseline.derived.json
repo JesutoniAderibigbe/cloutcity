@@ -41,9 +41,12 @@
     "maxGainPerGameHour": 18
   },
   "clout": {
-    "maxGainPerAction": 0,
-    "maxGainPerGameDay": 0,
-    "sources": {}
+    "maxGainPerAction": 25,
+    "maxGainPerGameDay": 25,
+    "sources": {
+      "flex": 25,
+      "paycheck": 10
+    }
   },
   "actions": {
     "maxPerGameDay": 16

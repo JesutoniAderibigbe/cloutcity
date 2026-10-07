@@ -12,6 +12,7 @@ import { VENUE_TYPES } from '@/lib/data/schemas/content'
 import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { engineConfig } from '@/engine/config'
 import { initialSnapshot, type GameSnapshot } from '@/engine/game'
+import { withClout } from '@/engine/test-support'
 import { flexMultiplier, placeActions, placeHoursNow } from '@/engine/placeActions'
 import { placeAllows } from '@/engine/places'
 
@@ -20,14 +21,16 @@ const camel = (id: string) => id.replace(/-([a-z0-9])/g, (_, next: string) => ne
 function snapshotAt(clock: string, clout = 0): GameSnapshot {
   const [h = 0, m = 0] = clock.split(':').map(Number)
   const base = initialSnapshot(engineConfig)
-  return {
-    ...base,
-    clock: { minute: h * 60 + m, remainderMs: 0 },
-    player: { ...base.player, clout },
-  }
+  return withClout({ ...base, clock: { minute: h * 60 + m, remainderMs: 0 } }, clout, engineConfig)
 }
 
 describe('balance.json place config against content', () => {
+  it('flexes only at real venue types (clout.flex.venueTypes)', () => {
+    const known: readonly string[] = VENUE_TYPES
+    expect(balance.clout.flex.venueTypes.length).toBeGreaterThan(0)
+    for (const type of balance.clout.flex.venueTypes) expect(known, type).toContain(type)
+  })
+
   it('names an action set for every venue type, and no others', () => {
     expect(Object.keys(balance.place.venueActions).sort()).toEqual([...VENUE_TYPES].sort())
   })
@@ -127,10 +130,11 @@ describe('every real place', () => {
     }
   })
 
-  it('every other landmark offers a Visit', () => {
+  it('every other landmark offers a Visit, and a Flex where it allows one', () => {
     for (const landmark of landmarks.filter((entry) => entry.category !== 'memorial')) {
       const view = placeActions(landmark, snapshotAt('12:00', 5000), engineConfig)
-      expect(view.kind === 'actions' && view.actions.map((action) => action.id)).toEqual(['visit'])
+      const expected = placeAllows(landmark, 'flex') ? ['visit', 'flex'] : ['visit']
+      expect(view.kind === 'actions' && view.actions.map((action) => action.id)).toEqual(expected)
     }
   })
 

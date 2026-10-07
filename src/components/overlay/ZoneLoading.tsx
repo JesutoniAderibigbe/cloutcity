@@ -1,11 +1,10 @@
 'use client'
 
-import { useId } from 'react'
 import { copy, type CopyKey } from '@/lib/copy'
 import { useModalPresence } from './modalState'
 
 /** Where a lazy island renders: an overlay zone, or the modal layer. */
-export type IslandZone = 'hud' | 'sheet' | 'modal'
+export type IslandZone = 'hud' | 'toast' | 'sheet' | 'modal'
 
 interface ZoneStateProps {
   readonly zone: IslandZone
@@ -14,12 +13,24 @@ interface ZoneStateProps {
 }
 
 // The modal layer sits in a grid cell that ignores touches; its card takes them back.
-// The HUD is one short row, so its states are a single pill, not a card.
+// The HUD and toast zones are one short row: their states stay a single compact line.
 const CARD: Readonly<Record<IslandZone, string>> = {
-  hud: 'flex shrink-0 items-center',
+  hud: 'flex items-center gap-2',
+  toast:
+    'mx-2 flex items-center gap-2 rounded-2xl border border-night-700 bg-night-900/95 px-3 py-1 shadow-lg backdrop-blur',
   sheet: 'm-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur',
   modal:
     'pointer-events-auto w-full max-w-[var(--overlay-sheet-max-w)] self-center rounded-3xl border border-night-700 bg-night-900 p-5 shadow-2xl',
+}
+
+const COMPACT: ReadonlySet<IslandZone> = new Set(['hud', 'toast'])
+
+// The HUD row has no room for the sentence beside the title: it stays for screen readers only.
+const FAILED_TEXT: Readonly<Record<IslandZone, string>> = {
+  hud: 'sr-only',
+  toast: 'min-w-0 flex-1 text-xs leading-tight text-ink-50',
+  sheet: 'text-sm text-ink-50',
+  modal: 'text-sm text-ink-50',
 }
 
 /** A modal placeholder keeps the page behind it inert: the gate fails closed while it loads. */
@@ -43,11 +54,11 @@ export function ZoneLoading({ zone, labelKey }: ZoneStateProps) {
       className={CARD[zone]}
     >
       <ModalPresence zone={zone} />
-      {zone === 'hud' ? (
-        <div
-          aria-hidden="true"
-          className="cc-reveal h-11 w-32 rounded-full bg-night-800 motion-safe:animate-pulse"
-        />
+      {COMPACT.has(zone) ? (
+        <div aria-hidden="true" className="cc-reveal flex flex-col items-end gap-1">
+          <div className="h-3 w-16 rounded-full bg-night-700 motion-safe:animate-pulse" />
+          <div className="h-2 w-28 rounded-full bg-night-800 motion-safe:animate-pulse" />
+        </div>
       ) : (
         <div aria-hidden="true" className="cc-reveal flex flex-col gap-2">
           <div className="h-4 w-1/2 rounded-full bg-night-700 motion-safe:animate-pulse" />
@@ -59,9 +70,6 @@ export function ZoneLoading({ zone, labelKey }: ZoneStateProps) {
   )
 }
 
-const RETRY =
-  'min-h-11 self-start rounded-full bg-taxi-400 px-5 text-sm font-extrabold text-night-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-50'
-
 /** A feature that failed to load (offline, a dropped chunk), with a retry, inside its zone. */
 export function ZoneLoadFailed({
   zone,
@@ -70,25 +78,18 @@ export function ZoneLoadFailed({
   readonly zone: IslandZone
   readonly onRetry: () => void
 }) {
-  const messageId = useId()
-  if (zone === 'hud') {
-    // No room for the message in the HUD row: it describes the retry button instead.
-    return (
-      <div data-zone-error={zone} className={CARD.hud}>
-        <span id={messageId} className="sr-only">
-          {copy('loading.failed')}
-        </span>
-        <button type="button" onClick={onRetry} aria-describedby={messageId} className={RETRY}>
-          {copy('loading.retry')}
-        </button>
-      </div>
-    )
-  }
   return (
-    <div data-zone-error={zone} className={`${CARD[zone]} flex flex-col gap-2`}>
+    <div
+      data-zone-error={zone}
+      className={COMPACT.has(zone) ? CARD[zone] : `${CARD[zone]} flex flex-col gap-2`}
+    >
       <ModalPresence zone={zone} />
-      <p className="text-sm text-ink-50">{copy('loading.failed')}</p>
-      <button type="button" onClick={onRetry} className={RETRY}>
+      <p className={FAILED_TEXT[zone]}>{copy('loading.failed')}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="min-h-11 self-start rounded-full bg-taxi-400 px-5 text-sm font-extrabold text-night-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink-50"
+      >
         {copy('loading.retry')}
       </button>
     </div>

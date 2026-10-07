@@ -74,7 +74,13 @@ export const ItemSchema = z
     price: z.int().positive(),
     sellValue: dollars,
     cloutValue: z.int().nonnegative(),
+    /** Style points while worn (S13): the outfit's score multiplies clout gains. Gifts: 0. */
+    styleValue: z.int().nonnegative(),
     statEffects: z.partialRecord(StatSchema, z.int()),
+  })
+  .refine((item) => item.category !== 'gift' || item.styleValue === 0, {
+    error: 'a gift is never worn, so its styleValue must be 0',
+    path: ['styleValue'],
   })
   .refine((item) => item.sellValue < item.price, {
     error: 'sellValue must be below price',

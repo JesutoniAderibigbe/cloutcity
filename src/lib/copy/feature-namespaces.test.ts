@@ -39,9 +39,11 @@ describe('feature copy renders with only its own namespaces loaded', () => {
       'loading.place',
       'loading.sound',
       'loading.soundSettings',
+      'loading.clout',
+      'loading.levelUp',
     ] as const
     for (const labelKey of loadingKeys) {
-      for (const zone of ['hud', 'sheet', 'modal'] as const) {
+      for (const zone of ['hud', 'toast', 'sheet', 'modal'] as const) {
         expect(renderToStaticMarkup(createElement(ZoneLoading, { zone, labelKey }))).toContain(
           'role="status"',
         )
@@ -114,6 +116,7 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     const { engineConfig } = await import('@/engine/config')
     const { initialSnapshot } = await import('@/engine/game')
     const { performPlaceAction, placeActions } = await import('@/engine/placeActions')
+    const { playerWithClout } = await import('@/engine/test-support')
 
     const ids = [...venues, ...landmarks].map((place) => place.id)
     for (const placeId of ids) {
@@ -126,8 +129,12 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     const minutes = [0, 6 * 60, 8 * 60, 13 * 60, 18 * 60, 22 * 60, 23 * 60 + 30]
     const players = [
       base.player,
-      { ...base.player, cash: 0, clout: 0, stats: { ...base.player.stats, energy: 0 } },
-      { ...base.player, cash: 1_000_000, clout: 1_000_000 },
+      {
+        ...playerWithClout(base.player, 0, engineConfig),
+        cash: 0,
+        stats: { ...base.player.stats, energy: 0 },
+      },
+      { ...playerWithClout(base.player, 1_000_000, engineConfig), cash: 1_000_000 },
     ]
     let blocks = 0
     let done = 0
@@ -160,6 +167,49 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     // The sweep reached both branches (self-check).
     expect(blocks).toBeGreaterThan(0)
     expect(done).toBeGreaterThan(0)
+  })
+
+  it('the HUD clout chunk: the meter at every level, with and without a next level', async () => {
+    await import('@/components/hud/CloutHudIsland')
+    const { CloutMeter } = await import('@/components/hud/CloutMeter')
+    const { cloutLevelName } = await import('@/lib/economyCopy')
+    const { engineConfig } = await import('@/engine/config')
+    const levels = engineConfig.clout.levels
+    levels.forEach((level, i) => {
+      const next = levels[i + 1]
+      const markup = renderToStaticMarkup(
+        createElement(CloutMeter, {
+          levelName: cloutLevelName(level.id),
+          total: level.minClout,
+          next:
+            next === undefined ? null : { name: cloutLevelName(next.id), minClout: next.minClout },
+          pct: 0,
+          atMax: next === undefined,
+        }),
+      )
+      expect(markup).toContain('cc-feature:clout-hud')
+    })
+  })
+
+  it('the level-up chunk: every level-up title, message, unlock line and close label', async () => {
+    await import('@/components/hud/LevelUpToast')
+    const copyFns = await import('@/lib/levelUpCopy')
+    const { recordClout } = await import('@/engine/clout')
+    const { engineConfig } = await import('@/engine/config')
+    const { initialSnapshot } = await import('@/engine/game')
+    for (const level of engineConfig.clout.levels.slice(1)) {
+      const change = {
+        source: 'event',
+        amount: level.minClout,
+        ref: { eventId: 'e', choiceId: 'c' },
+      } as const
+      const { levelUp } = recordClout(initialSnapshot(engineConfig), change, engineConfig)
+      if (levelUp === null) throw new Error(`expected a level-up to ${level.id}`)
+      expect(copyFns.levelUpTitle(levelUp)).not.toBe('')
+      expect(copyFns.levelUpMessage(levelUp)).not.toBe('')
+      expect(copyFns.levelUpCloseLabel(levelUp)).not.toBe('')
+      copyFns.levelUpUnlocked(levelUp)
+    }
   })
 
   it('the welcome chunk: the card, the lock notice and every form error', async () => {

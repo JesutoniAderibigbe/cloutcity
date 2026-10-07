@@ -13,6 +13,7 @@ import eventsJson from '@data/events/events.json'
 import itemsJson from '@data/items/items.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
+import { STYLED_SOURCES, type StyledSourceId } from '@/lib/data/cloutSources'
 import type { BalanceConfig, BoroughAccessRule } from '@/lib/data/schemas/config'
 import type { Borough, GameEvent, LocationCategory } from '@/lib/data/schemas/content'
 import { catalogFromJson, type ItemDef } from './itemCatalog'
@@ -34,6 +35,7 @@ export interface EngineConfig {
   readonly housing: BalanceConfig['housing']
   /** Food range and the subway fare, in whole dollars. */
   readonly costs: BalanceConfig['costs']
+  /** Levels, flex, style, the ledger and the premium cap (src/engine/clout.ts). */
   readonly clout: BalanceConfig['clout']
   /** Shop, resale and gift-stack rules, plus the cash item catalog (data/items/items.json). */
   readonly items: BalanceConfig['items'] & { readonly catalog: readonly ItemDef[] }
@@ -104,6 +106,20 @@ function boroughRules(json: Readonly<Record<Borough, { access: string; level?: s
   } satisfies BalanceConfig['boroughs']
 }
 
+/**
+ * JSON imports widen `style.appliesTo` to string[], so it is narrowed here; a source the
+ * style may not multiply throws at load (fail fast). CloutConfigSchema checks the same file.
+ */
+function cloutRules(json: typeof balanceJson.clout): BalanceConfig['clout'] {
+  const isStyled = (id: string): id is StyledSourceId =>
+    (STYLED_SOURCES as readonly string[]).includes(id)
+  const appliesTo = json.style.appliesTo.map((id) => {
+    if (!isStyled(id)) throw new Error(`config/balance.json: clout.style.appliesTo has "${id}"`)
+    return id
+  })
+  return { ...json, style: { ...json.style, appliesTo } }
+}
+
 export const engineConfig: EngineConfig = {
   time: balanceJson.time,
   stats: balanceJson.stats,
@@ -113,7 +129,7 @@ export const engineConfig: EngineConfig = {
   rent: balanceJson.rent,
   housing: balanceJson.housing,
   costs: balanceJson.costs,
-  clout: balanceJson.clout,
+  clout: cloutRules(balanceJson.clout),
   items: { ...balanceJson.items, catalog: catalogFromJson(itemsJson.items) },
   boroughs: boroughRules(balanceJson.boroughs),
   startCash: balanceJson.start.cash,

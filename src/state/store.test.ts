@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { initialCloutState, legacyCloutState } from '@/engine/clout'
+import { playerWithClout } from '@/engine/test-support'
+import { initialFlexState } from '@/engine/game'
 import type { EventContext } from '@/engine/events'
 import { createLogger, type LogRecord } from '@/lib/log'
 import { engineConfig } from '@/engine/config'
@@ -68,12 +71,14 @@ describe('game store persistence', () => {
     expect(state.player).toEqual({
       cash: 150,
       stats: { energy: 100, hunger: 80, mood: 70 },
-      clout: 0,
+      clout: initialCloutState,
+      flex: initialFlexState,
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
       inventory: { wearables: [], gifts: [], outfit: {} },
       clubNights: {},
     })
+    expect(state.lastLevelUp).toBeNull()
     expect(state.clock).toEqual({ minute: 480, remainderMs: 0 })
     expect(state.speed).toBe(1)
   })
@@ -170,7 +175,7 @@ describe('game store persistence', () => {
       player: {
         cash: 777,
         stats: { energy: 140, hunger: -3, mood: 41.6 },
-        clout: 12,
+        clout: legacyCloutState(12, 0),
         home: 'penthouse',
         rent: { owed: 280, missed: 1.4 },
         inventory: { wearables: [], gifts: [], outfit: {} },
@@ -185,7 +190,8 @@ describe('game store persistence', () => {
       player: {
         cash: 777,
         stats: { energy: 100, hunger: 0, mood: 42 },
-        clout: 12,
+        clout: legacyCloutState(12, 0),
+        flex: initialFlexState,
         home: 'queens-room',
         rent: { owed: 280, missed: 1 },
         inventory: { wearables: [], gifts: [], outfit: {} },
@@ -471,7 +477,8 @@ describe('jobs and rent in the store', () => {
     expect(clock.minute).toBe(5000)
     expect(player).toEqual({
       ...v2.player,
-      clout: 0,
+      clout: initialCloutState,
+      flex: initialFlexState,
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
       inventory: { wearables: [], gifts: [], outfit: {} },
@@ -622,9 +629,10 @@ describe('items in the store', () => {
 
   it('a v3 save loads with an empty inventory and is rewritten as the current version', () => {
     const local = new MemoryStorage()
-    const v3player: Record<string, unknown> = { ...saveOf(321).player }
+    const v3player: Record<string, unknown> = { ...saveOf(321).player, clout: 0 }
     delete v3player.inventory
     delete v3player.clubNights
+    delete v3player.flex
     const v3: Record<string, unknown> = { ...fresh, player: v3player }
     delete v3.events
     local.setItem(STORE_KEY, JSON.stringify({ state: v3, version: 3 }))
@@ -741,7 +749,6 @@ describe('events in the store', () => {
     borough: 'queens',
     locationId: null,
     locationCategory: 'bodega',
-    clout: 0,
     itemIds: [],
   }
 
@@ -805,5 +812,26 @@ describe('events in the store', () => {
     const after = game.getState().events.rngState
     expect(after).not.toBe(before)
     expect((saved(local) as { state: PersistedState }).state.events.rngState).toBe(after)
+  })
+})
+
+describe('level-ups in the store', () => {
+  it('a level-up from an action is kept for the toast until dismissed, and never saved', () => {
+    const local = new MemoryStorage()
+    const game = setup(local).store()
+    const nearLocal = playerWithClout(game.getState().player, 99, engineConfig)
+    game.setState({ player: nearLocal })
+    expect(game.getState().lastLevelUp).toBeNull()
+    const shift = game.getState().workShift('barista')
+    expect(shift.ok && shift.levelUp).toMatchObject({ to: 'local', source: 'paycheck' })
+    expect(game.getState().lastLevelUp).toMatchObject({ to: 'local' })
+    const written = JSON.parse(local.getItem(STORE_KEY) ?? '{}') as { state: object }
+    expect(written.state).not.toHaveProperty('lastLevelUp')
+    // A later action with no level-up leaves the toast as it is.
+    game.getState().performAction('nap')
+    expect(game.getState().lastLevelUp).toMatchObject({ to: 'local' })
+    game.getState().dismissLevelUp()
+    expect(game.getState().lastLevelUp).toBeNull()
+    expect(setup(local).store().getState().lastLevelUp).toBeNull()
   })
 })

@@ -3,13 +3,20 @@
  * shipped balance.json, and the result must hit the CLAUDE.md target feel. The full result is
  * also the committed baseline data/sim/economy-baseline.derived.json (S18c's plausibility
  * ceilings), so any change to the economy fails here until the baseline is regenerated.
+ *
+ * S13 adds clout: the job bots earn only the first paycheck's clout, and a flex bot (a
+ * barista, flexing once a day at the Queens ballpark) shows how fast flexing reaches Local.
+ * The baseline's clout maxima come from all of these runs.
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { balance } from '@/lib/data/config'
-import { engineConfig, type EngineConfig, type HomeId } from '../config'
+import { landmarks } from '@/lib/data/content'
+import { cloutCeilings, cloutLevel, findCloutLevel } from '../clout'
+import { engineConfig, type EngineConfig, type HomeId, type JobId } from '../config'
 import { initialSnapshot } from '../game'
 import { jobIds, jobLock, shiftWage } from '../jobs'
+import type { Place } from '../places'
 import { homeIds, rentFor } from '../rent'
 import { runEconomyBot, type BotReport } from './economyBot'
 
@@ -53,10 +60,27 @@ const reports = runAll(config)
 const best = bestOf(reports)
 const byJob = reports.map((report) => [report.jobId, report] as const)
 
-function baseline(all: readonly BotReport[]) {
+/**
+ * The flex bot: a barista (the entry job with the lightest shifts, so energy is left after the
+ * second one) flexing at the Queens ballpark, in the starting borough (x1.25).
+ */
+const FLEX_PLACE_ID = 'queens-ballpark'
+const flexPlace: Place = (() => {
+  const found = landmarks.find((landmark) => landmark.id === FLEX_PLACE_ID)
+  if (found === undefined) throw new Error(`no landmark ${FLEX_PLACE_ID}`)
+  return found
+})()
+const runFlex = (engine: EngineConfig, jobId: JobId = 'barista') =>
+  runEconomyBot({ jobId, days: DAYS, upgradeTo, flex: { place: flexPlace } }, engine)
+const flexReport = runFlex(config)
+
+/** The baseline file: money from the job bots, clout maxima from those and the flex bot. */
+function baseline(all: readonly BotReport[], flexRuns: readonly BotReport[] = [flexReport]) {
   const max = (pick: (report: BotReport) => number) => Math.max(...all.map(pick))
+  const cloutRuns = [...all, ...flexRuns]
+  const cloutMax = (pick: (report: BotReport) => number) => Math.max(...cloutRuns.map(pick))
   const sources: Record<string, number> = {}
-  for (const report of all) {
+  for (const report of cloutRuns) {
     for (const [kind, gain] of Object.entries(report.cloutGainBySource)) {
       sources[kind] = Math.max(sources[kind] ?? 0, gain)
     }
@@ -83,9 +107,9 @@ function baseline(all: readonly BotReport[]) {
       maxGainPerGameHour: max((report) => report.maxCashGainPerGameHour),
     },
     clout: {
-      maxGainPerAction: max((report) => report.maxCloutGainPerAction),
-      maxGainPerGameDay: max((report) => report.maxCloutGainPerGameDay),
-      sources,
+      maxGainPerAction: cloutMax((report) => report.maxCloutGainPerAction),
+      maxGainPerGameDay: cloutMax((report) => report.maxCloutGainPerGameDay),
+      sources: Object.fromEntries(Object.entries(sources).sort(([a], [b]) => a.localeCompare(b))),
     },
     actions: { maxPerGameDay: max((report) => report.maxActionsPerGameDay) },
   }
@@ -263,8 +287,62 @@ describe('economy baseline fixture (read by S18c)', () => {
     expect(file.actions.maxPerGameDay).toBe(Math.max(...reports.map((r) => r.maxActionsPerGameDay)))
   })
 
-  it('records no clout yet, in the shape S13 fills in', () => {
-    expect(file.clout).toEqual({ maxGainPerAction: 0, maxGainPerGameDay: 0, sources: {} })
+  it("matches the bots' clout maxima; the paycheck source is the configured first paycheck", () => {
+    const runs = [...reports, flexReport]
+    expect(file.clout.maxGainPerAction).toBe(Math.max(...runs.map((r) => r.maxCloutGainPerAction)))
+    expect(file.clout.maxGainPerGameDay).toBe(
+      Math.max(...runs.map((r) => r.maxCloutGainPerGameDay)),
+    )
+    // The bots wear nothing, so the first paycheck lands unscaled.
+    expect(file.clout.sources.paycheck).toBe(config.clout.sources.firstPaycheck)
+    expect(Object.keys(file.clout.sources).sort()).toEqual(['flex', 'paycheck'])
+  })
+
+  it('every clout value is within the theoretical ceilings S18c falls back on', () => {
+    const ceilings = cloutCeilings(config)
+    const perAction = Object.values(ceilings.bySource).map((ceiling) => ceiling?.perAction ?? 0)
+    const perDay = Object.values(ceilings.bySource).map((ceiling) => ceiling?.perGameDay ?? 0)
+    expect(file.clout.maxGainPerAction).toBeLessThanOrEqual(Math.max(...perAction))
+    expect(file.clout.maxGainPerGameDay).toBeLessThanOrEqual(perDay.reduce((a, b) => a + b, 0))
+    for (const [source, gain] of Object.entries(file.clout.sources)) {
+      const ceiling = ceilings.bySource[source as keyof typeof ceilings.bySource]
+      expect(ceiling, source).toBeDefined()
+      expect(gain, source).toBeLessThanOrEqual(ceiling?.perAction ?? 0)
+    }
+  })
+})
+
+describe('economy simulation: clout', () => {
+  const local = findCloutLevel('local', config)
+  const juniorDev = findCloutLevel(config.jobs.requiredCloutLevel['junior-dev'] ?? '', config)
+
+  it.each(byJob)(
+    '%s without flexing ends at Nobody with only the first paycheck, junior dev still locked',
+    (_, report) => {
+      expect(report.finalClout).toBe(config.clout.sources.firstPaycheck)
+      expect(cloutLevel(report.finalClout, config).id).toBe('nobody')
+      expect(Object.keys(report.levelReachedDay)).toEqual(['nobody'])
+      expect(juniorDev).toBeDefined()
+      expect(cloutLevel(report.finalClout, config).index).toBeLessThan(juniorDev?.index ?? 0)
+      expect(report.cloutGainBySource).toEqual({ paycheck: config.clout.sources.firstPaycheck })
+    },
+  )
+
+  it('the flex bot never goes broke or misses rent, and reaches Local between day 8 and 20', () => {
+    expect(flexReport.minCash).toBeGreaterThanOrEqual(0)
+    expect(flexReport.missedOrEvicted).toBe(0)
+    expect(flexReport.shiftsMissed).toBe(0)
+    expect(flexReport.flexes).toBeGreaterThan(0)
+    expect(local).toBeDefined()
+    const day = flexReport.levelReachedDay.local
+    expect(day).toBeGreaterThanOrEqual(8)
+    expect(day).toBeLessThanOrEqual(20)
+  })
+
+  it('the flex bot flexes once a day, as the place rules allow', () => {
+    expect(flexReport.flexes).toBeLessThanOrEqual(DAYS)
+    expect(flexReport.flexes).toBeGreaterThanOrEqual(DAYS - 2)
+    expect(flexReport.viralFlexes).toBeLessThanOrEqual(flexReport.flexes)
   })
 })
 

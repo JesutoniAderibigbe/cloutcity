@@ -64,3 +64,22 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* The level-up toast's single pop (src/components/hud/LevelUpToast.tsx). Only when motion is
+   welcome: under reduced motion the toast simply appears. */
+@media (prefers-reduced-motion: no-preference) {
+  .level-up-pop {
+    animation: level-up-pop 320ms ease-out 1;
+  }
+}
+
+@keyframes level-up-pop {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

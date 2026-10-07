@@ -112,7 +112,6 @@ test('the sound settings and an event can be open together without overlapping (
       borough: 'queens',
       locationId: null,
       locationCategory: 'bodega',
-      clout: 0,
       itemIds: [],
     }),
   )
@@ -160,7 +159,17 @@ test('a long track title stays on one truncated line inside the HUD, clear of th
   expect(control.y + control.height).toBeLessThanOrEqual(hud.y + hud.height)
   expect(overlaps(title, control), 'sound control overlaps the game title').toBe(false)
 
-  const line = await page.locator('#sound-control-now-playing').evaluate((element) => {
+  const nowPlaying = page.locator('#sound-control-now-playing')
+  // Below Tailwind's sm breakpoint the HUD row also holds the clout meter, so the control is an
+  // icon and its lines are for screen readers only (the description above still reads).
+  if ((page.viewportSize()?.width ?? 0) < 640) {
+    const box = await nowPlaying.boundingBox()
+    expect(box === null || (box.width <= 1 && box.height <= 1), 'line is visually hidden').toBe(
+      true,
+    )
+    return
+  }
+  const line = await nowPlaying.evaluate((element) => {
     const style = getComputedStyle(element)
     const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5
     return {

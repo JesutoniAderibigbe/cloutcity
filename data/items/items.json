@@ -11,6 +11,7 @@
       "price": 18,
       "sellValue": 7,
       "cloutValue": 2,
+      "styleValue": 2,
       "statEffects": {
         "mood": 3
       }
@@ -26,6 +27,7 @@
       "price": 85,
       "sellValue": 42,
       "cloutValue": 8,
+      "styleValue": 5,
       "statEffects": {
         "mood": 5
       }
@@ -41,6 +43,7 @@
       "price": 320,
       "sellValue": 192,
       "cloutValue": 25,
+      "styleValue": 10,
       "statEffects": {
         "mood": 8
       }
@@ -56,6 +59,7 @@
       "price": 28,
       "sellValue": 11,
       "cloutValue": 2,
+      "styleValue": 1,
       "statEffects": {
         "mood": 2
       }
@@ -71,6 +75,7 @@
       "price": 70,
       "sellValue": 35,
       "cloutValue": 7,
+      "styleValue": 4,
       "statEffects": {
         "mood": 4
       }
@@ -86,6 +91,7 @@
       "price": 35,
       "sellValue": 14,
       "cloutValue": 3,
+      "styleValue": 2,
       "statEffects": {
         "mood": 2
       }
@@ -101,6 +107,7 @@
       "price": 260,
       "sellValue": 156,
       "cloutValue": 20,
+      "styleValue": 9,
       "statEffects": {
         "mood": 7
       }
@@ -116,6 +123,7 @@
       "price": 15,
       "sellValue": 6,
       "cloutValue": 1,
+      "styleValue": 1,
       "statEffects": {
         "mood": 2
       }
@@ -131,6 +139,7 @@
       "price": 60,
       "sellValue": 30,
       "cloutValue": 6,
+      "styleValue": 4,
       "statEffects": {
         "mood": 4
       }
@@ -146,6 +155,7 @@
       "price": 12,
       "sellValue": 4,
       "cloutValue": 1,
+      "styleValue": 1,
       "statEffects": {
         "mood": 2
       }
@@ -161,6 +171,7 @@
       "price": 45,
       "sellValue": 22,
       "cloutValue": 5,
+      "styleValue": 3,
       "statEffects": {
         "mood": 4
       }
@@ -176,6 +187,7 @@
       "price": 180,
       "sellValue": 108,
       "cloutValue": 15,
+      "styleValue": 8,
       "statEffects": {
         "mood": 6
       }
@@ -190,6 +202,7 @@
       "price": 12,
       "sellValue": 4,
       "cloutValue": 0,
+      "styleValue": 0,
       "statEffects": {
         "mood": 8
       }
@@ -204,6 +217,7 @@
       "price": 30,
       "sellValue": 15,
       "cloutValue": 0,
+      "styleValue": 0,
       "statEffects": {
         "hunger": 30,
         "mood": 5
@@ -219,6 +233,7 @@
       "price": 150,
       "sellValue": 90,
       "cloutValue": 0,
+      "styleValue": 0,
       "statEffects": {
         "mood": 25
       }

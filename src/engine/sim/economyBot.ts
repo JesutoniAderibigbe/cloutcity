@@ -31,6 +31,12 @@
  * decay, with one point to spare, so energy never hits 0 mid-shift; with no cash for coffee the
  * bot naps once instead. The bot ignores mood. Each working day has two subway rides at
  * `costs.subwayFare` (a fixed ride until S08's transit replaces it).
+ *
+ * Clout (S13): every bot earns the first paycheck's clout. With the `flex` option the bot also
+ * flexes once a day at that place, after the second shift, when it has the energy for it and
+ * the flex ends by bedtime; it goes through `performPlaceAction`, so every place rule applies.
+ * Clout is measured as the player's total (src/engine/clout.ts `totalClout`), and gains are
+ * attributed to the ledger sources of the entries each step wrote.
  */
 import {
   applyAction,
@@ -40,10 +46,14 @@ import {
   type ActionDef,
 } from '../actions'
 import { calendar, minutesPerDay } from '../clock'
+import { cloutLevel, totalClout } from '../clout'
 import type { EngineConfig, HomeId, JobId } from '../config'
+import { flexAction } from '../flex'
 import { advanceMinutes, initialSnapshot, type GameSnapshot } from '../game'
 import { canAffordMove, rentReserve } from '../housing'
 import { shiftAction, workShift } from '../jobs'
+import { performPlaceAction } from '../placeActions'
+import type { Place } from '../places'
 import type { RentEvent } from '../rent'
 
 /** Hunger at or below this sends the bot to eat. */
@@ -65,6 +75,8 @@ export interface EconomyBotOptions {
   readonly days: number
   /** The home whose move the bot measures affordability for (src/engine/housing.ts). */
   readonly upgradeTo: HomeId
+  /** Flex once a day at this place (a landmark or venue that allows it). */
+  readonly flex?: { readonly place: Place }
 }
 
 export interface BotReport {
@@ -102,8 +114,17 @@ export interface BotReport {
   readonly maxActionsPerGameDay: number
   readonly maxCloutGainPerAction: number
   readonly maxCloutGainPerGameDay: number
-  /** Largest clout gain from one step, by step kind (only kinds that gave clout). */
+  /**
+   * Largest clout gain from one step, by clout ledger source (only sources that gave clout):
+   * `paycheck`, `flex` and so on.
+   */
   readonly cloutGainBySource: Readonly<Record<string, number>>
+  /** Total clout after the last day's sleep. */
+  readonly finalClout: number
+  /** The first game day each clout level was reached (the starting level on day 1). */
+  readonly levelReachedDay: Readonly<Record<string, number>>
+  readonly flexes: number
+  readonly viralFlexes: number
 }
 
 interface Step {
@@ -131,6 +152,11 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
 
   let snapshot = initialSnapshot(config)
   let minCash = snapshot.player.cash
+  let flexes = 0
+  let viralFlexes = 0
+  const levelReachedDay: Record<string, number> = {
+    [cloutLevel(totalClout(snapshot.player, config), config).id]: 1,
+  }
   let shiftsWorked = 0
   let shiftsMissed = 0
   let firstAffordableDay: number | null = null
@@ -155,13 +181,14 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   const add = (map: Map<number, number>, day: number, amount: number) =>
     map.set(day, (map.get(day) ?? 0) + amount)
 
-  function record(kind: string, step: Step, counts: boolean): void {
+  function record(step: Step, counts: boolean): void {
     const before = snapshot
     const after = step.snapshot
     const startDay = dayOf(before.clock.minute)
     const endDay = dayOf(after.clock.minute)
     const cashGain = Math.max(0, after.player.cash - before.player.cash)
-    const cloutGain = Math.max(0, after.player.clout - before.player.clout)
+    const cloutAfter = totalClout(after.player, config)
+    const cloutGain = Math.max(0, cloutAfter - totalClout(before.player, config))
     const hours = (after.clock.minute - before.clock.minute) / MINUTES_PER_HOUR
 
     maxCashGainPerAction = Math.max(maxCashGainPerAction, cashGain)
@@ -169,9 +196,16 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     add(cashGainByDay, endDay, cashGain)
     maxCloutGainPerAction = Math.max(maxCloutGainPerAction, cloutGain)
     add(cloutGainByDay, endDay, cloutGain)
-    if (cloutGain > 0) {
-      cloutGainBySource[kind] = Math.max(cloutGainBySource[kind] ?? 0, cloutGain)
+    const bySource = new Map<string, number>()
+    for (const entry of after.player.clout.ledger) {
+      if (entry.seq < before.player.clout.nextSeq || entry.amount <= 0) continue
+      bySource.set(entry.source, (bySource.get(entry.source) ?? 0) + entry.amount)
     }
+    for (const [source, gain] of bySource) {
+      cloutGainBySource[source] = Math.max(cloutGainBySource[source] ?? 0, gain)
+    }
+    const level = cloutLevel(cloutAfter, config).id
+    if (!Object.hasOwn(levelReachedDay, level)) levelReachedDay[level] = endDay
     if (counts) add(actionsByDay, startDay, 1)
 
     rentEvents.push(...step.rent)
@@ -187,18 +221,18 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   function act(actionId: string): boolean {
     const result = performAction(snapshot, actionId, config)
     if (!result.ok) return false
-    record(actionId, result, true)
+    record(result, true)
     return true
   }
 
   function rideSubway(): void {
     const result = applyAction(snapshot, ride, config)
-    if (result.ok) record('ride', result, true)
+    if (result.ok) record(result, true)
   }
 
   /** Waits until absolute minute `minute`; does nothing if it has already passed. */
   function waitUntil(minute: number): void {
-    if (minute > now()) record('idle', advanceMinutes(snapshot, minute - now(), config), false)
+    if (minute > now()) record(advanceMinutes(snapshot, minute - now(), config), false)
   }
 
   /** Energy the next shift needs: its cost plus its passive decay, plus one point to spare. */
@@ -235,6 +269,17 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     act('nap')
   }
 
+  /** See "Clout" in the module comment. */
+  function flex(place: Place): void {
+    const def = flexAction(config)
+    if (snapshot.player.stats.energy < def.energyCost || !fitsBefore(def, at(BED_HOUR))) return
+    const result = performPlaceAction(snapshot, place, 'flex', config)
+    if (!result.ok) return
+    record(result, true)
+    flexes += 1
+    if (result.flex?.viral === true) viralFlexes += 1
+  }
+
   function shift(): void {
     const def = shiftAction(jobId, config)
     if (!fitsBefore(def, at(BED_HOUR))) {
@@ -252,7 +297,7 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
       shiftsMissed += 1
       return
     }
-    record('shift', result, true)
+    record(result, true)
     shiftsWorked += 1
   }
 
@@ -272,6 +317,7 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     shift()
     eatIfHungry({ beforeShift: true, atHome: !commutes })
     shift()
+    if (options.flex !== undefined) flex(options.flex.place)
     if (commutes) rideSubway()
     eatIfHungry({ beforeShift: false, atHome: true })
     while (snapshot.player.stats.energy < TIRED && fitsBefore(nap, at(NAP_UNTIL_HOUR))) {
@@ -302,6 +348,10 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     maxCloutGainPerAction,
     maxCloutGainPerGameDay: Math.max(0, ...cloutGainByDay.values()),
     cloutGainBySource,
+    finalClout: totalClout(snapshot.player, config),
+    levelReachedDay,
+    flexes,
+    viralFlexes,
   }
 }
 

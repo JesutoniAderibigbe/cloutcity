@@ -497,6 +497,7 @@ describe('content schemas', () => {
     price: 20,
     sellValue: 8,
     cloutValue: 1,
+    styleValue: 1,
     statEffects: { mood: 2 },
   }
 

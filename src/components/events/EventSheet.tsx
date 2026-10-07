@@ -8,7 +8,7 @@ import { canAffordChoice, findEvent } from '@/engine/events'
 import type { GameEvent } from '@/lib/data/schemas/content'
 import { copy } from '@/lib/copy'
 import { gameStore, useGameStore } from '@/state/store'
-import { effectsSummary, eventText } from './effectLabels'
+import { appliedEffects, effectsSummary, eventText } from './effectLabels'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/events'
 
@@ -37,6 +37,8 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
 
   const resolved = outcome?.eventId === event.id ? outcome : null
   const view = resolved === null ? 'choices' : 'outcome'
+  const landed =
+    resolved === null ? '' : effectsSummary(appliedEffects(resolved.effects, resolved.cloutApplied))
 
   // Listened to directly: jsx-a11y does not allow key handlers on a non-interactive role.
   useEffect(() => {
@@ -102,11 +104,9 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
         <>
           <p id={bodyId} className="text-sm text-ink-50">
             {eventText(resolved.resultKey)}
-            {resolved.effects.length > 0 ? (
-              <span className="mt-1 block text-xs text-ink-300">
-                {effectsSummary(resolved.effects)}
-              </span>
-            ) : null}
+            {landed === '' ? null : (
+              <span className="mt-1 block text-xs text-ink-300">{landed}</span>
+            )}
           </p>
           <ChoiceButton
             choiceId="continue"
