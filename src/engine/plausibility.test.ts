@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import baselineJson from '@data/sim/economy-baseline.derived.json'
 import { sync } from '@/lib/data/config'
-import { landmarks } from '@/lib/data/content'
+import { landmarks, venues } from '@/lib/data/content'
 import { EconomyBaselineSchema } from '@/lib/data/schemas/sim'
 import { realMsPerGameMinute } from './clock'
 import { cloutCeilings, cloutLevel, findCloutLevel, playerLevel } from './clout'
@@ -19,6 +19,7 @@ import {
   applyRepairs,
   cashCeilings,
   checkUpload,
+  type CashClout,
   maxActionGameMinutes,
   plausibilityCeilings,
   type Repair,
@@ -28,6 +29,7 @@ import {
 import { prestige } from './prestige'
 import { createSaveSchema, initialSave, type SaveState } from './save'
 import { runEconomyBot, type BotStep } from './sim/economyBot'
+import { maxCloutPlaces } from './sim/maxCloutPlaces'
 import { playerWithClout } from './test-support'
 
 const baseline = EconomyBaselineSchema.parse(baselineJson)
@@ -87,18 +89,23 @@ const queensBallpark = (() => {
   return found
 })()
 
-function play(flex: boolean): Played[] {
+type BotKind = 'economy' | 'flex' | 'max-clout'
+
+function play(kind: BotKind): Played[] {
   const steps: Played[] = []
   let minute = initialSave(config).clock.minute
   let taps = 0
   let claims = 0
   runEconomyBot(
     {
-      jobId: flex ? 'barista' : 'retail',
+      jobId: kind === 'economy' ? 'retail' : 'barista',
       days: DAYS,
       upgradeTo: 'brooklyn-1br',
       claimAll: true,
-      ...(flex ? { flex: { place: queensBallpark } } : {}),
+      ...(kind === 'flex' ? { flex: { place: queensBallpark } } : {}),
+      ...(kind === 'max-clout'
+        ? { maxClout: maxCloutPlaces([...landmarks, ...venues], config) }
+        : {}),
       onStep: (step) => {
         const moved = step.snapshot.clock.minute - minute
         minute = step.snapshot.clock.minute
@@ -116,8 +123,10 @@ function play(flex: boolean): Played[] {
   return steps
 }
 
-const economySteps = play(false)
-const flexSteps = play(true)
+const economySteps = play('economy')
+const flexSteps = play('flex')
+/** The max-clout bot (S18c): as much clout as honest play gets, which sets the honest pace. */
+const maxCloutSteps = play('max-clout')
 
 /**
  * Uploads `steps` as the client would: the initial save first, then one upload per `every`
@@ -128,12 +137,14 @@ function replay(steps: readonly Played[], every: number) {
   const server = new Set<string>()
   let sinceAccept = 0
   let credit = 0
+  let pace: CashClout | null = null
   let age = 0
   const verdicts: { verdict: Verdict; upload: SaveState }[] = []
   const upload = (save: SaveState, first: boolean) => {
     const verdict = check(prev, save, {
       realMinutesSinceAccept: sinceAccept / 60_000,
       burstCreditMinutes: credit,
+      paceCredit: pace,
       accountAgeMinutes: age / 60_000,
       serverGrantKeys: [...server],
       firstUpload: first,
@@ -143,6 +154,7 @@ function replay(steps: readonly Played[], every: number) {
       prev = verdict.save
       sinceAccept = 0
       credit = verdict.burstCreditMinutes ?? credit
+      pace = verdict.paceCredit ?? pace
       for (const record of verdict.grantsToInsert) server.add(record.key)
     }
   }
@@ -161,6 +173,8 @@ describe('normal play is never flagged (false-positive guard)', () => {
     ['economy bot (retail), every 15 steps', economySteps, 15],
     ['flex bot (barista), every step', flexSteps, 1],
     ['flex bot (barista), every 15 steps', flexSteps, 15],
+    ['max-clout bot (barista), every step', maxCloutSteps, 1],
+    ['max-clout bot (barista), every 15 steps', maxCloutSteps, 15],
   ])('%s: every upload is accepted unchanged', (_label, steps, every) => {
     const { verdicts, server } = replay(steps, every)
     expect(verdicts.length).toBeGreaterThan(steps.length / every)
@@ -1067,7 +1081,8 @@ describe('honest pace (DEC-19, H1)', () => {
     let credit = ceilings.paceCreditCap
     const outcomes: string[] = []
     // A shift's top wage every tap: far above the honest pace, so the credit runs out.
-    for (let i = 0; i < 6; i++) {
+    const tries = 30
+    for (let i = 0; i < tries; i++) {
       const next = later(base)
       next.actions += 1
       next.player.cash += cashCeilings(config).shift.perAction
@@ -1082,7 +1097,9 @@ describe('honest pace (DEC-19, H1)', () => {
       credit = verdict.paceCredit
     }
     expect(outcomes.at(-1)).toBe('reject')
-    expect(outcomes.length).toBeLessThan(6)
+    // A full credit lasts a game day's worth of top wages at most.
+    const perTap = cashCeilings(config).shift.perAction - ceilings.pacePerTap.cash
+    expect(outcomes.length).toBeLessThanOrEqual(Math.ceil(ceilings.paceCreditCap.cash / perTap) + 1)
   })
 
   it.each([2, 10, 60])(
@@ -1110,11 +1127,11 @@ describe('honest pace (DEC-19, H1)', () => {
     },
   )
 
-  it('reaching Icon publicly takes hours of honest play', () => {
+  it('reaching Icon publicly takes more than an hour of honest play', () => {
     const icon = findCloutLevel('icon', config)
     if (icon === undefined) throw new Error('no icon level')
     const perMinute = ceilings.pacePerTap.clout * sync.plausibility.honestTapsPerRealMinute
-    expect((icon.minClout - ceilings.itemCloutMax) / perMinute / 60).toBeGreaterThan(2)
+    expect((icon.minClout - ceilings.itemCloutMax) / perMinute / 60).toBeGreaterThan(1)
   })
 })
 
@@ -1136,5 +1153,59 @@ describe('keeping one device over another (H2, branch)', () => {
     forged.player.cash += 100_000
     const verdict = check(prev, forged, { serverGrantKeys: serverKeys(next), branch: true })
     expect(verdict.outcome).toBe('reject')
+  })
+})
+
+describe('honest-pace credit across prestige (probe)', () => {
+  const { before, after } = prestiged()
+  const empty = { cash: 0, clout: 0 }
+  const windowCtx = (paceCredit: CashClout) => ({
+    realMinutesSinceAccept: 60,
+    paceCredit,
+    serverGrantKeys: serverKeys(before),
+  })
+
+  it('a prestige window does not refill the credit: it carries what the new run left', () => {
+    const next = clone(after)
+    next.actions = 3
+    next.clock.minute += 10
+    const verdict = check(before, next, windowCtx(empty))
+    expect(verdict.findings).toEqual([])
+    expect(verdict.paceCredit?.cash).toBeCloseTo(3 * ceilings.pacePerTap.cash)
+    expect(verdict.paceCredit?.cash).toBeLessThan(ceilings.paceCreditCap.cash)
+  })
+
+  it('earnings in a new run beyond its taps at honest pace are refused, prestige or not', () => {
+    const next = clone(after)
+    next.actions = 2
+    next.clock.minute += 10
+    next.player.cash += 500
+    expect(check(before, next, windowCtx(empty)).findings).toContain('honest-pace')
+  })
+
+  it('alternating a prestige window and same-run windows never earns more than the taps allow', () => {
+    // Prestige window, then same-run windows: each passes on what the last one left, so the sum
+    // of gains stays within the first credit plus every tap at the honest pace.
+    let base: SaveState = before
+    let credit: CashClout = empty
+    let save = clone(after)
+    save.actions = 1
+    save.clock.minute += 10
+    let gained = 0
+    let taps = 0
+    for (let i = 0; i < 12; i++) {
+      const verdict = check(base, save, windowCtx(credit))
+      if (verdict.save === null || verdict.paceCredit === null) break
+      gained = verdict.save.player.cash - after.player.cash
+      taps = verdict.save.actions
+      base = verdict.save
+      credit = verdict.paceCredit
+      save = later(base, 10)
+      save.actions += 1
+      save.player.cash += Math.floor(ceilings.pacePerTap.cash * 1.5)
+    }
+    // The probe ran: the prestige window and several same-run windows were accepted first.
+    expect(taps).toBeGreaterThan(2)
+    expect(gained).toBeLessThanOrEqual(ceilings.pacePerTap.cash * taps + 1)
   })
 })

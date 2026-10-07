@@ -185,7 +185,8 @@ export interface PlausibilityCeilings {
   readonly pacePerTap: CashClout
   /**
    * The most pace credit a player can carry (a token bucket per player, kept by the server): one
-   * action's worth, so a single shift or flex never waits for credit, but a run of them does.
+   * game day's worth at the per-game-day ceilings, so a lucky day (viral flexes, a club night)
+   * never waits for credit; past it, only counted taps at the honest pace refill it.
    */
   readonly paceCreditCap: CashClout
   /** Taps a person makes in a real minute of honest play (the public level cap's pace). */
@@ -258,21 +259,18 @@ export function plausibilityCeilings(
     club: cloutRate('club'),
     event: cloutRate('event'),
   }
-  const cloutPerAction = Math.max(...RATED_SOURCES.map((source) => clout[source].perAction))
   const cashPerAction = Math.max(
     fixture.cash.maxGainPerAction * margin,
     cash.shift.perAction,
     cash.event.perAction,
   )
+  const cashPerGameDay = Math.max(
+    fixture.cash.maxGainPerGameDay * margin,
+    cash.shift.perGameDay + cash.event.perGameDay,
+  )
   return {
     clout,
-    cash: rate(
-      cashPerAction,
-      Math.max(
-        fixture.cash.maxGainPerGameDay * margin,
-        cash.shift.perGameDay + cash.event.perGameDay,
-      ),
-    ),
+    cash: rate(cashPerAction, cashPerGameDay),
     grants: grantCeilings(config),
     itemCloutMax: theory.itemCloutMax,
     premiumCap: theory.premiumCap,
@@ -285,7 +283,10 @@ export function plausibilityCeilings(
       cash: fixture.pace.cashPerTap * margin,
       clout: fixture.pace.cloutPerTap * margin,
     },
-    paceCreditCap: { cash: cashPerAction, clout: cloutPerAction },
+    paceCreditCap: {
+      cash: cashPerGameDay,
+      clout: RATED_SOURCES.reduce((sum, source) => sum + clout[source].perGameDay, 0),
+    },
     honestTapsPerRealMinute,
   }
 }

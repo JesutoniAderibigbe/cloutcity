@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { balance } from '@/lib/data/config'
-import { landmarks } from '@/lib/data/content'
+import { landmarks, venues } from '@/lib/data/content'
 import { cloutCeilings, cloutLevel, findCloutLevel } from '../clout'
 import { engineConfig, type EngineConfig, type HomeId, type JobId } from '../config'
 import { initialSnapshot } from '../game'
@@ -20,6 +20,7 @@ import { jobIds, jobLock, shiftWage } from '../jobs'
 import type { Place } from '../places'
 import { homeIds, rentFor } from '../rent'
 import { runEconomyBot, type BotReport } from './economyBot'
+import { maxCloutPlaces } from './maxCloutPlaces'
 
 const DAYS = 30
 /** Whole dollars: the target's band for the best job, and a sanity envelope for every job. */
@@ -75,14 +76,31 @@ const runFlex = (engine: EngineConfig, jobId: JobId = 'barista') =>
   runEconomyBot({ jobId, days: DAYS, upgradeTo, flex: { place: flexPlace } }, engine)
 const flexReport = runFlex(config)
 
+/**
+ * The max-clout bot (S18c): a barista playing for clout as hard as an honest player can,
+ * flexing at the best-multiplier places first and taking the best club that lets it in.
+ */
+const runMaxClout = (engine: EngineConfig, jobId: JobId = 'barista') =>
+  runEconomyBot(
+    { jobId, days: DAYS, upgradeTo, maxClout: maxCloutPlaces([...landmarks, ...venues], engine) },
+    engine,
+  )
+const maxCloutReport = runMaxClout(config)
+
 /** A per-tap average, rounded up to a hundredth so the baseline stays readable. */
 const perTap = (value: number) => Math.ceil(value * 100) / 100
 
 /** The baseline file: money from the job bots, clout maxima from those and the flex bot. */
-function baseline(all: readonly BotReport[], flexRuns: readonly BotReport[] = [flexReport]) {
+function baseline(
+  all: readonly BotReport[],
+  flexRuns: readonly BotReport[] = [flexReport],
+  maxCloutRuns: readonly BotReport[] = [maxCloutReport],
+) {
   const max = (pick: (report: BotReport) => number) => Math.max(...all.map(pick))
   const cloutRuns = [...all, ...flexRuns]
   const cloutMax = (pick: (report: BotReport) => number) => Math.max(...cloutRuns.map(pick))
+  const paceRuns = [...cloutRuns, ...maxCloutRuns]
+  const paceMax = (pick: (report: BotReport) => number) => Math.max(...paceRuns.map(pick))
   const sources: Record<string, number> = {}
   for (const report of cloutRuns) {
     for (const [kind, gain] of Object.entries(report.cloutGainBySource)) {
@@ -116,10 +134,11 @@ function baseline(all: readonly BotReport[], flexRuns: readonly BotReport[] = [f
       sources: Object.fromEntries(Object.entries(sources).sort(([a], [b]) => a.localeCompare(b))),
     },
     actions: { maxPerGameDay: max((report) => report.maxActionsPerGameDay) },
-    // Honest pace (S18c, DEC-19): what a tap earns on average over a whole run, at the best bot.
+    // Honest pace (S18c, DEC-19): what a tap earns on average over a whole run, at the best of
+    // every bot, the max-clout bot included.
     pace: {
-      cashPerTap: perTap(max((report) => report.cashGained / Math.max(1, report.taps))),
-      cloutPerTap: perTap(cloutMax((report) => report.cloutGained / Math.max(1, report.taps))),
+      cashPerTap: perTap(paceMax((report) => report.cashGained / Math.max(1, report.taps))),
+      cloutPerTap: perTap(paceMax((report) => report.cloutGained / Math.max(1, report.taps))),
     },
   }
 }
@@ -346,6 +365,16 @@ describe('economy simulation: clout', () => {
     const day = flexReport.levelReachedDay.local
     expect(day).toBeGreaterThanOrEqual(8)
     expect(day).toBeLessThanOrEqual(20)
+  })
+
+  it('the max-clout bot stays solvent and out-earns the flex bot in clout per tap', () => {
+    expect(maxCloutReport.minCash).toBeGreaterThanOrEqual(0)
+    expect(maxCloutReport.missedOrEvicted).toBe(0)
+    expect(maxCloutReport.flexes).toBeGreaterThan(flexReport.flexes)
+    expect(maxCloutReport.flexes).toBeLessThanOrEqual(DAYS * config.clout.flex.maxPerGameDay)
+    const perTap = (report: BotReport) => report.cloutGained / report.taps
+    expect(perTap(maxCloutReport)).toBeGreaterThan(perTap(flexReport))
+    expect(baseline(reports).pace.cloutPerTap).toBe(Math.ceil(perTap(maxCloutReport) * 100) / 100)
   })
 
   it('the flex bot flexes once a day, as the place rules allow', () => {

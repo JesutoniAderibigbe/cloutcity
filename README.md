@@ -405,9 +405,16 @@ $185 in each of weeks 2 to 4, and can afford the move to the Brooklyn 1BR betwee
 in `balance.json` `target.firstUpgradeGameDay`; no job goes broke, misses rent or misses a
 shift, and every job saves $80 to $230 a week.
 
+Two clout bots play alongside: a barista who flexes once a day (S13), and a max-clout barista
+(S18c) who flexes up to `clout.flex.maxPerGameDay` times a day at the best-multiplier places it
+can reach, buys and wears wearables for style when it can spare the cash, and takes the best club
+night its clout lets it into.
+
 The test also writes the result to `data/sim/economy-baseline.derived.json` (per-job results
-and the highest cash, clout and action counts per action, game hour and game day, which S18c
-uses as save-plausibility ceilings) and fails if a later change to the balance moves it. After
+and the highest cash, clout and action counts per action, game hour and game day, plus the
+honest pace: the highest whole-run cash and clout per tap of every bot, max-clout included,
+which S18c uses as save-plausibility ceilings) and fails if a later change to the balance moves
+it. After
 tuning `balance.json` on purpose, run `npm run econ:update`, check the target tests still pass,
 and log the change in the progress.md Tuning log.
 

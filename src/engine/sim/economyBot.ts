@@ -38,6 +38,15 @@
  * Clout is measured as the player's total (src/engine/clout.ts `totalClout`), and gains are
  * attributed to the ledger sources of the entries each step wrote.
  *
+ * Maximum honest clout (S18c): with the `maxClout` option the bot plays for clout as hard as an
+ * honest player can: after the second shift it flexes up to `clout.flex.maxPerGameDay` times, at
+ * the first places of `maxClout.flexPlaces` (best multiplier first) whose borough and hours let
+ * it, buying deli coffee for the energy when it can; it buys the cheapest wearable it does not
+ * own whenever its cash after the rent reserve and `STYLE_BUFFER` covers it, and wears it; at
+ * bedtime it takes a club night at the first club of `maxClout.clubs` whose door lets it in (the
+ * club pays its configured clout once a night, DEC-12). Its pace sets the S18c honest-pace
+ * ceiling with the other bots'.
+ *
  * Goals (S15): with the `claimAll` option the bot records goals after every step and claims
  * every reward it has reached at once, through the grant function (src/engine/grants.ts), so
  * the sim shows what goal rewards do to the economy. Claims are not steps: their cash and clout
@@ -58,6 +67,7 @@ import { initialEventsState } from '../events'
 import { advanceMinutes, initialSnapshot, type GameSnapshot } from '../game'
 import { initialGoalsState, syncGoals, type GoalsState } from '../goals'
 import { grant, initialGrantsState, type GrantsState } from '../grants'
+import { buyItem, equipItem, isWearable, shopItems } from '../items'
 import { canAffordMove, rentReserve } from '../housing'
 import { shiftAction, workShift } from '../jobs'
 import { performPlaceAction } from '../placeActions'
@@ -76,6 +86,8 @@ const BED_HOUR = 22
 const MAX_FUEL_STEPS = 20
 const RIDE_MINUTES = 30
 const MINUTES_PER_HOUR = 60
+/** Cash the max-clout bot keeps beyond the rent reserve before it buys a wearable for style. */
+const STYLE_BUFFER = 60
 
 export interface EconomyBotOptions {
   /** An entry job (no clout level needed); the bot never switches jobs. */
@@ -86,6 +98,12 @@ export interface EconomyBotOptions {
   readonly upgradeTo: HomeId
   /** Flex once a day at this place (a landmark or venue that allows it). */
   readonly flex?: { readonly place: Place }
+  /** Play for clout as hard as an honest player can (see "Maximum honest clout"). */
+  readonly maxClout?: {
+    /** Where to flex, best multiplier first. */
+    readonly flexPlaces: readonly Place[]
+    readonly clubs: readonly Place[]
+  }
   /** Claim every goal reward as soon as it is reached (S15). Off by default. */
   readonly claimAll?: boolean
   /**
@@ -354,6 +372,51 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     if (result.flex?.viral === true) viralFlexes += 1
   }
 
+  /** See "Maximum honest clout" in the module comment: up to the day's flex limit. */
+  function flexAll(places: readonly Place[]): void {
+    const def = flexAction(config)
+    let done = 0
+    for (const place of places) {
+      if (done >= config.clout.flex.maxPerGameDay) return
+      for (let i = 0; i < MAX_FUEL_STEPS && snapshot.player.stats.energy <= def.energyCost; i++) {
+        const spare = snapshot.player.cash - rentReserve(snapshot.player, config)
+        if (spare < coffee.cashCost || !act('deli-coffee')) break
+      }
+      const before = flexes
+      flex(place)
+      if (flexes > before) done += 1
+    }
+  }
+
+  /** Buys and wears the cheapest wearable not owned yet, when the cash can spare it. */
+  function buyStyle(): void {
+    const owned = new Set(snapshot.player.inventory.wearables.map((entry) => entry.itemId))
+    const wearables = shopItems(config)
+      .filter(isWearable)
+      .filter((item) => !owned.has(item.id))
+      .sort((a, b) => a.price - b.price || a.id.localeCompare(b.id))
+    const [cheapest] = wearables
+    if (cheapest === undefined) return
+    const spare = snapshot.player.cash - rentReserve(snapshot.player, config) - STYLE_BUFFER
+    if (spare < cheapest.price) return
+    const bought = buyItem(snapshot, cheapest.id, config)
+    if (!bought.ok) return
+    record({ snapshot: bought.snapshot, rent: [] }, true)
+    const worn = equipItem(snapshot, cheapest.id, cheapest.slot, config)
+    // Wearing is not a tap (the store does not count it either).
+    if (worn.ok) record({ snapshot: worn.snapshot, rent: [] }, false)
+  }
+
+  /** A club night at the first club whose door lets the bot in tonight. */
+  function clubNight(clubs: readonly Place[]): void {
+    for (const club of clubs) {
+      const result = performPlaceAction(snapshot, club, 'club-night', config)
+      if (!result.ok) continue
+      record(result, true)
+      return
+    }
+  }
+
   function shift(): void {
     const def = shiftAction(jobId, config)
     if (!fitsBefore(def, at(BED_HOUR))) {
@@ -392,13 +455,16 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     eatIfHungry({ beforeShift: true, atHome: !commutes })
     shift()
     if (options.flex !== undefined) flex(options.flex.place)
+    if (options.maxClout !== undefined) flexAll(options.maxClout.flexPlaces)
     if (commutes) rideSubway()
     eatIfHungry({ beforeShift: false, atHome: true })
+    if (options.maxClout !== undefined) buyStyle()
     while (snapshot.player.stats.energy < TIRED && fitsBefore(nap, at(NAP_UNTIL_HOUR))) {
       if (!act('nap')) break
     }
     waitUntil(at(BED_HOUR))
     eatIfHungry({ beforeShift: false, atHome: true })
+    if (options.maxClout !== undefined) clubNight(options.maxClout.clubs)
     topUpBeforeBed()
     cashByDay.push(snapshot.player.cash)
     act('sleep')
