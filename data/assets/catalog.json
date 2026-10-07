@@ -1863,7 +1863,12 @@
       },
       "maxDeltaE": 40,
       "emissive": [],
-      "slots": [],
+      "slots": [
+        {
+          "name": "pot",
+          "tokens": ["terracotta-500"]
+        }
+      ],
       "clips": [],
       "loadPhase": "apartment",
       "instanced": false,

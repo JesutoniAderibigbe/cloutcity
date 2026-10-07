@@ -233,12 +233,22 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
   of a static model as one InstancedMesh; `_SLOT` recolours make one colour-buffer variant.
   `AvatarModel` binds a head and a body to one skeleton and poses them with the rig's clips; it
   holds a continuous frame lease only while `animate` is true, so an idle map still draws zero
-  frames. The night glow (`_EMISSIVE`) is not wired into the runtime material yet: it waits for
-  the S04f night-glow contract (`patchNightGlow`). Until then only the showcase previews it, with
-  an additive unlit twin (`src/app/dev/models/GlowPreview.tsx`, to delete once wired).
+  frames. Night glow uses the S04f contract: the shared material is patched with
+  `patchNightGlow(material, 'attribute', …)`, so each `_EMISSIVE` vertex glows at
+  `models.emissive.nightIntensity × uNightGlow` (the day/night rig writes `uNightGlow`;
+  `dayIntensity` stays 0). The showcase sets `uNightGlow` from its own time-of-day preset.
 - **Player avatar** (S05). The capsule placeholder shows at once; the hand-made avatar
   (`scene.json models.player`) starts loading after the city has drawn and replaces it. The
   capsule stays while loading, on failure, below `minDeviceMemoryGB` and on `capsuleTiers`.
+- **Apartment decor** (S16). Items mapped in `scene.json models.decor` (item → model and the slot
+  its colour variant recolours) draw with their hand-made model once `src/scene/apartment/
+decorModels.ts` (its own lazy chunk) has loaded them at the active tier; the rest, and every
+  item until then or if loading fails, keep the code-built stand-ins. The room shell stays
+  code-built (each home's window and door positions come from data).
+- **Tiers.** Models follow the active quality tier (`useActiveTier`): the map avatar, the
+  apartment decor and the shared material (Lambert on low) switch with a runtime step-down.
+- **Service worker.** `public/models/**` is never precached (only on-demand); a unit test guards
+  the precache inputs.
 - **Showcase** (`/dev/models`, test builds only: `NEXT_PUBLIC_TEST_HOOKS=1`, otherwise 404).
   Review scenes from `data/assets/showcase.json`: `?view=avatars|street|room|catalog`,
   `&time=day|golden|night`, `&tier=low|mid|high`, `&chrome=0` for clean screenshots;

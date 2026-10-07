@@ -48,7 +48,7 @@ export interface ShowcaseScene {
     readonly models: readonly ModelRef[]
   }
   readonly light: ShowcaseLight
-  /** scene.json `models.emissive` intensity for this time of day. */
-  readonly glowIntensity: number
+  /** The shared `uNightGlow` value for this time of day: 1 at night, else 0. */
+  readonly nightGlow: number
   readonly models: ModelsConfig
 }

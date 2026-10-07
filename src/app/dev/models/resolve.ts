@@ -85,10 +85,7 @@ export function resolveShowcase(
       },
     }),
     light,
-    glowIntensity:
-      light.glow === 'night'
-        ? scene.models.emissive.nightIntensity
-        : scene.models.emissive.dayIntensity,
+    nightGlow: light.glow === 'night' ? 1 : 0,
     models: scene.models,
   }
 }

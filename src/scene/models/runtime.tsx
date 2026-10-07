@@ -11,6 +11,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { DataTexture, Material } from 'three'
 import { log } from '@/lib/log'
 import { createRefCountLru, type RefCountLru } from './cache'
+import { useNightGlow } from '../lighting/nightGlow'
 import { createModelMaterial } from './materials'
 import { disposeModel, loadModel, type LoadedModel } from './prepare'
 import type { ModelRef, ModelsConfig, ModelTier } from './types'
@@ -30,6 +31,34 @@ function modelCache(maxIdle: number): RefCountLru<LoadedModel> {
   return cache
 }
 
+/**
+ * References `refs` at `tier` outside React (scene graphs built imperatively, like the
+ * apartment). The caller must call `release` exactly once, whether or not the load succeeded.
+ */
+export function acquireModels(
+  refs: readonly ModelRef[],
+  tier: ModelTier,
+  maxIdle: number,
+): { readonly models: Promise<LoadedModel[]>; release(): void } {
+  const store = modelCache(maxIdle)
+  const files = refs.map((ref) => ref.files[tier])
+  const models = Promise.all(
+    refs.map((ref, i) => {
+      const file = files[i] ?? ref.files[tier]
+      return store.acquire(file, () => loadModel(ref, file))
+    }),
+  )
+  let released = false
+  return {
+    models,
+    release() {
+      if (released) return
+      released = true
+      for (const file of files) store.release(file)
+    },
+  }
+}
+
 /** Cache counters for the showcase test hook. */
 export function modelCacheStats(): { readonly held: number; readonly idle: number } {
   return cache?.stats() ?? { held: 0, idle: 0 }
@@ -46,9 +75,11 @@ export function ModelsProvider({
   readonly gradientMap?: DataTexture
   readonly children: ReactNode
 }) {
+  // The shared uNightGlow (S04f): the day/night rig writes it, every model material reads it.
+  const nightGlow = useNightGlow()
   const material = useMemo(
-    () => createModelMaterial({ config, tier, gradientMap }),
-    [config, tier, gradientMap],
+    () => createModelMaterial({ config, tier, gradientMap, nightGlow }),
+    [config, tier, gradientMap, nightGlow],
   )
   useEffect(() => () => material.dispose(), [material])
   const value = useMemo(() => ({ config, tier, material }), [config, tier, material])

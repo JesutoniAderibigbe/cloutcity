@@ -251,6 +251,18 @@ export const SceneConfigSchema = z.strictObject({
       minDeviceMemoryGB: z.number().positive(),
       capsuleTiers: z.array(z.enum(['low', 'mid', 'high'])),
     }),
+    /**
+     * Apartment decor drawn with a hand-made model (S16 + S04h): decor item id → model id and the
+     * model slot the player's colour variant recolours. Items left out keep their code-built
+     * stand-in (string lights and the neon sign wait for their Blender models).
+     */
+    decor: z.record(
+      z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+      z.strictObject({
+        model: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+        slot: z.string().min(1),
+      }),
+    ),
   }),
   /** The static SVG map (GET /geo/fallback) shown when the 3D map is unavailable. */
   fallback: z.strictObject({

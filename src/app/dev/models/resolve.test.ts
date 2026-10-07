@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { SHOWCASE_TIMES, SHOWCASE_VIEWS } from '@/lib/data/schemas/assets'
-import { scene } from '@/lib/data/config'
 import { resolveShowcase, showcase, tokenHex } from './resolve'
 
 describe('resolveShowcase', () => {
@@ -36,13 +35,9 @@ describe('resolveShowcase', () => {
     )
   })
 
-  it('takes the night glow intensity from scene.json at night only', () => {
-    expect(resolveShowcase('street', 'night', 'high').glowIntensity).toBe(
-      scene.models.emissive.nightIntensity,
-    )
-    expect(resolveShowcase('street', 'golden', 'high').glowIntensity).toBe(
-      scene.models.emissive.dayIntensity,
-    )
+  it('drives the night-glow uniform at night only', () => {
+    expect(resolveShowcase('street', 'night', 'high').nightGlow).toBe(1)
+    expect(resolveShowcase('street', 'golden', 'high').nightGlow).toBe(0)
   })
 
   it('shows the whole static catalog in the catalog view', () => {

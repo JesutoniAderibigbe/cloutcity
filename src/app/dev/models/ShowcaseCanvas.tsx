@@ -7,13 +7,13 @@
  * has drawn.
  */
 import { useEffect, useMemo, useRef } from 'react'
+import { createDayNightUniforms, DayNightContext } from '@/scene/lighting/nightGlow'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap, type PerspectiveCamera } from 'three'
 import { AvatarModel } from '@/scene/models/AvatarModel'
 import { ModelInstances, type ModelPlacement } from '@/scene/models/ModelInstances'
 import { modelCacheStats, ModelsProvider, useModels } from '@/scene/models/runtime'
 import type { ModelRef } from '@/scene/models/types'
-import { GlowPreview } from './GlowPreview'
 import type { ShowcaseStatus } from './ShowcaseClient'
 import type { ShowcaseScene } from './types'
 
@@ -210,6 +210,13 @@ export default function ShowcaseCanvas({
   readonly onStatus: (status: ShowcaseStatus) => void
 }) {
   const { light } = scene
+  // The showcase keeps its own lighting presets but drives the real night-glow uniform (S04f)
+  // the day/night rig writes on the map: 1 at night, 0 otherwise.
+  const dayNight = useMemo(() => {
+    const uniforms = createDayNightUniforms()
+    uniforms.uNightGlow.value = scene.nightGlow
+    return uniforms
+  }, [scene.nightGlow])
   // perf.json `shadows`: only the high tier draws the sun's one directional shadow map.
   const shadows = scene.tier === 'high'
   const { extentM, mapSizePx, bias, normalBias } = light.shadow
@@ -243,23 +250,24 @@ export default function ShowcaseCanvas({
           shadow-normalBias={normalBias}
         />
         <CameraFraming scene={scene} />
-        <ModelsProvider config={scene.models} tier={scene.tier}>
-          <Grounds scene={scene} shadows={shadows} />
-          {scene.groups.map((group) => (
-            <ModelInstances
-              key={`${group.model.id}|${JSON.stringify(group.colors ?? {})}`}
-              model={group.model}
-              placements={group.placements}
-              {...(group.colors && { colors: group.colors })}
-              name={group.model.id}
-              shadows={shadows}
-            />
-          ))}
-          {scene.lineup && <Lineup lineup={scene.lineup} shadows={shadows} />}
-          {scene.grid && <Grid grid={scene.grid} shadows={shadows} />}
-          <GlowPreview intensity={scene.glowIntensity} />
-          <Readiness scene={scene} onStatus={onStatus} />
-        </ModelsProvider>
+        <DayNightContext value={dayNight}>
+          <ModelsProvider config={scene.models} tier={scene.tier}>
+            <Grounds scene={scene} shadows={shadows} />
+            {scene.groups.map((group) => (
+              <ModelInstances
+                key={`${group.model.id}|${JSON.stringify(group.colors ?? {})}`}
+                model={group.model}
+                placements={group.placements}
+                {...(group.colors && { colors: group.colors })}
+                name={group.model.id}
+                shadows={shadows}
+              />
+            ))}
+            {scene.lineup && <Lineup lineup={scene.lineup} shadows={shadows} />}
+            {scene.grid && <Grid grid={scene.grid} shadows={shadows} />}
+            <Readiness scene={scene} onStatus={onStatus} />
+          </ModelsProvider>
+        </DayNightContext>
       </Canvas>
     </div>
   )

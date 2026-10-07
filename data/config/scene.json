@@ -150,6 +150,20 @@
       "clip": "idle",
       "minDeviceMemoryGB": 2,
       "capsuleTiers": ["low"]
+    },
+    "decor": {
+      "thrift-flatweave-rug": {
+        "model": "rug",
+        "slot": "pattern"
+      },
+      "cloud-lounge-chair": {
+        "model": "armchair",
+        "slot": "upholstery"
+      },
+      "windowsill-monstera": {
+        "model": "plant",
+        "slot": "pot"
+      }
     }
   },
   "fallback": {

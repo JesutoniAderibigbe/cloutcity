@@ -130,6 +130,7 @@ export function PlayerAvatar({
             heightM={model.heightM}
             models={models}
             tier={tier}
+            toonRamp={toonRamp}
             onStatus={onStatus}
           />
         </Suspense>

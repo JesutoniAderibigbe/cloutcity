@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "670e4e7e64e22ef1",
+  "assetVersion": "3de1720f959354ad",
   "models": [
     {
       "id": "taxi",
@@ -1270,29 +1270,29 @@
       "instanced": false,
       "nameKey": "models.name.plant",
       "bounds": { "min": [-0.1459, 0, -0.1661], "max": [0.1459, 0.9, 0.1661] },
-      "slots": [],
+      "slots": ["pot"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/plant.high.0d245c51.glb",
-          "sha256": "0d245c5181822c547f7e834574074e55f63fceadabbf5d3efbec9b424d83fe13",
-          "bytes": 3296,
-          "gzBytes": 1708,
+          "file": "/models/plant.high.0ea475ce.glb",
+          "sha256": "0ea475ce197c994bd050b7900600f4b05d9562293e47e250e50d8fc750fb0a69",
+          "bytes": 3664,
+          "gzBytes": 1748,
           "triangles": 60
         },
         "mid": {
-          "file": "/models/plant.high.0d245c51.glb",
-          "sha256": "0d245c5181822c547f7e834574074e55f63fceadabbf5d3efbec9b424d83fe13",
-          "bytes": 3296,
-          "gzBytes": 1708,
+          "file": "/models/plant.high.0ea475ce.glb",
+          "sha256": "0ea475ce197c994bd050b7900600f4b05d9562293e47e250e50d8fc750fb0a69",
+          "bytes": 3664,
+          "gzBytes": 1748,
           "triangles": 60
         },
         "high": {
-          "file": "/models/plant.high.0d245c51.glb",
-          "sha256": "0d245c5181822c547f7e834574074e55f63fceadabbf5d3efbec9b424d83fe13",
-          "bytes": 3296,
-          "gzBytes": 1708,
+          "file": "/models/plant.high.0ea475ce.glb",
+          "sha256": "0ea475ce197c994bd050b7900600f4b05d9562293e47e250e50d8fc750fb0a69",
+          "bytes": 3664,
+          "gzBytes": 1748,
           "triangles": 60
         }
       }

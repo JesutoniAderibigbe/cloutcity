@@ -19,6 +19,10 @@ import {
 import { describe, expect, it } from 'vitest'
 import { modelManifest, modelRef } from '@/lib/data/models'
 import { scene } from '@/lib/data/config'
+import { items } from '@/lib/data/content'
+import { decorEntries } from '../apartment/decorModels'
+import { nightGlowSource } from '../lighting/nightGlow'
+import { createModelMaterial } from './materials'
 import { wantsAvatarModel } from '../avatar/PlayerAvatar'
 import { assembleAvatar, clipNamed } from './AvatarModel'
 import { placementMatrix } from './ModelInstances'
@@ -218,5 +222,40 @@ describe('wantsAvatarModel', () => {
     expect(wantsAvatarModel(player, 'mid', player.minDeviceMemoryGB)).toBe(true)
     // Browsers that do not report memory (Safari, Firefox) get the model.
     expect(wantsAvatarModel(player, 'high', undefined)).toBe(true)
+  })
+})
+
+describe('createModelMaterial night glow (S04f contract)', () => {
+  it('patches the shared material from the `_emissive` attribute with a zero default', () => {
+    const uniform = { value: 0 }
+    const material = createModelMaterial({ config: scene.models, tier: 'mid', nightGlow: uniform })
+    expect(nightGlowSource(material)).toBe('attribute')
+    expect(
+      (material as unknown as { defaultAttributeValues: unknown }).defaultAttributeValues,
+    ).toEqual({
+      _emissive: [0, 0, 0],
+    })
+    const plain = createModelMaterial({ config: scene.models, tier: 'mid' })
+    expect(nightGlowSource(plain)).toBeUndefined()
+  })
+
+  it('keeps the day intensity at 0: the contract only scales the glow by uNightGlow', () => {
+    expect(scene.models.emissive.dayIntensity).toBe(0)
+    expect(scene.models.emissive.nightIntensity).toBeGreaterThan(0)
+  })
+})
+
+describe('apartment decor models', () => {
+  it('maps only real decor items to static models with the named recolour slot', () => {
+    const decorIds = new Set(items.filter((item) => item.category === 'decor').map((i) => i.id))
+    const entries = decorEntries()
+    expect(entries.size).toBe(Object.keys(scene.models.decor).length)
+    for (const [itemId, entry] of entries) {
+      expect(decorIds.has(itemId)).toBe(true)
+      expect(entry.ref.kind).toBe('static')
+      expect(entry.ref.slots).toContain(entry.slot)
+      expect(entry.ref.category).toBe('furniture')
+      expect(entry.footprintM).toBeGreaterThan(0)
+    }
   })
 })
