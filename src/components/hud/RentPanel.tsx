@@ -21,7 +21,12 @@ export function RentPanel() {
   const dueDay = nextRentDueDay(minute, engineConfig)
 
   return (
-    <PanelDialog title={copy('rent.heading')} panel="rent" onClose={closeHudPanel}>
+    <PanelDialog
+      title={copy('rent.heading')}
+      panel="rent"
+      feature="cc-feature:rent-panel"
+      onClose={closeHudPanel}
+    >
       <div className="flex flex-col gap-1 text-sm text-ink-50">
         <p>{homeLine(home)}</p>
         <p data-rent-next-due="">{nextRentDueLine(home, dueDay)}</p>

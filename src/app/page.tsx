@@ -1,43 +1,53 @@
+import { SoundControlMount } from '@/components/audio/SoundControlMount'
+import { SoundSheetMount } from '@/components/audio/SoundSheetMount'
 import { EventSheetMount } from '@/components/events/EventSheetMount'
-import { HudPanelButtons } from '@/components/hud/HudPanelButtons'
+import { CloutHudMount } from '@/components/hud/CloutHudMount'
+import { HudPanelButtonsMount } from '@/components/hud/HudPanelButtonsMount'
 import { HudPanelMount } from '@/components/hud/HudPanelMount'
+import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
+import { ScenePlaceholder } from '@/components/overlay/ScenePlaceholder'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
-import { WelcomeGate } from '@/components/welcome/WelcomeGate'
+import { WelcomeMount } from '@/components/welcome/WelcomeMount'
 import { copy } from '@/lib/copy'
 
 export default function HomePage() {
   return (
     <OverlayLayout
-      modal={<WelcomeGate />}
+      modal={<WelcomeMount />}
       slots={{
         hud: (
-          <header className="flex h-full items-center justify-between gap-2 px-4">
-            <div className="min-w-0">
-              <h1 className="text-lg font-extrabold tracking-tight text-pink-400">
+          <div className="flex h-full items-center justify-between gap-3 px-4">
+            <header className="flex min-w-0 flex-col justify-center">
+              <h1 className="truncate text-lg font-extrabold tracking-tight text-pink-400">
                 {copy('app.name')}
               </h1>
-              <p className="text-xs text-ink-300">{copy('app.tagline')}</p>
+              <p className="truncate text-xs text-ink-300">{copy('app.tagline')}</p>
+            </header>
+            {/* Below sm the controls are fixed-width icons, so the title truncates instead
+                (S05 splits the HUD into two rows); from sm up the sound control's text shrinks. */}
+            <div className="flex shrink-0 items-center gap-2 sm:min-w-0 sm:shrink">
+              <CloutHudMount />
+              <HudPanelButtonsMount />
+              <SoundControlMount />
             </div>
-            <HudPanelButtons />
-          </header>
+          </div>
         ),
+        toast: <LevelUpToastMount />,
         sheet: (
           <>
             <EventSheetMount />
             <PlaceSheetMount />
             <HudPanelMount />
+            <SoundSheetMount />
           </>
         ),
         tabs: <BottomTabs />,
       }}
     >
-      {/* Scene placeholder until the 3D city lands in S04a. */}
-      <div
-        aria-hidden="true"
-        className="h-full w-full bg-gradient-to-b from-night-800 via-night-900 to-night-950"
-      />
+      {/* Scene placeholder until the 3D city lands in S04a; it marks the map playable. */}
+      <ScenePlaceholder />
     </OverlayLayout>
   )
 }

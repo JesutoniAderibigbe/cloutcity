@@ -37,6 +37,24 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* A lazy feature's loading skeleton (src/components/overlay/ZoneLoading.tsx) stays invisible for
+   the reveal delay (data/config/layout.json, written to --overlay-loading-delay by the overlay
+   layout), so a fast load never flashes a placeholder. Under reduced motion the rule below turns
+   the fade into an instant reveal after the same delay. */
+@keyframes cc-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cc-reveal {
+  opacity: 0;
+  animation: cc-reveal 150ms ease-out var(--overlay-loading-delay, 0ms) forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -44,5 +62,24 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* The level-up toast's single pop (src/components/hud/LevelUpToast.tsx). Only when motion is
+   welcome: under reduced motion the toast simply appears. */
+@media (prefers-reduced-motion: no-preference) {
+  .level-up-pop {
+    animation: level-up-pop 320ms ease-out 1;
+  }
+}
+
+@keyframes level-up-pop {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
 }

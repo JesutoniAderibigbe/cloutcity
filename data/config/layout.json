@@ -6,6 +6,8 @@
     "sheetMaxHeightVh": 40,
     "sheetMaxWidthPx": 560,
     "tabBarHeightPx": 64,
+    "toastMs": 6000,
+    "loadingRevealDelayMs": 300,
     "actionCooldownMs": 300
   }
 }

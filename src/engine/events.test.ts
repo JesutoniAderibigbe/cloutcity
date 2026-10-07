@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { EventChoice, EventConditions, GameEvent } from '@/lib/data/schemas/content'
 import { minutesPerDay } from './clock'
+import { totalClout } from './clout'
 import { engineConfig, type EngineConfig } from './config'
 import {
   canAffordChoice,
@@ -19,6 +20,7 @@ import {
 } from './events'
 import { initialSnapshot, type GameSnapshot } from './game'
 import { createRng } from './rng'
+import { withClout } from './test-support'
 
 const choice = (id: string, effects: EventChoice['effects'] = []): EventChoice => ({
   id,
@@ -45,6 +47,18 @@ function configWith(
 ): EngineConfig {
   return {
     ...engineConfig,
+    // Pinned (S03 values) so balance tuning (S12 changed hunger decay) cannot move the decay
+    // these tests count.
+    stats: {
+      max: 100,
+      start: { energy: 100, hunger: 80, mood: 70 },
+      decayPerGameHour: { energy: 3, hunger: 5, mood: 2 },
+      atZero: {
+        energy: { extraDecayPerGameHour: { mood: 3 }, durationMultiplier: 1.5 },
+        hunger: { extraDecayPerGameHour: { energy: 3, mood: 4 }, durationMultiplier: 1 },
+        mood: { extraDecayPerGameHour: {}, durationMultiplier: 1.25 },
+      },
+    },
     events: { rollChance: 1, defaultCooldownMin: 1440, maxPendingEffects: 3, ...tuning, catalog },
   }
 }
@@ -53,7 +67,6 @@ const street: EventContext = {
   borough: 'queens',
   locationId: null,
   locationCategory: null,
-  clout: 0,
   itemIds: [],
 }
 
@@ -129,8 +142,9 @@ describe('event conditions', () => {
     expect(holds({ stats: { hunger: { max: 70 }, mood: { max: 59 } } }, snapshot)).toBe(false)
     expect(holds({ cash: { min: 20, max: 20 } }, snapshot)).toBe(true)
     expect(holds({ cash: { min: 21 } }, snapshot)).toBe(false)
-    expect(holds({ clout: { min: 10 } }, snapshot, { ...street, clout: 10 })).toBe(true)
-    expect(holds({ clout: { max: 9 } }, snapshot, { ...street, clout: 10 })).toBe(false)
+    const known = withClout(snapshot, 10, config)
+    expect(holds({ clout: { min: 10 } }, known)).toBe(true)
+    expect(holds({ clout: { max: 9 } }, known)).toBe(false)
   })
 
   it('items: owns one of anyOf and none of noneOf', () => {
@@ -341,28 +355,41 @@ describe('choosing an option', () => {
     expect(result.events.history).toEqual(open.history)
   })
 
-  it('keeps clout and item effects as pending effects with their source', () => {
+  it('applies clout at once as one event ledger entry; item effects wait with their source', () => {
     const result = chooseEventOption(at(1, 12), open, 'flyers', tuned)
     if (!result.ok) throw new Error(result.error.code)
     const source = { type: 'event', eventId: 'rent', choiceId: 'flyers' }
     expect(result.events.pending).toEqual([
-      { kind: 'clout', amount: 2, source },
       { kind: 'item', itemId: 'flyer-cap', op: 'grant', source },
     ])
     expect(result.snapshot.player.cash).toBe(at(1, 12).player.cash + 30)
+    expect(totalClout(result.snapshot.player, tuned)).toBe(2)
+    expect(result.snapshot.player.clout.ledger).toEqual([
+      {
+        seq: 1,
+        at: result.snapshot.clock.minute,
+        amount: 2,
+        currency: 'cash',
+        source: 'event',
+        ref: { eventId: 'rent', choiceId: 'flyers' },
+      },
+    ])
+    expect(result.outcome.cloutApplied).toBe(2)
+    expect(result.levelUp).toBeNull()
   })
 
   it('keeps at most maxPendingEffects, dropping the oldest', () => {
     let events = open
     let snapshot = at(1, 12)
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       const result = chooseEventOption(snapshot, { ...events, active: 'rent' }, 'flyers', tuned)
       if (!result.ok) throw new Error(result.error.code)
       events = result.events
       snapshot = result.snapshot
     }
     expect(events.pending).toHaveLength(3)
-    expect(events.pending.map((effect) => effect.kind)).toEqual(['item', 'clout', 'item'])
+    expect(events.pending.map((effect) => effect.kind)).toEqual(['item', 'item', 'item'])
+    expect(totalClout(snapshot.player, tuned)).toBe(4 * 2)
   })
 
   it('refuses a choice the player cannot afford and changes nothing', () => {
@@ -415,10 +442,11 @@ describe('the shipped catalog', () => {
     const stats = Object.fromEntries(
       Object.entries(conditions.stats ?? {}).map(([key, range]) => [key, range.min ?? range.max]),
     )
-    const snapshot = at(conditions.minDay ?? 1, hour, {
-      cash: conditions.cash?.min ?? 500,
-      stats,
-    })
+    const snapshot = withClout(
+      at(conditions.minDay ?? 1, hour, { cash: conditions.cash?.min ?? 500, stats }),
+      conditions.clout?.min ?? 0,
+      engineConfig,
+    )
     const locationId = conditions.locationIds?.[0] ?? null
     const locationCategory = conditions.locationCategories?.[0] ?? null
     return {
@@ -427,7 +455,6 @@ describe('the shipped catalog', () => {
         borough: conditions.boroughs?.[0] ?? 'queens',
         locationId,
         locationCategory,
-        clout: conditions.clout?.min ?? 0,
         itemIds: conditions.items?.anyOf?.slice(0, 1) ?? [],
       },
     }
@@ -700,8 +727,8 @@ describe('choice edge cases', () => {
     const promo = event('promo', {
       choices: [
         choice('take', [
-          { kind: 'clout', amount: 1 },
-          { kind: 'clout', amount: 2 },
+          { kind: 'item', itemId: 'promo-a', op: 'grant' },
+          { kind: 'item', itemId: 'promo-b', op: 'grant' },
         ]),
         choice('skip'),
       ],
@@ -709,16 +736,20 @@ describe('choice edge cases', () => {
     const capped = configWith([promo], { maxPendingEffects: cap })
     const source = { type: 'event', eventId: 'old', choiceId: 'x' } as const
     const pending = Array.from({ length: cap - 1 }, (_, i) => ({
-      kind: 'clout' as const,
-      amount: 100 + i,
+      kind: 'item' as const,
+      itemId: `old-${100 + i}`,
+      op: 'grant' as const,
       source,
     }))
     const full: EventsState = { ...initialEventsState(), active: 'promo', pending }
     const result = chooseEventOption(at(1, 12), full, 'take', capped)
     if (!result.ok) throw new Error(result.error.code)
     expect(result.events.pending).toHaveLength(cap)
-    // 99 + 2 = 101: the oldest (amount 100) is the one dropped.
-    expect(result.events.pending[0]).toMatchObject({ amount: 101 })
-    expect(result.events.pending.at(-1)).toMatchObject({ amount: 2, source: { eventId: 'promo' } })
+    // 99 + 2 = 101: the oldest (old-100) is the one dropped.
+    expect(result.events.pending[0]).toMatchObject({ itemId: 'old-101' })
+    expect(result.events.pending.at(-1)).toMatchObject({
+      itemId: 'promo-b',
+      source: { eventId: 'promo' },
+    })
   })
 })

@@ -110,3 +110,21 @@ export function createSafeJsonStorage<S>(
     },
   }
 }
+
+/**
+ * Blocks every write while storage holds a value from a newer build (`version` above this
+ * build's), so an older build never overwrites what a newer one saved. Reads pass through.
+ */
+export function guardNewerVersion<S>(inner: PersistStorage<S>, version: number): PersistStorage<S> {
+  let newerPresent = false
+  return {
+    getItem: (name) => {
+      const value = inner.getItem(name)
+      if (value instanceof Promise) return value
+      if (value !== null && (value.version ?? 0) > version) newerPresent = true
+      return value
+    },
+    setItem: (name, value) => (newerPresent ? undefined : inner.setItem(name, value)),
+    removeItem: (name) => (newerPresent ? undefined : inner.removeItem(name)),
+  }
+}

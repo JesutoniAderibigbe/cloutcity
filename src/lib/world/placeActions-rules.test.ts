@@ -6,7 +6,7 @@
  * applies when the player is slowed. Numbers come from data/config, never literals.
  */
 import { describe, expect, it } from 'vitest'
-import { findCloutLevel } from '@/engine/clout'
+import { findCloutLevel, totalClout } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import { initialSnapshot, type GameSnapshot } from '@/engine/game'
 import {
@@ -16,8 +16,10 @@ import {
   type PlaceActionBlock,
 } from '@/engine/placeActions'
 import { placeAllows, type PlaceHook } from '@/engine/places'
+import { withClout } from '@/engine/test-support'
 import { boroughAccess } from '@/engine/boroughs'
-import { baseCopy, createCopy, slangPacks } from '@/lib/copy'
+import { createCopy } from '@/lib/copy'
+import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { cloutLevelName } from '@/lib/economyCopy'
 import {
   formatDuration,
@@ -50,16 +52,18 @@ function snapshotAt(
   } = {},
 ): GameSnapshot {
   const base = initialSnapshot(engineConfig)
-  return {
+  const snapshot = {
     clock: { minute: (overrides.day ?? 0) * DAY + minuteOfDay, remainderMs: 0 },
     player: {
       ...base.player,
-      clout: overrides.clout ?? MAX_CLOUT,
       cash: overrides.cash ?? base.player.cash,
       stats: { ...base.player.stats, ...overrides.stats },
     },
   }
+  return withClout(snapshot, overrides.clout ?? MAX_CLOUT, engineConfig)
 }
+
+const cloutOf = (snapshot: GameSnapshot) => totalClout(snapshot.player, engineConfig)
 
 function place(id: string) {
   const found = findPlace(id)
@@ -155,7 +159,7 @@ describe('opening hours of every real venue on the personal clock', () => {
     for (const landmark of landmarks) {
       if (landmark.category === 'memorial') continue
       const snapshot = snapshotAt(minuteOf('03:30'))
-      if (boroughAccess(landmark.borough, snapshot.player.clout, engineConfig).status !== 'open') {
+      if (boroughAccess(landmark.borough, cloutOf(snapshot), engineConfig).status !== 'open') {
         continue
       }
       expect(actionAt(landmark.id, 'visit', snapshot).block, landmark.id).toBeNull()
@@ -222,7 +226,7 @@ describe('the club door at every real club', () => {
       expect(result.snapshot.player.cash).toBe(0)
       // The clout gain lands once, exactly as configured.
       expect(result.cloutGained).toBe(rule.cloutGain)
-      expect(result.snapshot.player.clout).toBe(level.minClout + rule.cloutGain)
+      expect(cloutOf(result.snapshot)).toBe(level.minClout + rule.cloutGain)
       expect(result.snapshot.clock.minute).toBe(exact.clock.minute + rule.durationMin)
 
       const short = snapshotAt(NIGHT, { clout: level.minClout, cash: rule.coverCharge - 1 })
@@ -275,16 +279,14 @@ describe('the club door at every real club', () => {
       nights += 1
       // Orchestrator ruling (S09, 2026-10-06): a club pays out clout at most once per game
       // night; later entries the same night still pay the cover but earn no clout.
-      expect(result.snapshot.player.clout).toBe(
-        before.player.clout + (nights === 1 ? rule.cloutGain : 0),
-      )
+      expect(cloutOf(result.snapshot)).toBe(cloutOf(before) + (nights === 1 ? rule.cloutGain : 0))
       expect(result.snapshot.player.cash).toBeLessThanOrEqual(before.player.cash - rule.coverCharge)
       snapshot = result.snapshot
       if (nights > 24) throw new Error('the club never stopped admitting')
     }
     // Every entry was paid for; the whole chain is one game night, so clout landed once
     // (orchestrator ruling, S09: at most once per club per game night).
-    expect(snapshot.player.clout).toBe(level.minClout + rule.cloutGain)
+    expect(cloutOf(snapshot)).toBe(level.minClout + rule.cloutGain)
     expect(nights).toBeGreaterThan(0)
   })
 })

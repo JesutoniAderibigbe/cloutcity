@@ -15,6 +15,7 @@ import { createLogger } from '@/lib/log'
 import { findPlace, venues } from '@/lib/world/places'
 import { createSafeJsonStorage } from './storage'
 import { createGameStore, type PersistedState } from './store'
+import { playerWithClout } from '@/engine/test-support'
 
 const DAY = minutesPerDay(engineConfig)
 const logger = createLogger({ level: 'error', sink: () => undefined })
@@ -47,7 +48,8 @@ function storeAt(minuteOfDay: number, cash: number, clout = 0) {
   const { clock, player } = game.getState()
   game.setState({
     clock: { ...clock, minute: DAY + minuteOfDay },
-    player: { ...player, cash, clout },
+    // S13: clout is a ledger now; build one holding `clout` in total.
+    player: playerWithClout({ ...player, cash }, clout, engineConfig),
   })
   return game
 }

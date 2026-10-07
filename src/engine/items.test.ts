@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { cloutSums, totalClout } from './clout'
 import { engineConfig as config } from './config'
 import { initialSnapshot, type GameSnapshot } from './game'
 import {
@@ -106,11 +107,22 @@ describe('buying', () => {
     expect(shopItems(withLamp)).toEqual([])
   })
 
-  it('never touches the clock, stats or clout', () => {
+  it('never touches the clock or stats; clout counts the owned item, audited in the ledger', () => {
     const { snapshot } = ok(buyItem(withCash(1000), puffer.id, config))
     expect(snapshot.clock).toBe(start.clock)
     expect(snapshot.player.stats).toEqual(start.player.stats)
-    expect(snapshot.player.clout).toBe(0)
+    expect(totalClout(snapshot.player, config)).toBe(puffer.cloutValue)
+    expect(cloutSums(snapshot.player.clout).earned).toBe(0)
+    expect(snapshot.player.clout.ledger).toEqual([
+      {
+        seq: 1,
+        at: start.clock.minute,
+        amount: puffer.cloutValue,
+        currency: 'cash',
+        source: 'item',
+        ref: { itemId: puffer.id, op: 'buy' },
+      },
+    ])
   })
 })
 
@@ -179,7 +191,7 @@ describe('selling and depreciation', () => {
         snapshot = at(snapshot.clock.minute + days * DAY, snapshot)
         snapshot = ok(sellItem(snapshot, shopItem.id, config)).snapshot
         expect(snapshot.player.cash, `${shopItem.id} day ${days}`).toBeLessThan(shopItem.price)
-        expect(snapshot.player.clout).toBe(0)
+        expect(totalClout(snapshot.player, config)).toBe(0)
       }
     }
   })

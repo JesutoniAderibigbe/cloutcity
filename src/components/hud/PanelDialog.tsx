@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { copy } from '@/lib/copy'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/place'
 
 export const PANEL_BUTTON =
   'min-h-11 min-w-11 rounded-xl px-3 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
@@ -14,11 +16,14 @@ export const PANEL_BUTTON =
 export function PanelDialog({
   title,
   panel,
+  feature,
   onClose,
   children,
 }: {
   readonly title: string
   readonly panel: string
+  /** The panel's lazy-feature marker (`cc-feature:<id>`, DEC-11), written literally by the caller. */
+  readonly feature: string
   readonly onClose: () => void
   readonly children: ReactNode
 }) {
@@ -53,6 +58,7 @@ export function PanelDialog({
       role="dialog"
       aria-labelledby={titleId}
       data-hud-panel-dialog={panel}
+      data-cc-feature={feature}
       className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur"
     >
       <div className="flex items-start justify-between gap-2">

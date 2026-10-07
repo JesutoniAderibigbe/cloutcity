@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
-import { test as base, expect, type ConsoleMessage } from '@playwright/test'
+import { test as base, expect, type ConsoleMessage, type Page } from '@playwright/test'
 import { ONBOARDING_KEY, completedOnboardingSeed } from './onboarding-seed'
 
 /**
@@ -63,12 +63,20 @@ interface Fixtures {
    * `use: { consoleSettleMs }` in playwright.config.ts or `test.use()`.
    */
   consoleSettleMs: number
+  /**
+   * Console errors a spec causes on purpose, matched against the message text (errors only).
+   * Only for a failure the test itself injects, such as a request it aborts: Chromium reports
+   * that as "Failed to load resource". Set with `test.use()` around that test alone.
+   */
+  injectedConsoleErrors: readonly RegExp[]
   consoleGuard: void
   checkA11y: (options?: A11yOptions) => Promise<void>
 }
 
 export const test = base.extend<Fixtures>({
   consoleSettleMs: [250, { option: true }],
+
+  injectedConsoleErrors: [[], { option: true }],
 
   onboarding: ['complete', { option: true }],
 
@@ -93,11 +101,17 @@ export const test = base.extend<Fixtures>({
   ],
 
   consoleGuard: [
-    async ({ page, consoleSettleMs }, use) => {
+    async ({ page, consoleSettleMs, injectedConsoleErrors }, use) => {
       const problems: string[] = []
       page.on('console', (message) => {
         if (!FAILING_CONSOLE_TYPES.has(message.type())) return
         if (isIgnored(message)) return
+        if (
+          message.type() === 'error' &&
+          injectedConsoleErrors.some((pattern) => pattern.test(message.text()))
+        ) {
+          return
+        }
         const { url, lineNumber } = message.location()
         problems.push(`console.${message.type()}: ${message.text()} (${url}:${lineNumber})`)
       })
@@ -142,5 +156,21 @@ export const test = base.extend<Fixtures>({
     })
   },
 })
+
+/**
+ * Waits until the welcome boot island has loaded and decided (S05c): until then the page is
+ * inert behind its loading card, so keyboard and hit-testing steps must wait for this. Clicks
+ * wait on their own (Playwright retries until the target receives the click).
+ */
+export async function waitForWelcomeGate(page: Page): Promise<void> {
+  await page.locator('[data-welcome-gate]').waitFor({ state: 'attached' })
+  // The marker commits before the loading card's modal presence is released (a later effect),
+  // so for a closed gate also wait for the page to leave `inert`: a focus() in between is lost.
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-welcome-dialog]') !== null ||
+      document.querySelector('[data-overlay-background]:not([inert])') !== null,
+  )
+}
 
 export { expect }

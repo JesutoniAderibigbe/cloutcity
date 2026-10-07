@@ -26,6 +26,7 @@ import {
 } from './events'
 import { initialSnapshot, type GameSnapshot } from './game'
 import { createRng, type Rng } from './rng'
+import { withClout } from './test-support'
 
 const CATEGORIES: readonly LocationCategory[] = [...LANDMARK_CATEGORIES, ...VENUE_TYPES]
 
@@ -83,7 +84,7 @@ function randomEvent(id: string, rng: Rng): GameEvent {
 /** A player and moment from the same seeded source. */
 function randomSnapshot(rng: Rng): GameSnapshot {
   const fresh = initialSnapshot(engineConfig)
-  return {
+  const snapshot = {
     clock: { minute: Math.floor(rng.next() * 30 * 24 * 60), remainderMs: 0 },
     player: {
       ...fresh.player,
@@ -91,6 +92,7 @@ function randomSnapshot(rng: Rng): GameSnapshot {
       stats: { ...fresh.player.stats, mood: Math.floor(rng.next() * 101) },
     },
   }
+  return withClout(snapshot, Math.floor(rng.next() * 1000), engineConfig)
 }
 
 function contextAt(category: LocationCategory, rng: Rng): EventContext {
@@ -99,7 +101,6 @@ function contextAt(category: LocationCategory, rng: Rng): EventContext {
     // Category only: place ids are resolved from data, covered in 'places are judged by data'.
     locationId: null,
     locationCategory: category,
-    clout: Math.floor(rng.next() * 1000),
     itemIds: [],
   }
 }
@@ -230,7 +231,6 @@ describe('the safety guard itself', () => {
     borough: null,
     locationId: null,
     locationCategory,
-    clout: 0,
     itemIds: [],
   })
 
@@ -300,7 +300,6 @@ describe('places are judged by data, not by the caller', () => {
     borough: 'manhattan',
     locationId,
     locationCategory,
-    clout: 0,
     itemIds: [],
   })
   const night = { ...initialSnapshot(engineConfig), clock: { minute: 22 * 60, remainderMs: 0 } }
@@ -369,7 +368,6 @@ describe('the shipped landmarks are guarded by id alone', () => {
     borough: 'manhattan',
     locationId,
     locationCategory: null,
-    clout: 0,
     itemIds: [],
   })
 

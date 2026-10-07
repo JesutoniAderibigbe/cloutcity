@@ -1,26 +1,26 @@
 'use client'
 
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useModalOpen } from '@/components/overlay/modalState'
 import { useModalZone } from '@/components/overlay/useModalZone'
 import { engineConfig } from '@/engine/config'
 import { canAffordChoice, findEvent } from '@/engine/events'
 import type { GameEvent } from '@/lib/data/schemas/content'
 import { copy } from '@/lib/copy'
 import { gameStore, useGameStore } from '@/state/store'
-import { effectsSummary, eventText } from './effectLabels'
-import { installEventTestHook } from './eventTestHook'
+import { appliedEffects, effectsSummary, eventText } from './effectLabels'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/events'
 
 /**
  * The event modal, in the overlay `sheet` zone. It shows the open event (its choices), then
  * what the chosen option did, until the player continues. Renders nothing when no event is
- * open, so the empty sheet zone lets touches through to the map. Loaded lazily, after
- * hydration, by EventSheetMount (DEC-11: feature UI stays out of the shell).
+ * open, so the empty sheet zone lets touches through to the map. Loaded on first use by
+ * EventSheetHost (DEC-11: feature UI stays out of the shell).
  */
 export function EventSheet() {
   const activeId = useGameStore((state) => state.events.active)
   const outcome = useGameStore((state) => state.eventOutcome)
-
-  useEffect(() => installEventTestHook(gameStore), [])
 
   const event = findEvent(outcome?.eventId ?? activeId ?? '', engineConfig)
   if (event === undefined) return null
@@ -37,6 +37,8 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
 
   const resolved = outcome?.eventId === event.id ? outcome : null
   const view = resolved === null ? 'choices' : 'outcome'
+  const landed =
+    resolved === null ? '' : effectsSummary(appliedEffects(resolved.effects, resolved.cloutApplied))
 
   // Listened to directly: jsx-a11y does not allow key handlers on a non-interactive role.
   useEffect(() => {
@@ -47,10 +49,14 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
     return () => dialog.removeEventListener('keydown', onKeyDown)
   }, [])
 
-  // Focus the first button of each view: the choices on open, Continue after a choice.
+  // Focus the first button of each view: the choices on open, Continue after a choice. While a
+  // modal (the welcome card, or its loading state at boot) holds the page inert, focus cannot
+  // land here; it does once the modal closes.
+  const blocked = useModalOpen()
   useEffect(() => {
+    if (blocked) return
     ref.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus()
-  }, [view])
+  }, [view, blocked])
 
   return (
     <div
@@ -60,6 +66,7 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
       aria-labelledby={titleId}
       aria-describedby={bodyId}
       data-event={event.id}
+      data-cc-feature="cc-feature:event-sheet"
       className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur"
     >
       <h2 id={titleId} className="text-base leading-tight font-extrabold text-pink-400">
@@ -97,11 +104,9 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
         <>
           <p id={bodyId} className="text-sm text-ink-50">
             {eventText(resolved.resultKey)}
-            {resolved.effects.length > 0 ? (
-              <span className="mt-1 block text-xs text-ink-300">
-                {effectsSummary(resolved.effects)}
-              </span>
-            ) : null}
+            {landed === '' ? null : (
+              <span className="mt-1 block text-xs text-ink-300">{landed}</span>
+            )}
           </p>
           <ChoiceButton
             choiceId="continue"

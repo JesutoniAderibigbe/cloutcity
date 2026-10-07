@@ -11,6 +11,7 @@ import { isWearable, shopItems } from '@/engine/items'
 import { buyAtShop, hasShop, SHOP_VENUE_TYPES, shopBlock } from '@/engine/placeActions'
 import { minuteOf } from '@/engine/places'
 import { findPlace, landmarks, venues } from './places'
+import { playerWithClout } from '@/engine/test-support'
 
 const DAY = minutesPerDay(engineConfig)
 const MAX_CLOUT = Math.max(...engineConfig.clout.levels.map((level) => level.minClout))
@@ -25,7 +26,8 @@ function snapshotAt(minuteOfDay: number, cash: number, clout = 0): GameSnapshot 
   const base = initialSnapshot(engineConfig)
   return {
     clock: { minute: DAY + minuteOfDay, remainderMs: 0 },
-    player: { ...base.player, cash, clout },
+    // S13: clout is a ledger now; build one holding `clout` in total.
+    player: playerWithClout({ ...base.player, cash }, clout, engineConfig),
   }
 }
 

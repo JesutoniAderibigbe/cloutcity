@@ -10,12 +10,13 @@ import jobsJson from '@data/jobs/jobs.json'
 import { engineConfig, type EngineConfig, type HomeId, type JobId } from '@/engine/config'
 import { shiftWage, type JobLock } from '@/engine/jobs'
 import { homeIds, rentFor, type RentEvent } from '@/engine/rent'
-import { baseCopy, copy as activeCopy, superlative, type CopyFn, type CopyKey } from './copy'
+import { copy as activeCopy, isCopyKey, superlative, type CopyFn, type CopyKey } from './copy'
 import { formatCount, formatMoney } from './format'
-
-function isCopyKey(key: string): key is CopyKey {
-  return Object.hasOwn(baseCopy.strings, key)
-}
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/clout'
+import '@/lib/copy/ns/housing'
+import '@/lib/copy/ns/jobs'
+import '@/lib/copy/ns/rent'
 
 function requireKey(key: string, what: string): CopyKey {
   if (!isCopyKey(key)) throw new Error(`No copy key "${key}" for ${what}`)

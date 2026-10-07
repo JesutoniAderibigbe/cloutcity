@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
 import { isGift, isWearable, shopItems, type ItemError } from '@/engine/items'
-import { baseCopy, createCopy, slangPacks } from './copy'
+import { createCopy } from './copy'
+import { baseCopy, slangPacks } from './copy/all'
 import { homeLine, rentOwedLine } from './economyCopy'
 import { formatMoney } from './format'
 import {

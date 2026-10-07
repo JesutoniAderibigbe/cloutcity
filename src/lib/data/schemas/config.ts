@@ -1,8 +1,10 @@
 /**
- * Schemas for /data/config. This file imports only `zod` (no path aliases, no other modules) so
- * Node can load it directly from `scripts/` with its built-in type stripping.
+ * Schemas for /data/config. This file imports only `zod` and the dependency-free `../homes.ts` (no
+ * path aliases) so Node can load it directly from `scripts/` with its built-in type stripping.
  */
 import { z } from 'zod'
+import { STYLED_SOURCES } from '../cloutSources.ts'
+import { HOME_IDS, lowestRentHome } from '../homes.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
 export const QualityTierSchema = z.enum(QUALITY_TIERS)
@@ -32,6 +34,11 @@ export const ThrottleProfileSchema = z.strictObject({
 export const PerfConfigSchema = z.strictObject({
   /** Shell JS of route `/`, before the 3D chunk. Read by `npm run budget`. */
   shellJsGzKB: positive,
+  /**
+   * Room the shell keeps below `shellJsGzKB` for features still to land (S05c): the shell may
+   * use at most shellJsGzKB minus this. Read by scripts/shell-guard.ts.
+   */
+  shellHeadroomGzKB: z.number().nonnegative(),
   sceneChunkJsGzKB: positive,
   totalJsToPlayableGzKB: positive,
   baseGeoGzKB: positive,
@@ -56,6 +63,16 @@ export const PerfConfigSchema = z.strictObject({
   /** Step down one tier when average FPS stays below `belowFps` for `sustainMs`. */
   fpsStepDown: z.strictObject({ belowFps: positive, sustainMs: positive }),
   throttleProfiles: z.strictObject({ 'cc-mid-4g': ThrottleProfileSchema }),
+  /**
+   * Audio fetched after the player's sound choice, per tier: the first music track, the ambience
+   * loop and (where the tier preloads them) the sound effects, in one encoding. Audio is not part
+   * of `totalBytesToPlayableGzKB`.
+   */
+  audioLazyGzKB: perTier(positive),
+  /** Largest single audio file. */
+  audioFileMaxKB: positive,
+  /** The lazily loaded audio runtime chunk (src/lib/audio/runtime.ts). */
+  audioRuntimeJsGzKB: positive,
 })
 export type PerfConfig = z.infer<typeof PerfConfigSchema>
 
@@ -106,7 +123,7 @@ export const RARITY_TIERS = ['common', 'medium', 'rare'] as const
 export const RarityTierSchema = z.enum(RARITY_TIERS)
 export type RarityTier = z.infer<typeof RarityTierSchema>
 
-export const HOME_IDS = ['queens-room', 'brooklyn-1br', 'manhattan-loft'] as const
+export { HOME_IDS }
 export const JOB_IDS = ['barista', 'retail', 'delivery', 'junior-dev'] as const
 
 /** Player needs, 0..stats.max. Hunger is fullness: high is fed, 0 is starving. */
@@ -319,6 +336,87 @@ export const PlaceConfigSchema = z.strictObject({
 })
 export type PlaceConfig = z.infer<typeof PlaceConfigSchema>
 
+/**
+ * Clout (S13, src/engine/clout.ts): levels, how flexing and style work, the ledger and the
+ * premium cap. Venue types in `flex.venueTypes` are checked against the content schema in
+ * src/lib/world/placeActions-content.test.ts (this file cannot import the content schemas).
+ */
+export const CloutConfigSchema = z
+  .strictObject({
+    /** Lowest first. A player is at the highest level whose `minClout` they hold. */
+    levels: z
+      .array(
+        z.strictObject({
+          id: z.string().regex(KEBAB_ID),
+          minClout: z.int().nonnegative(),
+        }),
+      )
+      .min(1),
+    /** One-off gains: the first paycheck ever earned. */
+    sources: z.strictObject({ firstPaycheck: positiveInt }),
+    /**
+     * The Flex action: at a landmark that allows it (its `place.flexMultiplier`) or a venue of
+     * one of `venueTypes` (the default multiplier; never `club`). Once per place per game day, at most
+     * `maxPerGameDay` a day. A flex goes viral when one seeded draw falls below
+     * min(maxChance, (baseChance + style score * perStylePoint) * place multiplier); a viral
+     * flex earns `baseClout * cloutMultiplier`.
+     */
+    flex: z.strictObject({
+      durationMin: positiveInt,
+      energyCost: statPoints,
+      cashCost: dollars,
+      baseClout: positiveInt,
+      maxPerGameDay: positiveInt,
+      venueTypes: z.array(z.string().regex(KEBAB_ID)),
+      viral: z.strictObject({
+        baseChance: probability,
+        perStylePoint: probability,
+        maxChance: probability,
+        cloutMultiplier: z.int().min(1),
+      }),
+    }),
+    /**
+     * The outfit's style score (the `styleValue` of every worn item) multiplies positive gains
+     * from `appliesTo` by 100 + min(maxBonusPct, score * pctPerPoint) percent. `club` cannot be
+     * listed (STYLED_SOURCES): club clout is exactly the configured value.
+     */
+    style: z.strictObject({
+      pctPerPoint: z.int().nonnegative(),
+      maxBonusPct: z.int().nonnegative(),
+      appliesTo: z.array(z.enum(STYLED_SOURCES)),
+    }),
+    /** Entries kept one by one; older ones fold into per-source totals. */
+    ledger: z.strictObject({ maxEntries: positiveInt }),
+    /** The most clout a currency other than in-game cash can add (premium items: `usd`). */
+    caps: z.strictObject({ byCurrency: z.strictObject({ usd: z.int().nonnegative() }) }),
+  })
+  .refine(
+    ({ levels }) =>
+      levels[0]?.minClout === 0 &&
+      levels.every((level, i) => i === 0 || level.minClout > (levels[i - 1]?.minClout ?? 0)) &&
+      new Set(levels.map((level) => level.id)).size === levels.length,
+    { error: 'clout.levels must start at 0, rise strictly and have unique ids', path: ['levels'] },
+  )
+  .refine(({ levels, caps }) => caps.byCurrency.usd < (levels.at(-1)?.minClout ?? 0), {
+    error:
+      'caps.byCurrency.usd must stay below the top level, so premium clout alone never reaches it',
+    path: ['caps', 'byCurrency', 'usd'],
+  })
+  .refine(({ style }) => new Set(style.appliesTo).size === style.appliesTo.length, {
+    error: 'style.appliesTo must not repeat a source',
+    path: ['style', 'appliesTo'],
+  })
+  .refine(({ flex }) => !flex.venueTypes.includes('club'), {
+    // Nightlife is flavour only: a club pays its configured clout and nothing more.
+    error: 'flex.venueTypes must not include club',
+    path: ['flex', 'venueTypes'],
+  })
+  .refine(({ flex }) => flex.viral.baseChance <= flex.viral.maxChance, {
+    error: 'flex.viral.baseChance must not exceed maxChance',
+    path: ['flex', 'viral'],
+  })
+export type CloutConfig = z.infer<typeof CloutConfigSchema>
+
 /** CLAUDE.md "Balance anchors". Money is whole in-game dollars. */
 export const BalanceConfigSchema = z
   .strictObject({
@@ -371,6 +469,15 @@ export const BalanceConfigSchema = z
       requiredCloutLevel: z.partialRecord(z.enum(JOB_IDS), z.string()),
     }),
     /**
+     * Moving home (S12 measures it, S16 spends it). `moveInCost` is the whole dollars a player
+     * needs on top of their rent reserve (rent owed plus this week's rent) to move into a home.
+     * Every home except the lowest-rent one has a cost; the lowest-rent home (where an eviction
+     * lands; on a tie, the first in HOME_IDS, as the engine's cheapestHome) has none.
+     */
+    housing: z.strictObject({
+      moveInCost: z.partialRecord(z.enum(HOME_IDS), dollars),
+    }),
+    /**
      * Missed rent. Each consecutive due date the player cannot pay in full adds that week's
      * rent to what they owe, plus `lateFees[missed - 1]` (0 is a warning). On the
      * `evictAfterMissed`-th miss the player is evicted to the lowest-rent home.
@@ -379,17 +486,8 @@ export const BalanceConfigSchema = z
       lateFees: z.array(dollars),
       evictAfterMissed: positiveInt,
     }),
-    /** Clout levels, lowest first. A player is at the highest level whose `minClout` they hold. */
-    clout: z.strictObject({
-      levels: z
-        .array(
-          z.strictObject({
-            id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-            minClout: z.int().nonnegative(),
-          }),
-        )
-        .min(1),
-    }),
+    /** Clout (S13, src/engine/clout.ts). Every number here is a TUNE-4 placeholder. */
+    clout: CloutConfigSchema,
     costs: z.strictObject({ food: MinMaxSchema, subwayFare: dollars }),
     transit: TransitConfigSchema,
     target: z.strictObject({
@@ -502,19 +600,24 @@ export const BalanceConfigSchema = z
       ),
     { error: 'a clout-gated borough must name a level in clout.levels', path: ['boroughs'] },
   )
+  .refine(
+    (balance) => {
+      const cheapest = lowestRentHome(balance.rentPerWeek)
+      return HOME_IDS.every((id) => (id === cheapest) === !(id in balance.housing.moveInCost))
+    },
+    {
+      error: 'housing.moveInCost needs every home except the lowest-rent one, and not that one',
+      path: ['housing', 'moveInCost'],
+    },
+  )
   .refine((balance) => balance.rent.lateFees.length === balance.rent.evictAfterMissed - 1, {
     error: 'rent.lateFees needs one fee for each miss before eviction',
     path: ['rent', 'lateFees'],
   })
   .refine(
-    ({ clout: { levels } }) =>
-      levels[0]?.minClout === 0 &&
-      levels.every((level, i) => i === 0 || level.minClout > (levels[i - 1]?.minClout ?? 0)) &&
-      new Set(levels.map((level) => level.id)).size === levels.length,
-    {
-      error: 'clout.levels must start at 0, rise strictly and have unique ids',
-      path: ['clout', 'levels'],
-    },
+    ({ actions, stats, clout }) =>
+      clout.flex.durationMin <= actions.maxDurationMin && clout.flex.energyCost <= stats.max,
+    { error: 'clout.flex exceeds maxDurationMin or stats.max', path: ['clout', 'flex'] },
   )
   .refine(
     ({ actions, place }) =>
@@ -574,9 +677,16 @@ export const LayoutConfigSchema = z.strictObject({
     bannerHeightPx: positive,
     hudHeightPx: positive,
     toastHeightPx: positive,
+    /** How long a toast (the level-up message) shows before it closes itself. */
+    toastMs: positiveInt,
     sheetMaxHeightVh: positive,
     sheetMaxWidthPx: positive,
     tabBarHeightPx: positive,
+    /**
+     * A lazily loaded feature's loading skeleton stays invisible this long, so a fast load never
+     * flashes a placeholder (its status is announced at once).
+     */
+    loadingRevealDelayMs: z.int().nonnegative(),
     /**
      * After a sheet or panel action, pointer taps on its actions are ignored this long (ms), so
      * the second tap of a drifting double tap cannot land on the row or button that replaced
@@ -587,10 +697,26 @@ export const LayoutConfigSchema = z.strictObject({
 })
 export type LayoutConfig = z.infer<typeof LayoutConfigSchema>
 
-export const CopyConfigSchema = z.strictObject({
-  /** Active slang pack id (a file in data/copy/packs). Swapping it needs no code change. */
-  slangPack: z.string().regex(/^[a-z0-9-]+$/),
-})
+const PACK_ID = /^[a-z0-9-]+$/
+
+export const CopyConfigSchema = z
+  .strictObject({
+    /** Active slang pack id. Swapping it needs no code change. */
+    slangPack: z.string().regex(PACK_ID),
+    /**
+     * Every slang pack. A pack overrides a namespace with data/copy/<namespace>/<pack>.json;
+     * a namespace it does not override has no file for it.
+     */
+    packs: z.array(z.string().regex(PACK_ID)).min(1),
+  })
+  .refine((config) => config.packs.includes(config.slangPack), {
+    error: 'slangPack must be one of packs',
+    path: ['slangPack'],
+  })
+  .refine((config) => new Set(config.packs).size === config.packs.length, {
+    error: 'packs must not repeat',
+    path: ['packs'],
+  })
 export type CopyConfig = z.infer<typeof CopyConfigSchema>
 
 /** The welcome card: the 18+ check, the under-age lock and the consent version (S05a). */
@@ -610,6 +736,61 @@ export const OnboardingConfigSchema = z
     path: ['birthYearSpan'],
   })
 export type OnboardingConfig = z.infer<typeof OnboardingConfigSchema>
+
+const volume = z.int().min(0).max(100)
+const AudioTierSchema = z.strictObject({
+  /** Decode the sound effects as soon as the runtime starts (else on first use). */
+  preloadSfx: z.boolean(),
+  /** Fetch the next music track ahead of the crossfade (else at the switch). */
+  prefetchNextMusic: z.boolean(),
+})
+
+/**
+ * The audio mixer and runtime (S05b). Volumes are whole percent 0-100 on the player's sliders;
+ * gains follow a squared curve (src/lib/audio/mixer.ts). Times are seconds.
+ */
+export const AudioConfigSchema = z
+  .strictObject({
+    defaults: z.strictObject({
+      master: volume,
+      music: volume,
+      sfx: volume,
+      ambience: volume,
+      voice: volume,
+    }),
+    /** Slider step; every stored volume is a multiple of it. */
+    volumeStep: z.int().min(1).max(50),
+    /** Length of the linear ramp on every gain change, so volume moves never click. */
+    rampSeconds: positive,
+    musicCrossfadeSeconds: positive,
+    /** How long one music track plays before the next fades in. */
+    musicTrackPlaySeconds: positive,
+    /** How far ahead of the switch the next track is fetched, where the tier prefetches. */
+    prefetchAheadSeconds: positive,
+    tiers: perTier(AudioTierSchema),
+  })
+  .refine((audio) => 100 % audio.volumeStep === 0, {
+    error: 'volumeStep must divide 100',
+    path: ['volumeStep'],
+  })
+  .refine(
+    (audio) => Object.values(audio.defaults).every((value) => value % audio.volumeStep === 0),
+    { error: 'defaults must be multiples of volumeStep', path: ['defaults'] },
+  )
+  .refine((audio) => audio.musicCrossfadeSeconds < audio.musicTrackPlaySeconds, {
+    error: 'the crossfade must be shorter than a track',
+    path: ['musicCrossfadeSeconds'],
+  })
+  .refine(
+    (audio) =>
+      audio.prefetchAheadSeconds > audio.musicCrossfadeSeconds &&
+      audio.prefetchAheadSeconds < audio.musicTrackPlaySeconds,
+    {
+      error: 'prefetchAheadSeconds must fall between the crossfade and the track length',
+      path: ['prefetchAheadSeconds'],
+    },
+  )
+export type AudioConfig = z.infer<typeof AudioConfigSchema>
 
 const metres = z.number().positive()
 

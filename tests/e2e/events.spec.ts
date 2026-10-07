@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import type { EventContext } from '@/engine/events'
-import { expect, test } from './fixtures/test'
+import { expect, test, waitForWelcomeGate } from './fixtures/test'
 
 // S14: an event opens as a modal in the overlay sheet zone, the player picks an option by
 // touch, click or keyboard, and the outcome lands in the game state. Events are opened through
@@ -11,7 +11,6 @@ const BODEGA: EventContext = {
   borough: 'queens',
   locationId: null,
   locationCategory: 'bodega',
-  clout: 0,
   itemIds: [],
 }
 
@@ -31,6 +30,7 @@ async function boot(page: Page) {
     window.__CLOUTCITY_E2E__ = true
   })
   await page.goto('/')
+  await waitForWelcomeGate(page)
   await page.waitForFunction(() => window.__cloutcityTest?.events !== undefined)
 }
 
@@ -143,7 +143,7 @@ test.describe('events', () => {
     await expect(page.locator('[data-overlay-zone="tabs"]')).not.toHaveAttribute('inert')
   })
 
-  test('chosen by touch or click; clout waits as a pending effect', async ({ page }) => {
+  test('chosen by touch or click; the clout lands at once', async ({ page }) => {
     await boot(page)
     // The viral moment needs mood of at least 60; a new player starts at 70.
     expect(
@@ -161,8 +161,11 @@ test.describe('events', () => {
     if (test.info().project.use.hasTouch) await post.tap()
     else await post.click()
     await expect(page.getByRole('dialog')).toContainText('Notifications won')
+    // S13: event clout is applied now (no outfit, so unscaled), not kept pending.
+    await expect(page.getByRole('dialog')).toContainText('Clout +6')
     const state = await gameState(page)
-    expect(state.pendingEffects).toBe(1)
+    expect(state.clout).toBe(6)
+    expect(state.pendingEffects).toBe(0)
     expect(state.activeEvent).toBeNull()
   })
 
@@ -192,9 +195,9 @@ test.describe('events', () => {
 
 // src/state/store.ts STORE_KEY. Not imported: Playwright's loader cannot load the store's JSON imports.
 const STORE_KEY = 'cloutcity:game'
-// src/engine/save.ts SAVE_VERSION (v5 adds event state, v6 club nights), not imported for the
-// same reason.
-const SAVE_VERSION = 6
+// src/engine/save.ts SAVE_VERSION (v5 adds event state, v6 club nights, v7 the clout ledger), not
+// imported for the same reason.
+const SAVE_VERSION = 7
 
 /** True when a click at the centre of the sheet zone lands outside every overlay zone. */
 function sheetPassesThrough(page: Page) {
@@ -220,10 +223,11 @@ async function seedSave(page: Page, value: string) {
 }
 
 test.describe('events: edge cases', () => {
-  test('the empty sheet zone lets touches through before the event chunk loads, and after', async ({
+  test('the empty sheet zone lets touches through before the event host loads, and after', async ({
     page,
   }) => {
-    // Hold back the event sheet chunk (the only chunk that renders `data-choice`).
+    // Hold back the boot island with the game store (the only chunk that names its save key).
+    // The event host, and so the test hook, cannot run until it loads.
     let release: () => void = () => {}
     const released = new Promise<void>((resolve) => {
       release = resolve
@@ -232,7 +236,7 @@ test.describe('events: edge cases', () => {
     await page.route('**/_next/static/chunks/**/*.js', async (route) => {
       const response = await route.fetch()
       const body = await response.text()
-      if (body.includes('data-choice')) {
+      if (body.includes(STORE_KEY)) {
         held = true
         await released
       }
@@ -241,9 +245,10 @@ test.describe('events: edge cases', () => {
     await page.addInitScript(() => {
       window.__CLOUTCITY_E2E__ = true
     })
-    await page.goto('/')
+    // A held boot-island chunk delays the load event, so do not wait for it.
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
-    await expect.poll(() => held, { message: 'the event chunk is requested at boot' }).toBe(true)
+    await expect.poll(() => held, { message: 'the store chunk is requested at boot' }).toBe(true)
     expect(await page.evaluate(() => window.__cloutcityTest?.events)).toBeUndefined()
     expect(await sheetPassesThrough(page), 'before the chunk loads').toBe(true)
 
@@ -325,7 +330,14 @@ test.describe('events: edge cases', () => {
           player: {
             cash: 1,
             stats: { energy: 80, hunger: 50, mood: 60 },
-            clout: 0,
+            clout: {
+              ledger: [],
+              compacted: { entries: 0, bySource: {} },
+              nextSeq: 1,
+              peakLevel: 0,
+              firstPaycheckPaid: false,
+            },
+            flex: { rngState: 0, byPlace: {} },
             home: 'queens-room',
             rent: { owed: 0, missed: 0 },
             inventory: { wearables: [], gifts: [], outfit: {} },

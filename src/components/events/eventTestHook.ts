@@ -1,3 +1,5 @@
+import { totalClout } from '@/engine/clout'
+import { engineConfig } from '@/engine/config'
 import type { EventContext, OpenResult } from '@/engine/events'
 import type { GameStore } from '@/state/store'
 
@@ -12,6 +14,8 @@ export interface EventTestHook {
   open(eventId: string, context: EventContext): OpenResult
   state(): {
     readonly cash: number
+    /** Total clout (src/engine/clout.ts `totalClout`). */
+    readonly clout: number
     readonly stats: { readonly energy: number; readonly hunger: number; readonly mood: number }
     readonly minute: number
     readonly activeEvent: string | null
@@ -20,9 +24,13 @@ export interface EventTestHook {
 }
 
 declare global {
+  /** Test hooks by feature; each hook module adds its own key (interface merging). */
+  interface CloutcityTestHooks {
+    events?: EventTestHook
+  }
   interface Window {
     __CLOUTCITY_E2E__?: boolean
-    __cloutcityTest?: { events?: EventTestHook }
+    __cloutcityTest?: CloutcityTestHooks
   }
 }
 
@@ -36,6 +44,7 @@ export function installEventTestHook(store: GameStore): void {
         const { player, clock, events } = store.getState()
         return {
           cash: player.cash,
+          clout: totalClout(player, engineConfig),
           stats: player.stats,
           minute: clock.minute,
           activeEvent: events.active,

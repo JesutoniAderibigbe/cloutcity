@@ -16,13 +16,18 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "e2e": "playwright test",
-    "budget": "node scripts/budget.ts",
-    "geo:build": "node scripts/geo/build.ts"
+    "budget": "node scripts/budget.ts && node scripts/shell-guard.ts",
+    "db:types": "supabase gen types --local --schema public > src/lib/supabase/database.types.ts",
+    "geo:build": "node scripts/geo/build.ts",
+    "audio:build": "node scripts/audio/build.ts",
+    "econ:update": "vitest run src/engine/sim --update"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.1",
+    "@supabase/supabase-js": "2.117.2",
     "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -50,6 +55,7 @@
     "eslint-plugin-jsx-a11y": "6.10.2",
     "fflate": "0.8.3",
     "postcss": "8.5.29",
+    "postgres": "3.4.9",
     "prettier": "3.9.9",
     "supabase": "2.119.0",
     "tailwindcss": "4.3.3",

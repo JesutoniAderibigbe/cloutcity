@@ -25,6 +25,8 @@ import { useActionGuard } from '@/components/overlay/useActionGuard'
 import { closeHudPanel } from '@/state/hudPanel'
 import { gameStore, useGameStore } from '@/state/store'
 import { PANEL_BUTTON, PanelDialog, PanelStatus } from './PanelDialog'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/inventory'
 
 const ACTION = `${PANEL_BUTTON} bg-night-800 text-center text-sm text-ink-50 enabled:hover:bg-night-700`
 
@@ -82,7 +84,12 @@ export function InventoryPanel() {
   const empty = wearables.length === 0 && gifts.length === 0
 
   return (
-    <PanelDialog title={copy('inventory.heading')} panel="inventory" onClose={closeHudPanel}>
+    <PanelDialog
+      title={copy('inventory.heading')}
+      panel="inventory"
+      feature="cc-feature:inventory-panel"
+      onClose={closeHudPanel}
+    >
       {empty ? <p className="text-sm text-ink-300">{copy('inventory.empty')}</p> : null}
       {wearables.length === 0 ? null : (
         <section aria-label={copy('inventory.wearables.heading')} className="flex flex-col gap-1.5">

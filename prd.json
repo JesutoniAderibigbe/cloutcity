@@ -172,7 +172,7 @@
       "requires": [],
       "acceptance": "The shell JS for / (npm run budget) contains only the boot path: layout, overlay shell, HUD, welcome card, persisted store and the engine modules the HUD needs; every other feature UI (event sheet, shop, place action sheet, panels, transit planner) and its data (event catalog, item catalog, transit network) loads via next/dynamic or a lazy loader on first use; player-facing copy is split into a small boot namespace bundled with the shell and per-feature namespaces loaded with their feature chunk through the existing copy() API (missing-namespace access is a typed error in tests, never a silent raw key); a test enumerates the shell chunks and fails if any feature module or feature copy namespace is reachable from the shell entry; the shell is at most perf.json shellJsGzKB minus 20 KB headroom after all merged slice tasks; first use of each lazy feature shows a loading state within the overlay system and no console warnings; existing tests stay green.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
@@ -286,7 +286,7 @@
       "requires": [],
       "acceptance": "A scripted bot plays 30 game days solo with a sensible strategy and ends neither bankrupt nor wildly rich (bounds in test); it saves roughly $150 per week and reaches the first apartment upgrade affordability between game days 10 and 14; any cost tuning needed to hit this is done in /data/config and logged; the bot also records its maximum clout and cash gain per action and per game day into a fixture used by S18c plausibility ceilings; test fails if balance drifts.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
@@ -358,9 +358,9 @@
       ],
       "acceptance": "Migrations for profiles (with age attestation timestamp, consent version and timestamp, audio preference), saves, friendships, friend_boosts, roommates, referrals, live_stats, purchases, entitlements and grants, all with Row Level Security; purchases, entitlements and grants are readable only by their owner and writable only by the service role; a profile row is created on first guest session and receives the S05a attestation and consent; a server helper requires attestation and every social, realtime and purchase RPC calls it (test proves an unattested account is refused); a server-side function enforces one friend boost per sender per day; tests prove users cannot read or write others' private rows.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
-      "attempts": 0
+      "attempts": 1
     },
     {
       "id": "S18a",

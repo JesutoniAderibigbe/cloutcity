@@ -8,6 +8,8 @@
 import * as z from 'zod/mini'
 import { birthYearOptions, type AgeGateConfig } from '@/engine/ageGate'
 import type { CopyKey } from '@/lib/copy'
+// The error keys below are rendered by fieldErrors, which needs their namespace loaded.
+import '@/lib/copy/ns/welcome'
 
 export const AUDIO_CHOICES = ['ours', 'own'] as const
 export type AudioChoice = (typeof AUDIO_CHOICES)[number]

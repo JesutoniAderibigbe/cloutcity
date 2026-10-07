@@ -5,8 +5,13 @@
 import { engineConfig, type EngineConfig } from '@/engine/config'
 import { findItem, isWearable, type ItemDef, type ItemError, type ItemSlot } from '@/engine/items'
 import type { RarityTier } from '@/lib/data/schemas/config'
-import { baseCopy, copy as activeCopy, type CopyFn, type CopyKey } from './copy'
+import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from './copy'
 import { formatCount, formatMoney } from './format'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/inventory'
+import '@/lib/copy/ns/items'
+import '@/lib/copy/ns/place'
+import '@/lib/copy/ns/shop'
 
 export interface ShopCopyOptions {
   readonly copy?: CopyFn
@@ -14,8 +19,8 @@ export interface ShopCopyOptions {
 }
 
 function requireKey(key: string, what: string): CopyKey {
-  if (!Object.hasOwn(baseCopy.strings, key)) throw new Error(`No copy key "${key}" for ${what}`)
-  return key as CopyKey
+  if (!isCopyKey(key)) throw new Error(`No copy key "${key}" for ${what}`)
+  return key
 }
 
 function item(itemId: string, config: EngineConfig): ItemDef {

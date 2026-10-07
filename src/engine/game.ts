@@ -11,6 +11,7 @@ import {
   type Rollovers,
   type TickOptions,
 } from './clock'
+import { initialCloutState, type CloutState } from './clout'
 import type { EngineConfig, HomeId } from './config'
 import { emptyInventory, type Inventory } from './items'
 import { initialRent, settleRent, type RentEvent, type RentState } from './rent'
@@ -22,8 +23,13 @@ export interface GameSnapshot {
     /** Whole in-game dollars, never negative. */
     readonly cash: number
     readonly stats: Stats
-    /** Whole clout points, never negative. Earning it arrives with S13. */
-    readonly clout: number
+    /**
+     * The clout ledger (src/engine/clout.ts). The player's clout is derived from it, their
+     * wearables and the premium cap: read it with `totalClout`, never by summing it here.
+     */
+    readonly clout: CloutState
+    /** Flex state (src/engine/flex.ts): the viral roll's generator and today's flexes. */
+    readonly flex: FlexState
     readonly home: HomeId
     readonly rent: RentState
     /** Owned items and the outfit being worn (src/engine/items.ts). */
@@ -41,6 +47,15 @@ export type PlayerState = GameSnapshot['player']
 /** Club venue id → the game day its last clout-paying night opened on. */
 export type ClubNights = Readonly<Record<string, number>>
 
+export interface FlexState {
+  /** uint32 state of the viral-roll generator, saved so a reload cannot re-roll a flex. */
+  readonly rngState: number
+  /** Place id → the game day it was last flexed at (only today's flexes are kept). */
+  readonly byPlace: Readonly<Record<string, number>>
+}
+
+export const initialFlexState: FlexState = { rngState: 0, byPlace: {} }
+
 export interface Advance {
   readonly snapshot: GameSnapshot
   readonly minutes: number
@@ -55,7 +70,8 @@ export function initialSnapshot(config: EngineConfig): GameSnapshot {
     player: {
       cash: config.startCash,
       stats: initialStats(config),
-      clout: 0,
+      clout: initialCloutState,
+      flex: initialFlexState,
       home: config.startHome,
       rent: initialRent,
       inventory: emptyInventory,

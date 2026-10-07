@@ -31,6 +31,7 @@ for (const { instant, timezoneId, nyYear } of CASES) {
     test.beforeEach(async ({ page }) => {
       await page.clock.setFixedTime(new Date(instant))
       await page.goto('/')
+      await expect(welcomeDialog(page)).toBeVisible()
     })
 
     test(`the list starts at ${nyYear}, the New York year`, async ({ page }) => {

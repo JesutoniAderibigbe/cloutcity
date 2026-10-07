@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
 import { ITEM_SLOTS as ENGINE_SLOTS } from '@/engine/items'
-import { baseCopy } from '@/lib/copy'
+import { baseCopy } from '@/lib/copy/all'
 import { BalanceConfigSchema, RARITY_TIERS, type BalanceConfig } from './schemas/config'
 import { ITEM_SLOTS, ItemsFileSchema } from './schemas/content'
 import { balance } from './config'
@@ -37,7 +37,7 @@ describe('data/items/items.json', () => {
     expect(ITEM_SLOTS).toHaveLength(5)
   })
 
-  it('every item spells out currency, price, rarity, sellValue, cloutValue and statEffects', () => {
+  it('every item spells out currency, price, rarity, sellValue, cloutValue, styleValue and statEffects', () => {
     for (const raw of rawItems) {
       for (const field of [
         'currency',
@@ -45,11 +45,25 @@ describe('data/items/items.json', () => {
         'rarity',
         'sellValue',
         'cloutValue',
+        'styleValue',
         'statEffects',
       ]) {
         expect(Object.hasOwn(raw, field), `${String(raw.id)}.${field}`).toBe(true)
       }
       expect(raw.currency).toBe('cash')
+    }
+  })
+
+  it('styleValue follows rarity (S13): common 1-2, medium 3-5, rare 8-10; gifts 0', () => {
+    const band = { common: [1, 2], medium: [3, 5], rare: [8, 10] } as const
+    for (const item of items) {
+      if (item.category === 'gift') {
+        expect(item.styleValue, item.id).toBe(0)
+        continue
+      }
+      const [min, max] = band[item.rarity]
+      expect(item.styleValue, item.id).toBeGreaterThanOrEqual(min)
+      expect(item.styleValue, item.id).toBeLessThanOrEqual(max)
     }
   })
 
@@ -105,6 +119,8 @@ describe('ItemSchema', () => {
     ['a price of 0', { price: 0, sellValue: 0 }],
     ['fractional price', { price: 18.5 }],
     ['negative clout', { cloutValue: -1 }],
+    ['negative style', { styleValue: -1 }],
+    ['no style', { styleValue: undefined }],
     ['a fractional stat effect', { statEffects: { mood: 1.5 } }],
     ['an unknown stat', { statEffects: { luck: 1 } }],
     ['an unknown slot', { slot: 'hat' }],

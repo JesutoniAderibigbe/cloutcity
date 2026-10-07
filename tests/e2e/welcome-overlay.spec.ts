@@ -1,6 +1,13 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures/test'
-import { T0, YEAR, answerWelcomeCard, passWelcomeCard, welcomeDialog } from './fixtures/welcome'
+import {
+  T0,
+  WELCOME_TITLE,
+  YEAR,
+  answerWelcomeCard,
+  passWelcomeCard,
+  welcomeDialog,
+} from './fixtures/welcome'
 
 // S05a, UX-1: the welcome card is a modal in the overlay layer system. It never covers the
 // banner, HUD or tab bar, keeps focus inside, cannot be dismissed, and scrolls inside itself.
@@ -55,6 +62,8 @@ test('Escape does not dismiss the card and Tab keeps focus inside it', async ({ 
 test('the card can be completed with the keyboard only', async ({ page }) => {
   await page.goto('/')
   const dialog = welcomeDialog(page)
+  // The card loads as a boot island; it takes focus when it appears.
+  await expect(dialog.getByRole('heading', { name: WELCOME_TITLE })).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(dialog.getByRole('combobox')).toBeFocused()
   await dialog.getByRole('combobox').selectOption(String(YEAR - 30))

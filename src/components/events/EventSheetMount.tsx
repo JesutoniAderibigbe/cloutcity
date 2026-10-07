@@ -1,30 +1,15 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-import { useSyncExternalStore } from 'react'
+import { lazyIsland } from '@/components/overlay/lazyIsland'
 
-// DEC-11: the shell carries only the boot path. The event sheet, and the store, engine and
-// zod/mini it needs (nothing else in the shell uses them yet), load in their own chunk after
-// hydration. It must load at boot rather than on a tap: an event left open before a reload
-// has to reappear. Once a boot-path component (the HUD) imports the store, that chunk keeps
-// only the dialog code.
-const EventSheet = dynamic(() => import('./EventSheet').then((module) => module.EventSheet), {
-  ssr: false,
-  loading: () => null,
-})
-
-const noSubscribe = () => () => {}
-
-/** False during the server render and hydration, true after: the store is browser-only state. */
-function useHydrated(): boolean {
-  return useSyncExternalStore(
-    noSubscribe,
-    () => true,
-    () => false,
-  )
-}
-
-/** The sheet zone's event slot: nothing on the server, the lazily loaded sheet in the browser. */
-export function EventSheetMount() {
-  return useHydrated() ? <EventSheet /> : null
-}
+/**
+ * The sheet zone's event slot (DEC-11). The shell carries none of the event code: the host
+ * (with the game store, engine, save and catalogs it needs) is a boot island that starts loading
+ * when the shell runs, because an event left open before a reload has to reappear. The host then
+ * loads the event sheet UI and its copy only when an event is open. Nothing shows while the
+ * host loads: most boots have no event open.
+ */
+export const EventSheetMount = lazyIsland(
+  () => import('./EventSheetHost').then((module) => module.EventSheetHost),
+  { zone: 'sheet', labelKey: 'loading.event', eager: true, quiet: true },
+)

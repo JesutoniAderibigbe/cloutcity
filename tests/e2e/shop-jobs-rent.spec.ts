@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import type { Locator, Page } from '@playwright/test'
 import type { HudTestHook } from '@/components/hud/hudTestHook'
-import { expect, test } from './fixtures/test'
+import { expect, test, waitForWelcomeGate } from './fixtures/test'
 
 // S10a: the shop in a thrift store's place sheet, the inventory and rent panels from the HUD,
 // and a shift with its lock and energy states. Places open through the S09 test hook (the same
@@ -16,14 +16,15 @@ async function boot(page: Page) {
     window.__CLOUTCITY_E2E__ = true
   })
   await page.goto('/')
+  await waitForWelcomeGate(page)
   await page.waitForFunction(
-    () => window.__cloutcityPlaces !== undefined && window.__cloutcityHud !== undefined,
+    () => window.__cloutcityPlaces !== undefined && window.__cloutcityTest?.hud !== undefined,
   )
 }
 
 const hudState = (page: Page) =>
   page.evaluate((): ReturnType<HudTestHook['state']> => {
-    const hook = window.__cloutcityHud
+    const hook = window.__cloutcityTest?.hud
     if (hook === undefined) throw new Error('hud test hook is not installed')
     return hook.state()
   })
@@ -45,7 +46,7 @@ const sheet = (page: Page): Locator => page.locator(`[data-place-sheet="${THRIFT
 const shopRow = (page: Page, itemId: string) => sheet(page).locator(`[data-shop-item="${itemId}"]`)
 
 async function cheapestWearable(page: Page) {
-  const items = await page.evaluate(() => window.__cloutcityHud?.shop() ?? [])
+  const items = await page.evaluate(() => window.__cloutcityTest?.hud?.shop() ?? [])
   const [item] = items.filter((entry) => !entry.gift).sort((a, b) => a.price - b.price)
   if (item === undefined) throw new Error('no wearable for sale')
   const dearest = [...items].sort((a, b) => b.price - a.price)[0]
@@ -64,7 +65,7 @@ test.describe('shop, inventory, jobs and rent', () => {
     const card = page.getByRole('dialog', { name: 'Rerun Racks' })
     await expect(card).toBeVisible()
     await expect(sheet(page).locator('[data-shop-item]')).toHaveCount(
-      await page.evaluate(() => window.__cloutcityHud?.shop().length ?? 0),
+      await page.evaluate(() => window.__cloutcityTest?.hud?.shop().length ?? 0),
     )
     await checkA11y()
 
@@ -124,7 +125,9 @@ test.describe('shop, inventory, jobs and rent', () => {
     await expect(rent.locator('[data-rent-next-due]')).toHaveText(/ day \d+\.$/)
     const notice = rent.locator('[data-rent-notice]')
     await expect(notice).toHaveText('No rent has come due this session.')
-    const due = await page.evaluate(() => window.__cloutcityHud?.advancePastNextRentDay() ?? 0)
+    const due = await page.evaluate(
+      () => window.__cloutcityTest?.hud?.advancePastNextRentDay() ?? 0,
+    )
     expect(due).toBeGreaterThan(1)
     await expect(notice).toContainText(/paid/i)
     const after = await hudState(page)
@@ -148,7 +151,7 @@ test.describe('shop, inventory, jobs and rent', () => {
     // The shortfall is the whole price at $0 (wording varies by slang pack).
     await expect(buy).toHaveAccessibleName(/\d+ more/)
 
-    await page.evaluate(() => window.__cloutcityHud?.setEnergy(0))
+    await page.evaluate(() => window.__cloutcityTest?.hud?.setEnergy(0))
     const work = page
       .getByRole('dialog', { name: 'Rerun Racks' })
       .getByRole('button', { name: /^Work a .+ shift: / })
@@ -222,7 +225,7 @@ const focused = (page: Page) =>
   })
 
 async function shopList(page: Page) {
-  const items = await page.evaluate(() => window.__cloutcityHud?.shop() ?? [])
+  const items = await page.evaluate(() => window.__cloutcityTest?.hud?.shop() ?? [])
   const byPrice = [...items].sort((a, b) => a.price - b.price)
   const wearables = byPrice.filter((item) => !item.gift)
   const gifts = byPrice.filter((item) => item.gift)
@@ -471,7 +474,8 @@ test.describe('rent notices', () => {
     const rent = page.getByRole('dialog', { name: 'Rent' })
     const notice = rent.locator('[data-rent-notice]')
     const owed = rent.locator('[data-rent-owed]')
-    const advance = () => page.evaluate(() => window.__cloutcityHud?.advancePastNextRentDay() ?? 0)
+    const advance = () =>
+      page.evaluate(() => window.__cloutcityTest?.hud?.advancePastNextRentDay() ?? 0)
 
     await advance()
     expect((await hudState(page)).lastRentEvent).toBe('missed')
@@ -582,6 +586,75 @@ test.describe('shop on a phone', () => {
         expect(box.height).toBeGreaterThanOrEqual(44)
         expect(box.width).toBeGreaterThanOrEqual(44)
       }
+    })
+  }
+})
+
+test.describe('HUD row', () => {
+  test.beforeEach(async ({ page }) => {
+    await boot(page)
+  })
+
+  // The HUD row holds the title, the clout meter, the Inventory and Rent buttons and the sound
+  // control. Below `sm` the two panel buttons are icon buttons (their labels stay their
+  // accessible names) so nothing in the row overlaps at 390 px.
+  for (const width of [390, 1280]) {
+    test(`at ${width} px nothing in the HUD row overlaps and every control fits the row`, async ({
+      page,
+      checkA11y,
+    }) => {
+      await page.setViewportSize({ width, height: 844 })
+      const zone = page.locator('[data-overlay-zone="hud"]')
+      const inventory = page.getByRole('button', { name: 'Inventory', exact: true })
+      const rent = page.getByRole('button', { name: 'Rent', exact: true })
+      await expect(inventory).toBeVisible()
+      await expect(zone.locator('[data-clout-meter]')).toBeVisible()
+      await expect(zone.locator('[data-cc-feature="cc-feature:sound-control"]')).toBeVisible()
+
+      const parts = [
+        { name: 'title', locator: zone.locator('h1') },
+        { name: 'clout meter', locator: zone.locator('[data-clout-meter]') },
+        { name: 'Inventory', locator: inventory },
+        { name: 'Rent', locator: rent },
+        ...(await zone.locator('[data-cc-feature="cc-feature:sound-control"] button').all()).map(
+          (locator, index) => ({ name: `sound control ${index}`, locator }),
+        ),
+      ]
+      const row = await zone.boundingBox()
+      if (row === null) throw new Error('the HUD zone is not rendered')
+      const boxes = []
+      for (const part of parts) {
+        const box = await part.locator.boundingBox()
+        if (box === null) throw new Error(`${part.name} is not rendered`)
+        expect(box.width, `${part.name} width`).toBeGreaterThan(0)
+        expect(box.x, `${part.name} left`).toBeGreaterThanOrEqual(row.x - 0.5)
+        expect(box.x + box.width, `${part.name} right`).toBeLessThanOrEqual(row.x + row.width + 0.5)
+        expect(box.y, `${part.name} top`).toBeGreaterThanOrEqual(row.y - 0.5)
+        expect(box.y + box.height, `${part.name} bottom`).toBeLessThanOrEqual(
+          row.y + row.height + 0.5,
+        )
+        boxes.push({ name: part.name, box })
+      }
+      for (const [i, a] of boxes.entries()) {
+        for (const b of boxes.slice(i + 1)) {
+          const apart =
+            a.box.x + a.box.width <= b.box.x + 0.5 ||
+            b.box.x + b.box.width <= a.box.x + 0.5 ||
+            a.box.y + a.box.height <= b.box.y + 0.5 ||
+            b.box.y + b.box.height <= a.box.y + 0.5
+          expect(apart, `${a.name} overlaps ${b.name}`).toBe(true)
+        }
+      }
+      for (const button of [inventory, rent]) {
+        const box = await button.boundingBox()
+        expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
+        expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)
+      }
+      // Icons below `sm` (640 px), text labels from `sm` up (an sr-only label is 1 px wide).
+      const label = await inventory.getByText('Inventory', { exact: true }).boundingBox()
+      expect((label?.width ?? 0) > 1, 'text label shown').toBe(width >= 640)
+      await expect(inventory.locator('svg')).toBeVisible({ visible: width < 640 })
+      await checkA11y()
     })
   }
 })
@@ -754,7 +827,6 @@ test.describe('rent notices from events (BUG-1)', () => {
         borough: 'queens',
         locationId: null,
         locationCategory: 'bodega',
-        clout: 0,
         itemIds: [],
       }),
     )

@@ -5,9 +5,10 @@ import { nextRentDueDay, rentFor } from '@/engine/rent'
 import { gameStore } from '@/state/store'
 
 /**
- * Test-only hook for the S10a shop, inventory and rent flows (tests/e2e/shop-jobs-rent.spec.ts).
- * Installed only when the page sets `window.__CLOUTCITY_E2E__ = true` before the app loads
- * (Playwright's addInitScript), from its own lazily loaded chunk. Time moves through the
+ * Test-only hook for the S10a shop, inventory and rent flows (tests/e2e/shop-jobs-rent.spec.ts),
+ * on `window.__cloutcityTest.hud`. Only builds with NEXT_PUBLIC_TEST_HOOKS=1 load it (from its
+ * own chunk, see HudPanelMount), and it installs only when the page also sets
+ * `window.__CLOUTCITY_E2E__ = true` before the app loads (Playwright's addInitScript). Time moves through the
  * store's `advanceMinutes`, so decay and rent run through the engine like any other advance.
  * The energy setter writes the local save directly, which anyone with devtools can already do.
  */
@@ -34,14 +35,18 @@ export interface HudTestHook {
 }
 
 declare global {
-  interface Window {
-    __cloutcityHud?: HudTestHook
+  interface CloutcityTestHooks {
+    hud?: HudTestHook
   }
 }
 
 export function installHudTestHook(): void {
   if (window.__CLOUTCITY_E2E__ !== true) return
-  window.__cloutcityHud = {
+  window.__cloutcityTest = { ...window.__cloutcityTest, hud: createHudTestHook() }
+}
+
+function createHudTestHook(): HudTestHook {
+  return {
     advancePastNextRentDay: () => {
       const { clock } = gameStore.getState()
       const day = nextRentDueDay(clock.minute, engineConfig)

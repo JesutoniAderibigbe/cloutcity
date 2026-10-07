@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 import type { PlaceTestHook } from '@/components/places/placeTestHook'
-import { expect, test } from './fixtures/test'
+import { expect, test, waitForWelcomeGate } from './fixtures/test'
 
 // S09: the location action sheet. Places are opened through the test-only hook
 // (src/components/places/placeTestHook.ts), which calls the same `openPlace` the 3D pins and
@@ -13,6 +13,7 @@ async function boot(page: Page) {
     window.__CLOUTCITY_E2E__ = true
   })
   await page.goto('/')
+  await waitForWelcomeGate(page)
   await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
 }
 

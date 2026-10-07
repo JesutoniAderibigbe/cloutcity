@@ -1,14 +1,23 @@
 import { describe, expect, it } from 'vitest'
+import { initialCloutState, legacyCloutState } from './clout'
 import { engineConfig as config } from './config'
 import { emptyInventory } from './items'
 import { initialEventsState } from './events'
+import { initialFlexState } from './game'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
 const schema = createSaveSchema(config)
 
+/** A v3 to v6 player: clout was one number and there was no flex state. */
+function legacyPlayer(): Record<string, unknown> {
+  const player: Record<string, unknown> = { ...initialSave(config).player, clout: 0 }
+  delete player.flex
+  return player
+}
+
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(6)
+    expect(SAVE_VERSION).toBe(7)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -159,7 +168,8 @@ describe('save v3: clout, home and rent', () => {
 
   it('a fresh save starts with no clout, the start home and nothing owed', () => {
     expect(base.player).toMatchObject({
-      clout: 0,
+      clout: initialCloutState,
+      flex: initialFlexState,
       home: config.startHome,
       rent: { owed: 0, missed: 0 },
     })
@@ -178,7 +188,8 @@ describe('save v3: clout, home and rent', () => {
         ...v2,
         player: {
           ...v2.player,
-          clout: 0,
+          clout: initialCloutState,
+          flex: initialFlexState,
           home: config.startHome,
           rent: { owed: 0, missed: 0 },
           inventory: emptyInventory,
@@ -232,8 +243,10 @@ describe('save v3: clout, home and rent', () => {
   })
 
   it.each([
-    ['fractional clout', { ...base.player, clout: 1.5 }],
-    ['a missing rent object', { cash: 1, stats: base.player.stats, clout: 0, home: 'queens-room' }],
+    [
+      'a missing rent object',
+      { cash: 1, stats: base.player.stats, clout: initialCloutState, home: 'queens-room' },
+    ],
     ['fractional rent owed', { ...base.player, rent: { owed: 1.5, missed: 0 } }],
   ])('refuses a structurally unusable save: %s', (_label, player) => {
     expect(loadSave({ ...base, player }, config).ok).toBe(false)
@@ -250,8 +263,10 @@ describe('save v3: tampered and edge saves', () => {
   it.each(['__proto__', 'constructor', 'hasOwnProperty', ''])(
     'a home of %j is repaired to the start home',
     (home) => {
+      const clout = JSON.stringify(legacyCloutState(4, 0))
+      const flex = JSON.stringify(initialFlexState)
       const persisted = fromJson(
-        `{"cash":9,"stats":{"energy":1,"hunger":2,"mood":3},"clout":4,"home":${JSON.stringify(home)},"rent":{"owed":5,"missed":1},"inventory":{"wearables":[],"gifts":[],"outfit":{}},"clubNights":{}}`,
+        `{"cash":9,"stats":{"energy":1,"hunger":2,"mood":3},"clout":${clout},"flex":${flex},"home":${JSON.stringify(home)},"rent":{"owed":5,"missed":1},"inventory":{"wearables":[],"gifts":[],"outfit":{}},"clubNights":{}}`,
       )
       const result = loadSave(persisted, config)
       if (!result.ok) throw new Error('expected a repaired save')
@@ -259,7 +274,8 @@ describe('save v3: tampered and edge saves', () => {
       expect(result.save.player).toEqual({
         cash: 9,
         stats: { energy: 1, hunger: 2, mood: 3 },
-        clout: 4,
+        clout: legacyCloutState(4, 0),
+        flex: initialFlexState,
         home: config.startHome,
         rent: { owed: 5, missed: 1 },
         inventory: emptyInventory,
@@ -315,7 +331,8 @@ describe('save v3: tampered and edge saves', () => {
       player: {
         cash: 77,
         stats: { energy: 12, hunger: 0, mood: config.stats.max },
-        clout: 0,
+        clout: initialCloutState,
+        flex: initialFlexState,
         home: config.startHome,
         rent: { owed: 0, missed: 0 },
         inventory: emptyInventory,
@@ -339,8 +356,8 @@ describe('event state in the save (v5)', () => {
   const base = initialSave(config)
   const eventId = config.events.catalog[0]?.id ?? 'missing'
   const source = { type: 'event', eventId, choiceId: 'a' } as const
-  // A v4 save has neither event state nor club nights (v6).
-  const v4Player: Record<string, unknown> = { ...base.player }
+  // A v4 save has neither event state nor club nights (v6), and clout is a number (v7).
+  const v4Player = legacyPlayer()
   delete v4Player.clubNights
   const v4: Record<string, unknown> = { ...base, player: v4Player }
   delete v4.events
@@ -355,7 +372,12 @@ describe('event state in the save (v5)', () => {
     expect(migrateSave(progressed, 4, config)).toEqual({
       save: {
         ...progressed,
-        player: { ...progressed.player, clubNights: {} },
+        player: {
+          ...progressed.player,
+          clout: legacyCloutState(9, 0),
+          flex: initialFlexState,
+          clubNights: {},
+        },
         events: initialEventsState(),
       },
       outcome: 'carried',
@@ -380,7 +402,7 @@ describe('event state in the save (v5)', () => {
     expect(migrateSave({ player: { cash: 1 } }, 4, config).outcome).toBe('fresh')
   })
 
-  it('a save of every version so far (v1 to v6) loads, carrying its progress', () => {
+  it('a save of every version so far (v1 to v7) loads, carrying its progress', () => {
     const player = v4Player
     const saves: Record<number, unknown> = {
       1: { player: { cash: 501 } },
@@ -392,6 +414,7 @@ describe('event state in the save (v5)', () => {
       },
       4: { ...v4, player: { ...player, cash: 504 } },
       5: { ...base, player: { ...player, cash: 505 } },
+      6: { ...base, player: { ...legacyPlayer(), cash: 506 } },
     }
     for (const [version, persisted] of Object.entries(saves)) {
       const migrated = migrateSave(persisted, Number(version), config)
@@ -399,9 +422,9 @@ describe('event state in the save (v5)', () => {
       expect(migrated.save.player.cash, `v${version}`).toBe(500 + Number(version))
       expect(schema.safeParse(migrated.save).success, `v${version}`).toBe(true)
     }
-    const v6 = { ...base, player: { ...base.player, cash: 506 } }
-    const loaded = loadSave(JSON.parse(JSON.stringify(v6)), config)
-    expect(loaded.ok && loaded.save.player.cash).toBe(506)
+    const v7 = { ...base, player: { ...base.player, cash: 507 } }
+    const loaded = loadSave(JSON.parse(JSON.stringify(v7)), config)
+    expect(loaded.ok && loaded.save.player.cash).toBe(507)
     expect(loaded.ok && loaded.repaired).toEqual([])
   })
 
@@ -412,8 +435,8 @@ describe('event state in the save (v5)', () => {
         active: eventId,
         history: { [eventId]: 480 },
         pending: [
-          { kind: 'clout', amount: 3, source },
           { kind: 'item', itemId: 'tee', op: 'grant', source },
+          { kind: 'item', itemId: 'cap', op: 'consume', source },
         ],
         rngState: 0xffffffff,
       },
@@ -438,8 +461,9 @@ describe('event state in the save (v5)', () => {
       {
         ...initialEventsState(),
         pending: Array.from({ length: config.events.maxPendingEffects + 1 }, () => ({
-          kind: 'clout',
-          amount: 1,
+          kind: 'item',
+          itemId: 'tee',
+          op: 'grant',
           source,
         })),
       },
@@ -469,8 +493,12 @@ describe('event state in the save (v5)', () => {
     ['an open event that is not a string', { ...initialEventsState(), active: 5 }],
     ['an extra key', { ...initialEventsState(), cheat: true }],
     [
-      'a pending clout effect with no source',
-      { ...initialEventsState(), pending: [{ kind: 'clout', amount: 1 }] },
+      'a pending clout effect (since v7 event clout lands at once)',
+      { ...initialEventsState(), pending: [{ kind: 'clout', amount: 1, source }] },
+    ],
+    [
+      'a pending item effect with no source',
+      { ...initialEventsState(), pending: [{ kind: 'item', itemId: 'tee', op: 'grant' }] },
     ],
     ['a negative generator state', { ...initialEventsState(), rngState: -1 }],
   ])('resets event state with %s, keeping clock, cash and stats', (_label, events) => {
@@ -501,7 +529,7 @@ describe('event state in the save (v5)', () => {
 describe('club nights in the save (v6)', () => {
   const base = initialSave(config)
   const clubId = Object.keys(config.place.clubs)[0] ?? 'missing'
-  const v5Player: Record<string, unknown> = { ...base.player }
+  const v5Player = legacyPlayer()
   delete v5Player.clubNights
   const v5 = { ...base, player: v5Player }
 
@@ -516,7 +544,15 @@ describe('club nights in the save (v6)', () => {
       player: { ...v5Player, cash: 88, clout: 120 },
     }
     expect(migrateSave(progressed, 5, config)).toEqual({
-      save: { ...progressed, player: { ...progressed.player, clubNights: {} } },
+      save: {
+        ...progressed,
+        player: {
+          ...progressed.player,
+          clout: legacyCloutState(120, 1),
+          flex: initialFlexState,
+          clubNights: {},
+        },
+      },
       outcome: 'carried',
     })
     expect(migrateSave({ ...progressed, admin: true }, 5, config).outcome).toBe('fresh')
