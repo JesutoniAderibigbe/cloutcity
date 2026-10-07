@@ -128,6 +128,9 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   catalog.test.ts). SQLSTATE PTxyz → HTTP xyz; supabase-js returns {code, message}. One local stack is
   shared by all checkouts: `db reset` affects every lane. `npm run test:integration` needs it running.
 
+- Never `pkill -f next-server` (or any pattern-wide kill): it stops every lane's servers and the user's
+  preview. Stop only your own process by PID or by its port (`lsof -tiTCP:<port> -sTCP:LISTEN`).
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.
