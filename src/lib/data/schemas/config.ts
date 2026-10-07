@@ -307,10 +307,43 @@ export const RealtimeConfigSchema = z.strictObject({
 })
 export type RealtimeConfig = z.infer<typeof RealtimeConfigSchema>
 
-export const ModerationConfigSchema = z.strictObject({
-  /** Content auto-hides, pending review, after this many distinct reporters. */
-  autoHideReports: positiveInt,
-})
+/**
+ * data/config/moderation.json (S18b). The database enforces these from its own copy,
+ * private.moderation_settings (tests/integration/safety.test.ts checks the two match).
+ */
+export const ModerationConfigSchema = z
+  .strictObject({
+    /** Content auto-hides, pending review, after this many distinct trusted reporters. */
+    autoHideReports: positiveInt,
+    /** A reporter counts toward auto-hide only once their account is this old. */
+    autoHideMinReporterAgeHours: z.int().nonnegative(),
+    /** Reports a moderator dismissed as abusive before a reporter stops counting. */
+    falseReportThreshold: positiveInt,
+    /** Reports one player may file per New York day. */
+    reportsPerDay: positiveInt,
+    noteMaxChars: positiveInt,
+    appealMaxChars: positiveInt,
+    /** How long a block can be undone with its friendship and roommate link restored. */
+    blockUndoSeconds: positiveInt,
+    blockMax: positiveInt,
+    muteMax: positiveInt,
+    retention: z
+      .strictObject({
+        /** Snapshots and notes of resolved reports (never under legal hold). */
+        evidenceDays: positiveInt,
+        /** Resolved report rows themselves. */
+        reportRowDays: positiveInt,
+        auditDays: positiveInt,
+        /** Resolved appeals. */
+        appealDays: positiveInt,
+      })
+      .refine((retention) => retention.evidenceDays <= retention.reportRowDays, {
+        error: 'evidenceDays must not exceed reportRowDays',
+      }),
+  })
+  .refine((config) => config.noteMaxChars <= 1000 && config.appealMaxChars <= 2000, {
+    error: 'note and appeal limits must stay within the database column checks',
+  })
 export type ModerationConfig = z.infer<typeof ModerationConfigSchema>
 
 /**

@@ -221,6 +221,27 @@ describe('guest session (S05)', () => {
     expect(s.status.getState().reason).toBe('offline')
   })
 
+  it('a session chunk that fails to load while the browser reports online counts as no network, and retries', async () => {
+    const s = setup()
+    // What Turbopack's runtime throws for a chunk it could not fetch (a flaky network, a deploy
+    // that replaced the chunk): an Error named ChunkLoadError, with navigator.onLine still true.
+    const chunkError = Object.assign(new Error('Failed to load chunk /_next/static/chunks/x.js'), {
+      name: 'ChunkLoadError',
+    })
+    s.loadAuth.mockRejectedValueOnce(chunkError)
+    s.complete()
+    s.start()
+    s.markPlayable()
+    await flush()
+    expect(s.status.getState()).toEqual({ status: 'local', reason: 'offline', reused: false })
+    expect(s.levels(/No network/)).toEqual(['info'])
+    expect(s.levels(/sign-in failed/)).toEqual([])
+
+    s.goOnline()
+    await flush()
+    expect(s.status.getState().status).toBe('anonymous')
+  })
+
   it('sign-ins switched off on the project warn and play local', async () => {
     const s = setup()
     s.results.push({

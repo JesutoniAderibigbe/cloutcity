@@ -70,9 +70,12 @@ export function classifySessionFailure(failure: AuthFailure, online: boolean): F
     return 'disabled'
   }
   // supabase-js reports an unreachable network as a retryable fetch error with status 0; a
-  // thrown fetch is a TypeError.
+  // thrown fetch is a TypeError, and a session chunk the bundler could not fetch is a
+  // ChunkLoadError (Turbopack), even while the browser still reports itself online.
   const unreachable =
-    (failure.name === 'AuthRetryableFetchError' && !failure.status) || failure.name === 'TypeError'
+    (failure.name === 'AuthRetryableFetchError' && !failure.status) ||
+    failure.name === 'TypeError' ||
+    failure.name === 'ChunkLoadError'
   if (!online || unreachable) return 'offline'
   return 'error'
 }

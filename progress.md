@@ -141,6 +141,12 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   `npx supabase start` only for test:integration / e2e:supabase, then `npx supabase stop`. Never quit
   Docker or touch non-cloutcity containers (the user has other projects there).
 
+- Wave testing (user request 2026-10-07): per task, run typecheck, lint, the FULL unit suite, build, budget
+  and only the task's own/affected e2e specs (no full e2e, no per-task bug-hunter). At the end of each
+  wave the orchestrator merges every lane into `integration/wave-N`, runs the full gates once, and one
+  bug-hunter covers the whole wave plus fix cycles before fast-forwarding dev. Exception: security,
+  money and server tasks (S18a/b/c, S19+, S25–S28) keep their own bug-hunter.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.
@@ -324,4 +330,15 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   outfits as looks only (0 clout/style/sell). Bug-hunter: HUD title at 390, double-claim/farming
   probes, prestige run 2 badge. Lane gates: unit 2376, integration 126, e2e 506 + 12 load timeouts
   (12/12 on re-run), shell 146.1 KB. Follow-ups: UX-8/11, SEC-9/10.
+- S04c (attempt 1, passed): instanced pins with screen-space picking (>=44 px, chooser), DOM Places panel
+  by borough, static SVG fallback and in-place context recovery, dimmed Bronx/SI with teaser pins.
+  Bug-hunter: flights yield to gestures, auto panel never closes HUD panels, Places button state.
+  Integrated through S05 (one-row HUD overflow at 390).
+- S05 (attempt 1, passed): guest start centred on the Queens home (homes.json) with avatar placeholder,
+  two-row HUD (HudFrame + HudLive boot island over a matching skeleton; More panel on narrow/short),
+  per-game-minute store writes, game clock after attestation, free-row camera framing (setViewOffset),
+  lazy anonymous Supabase auth + attest_and_consent with local fallback, OG/Twitter tagline meta,
+  "Map data" corner chip (UX-9), e2e:supabase opt-in config. Bug-hunter: attribution no longer truncated
+  at 390x480/320; ChunkLoadError counts as offline. Gates: unit 2638, e2e 602 + 24 load timeouts (green
+  on re-run), shell 148.9 KB, 3D 273.7 KB.
 

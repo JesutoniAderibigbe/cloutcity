@@ -5,7 +5,51 @@ export type Database = {
   
   "public": {
           Tables: {
-            "entitlements": {
+            "account_notices": {
+                  Row: {
+                    "acknowledged_at": string | null,"created_at": string,"ends_at": string | null,"id": string,"kind": string,"reason": string | null,"sanction_id": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "acknowledged_at"?: string | null,"created_at"?: string,"ends_at"?: string | null,"id"?: string,"kind": string,"reason"?: string | null,"sanction_id"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "acknowledged_at"?: string | null,"created_at"?: string,"ends_at"?: string | null,"id"?: string,"kind"?: string,"reason"?: string | null,"sanction_id"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "account_notices_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"blocks": {
+                  Row: {
+                    "blocked_id": string,"blocker_id": string,"created_at": string
+                  }
+                  Insert: {
+                    "blocked_id": string,"blocker_id": string,"created_at"?: string
+                  }
+                  Update: {
+                    "blocked_id"?: string,"blocker_id"?: string,"created_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "blocks_blocked_id_fkey"
+      columns: ["blocked_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "blocks_blocker_id_fkey"
+      columns: ["blocker_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"entitlements": {
                   Row: {
                     "created_at": string,"grant_id": string | null,"granted_at": string,"id": string,"item_id": string,"purchase_id": string | null,"revoke_reason": string | null,"revoked_at": string | null,"source": string,"updated_at": string,"user_id": string
                   }
@@ -143,6 +187,31 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"mutes": {
+                  Row: {
+                    "created_at": string,"muted_id": string,"muter_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"muted_id": string,"muter_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"muted_id"?: string,"muter_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mutes_muted_id_fkey"
+      columns: ["muted_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mutes_muter_id_fkey"
+      columns: ["muter_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "attestation_recorded_at": string | null,"attested": boolean,"attested_at": string | null,"audio_choice": string | null,"avatar": NonNullable<Json>,"career_path": string | null,"consent_version": string | null,"consented_at": string | null,"created_at": string,"handle": string | null,"id": string,"public_level": string,"updated_at": string
@@ -250,7 +319,10 @@ isOneToOne: true
             [_ in never]: never
           }
           Functions: {
-            "assert_attested":
+            "acknowledge_notice":
+{ Args: { "p_notice_id": string }; Returns: undefined
+                           },
+"assert_attested":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "attest_and_consent":
@@ -275,6 +347,11 @@ isOneToOne: true
         isOneToOne: true
         isSetofReturn: false
       } },
+"block_player":
+{ Args: { "p_target": string }; Returns: {
+              "friendship_ended": boolean,"roommate_ended": boolean,"undo_expires_at": string,"undo_id": string
+            }[]
+                           },
 "check_handle":
 { Args: { "p_handle": string }; Returns: string
                            },
@@ -293,8 +370,50 @@ isOneToOne: true
               "avatar": Json,"career_path": string,"handle": string,"id": string,"public_level": string
             }[]
                            },
+"list_my_blocks":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "blocked_at": string,"handle": string,"player_id": string
+            }[]
+                           },
+"list_my_mutes":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "handle": string,"muted_at": string,"player_id": string
+            }[]
+                           },
+"list_my_reports":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "created_at": string,"kind": string,"reason": string,"report_id": string,"status": string,"target_handle": string
+            }[]
+                           },
+"mod_ban":
+{ Args: { "p_case": string,"p_correlation_id": string,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string,"p_reason": string }; Returns: Json
+                           },
+"mod_dismiss":
+{ Args: { "p_abusive": boolean,"p_case": string,"p_correlation_id": string,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string }; Returns: Json
+                           },
+"mod_reset_handle":
+{ Args: { "p_case": string,"p_correlation_id": string,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string,"p_reason": string }; Returns: Json
+                           },
+"mod_resolve_appeal":
+{ Args: { "p_case": string,"p_correlation_id": string,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string,"p_overturn": boolean }; Returns: Json
+                           },
+"mod_restrict":
+{ Args: { "p_case": string,"p_correlation_id": string,"p_days": number,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string,"p_reason": string }; Returns: Json
+                           },
+"mod_set_legal_hold":
+{ Args: { "p_case": string,"p_correlation_id": string,"p_hold": boolean,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string }; Returns: Json
+                           },
+"mod_suspend":
+{ Args: { "p_case": string,"p_correlation_id": string,"p_days": number,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string,"p_reason": string }; Returns: Json
+                           },
+"mod_warn":
+{ Args: { "p_case": string,"p_correlation_id": string,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string,"p_reason": string }; Returns: Json
+                           },
 "moderator_reset_handle":
 { Args: { "p_reason": string,"p_user_id": string }; Returns: string
+                           },
+"mute_player":
+{ Args: { "p_target": string }; Returns: undefined
                            },
 "send_friend_boost":
 { Args: { "p_to": string }; Returns: {
@@ -308,6 +427,24 @@ isOneToOne: true
 { Args: { "p_handle": string }; Returns: {
               "avatar": Json,"career_path": string,"free_handle_change": boolean,"handle": string,"handle_changes_left": number,"handle_generated": boolean,"next_handle_change_at": string,"public_level": string
             }[]
+                           },
+"submit_appeal":
+{ Args: { "p_body": string,"p_notice_id": string }; Returns: {
+              "appeal_id": string
+            }[]
+                           },
+"submit_report":
+{ Args: { "p_idempotency_key": string,"p_kind": string,"p_note": string,"p_reason": string,"p_target": string }; Returns: {
+              "duplicate": boolean,"report_id": string
+            }[]
+                           },
+"unblock_player":
+{ Args: { "p_target": string,"p_undo"?: string }; Returns: {
+              "friendship_restored": boolean,"roommate_restored": boolean,"unblocked": boolean
+            }[]
+                           },
+"unmute_player":
+{ Args: { "p_target": string }; Returns: undefined
                            }
           }
           Enums: {

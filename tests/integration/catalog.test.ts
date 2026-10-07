@@ -7,15 +7,18 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it } from 'vitest'
-import { newGuest, sql } from './helpers'
+import { newAttestedGuest, newGuest, sql } from './helpers'
 
 /** Tables clients may read (their own or their party's rows, through RLS). */
 const CLIENT_READABLE_TABLES = [
+  'account_notices',
+  'blocks',
   'entitlements',
   'friend_boosts',
   'friendships',
   'grants',
   'live_stats',
+  'mutes',
   'profiles',
   'purchases',
   'referrals',
@@ -28,6 +31,57 @@ const SERVICE_ONLY_TABLES = ['handles']
 
 /** Functions allowed to skip the gate, each with a stated reason in its comment. */
 const EXEMPT = ['attest_and_consent', 'set_audio_choice']
+
+/**
+ * Client RPCs allowed to skip the standing gate (S18b), each tagged `@standing-exempt: <reason>`
+ * on a line of its comment: reads of the caller's own data, and the ways a sanctioned player
+ * reports, appeals and acknowledges.
+ */
+const STANDING_EXEMPT = [
+  'acknowledge_notice',
+  'assert_attested',
+  'attest_and_consent',
+  'check_handle',
+  'get_my_profile',
+  'get_public_profile',
+  'get_public_profiles',
+  'list_my_blocks',
+  'list_my_mutes',
+  'list_my_reports',
+  'set_audio_choice',
+  'submit_appeal',
+  'submit_report',
+]
+
+/** Private tables (S18a, S18b): no client role, and not the service role either, may touch them. */
+const PRIVATE_TABLES = [
+  'appeals',
+  'banned_identities',
+  'block_undo',
+  'content_holds',
+  'handle_changes',
+  'handle_settings',
+  'handle_terms',
+  'handle_words',
+  'moderation_audit',
+  'moderation_settings',
+  'rate_limits',
+  'reporter_stats',
+  'reports',
+  'sanctions',
+]
+
+/** The moderator actions (S18b): the /mod server routes call them with the service role. */
+const MODERATOR_RPCS = [
+  'mod_ban',
+  'mod_dismiss',
+  'mod_reset_handle',
+  'mod_resolve_appeal',
+  'mod_restrict',
+  'mod_set_legal_hold',
+  'mod_suspend',
+  'mod_warn',
+]
 
 const CLIENT_ROLES = ['anon', 'authenticated']
 const WRITE_PRIVILEGES = ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER']
@@ -82,6 +136,7 @@ async function clientRpcs(): Promise<FunctionRow[]> {
 }
 
 const isExempt = (fn: FunctionRow) => /^@attestation-exempt: \S/.test(fn.comment ?? '')
+const isStandingExempt = (fn: FunctionRow) => /(?:^|\n)@standing-exempt: \S/.test(fn.comment ?? '')
 
 /** Comments, string literals and dollar-quoted strings: text that is not code. */
 const NOT_CODE = /--[^\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'|\$([A-Za-z_]\w*)?\$[\s\S]*?\$\1\$/g
@@ -93,6 +148,23 @@ function startsWithGate(source: string): boolean {
   if (begin === null) return false
   const body = code.slice(begin.index + begin[0].length).trimStart()
   return /^(?:\w+\s*:=\s*|perform\s+)private\.require_attestation\(\)\s*;/i.test(body)
+}
+
+/**
+ * The statement right after the attestation gate is the standing gate,
+ * `perform private.require_good_standing(v_uid, '<capability>');`, with a known capability.
+ */
+function callsStandingGate(source: string): boolean {
+  const code = source.replace(NOT_CODE, (match) => (match.startsWith("'") ? "''" : ' '))
+  const begin = /\bbegin\b/i.exec(code)
+  if (begin === null) return false
+  const body = code.slice(begin.index + begin[0].length).trimStart()
+  const gated =
+    /^(?:\w+\s*:=\s*|perform\s+)private\.require_attestation\(\)\s*;\s*perform\s+private\.require_good_standing\(\s*\w+\s*,\s*''\s*\)\s*;/i
+  return (
+    gated.test(body) &&
+    /private\.require_good_standing\(\s*\w+\s*,\s*'(?:interact|social)'\s*\)/.test(source)
+  )
 }
 
 describe('tables', () => {
@@ -315,14 +387,90 @@ describe('functions', () => {
 })
 
 describe('service-only functions', () => {
-  it('moderator_reset_handle is executable by the service role only', async () => {
+  it('moderator_reset_handle is reachable only through the audited mod_reset_handle (NOTE-15)', async () => {
     const [row] = await sql<{ anon: boolean; auth: boolean; service: boolean }[]>`
       select
         has_function_privilege('anon', 'public.moderator_reset_handle(uuid, text)', 'execute') as anon,
         has_function_privilege('authenticated', 'public.moderator_reset_handle(uuid, text)', 'execute') as auth,
         has_function_privilege('service_role', 'public.moderator_reset_handle(uuid, text)', 'execute') as service
     `
-    expect(row).toEqual({ anon: false, auth: false, service: true })
+    expect(row).toEqual({ anon: false, auth: false, service: false })
+  })
+
+  it('every mod_* RPC is executable by the service role only, and there are no others', async () => {
+    const rows = await sql<{ name: string; anon: boolean; auth: boolean; service: boolean }[]>`
+      select p.proname as name,
+        has_function_privilege('anon', p.oid, 'execute') as anon,
+        has_function_privilege('authenticated', p.oid, 'execute') as auth,
+        has_function_privilege('service_role', p.oid, 'execute') as service
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public' and p.proname like 'mod\\_%'
+      order by 1
+    `
+    expect(rows).toEqual(
+      MODERATOR_RPCS.map((name) => ({ name, anon: false, auth: false, service: true })),
+    )
+  })
+
+  it('a guest calling a mod_* RPC is refused by PostgREST before it runs', async () => {
+    const guest = await newAttestedGuest()
+    const client = guest.client as unknown as SupabaseClient
+    for (const name of MODERATOR_RPCS) {
+      const { error } = await client.rpc(name, {
+        p_moderator_id: guest.id,
+        p_case: guest.id,
+        p_idempotency_key: 'probe-key-0001',
+        p_correlation_id: 'probe',
+      })
+      expect(error, name).not.toBeNull()
+      expect(error?.message, name).toMatch(/permission denied|Could not find the function/)
+    }
+  })
+})
+
+describe('private tables', () => {
+  it('every private table is known, has RLS on and no privilege for any API role', async () => {
+    const rows = await sql<{ name: string; rls: boolean; roles: string[] }[]>`
+      select c.relname as name, c.relrowsecurity as rls,
+        array(
+          select r.role from unnest(array['anon', 'authenticated', 'service_role']) as r(role)
+          where has_table_privilege(r.role, c.oid, 'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER')
+            or has_any_column_privilege(r.role, c.oid, 'SELECT, INSERT, UPDATE, REFERENCES')
+        ) as roles
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'private' and c.relkind in ('r', 'p', 'v', 'm', 'f')
+      order by 1
+    `
+    expect(rows).toEqual(PRIVATE_TABLES.map((name) => ({ name, rls: true, roles: [] })))
+  })
+
+  it('moderation_audit: the service role can neither update, delete nor truncate it', async () => {
+    const [row] = await sql<Record<string, boolean>[]>`
+      select
+        has_table_privilege('service_role', 'private.moderation_audit', 'UPDATE') as update,
+        has_table_privilege('service_role', 'private.moderation_audit', 'DELETE') as delete,
+        has_table_privilege('service_role', 'private.moderation_audit', 'TRUNCATE') as truncate
+    `
+    expect(row).toEqual({ update: false, delete: false, truncate: false })
+  })
+
+  it('moderation_audit is append-only even for its owner (update, delete, truncate all raise)', async () => {
+    const [{ id } = { id: 0 }] = await sql<{ id: number }[]>`
+      insert into private.moderation_audit (action, moderator_id, case_id, idempotency_key,
+        correlation_id, result)
+      values ('dismiss', gen_random_uuid(), gen_random_uuid(), ${`catalog-${crypto.randomUUID()}`},
+        'catalog', '{}')
+      returning id
+    `
+    await expect(
+      sql`update private.moderation_audit set note = 'x' where id = ${id}`,
+    ).rejects.toThrow('moderation_audit_append_only')
+    await expect(sql`delete from private.moderation_audit where id = ${id}`).rejects.toThrow(
+      'moderation_audit_append_only',
+    )
+    await expect(sql`truncate private.moderation_audit`).rejects.toThrow(
+      'moderation_audit_append_only',
+    )
   })
 })
 
@@ -374,5 +522,48 @@ describe('attestation gate: default deny', () => {
       const { error } = await client.rpc(fn.name, args)
       expect(error?.message, fn.name).toBe('attestation_required')
     }
+  })
+})
+
+describe('standing gate: default deny (S18b)', () => {
+  it('every client RPC calls the standing gate right after the attestation gate, or is tagged', async () => {
+    const rpcs = await clientRpcs()
+    expect(rpcs.map((fn) => fn.name)).toEqual(
+      expect.arrayContaining([
+        'block_player',
+        'unblock_player',
+        'mute_player',
+        'unmute_player',
+        'send_friend_boost',
+        'set_handle',
+        ...STANDING_EXEMPT,
+      ]),
+    )
+    const ungated = rpcs
+      .filter((fn) => !isStandingExempt(fn) && !callsStandingGate(fn.source))
+      .map((fn) => fn.name)
+    expect(ungated).toEqual([])
+    expect(rpcs.filter(isStandingExempt).map((fn) => fn.name)).toEqual(STANDING_EXEMPT)
+  })
+
+  it('the standing scanner reads what it must (self-check)', () => {
+    const gate = 'v_uid := private.require_attestation();'
+    expect(
+      callsStandingGate(`begin ${gate} perform private.require_good_standing(v_uid, 'social');`),
+    ).toBe(true)
+    expect(callsStandingGate(`begin ${gate} return 1; end`)).toBe(false)
+    expect(
+      callsStandingGate(`begin ${gate} perform private.require_good_standing(v_uid, 'anything');`),
+    ).toBe(false)
+    expect(
+      callsStandingGate(
+        `begin ${gate} if x then null; end if; perform private.require_good_standing(v_uid, 'social');`,
+      ),
+    ).toBe(false)
+    expect(
+      callsStandingGate(
+        `begin ${gate} -- perform private.require_good_standing(v_uid, 'social');\nreturn 1;`,
+      ),
+    ).toBe(false)
   })
 })

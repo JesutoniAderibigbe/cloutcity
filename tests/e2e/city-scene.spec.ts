@@ -677,6 +677,14 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
       const link = attribution.getByRole('link', { name: 'Credits' })
       await expect(link).toBeVisible()
       expect((await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
+      // The required attribution is read in full, never cut off with an ellipsis or clipped.
+      const clipped = await attribution.evaluate((element) =>
+        [...element.querySelectorAll('summary ~ div p')]
+          .filter((p) => p.getClientRects().length > 0)
+          .filter((p) => p.scrollWidth > p.clientWidth || p.scrollHeight > p.clientHeight)
+          .map((p) => p.textContent),
+      )
+      expect(clipped, 'attribution text cut off').toEqual([])
     })
   }
 })
