@@ -19,7 +19,14 @@
     "mint-400": "#5cf2b3",
     "orange-400": "#ff9a3d",
     "lilac-300": "#c8a6ff",
-    "stone-400": "#8f8aae"
+    "stone-400": "#8f8aae",
+    "stone-300": "#cfc6b4",
+    "brick-500": "#9c4a36",
+    "steel-400": "#7d848a",
+    "glass-400": "#7f9eb2",
+    "roof-600": "#5b5f63",
+    "lamp-200": "#ffe7a1",
+    "dim-500": "#77746e"
   },
   "themeColor": "night-950",
   "scene": {
@@ -52,6 +59,17 @@
     "chip": {
       "fill": "night-800",
       "ink": "ink-300"
+    },
+    "landmarks": {
+      "stone": "stone-300",
+      "brick": "brick-500",
+      "steel": "steel-400",
+      "glass": "glass-400",
+      "roof": "roof-600",
+      "accent": "taxi-400",
+      "window": "lamp-200",
+      "outline": "night-950",
+      "dimmed": "dim-500"
     }
   }
 }

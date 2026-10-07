@@ -5,7 +5,7 @@ import { chmod, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { LockSchema, SOURCE_DEFINITIONS, type Lock } from './lock'
+import { LockSchema, PartialLockSchema, SOURCE_DEFINITIONS, type Lock } from './lock'
 import {
   MAX_DOWNLOAD_BYTES,
   USER_AGENT,
@@ -97,7 +97,7 @@ describe('ensureSources', () => {
       fetch,
     })
     expect(calls).toEqual([])
-    expect(result.files.size).toBe(3)
+    expect(result.files.size).toBe(SOURCE_DEFINITIONS.length)
   })
 
   it('fails when upstream changed and leaves the old cache untouched', async () => {
@@ -124,7 +124,7 @@ describe('ensureSources', () => {
       today: '2026-10-06',
       fetch,
     })
-    expect(calls).toHaveLength(3)
+    expect(calls).toHaveLength(SOURCE_DEFINITIONS.length)
     expect(result.lock).toEqual({
       version: 1,
       sources: lockFor(2).sources.map((s) => ({ ...s, retrieved: '2026-10-06' })),
@@ -142,11 +142,28 @@ describe('ensureSources', () => {
       today: '2026-12-31',
       fetch,
     })
-    expect(same.lock.sources.map((s) => s.retrieved)).toEqual([
-      '2026-10-06',
-      '2026-10-06',
-      '2026-10-06',
-    ])
+    expect(same.lock.sources.map((s) => s.retrieved)).toEqual(
+      SOURCE_DEFINITIONS.map(() => '2026-10-06'),
+    )
+  })
+
+  it('--update from a lock missing a new source keeps the old dates and adds the new one', async () => {
+    await seedCache()
+    const { fetch } = fakeFetch()
+    const partial = { ...lockFor(), sources: lockFor().sources.slice(0, 3) }
+    expect(LockSchema.safeParse(partial).success).toBe(false)
+    expect(PartialLockSchema.safeParse(partial).success).toBe(true)
+    const result = await ensureSources({
+      cacheDir,
+      lock: partial,
+      mode: 'update',
+      today: '2026-10-07',
+      fetch,
+    })
+    expect(result.lock.sources.map((s) => s.retrieved)).toEqual(
+      SOURCE_DEFINITIONS.map((_, i) => (i < 3 ? '2026-01-01' : '2026-10-07')),
+    )
+    expect(LockSchema.safeParse(result.lock).success).toBe(true)
   })
 
   it('--update works without a lock; other modes need one', async () => {
@@ -158,7 +175,7 @@ describe('ensureSources', () => {
       today: '2026-10-06',
       fetch,
     })
-    expect(created.lock.sources).toHaveLength(3)
+    expect(created.lock.sources).toHaveLength(SOURCE_DEFINITIONS.length)
     await expect(
       ensureSources({ cacheDir, lock: undefined, mode: 'default', today: 'x', fetch }),
     ).rejects.toThrow(/missing or out of date .*--update/)
@@ -187,7 +204,7 @@ describe('ensureSources', () => {
       today: 'x',
       fetch,
     })
-    expect(result.files.size).toBe(3)
+    expect(result.files.size).toBe(SOURCE_DEFINITIONS.length)
     expect(calls).toEqual([])
   })
 })

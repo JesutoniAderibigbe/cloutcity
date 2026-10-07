@@ -4,6 +4,7 @@ import { AUDIO_CHANNELS, AUDIO_SOURCE_TYPES } from '../../audio/channels'
 import { ORIGIN, PROJECTION_ID } from '../../geo/projection'
 import { GEO_SOURCE_IDS } from '../../geo/sources'
 import { BOROUGHS, BoroughSchema, CopyKeyRefSchema, IdSchema, listOf } from './content'
+import { LandmarkFrameSchema } from './landmarkModels'
 
 /** The NYC extent in WGS84 degrees: camera bounds and a sanity check for every coordinate. */
 export const GeoBoundsSchema = z
@@ -130,6 +131,16 @@ export const ZoneShapesFileSchema = z.strictObject({
   zones: listOf(z.strictObject({ id: IdSchema, polygons })),
 })
 
+/**
+ * data/landmarks/frames.derived.json: where each modelled landmark stands and faces, derived
+ * from NYC DCP LION street centerlines (S07a).
+ */
+export const LandmarkFramesFileSchema = z.strictObject({
+  ...derivedHeader,
+  landmarks: listOf(LandmarkFrameSchema).min(1),
+})
+export type LandmarkFramesFile = z.infer<typeof LandmarkFramesFileSchema>
+
 /** data/geo/manifest.derived.json: size and hash of every file the geo build writes. */
 export const GeoManifestSchema = z.strictObject({
   format: z.literal('cc-geo-manifest-v1'),
@@ -137,7 +148,9 @@ export const GeoManifestSchema = z.strictObject({
     .array(
       z.strictObject({
         /** Relative to data/. */
-        path: z.string().regex(/^(?:geo|zones)\/(?:[a-z0-9-]+\.derived\.json|SOURCES\.md)$/),
+        path: z
+          .string()
+          .regex(/^(?:geo|zones|landmarks)\/(?:[a-z0-9-]+\.derived\.json|SOURCES\.md)$/),
         /** `base` ships with the map (perf.json baseGeoGzKB); `docs` does not. */
         group: z.enum(['base', 'docs']),
         bytes: z.int().positive(),

@@ -21,6 +21,7 @@ import type {
 } from 'topojson-specification'
 import { z } from 'zod'
 import type { GeoConfig } from '../../src/lib/data/schemas/config.ts'
+import type { LandmarkModel } from '../../src/lib/data/schemas/landmarkModels.ts'
 import { encodePath, encodeRing, type DeltaPolygon } from '../../src/lib/geo/codec.ts'
 import { areaAt, nearestArea, prepareAreas, type PreparedArea } from '../../src/lib/geo/lookup.ts'
 import {
@@ -36,9 +37,10 @@ import {
   project,
   type LocalPoint,
 } from '../../src/lib/geo/projection.ts'
-import type { GeoSourceId } from '../../src/lib/geo/sources.ts'
+import type { GeoSourceId, LionSourceId } from '../../src/lib/geo/sources.ts'
 import { douglasPeucker } from './douglas-peucker.ts'
 import { readGtfsSubway } from './gtfs.ts'
+import { buildLandmarkFrames, type FramePlace } from './landmarks.ts'
 import type { Lock } from './lock.ts'
 import { renderSourcesMd, type TerminalExtension } from './sources-md.ts'
 
@@ -56,6 +58,8 @@ export interface RawGeoInputs {
   readonly ntas: unknown
   /** The MTA subway GTFS zip, byte for byte as downloaded. */
   readonly gtfsZip: Uint8Array
+  /** Parsed NYC DCP LION GeoJSON, one exact-street query per source. */
+  readonly lion: ReadonlyMap<LionSourceId, unknown>
 }
 
 export interface GeoBuildParams {
@@ -64,6 +68,11 @@ export interface GeoBuildParams {
   readonly lock: Lock
   /** Sanity counts for the upstream files: a partial download must fail the build. */
   readonly expected: { readonly boroughs: number; readonly ntas: number }
+  /** data/landmarks/models.json and the landmarks.json places they model. */
+  readonly landmarks: {
+    readonly models: readonly LandmarkModel[]
+    readonly places: readonly FramePlace[]
+  }
 }
 
 export interface GeoBuildResult {
@@ -83,6 +92,7 @@ export const OUTPUT_FILES = {
   subway: 'geo/subway.derived.json',
   zones: 'zones/zones.derived.json',
   zoneShapes: 'zones/zone-shapes.derived.json',
+  landmarkFrames: 'landmarks/frames.derived.json',
   manifest: 'geo/manifest.derived.json',
   sources: 'geo/SOURCES.md',
 } as const
@@ -95,11 +105,15 @@ const BASE_FILES: readonly string[] = [
   OUTPUT_FILES.subway,
   OUTPUT_FILES.zones,
   OUTPUT_FILES.zoneShapes,
+  OUTPUT_FILES.landmarkFrames,
 ]
 
 const DCP_NOTICE =
   'Simplified artwork derived from NYC Department of City Planning data; not the original data.'
 const MTA_NOTICE = 'Simplified artwork derived from MTA static GTFS; not the original data.'
+const LION_NOTICE =
+  'Placements derived from NYC Department of City Planning LION street centerlines and ' +
+  'borough boundaries; not the original data.'
 
 const BOROUGH_IDS = {
   Manhattan: 'manhattan',
@@ -550,7 +564,14 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     paths: (routePaths.get(route.routeId) ?? []).map(encodePath),
   }))
 
-  // 6. Files, manifest and SOURCES.md.
+  // 6. Landmark frames, oriented by LION streets and checked against the land just built.
+  const landmarkFrames = buildLandmarkFrames(
+    { lion: raw.lion, ...params.landmarks },
+    landAreas,
+    config,
+  )
+
+  // 7. Files, manifest and SOURCES.md.
   const dcpBoroughs: GeoSourceId[] = ['dcp-borough-boundaries']
   const dcpNtas: GeoSourceId[] = ['dcp-nta-2020']
   const files = new Map<string, string>([
@@ -563,6 +584,13 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     ],
     [OUTPUT_FILES.zones, toText({ ...header(dcpNtas, DCP_NOTICE), zones: zoneMeta })],
     [OUTPUT_FILES.zoneShapes, toText({ ...header(dcpNtas, DCP_NOTICE), zones: zoneShapes })],
+    [
+      OUTPUT_FILES.landmarkFrames,
+      toText({
+        ...header([...dcpBoroughs, ...landmarkFrames.sources], LION_NOTICE),
+        landmarks: landmarkFrames.frames,
+      }),
+    ],
     [OUTPUT_FILES.sources, renderSourcesMd(lock, config, terminalExtensions)],
   ])
   const manifestFiles = [...files.entries()]

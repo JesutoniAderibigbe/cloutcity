@@ -25,6 +25,13 @@
   --color-mint-400: var(--palette-mint-400);
   --color-orange-400: var(--palette-orange-400);
   --color-lilac-300: var(--palette-lilac-300);
+  --color-stone-300: var(--palette-stone-300);
+  --color-brick-500: var(--palette-brick-500);
+  --color-steel-400: var(--palette-steel-400);
+  --color-glass-400: var(--palette-glass-400);
+  --color-roof-600: var(--palette-roof-600);
+  --color-lamp-200: var(--palette-lamp-200);
+  --color-dim-500: var(--palette-dim-500);
 }
 
 @theme {

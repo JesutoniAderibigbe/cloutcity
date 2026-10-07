@@ -11,6 +11,12 @@ import {
   PRESTIGE_PARTS,
 } from '../goalFacts.ts'
 import { HOME_IDS, lowestRentHome } from '../homes.ts'
+import {
+  LANDMARK_ROLES,
+  LandmarkPaletteRefsSchema,
+  LandmarkTrianglesMaxSchema,
+  LandmarkTrianglesOverrideSchema,
+} from './landmarkModels.ts'
 
 export const QUALITY_TIERS = ['low', 'mid', 'high'] as const
 export const QualityTierSchema = z.enum(QUALITY_TIERS)
@@ -79,6 +85,15 @@ export const PerfConfigSchema = z.strictObject({
   audioFileMaxKB: positive,
   /** The lazily loaded audio runtime chunk (src/lib/audio/runtime.ts). */
   audioRuntimeJsGzKB: positive,
+  /**
+   * Triangles of one landmark model's finest level per tier (outline and windows included), by
+   * landmark category (S07a). Each coarser level may have at most `landmarkLodRatioMax` of the
+   * level above it.
+   */
+  landmarkTrianglesMax: LandmarkTrianglesMaxSchema,
+  /** Per-landmark caps replacing the category caps, by landmark id. */
+  landmarkTrianglesOverride: LandmarkTrianglesOverrideSchema,
+  landmarkLodRatioMax: z.number().gt(0).max(1),
 })
 export type PerfConfig = z.infer<typeof PerfConfigSchema>
 
@@ -128,6 +143,8 @@ export const ScenePaletteRefsSchema = z.strictObject({
   chip: z.strictObject({ fill: tokenRef, ink: tokenRef }),
   /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
   toonRamp: z.array(z.number().gt(0).max(1)).min(2),
+  /** The landmark kit's material roles (S07a, S07c): real-world material colours (DEC-26). */
+  landmarks: LandmarkPaletteRefsSchema,
 })
 export type ScenePaletteRefs = z.infer<typeof ScenePaletteRefsSchema>
 
@@ -148,6 +165,7 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     scene.sunLight,
     ...Object.values(scene.pins),
     ...Object.values(scene.chip),
+    ...Object.values(scene.landmarks),
   ]
 }
 
@@ -171,6 +189,10 @@ export const ThemeConfigSchema = z
     (theme) => theme.scene.toonRamp.every((step, i, ramp) => i === 0 || step > (ramp[i - 1] ?? 0)),
     { error: 'toonRamp must increase', path: ['scene', 'toonRamp'] },
   )
+  .refine((theme) => LANDMARK_ROLES.every((role) => theme.scene.landmarks[role] in theme.colors), {
+    error: 'every landmark role must name a token in colors',
+    path: ['scene', 'landmarks'],
+  })
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>
 
 const RateLimitSchema = z.strictObject({ max: positiveInt, windowMs: positiveInt })
@@ -1002,6 +1024,10 @@ export const GeoConfigSchema = z
     stationAreaFallbackM: metres,
     /** How far the sea extends beyond data/geo/bounds.json. */
     waterMarginM: metres,
+    /** A landmark's fronting LION street must pass this close to its location (S07a). */
+    landmarkFrontMaxM: metres,
+    /** Clear ground kept around a landmark model's footprint (its exclusion rectangle). */
+    landmarkExclusionMarginM: z.number().nonnegative(),
   })
   .refine(
     (geo) =>

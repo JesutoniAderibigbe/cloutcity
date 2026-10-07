@@ -1,6 +1,6 @@
 /**
  * `npm run geo:build`: downloads the pinned geo sources into `.cache/geo/` and writes the
- * derived layers to data/geo and data/zones.
+ * derived layers to data/geo, data/zones and data/landmarks.
  *
  *   npm run geo:build                 use the cache, download what is missing (must match lock)
  *   npm run geo:build -- --update     download everything, accept new upstream files, rewrite lock
@@ -12,9 +12,17 @@ import { dirname, join, resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { z } from 'zod'
 import { GeoConfigSchema } from '../../src/lib/data/schemas/config.ts'
-import { LockSchema, type Lock } from './lock.ts'
+import { landmarkModelsFileSchemaFor } from '../../src/lib/data/schemas/landmarkModels.ts'
+import { LION_SOURCE_IDS } from '../../src/lib/geo/sources.ts'
+import type { FramePlace } from './landmarks.ts'
+import { LockSchema, PartialLockSchema, type Lock } from './lock.ts'
 import { ensureSources, type SourceMode } from './sources.ts'
-import { buildGeoOutputs, type GeoBoundsInput, type GeoBuildResult } from './transform.ts'
+import {
+  buildGeoOutputs,
+  type GeoBoundsInput,
+  type GeoBuildParams,
+  type GeoBuildResult,
+} from './transform.ts'
 
 const ROOT = resolve(import.meta.dirname, '../..')
 const DATA = join(ROOT, 'data')
@@ -35,13 +43,29 @@ const BoundsSchema = z.object({
   north: z.number(),
 })
 
+// Only the fields the frames need; landmarks.json is fully validated by src/lib/data/data.test.ts.
+const PlacesSchema = z.object({
+  landmarks: z.array(
+    z.object({
+      id: z.string(),
+      category: z.string(),
+      location: z.object({ lat: z.number(), lng: z.number() }),
+      spans: z.array(z.string()).optional(),
+    }),
+  ),
+})
+
 const write = (line: string) => process.stdout.write(`${line}\n`)
 
 async function readJson(path: string): Promise<unknown> {
   return JSON.parse(await readFile(path, 'utf8'))
 }
 
-export async function readLock(path = LOCK_PATH): Promise<Lock | undefined> {
+/**
+ * The committed lock. `partial` (for --update) also accepts a lock that lacks some sources or
+ * lists them out of order: update rewrites it in full.
+ */
+export async function readLock(path = LOCK_PATH, partial = false): Promise<Lock | undefined> {
   let json: unknown
   try {
     json = await readJson(path)
@@ -49,7 +73,7 @@ export async function readLock(path = LOCK_PATH): Promise<Lock | undefined> {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error
   }
-  const result = LockSchema.safeParse(json)
+  const result = (partial ? PartialLockSchema : LockSchema).safeParse(json)
   if (!result.success) throw new Error(`Invalid ${path}:\n${z.prettifyError(result.error)}`)
   return result.data
 }
@@ -59,10 +83,21 @@ export const lockText = (lock: Lock) => `${JSON.stringify(lock, null, 2)}\n`
 export async function readBuildParams(): Promise<{
   config: z.infer<typeof GeoConfigSchema>
   bounds: GeoBoundsInput
+  landmarks: GeoBuildParams['landmarks']
 }> {
+  const places: FramePlace[] = PlacesSchema.parse(
+    await readJson(join(DATA, 'landmarks/landmarks.json')),
+  ).landmarks
+  const models = landmarkModelsFileSchemaFor(places).safeParse(
+    await readJson(join(DATA, 'landmarks/models.json')),
+  )
+  if (!models.success) {
+    throw new Error(`Invalid data/landmarks/models.json:\n${z.prettifyError(models.error)}`)
+  }
   return {
     config: GeoConfigSchema.parse(await readJson(join(DATA, 'config/geo.json'))),
     bounds: BoundsSchema.parse(await readJson(join(DATA, 'geo/bounds.json'))),
+    landmarks: { models: models.data.models, places },
   }
 }
 
@@ -82,6 +117,7 @@ export async function buildFromSources(
       boroughs: decode('dcp-borough-boundaries'),
       ntas: decode('dcp-nta-2020'),
       gtfsZip: raw('mta-gtfs-subway'),
+      lion: new Map(LION_SOURCE_IDS.map((id) => [id, decode(id)])),
     },
     { ...(await readBuildParams()), lock, expected: EXPECTED_COUNTS },
   )
@@ -106,7 +142,7 @@ async function main(): Promise<void> {
   const today = new Date().toISOString().slice(0, 10)
   const { lock, files } = await ensureSources({
     cacheDir: CACHE_DIR,
-    lock: await readLock(),
+    lock: await readLock(LOCK_PATH, mode === 'update'),
     mode,
     today,
     log: write,

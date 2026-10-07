@@ -5,6 +5,7 @@
  * here is a proposal.
  */
 import type { GeoConfig } from '../../src/lib/data/schemas/config.ts'
+import { LION_SOURCE_IDS } from '../../src/lib/geo/sources.ts'
 import type { Lock, LockEntry } from './lock.ts'
 
 export interface TerminalExtension {
@@ -31,6 +32,40 @@ export const MTA_ATTRIBUTION =
   'our own server. Lines and stations are simplified artwork derived from it. Clout City is not ' +
   'endorsed by, licensed by or affiliated with the MTA. This data may not be accurate, complete, ' +
   'timely or real time.'
+
+/** DCP's LION metadata: the data dictionary for the SegmentTyp and RW_TYPE codes. */
+export const LION_METADATA_URL =
+  'https://s-media.nyc.gov/agencies/dcp/assets/files/pdf/data-tools/bytes/lion_metadata.pdf'
+
+const LION_DISCLAIMER =
+  'The Department of City Planning make no representation as to the accuracy of the ' +
+  'information or its suitability for any purposes. The Department and the City disclaim any ' +
+  'liability for errors that may be contained herein.'
+
+function lionSection(lock: Lock): string[] {
+  const sources = LION_SOURCE_IDS.map((id) => entry(lock, id))
+  return [
+    '### LION street centerlines (landmark frames)',
+    '',
+    'One query per street, each an exact `Street` match on the LION FeatureServer (release 26C),',
+    'reduced to the fields used and ordered by segment id so the bytes are stable.',
+    '',
+    '- Used for: `landmarks/frames.derived.json` (where each landmark model stands and faces).',
+    `- Codes (LION data dictionary <${LION_METADATA_URL}>): \`SegmentTyp\` B both, C connector,`,
+    '  E entrance/exit ramp, F faux, G generic, R roadbed, T terminator, U undivided, S suppressed;',
+    '  `RW_TYPE` 1 street, 3 bridge, 9 ramp. A bridge uses only its main-roadway segment types',
+    '  and roadway types (data/landmarks/models.json `frame`), never ramps or connectors.',
+    '- Transformations: projected to local metres; bridges: the length-weighted principal axis',
+    '  of those segments, its two ends where the extreme vertices project onto it (each checked',
+    '  to lie on the land of the borough it spans, from the borough boundaries above), the',
+    '  heading from the first spanned borough to the second; other landmarks: the bearing of',
+    "  the nearest segment of the fronting street plus the model's face angle. Headings are",
+    '  rounded to 0.1°, points to whole metres. No street geometry is kept.',
+    `- The item's own notice: "${LION_DISCLAIMER}"`,
+    '',
+    ...sources.flatMap((source) => [`#### ${source.title}`, '', ...sourceFacts(source), '']),
+  ]
+}
 
 function entry(lock: Lock, id: string): LockEntry {
   const found = lock.sources.find((source) => source.id === id)
@@ -109,6 +144,7 @@ export function renderSourcesMd(
     '',
     `> ${NYC_DISCLAIMER}`,
     '',
+    ...lionSection(lock),
     '## MTA',
     '',
     `### ${mta.title}`,

@@ -36,6 +36,7 @@ import {
 } from './schemas/content'
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
+import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
 import { SceneConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
@@ -44,6 +45,7 @@ import {
   GeoBoundsSchema,
   GeoManifestSchema,
   LandFileSchema,
+  LandmarkFramesFileSchema,
   ParksFileSchema,
   SubwayFileSchema,
   WaterFileSchema,
@@ -97,7 +99,9 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'homes/homes.json': HomesFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
+  'landmarks/frames.derived.json': LandmarkFramesFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
+  'landmarks/models.json': LandmarkModelsFileSchema,
   'moderation/handle-blocklist.json': HandleBlocklistSchema,
   'premium/premium.json': PremiumFileSchema,
   'sim/economy-baseline.derived.json': EconomyBaselineSchema,
@@ -238,6 +242,14 @@ describe('config/perf.json', () => {
       audioLazyGzKB: { low: 600, mid: 1000, high: 1400 },
       audioFileMaxKB: 600,
       audioRuntimeJsGzKB: 20,
+      landmarkTrianglesMax: {
+        bridge: { low: 1200, mid: 3500, high: 7000 },
+        building: { low: 600, mid: 1800, high: 3500 },
+        station: { low: 600, mid: 1800, high: 3500 },
+        government: { low: 600, mid: 1800, high: 3500 },
+      },
+      landmarkTrianglesOverride: {},
+      landmarkLodRatioMax: 0.5,
     })
   })
 

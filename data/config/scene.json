@@ -118,5 +118,19 @@
     "labelSizeM": 1500,
     "labelOpacity": 0.85,
     "dimmedLabelOpacity": 0.5
+  },
+  "landmarks": {
+    "heightScale": 1,
+    "lod": {
+      "low": { "distancesM": [0, 2000], "cullM": 6000 },
+      "mid": { "distancesM": [0, 1200, 3500], "cullM": 9000 },
+      "high": { "distancesM": [0, 1800, 5000], "cullM": 12000 }
+    },
+    "bridgeDistanceMultiplier": 2,
+    "hysteresis": 0.1,
+    "outline": { "low": false, "mid": true, "high": true },
+    "windows": { "low": false, "mid": true, "high": true },
+    "labelMaxDistanceM": 6000,
+    "outlineWidthM": 1.5
   }
 }
