@@ -492,7 +492,13 @@ step-down rule and the `e2e:perf` run settings (`perfRun`). `npm run budget` (af
 - `districtBuildingsGzKB`: per tier, every prerendered `/geo/districts/<tier>/<id>` body plus
   `/geo/blocks/<tier>`, once the build has those routes (S04d; until then the line says SKIP);
 - `serviceWorkerGzKB` and `precacheGzKB` (S04e): the service worker script and everything it
-  precaches.
+  precaches. The precache must also hold every file of the path to playable and the versioned
+  base geo, and never `/models`, `/audio`, `.glb`, source maps or `/api`, `/mod`, `/serwist`,
+  `/og`; with district routes built, the worker must carry each tier's warm list.
+
+`node scripts/budget.ts --perf=<file>` reads the limits from another file instead of
+`perf.json`: a positive control on a real build (copy perf.json, lower one limit below the
+measured size, and the run must print FAIL and exit 1). Never edit perf.json for that.
 
 It also prints a PERF-3 report line (modules Turbopack copies into more than one chunk); that line
 never fails the run. Every lookup fails loudly when it finds nothing, so a change in the build
@@ -612,6 +618,23 @@ camera starts over it).
 `public/icons/icon.svg` by `node scripts/generate-icons.ts` (output committed). The viewport is
 locked to the device width with `viewport-fit=cover`; the shell blocks page scroll, bounce and
 double-tap zoom in CSS but keeps pinch zoom (WCAG 1.4.4).
+
+**Offline (S04e).** A Serwist worker (`src/sw/sw.ts`, rules in `src/sw/policy.ts`) is served
+from `/serwist/sw.js` (no-cache, strict CSP, no source map) and registered once the map is
+playable and the browser is idle, in production builds only. It precaches the build's JS, CSS,
+SVG and fonts, the icons, the pages and the versioned base geo; models and audio are never
+precached. Runtime caches, all cache-first, same-origin GET only, versioned by content and
+deleted when a newer worker takes over: `cc-geo-*` (any `/geo/...?v=`), `cc-audio-*` (after the
+audio choice) and `cc-models-*` (`/models/<id>.<tier>.<sha8>.glb`, as the scene loads them).
+After registration the page sends `CC_WARM_TIER` with its quality tier, and the worker fetches
+that tier's district and block URLs (`districtAssetUrls(tier)`, baked in at build time) into
+`cc-geo-*`; it does so again when the tier changes, and never under a data-saver request or on
+a device reporting at most `tierWarm.skipAtOrBelowDeviceMemoryGB` of memory
+(`data/config/offline.json`). A new build waits: the update notice (banner zone,
+`data-cc-notice="update"`) offers a reload, and stays hidden while a modal or the tour is up.
+E2E blocks service workers by default; `service-worker.spec.ts`, `offline.spec.ts` and
+`npm run e2e:perf` opt in. To drop a local worker: DevTools > Application > Service workers >
+Unregister, or run `npm run dev` once (development builds unregister it).
 
 ## Local Supabase
 

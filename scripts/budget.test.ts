@@ -23,6 +23,10 @@ import {
   staticFilePath,
   threeRevisions,
   type BootIsland,
+  PRECACHE_FORBIDDEN,
+  perfOverridePath,
+  precacheProblems,
+  workerWarmUrls,
 } from './budget'
 
 const ROOT = resolve(import.meta.dirname, '..')
@@ -528,5 +532,78 @@ describe('BOOT_ISLAND_FEATURES', () => {
       const nested = uses.filter((use) => use.file === path).map((use) => join(ROOT, use.module))
       expect(nested.some(marked)).toBe(true)
     }
+  })
+})
+
+describe('precacheProblems (S04e)', () => {
+  const ok = ['/_next/static/chunks/a.js', '/', '/geo/base?v=0123456789ab']
+
+  it('passes a precache holding the path to playable and the versioned base geo', () => {
+    expect(precacheProblems(ok, ['static/chunks/a.js'])).toEqual([])
+  })
+
+  it('names every forbidden entry and every missing one', () => {
+    expect(
+      precacheProblems(
+        ['/models/taxi.low.752dce5e.glb', '/audio/a.webm', '/_next/static/chunks/a.js.map'],
+        ['static/chunks/a.js'],
+      ),
+    ).toEqual([
+      'precaches /models/taxi.low.752dce5e.glb, which must load on demand or never be cached',
+      'precaches /audio/a.webm, which must load on demand or never be cached',
+      'precaches /_next/static/chunks/a.js.map, which must load on demand or never be cached',
+      'does not precache static/chunks/a.js',
+      'does not precache the versioned base geo (/geo/base?v=)',
+    ])
+  })
+
+  it('forbids models, audio, maps and server routes, and nothing the app shell needs', () => {
+    for (const url of [
+      '/models/x.glb',
+      '/x.glb',
+      '/api/save',
+      '/mod',
+      '/og/card',
+      '/serwist/sw.js',
+      '/a.js.map',
+    ]) {
+      expect(PRECACHE_FORBIDDEN.test(url), url).toBe(true)
+    }
+    for (const url of [
+      '/',
+      '/offline',
+      '/manifest.webmanifest',
+      '/icons/icon-192.png',
+      '/geo/base?v=1',
+      '/_next/static/chunks/a.js',
+      '/modern',
+      '/apiary',
+    ]) {
+      expect(PRECACHE_FORBIDDEN.test(url), url).toBe(false)
+    }
+  })
+})
+
+describe('workerWarmUrls (S04e)', () => {
+  it("reads each tier's versioned district and block URLs, once each", () => {
+    const body =
+      'c={districtUrls:{low:["/geo/districts/low/queens?v=abc","/geo/blocks/low?v=def","/geo/blocks/low?v=def"],mid:["/geo/blocks/mid?v=1"],high:[]}}'
+    const warm = workerWarmUrls(body)
+    expect(warm.get('low')).toEqual(['/geo/districts/low/queens?v=abc', '/geo/blocks/low?v=def'])
+    expect(warm.get('mid')).toEqual(['/geo/blocks/mid?v=1'])
+    expect(warm.get('high')).toBeUndefined()
+  })
+
+  it('ignores unversioned URLs', () => {
+    expect(workerWarmUrls('"/geo/districts/low/queens"').size).toBe(0)
+  })
+})
+
+describe('perfOverridePath', () => {
+  it('reads --perf=<file>, and nothing otherwise', () => {
+    expect(perfOverridePath(['--perf=tight.json'])).toBe('tight.json')
+    expect(perfOverridePath([])).toBeNull()
+    expect(perfOverridePath(['--other'])).toBeNull()
+    expect(() => perfOverridePath(['--perf='])).toThrow(/needs a file path/)
   })
 })

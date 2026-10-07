@@ -20,7 +20,14 @@
  *   so it is left out of the 3D chunk above. A build without that marker fails, so the split
  *   can never silently fold the apartment into the city figure or drop it.
  * - Service worker (S04e): the prerendered /serwist/sw.js, gzipped, against `serviceWorkerGzKB`,
- *   and every file it precaches on install, gzipped and summed, against `precacheGzKB`.
+ *   and every file it precaches on install, gzipped and summed, against `precacheGzKB`. The
+ *   precache must hold every file of the path to playable (shell, boot islands, 3D chunk) and the
+ *   versioned base geo, and must never hold models, audio, source maps or server routes; once the
+ *   build has district routes, the worker must carry each tier's warm list (S04e part 2).
+ *
+ * `--perf=<file>` reads the limits from another file instead of data/config/perf.json: a
+ * positive control that proves, on a real build, that a limit below the measured size fails
+ * (perf.json itself is never edited for that).
  *
  * Every lookup has a positive control: a marker, loader or manifest entry that cannot be found
  * fails the run, so a change in the build format cannot turn a check into a silent pass.
@@ -28,7 +35,7 @@
  * Run after `npm run build`. Sizes use KB = 1000 bytes, the stricter reading of the budget.
  */
 import { readdir, readFile, stat } from 'node:fs/promises'
-import { join, relative } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { gzipSync } from 'node:zlib'
 import { z } from 'zod'
 import { PerfConfigSchema, QUALITY_TIERS } from '../src/lib/data/schemas/config.ts'
@@ -374,6 +381,57 @@ async function precacheFileBytes(url: string, root: string, distDir: string): Pr
   throw new Error(`No built file for precached URL ${url}`)
 }
 
+/**
+ * URLs the precache must never hold (S04e): the 3D models and audio (they load on demand and are
+ * cached by the worker then), source maps, and server, moderator, worker and share-image routes.
+ */
+export const PRECACHE_FORBIDDEN =
+  /^\/(?:models|audio|api|mod|serwist|og)(?:\/|$)|\.(?:glb|map)(?:[?#]|$)/
+
+/**
+ * Problems with the precache list: a forbidden URL, or a required one missing. `required` is the
+ * path to playable (`static/...` chunk names) plus the versioned base geo URL prefix.
+ */
+export function precacheProblems(
+  urls: readonly string[],
+  requiredChunks: readonly string[],
+): string[] {
+  const problems = urls
+    .filter((url) => PRECACHE_FORBIDDEN.test(url))
+    .map((url) => `precaches ${url}, which must load on demand or never be cached`)
+  const listed = new Set(urls)
+  for (const chunk of requiredChunks) {
+    if (!listed.has(`/_next/${chunk}`)) problems.push(`does not precache ${chunk}`)
+  }
+  if (!urls.some((url) => /^\/geo\/base\?v=[0-9a-f]+$/.test(url))) {
+    problems.push('does not precache the versioned base geo (/geo/base?v=)')
+  }
+  return problems
+}
+
+const WARM_URL = /"(\/geo\/(?:districts|blocks)\/(low|mid|high)\b[^"]*\?v=[0-9a-f]+)"/g
+
+/** The tier-warm URLs baked into the worker (src/server/pwa/revision.ts), per tier. */
+export function workerWarmUrls(swSource: string): Map<string, string[]> {
+  const perTier = new Map<string, string[]>()
+  for (const match of swSource.matchAll(WARM_URL)) {
+    const [, url = '', tier = ''] = match
+    const urls = perTier.get(tier) ?? []
+    if (!urls.includes(url)) urls.push(url)
+    perTier.set(tier, urls)
+  }
+  return perTier
+}
+
+/** Reads `--perf=<file>` (a limits file used instead of data/config/perf.json), if given. */
+export function perfOverridePath(argv: readonly string[]): string | null {
+  const flag = argv.find((arg) => arg.startsWith('--perf='))
+  if (flag === undefined) return null
+  const path = flag.slice('--perf='.length)
+  if (path === '') throw new Error('--perf= needs a file path')
+  return path
+}
+
 export interface BuildInput {
   readonly chunks: Chunks
   /** The shell's external scripts, as chunk names. */
@@ -626,7 +684,9 @@ async function main(): Promise<void> {
   const root = process.cwd()
   const distDir = join(root, '.next')
   const appDir = join(distDir, 'server/app')
-  const perf: unknown = JSON.parse(await readFile(join(root, 'data/config/perf.json'), 'utf8'))
+  const override = perfOverridePath(process.argv.slice(2))
+  const perfPath = override === null ? join(root, 'data/config/perf.json') : resolve(root, override)
+  const perf: unknown = JSON.parse(await readOrExplain(perfPath, `No limits file at ${perfPath}`))
   const limits = readLimits(perf)
 
   const html = await readOrExplain(
@@ -673,21 +733,6 @@ async function main(): Promise<void> {
     readApartmentChunkLimit(perf),
   )
 
-  const swLimits = readServiceWorkerLimits(perf)
-  const swSource = await readOrExplain(
-    join(distDir, SERVICE_WORKER_BODY),
-    `No ${SERVICE_WORKER_BODY} in .next. Run \`npm run build\`.`,
-  )
-  const worker = checkBudget(
-    'Service worker (/serwist/sw.js)',
-    gzipBytes(swSource),
-    swLimits.serviceWorkerGzKB,
-  )
-  const urls = precacheUrls(swSource)
-  let precacheBytes = 0
-  for (const url of urls) precacheBytes += await precacheFileBytes(url, root, distDir)
-  const precache = checkBudget('Precache (install)', precacheBytes, swLimits.precacheGzKB)
-
   const boot = bootIslandFiles(input)
   const playable = new Set([...shellFiles, ...[...boot.values()].flat(), ...scene3d.files])
   const bootOnly = [...new Set([...boot.values()].flat())].filter(
@@ -705,6 +750,26 @@ async function main(): Promise<void> {
   )
   assertGeoBaseBody(geoBody)
   const geo = checkBudget('Base geo (/geo/base)', gzipBytes(geoBody), limits.baseGeoGzKB)
+
+  const swLimits = readServiceWorkerLimits(perf)
+  const swSource = await readOrExplain(
+    join(distDir, SERVICE_WORKER_BODY),
+    `No ${SERVICE_WORKER_BODY} in .next. Run \`npm run build\`.`,
+  )
+  const worker = checkBudget(
+    'Service worker (/serwist/sw.js)',
+    gzipBytes(swSource),
+    swLimits.serviceWorkerGzKB,
+  )
+  const urls = precacheUrls(swSource)
+  const problems = precacheProblems(
+    urls,
+    [...playable].filter((file) => file.endsWith('.js')),
+  )
+  if (problems.length > 0) throw new Error(`service worker: ${problems.join('; ')}`)
+  let precacheBytes = 0
+  for (const url of urls) precacheBytes += await precacheFileBytes(url, root, distDir)
+  const precache = checkBudget('Precache (install)', precacheBytes, swLimits.precacheGzKB)
 
   const results = [shell, scene, apartment, total, geo, worker, precache]
   const lines = [
@@ -727,6 +792,15 @@ async function main(): Promise<void> {
   if (districts === null) {
     lines.push('SKIP District buildings: this build has no /geo/districts routes yet (S04d)')
   } else {
+    // S04e part 2: the worker can warm every tier the build serves.
+    const warm = workerWarmUrls(swSource)
+    const empty = QUALITY_TIERS.filter((tier) => (warm.get(tier) ?? []).length === 0)
+    if (empty.length > 0) {
+      throw new Error(`service worker: no tier-warm URLs for ${empty.join(', ')}`)
+    }
+    lines.push(
+      `INFO Tier warm: ${QUALITY_TIERS.map((tier) => `${tier} ${warm.get(tier)?.length ?? 0} URLs`).join(', ')}`,
+    )
     for (const [tier, [bytes, count]] of districts) {
       const limit =
         limits.districtBuildingsGzKB[tier as keyof BudgetLimits['districtBuildingsGzKB']]
@@ -742,6 +816,7 @@ async function main(): Promise<void> {
     `INFO PERF-3 duplicate modules (report only): ${duplicates.modules} modules in more than one chunk, about ${kb(duplicates.extraGzBytes)} KB gz extra${top.length > 0 ? `; largest ${top.join(', ')}` : ''}`,
   )
 
+  if (override !== null) lines.unshift(`NOTE limits read from ${override}, not perf.json`)
   process.stdout.write(`${lines.join('\n')}\n`)
   if (results.some((result) => !result.ok)) process.exitCode = 1
 }

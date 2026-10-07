@@ -10,11 +10,13 @@ import {
   writeReport,
   type LoadTimings,
 } from './measure'
+import { markServiceWorkerRegistration, registrationMarkMs } from './serviceWorker'
 
 // Cold load under the cc-mid-4g profile on the perf run's tier (CLAUDE.md "Performance budgets"):
 // the shell visible and interactive, and the map playable (city drawn, the player's avatar
 // placed), each as the median of perfRun.coldRuns loads. Every load gets a fresh browser
-// context, so nothing is cached.
+// context, so nothing is cached. The service worker (S04e) must stay off the critical path: the
+// page asks to register it only after the map is playable.
 
 const tier = perf.perfRun.coldTier
 const runs: LoadTimings[] = []
@@ -24,11 +26,18 @@ test.describe.configure({ mode: 'serial' })
 for (let run = 1; run <= perf.perfRun.coldRuns; run += 1) {
   test(`cold load ${run} of ${perf.perfRun.coldRuns} (${tier} tier)`, async ({ page }) => {
     await seedPlayer(page, tier)
+    await markServiceWorkerRegistration(page)
     await applyThrottle(page, profile)
     await page.goto('/')
     const timings = await waitForPlayable(page)
     test.info().annotations.push({ type: 'timings', description: JSON.stringify(timings) })
     runs.push(timings)
+    // Registration waits for playable, then for an idle moment (offline.json registration
+    // idleTimeoutMs), so it must come, and come after playable.
+    const registeredMs = await registrationMarkMs(page, 30_000)
+    expect(registeredMs, 'service worker registered after playable').toBeGreaterThanOrEqual(
+      timings.playableMs,
+    )
   })
 }
 

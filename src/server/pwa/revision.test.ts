@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import audioManifestJson from '@data/audio/manifest.json'
+import modelManifestJson from '@data/assets/manifest.json'
+import { districtAssetUrls } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
+import { QUALITY_TIERS } from '@/lib/data/schemas/config'
+import { isVersionedGeo, warmTierUrls } from '@/sw/policy'
 import {
   PRECACHED_PAGES,
   additionalPrecacheEntries,
   audioVersionOf,
   buildRevision,
+  precacheGlobs,
   serviceWorkerConfig,
 } from './revision'
 
@@ -60,11 +65,41 @@ describe('additionalPrecacheEntries', () => {
 })
 
 describe('serviceWorkerConfig', () => {
-  it('names the versioned caches after the current geo and audio', () => {
+  it('names the versioned caches after the current geo, audio and models', () => {
     const config = serviceWorkerConfig()
     expect(config.geoCache).toBe(`cc-geo-${geoVersion}`)
     expect(config.audioCache).toBe(`cc-audio-${audioVersionOf(audioManifestJson)}`)
+    expect(config.modelsCache).toBe(`cc-models-${modelManifestJson.assetVersion}`)
     expect(config.revision).toMatch(/^[0-9a-f]{16}$/)
-    expect(config.districtUrls).toEqual({ low: [], mid: [], high: [] })
+  })
+
+  it("bakes in each tier's district URLs exactly as the scene loads them", () => {
+    const config = serviceWorkerConfig()
+    const origin = 'https://cloutcity.example'
+    for (const tier of QUALITY_TIERS) {
+      const urls = districtAssetUrls(tier)
+      expect(urls.length, tier).toBeGreaterThan(1)
+      expect(config.districtUrls[tier]).toEqual(urls)
+      // Every URL is versioned geo the worker's geo route caches, and none is dropped.
+      expect(warmTierUrls(config, tier, origin)).toEqual(urls)
+      for (const url of urls) {
+        const facts = { url: new URL(url, origin), method: 'GET', mode: 'cors' as const }
+        expect(isVersionedGeo({ ...facts, sameOrigin: true }), url).toBe(true)
+        expect(url, url).toMatch(new RegExp(`^/geo/(?:districts|blocks)/${tier}\\b`))
+      }
+    }
+  })
+})
+
+describe('precacheGlobs', () => {
+  it('takes code, styles and fonts from the build and only the icons from public/', () => {
+    expect(precacheGlobs('.next-x')).toEqual([
+      '.next-x/static/**/*.{js,css,svg,woff2}',
+      'public/icons/**/*',
+    ])
+    // Models and audio load on demand: nothing under public/models or public/audio, no .glb.
+    for (const glob of precacheGlobs()) {
+      expect(glob).not.toMatch(/models|audio|glb|public\/\*\*/)
+    }
   })
 })

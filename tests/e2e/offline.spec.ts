@@ -1,7 +1,13 @@
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import { copyText, placeName } from './helpers/places'
 import { waitForMapSettled } from './helpers/scene'
-import { reloadControlled, waitForActiveWorker } from './helpers/serviceWorker'
+import {
+  SERVICE_WORKER_PATH,
+  geoCacheUrls,
+  reloadControlled,
+  waitForActiveWorker,
+  warmUrlsFromWorker,
+} from './helpers/serviceWorker'
 
 // S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
 // player there (travel itself is tests/e2e/travel.spec.ts).
@@ -16,18 +22,45 @@ test.use({ serviceWorkers: 'allow' })
 const DELI = 'late-lantern-deli'
 const BREAKFAST = 'bodega-breakfast'
 
-test('loads, goes offline, reloads and buys a deli breakfast', async ({ page, context }) => {
+test('loads, goes offline, reloads and buys a deli breakfast', async ({
+  page,
+  context,
+  request,
+}) => {
+  const warm = warmUrlsFromWorker(await (await request.get(SERVICE_WORKER_PATH)).text())
+  expect(warm.low.length).toBeGreaterThan(1)
   await page.goto('/')
   await waitForWelcomeGate(page)
   await waitForActiveWorker(page)
+  // The detected tier's district assets (low under SwiftShader) are on the device before the
+  // network goes away.
+  await expect
+    .poll(async () => {
+      const cached = await geoCacheUrls(page)
+      return warm.low.filter((url) => !cached.includes(url))
+    })
+    .toEqual([])
   // The worker never claims an open page: it serves from the next load on.
   await reloadControlled(page)
 
   await context.setOffline(true)
+  const geoResponses: { url: string; fromWorker: boolean }[] = []
+  page.on('response', (response) => {
+    const url = new URL(response.url())
+    if (url.pathname.startsWith('/geo/')) {
+      geoResponses.push({ url: url.pathname, fromWorker: response.fromServiceWorker() })
+    }
+  })
   await page.reload()
   await waitForWelcomeGate(page)
   await waitForMapSettled(page)
   await expect(page.locator('[data-scene-root]')).toHaveAttribute('data-scene-status', 'ready')
+  // Base geo and the tier's districts came from the worker's caches.
+  expect(geoResponses.some(({ url }) => url === '/geo/base')).toBe(true)
+  await expect
+    .poll(() => geoResponses.some(({ url }) => url.startsWith('/geo/districts/low/')))
+    .toBe(true)
+  for (const response of geoResponses) expect(response.fromWorker, response.url).toBe(true)
 
   const money = page.locator('[data-hud-value="money"]').first()
   await expect(money).toBeVisible()

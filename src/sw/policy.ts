@@ -8,7 +8,9 @@
  *    pages, the manifest and the versioned base geo and fallback map (src/app/serwist/[path]);
  *  - `cc-geo-<version>`: other versioned geo (`/geo/...?v=`), cache-first;
  *  - `cc-audio-<version>`: our own audio files, cache-first, only once the runtime fetches them
- *    (after the player's audio choice); never precached.
+ *    (after the player's audio choice); never precached;
+ *  - `cc-models-<version>`: the hand-made 3D models (S04h), cache-first, only once the scene
+ *    loads them; never precached (they load on demand, tier by tier, after the map is playable).
  * Everything else goes to the network untouched. Same-origin only, GET only, and a response
  * that is private, personalised or not a plain 200 is never stored ({@link refuseSensitive}).
  */
@@ -17,7 +19,7 @@
 export const CACHE_PREFIX = 'cc-'
 
 /** The runtime caches, by kind. Each name carries the content version it holds. */
-export const RUNTIME_CACHE_KINDS = ['geo', 'audio'] as const
+export const RUNTIME_CACHE_KINDS = ['geo', 'audio', 'models'] as const
 export type RuntimeCacheKind = (typeof RUNTIME_CACHE_KINDS)[number]
 
 const VERSION = /^[a-z0-9]{1,64}$/
@@ -64,6 +66,18 @@ export const AUDIO_PATH = /^\/audio\/[a-z0-9/_-]+\.(?:webm|m4a)$/
 
 export function isOwnAudio({ url, method, sameOrigin }: RequestFacts): boolean {
   return sameOrigin && method === 'GET' && url.search === '' && AUDIO_PATH.test(url.pathname)
+}
+
+/**
+ * A served model file (the same rule as the `file` field of data/assets/manifest.json, kept here
+ * so the worker bundle does not pull in the schema; policy.test.ts checks they agree). The name
+ * carries the first 8 hex digits of the file's sha256, so a URL never changes content.
+ */
+export const MODEL_PATH = /^\/models\/[a-z0-9-]+\.(?:low|mid|high)\.[0-9a-f]{8}\.glb$/
+
+/** A versioned model file: same-origin GET, no query (the name is the version). */
+export function isVersionedModel({ url, method, sameOrigin }: RequestFacts): boolean {
+  return sameOrigin && method === 'GET' && url.search === '' && MODEL_PATH.test(url.pathname)
 }
 
 /**
@@ -139,6 +153,18 @@ export interface WarmTierMessage {
   readonly tier: WarmTier
 }
 
+/** The worker's reply on the message's port once a tier's assets are in its cache. */
+export const WARM_TIER_DONE = 'CC_WARM_TIER_DONE'
+
+export interface WarmTierDone {
+  readonly type: typeof WARM_TIER_DONE
+  readonly tier: WarmTier
+  /** URLs now in the cache (from before, or fetched now). */
+  readonly cached: number
+  /** URLs that could not be fetched (offline, or refused by {@link refuseSensitive}). */
+  readonly failed: number
+}
+
 /** A page's message, validated: a warm request for a known tier, or null for anything else. */
 export function parseWarmTierMessage(data: unknown): WarmTierMessage | null {
   if (typeof data !== 'object' || data === null) return null
@@ -154,6 +180,27 @@ export interface ServiceWorkerConfig {
   readonly revision: string
   readonly geoCache: string
   readonly audioCache: string
-  /** District asset URLs to warm per tier. Empty until S04d part 2. */
+  readonly modelsCache: string
+  /**
+   * Per tier, the district and block URLs the worker fetches on a warm request
+   * (`districtAssetUrls(tier)`, src/lib/data/districts.ts): the same versioned URLs the scene
+   * loads, so a warm entry is exactly what the next load asks for.
+   */
   readonly districtUrls: Readonly<Record<WarmTier, readonly string[]>>
+}
+
+/**
+ * The URLs to fetch for a warm request: the tier's baked-in list, keeping only versioned geo, so
+ * a warm can never reach anything the geo route would not cache anyway.
+ */
+export function warmTierUrls(
+  config: ServiceWorkerConfig,
+  tier: WarmTier,
+  origin: string,
+): string[] {
+  return config.districtUrls[tier].filter((url) => {
+    const parsed = new URL(url, origin)
+    const sameOrigin = parsed.origin === origin
+    return isVersionedGeo({ url: parsed, method: 'GET', mode: 'cors', sameOrigin })
+  })
 }

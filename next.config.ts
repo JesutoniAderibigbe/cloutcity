@@ -12,6 +12,11 @@ const SERVICE_WORKER_HEADERS = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // No source maps for client code in production (the default, stated so it stays that way): the
+  // bundles players download carry no map URL and no map is served. The service worker's bundle
+  // has none either (src/app/serwist/[path]/route.ts). Server maps stay: they never leave the
+  // server and keep stack traces readable in its logs.
+  productionBrowserSourceMaps: false,
   // The e2e suite builds into its own directory (playwright.config.ts), so a test build with
   // the scene test hooks never sits where `npm run start` and `npm run budget` read.
   distDir: process.env.NEXT_DIST_DIR ?? '.next',
