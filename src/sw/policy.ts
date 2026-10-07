@@ -1,0 +1,159 @@
+/**
+ * The service worker's caching policy (S04e, DEC-23), as pure functions so every rule is unit
+ * tested without a browser. src/sw/sw.ts wires them into Serwist; nothing here touches
+ * `self`, `caches` or the network.
+ *
+ * What the worker may keep:
+ *  - the precache: the build's static JS/CSS/SVG/fonts, the icons, `/`, `/offline`, the legal
+ *    pages, the manifest and the versioned base geo and fallback map (src/app/serwist/[path]);
+ *  - `cc-geo-<version>`: other versioned geo (`/geo/...?v=`), cache-first;
+ *  - `cc-audio-<version>`: our own audio files, cache-first, only once the runtime fetches them
+ *    (after the player's audio choice); never precached.
+ * Everything else goes to the network untouched. Same-origin only, GET only, and a response
+ * that is private, personalised or not a plain 200 is never stored ({@link refuseSensitive}).
+ */
+
+/** Prefix of every runtime cache this app owns; anything else (Serwist's precache) is left alone. */
+export const CACHE_PREFIX = 'cc-'
+
+/** The runtime caches, by kind. Each name carries the content version it holds. */
+export const RUNTIME_CACHE_KINDS = ['geo', 'audio'] as const
+export type RuntimeCacheKind = (typeof RUNTIME_CACHE_KINDS)[number]
+
+const VERSION = /^[a-z0-9]{1,64}$/
+
+/** `cc-<kind>-<version>`. The version is a content hash, so new data never mixes with old. */
+export function runtimeCacheName(kind: RuntimeCacheKind, version: string): string {
+  if (!VERSION.test(version)) throw new Error(`Invalid ${kind} cache version: ${version}`)
+  return `${CACHE_PREFIX}${kind}-${version}`
+}
+
+/**
+ * The app-owned caches to delete on activate: every `cc-` cache that is not one of the current
+ * worker's caches. Caches without the prefix (Serwist's precache, which cleans itself) are kept.
+ */
+export function staleCacheNames(existing: readonly string[], current: readonly string[]): string[] {
+  const keep = new Set(current)
+  return existing.filter((name) => name.startsWith(CACHE_PREFIX) && !keep.has(name))
+}
+
+/** What a route matcher sees of a request. */
+export interface RequestFacts {
+  readonly url: URL
+  readonly method: string
+  readonly mode: RequestMode
+  /** Serwist's `sameOrigin`: the request's origin is the worker's. */
+  readonly sameOrigin: boolean
+}
+
+/** Geo the worker caches: same-origin GET `/geo/...` carrying its `?v=` content version. */
+export function isVersionedGeo({ url, method, sameOrigin }: RequestFacts): boolean {
+  return (
+    sameOrigin &&
+    method === 'GET' &&
+    url.pathname.startsWith('/geo/') &&
+    (url.searchParams.get('v') ?? '') !== ''
+  )
+}
+
+/**
+ * Our own audio files (the same rule as SAME_ORIGIN_AUDIO in src/lib/audio/manifest.ts, kept
+ * here so the worker bundle does not pull in the manifest; policy.test.ts checks they agree).
+ */
+export const AUDIO_PATH = /^\/audio\/[a-z0-9/_-]+\.(?:webm|m4a)$/
+
+export function isOwnAudio({ url, method, sameOrigin }: RequestFacts): boolean {
+  return sameOrigin && method === 'GET' && url.search === '' && AUDIO_PATH.test(url.pathname)
+}
+
+/**
+ * Navigations the worker never touches: server endpoints, the moderator area, the worker
+ * itself, data routes and share images. They always go straight to the network, with no
+ * offline page in their place.
+ */
+export const NAVIGATION_DENYLIST: readonly RegExp[] = [/^\/(?:api|mod|serwist|geo|og)(?:\/|$)/]
+
+/** A page navigation the worker handles: network only, with `/offline` when that fails. */
+export function isPageNavigation({ url, method, mode, sameOrigin }: RequestFacts): boolean {
+  return (
+    sameOrigin &&
+    method === 'GET' &&
+    mode === 'navigate' &&
+    !NAVIGATION_DENYLIST.some((pattern) => pattern.test(url.pathname))
+  )
+}
+
+/** The parts of a request and response {@link refuseSensitive} judges. */
+export interface CacheCandidate {
+  readonly request: { readonly headers: Pick<Headers, 'has'> }
+  readonly response: {
+    readonly status: number
+    readonly type: ResponseType
+    readonly headers: Pick<Headers, 'get'>
+  }
+}
+
+function headerTokens(value: string | null): string[] {
+  return (value ?? '')
+    .toLowerCase()
+    .split(',')
+    .map((token) => token.trim().split('=')[0] ?? '')
+    .filter((token) => token !== '')
+}
+
+/**
+ * Whether a response must never be stored (DEC-23): a request that carried credentials in an
+ * Authorization header, anything but a plain same-origin 200 (opaque, CORS, redirects, partial
+ * and error responses), `Cache-Control: no-store` or `private`, or a response that varies by
+ * cookie or credentials (personalised).
+ */
+export function isSensitive({ request, response }: CacheCandidate): boolean {
+  if (request.headers.has('authorization')) return true
+  if (response.status !== 200 || response.type !== 'basic') return true
+  const cacheControl = headerTokens(response.headers.get('cache-control'))
+  if (cacheControl.includes('no-store') || cacheControl.includes('private')) return true
+  const vary = headerTokens(response.headers.get('vary'))
+  return vary.includes('*') || vary.includes('cookie') || vary.includes('authorization')
+}
+
+/**
+ * A Serwist `cacheWillUpdate` callback: the response when it may be stored, `null` to refuse.
+ * Every runtime strategy carries it.
+ */
+export function refuseSensitive<R extends CacheCandidate['response']>(candidate: {
+  readonly request: CacheCandidate['request']
+  readonly response: R
+}): R | null {
+  return isSensitive(candidate) ? null : candidate.response
+}
+
+/** The detected quality tiers (CLAUDE.md "Quality tiers"). */
+export const WARM_TIERS = ['low', 'mid', 'high'] as const
+export type WarmTier = (typeof WARM_TIERS)[number]
+
+/** Message type a page sends to have the worker cache its tier's district assets. */
+export const WARM_TIER_MESSAGE = 'CC_WARM_TIER'
+
+export interface WarmTierMessage {
+  readonly type: typeof WARM_TIER_MESSAGE
+  readonly tier: WarmTier
+}
+
+/** A page's message, validated: a warm request for a known tier, or null for anything else. */
+export function parseWarmTierMessage(data: unknown): WarmTierMessage | null {
+  if (typeof data !== 'object' || data === null) return null
+  const { type, tier } = data as { type?: unknown; tier?: unknown }
+  if (type !== WARM_TIER_MESSAGE) return null
+  if (!(WARM_TIERS as readonly unknown[]).includes(tier)) return null
+  return { type: WARM_TIER_MESSAGE, tier: tier as WarmTier }
+}
+
+/** What the route handler bakes into the worker at build time (src/server/pwa/revision.ts). */
+export interface ServiceWorkerConfig {
+  /** Build revision: precache revisions of the HTML entries. */
+  readonly revision: string
+  readonly geoCache: string
+  readonly audioCache: string
+  /** District asset URLs to warm per tier. Empty until S04d part 2. */
+  readonly districtUrls: Readonly<Record<WarmTier, readonly string[]>>
+}

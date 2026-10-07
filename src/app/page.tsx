@@ -5,6 +5,7 @@ import { HudFrame } from '@/components/hud/HudFrame'
 import { HudPanelMount } from '@/components/hud/HudPanelMount'
 import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
+import { OfflineSupportMount } from '@/components/offline/OfflineSupportMount'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
 import { PlacesButton } from '@/components/places/PlacesButton'
@@ -22,6 +23,7 @@ export default function HomePage() {
         </>
       }
       slots={{
+        banner: <OfflineSupportMount />,
         hud: <HudFrame places={<PlacesButton />} />,
         toast: <LevelUpToastMount />,
         sheet: (

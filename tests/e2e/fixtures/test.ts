@@ -37,6 +37,10 @@ const IGNORED_CONSOLE_MESSAGES: readonly {
     type: 'warning',
     text: /^\[\.WebGL-0x[0-9a-f]+\]GL Driver Message \(OpenGL, Performance, GL_CLOSE_PATH_NV, High\): GPU stall due to ReadPixels(?: \(this message will no longer repeat\))?$/,
   },
+  // Playwright's own stand-in for navigator.serviceWorker.register under `serviceWorkers:
+  // 'block'` (playwright.config.ts, S04e). Only test browsers run it; the app logs the refused
+  // registration at info and plays on.
+  { type: 'warning', text: /^Service Worker registration blocked by Playwright$/ },
 ]
 
 function isIgnored(message: ConsoleMessage): boolean {

@@ -18,6 +18,7 @@ import {
   JOB_IDS,
   LayoutConfigSchema,
   ModerationConfigSchema,
+  OfflineConfigSchema,
   OnboardingConfigSchema,
   PerfConfigSchema,
   ProgressionConfigSchema,
@@ -79,6 +80,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/handles.json': HandlesConfigSchema,
   'config/layout.json': LayoutConfigSchema,
   'config/moderation.json': ModerationConfigSchema,
+  'config/offline.json': OfflineConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
@@ -238,6 +240,9 @@ describe('config/perf.json', () => {
       audioLazyGzKB: { low: 600, mid: 1000, high: 1400 },
       audioFileMaxKB: 600,
       audioRuntimeJsGzKB: 20,
+      // S04e: the service worker script and its install-time precache (not in CLAUDE.md's table).
+      serviceWorkerGzKB: 15,
+      precacheGzKB: 1000,
     })
   })
 

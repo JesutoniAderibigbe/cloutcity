@@ -1,4 +1,14 @@
+import { withSerwist } from '@serwist/turbopack'
 import type { NextConfig } from 'next'
+
+/**
+ * The service worker script (S04e): never cached, so a deploy is found on the next update
+ * check, and locked to same-origin scripts (Next.js PWA guide, "Securing your application").
+ */
+const SERVICE_WORKER_HEADERS = [
+  { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+  { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self'" },
+]
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -10,6 +20,21 @@ const nextConfig: NextConfig = {
     // code unless the build opts in (an unset NEXT_PUBLIC_ variable stays a runtime lookup).
     NEXT_PUBLIC_TEST_HOOKS: process.env.NEXT_PUBLIC_TEST_HOOKS === '1' ? '1' : '0',
   },
+  async headers() {
+    return [
+      { source: '/serwist/sw.js', headers: SERVICE_WORKER_HEADERS },
+      {
+        // Geo is addressed by its content version (/geo/base?v=<geoVersion>), so a versioned
+        // URL never changes. The fallback map is left out: its ?v= is the geo version, but it
+        // also renders the palette and copy, which can change without it.
+        source: '/geo/:path((?!fallback$).+)',
+        has: [{ type: 'query', key: 'v' }],
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+    ]
+  },
 }
 
-export default nextConfig
+// withSerwist keeps esbuild (which bundles the worker in the route handler) out of the server
+// bundle.
+export default withSerwist(nextConfig)

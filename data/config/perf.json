@@ -29,5 +29,7 @@
   },
   "audioLazyGzKB": { "low": 600, "mid": 1000, "high": 1400 },
   "audioFileMaxKB": 600,
-  "audioRuntimeJsGzKB": 20
+  "audioRuntimeJsGzKB": 20,
+  "serviceWorkerGzKB": 15,
+  "precacheGzKB": 1000
 }

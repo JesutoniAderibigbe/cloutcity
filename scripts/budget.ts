@@ -7,6 +7,8 @@
  * - 3D chunk JS: the files of the lazy `next/dynamic` scene import, read from the route's
  *   react-loadable-manifest.json (minus any file the shell already loads), gzipped, against
  *   `sceneChunkJsGzKB`.
+ * - Service worker (S04e): the prerendered /serwist/sw.js, gzipped, against `serviceWorkerGzKB`,
+ *   and every file it precaches on install, gzipped and summed, against `precacheGzKB`.
  *
  * scripts/shell-guard.ts runs next and checks the boot path and that no test hook ships.
  * Run after `npm run build`. Sizes use KB = 1000 bytes, the stricter reading of the budget.
@@ -129,6 +131,65 @@ export function sceneChunkFiles(manifest: unknown, shellScripts: readonly string
   return [...files].sort()
 }
 
+const ServiceWorkerLimitsSchema = z.object({
+  serviceWorkerGzKB: PerfConfigSchema.shape.serviceWorkerGzKB,
+  precacheGzKB: PerfConfigSchema.shape.precacheGzKB,
+})
+
+export function readServiceWorkerLimits(perf: unknown): {
+  serviceWorkerGzKB: number
+  precacheGzKB: number
+} {
+  const result = ServiceWorkerLimitsSchema.safeParse(perf)
+  if (!result.success) {
+    throw new Error(
+      'data/config/perf.json: serviceWorkerGzKB and precacheGzKB must be positive numbers',
+    )
+  }
+  return result.data
+}
+
+/** Where the build keeps the prerendered service worker (src/app/serwist/[path]/route.ts). */
+export const SERVICE_WORKER_BODY = 'server/app/serwist/sw.js.body'
+
+const PRECACHE_URL = /\burl:\s*"([^"]+)"/g
+
+/**
+ * The URLs the service worker precaches, read from its injected manifest, deduplicated. Fails
+ * fast when there are none, so a changed bundle format cannot pass as an empty precache.
+ */
+export function precacheUrls(swSource: string): string[] {
+  const urls = [...new Set([...swSource.matchAll(PRECACHE_URL)].map((match) => match[1] ?? ''))]
+  if (urls.length === 0) throw new Error('sw.js lists no precache entries: unexpected format')
+  return urls
+}
+
+/**
+ * Candidate files for a precached URL: build assets under `static/`, prerendered pages and
+ * route bodies under `server/app/`, then `public/`. The first that exists is the one served.
+ */
+export function precacheFileCandidates(url: string, root: string, distDir: string): string[] {
+  if (url.startsWith('/_next/static/')) return [staticFilePath(url, distDir)]
+  const path = decodeURIComponent(url.split(/[?#]/)[0] ?? '')
+  if (!path.startsWith('/') || path.split('/').includes('..')) {
+    throw new Error(`Refusing precache URL: ${url}`)
+  }
+  const page = path === '/' ? 'index' : path.slice(1)
+  return [
+    join(distDir, 'server/app', `${page}.html`),
+    join(distDir, 'server/app', `${page}.body`),
+    join(root, 'public', path.slice(1)),
+  ]
+}
+
+async function precacheFileBytes(url: string, root: string, distDir: string): Promise<number> {
+  for (const file of precacheFileCandidates(url, root, distDir)) {
+    const content = await readFile(file).catch(() => null)
+    if (content !== null) return gzipBytes(content)
+  }
+  throw new Error(`No built file for precached URL ${url}`)
+}
+
 function report(result: BudgetResult, detail: string): string {
   const status = result.ok ? 'PASS' : 'FAIL'
   return `${status} ${result.name}: ${result.actualKB} KB gz (limit ${result.limitKB} KB)\n  ${detail}`
@@ -171,15 +232,34 @@ async function main(): Promise<void> {
   for (const file of sceneFiles) sceneBytes += gzipBytes(await readFile(join(distDir, file)))
   const scene = checkBudget('3D chunk JS (lazy)', sceneBytes, sceneLimitKB)
 
+  const swLimits = readServiceWorkerLimits(perf)
+  let swSource: string
+  try {
+    swSource = await readFile(join(distDir, SERVICE_WORKER_BODY), 'utf8')
+  } catch {
+    throw new Error(`No ${SERVICE_WORKER_BODY} in .next. Run \`npm run build\`.`)
+  }
+  const worker = checkBudget(
+    'Service worker (/serwist/sw.js)',
+    gzipBytes(swSource),
+    swLimits.serviceWorkerGzKB,
+  )
+  const urls = precacheUrls(swSource)
+  let precacheBytes = 0
+  for (const url of urls) precacheBytes += await precacheFileBytes(url, root, distDir)
+  const precache = checkBudget('Precache (install)', precacheBytes, swLimits.precacheGzKB)
+
   const lines = [
     report(
       shell,
       `${external.length} chunks: ${(externalBytes / 1000).toFixed(1)} KB gz; inline: ${(inlineBytes / 1000).toFixed(1)} KB gz`,
     ),
     report(scene, `${sceneFiles.length} chunks: ${sceneFiles.join(', ')}`),
+    report(worker, `${SERVICE_WORKER_BODY}`),
+    report(precache, `${urls.length} entries`),
   ]
   process.stdout.write(`${lines.join('\n')}\n`)
-  if (!shell.ok || !scene.ok) process.exitCode = 1
+  if (![shell, scene, worker, precache].every((result) => result.ok)) process.exitCode = 1
 }
 
 if (import.meta.main) {
