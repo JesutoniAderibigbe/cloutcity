@@ -27,23 +27,24 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 
 ## Scripts
 
-| Script                            | What it does                                                                                                                        |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                             |
-| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                         |
-| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                |
-| `npm run format:check` / `format` | Prettier check / write                                                                                                              |
-| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                    |
-| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                        |
-| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                            |
-| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)            |
-| `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                     |
-| `npm run budget`                  | Gzipped shell JS of `/` and the lazy 3D chunk against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
-| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                            |
-| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies             |
-| `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies              |
-| `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender           |
-| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                              |
+| Script                            | What it does                                                                                                                                                                                                    |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                                                                                         |
+| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                                                                                                     |
+| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                                                                                            |
+| `npm run format:check` / `format` | Prettier check / write                                                                                                                                                                                          |
+| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                                                                                                |
+| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                                                                                                    |
+| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                                                                                                        |
+| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)                                                                                        |
+| `npm run e2e:perf`                | Cold, warm and per-tier render budgets under the `cc-mid-4g` throttle (`tests/perf/*.perf.ts`); medians in `test-results/perf/report.json`                                                                      |
+| `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                                                                                                 |
+| `npm run budget`                  | Gzipped shell JS, 3D chunk, apartment chunk, total JS to playable, base geo, district assets, service worker and precache against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
+| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                                                                        |
+| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                         |
+| `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                          |
+| `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender                                                                                       |
+| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                          |
 
 Gate order used by the build loop:
 `npm run format:check && npm run typecheck && npm run lint && npm test && npm run test:integration && npm run build && npm run e2e && npm run budget`
@@ -253,15 +254,15 @@ by a zod schema in `src/lib/data/schemas/` (`src/lib/data/data.test.ts` fails if
 no schema or does not match it, if any other file type appears (only `SOURCES.md` and
 `README.md` are allowed next to data), or if a cross-file reference breaks).
 
-| Folder            | Holds                                                                                                                                                                                                                                                                                                                |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `progression.json` (goals, grant caps, prestige rules), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings) |
-| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                                                                                     |
-| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                                                                                    |
-| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                                   |
-| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                                                                        |
-| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                    |
-| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                           |
+| Folder            | Holds                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/config/`    | `perf.json` (every performance budget), `theme.json` (palette), `realtime.json`, `moderation.json`, `balance.json` (balance anchors), `progression.json` (goals, grant caps, prestige rules), `layout.json`, `copy.json`, `geo.json` (geo build parameters), `scene.json` (3D scene camera, layer and line settings, the apartment's room, markers and picking) |
+| `data/copy/`      | one directory per namespace: `<ns>/base.json` (plain strings) and `<ns>/<pack>.json` (slang-pack overrides); `superlatives.json`                                                                                                                                                                                                                                |
+| `data/items/` ... | `items`, `premium`, `events`, `jobs`, `venues`, `landmarks`, `boroughs`: content, with copy keys instead of text (`venues`, `landmarks` and `boroughs` are real since S07; the rest are placeholder seeds until their tasks land)                                                                                                                               |
+| `data/geo/`       | `bounds.json` (NYC extent) and the layers `npm run geo:build` writes: `land`, `water`, `parks`, `subway`, `blocks.<tier>`, `districts/<district>.<tier>` (`*.derived.json`), `manifest.derived.json`, `SOURCES.md`                                                                                                                                              |
+| `data/zones/`     | play zones (one per 2020 CDTA, grouping NTAs): `zones.derived.json` (metadata) and `zone-shapes.derived.json`                                                                                                                                                                                                                                                   |
+| `data/audio/`     | `manifest.json` (CC0 tracks only)                                                                                                                                                                                                                                                                                                                               |
+| `data/sim/`       | `economy-baseline.derived.json`, written by the economy simulation (`npm run econ:update`)                                                                                                                                                                                                                                                                      |
 
 - **Handles.** `data/config/handles.json` (handle rules, change and rate limits),
   `data/copy/handleWords.json` (guest-handle words) and `data/moderation/handle-blocklist.json`
@@ -380,7 +381,25 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   slot (top, bottom, shoes, accessory, face); gifts stack and are consumed on yourself or an
   NPC (`{ npcId }` with an `npc-` id), never another player. Resale is `sellValue` (data,
   `floor(price * resalePct[rarity] / 100)`), less `depreciationPctPerGameDay` per game day
-  owned for wearables, never below `minResalePct` (`balance.json` `items`).
+  owned for wearables and decor, never below `minResalePct` (`balance.json` `items`). Decor is
+  owned once and sells back out of its slot; selling a wearable or decor kept through prestige
+  is refused (`PRESTIGE_KEPT`).
+- **Apartment** (`home.ts`, slots in `data/homes/interiors.json`, numbers in `balance.json`
+  `home`): decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface,
+  `homeScore`, and at least two colour `variants`, each a palette token and a `colors.*` copy
+  name) is placed in a slot of its kind in the current home (`placeDecor`, `removeDecor`,
+  `setDecorVariant`). Home score is the home's `baseScore` plus placed decor's `homeScore`; home
+  clout is that score capped at `maxClout` and counts toward total, goal and level clout.
+  `moveHome` is instant and refused, in order, for the current home, a home in a borough the
+  level has not opened (`HOME_BOROUGHS` in `src/lib/data/homes.ts`) and a move the player cannot
+  afford (`canAffordMove`); it pays the move-in cost, keeps decor in slots the new home shares and
+  logs the move (`apartment.moveLog`). To add decor: add the item with its `decor` block to
+  `items.json` (cloutValue and styleValue 0, no stat effects), its name and description to
+  `data/copy/items/`, any new colour name to `data/copy/colors/`, a low-poly model to
+  `src/scene/apartment/buildDecor.ts` (one merged geometry, at most two material groups), and run
+  `npm test`. The Home panel (`src/components/hud/HomePanel.tsx`) places, recolours and moves
+  through a slot list (the keyboard path); the 3D room (`src/scene/apartment/`) mirrors it and
+  places by tapping a slot. While the room shows, the city draws nothing (`src/state/sceneFocus.ts`).
 - **Events** (`events.ts`, data in `data/events/events.json`): each event lists conditions
   (personal-clock `hours`, `minDay`, `boroughs`, `locationIds`/`locationCategories`, `stats`,
   `cash`, `clout`, `items`), a `weight`, an optional `cooldownMin` or `once`, and two or three
@@ -405,7 +424,7 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   `data/config/progression.json`): goals are facts read from the save (first paycheck, outfit,
   landmark visit, club night, one per clout level; first friend is coming soon), recorded by
   `syncGoals` after every state-changing store action. Level goals read goal clout (earned minus
-  granted, plus items, never premium), so granted value never counts toward a goal (ECON-1).
+  granted, plus items and home, never premium), so granted value never counts toward a goal (ECON-1).
   Icon is earned: every clout level reads total clout except Icon (the victory goal's level),
   which also needs goal clout at its threshold, so the Icon level-up and the victory screen land
   together and grants or premium clout never reach Icon (`levelClout` in `clout.ts`).
@@ -450,8 +469,16 @@ objects and Sets arrays. `console.*` is a lint error everywhere else.
 
 `npm run geo:build` (`scripts/geo/build.ts`) downloads the sources pinned in
 `scripts/geo/sources.lock.json` (DCP borough boundaries clipped to shoreline and 2020 NTAs, MTA
-subway static GTFS) into `.cache/geo/`, then writes simplified, integer-metre layers to
-`data/geo` and `data/zones`. The output is deterministic: `npm run geo:build -- --check` rebuilds
+subway static GTFS, MapPLUTO density statistics per community district, and NYC OTI building
+footprints for each district in `geo.json` `districts`, paged and hashed page by page) into
+`.cache/geo/`, then writes simplified, integer-metre layers to `data/geo` and `data/zones`. District
+building masses go to `data/geo/districts/<district>.<tier>.derived.json` and the procedural low
+blocks elsewhere to `data/geo/blocks.<tier>.derived.json`; the build fails if a tier's total
+exceeds `perf.json` `districtBuildingsGzKB` or `buildingTrianglesMax`. The same build derives the
+landmark frames (`data/landmarks/frames.derived.json`, from DCP LION street centerlines) first,
+and drops every footprint whose centroid lies in a landmark's `landmarks[].exclusion` rectangle
+and every block that would touch one.
+The output is deterministic: `npm run geo:build -- --check` rebuilds
 in memory and fails if a committed file differs, and `npm test` rebuilds from the cache when it
 is present. `--update` accepts changed upstream files and rewrites the lock; `--offline` never
 touches the network. Parameters live in `data/config/geo.json`; sources, terms, transformations
@@ -462,20 +489,71 @@ build, the scene and the engine; `src/lib/data/geo.ts` loads the layers for serv
 ## Performance budget
 
 `data/config/perf.json` holds every budget from `CLAUDE.md`, per tier where tiered, plus the
-`cc-mid-4g` throttle profile and the FPS step-down rule. `npm run budget` (after `npm run build`,
-KB = 1000 bytes) checks:
+`cc-mid-4g` throttle profile, the per-tier render settings (shadow map size, antialias, outlines,
+building density, LOD distance scale; no postprocessing), the tier picker thresholds, the FPS
+step-down rule and the `e2e:perf` run settings (`perfRun`). `npm run budget` (after
+`npm run build`, KB = 1000 bytes) checks:
 
 - `shellJsGzKB`: the gzipped size of every script the prerendered `/` makes a modern browser run
   (Next.js chunks plus inline scripts; `nomodule` polyfills excluded);
-- `sceneChunkJsGzKB`: the lazy 3D chunk, i.e. the files of the `next/dynamic` scene import listed
-  in `.next/server/app/page/react-loadable-manifest.json` (minus any file the shell already
-  loads); the script fails if the manifest is missing or lists no lazy JS.
+- `sceneChunkJsGzKB`: the lazy 3D chunk, i.e. the files Turbopack's loader in the shell fetches
+  for the scene's `next/dynamic` import (minus any file the shell already loads). The import is
+  found by the scene's `cc-feature:city-scene` marker and must match its entry in
+  `.next/server/app/page/react-loadable-manifest.json`; the build must hold exactly one copy of
+  three (its `REVISION`), inside this chunk. The apartment's import is left out: it loads when the
+  Home panel opens, not before the map is playable;
+- `apartmentChunkJsGzKB` (S16): what only the apartment's `next/dynamic` import adds (the manifest
+  entry whose code renders `cc-feature:apartment-scene`, minus the city's 3D chunk and the shell);
+  the script fails if no lazy entry, or more than one, renders that marker. The import sits in the
+  shell's `src/scene/apartment/ApartmentMount.tsx`: nested in a lazy island's chunk, Turbopack
+  lists it under a chunk it never writes;
+- `totalJsToPlayableGzKB`: the shell, the boot islands (`BOOT_ISLAND_FEATURES` in
+  `scripts/budget.ts`, checked against the `eager: true` islands in `src` by its test) and the 3D
+  chunk, each file once;
+- `baseGeoGzKB`: the prerendered `/geo/base` body (`.next/server/app/geo/base.body`);
+- `districtBuildingsGzKB`: per tier, every prerendered `/geo/districts/<tier>/<id>` body plus
+  `/geo/blocks/<tier>`, once the build has those routes (S04d; until then the line says SKIP);
+- `serviceWorkerGzKB` and `precacheGzKB` (S04e): the service worker script and everything it
+  precaches.
+
+It also prints a PERF-3 report line (modules Turbopack copies into more than one chunk); that line
+never fails the run. Every lookup fails loudly when it finds nothing, so a change in the build
+format cannot turn a check into a silent pass.
 
 Draw calls, triangles and idle frames at the default view are asserted by
-`tests/e2e/city-scene.spec.ts`. Enforcement of the other budgets joins in later tasks. Audio has its own budgets
+`tests/e2e/city-scene.spec.ts`, and per tier by `npm run e2e:perf`; the apartment's per-tier caps
+(`perf.json` `apartment`, with `avatarReserve` kept free for the S16a avatar, shadow pass
+included) by `tests/e2e/home-apartment.spec.ts`. Audio has its own budgets
 (`audioLazyGzKB` per tier for the first music track, the ambience and the tier's preloaded sfx,
 per encoding; `audioFileMaxKB`), checked by `src/lib/data/data.test.ts`; `audioRuntimeJsGzKB` is
 measured by hand until the budget script covers its lazy chunk.
+
+**Quality tiers (S04b).** `src/lib/quality/probe.ts` reads the device signals (WebGL2, renderer,
+`MAX_TEXTURE_SIZE`, `deviceMemory`, `hardwareConcurrency`, Save-Data, `prefers-reduced-data`);
+`src/lib/quality/tier.ts` picks low, mid or high from them with the `tierPicker` thresholds
+(unknown signals are neutral; data saver forces low); `src/lib/quality/stepDown.ts` decides
+runtime step-downs (never up) and the active tier. `src/state/quality.ts` persists only the
+settings override (`cloutcity:quality`); it loads in its own chunk, outside the shell.
+
+At run time the 3D map's shell mount (`src/scene/CitySceneClient.tsx`) probes the device
+(`src/scene/webgl.ts`) with the thresholds and per-tier settings `CityScene` passes as server
+props, records the pick in the store, and mounts the canvas when the main thread is idle. The
+canvas (`src/scene/CityCanvas.tsx`) applies the active tier: DPR cap and outlines (the subway
+casing) live, PCFShadowMap shadows from one directional sun on the high tier only
+(`src/scene/SunLight.tsx`), antialiasing on the next load; building density and LOD scale are
+exposed to scene parts through `useTierSettings()` (`src/scene/quality/tierSettings.ts`).
+`TierMonitor` runs drei's `PerformanceMonitor` only inside the continuous-rendering window that
+gestures and camera flights open (`beginContinuous` / `endContinuous` in
+`src/scene/quality/continuity.ts`), so an idle on-demand map never reads as a low frame rate.
+Audio plays the active tier. The Settings sheet (gear, or More on phones) has a Graphics choice:
+Auto (the detected tier), Low, Mid or High; a data-saver request disables Mid and High.
+
+Start-up marks (User Timing): `cc:shell-interactive`, `cc:playable` and the `cc:3d:*` steps
+(`src/lib/perfMarks.ts`). `playwright.perf.config.ts` and `tests/perf/` hold the `e2e:perf`
+harness: CDP network and CPU throttling, a machine-wide lock with a load wait so only one perf
+run measures at a time, and specs for cold loads (median of `perfRun.coldRuns`), warm loads
+(the service worker, S04e, and the HTTP cache) and each tier's draw calls, triangles and
+renderer settings. The run writes its medians to `test-results/perf/report.json`.
 
 **Shell diet (S05c, DEC-11).** The shell of `/` carries only the boot path: the layout, overlay
 system, HUD, tab bar, the copy core with its boot namespaces, and the island mounts. Everything
@@ -510,7 +588,23 @@ camera starts over it).
   `next/dynamic` (`ssr: false`), so the shell is interactive first, and starts the geo request at
   hydration. The geo layers come from the prerendered route `/geo/base?v=<geoVersion>`
   (`src/app/geo/base/route.ts`) and are validated in the 3D chunk with `zod/mini`
-  (`src/scene/geo/schema.ts`, kept in step with the classic schemas by its tests).
+  (`src/scene/geo/schema.ts`, kept in step with the classic schemas by its tests). Format v3
+  carries the `landmarks` layer (model parameters and frames, `src/lib/world/landmarksLayer.ts`).
+- **Buildings (S04d).** After the city's first frame, `src/scene/buildings/Buildings.tsx` loads
+  the active tier's districts near the view from `/geo/districts/<tier>/<id>?v=<hash>` and the
+  blocks from `/geo/blocks/<tier>?v=<hash>` (prerendered; URLs from
+  `src/lib/data/districts.ts` `districtAssets(tier)` / `districtAssetUrls(tier)`), builds each
+  district as one merged mesh in time slices, and draws only what is within the tier's distance
+  (`scene.json` `buildings.viewM` times `lodDistanceScale`), at its `buildingDensity` (the most
+  prominent masses first). Blocks are one instanced mesh per borough with only the in-view
+  instances drawn. District walls carry a window mask that glows with the shared night-glow
+  uniform (`src/scene/lighting/nightGlow.ts`).
+- **Landmarks (S07a).** `src/scene/landmarks/Landmarks.tsx` builds the code-built kit models
+  (`buildLandmark`) after the first frame, nearest first, each in a drei `Detailed` with the
+  tier's levels and distances (`scene.json` `landmarks.lod`); teaser landmarks on "expanding
+  soon" land use the dimmed material; name chips show copy names only. `landmarkSource(id)`
+  (`src/scene/landmarks/source.ts`) is where Blender models (DEC-25) take over per landmark.
+  Modelled landmarks' pins are badges lifted over the model (`liftM`).
 - **Config.** Camera start, zoom/tilt/turn limits, layer heights, line widths, marker and chip
   sizes and lights live in `data/config/scene.json`; scene colours are palette tokens in the
   `scene` block of `data/config/theme.json` (resolved to hex on the server). Toon shading uses one
@@ -529,7 +623,8 @@ camera starts over it).
   structured warning; the shell keeps working. `SceneErrorBoundary` only catches unexpected
   renderer errors.
 - **Test hooks.** With `NEXT_PUBLIC_TEST_HOOKS=1` at build time, `window.__cloutcityTest.scene`
-  exposes `ready`, `frames()`, `pendingFrames()`, `camera()`, `renderInfo()` and `player()` (`src/scene/testHooks.tsx`). The e2e
+  exposes `ready`, `frames()`, `pendingFrames()`, `camera()`, `renderInfo()`, `player()`,
+  `buildings()` and `landmarks()` among others (`src/scene/testHooks.tsx`). The e2e
   web server sets it and builds into `.next-e2e` (`NEXT_DIST_DIR`, read by `next.config.ts`), so
   the hook never reaches `.next`; in every other build its code is removed as dead code.
 

@@ -3,7 +3,14 @@
  * the copy layer. Every price goes through `formatMoney`, never a hand-built "$" string.
  */
 import { engineConfig, type EngineConfig } from '@/engine/config'
-import { findItem, isWearable, type ItemDef, type ItemError, type ItemSlot } from '@/engine/items'
+import {
+  findItem,
+  isDecor,
+  isWearable,
+  type ItemDef,
+  type ItemError,
+  type ItemSlot,
+} from '@/engine/items'
 import type { RarityTier } from '@/lib/data/schemas/config'
 import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from './copy'
 import { formatCount, formatMoney } from './format'
@@ -132,12 +139,19 @@ export function giftCountLine(itemId: string, count: number, options: ShopCopyOp
   })
 }
 
-/** The line under a shop item: "Top, Common, $28" (a gift says "Gift" for its slot). */
+/** The kind shown for a shop item: its slot, or "Gift" or "Decor". */
+function shopItemKind(found: ItemDef, options: ShopCopyOptions): string {
+  const { copy = activeCopy } = options
+  if (isWearable(found)) return slotName(found.slot, options)
+  return copy(isDecor(found) ? 'shop.item.decor' : 'shop.item.gift')
+}
+
+/** The line under a shop item: "Top, Common, $28" (a gift says "Gift", decor "Decor"). */
 export function shopItemDetails(itemId: string, options: ShopCopyOptions = {}): string {
   const { copy = activeCopy, config = engineConfig } = options
   const found = item(itemId, config)
   return copy('shop.item.details', {
-    kind: isWearable(found) ? slotName(found.slot, options) : copy('shop.item.gift'),
+    kind: shopItemKind(found, options),
     rarity: rarityName(found.rarity, options),
     price: formatMoney(found.price),
   })

@@ -18,16 +18,20 @@ import {
   JOB_IDS,
   LayoutConfigSchema,
   ModerationConfigSchema,
+  OfflineConfigSchema,
   OnboardingConfigSchema,
   PerfConfigSchema,
+  type PerfConfig,
   ProgressionConfigSchema,
   RealtimeConfigSchema,
   ThemeConfigSchema,
+  TourConfigSchema,
   createProgressionConfigSchema,
 } from './schemas/config'
 import {
   EventsFileSchema,
   HomesFileSchema,
+  HomeInteriorsFileSchema,
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
@@ -37,13 +41,17 @@ import {
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
 import { SceneConfigSchema } from './schemas/scene'
+import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
+  BlocksFileSchema,
   BoroughsFileSchema,
+  BuildingsFileSchema,
   GeoBoundsSchema,
   GeoManifestSchema,
   LandFileSchema,
+  LandmarkFramesFileSchema,
   ParksFileSchema,
   SubwayFileSchema,
   WaterFileSchema,
@@ -57,6 +65,7 @@ import {
   audioManifest,
   events,
   geoBounds,
+  homeInteriors,
   items,
   jobs,
   landmarks,
@@ -84,12 +93,14 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/handles.json': HandlesConfigSchema,
   'config/layout.json': LayoutConfigSchema,
   'config/moderation.json': ModerationConfigSchema,
+  'config/offline.json': OfflineConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/realtime.json': RealtimeConfigSchema,
   'config/scene.json': SceneConfigSchema,
   'config/theme.json': ThemeConfigSchema,
+  'config/tour.json': TourConfigSchema,
   'copy/handleWords.json': HandleWordsSchema,
   'copy/superlatives.json': SuperlativesSchema,
   'events/events.json': EventsFileSchema,
@@ -100,9 +111,12 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/subway.derived.json': SubwayFileSchema,
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
+  'homes/interiors.json': HomeInteriorsFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
+  'landmarks/frames.derived.json': LandmarkFramesFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
+  'landmarks/models.json': LandmarkModelsFileSchema,
   'moderation/handle-blocklist.json': HandleBlocklistSchema,
   'premium/premium.json': PremiumFileSchema,
   'sim/economy-baseline.derived.json': EconomyBaselineSchema,
@@ -112,6 +126,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
 }
 
 function schemaFor(file: string): z.ZodType | undefined {
+  if (/^geo\/districts\/[a-z0-9-]+\.[a-z]+\.derived\.json$/.test(file)) return BuildingsFileSchema
+  if (/^geo\/blocks\.[a-z]+\.derived\.json$/.test(file)) return BlocksFileSchema
   if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
   if (/^copy\/[\w-]+\/[\w-]+\.json$/.test(file)) return SlangPackSchema
   return SCHEMAS[file]
@@ -216,6 +232,8 @@ describe('config/perf.json', () => {
       // S05c: the shell keeps 20 KB of the budget free for features still to land.
       shellHeadroomGzKB: 20,
       sceneChunkJsGzKB: 350,
+      // S16: the apartment's lazy 3D chunk, reported apart from the before-playable 3D chunk.
+      apartmentChunkJsGzKB: 40,
       totalJsToPlayableGzKB: 550,
       baseGeoGzKB: 400,
       districtBuildingsGzKB: { low: 150, mid: 300, high: 400 },
@@ -225,13 +243,34 @@ describe('config/perf.json', () => {
       playableWarmMs: 2500,
       drawCallsMax: { low: 60, mid: 120, high: 200 },
       trianglesMax: { low: 150_000, mid: 400_000, high: 800_000 },
+      // S16 apartment caps (TUNE-8 placeholders), with room kept for S16a's avatar.
+      apartment: {
+        drawCallsMax: { low: 24, mid: 32, high: 56 },
+        trianglesMax: { low: 12_000, mid: 20_000, high: 30_000 },
+        avatarReserve: { drawCalls: 6, triangles: 4000 },
+      },
       dprCap: { low: 1, mid: 1.5, high: 2 },
       shadows: { low: 'none', mid: 'blob-or-baked', high: 'pcf-directional' },
+      // S04b per-tier render settings (TUNE-6 placeholders).
+      shadowMapSizePx: { low: 0, mid: 0, high: 2048 },
+      antialias: { low: false, mid: true, high: true },
+      outlines: { low: false, mid: true, high: true },
+      buildingDensity: { low: 0.5, mid: 0.8, high: 1 },
+      lodDistanceScale: { low: 0.6, mid: 1, high: 1.4 },
+      postprocessing: 'none',
       otherPlayersMax: { low: 8, mid: 16, high: 24 },
       otherPlayersStyle: { low: 'billboard', mid: 'model', high: 'model' },
       medianFpsMin: { low: 30, mid: 45, high: 55 },
       idleFramesMax: 0,
-      fpsStepDown: { belowFps: 28, sustainMs: 3000 },
+      fpsStepDown: {
+        belowFps: 28,
+        sustainMs: 3000,
+        sampleMs: 250,
+        threshold: 0.9,
+        cooldownMs: 10_000,
+        maxSteps: 2,
+      },
+      tierPicker: perf.tierPicker,
       throttleProfiles: {
         'cc-mid-4g': {
           downloadKbps: 4000,
@@ -241,9 +280,30 @@ describe('config/perf.json', () => {
           viewport: { width: 390, height: 844 },
         },
       },
+      perfRun: {
+        coldRuns: 3,
+        coldTier: 'low',
+        profile: 'cc-mid-4g',
+        maxLoadPerCore: 0.75,
+        loadWaitMaxMs: 600_000,
+        loadPollMs: 5000,
+        lockWaitMaxMs: 1_800_000,
+      },
       audioLazyGzKB: { low: 600, mid: 1000, high: 1400 },
       audioFileMaxKB: 600,
       audioRuntimeJsGzKB: 20,
+      // S04e: the service worker script and its install-time precache (not in CLAUDE.md's table).
+      serviceWorkerGzKB: 15,
+      precacheGzKB: 1000,
+      buildingTrianglesMax: { low: 160_000, mid: 300_000, high: 480_000 },
+      landmarkTrianglesMax: {
+        bridge: { low: 1200, mid: 3500, high: 7000 },
+        building: { low: 600, mid: 1800, high: 3500 },
+        station: { low: 600, mid: 1800, high: 3500 },
+        government: { low: 600, mid: 1800, high: 3500 },
+      },
+      landmarkTrianglesOverride: {},
+      landmarkLodRatioMax: 0.5,
       // S04h (TUNE-12): per-asset caps set from the Part 1 measurements with ~15–25% headroom.
       models: {
         vehicle: { trianglesMax: { low: 1200, mid: 1500, high: 1500 }, gzKBMax: 25 },
@@ -269,6 +329,74 @@ describe('config/perf.json', () => {
     expect(PerfConfigSchema.safeParse({ ...valid, shellJsGzKB: 0 }).success).toBe(false)
     const softShadows = { low: 'none', mid: 'blob-or-baked', high: 'pcf-soft' }
     expect(PerfConfigSchema.safeParse({ ...valid, shadows: softShadows }).success).toBe(false)
+    const apartment = valid.apartment as Record<string, unknown>
+    const reserveFillsLow = { ...apartment, avatarReserve: { drawCalls: 24, triangles: 1 } }
+    expect(PerfConfigSchema.safeParse({ ...valid, apartment: reserveFillsLow }).success).toBe(false)
+  })
+
+  describe('S04b quality tier rules', () => {
+    const valid = () => readJson('config/perf.json') as PerfConfig
+    const accepts = (change: Partial<PerfConfig>) =>
+      PerfConfigSchema.safeParse({ ...valid(), ...change }).success
+
+    it('accepts the shipped file', () => {
+      expect(accepts({})).toBe(true)
+    })
+
+    it('needs every renderer pattern to compile', () => {
+      const { tierPicker } = valid()
+      expect(accepts({ tierPicker: { ...tierPicker, lowRendererPatterns: ['mali-('] } })).toBe(
+        false,
+      )
+      expect(accepts({ tierPicker: { ...tierPicker, highRendererPatterns: ['[a-'] } })).toBe(false)
+      expect(accepts({ tierPicker: { ...tierPicker, highRendererPatterns: [] } })).toBe(false)
+      expect(accepts({ tierPicker: { ...tierPicker, lowRendererPatterns: [''] } })).toBe(false)
+    })
+
+    it('keeps every high threshold at or above its low threshold', () => {
+      const { tierPicker } = valid()
+      const atLow = { ...tierPicker, highAtLeast: tierPicker.lowBelow }
+      expect(accepts({ tierPicker: atLow })).toBe(true)
+      const below = { ...tierPicker, highAtLeast: { ...tierPicker.highAtLeast, cores: 2 } }
+      expect(accepts({ tierPicker: below })).toBe(false)
+    })
+
+    it('needs sustainMs to be a whole number of sampleMs windows', () => {
+      const { fpsStepDown } = valid()
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, sampleMs: 300 } })).toBe(true)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, sampleMs: 400 } })).toBe(false)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, sampleMs: 0 } })).toBe(false)
+    })
+
+    it('bounds the step-down threshold and step count', () => {
+      const { fpsStepDown } = valid()
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, threshold: 1 } })).toBe(true)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, threshold: 0 } })).toBe(false)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, threshold: 1.1 } })).toBe(false)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, maxSteps: 0 } })).toBe(true)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, maxSteps: 3 } })).toBe(false)
+    })
+
+    it('sizes a shadow map exactly where the tier has the directional PCF shadow', () => {
+      expect(accepts({ shadowMapSizePx: { low: 0, mid: 0, high: 0 } })).toBe(false)
+      expect(accepts({ shadowMapSizePx: { low: 0, mid: 512, high: 2048 } })).toBe(false)
+      expect(accepts({ shadowMapSizePx: { low: 0, mid: 0, high: 1.5 } })).toBe(false)
+    })
+
+    it('bounds building density to (0, 1] and allows no postprocessing', () => {
+      expect(accepts({ buildingDensity: { low: 0, mid: 0.8, high: 1 } })).toBe(false)
+      expect(accepts({ buildingDensity: { low: 0.5, mid: 0.8, high: 1.2 } })).toBe(false)
+      expect(PerfConfigSchema.safeParse({ ...valid(), postprocessing: 'bloom' }).success).toBe(
+        false,
+      )
+    })
+
+    it('needs an odd number of cold runs and a known throttle profile', () => {
+      const { perfRun } = valid()
+      expect(accepts({ perfRun: { ...perfRun, coldRuns: 1 } })).toBe(true)
+      expect(accepts({ perfRun: { ...perfRun, coldRuns: 4 } })).toBe(false)
+      expect(accepts({ perfRun: { ...perfRun, profile: 'cc-slow-3g' } })).toBe(false)
+    })
   })
 })
 
@@ -787,6 +915,8 @@ describe('cross-file references', () => {
     venues: venues.flatMap((entry) => [entry.nameKey, entry.blurbKey]),
     landmarks: landmarks.flatMap((entry) => [entry.nameKey, entry.infoKey]),
     club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
+    colors: items.flatMap((entry) => entry.decor?.variants.map((variant) => variant.nameKey) ?? []),
+    housing: Object.values(homeInteriors).flatMap((home) => home.slots.map((slot) => slot.nameKey)),
   }
 
   it('every copy key named by content exists in data/copy', () => {

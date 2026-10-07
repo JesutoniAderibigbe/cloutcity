@@ -6,23 +6,40 @@ import { initialEventsState } from './events'
 import { initialFlexState } from './game'
 import { initialGoalsState } from './goals'
 import { initialGrantsState } from './grants'
+import { initialApartment } from './home'
 import { initialPrestigeState } from './prestige'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
 const schema = createSaveSchema(config)
 
-/** A v3 to v6 player: clout was one number and there was no flex state or visits (v8). */
+/** A v4 to v8 inventory: no decor (v9). */
+const legacyInventory = { wearables: [], gifts: [], outfit: {} }
+
+/** A v3 to v6 player: clout was one number and there was no flex state, visits (v8) or apartment (v9). */
 function legacyPlayer(): Record<string, unknown> {
-  const player: Record<string, unknown> = { ...initialSave(config).player, clout: 0 }
+  const player: Record<string, unknown> = {
+    ...initialSave(config).player,
+    clout: 0,
+    inventory: legacyInventory,
+  }
   delete player.flex
   delete player.visited
+  delete player.apartment
+  delete player.location
+  delete player.transit
   return player
 }
 
-/** A v7 player: everything but the first visits (v8). */
+/** A v7 player: everything but the first visits (v8), decor and the apartment (v9). */
 function legacyV7Player(): Record<string, unknown> {
-  const player: Record<string, unknown> = { ...initialSave(config).player }
+  const player: Record<string, unknown> = {
+    ...initialSave(config).player,
+    inventory: legacyInventory,
+  }
   delete player.visited
+  delete player.apartment
+  delete player.location
+  delete player.transit
   return player
 }
 
@@ -44,7 +61,7 @@ const S15_FIELDS = {
 
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(8)
+    expect(SAVE_VERSION).toBe(10)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -222,6 +239,9 @@ describe('save v3: clout, home and rent', () => {
           inventory: emptyInventory,
           clubNights: {},
           visited: {},
+          apartment: initialApartment,
+          location: { kind: 'home' },
+          transit: { rngState: 0 },
         },
         events: initialEventsState(),
         ...S15_FIELDS,
@@ -310,6 +330,9 @@ describe('save v3: tampered and edge saves', () => {
         inventory: emptyInventory,
         clubNights: {},
         visited: {},
+        apartment: initialApartment,
+        location: { kind: 'home' },
+        transit: { rngState: 0 },
       })
       expect(schema.safeParse(result.save).success).toBe(true)
     },
@@ -368,6 +391,9 @@ describe('save v3: tampered and edge saves', () => {
         inventory: emptyInventory,
         clubNights: {},
         visited: {},
+        apartment: initialApartment,
+        location: { kind: 'home' },
+        transit: { rngState: 0 },
       },
       speed: 1,
       events: initialEventsState(),
@@ -410,6 +436,10 @@ describe('event state in the save (v5)', () => {
           flex: initialFlexState,
           clubNights: {},
           visited: {},
+          inventory: emptyInventory,
+          apartment: initialApartment,
+          location: { kind: 'home' },
+          transit: { rngState: 0 },
         },
         events: initialEventsState(),
         ...S15_FIELDS,
@@ -587,6 +617,10 @@ describe('club nights in the save (v6)', () => {
           flex: initialFlexState,
           clubNights: {},
           visited: {},
+          inventory: emptyInventory,
+          apartment: initialApartment,
+          location: { kind: 'home' },
+          transit: { rngState: 0 },
         },
         // 120 earned clout holds Local: the migration derives that goal at the save's minute.
         ...S15_FIELDS,

@@ -14,6 +14,10 @@ import {
 import { waitForMapSettled } from './helpers/scene'
 import { touchGesture } from './helpers/touch'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 // S04c: tappable place pins on the 3D map. Tap points come from the scene test hook
 // (src/scene/testHooks.tsx `pins()`), so the spec never hard-codes screen positions. Places are
 // brought into view through the place hook (origin `hook`), which flies the camera like the

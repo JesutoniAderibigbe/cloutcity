@@ -12,8 +12,11 @@
 import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
 
-/** Where a place was picked: a tap on its 3D pin, the Places panel, or a test hook. */
-export type PlaceOrigin = 'map' | 'panel' | 'hook'
+/**
+ * Where a place was picked: a tap on its 3D pin, the Places panel, a test hook, or the end of a
+ * trip there (S08: the sheet opens again on arrival, announcing it).
+ */
+export type PlaceOrigin = 'map' | 'panel' | 'hook' | 'travel'
 
 interface PlaceSheetState {
   /** The place whose sheet is open, or null. An unknown id renders nothing and is cleared. */
@@ -74,6 +77,14 @@ export function usePlaceOpenCount(): number {
   return useSyncExternalStore(placeSheetStore.subscribe, openCountNow, serverOpenCount)
 }
 
+const originNow = () => placeSheetStore.getState().origin
+const serverOrigin = () => null
+
+/** How the open place was picked; null with none, on the server and during hydration. */
+export function usePlaceOrigin(): PlaceOrigin | null {
+  return useSyncExternalStore(placeSheetStore.subscribe, originNow, serverOrigin)
+}
+
 const announcementNow = () => placeSheetStore.getState().announcement
 const serverAnnouncement = () => ''
 
@@ -113,4 +124,30 @@ export function onPlaceOpened(listener: () => void): () => void {
   return placeSheetStore.subscribe((state, previous) => {
     if (state.placeId !== null && state.placeId !== previous.placeId) listener()
   })
+}
+
+/** A place action that ran (S06): where, which action, and the player's cash around it. */
+export interface PlaceActionDone {
+  readonly placeId: string
+  readonly actionId: string
+  readonly cashBefore: number
+  readonly cashAfter: number
+}
+
+const actionDoneListeners = new Set<(done: PlaceActionDone) => void>()
+
+/**
+ * Calls `listener` each time a place sheet action succeeds (S06: the tour waits for the first
+ * purchase). Returns unsubscribe.
+ */
+export function onPlaceActionDone(listener: (done: PlaceActionDone) => void): () => void {
+  actionDoneListeners.add(listener)
+  return () => {
+    actionDoneListeners.delete(listener)
+  }
+}
+
+/** The place sheet reports each action that succeeded. */
+export function reportPlaceActionDone(done: PlaceActionDone): void {
+  for (const listener of [...actionDoneListeners]) listener(done)
 }

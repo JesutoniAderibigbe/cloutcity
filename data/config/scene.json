@@ -75,7 +75,17 @@
       "x": -0.4,
       "y": 1,
       "z": 0.6
+    },
+    "shadow": {
+      "extentPerDistance": 0.9,
+      "lightPerDistance": 2,
+      "depthPerDistance": 4,
+      "bias": -0.0005,
+      "normalBias": 0.02
     }
+  },
+  "startup": {
+    "idleTimeoutMs": 300
   },
   "dimmed": {
     "towardBackground": 0.55
@@ -97,6 +107,17 @@
   "focus": {
     "tweenMs": 350,
     "maxDistanceM": 3000
+  },
+  "travel": {
+    "taxiLengthRatio": 1.2,
+    "trainLengthRatio": 2.6,
+    "vehicleWidthRatio": 0.45,
+    "vehicleHeightRatio": 0.4,
+    "trailMaxPoints": 64,
+    "trailWidthPx": 3,
+    "trailStepRatio": 0.5,
+    "trailLiftRatio": 0.05,
+    "trailOnLow": false
   },
   "chips": {
     "widthM": 2400,
@@ -140,5 +161,100 @@
     "labelSizeM": 1500,
     "labelOpacity": 0.85,
     "dimmedLabelOpacity": 0.5
+  },
+  "apartment": {
+    "floorThicknessM": 0.12,
+    "insetM": 0.006,
+    "trimHeightM": 0.1,
+    "ledgeDepthM": 0.32,
+    "ledgeThicknessM": 0.05,
+    "tableSizeM": 0.5,
+    "marker": {
+      "radiusM": 0.17,
+      "segments": 16,
+      "liftM": 0.02,
+      "selectedScale": 1.35
+    },
+    "hitRadiusPx": 26,
+    "ambiguityPx": 6,
+    "fitMargin": 1.06,
+    "lights": {
+      "ambientIntensity": 0.7,
+      "sunIntensity": 0.85,
+      "sunDirection": {
+        "x": -0.6,
+        "y": 1,
+        "z": 0.5
+      },
+      "shadowMapSizePx": 1024
+    },
+    "blob": {
+      "radiusM": 0.36,
+      "opacity": 0.35,
+      "liftM": 0.004
+    }
+  },
+  "landmarks": {
+    "heightScale": 1,
+    "lod": {
+      "low": {
+        "distancesM": [0, 2000],
+        "cullM": 6000
+      },
+      "mid": {
+        "distancesM": [0, 1200, 3500],
+        "cullM": 9000
+      },
+      "high": {
+        "distancesM": [0, 1800, 5000],
+        "cullM": 12000
+      }
+    },
+    "bridgeDistanceMultiplier": 2,
+    "hysteresis": 0.1,
+    "outline": {
+      "low": false,
+      "mid": true,
+      "high": true
+    },
+    "windows": {
+      "low": false,
+      "mid": true,
+      "high": true
+    },
+    "labelMaxDistanceM": 6000,
+    "outlineWidthM": 1.5
+  },
+  "buildings": {
+    "floorM": 3.3,
+    "windowSpacingM": 4,
+    "windowWidth": 0.5,
+    "windowHeight": 0.45,
+    "litShare": 0.55,
+    "windows": {
+      "low": false,
+      "mid": true,
+      "high": true
+    },
+    "wallJitter": 0.12,
+    "viewM": {
+      "districts": 9000,
+      "blocks": 9000
+    },
+    "loadMarginM": 1500,
+    "buildSliceMs": 8,
+    "windowTileCells": 4
+  },
+  "landmarkChips": {
+    "widthM": 1000,
+    "heightM": 200,
+    "offsetM": 260,
+    "liftM": 12,
+    "atlasWidthPx": 512,
+    "cellHeightPx": 96,
+    "fontScale": 0.5,
+    "textMaxWidth": 0.9,
+    "cornerRadius": 0.3,
+    "alphaTest": 0.5
   }
 }

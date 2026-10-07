@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
 import { initialSnapshot, type GameSnapshot } from '@/engine/game'
-import { withClout } from '@/engine/test-support'
-import { performPlaceAction, placeActions, type PlaceAction } from '@/engine/placeActions'
+import {
+  performPlaceActionHere as performPlaceAction,
+  placeActionsHere as placeActions,
+  withClout,
+} from '@/engine/test-support'
+import type { PlaceAction } from '@/engine/placeActions'
 import { createCopy } from '@/lib/copy'
 import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { formatMoney } from '@/lib/format'

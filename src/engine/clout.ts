@@ -3,16 +3,18 @@
  *
  * A player's total clout is derived, never stored as one number:
  *
- *   total = earned + item clout + min(premium, clout.caps.byCurrency.usd)
+ *   total = earned + item clout + home clout + min(premium, clout.caps.byCurrency.usd)
  *
  * Levels read the total, except Icon (the victory goal's level), which also needs goal clout
- * (earned minus granted, plus items, never premium) at its threshold: `levelClout`.
+ * (earned minus granted, plus items and home, never premium) at its threshold: `levelClout`.
  *
  * - `earned` is the sum of the ledger's in-game sources (paycheck, flex, club, event, grant,
  *   legacy, repair). It never drops below 0.
  * - Item clout is the `cloutValue` of every wearable owned right now (gifts excluded). It is
  *   computed, never accumulated, so a buy/sell loop cannot farm it: selling takes the clout
  *   away again. Buying and selling still write `item` ledger entries, as an audit trail only.
+ * - Home clout (S16) is the home's score (its base score plus placed decor) capped at
+ *   `home.maxClout`, computed from the save like item clout (src/engine/home.ts `homeClout`).
  * - Premium clout (S25, real-money items, currency `usd`) counts only up to the cap, which
  *   the balance schema keeps below the top level: premium clout alone never reaches Icon.
  *
@@ -29,6 +31,7 @@ import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
 import type { Borough } from '@/lib/data/schemas/content'
 import type { EngineConfig, JobId } from './config'
 import type { GameSnapshot, PlayerState } from './game'
+import { homeClout } from './home'
 
 export { CLOUT_SOURCES }
 export type { CloutSourceId }
@@ -222,9 +225,14 @@ export function styleMultiplierPct(score: number, config: EngineConfig): number 
   return 100 + Math.min(maxBonusPct, Math.max(0, score) * pctPerPoint)
 }
 
+/** What the level and goal measures read: the ledger, the inventory and the home. */
+export type CloutPlayer = Pick<PlayerState, 'clout' | 'inventory' | 'home' | 'apartment'>
+
 export interface CloutBreakdown {
   readonly earned: number
   readonly items: number
+  /** Home clout (capped; src/engine/home.ts). */
+  readonly home: number
   /** Premium clout as it counts (capped). */
   readonly premium: number
   /** Premium clout before the cap. */
@@ -235,13 +243,15 @@ export interface CloutBreakdown {
 export function cloutBreakdown(player: PlayerState, config: EngineConfig): CloutBreakdown {
   const sums = cloutSums(player.clout)
   const items = itemClout(player, config)
+  const home = homeClout(player, config)
   const premium = Math.min(sums.premium, config.clout.caps.byCurrency.usd)
   return {
     earned: sums.earned,
     items,
+    home,
     premium,
     premiumRaw: sums.premium,
-    total: sums.earned + items + premium,
+    total: sums.earned + items + home + premium,
   }
 }
 
@@ -251,15 +261,16 @@ export function totalClout(player: PlayerState, config: EngineConfig): number {
 }
 
 /**
- * The clout goals measure (S15, ECON-1): earned clout without what grants added, plus item
- * clout, never premium. Never below 0 (a loss can eat into granted clout).
+ * The clout goals measure (S15, ECON-1): earned clout without what grants added, plus item and
+ * home clout, never premium. Never below 0 (a loss can eat into granted clout).
  */
-export function goalClout(
-  player: Pick<PlayerState, 'clout' | 'inventory'>,
-  config: EngineConfig,
-): number {
+export function goalClout(player: CloutPlayer, config: EngineConfig): number {
   const sums = cloutSums(player.clout)
-  return Math.max(0, sums.earned - (sums.bySource.grant ?? 0)) + itemClout(player, config)
+  return (
+    Math.max(0, sums.earned - (sums.bySource.grant ?? 0)) +
+    itemClout(player, config) +
+    homeClout(player, config)
+  )
 }
 
 /**
@@ -273,19 +284,17 @@ export function earnedOnlyLevel(config: EngineConfig): CloutLevel | null {
 
 /**
  * The clout a player's level is judged on. Every level up to the one below Icon reads the total
- * (earned, items, capped premium and grants); Icon also needs goal clout (`goalClout`) at its
+ * (earned, items, home, capped premium and grants); Icon also needs goal clout (`goalClout`) at its
  * threshold, so grants and premium can carry a player to the edge of Icon but never over it.
  * Below that, this is the total held just under Icon. Gates read it, so `cloutLevel` of it is
  * always `playerLevel`.
  */
-export function levelClout(
-  player: Pick<PlayerState, 'clout' | 'inventory'>,
-  config: EngineConfig,
-): number {
+export function levelClout(player: CloutPlayer, config: EngineConfig): number {
   const sums = cloutSums(player.clout)
   const total =
     sums.earned +
     itemClout(player, config) +
+    homeClout(player, config) +
     Math.min(sums.premium, config.clout.caps.byCurrency.usd)
   const earnedOnly = earnedOnlyLevel(config)
   if (earnedOnly === null || total < earnedOnly.minClout) return total
@@ -293,10 +302,7 @@ export function levelClout(
 }
 
 /** The player's current clout level (Icon only on earned clout: see `levelClout`). */
-export function playerLevel(
-  player: Pick<PlayerState, 'clout' | 'inventory'>,
-  config: EngineConfig,
-): CloutLevel {
+export function playerLevel(player: CloutPlayer, config: EngineConfig): CloutLevel {
   return cloutLevel(levelClout(player, config), config)
 }
 
@@ -356,6 +362,12 @@ export interface LevelUnlocks {
   readonly clubs: readonly string[]
 }
 
+/**
+ * What caused a level-up: a clout source, or `home` for a change to the home score (placing
+ * decor, moving home), which writes no ledger entry (src/engine/home.ts).
+ */
+export type LevelUpSource = CloutSourceId | 'home'
+
 export interface LevelUp {
   /**
    * The highest level reached before this change (the old peak). It can be above the level
@@ -366,7 +378,7 @@ export interface LevelUp {
   readonly toIndex: number
   /** Personal-clock minute of the change. */
   readonly at: number
-  readonly source: CloutSourceId
+  readonly source: LevelUpSource
   /** Everything gated on any level newly reached (above the old peak, up to `to`). */
   readonly unlocks: LevelUnlocks
 }
@@ -445,7 +457,7 @@ function compact(state: CloutState, maxEntries: number): CloutState {
 export function settleLevel(
   player: PlayerState,
   at: number,
-  source: CloutSourceId,
+  source: LevelUpSource,
   config: EngineConfig,
 ): { readonly player: PlayerState; readonly levelUp: LevelUp | null } {
   const level = playerLevel(player, config)
@@ -536,6 +548,8 @@ export interface CloutCeilings {
   readonly bySource: Readonly<Partial<Record<CloutSourceId, CloutCeiling>>>
   /** The most item clout a player can hold: every wearable owned at once. */
   readonly itemCloutMax: number
+  /** The most home clout a player can hold (`home.maxClout`). */
+  readonly homeCloutMax: number
   /** Premium clout as it counts, at most. */
   readonly premiumCap: number
 }
@@ -605,6 +619,7 @@ export function cloutCeilings(config: EngineConfig): CloutCeilings {
       event: { perAction: eventPerAction, perGameDay: eventPerDay },
     },
     itemCloutMax: wearableClout.reduce((a, b) => a + b, 0),
+    homeCloutMax: config.home.maxClout,
     premiumCap: clout.caps.byCurrency.usd,
   }
 }

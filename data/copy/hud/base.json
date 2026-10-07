@@ -16,10 +16,12 @@
     "hud.clout.maxLabel": "Clout: {level}, {count}. Top level reached.",
     "hud.inventory": "Inventory",
     "hud.rent": "Rent",
+    "hud.home": "Home",
     "hud.more": "More",
-    "hud.soundSettings": "Sound settings",
+    "hud.soundSettings": "Settings",
     "hud.goals": "Goals: {goal}",
     "hud.goalsReady": "Goals: {goal}, {count} rewards ready",
-    "hud.goalsReadyOne": "Goals: {goal}, 1 reward ready"
+    "hud.goalsReadyOne": "Goals: {goal}, 1 reward ready",
+    "hud.help": "Help: take the tour"
   }
 }

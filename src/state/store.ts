@@ -28,9 +28,10 @@ import {
   type EventOutcome,
   type OpenResult,
 } from '@/engine/events'
-import { advanceMinutes, tick } from '@/engine/game'
+import { advanceMinutes, tick, type GameSnapshot } from '@/engine/game'
 import { findGoal, syncGoals, victoryGoal, type GoalsState } from '@/engine/goals'
 import { grant, type GrantResult } from '@/engine/grants'
+import { moveHome, placeDecor, removeDecor, setDecorVariant, type HomeResult } from '@/engine/home'
 import {
   buyItem,
   equipItem,
@@ -68,6 +69,19 @@ export const STORE_VERSION = SAVE_VERSION
 export const PersistedStateSchema = createSaveSchema(engineConfig)
 export type PersistedState = SaveState
 
+/**
+ * What a trip computed (S08): the snapshot after it, and the rent charged on the way. The travel
+ * chunk computes it with the transit engine (src/engine/transit/trip.ts `takeTrip`); the store
+ * only applies it, so the transit engine and its data never load with the store (DEC-11).
+ */
+export type TripCommit =
+  | {
+      readonly ok: true
+      readonly snapshot: GameSnapshot
+      readonly rent: readonly RentEvent[]
+    }
+  | { readonly ok: false }
+
 export interface GameActions {
   /** Passive time: real ms since the last tick, while the tab is (or is not) visible. */
   tick(realElapsedMs: number, visible: boolean): void
@@ -91,10 +105,31 @@ export interface GameActions {
   /** Uses one gift on yourself or an NPC; it is consumed. Never another player. */
   consumeGift(itemId: string, target: GiftTarget): ReturnType<typeof consumeGift>
   /**
+   * Places owned decor in a slot of the current home (whatever sat there goes to storage). A
+   * level reached through the home score shows the level-up toast.
+   */
+  placeDecor(itemId: string, slotId: string): ReturnType<typeof placeDecor>
+  /** Takes the decor in a slot of the current home back to storage. */
+  removeDecor(slotId: string): ReturnType<typeof removeDecor>
+  /** Shows owned decor in another of its colour variants. */
+  setDecorVariant(itemId: string, variantId: string): HomeResult
+  /**
+   * Moves home at once, paying the move-in cost. The engine refuses the current home, a home in a
+   * locked borough and a move the player cannot afford, in that order.
+   */
+  moveHome(home: string): ReturnType<typeof moveHome>
+  /**
    * Does one action from a place's action sheet. The engine re-checks the borough, opening
    * hours, club door, job lock, funds and energy; the state changes only when the result is ok.
    */
   performPlaceAction(place: Place, actionId: string): PlaceActionResult
+  /**
+   * Takes a trip in one step (DEC-22): `compute` gets the current snapshot and returns the
+   * engine's result; an ok result replaces the clock and player at once (fare paid, clock
+   * fast-forwarded, rent charged, location moved) before any animation starts. Returns what
+   * `compute` returned.
+   */
+  commitTrip<R extends TripCommit>(compute: (snapshot: GameSnapshot) => R): R
   /**
    * Fast-forwards the personal clock by whole game minutes (decay and rent apply). Used by the
    * e2e hook; no player-facing control waits without an action yet.
@@ -205,7 +240,8 @@ export function mergeGameState(
 
 /**
  * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout
- * ledger, flex state, home, rent, inventory, club nights, visits), speed, event state, goals,
+ * ledger, flex state, home, rent, inventory with decor, club nights, visits, the apartment's
+ * placements and move log, location and transit state), speed, event state, goals,
  * the grant log and prestige. The sub-minute remainder alone is not, so a visible tab does not
  * write on every tick (a reload loses at most one game minute's worth of carried real time).
  */
@@ -408,6 +444,26 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
             if (result.ok) set({ player: result.snapshot.player })
             return result
           },
+          placeDecor: (itemId, slotId) => {
+            const result = placeDecor(get(), itemId, slotId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          removeDecor: (slotId) => {
+            const result = removeDecor(get(), slotId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          setDecorVariant: (itemId, variantId) => {
+            const result = setDecorVariant(get(), itemId, variantId, engineConfig)
+            if (result.ok) set({ player: result.snapshot.player })
+            return result
+          },
+          moveHome: (home) => {
+            const result = moveHome(get(), home, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
           performPlaceAction: (place, actionId) => {
             const state = get()
             const result = performPlaceAction(state, place, actionId, engineConfig)
@@ -420,6 +476,18 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
                 },
                 result.levelUp,
               )
+            }
+            return result
+          },
+          commitTrip: (compute) => {
+            const state = get()
+            const result = compute({ clock: state.clock, player: state.player })
+            if (result.ok) {
+              commit({
+                clock: result.snapshot.clock,
+                player: result.snapshot.player,
+                lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+              })
             }
             return result
           },

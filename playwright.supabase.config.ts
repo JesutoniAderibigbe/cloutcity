@@ -45,7 +45,8 @@ export default defineConfig({
   ...base,
   testIgnore: undefined,
   testMatch: SUPABASE_SPECS,
-  use: { ...base.use, baseURL: BASE_URL },
+  // `base.use` carries `serviceWorkers: 'block'`; stated here too so the opt-out is visible.
+  use: { ...base.use, baseURL: BASE_URL, serviceWorkers: 'block' },
   webServer: {
     command: `npm run build && npm run start -- --port ${PORT}`,
     url: BASE_URL,

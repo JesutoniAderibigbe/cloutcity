@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { test as base, expect, type ConsoleMessage, type Page } from '@playwright/test'
 import { ONBOARDING_KEY, completedOnboardingSeed } from './onboarding-seed'
+import { TOUR_KEY, doneTourSeed } from './tour-seed'
 
 /**
  * Shared e2e fixture. Every spec imports `test` and `expect` from here, never from
@@ -11,7 +12,13 @@ import { ONBOARDING_KEY, completedOnboardingSeed } from './onboarding-seed'
  *  - `checkA11y()` (A11Y-2): an axe scan of the current page that fails on serious or critical
  *    violations;
  *  - a completed welcome card (S05a), so specs for other flows start like a returning player.
- *    Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`.
+ *    Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`;
+ *  - a finished first-run tour (S06), so no coach marks sit over other flows. Tour specs opt out
+ *    with `test.use({ tour: 'fresh' })`;
+ *  - a player who starts at home and must travel to a place before its actions work (S08,
+ *    DEC-22). Specs about a place's own rules use `test.use({ location: 'follow' })`: every place
+ *    picked (pin, Places panel, hook) then puts the player there, as if they had travelled
+ *    (src/components/places/placeTestHook.ts).
  */
 
 const FAILING_CONSOLE_TYPES = new Set<ReturnType<ConsoleMessage['type']>>([
@@ -37,6 +44,10 @@ const IGNORED_CONSOLE_MESSAGES: readonly {
     type: 'warning',
     text: /^\[\.WebGL-0x[0-9a-f]+\]GL Driver Message \(OpenGL, Performance, GL_CLOSE_PATH_NV, High\): GPU stall due to ReadPixels(?: \(this message will no longer repeat\))?$/,
   },
+  // Playwright's own stand-in for navigator.serviceWorker.register under `serviceWorkers:
+  // 'block'` (playwright.config.ts, S04e). Only test browsers run it; the app logs the refused
+  // registration at info and plays on.
+  { type: 'warning', text: /^Service Worker registration blocked by Playwright$/ },
 ]
 
 function isIgnored(message: ConsoleMessage): boolean {
@@ -88,6 +99,18 @@ interface Fixtures {
   onboarding: 'complete' | 'fresh'
   onboardingSeed: void
   /**
+   * `done` (default) seeds a finished tour before every page load, unless the spec has already
+   * stored its own; `fresh` leaves storage alone, so a fresh game starts the tour.
+   */
+  tour: 'done' | 'fresh'
+  tourSeed: void
+  /**
+   * `home` (default): the player is where the save says (a new game starts at home) and travels
+   * like a player. `follow`: picking a place puts the player there first.
+   */
+  location: 'home' | 'follow'
+  locationSeed: void
+  /**
    * How long the guard keeps listening after the test body ends, so late async warnings
    * (a failed fetch, an effect after the last assertion) still fail the test. Override with
    * `use: { consoleSettleMs }` in playwright.config.ts or `test.use()`.
@@ -133,6 +156,42 @@ export const test = base.extend<Fixtures>({
           },
           { key: ONBOARDING_KEY, value: JSON.stringify(completedOnboardingSeed()) },
         )
+      }
+      await use()
+    },
+    { auto: true },
+  ],
+
+  tour: ['done', { option: true }],
+
+  tourSeed: [
+    async ({ page, tour }, use) => {
+      if (tour === 'done') {
+        await page.addInitScript(
+          ({ key, value }) => {
+            // Storage can throw (opaque origins, specs that make it throw on purpose).
+            try {
+              if (localStorage.getItem(key) === null) localStorage.setItem(key, value)
+            } catch {
+              // Nothing to seed: a fresh game starts the tour, as it would for that player.
+            }
+          },
+          { key: TOUR_KEY, value: JSON.stringify(doneTourSeed()) },
+        )
+      }
+      await use()
+    },
+    { auto: true },
+  ],
+
+  location: ['home', { option: true }],
+
+  locationSeed: [
+    async ({ page, location }, use) => {
+      if (location === 'follow') {
+        await page.addInitScript(() => {
+          window.__CLOUTCITY_E2E_LOCATION__ = 'follow'
+        })
       }
       await use()
     },

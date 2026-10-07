@@ -9,16 +9,22 @@
  * The keyboard and DOM path to every place is the Places panel (S04c, A11Y-3); a place picked
  * there brings the camera to it (pins/PlacePins.tsx).
  */
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useThree } from '@react-three/fiber'
 import { PerspectiveCamera } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
+import { beginContinuous, endContinuous } from '../quality/continuity'
 import { clampTarget, degToRad, initialPose, nearFar, type LocalBounds } from './limits'
 
 interface CameraRigProps {
   readonly camera: SceneConfig['camera']
+  /**
+   * Where the camera starts. Read once, when the controls are created: a later change (the
+   * player's home loading from the save, a trip, S08) must not rebuild the controls and snap the
+   * camera back; the avatar and the trip's follow camera move the view instead.
+   */
   readonly start: LocalPoint
   readonly bounds: LocalBounds
   /** Height of the plane the target moves on (the land top). */
@@ -29,6 +35,7 @@ export function CameraRig({ camera: rig, start, bounds, groundY }: CameraRigProp
   const get = useThree((state) => state.get)
   const set = useThree((state) => state.set)
   const invalidate = useThree((state) => state.invalidate)
+  const startRef = useRef(start)
 
   useEffect(() => {
     // Read from the store inside the effect: the rig mutates the camera, which is three's model
@@ -39,7 +46,7 @@ export function CameraRig({ camera: rig, start, bounds, groundY }: CameraRigProp
       throw new Error('CameraRig needs a PerspectiveCamera')
     }
     const pose = initialPose(
-      start,
+      startRef.current,
       groundY,
       rig.distanceM,
       rig.polarDeg.default,
@@ -83,7 +90,13 @@ export function CameraRig({ camera: rig, start, bounds, groundY }: CameraRigProp
       applyClip()
       invalidate()
     }
+    // A gesture keeps the scene animating: the runtime step-down measures FPS only then
+    // (src/scene/quality/TierMonitor.tsx).
+    const onStart = () => beginContinuous('gesture')
+    const onEnd = () => endContinuous('gesture')
     controls.addEventListener('change', onChange)
+    controls.addEventListener('start', onStart)
+    controls.addEventListener('end', onEnd)
     controls.update()
     applyClip()
     set({ controls })
@@ -91,10 +104,13 @@ export function CameraRig({ camera: rig, start, bounds, groundY }: CameraRigProp
 
     return () => {
       controls.removeEventListener('change', onChange)
+      controls.removeEventListener('start', onStart)
+      controls.removeEventListener('end', onEnd)
+      endContinuous('gesture')
       controls.dispose()
       set({ controls: null })
     }
-  }, [get, set, invalidate, rig, start, bounds, groundY])
+  }, [get, set, invalidate, rig, bounds, groundY])
 
   return null
 }

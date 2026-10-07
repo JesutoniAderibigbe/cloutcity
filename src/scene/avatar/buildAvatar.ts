@@ -14,7 +14,7 @@ import {
   type Object3D,
 } from 'three'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
-import { createToonRamp } from '../materials'
+import { createToonRamp } from '../toonRamp'
 import { LAY_FLAT_X } from '../geo/coords'
 
 export type AvatarConfig = SceneConfig['avatar']
@@ -73,6 +73,8 @@ export function buildAvatar(
 
   const bodyMesh = new Mesh(body, bodyMaterial)
   bodyMesh.name = `${PLAYER_AVATAR_NAME}-body`
+  // Seen only where the tier's sun casts a shadow (src/scene/SunLight.tsx).
+  bodyMesh.castShadow = true
   const ringMesh = new Mesh(ring, ringMaterial)
   ringMesh.name = `${PLAYER_AVATAR_NAME}-ring`
   ringMesh.renderOrder = 3

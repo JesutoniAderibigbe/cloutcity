@@ -26,7 +26,6 @@ import { mixerGains, type Gains } from './mixer'
 import { attachMusicRetry } from './loadRuntime'
 import { attachSfxPlayer } from './sfx'
 import type { AudioTestHook } from './testHook'
-import { audioTier } from './tier'
 import type { AudioConfig } from '@/lib/data/schemas/config'
 import { log, type Logger } from '@/lib/log'
 import { audioSettingsStore, type AudioSettingsStore } from '@/state/audioSettings'
@@ -454,13 +453,13 @@ let active: { context: AudioContext; runtime: AudioRuntime } | null = null
  * Starts the runtime on the page's audio context. Once per context; a new context (the old one
  * was closed) replaces the old runtime, which is detached first.
  */
-export function attach(context: AudioContext): AudioRuntime {
+export function attach(context: AudioContext, tier: AudioTier): AudioRuntime {
   if (active?.context === context) return active.runtime
   active?.runtime.detach()
   const runtime = createAudioRuntime(context, {
     manifest: audioManifest,
     config: audioConfig,
-    tier: audioTier(window.navigator, window.matchMedia?.bind(window)),
+    tier,
     onboarding: onboardingStore,
     settings: audioSettingsStore,
     status: audioStatusStore,

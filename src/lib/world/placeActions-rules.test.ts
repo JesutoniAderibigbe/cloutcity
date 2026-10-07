@@ -9,14 +9,13 @@ import { describe, expect, it } from 'vitest'
 import { findCloutLevel, totalClout } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import { initialSnapshot, type GameSnapshot } from '@/engine/game'
-import {
-  performPlaceAction,
-  placeActions,
-  type PlaceAction,
-  type PlaceActionBlock,
-} from '@/engine/placeActions'
+import type { PlaceAction, PlaceActionBlock } from '@/engine/placeActions'
 import { placeAllows, type PlaceHook } from '@/engine/places'
-import { withClout } from '@/engine/test-support'
+import {
+  performPlaceActionHere as performPlaceAction,
+  placeActionsHere as placeActions,
+  withClout,
+} from '@/engine/test-support'
 import { boroughAccess } from '@/engine/boroughs'
 import { createCopy } from '@/lib/copy'
 import { baseCopy, slangPacks } from '@/lib/copy/all'

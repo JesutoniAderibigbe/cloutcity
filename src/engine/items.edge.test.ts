@@ -11,6 +11,7 @@ import {
   equipItem,
   findItem,
   giftCount,
+  isGift,
   isWearable,
   parseGiftTarget,
   resaleValue,
@@ -53,7 +54,7 @@ function ok<T extends { ok: boolean }>(result: T): Extract<T, { ok: true }> {
 }
 
 const wearables = shopItems(config).filter(isWearable)
-const gifts = shopItems(config).filter((entry) => !isWearable(entry))
+const gifts = shopItems(config).filter(isGift)
 const tee = item('bodega-graphic-tee') as WearableDef
 const flowers = item('bodega-flowers')
 const cheesecake = item('cheesecake-box')

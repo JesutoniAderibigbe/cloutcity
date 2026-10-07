@@ -16,6 +16,18 @@ import { findPlace, venues } from '@/lib/world/places'
 import { createSafeJsonStorage } from './storage'
 import { createGameStore, type PersistedState } from './store'
 import { playerWithClout } from '@/engine/test-support'
+import type { Place } from '@/engine/places'
+import type { GameStore } from './store'
+
+/** The store's state after the player walks into `place` (DEC-22: its actions need them there). */
+function standingAt(game: GameStore, place: Place) {
+  const { player } = game.getState()
+  const { location } = player
+  if (location.kind !== 'place' || location.placeId !== place.id) {
+    game.setState({ player: { ...player, location: { kind: 'place', placeId: place.id } } })
+  }
+  return game.getState()
+}
 
 const DAY = minutesPerDay(engineConfig)
 const logger = createLogger({ level: 'error', sink: () => undefined })
@@ -59,7 +71,7 @@ const NOON = 12 * 60
 describe('repeated taps through the store', () => {
   it('a wearable is bought once however many times Buy lands', () => {
     const game = storeAt(NOON, wearable.price * 5)
-    const results = [1, 2, 3].map(() => game.getState().buyAtShop(thrift, wearable.id))
+    const results = [1, 2, 3].map(() => standingAt(game, thrift).buyAtShop(thrift, wearable.id))
     expect(results.map((result) => result.ok)).toEqual([true, false, false])
     expect(results[1]).toMatchObject({ ok: false, error: { code: 'ALREADY_OWNED' } })
     const { player } = game.getState()
@@ -72,10 +84,11 @@ describe('repeated taps through the store', () => {
   it('a gift stacks up to the cap, then refuses with STACK_FULL and charges nothing more', () => {
     const game = storeAt(NOON, gift.price * (MAX_STACK + 3))
     for (let i = 0; i < MAX_STACK; i += 1) {
-      expect(game.getState().buyAtShop(thrift, gift.id).ok, `buy ${i + 1}`).toBe(true)
+      expect(standingAt(game, thrift).buyAtShop(thrift, gift.id).ok, `buy ${i + 1}`).toBe(true)
     }
+    standingAt(game, thrift)
     const before = game.getState().player
-    expect(game.getState().buyAtShop(thrift, gift.id)).toEqual({
+    expect(standingAt(game, thrift).buyAtShop(thrift, gift.id)).toEqual({
       ok: false,
       error: { code: 'STACK_FULL', itemId: gift.id, max: MAX_STACK },
     })
@@ -86,7 +99,7 @@ describe('repeated taps through the store', () => {
 
   it('selling the last copy twice pays once; the second sell is NOT_OWNED', () => {
     const game = storeAt(NOON, wearable.price)
-    expect(game.getState().buyAtShop(thrift, wearable.id).ok).toBe(true)
+    expect(standingAt(game, thrift).buyAtShop(thrift, wearable.id).ok).toBe(true)
     const first = game.getState().sellItem(wearable.id)
     if (!first.ok) throw new Error(`refused: ${first.error.code}`)
     const afterFirst = game.getState().player
@@ -100,7 +113,7 @@ describe('repeated taps through the store', () => {
 
   it('selling a worn wearable takes it off the outfit', () => {
     const game = storeAt(NOON, wearable.price)
-    game.getState().buyAtShop(thrift, wearable.id)
+    standingAt(game, thrift).buyAtShop(thrift, wearable.id)
     expect(game.getState().equipItem(wearable.id, wearable.slot).ok).toBe(true)
     expect(game.getState().player.inventory.outfit[wearable.slot]).toBe(wearable.id)
     expect(game.getState().sellItem(wearable.id).ok).toBe(true)
@@ -109,7 +122,7 @@ describe('repeated taps through the store', () => {
 
   it('using the last gift twice uses it once; the second use is NOT_OWNED', () => {
     const game = storeAt(NOON, gift.price)
-    game.getState().buyAtShop(thrift, gift.id)
+    standingAt(game, thrift).buyAtShop(thrift, gift.id)
     expect(game.getState().consumeGift(gift.id, 'yourself').ok).toBe(true)
     const after = game.getState().player
     expect(after.inventory.gifts.some((stack) => stack.itemId === gift.id)).toBe(false)
@@ -131,8 +144,9 @@ describe('the shop re-checks its rules on every buy', () => {
     ['the closing minute', close, false],
   ])('at %s the buy is %s', (_label, minuteOfDay, allowed) => {
     const game = storeAt(minuteOfDay, wearable.price)
+    standingAt(game, thrift)
     const before = game.getState().player
-    const result = game.getState().buyAtShop(thrift, wearable.id)
+    const result = standingAt(game, thrift).buyAtShop(thrift, wearable.id)
     expect(result.ok).toBe(allowed)
     if (!allowed) {
       expect(result).toMatchObject({
@@ -145,8 +159,9 @@ describe('the shop re-checks its rules on every buy', () => {
 
   it('a crafted buy at a boutique in a locked borough is refused and changes nothing', () => {
     const game = storeAt(hoursOf('sidecut-studio').open + 30, 100_000, 0)
+    standingAt(game, boutique)
     const before = game.getState()
-    const result = game.getState().buyAtShop(boutique, wearable.id)
+    const result = standingAt(game, boutique).buyAtShop(boutique, wearable.id)
     expect(result).toMatchObject({
       ok: false,
       error: { code: 'BLOCKED', block: { code: 'borough-locked' } },
@@ -157,8 +172,11 @@ describe('the shop re-checks its rules on every buy', () => {
 
   it('a place without a shop refuses even when the store would otherwise allow it', () => {
     const game = storeAt(NOON, 100_000)
+    standingAt(game, place('steam-vent-coffee'))
     const before = game.getState().player
-    expect(game.getState().buyAtShop(place('steam-vent-coffee'), gift.id)).toEqual({
+    expect(
+      standingAt(game, place('steam-vent-coffee')).buyAtShop(place('steam-vent-coffee'), gift.id),
+    ).toEqual({
       ok: false,
       error: { code: 'NOT_A_SHOP' },
     })
@@ -254,17 +272,17 @@ describe('rent notices reach the panel state', () => {
     for (const venue of venues) {
       const game = storeAt(NOON, 0)
       const due = nextRentDueDay(game.getState().clock.minute, engineConfig)
-      const atNoon = placeActions(venue, game.getState(), engineConfig)
+      const atNoon = placeActions(venue, standingAt(game, venue), engineConfig)
       if (atNoon.kind !== 'actions') continue
       const offered = atNoon.actions.find((entry) => entry.kind === 'shift')
       if (offered === undefined) continue
       const start = (due - 1) * DAY - (offered.def.durationMin - 1)
       game.setState({ clock: { ...game.getState().clock, minute: start } })
-      const view = placeActions(venue, game.getState(), engineConfig)
+      const view = placeActions(venue, standingAt(game, venue), engineConfig)
       if (view.kind !== 'actions') continue
       const shift = view.actions.find((entry) => entry.id === offered.id && entry.block === null)
       if (shift === undefined) continue
-      const result = game.getState().performPlaceAction(venue, shift.id)
+      const result = standingAt(game, venue).performPlaceAction(venue, shift.id)
       if (!result.ok) throw new Error(`refused: ${result.error.code}`)
       expect(result.rent.length).toBeGreaterThan(0)
       expect(result.rent[0]).toMatchObject({ kind: 'missed', day: due })

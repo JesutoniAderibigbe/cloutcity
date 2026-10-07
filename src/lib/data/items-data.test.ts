@@ -4,10 +4,10 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
 import { ITEM_SLOTS as ENGINE_SLOTS } from '@/engine/items'
-import { baseCopy } from '@/lib/copy/all'
+import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { BalanceConfigSchema, RARITY_TIERS, type BalanceConfig } from './schemas/config'
 import { ITEM_SLOTS, ItemsFileSchema } from './schemas/content'
-import { balance } from './config'
+import { balance, theme } from './config'
 import { items } from './content'
 
 const DATA = join(import.meta.dirname, '../../../data')
@@ -22,6 +22,7 @@ const validBalance = JSON.parse(
 
 const wearables = items.filter((item) => item.category === 'clothing' || item.category === 'makeup')
 const gifts = items.filter((item) => item.category === 'gift')
+const decor = items.filter((item) => item.category === 'decor')
 
 describe('data/items/items.json', () => {
   it('has 12 clothing and makeup items and 3 gifts', () => {
@@ -54,10 +55,10 @@ describe('data/items/items.json', () => {
     }
   })
 
-  it('styleValue follows rarity (S13): common 1-2, medium 3-5, rare 8-10; gifts 0', () => {
+  it('styleValue follows rarity (S13): common 1-2, medium 3-5, rare 8-10; gifts and decor 0', () => {
     const band = { common: [1, 2], medium: [3, 5], rare: [8, 10] } as const
     for (const item of items) {
-      if (item.category === 'gift') {
+      if (item.category === 'gift' || item.category === 'decor') {
         expect(item.styleValue, item.id).toBe(0)
         continue
       }
@@ -77,7 +78,7 @@ describe('data/items/items.json', () => {
   })
 
   it('rarer tiers cost more: every common < every medium < every rare, per category', () => {
-    for (const group of [wearables, gifts]) {
+    for (const group of [wearables, gifts, decor]) {
       const prices = (tier: string) =>
         group.filter((item) => item.rarity === tier).map((item) => item.price)
       expect(Math.max(...prices('common'))).toBeLessThan(Math.min(...prices('medium')))
@@ -99,6 +100,73 @@ describe('data/items/items.json', () => {
     const { catalog, ...rules } = engineConfig.items
     expect(catalog).toHaveLength(items.length)
     expect(rules).toEqual(balance.items)
+  })
+})
+
+describe('decor (S16)', () => {
+  const HEX_LIKE = /^#?[0-9a-f]{3,8}$/i
+  /** A key's text in `pack`, falling back to base like the copy layer (undefined if missing). */
+  const renderIn = (pack: string) => (key: string) =>
+    slangPacks[pack]?.strings[key] ?? baseCopy.strings[key]
+
+  it('has exactly 6 decor items across all 3 rarity tiers, none about drinking (DEC-12)', () => {
+    expect(decor.map((item) => item.id)).toEqual([
+      'fairy-string-lights',
+      'windowsill-monstera',
+      'thrift-flatweave-rug',
+      'crate-record-player',
+      'custom-neon-sign',
+      'cloud-lounge-chair',
+    ])
+    expect(new Set(decor.map((item) => item.rarity))).toEqual(new Set(RARITY_TIERS))
+    const text = decor
+      .flatMap((item) => [item.id, baseCopy.strings[item.nameKey] ?? ''])
+      .join(' ')
+      .toLowerCase()
+    expect(text).not.toMatch(/\b(bar|cart|wine|beer|liquor|cocktail|booze|drink)/)
+  })
+
+  it('is worth no item clout, style or stat effect, and fits a wall, floor or surface', () => {
+    for (const item of decor) {
+      expect(item.cloutValue, item.id).toBe(0)
+      expect(item.styleValue, item.id).toBe(0)
+      expect(item.statEffects, item.id).toEqual({})
+      expect(item.decor?.homeScore, item.id).toBeGreaterThanOrEqual(1)
+    }
+    expect(new Set(decor.map((item) => item.decor?.fits))).toEqual(
+      new Set(['wall', 'floor', 'surface']),
+    )
+  })
+
+  it('every variant names a theme token, and its colour name is unique per item', () => {
+    for (const item of decor) {
+      const variants = item.decor?.variants ?? []
+      expect(variants.length, item.id).toBeGreaterThanOrEqual(2)
+      for (const variant of variants) {
+        expect(Object.hasOwn(theme.colors, variant.token), `${item.id} ${variant.id}`).toBe(true)
+      }
+      for (const pack of ['nyc', 'plain']) {
+        const render = renderIn(pack)
+        const names = variants.map((variant) => render(variant.nameKey))
+        expect(new Set(names).size, `${item.id} (${pack})`).toBe(names.length)
+      }
+    }
+  })
+
+  it('every colour name resolves in both packs as words, never a hex code (A11Y-1)', () => {
+    const keys = decor.flatMap((item) => item.decor?.variants.map((v) => v.nameKey) ?? [])
+    expect(keys.length).toBeGreaterThan(0)
+    for (const pack of ['nyc', 'plain']) {
+      const render = renderIn(pack)
+      for (const key of keys) {
+        const name = render(key)
+        expect(name, `${key} (${pack})`).toBeTypeOf('string')
+        expect(name, `${key} (${pack})`).toMatch(/^[A-Z][a-z]+(?: [a-z]+)*$/)
+        expect(HEX_LIKE.test(name ?? '') || (name ?? '#').includes('#'), `${key} (${pack})`).toBe(
+          false,
+        )
+      }
+    }
   })
 })
 
@@ -131,6 +199,31 @@ describe('ItemSchema', () => {
     ['an extra key', { tradeable: true }],
   ])('rejects %s', (_label, patch) => {
     expect(parses({ ...tee, ...patch })).toBe(false)
+  })
+
+  it('decor needs its decor block, worth no clout, style or stat effects, with 2+ variants', () => {
+    const lights = rawItems.find((item) => item.id === 'fairy-string-lights')
+    expect(parses(lights)).toBe(true)
+    const block = (lights as { decor: { variants: unknown[] } }).decor
+    expect(parses({ ...lights, decor: undefined })).toBe(false)
+    expect(parses({ ...tee, decor: block })).toBe(false)
+    expect(parses({ ...lights, cloutValue: 1 })).toBe(false)
+    expect(parses({ ...lights, styleValue: 1 })).toBe(false)
+    expect(parses({ ...lights, statEffects: { mood: 1 } })).toBe(false)
+    expect(parses({ ...lights, slot: 'top' })).toBe(false)
+    expect(parses({ ...lights, decor: { ...block, fits: 'ceiling' } })).toBe(false)
+    expect(parses({ ...lights, decor: { ...block, homeScore: 0 } })).toBe(false)
+    expect(parses({ ...lights, decor: { ...block, variants: block.variants.slice(0, 1) } })).toBe(
+      false,
+    )
+    const [first] = block.variants as { id: string; token: string; nameKey: string }[]
+    const variant = (patch: object) => ({
+      ...block,
+      variants: [{ ...first, ...patch }, ...block.variants.slice(1)],
+    })
+    expect(parses({ ...lights, decor: variant({ token: '#ff4fa3' }) })).toBe(false)
+    expect(parses({ ...lights, decor: variant({ nameKey: 'items.pink.name' }) })).toBe(false)
+    expect(parses({ ...lights, decor: { ...block, variants: [first, first] } })).toBe(false)
   })
 
   it('rejects a gift with a slot and makeup outside the face slot', () => {

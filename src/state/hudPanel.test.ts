@@ -9,6 +9,18 @@ import { closeHudPanel, hudPanelStore, openHudPanel } from './hudPanel'
 import { closePlace, onPlaceOpened, openPlace, placeSheetStore } from './placeSheet'
 import { createSafeJsonStorage } from './storage'
 import { createGameStore, type PersistedState } from './store'
+import type { Place } from '@/engine/places'
+import type { GameStore } from './store'
+
+/** The store's state after the player walks into `place` (DEC-22: its actions need them there). */
+function standingAt(game: GameStore, place: Place) {
+  const { player } = game.getState()
+  const { location } = player
+  if (location.kind !== 'place' || location.placeId !== place.id) {
+    game.setState({ player: { ...player, location: { kind: 'place', placeId: place.id } } })
+  }
+  return game.getState()
+}
 
 afterEach(() => {
   closeHudPanel()
@@ -63,11 +75,12 @@ describe('game store S10a actions', () => {
     const day = minutesPerDay(engineConfig)
     const noon = Math.floor(clock.minute / day) * day + day + 12 * 60
     game.setState({ clock: { ...clock, minute: noon }, player: { ...player, cash: 10_000 } })
-    const ok = game.getState().buyAtShop(thrift, wearable.id)
+    const ok = standingAt(game, thrift).buyAtShop(thrift, wearable.id)
     expect(ok.ok).toBe(true)
     expect(game.getState().player.cash).toBe(10_000 - wearable.price)
+    standingAt(game, thrift)
     const before = game.getState().player
-    const again = game.getState().buyAtShop(thrift, wearable.id)
+    const again = standingAt(game, thrift).buyAtShop(thrift, wearable.id)
     expect(again).toMatchObject({ ok: false, error: { code: 'ALREADY_OWNED' } })
     expect(game.getState().player).toBe(before)
   })

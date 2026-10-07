@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createRng, mixSeed } from './rng'
+import { createRng, mixSeed, rollInt } from './rng'
 
 describe('seeded random source', () => {
   it('gives the same sequence for the same seed, on every run (golden values)', () => {
@@ -53,5 +53,18 @@ describe('seeded random source', () => {
     for (const seed of seeds) {
       expect(Number.isInteger(seed) && seed >= 0 && seed <= 0xffffffff).toBe(true)
     }
+  })
+
+  it('rolls whole numbers inside the inclusive range, reaching both ends', () => {
+    const rng = createRng(3)
+    const seen = new Set<number>()
+    for (let i = 0; i < 2000; i++) {
+      const value = rollInt(rng, 5, 8)
+      expect(Number.isInteger(value)).toBe(true)
+      expect(value).toBeGreaterThanOrEqual(5)
+      expect(value).toBeLessThanOrEqual(8)
+      seen.add(value)
+    }
+    expect([...seen].sort()).toEqual([5, 6, 7, 8])
   })
 })

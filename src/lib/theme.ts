@@ -61,6 +61,20 @@ export function scenePalette(): ScenePalette {
       selected: tokenHex(scene.pins.selected),
     },
     chip: { fill: tokenHex(scene.chip.fill), ink: tokenHex(scene.chip.ink) },
+    travel: {
+      taxi: tokenHex(scene.travel.taxi),
+      train: tokenHex(scene.travel.train),
+      trail: tokenHex(scene.travel.trail),
+    },
     toonRamp: [...scene.toonRamp],
+    buildings: {
+      wall: tokenHex(scene.buildings.wall),
+      roof: tokenHex(scene.buildings.roof),
+      window: tokenHex(scene.buildings.window),
+      block: tokenHex(scene.buildings.block),
+    },
+    landmarks: Object.fromEntries(
+      Object.entries(scene.landmarks).map(([role, token]) => [role, tokenHex(token)]),
+    ) as ScenePalette['landmarks'],
   }
 }

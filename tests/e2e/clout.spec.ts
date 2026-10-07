@@ -4,6 +4,10 @@ import type { PlaceTestHook } from '@/components/places/placeTestHook'
 import { expect, test } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 // S13: flexing at a landmark earns clout, the HUD clout meter follows it, and crossing a level
 // shows the level-up toast in the toast zone. Places are opened and the player set up through
 // the place test hook (src/components/places/placeTestHook.ts); actions still run through the

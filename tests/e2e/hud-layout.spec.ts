@@ -4,8 +4,9 @@ import { holdGameTime, hudIsWide, moreButton, morePanel, waitForHudLoaded } from
 import { hideSceneForScreenshot, waitForMapSettled } from './helpers/scene'
 
 // S05: the HUD in the overlay's HUD zone (UX-1) at a phone, a desktop, a short phone and a
-// landscape phone. Nothing overlaps, every target is at least 44 px, Inventory, Rent and the
-// sound gear move into More on phones and landscape phones, and More closes back to its button.
+// landscape phone. Nothing overlaps, every target is at least 44 px, Inventory, Rent and Home
+// move into More on phones and landscape phones, More (with the sound settings and Help, S06)
+// shows at every width, and it closes back to its button.
 
 const VIEWPORTS = [
   { width: 390, height: 844 },
@@ -106,25 +107,28 @@ for (const viewport of VIEWPORTS) {
       await checkA11y()
     })
 
-    test('More holds Inventory, Rent and sound settings only where the HUD is narrow or short', async ({
+    test('More shows at every width; Inventory, Rent and Home leave the HUD only where it is narrow or short', async ({
       page,
     }) => {
       await boot(page)
       const wide = hudIsWide(page)
       const visible = (name: string) =>
         zone(page).getByRole('button', { name, exact: true }).filter({ visible: true })
-      await expect(moreButton(page)).toHaveCount(wide ? 0 : 1)
-      for (const name of ['Inventory', 'Rent', 'Sound settings']) {
+      await expect(moreButton(page)).toBeVisible()
+      for (const name of ['Inventory', 'Rent', 'Home']) {
         await expect(visible(name), name).toHaveCount(wide ? 1 : 0)
       }
-      if (wide) return
+      // The settings and Help live in More at every width (S06: no gear in the HUD).
+      for (const name of ['Settings', 'Help: take the tour']) {
+        await expect(visible(name), name).toHaveCount(0)
+      }
 
       await moreButton(page).click()
       const panel = morePanel(page)
       await expect(panel).toBeVisible()
       await expect(moreButton(page)).toHaveAttribute('aria-expanded', 'true')
       await expect(panel.getByRole('heading', { name: 'More' })).toBeFocused()
-      for (const name of ['Inventory', 'Rent', 'Sound settings']) {
+      for (const name of ['Inventory', 'Rent', 'Home', 'Settings', 'Help: take the tour']) {
         const item = panel.getByRole('button', { name, exact: true })
         await expect(item).toBeVisible()
         expect((await boxOf(item, name)).height).toBeGreaterThanOrEqual(44)
@@ -133,19 +137,20 @@ for (const viewport of VIEWPORTS) {
       await expect(panel).toHaveCount(0)
       await expect(moreButton(page)).toBeFocused()
 
-      // A panel opened from More hands focus back to More when it closes.
+      // A panel opened from More hands focus back to its own HUD button where it has one, and
+      // to More elsewhere.
       await moreButton(page).click()
       await panel.getByRole('button', { name: 'Rent', exact: true }).click()
       const rent = page.getByRole('dialog', { name: 'Rent' })
       await expect(rent.getByRole('heading', { name: 'Rent', exact: true })).toBeFocused()
       await page.keyboard.press('Escape')
       await expect(rent).toHaveCount(0)
-      await expect(moreButton(page)).toBeFocused()
+      await expect(wide ? visible('Rent') : moreButton(page)).toBeFocused()
 
-      // So does the sound settings sheet.
+      // The settings sheet hands focus back to More at every width.
       await moreButton(page).click()
-      await panel.getByRole('button', { name: 'Sound settings', exact: true }).click()
-      const sound = page.getByRole('region', { name: 'Sound' })
+      await panel.getByRole('button', { name: 'Settings', exact: true }).click()
+      const sound = page.getByRole('region', { name: 'Settings' })
       await expect(sound).toBeVisible()
       await page.keyboard.press('Escape')
       await expect(sound).toHaveCount(0)

@@ -16,6 +16,18 @@ import {
   initialPersistedState,
   type PersistedState,
 } from './store'
+import type { Place } from '@/engine/places'
+import type { GameStore } from './store'
+
+/** The store's state after the player walks into `place` (DEC-22: its actions need them there). */
+function standingAt(game: GameStore, place: Place) {
+  const { player } = game.getState()
+  const { location } = player
+  if (location.kind !== 'place' || location.placeId !== place.id) {
+    game.setState({ player: { ...player, location: { kind: 'place', placeId: place.id } } })
+  }
+  return game.getState()
+}
 
 class MemoryStorage implements Storage {
   private readonly map = new Map<string, string>()
@@ -72,7 +84,7 @@ describe('goals sync after state-changing actions', () => {
 
   it('a landmark visit reaches the first landmark visit goal', () => {
     const game = setup().store()
-    const result = game.getState().performPlaceAction(ballpark, 'visit')
+    const result = standingAt(game, ballpark).performPlaceAction(ballpark, 'visit')
     if (!result.ok) throw new Error(result.error.code)
     expect(game.getState().player.visited).toEqual({
       'queens-ballpark': game.getState().clock.minute,
@@ -134,7 +146,7 @@ describe('the Icon moment and prestige', () => {
     const local = new MemoryStorage()
     seed(local, 4999)
     const game = setup(local).store()
-    const flexed = game.getState().performPlaceAction(ballpark, 'flex')
+    const flexed = standingAt(game, ballpark).performPlaceAction(ballpark, 'flex')
     if (!flexed.ok) throw new Error(flexed.error.code)
     return { local, game }
   }
@@ -233,7 +245,7 @@ describe('claims racing events, and random interleavings (ECON-1)', () => {
       } else if (roll < 0.4) {
         state.performAction('bodega-breakfast')
       } else if (roll < 0.5) {
-        state.performPlaceAction(ballpark, rng.next() < 0.5 ? 'visit' : 'flex')
+        standingAt(game, ballpark).performPlaceAction(ballpark, rng.next() < 0.5 ? 'visit' : 'flex')
       } else if (roll < 0.55) {
         if (state.events.active === null) state.openEvent('bodega-cat', bodega)
         else state.chooseEventOption('treat')
@@ -302,7 +314,7 @@ describe('Icon is earned, in the store (S15 fix cycle 1)', () => {
       game.getState().advanceMinutes(24 * 60)
       const { player } = game.getState()
       game.setState({ player: { ...player, stats: { energy: 100, hunger: 80, mood: 80 } } })
-      const flexed = game.getState().performPlaceAction(place, 'flex')
+      const flexed = standingAt(game, place).performPlaceAction(place, 'flex')
       if (!flexed.ok) throw new Error(JSON.stringify(flexed.error))
     }
     expect(goalClout(game.getState().player, engineConfig)).toBeGreaterThanOrEqual(5000)

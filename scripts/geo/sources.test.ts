@@ -5,7 +5,18 @@ import { chmod, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { LockSchema, SOURCE_DEFINITIONS, type Lock } from './lock'
+import {
+  BUILDING_OUT_FIELDS,
+  LockSchema,
+  PartialLockSchema,
+  SOURCE_DEFINITIONS,
+  buildingSourceDefinition,
+  buildingSourceDefinitions,
+  pageFile,
+  pageUrl,
+  type Lock,
+} from './lock'
+import { GeoConfigSchema } from '../../src/lib/data/schemas/config'
 import {
   MAX_DOWNLOAD_BYTES,
   USER_AGENT,
@@ -30,6 +41,7 @@ function lockFor(version = 1): Lock {
         bytes: bytes.byteLength,
       }
     }),
+    pagedSources: [],
   }
 }
 
@@ -97,7 +109,7 @@ describe('ensureSources', () => {
       fetch,
     })
     expect(calls).toEqual([])
-    expect(result.files.size).toBe(3)
+    expect(result.files.size).toBe(SOURCE_DEFINITIONS.length)
   })
 
   it('fails when upstream changed and leaves the old cache untouched', async () => {
@@ -124,10 +136,11 @@ describe('ensureSources', () => {
       today: '2026-10-06',
       fetch,
     })
-    expect(calls).toHaveLength(3)
+    expect(calls).toHaveLength(SOURCE_DEFINITIONS.length)
     expect(result.lock).toEqual({
       version: 1,
       sources: lockFor(2).sources.map((s) => ({ ...s, retrieved: '2026-10-06' })),
+      pagedSources: [],
     })
     expect(LockSchema.safeParse(result.lock).success).toBe(true)
     const definition = SOURCE_DEFINITIONS[2]
@@ -142,11 +155,28 @@ describe('ensureSources', () => {
       today: '2026-12-31',
       fetch,
     })
-    expect(same.lock.sources.map((s) => s.retrieved)).toEqual([
-      '2026-10-06',
-      '2026-10-06',
-      '2026-10-06',
-    ])
+    expect(same.lock.sources.map((s) => s.retrieved)).toEqual(
+      SOURCE_DEFINITIONS.map(() => '2026-10-06'),
+    )
+  })
+
+  it('--update from a lock missing a new source keeps the old dates and adds the new one', async () => {
+    await seedCache()
+    const { fetch } = fakeFetch()
+    const partial = { ...lockFor(), sources: lockFor().sources.slice(0, 3) }
+    expect(LockSchema.safeParse(partial).success).toBe(false)
+    expect(PartialLockSchema.safeParse(partial).success).toBe(true)
+    const result = await ensureSources({
+      cacheDir,
+      lock: partial,
+      mode: 'update',
+      today: '2026-10-07',
+      fetch,
+    })
+    expect(result.lock.sources.map((s) => s.retrieved)).toEqual(
+      SOURCE_DEFINITIONS.map((_, i) => (i < 3 ? '2026-01-01' : '2026-10-07')),
+    )
+    expect(LockSchema.safeParse(result.lock).success).toBe(true)
   })
 
   it('--update works without a lock; other modes need one', async () => {
@@ -158,7 +188,7 @@ describe('ensureSources', () => {
       today: '2026-10-06',
       fetch,
     })
-    expect(created.lock.sources).toHaveLength(3)
+    expect(created.lock.sources).toHaveLength(SOURCE_DEFINITIONS.length)
     await expect(
       ensureSources({ cacheDir, lock: undefined, mode: 'default', today: 'x', fetch }),
     ).rejects.toThrow(/missing or out of date .*--update/)
@@ -187,7 +217,7 @@ describe('ensureSources', () => {
       today: 'x',
       fetch,
     })
-    expect(result.files.size).toBe(3)
+    expect(result.files.size).toBe(SOURCE_DEFINITIONS.length)
     expect(calls).toEqual([])
   })
 })
@@ -406,6 +436,31 @@ describe('lock schema', () => {
     },
   )
 
+  it('accepts .json cache files and rejects paged sources out of order or repeated', () => {
+    expect(LockSchema.safeParse(withEntry({ file: 'density.json' })).success).toBe(true)
+    const paged = (id: string) => ({
+      ...buildingSourceDefinition({
+        id: id as 'midtown',
+        label: id,
+        borough: 'manhattan',
+        center: { lat: 40.75, lng: -73.98 },
+        radiusM: 100,
+      }),
+      retrieved: '2026-10-07',
+      count: 1,
+      pages: [{ sha256: 'a'.repeat(64), bytes: 1 }],
+    })
+    const lock = lockFor()
+    const ordered = { ...lock, pagedSources: [paged('midtown'), paged('astoria')] }
+    expect(LockSchema.safeParse(ordered).success).toBe(true)
+    const reversed = { ...lock, pagedSources: [paged('astoria'), paged('midtown')] }
+    expect(LockSchema.safeParse(reversed).success).toBe(false)
+    const twice = { ...lock, pagedSources: [paged('midtown'), paged('midtown')] }
+    expect(LockSchema.safeParse(twice).success).toBe(false)
+    const noPages = { ...lock, pagedSources: [{ ...paged('midtown'), pages: [] }] }
+    expect(LockSchema.safeParse(noPages).success).toBe(false)
+  })
+
   it('rejects a bad hash, date or size, sources out of order, and unknown keys', () => {
     expect(LockSchema.safeParse(withEntry({ sha256: 'ABC' })).success).toBe(false)
     expect(LockSchema.safeParse(withEntry({ retrieved: '6 Oct 2026' })).success).toBe(false)
@@ -445,5 +500,275 @@ describe('committed lock and cache location', () => {
       encoding: 'utf8',
     })
     expect(ignored.trim()).toBe('.cache/geo/mta-gtfs-subway.zip')
+  })
+})
+
+describe('paged building sources', () => {
+  const district = {
+    id: 'astoria',
+    label: 'Astoria',
+    borough: 'queens',
+    center: { lat: 40.764, lng: -73.923 },
+    radiusM: 700,
+  } as const
+  const definition = buildingSourceDefinition(district)
+  const feature = { type: 'Feature', properties: { HEIGHT_ROOF: 30 }, geometry: null }
+  const pageBytes = (index: number, sizes: readonly number[], version = 1) =>
+    new TextEncoder().encode(
+      JSON.stringify({
+        type: 'FeatureCollection',
+        features: Array.from({ length: sizes[index] ?? 0 }, () => feature),
+        ...(index < sizes.length - 1 ? { properties: { exceededTransferLimit: true } } : {}),
+        version,
+      }),
+    )
+
+  /** Serves the count and the pages of `sizes`; `count` can disagree on purpose. */
+  function pagedFetch(sizes: readonly number[], count = sizes.reduce((a, b) => a + b, 0)) {
+    const calls: string[] = []
+    const fetch: FetchLike = async (url) => {
+      calls.push(url)
+      if (url === definition.countUrl) return new Response(JSON.stringify({ count }))
+      const index = sizes.findIndex((_, i) => url === pageUrl(definition, i))
+      if (index < 0) return new Response('nope', { status: 404 })
+      return new Response(pageBytes(index, sizes))
+    }
+    return { fetch, calls }
+  }
+  const base = { lock: lockFor(), today: '2026-10-07', fetch: fakeFetch().fetch }
+
+  it('--update fetches the count, then pages until one is not truncated, and locks each page', async () => {
+    const { fetch: pages, calls } = pagedFetch([2000, 2000, 37])
+    const files = fakeFetch()
+    const result = await ensureSources({
+      ...base,
+      cacheDir,
+      mode: 'update',
+      fetch: async (url, init) =>
+        SOURCE_DEFINITIONS.some((d) => d.url === url) ? files.fetch(url, init) : pages(url, init),
+      pagedDefinitions: [definition],
+    })
+    expect(calls).toEqual([
+      definition.countUrl,
+      pageUrl(definition, 0),
+      pageUrl(definition, 1),
+      pageUrl(definition, 2),
+    ])
+    expect(pageUrl(definition, 2)).toMatch(/&resultOffset=4000&resultRecordCount=2000$/)
+    const entry = result.lock.pagedSources[0]
+    expect(entry).toMatchObject({
+      id: 'oti-buildings-astoria',
+      count: 4037,
+      retrieved: '2026-10-07',
+    })
+    expect(entry?.pages).toEqual(
+      [0, 1, 2].map((i) => {
+        const bytes = pageBytes(i, [2000, 2000, 37])
+        return { sha256: sha256Hex(bytes), bytes: bytes.byteLength }
+      }),
+    )
+    for (const i of [0, 1, 2]) {
+      const path = join(cacheDir, pageFile(definition.id, i))
+      expect(new Uint8Array(await readFile(path))).toEqual(pageBytes(i, [2000, 2000, 37]))
+      expect((await stat(path)).mode & 0o777).toBe(0o444)
+    }
+    expect(result.pages.get(definition.id)).toHaveLength(3)
+    expect(LockSchema.safeParse(result.lock).success).toBe(true)
+
+    // A second update with identical bytes keeps the first retrieval date.
+    const again = await ensureSources({
+      ...base,
+      cacheDir,
+      lock: result.lock,
+      mode: 'update',
+      today: '2026-12-31',
+      fetch: async (url, init) =>
+        SOURCE_DEFINITIONS.some((d) => d.url === url) ? files.fetch(url, init) : pages(url, init),
+      pagedDefinitions: [definition],
+    })
+    expect(again.lock.pagedSources[0]?.retrieved).toBe('2026-10-07')
+
+    // Offline then reads every page from the cache.
+    const offline = await ensureSources({
+      ...base,
+      cacheDir,
+      lock: result.lock,
+      mode: 'offline',
+      fetch: vi.fn<FetchLike>(),
+      pagedDefinitions: [definition],
+    })
+    expect(offline.pages.get(definition.id)?.map((p) => p.byteLength)).toEqual(
+      entry?.pages.map((p) => p.bytes),
+    )
+  })
+
+  it('--update fails when the pages do not add up to the count', async () => {
+    const { fetch } = pagedFetch([2000, 5], 2004)
+    const files = fakeFetch()
+    await expect(
+      ensureSources({
+        ...base,
+        cacheDir,
+        mode: 'update',
+        fetch: async (url, init) =>
+          SOURCE_DEFINITIONS.some((d) => d.url === url) ? files.fetch(url, init) : fetch(url, init),
+        pagedDefinitions: [definition],
+      }),
+    ).rejects.toThrow(/2005 features but the query counts 2004/)
+  })
+
+  it('--update fails on an ArcGIS error body served with HTTP 200', async () => {
+    const files = fakeFetch()
+    await expect(
+      ensureSources({
+        ...base,
+        cacheDir,
+        mode: 'update',
+        fetch: async (url, init) =>
+          SOURCE_DEFINITIONS.some((d) => d.url === url)
+            ? files.fetch(url, init)
+            : new Response(JSON.stringify({ error: { code: 400, message: 'Invalid query' } })),
+        pagedDefinitions: [definition],
+      }),
+    ).rejects.toThrow(/oti-buildings-astoria count: unexpected response/)
+  })
+
+  it('default mode re-downloads a missing page and fails if it changed; offline never fetches', async () => {
+    const sizes = [2000, 3]
+    const lock: Lock = {
+      ...lockFor(),
+      pagedSources: [
+        {
+          ...definition,
+          retrieved: '2026-10-07',
+          count: 2003,
+          pages: sizes.map((_, i) => {
+            const bytes = pageBytes(i, sizes)
+            return { sha256: sha256Hex(bytes), bytes: bytes.byteLength }
+          }),
+        },
+      ],
+    }
+    await seedCache()
+    const { fetch, calls } = pagedFetch(sizes)
+    const files = fakeFetch()
+    const both: FetchLike = async (url, init) =>
+      SOURCE_DEFINITIONS.some((d) => d.url === url) ? files.fetch(url, init) : fetch(url, init)
+    await expect(
+      ensureSources({ ...base, cacheDir, lock, mode: 'offline', pagedDefinitions: [definition] }),
+    ).rejects.toThrow(/no cached page 0 .*offline/)
+    const result = await ensureSources({
+      ...base,
+      cacheDir,
+      lock,
+      mode: 'default',
+      fetch: both,
+      pagedDefinitions: [definition],
+    })
+    expect(calls).toEqual([pageUrl(definition, 0), pageUrl(definition, 1)])
+    expect(result.lock.pagedSources).toEqual(lock.pagedSources)
+
+    const changed: Lock = {
+      ...lock,
+      pagedSources: lock.pagedSources.map((entry) => ({
+        ...entry,
+        pages: entry.pages.map((page) => ({ ...page, sha256: 'a'.repeat(64) })),
+      })),
+    }
+    await expect(
+      ensureSources({
+        ...base,
+        cacheDir,
+        lock: changed,
+        mode: 'default',
+        fetch: both,
+        pagedDefinitions: [definition],
+      }),
+    ).rejects.toThrow(/upstream changed \(page 0/)
+  })
+
+  it('a lock entry whose query no longer matches the district must be updated', async () => {
+    const moved = buildingSourceDefinition({ ...district, radiusM: 800 })
+    const lock: Lock = {
+      ...lockFor(),
+      pagedSources: [
+        {
+          ...definition,
+          retrieved: '2026-10-07',
+          count: 1,
+          pages: [{ sha256: 'a'.repeat(64), bytes: 1 }],
+        },
+      ],
+    }
+    await seedCache()
+    await expect(
+      ensureSources({ ...base, cacheDir, lock, mode: 'offline', pagedDefinitions: [moved] }),
+    ).rejects.toThrow(/out of date for oti-buildings-astoria/)
+  })
+})
+
+describe('building source queries', () => {
+  const config = GeoConfigSchema.parse(
+    JSON.parse(readFileSync(join(ROOT, 'data/config/geo.json'), 'utf8')),
+  )
+  const definitions = buildingSourceDefinitions(config.districts)
+
+  it('one per configured district, in source-id order', () => {
+    expect(definitions.map((d) => d.id)).toEqual([
+      'oti-buildings-midtown',
+      'oti-buildings-lower-manhattan',
+      'oti-buildings-downtown-brooklyn-dumbo',
+      'oti-buildings-williamsburg',
+      'oti-buildings-long-island-city',
+      'oti-buildings-astoria',
+      'oti-buildings-flushing',
+      'oti-buildings-jamaica',
+    ])
+  })
+
+  it.each(definitions.map((d) => [d.id, d] as const))(
+    '%s requests HEIGHT_ROOF and nothing else (never NAME)',
+    (_id, definition) => {
+      expect(BUILDING_OUT_FIELDS).toBe('HEIGHT_ROOF')
+      const params = new URL(definition.url).searchParams
+      expect(params.getAll('outFields')).toEqual(['HEIGHT_ROOF'])
+      expect(definition.url).not.toMatch(/NAME/i)
+      expect(params.get('where')).toBe('FEATURE_CODE IN (2100,5100,1006) AND Shape__Area>=40')
+      expect(params.get('f')).toBe('geojson')
+      expect(params.get('orderByFields')).toBe('OBJECTID')
+      const count = new URL(definition.countUrl).searchParams
+      expect(count.get('returnCountOnly')).toBe('true')
+      expect(count.get('outFields')).toBeNull()
+      expect(count.get('geometry')).toBe(params.get('geometry'))
+    },
+  )
+
+  it('every committed lock page query also asks for HEIGHT_ROOF only', () => {
+    const lock = LockSchema.parse(
+      JSON.parse(readFileSync(join(ROOT, 'scripts/geo/sources.lock.json'), 'utf8')),
+    )
+    for (const entry of lock.pagedSources) {
+      expect(new URL(entry.url).searchParams.getAll('outFields')).toEqual(['HEIGHT_ROOF'])
+    }
+  })
+
+  it('the envelope covers the district circle', () => {
+    for (const district of config.districts) {
+      const definition = definitions.find((d) => d.id.endsWith(district.id))
+      const [west, south, east, north] = (
+        new URL(definition?.url ?? '').searchParams.get('geometry') ?? ''
+      )
+        .split(',')
+        .map(Number)
+      const { lat, lng } = district.center
+      expect(west).toBeLessThan(lng)
+      expect(east).toBeGreaterThan(lng)
+      expect(south).toBeLessThan(lat)
+      expect(north).toBeGreaterThan(lat)
+      // Half the height in metres is at least the radius.
+      expect((((north ?? 0) - (south ?? 0)) / 2) * 111_000).toBeGreaterThanOrEqual(
+        district.radiusM * 0.999,
+      )
+    }
   })
 })

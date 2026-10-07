@@ -4,6 +4,7 @@
  * here: they are palette tokens in data/config/theme.json (`scene`).
  */
 import { z } from 'zod'
+import { LandmarkSceneConfigSchema } from './landmarkModels'
 
 const metres = z.number().positive()
 const ratio = z.number().positive()
@@ -126,6 +127,29 @@ export const SceneConfigSchema = z.strictObject({
     sunDirection: z
       .strictObject({ x: z.number(), y: z.number(), z: z.number() })
       .refine((d) => d.y > 0, { error: 'the sun must be above the horizon' }),
+    /**
+     * The high tier's directional shadow (S04b, perf.json `shadows`). The light follows the
+     * camera target so its shadow map covers the view; sizes are multiples of the camera
+     * distance so the shadow stays sharp at every zoom.
+     */
+    shadow: z.strictObject({
+      /** Half the width of the square the shadow map covers. */
+      extentPerDistance: ratio,
+      /** How far towards the sun the light sits from the target. */
+      lightPerDistance: ratio,
+      /** Depth of the shadow camera, from the light. */
+      depthPerDistance: ratio,
+      bias: z.number().max(0),
+      normalBias: z.number().nonnegative(),
+    }),
+  }),
+  /**
+   * How the 3D map starts (S04b, PERF-4): the canvas mounts when the main thread is idle (or
+   * after `idleTimeoutMs` at the latest), and the city build yields to the browser between
+   * layers so taps and other islands are not blocked for its whole length.
+   */
+  startup: z.strictObject({
+    idleTimeoutMs: z.int().positive(),
   }),
   /** "Expanding soon" land and parks (S04c): their colour mixed this far towards the background. */
   dimmed: z.strictObject({ towardBackground: z.number().gt(0).lt(1) }),
@@ -161,6 +185,24 @@ export const SceneConfigSchema = z.strictObject({
     tweenMs: z.int().nonnegative(),
     /** The camera ends at most this far from the place. */
     maxDistanceM: metres,
+  }),
+  /**
+   * Travel (S08): the vehicle the avatar rides in, sized as a multiple of the avatar's height (so
+   * it scales with the camera like the avatar), and the trail drawn behind it (at most
+   * `trailMaxPoints` points, one line; off on the low tier unless `trailOnLow`).
+   */
+  travel: z.strictObject({
+    taxiLengthRatio: z.number().gt(0),
+    trainLengthRatio: z.number().gt(0),
+    vehicleWidthRatio: z.number().gt(0),
+    vehicleHeightRatio: z.number().gt(0),
+    /** A trail point is added each time the traveller moves this much (avatar heights). */
+    trailStepRatio: z.number().gt(0),
+    /** The trail's height above the land top (avatar heights). */
+    trailLiftRatio: z.number().nonnegative(),
+    trailMaxPoints: z.int().min(2).max(64),
+    trailWidthPx: z.number().gt(0),
+    trailOnLow: z.boolean(),
   }),
   /** "Expanding soon" ground chips on dimmed boroughs, drawn from a runtime atlas. */
   chips: z.strictObject({
@@ -223,6 +265,103 @@ export const SceneConfigSchema = z.strictObject({
     labelSizeM: metres,
     labelOpacity: z.number().gt(0).max(1),
     dimmedLabelOpacity: z.number().gt(0).max(1),
+  }),
+  /**
+   * The apartment interior (S16, src/scene/apartment/): the floor slab and wall insets, the ledge or
+   * side table drawn under each surface slot, the slot markers, tap picking, the camera fit, the
+   * static lighting (until S04f drives it from the clock) and the mid tier's blob shadows.
+   */
+  apartment: z.strictObject({
+    floorThicknessM: metres,
+    /**
+     * Walls are single-sided planes facing into the room, so a wall between the camera and the
+     * room is culled (the cutaway); trim, the window pane and the door sit this far in front of
+     * their wall so they never fight it in the depth test.
+     */
+    insetM: metres,
+    trimHeightM: metres,
+    /** A surface slot this close to a side wall sits on a ledge; elsewhere on a side table. */
+    ledgeDepthM: metres,
+    ledgeThicknessM: metres,
+    tableSizeM: metres,
+    marker: z.strictObject({
+      radiusM: metres,
+      segments: z.int().min(3).max(64),
+      liftM: z.number().nonnegative(),
+      /** The selected or highlighted slot's marker grows by this factor. */
+      selectedScale: z.number().min(1),
+    }),
+    /** At least 22 px, so a slot's tap target is at least 44 px across (CLAUDE.md "Art direction"). */
+    hitRadiusPx: z.number().min(22),
+    /** Slots this close to the nearest hit (in pixels) make the tap ambiguous: a chooser opens. */
+    ambiguityPx: z.number().nonnegative(),
+    /** The room's bounding sphere is fitted into the free scene row with this much margin. */
+    fitMargin: z.number().min(1),
+    lights: z.strictObject({
+      ambientIntensity: z.number().nonnegative(),
+      sunIntensity: z.number().nonnegative(),
+      sunDirection: z
+        .strictObject({ x: z.number(), y: z.number(), z: z.number() })
+        .refine((d) => d.y > 0, { error: 'the light must come from above' }),
+      /** The high tier's one directional shadow map (PCFShadowMap). */
+      shadowMapSizePx: z.int().min(256).max(4096),
+    }),
+    /** The mid tier's blob shadows under placed floor and surface decor. */
+    blob: z.strictObject({
+      radiusM: metres,
+      opacity: z.number().gt(0).max(1),
+      liftM: z.number().nonnegative(),
+    }),
+  }),
+  /** The landmark kit's levels of detail and look per quality tier (S07a). */
+  landmarks: LandmarkSceneConfigSchema,
+  /**
+   * District buildings and procedural blocks (S04d). Windows are a mask texture repeated over
+   * the district walls (one cell per `floorM` storey and `windowSpacingM` of wall), glowing with
+   * the shared night-glow uniform (src/scene/lighting/nightGlow.ts, driven by S04f's day/night
+   * rig); view distances are multiplied by the tier's lodDistanceScale.
+   */
+  buildings: z.strictObject({
+    floorM: metres,
+    windowSpacingM: metres,
+    /** The window's share of its cell, across and up. */
+    windowWidth: z.number().gt(0).lt(1),
+    windowHeight: z.number().gt(0).lt(1),
+    /** Share of windows lit at night. */
+    litShare: z.number().min(0).max(1),
+    /**
+     * The window mask texture repeats every this many cells each way, so lit and dark windows
+     * vary within the tile.
+     */
+    windowTileCells: z.int().min(1).max(16),
+    /** The window pattern costs fragment work: off where the tier has no headroom. */
+    windows: z.strictObject({ low: z.boolean(), mid: z.boolean(), high: z.boolean() }),
+    /** Per-building spread of the facade's brightness (0.12 = plus or minus 12%). */
+    wallJitter: z.number().min(0).max(0.5),
+    /** Beyond these distances from the camera, districts and blocks are not drawn. */
+    viewM: z.strictObject({ districts: metres, blocks: metres }),
+    /** A district loads once the camera is this close to its draw distance. */
+    loadMarginM: z.number().nonnegative(),
+    /** The longest a build slice runs before it gives the browser a turn. */
+    buildSliceMs: z.number().positive(),
+  }),
+  /**
+   * Name chips of the modelled landmarks (S07a): one flat rounded plate per landmark, floating
+   * above its model's top and `offsetM` south of its pin, all in one mesh and one atlas, shown
+   * within `landmarks.labelMaxDistanceM` of the camera target. Text comes from the server's copy
+   * (generic labels for generic-name landmarks), never from the model data.
+   */
+  landmarkChips: z.strictObject({
+    widthM: metres,
+    heightM: metres,
+    offsetM: z.number().nonnegative(),
+    liftM: z.number().nonnegative(),
+    atlasWidthPx: z.int().min(64).max(2048),
+    cellHeightPx: z.int().min(16).max(256),
+    fontScale: ratio.max(1),
+    textMaxWidth: ratio.max(1),
+    cornerRadius: z.number().min(0).max(0.5),
+    alphaTest: z.number().gt(0).lt(1),
   }),
 })
 export type SceneConfig = z.infer<typeof SceneConfigSchema>

@@ -5,8 +5,8 @@
  * and city sounds keep playing), and the second line says what is playing. Before audio is
  * unlocked it reads "Tap for sound" with the remembered choice, and that first tap only turns
  * sound on (GR-13). If music (or the whole runtime) failed to load, it says so and a tap retries.
- * The gear opens the sound settings (on wide screens; on phones they open from the HUD's More
- * panel).
+ * The sound settings open from the HUD's More panel at every width (S06: More replaced the gear
+ * that wide screens had).
  *
  * A boot island (SoundControlMount): it and the zod-backed stores it reads load in their own
  * chunk right after the shell (DEC-11).
@@ -20,19 +20,12 @@ import { retryAudio } from '@/lib/audio/loadRuntime'
 import { unlockAudioFromGesture } from '@/lib/audio/unlock'
 import { INITIAL_AUDIO_STATUS, audioStatusStore } from '@/state/audioStatus'
 import { onboardingStore } from '@/state/onboarding'
-import {
-  SOUND_SETTINGS_BUTTON_ID,
-  SOUND_SETTINGS_SHEET_ID,
-  setSoundSheetOpen,
-  soundSheetStore,
-} from './soundSheet'
 import '@/lib/copy/ns/audio'
 
 const LINE_2_ID = 'sound-control-now-playing'
 
 const ownMusicNow = () => isOwnMusic(onboardingStore.getState().record)
 const statusNow = () => audioStatusStore.getState()
-const sheetOpenNow = () => soundSheetStore.getState().open
 const never = () => false
 const initialStatus = () => INITIAL_AUDIO_STATUS
 
@@ -62,7 +55,6 @@ const BUTTON =
 export function SoundControl() {
   const ownMusic = useSyncExternalStore(onboardingStore.subscribe, ownMusicNow, never)
   const status = useSyncExternalStore(audioStatusStore.subscribe, statusNow, initialStatus)
-  const sheetOpen = useSyncExternalStore(soundSheetStore.subscribe, sheetOpenNow, never)
 
   const view = nowPlaying({
     status: status.status,
@@ -134,26 +126,6 @@ export function SoundControl() {
             {line2}
           </span>
         )}
-      </button>
-      <button
-        type="button"
-        id={SOUND_SETTINGS_BUTTON_ID}
-        aria-label={copy('audio.hud.settings')}
-        aria-expanded={sheetOpen}
-        aria-controls={sheetOpen ? SOUND_SETTINGS_SHEET_ID : undefined}
-        onClick={() => setSoundSheetOpen(!sheetOpen)}
-        // On phones and landscape phones the gear lives in the HUD's More panel (S05, Q3).
-        className={`${BUTTON} hidden shrink-0 justify-center hud-wide:flex hud-short:hidden`}
-      >
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          className="h-5 w-5 fill-none stroke-current stroke-2"
-        >
-          <path d="M4 7h10M18 7h2M4 17h4M12 17h8" strokeLinecap="round" />
-          <circle cx="16" cy="7" r="2" />
-          <circle cx="10" cy="17" r="2" />
-        </svg>
       </button>
     </div>
   )

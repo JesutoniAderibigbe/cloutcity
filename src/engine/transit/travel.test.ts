@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { engineConfig, type EngineConfig } from '../config'
 import { initialSnapshot, type GameSnapshot } from '../game'
-import { createSeededRng, type Rng } from '../random'
+import { createRng, type Rng } from '../rng'
 import type { TransitConfig } from './config'
 import { planTrip, type Route } from './plan'
 import { EIGHT_AM, NOON, PLACES, TEST_TRANSIT, allLandWorld, testWorld } from './test-fixtures'
@@ -31,8 +31,10 @@ const engine: EngineConfig = {
 }
 
 const world = testWorld()
-const never: Rng = () => 0.999
-const always: Rng = () => 0
+/** A source that returns whatever `draw` gives (state is not used by travel). */
+const source = (draw: () => number): Rng => ({ next: draw, state: 0 })
+const never = source(() => 0.999)
+const always = source(() => 0)
 
 function at(minuteOfDay: number, cash = 150): GameSnapshot {
   const base = initialSnapshot(engine)
@@ -131,10 +133,10 @@ describe('travel action', () => {
 
   it('does not draw from the random source for a refused trip', () => {
     let draws = 0
-    const counting: Rng = () => {
+    const counting = source(() => {
       draws++
       return 0.5
-    }
+    })
     travel(at(NOON, 0), coneyToTimesSq, { world, rng: counting }, engine, TEST_TRANSIT)
     expect(draws).toBe(0)
   })
@@ -201,7 +203,7 @@ describe('MTA delay hook', () => {
           acc.snapshots.push(result)
           return acc
         },
-        { snapshots: [], rng: createSeededRng(2026) },
+        { snapshots: [], rng: createRng(2026) },
       ).snapshots
     const first = run()
     expect(run()).toEqual(first)
@@ -215,7 +217,7 @@ describe('MTA delay hook', () => {
   it('emits a typed event and adds the delay to the first train', () => {
     const route = planned(NOON)
     const rolls = [0.1, 0.5]
-    const rng: Rng = () => rolls.shift() ?? 0
+    const rng = source(() => rolls.shift() ?? 0)
     const { route: delayedRoute, event } = rollSubwayDelay(route, rng, delays)
     // 0.5 of a 5..20 range: 5 + floor(0.5 x 16) = 13 minutes.
     expect(event).toEqual({ id: MTA_DELAY_EVENT, lineId: expect.any(String), extraMin: 13 })
@@ -230,7 +232,7 @@ describe('MTA delay hook', () => {
   })
 
   it('uses the rush-hour probability in rush hour', () => {
-    const roll = () => 0.7
+    const roll = source(() => 0.7)
     expect(rollSubwayDelay(planned(NOON), roll, delays).event).toBeUndefined()
     expect(rollSubwayDelay(planned(EIGHT_AM), roll, delays).event).toBeDefined()
   })
@@ -254,10 +256,10 @@ describe('trip length limit', () => {
       far,
       {
         world: allLandWorld(),
-        rng: () => {
+        rng: source(() => {
           draws++
           return 0
-        },
+        }),
       },
       engine,
       TEST_TRANSIT,

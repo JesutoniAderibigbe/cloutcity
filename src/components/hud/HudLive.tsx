@@ -5,12 +5,14 @@
  * clock, its speed, clout with the goal line (the Goals button, S15), and the three stats. Each
  * cell subscribes to the slice of the save it shows, so a passing game minute re-renders the
  * clock and the stats, not the clout cell. It also starts the game clock (Q12), tells the Icon
- * moment mount when the moment is due, and tells the 3D map which home the player lives in.
+ * moment mount when the moment is due, and tells the 3D map which home the player lives in and
+ * where they stand.
  *
  * It renders a fragment of grid cells in the HudFrame grid (hudLayout.ts), box for box the same
  * as HudSkeleton.
  */
 import { useEffect, useMemo } from 'react'
+import { minutesPerDay } from '@/engine/clock'
 import { cloutProgress } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import { claimableCount } from '@/engine/goals'
@@ -18,12 +20,14 @@ import type { StatKey } from '@/engine/stats'
 import { copy, type CopyKey } from '@/lib/copy'
 import { cloutLevelName } from '@/lib/economyCopy'
 import { formatCount, formatMoney } from '@/lib/format'
+import { setMinuteOfDay } from '@/state/dayClock'
 import { startGameClock } from '@/state/gameClock'
 import { closeHudPanel, openHudPanel, useHudPanel } from '@/state/hudPanel'
 import { clockView, nextSpeed, statsView } from '@/state/hudView'
 import { setIconMomentPending } from '@/state/iconMoment'
 import { onboardingStore } from '@/state/onboarding'
 import { setPlayerHome } from '@/state/playerHome'
+import { setPlayerSpot, useTripClockMinute } from '@/state/trip'
 import { gameStore, useGameStore } from '@/state/store'
 import { CloutMeter } from './CloutMeter'
 import { HUD_CELL } from './hudLayout'
@@ -43,10 +47,15 @@ export function HudLive() {
   )
 }
 
-/** The live island's side effects: the game clock, the Icon moment signal, the player's home. */
+/**
+ * The live island's side effects: the game clock, the Icon moment signal, the player's home and
+ * the minute of day the day/night cycle reads.
+ */
 function useHudEffects() {
   const icon = useGameStore((state) => state.goals.icon)
   const home = useGameStore((state) => state.player.home)
+  const minuteOfDay = useGameStore((state) => state.clock.minute % minutesPerDay(engineConfig))
+  const location = useGameStore((state) => state.player.location)
 
   // Passive time runs once the welcome card is complete; one driver however often this mounts.
   useEffect(() => startGameClock({ game: gameStore, onboarding: onboardingStore }), [])
@@ -56,6 +65,9 @@ function useHudEffects() {
   }, [icon])
 
   useEffect(() => setPlayerHome(home), [home])
+  useEffect(() => setPlayerSpot(location), [location])
+
+  useEffect(() => setMinuteOfDay(minuteOfDay), [minuteOfDay])
 
   useEffect(() => {
     // Inlined at build time (next.config.ts): production builds drop the hook entirely.
@@ -78,8 +90,10 @@ function MoneyCell() {
 }
 
 function ClockCell() {
-  const minute = useGameStore((state) => state.clock.minute)
-  const view = clockView(minute, engineConfig)
+  const saved = useGameStore((state) => state.clock.minute)
+  // The trip is already in the save (S08); the clock counts up through it while it animates.
+  const travelling = useTripClockMinute()
+  const view = clockView(travelling ?? saved, engineConfig)
   return (
     <div data-hud-cell="clock" className={HUD_CELL.clock}>
       <p className="flex flex-col leading-tight">
@@ -181,6 +195,7 @@ function CloutCell() {
         {ready === 0 ? null : (
           <span
             aria-hidden="true"
+            data-cc-notice="goals-ready"
             className="ml-auto min-w-4 shrink-0 rounded-full bg-taxi-400 px-1 text-center text-[10px] leading-3.5 font-bold text-night-950"
           >
             {formatCount(ready)}

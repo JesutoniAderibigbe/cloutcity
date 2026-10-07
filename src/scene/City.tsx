@@ -5,10 +5,14 @@
  * plus the place pins and the "expanding soon" chips on dimmed boroughs (S04c), built once from
  * the fetched geo layers into merged/instanced meshes (under twenty draw calls). Renders state
  * only; the camera rig owns the view and PlacePins owns picking.
+ *
+ * Start-up (S04b, PERF-4): the canvas builds the city before mounting it, giving the browser a
+ * turn between layers, and the city's shaders are compiled (asynchronously where the browser
+ * supports it) before the first frame that shows it, so neither step is one long blocking task.
  */
-import { useEffect, useMemo, useRef, type RefObject } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Group, InstancedMesh, Mesh, MeshBasicMaterial } from 'three'
+import { Group, InstancedMesh, Mesh, MeshBasicMaterial, type Texture } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
@@ -29,6 +33,8 @@ import { buildChipGeometry, chipAnchor, createChipTexture } from './pins/buildCh
 import { buildPins, type PinObjects } from './pins/buildPins'
 import { PlacePins } from './pins/PlacePins'
 import type { ScenePalette } from './types'
+import { perfMark } from '@/lib/perfMarks'
+import { yieldToMain } from './schedule'
 
 /** How one borough is drawn (the test hook reports it). */
 export interface BoroughView {
@@ -44,17 +50,29 @@ export interface CityObjects {
   readonly group: Group
   readonly pins: PinObjects
   readonly boroughs: readonly BoroughView[]
+  /** The shared toon ramp: district buildings and landmarks shade with the same steps. */
+  readonly gradientMap: Texture
+  /** Boroughs drawn as "expanding soon" land. */
+  readonly dimmed: ReadonlySet<BoroughId>
   /** Rescales station markers and pins and toggles line letters for a camera distance. */
   applyDistance(distance: number): void
+  /** Shows or hides the outlines (the subway casing), per quality tier. */
+  setOutlines(visible: boolean): void
   dispose(): void
 }
 
-function buildCity(
+/**
+ * Builds the city, awaiting `pause` between layers so the main thread is never blocked for the
+ * whole build. Shadows are received by the ground layers and cast by the pins; they show only
+ * where the tier's light casts one (SunLight.tsx).
+ */
+export async function buildCity(
   geo: GeoBase,
   palette: ScenePalette,
   config: SceneConfig,
   expandingSoon: string,
-): CityObjects {
+  pause: () => Promise<void>,
+): Promise<CityObjects> {
   const top = landTopY(config.land)
   const colorById = lineColors(geo.subway.lines, palette.subwayLines)
   const atlas = createLabelAtlas(geo.subway.lines, colorById, palette.labelInk, config.labels)
@@ -66,13 +84,16 @@ function buildCity(
   group.name = 'city'
 
   for (const borough of geo.land.boroughs) {
+    await pause()
     const mesh = new Mesh(
       buildLandGeometry(borough.polygons, config.land),
       materials.land[borough.id],
     )
     mesh.name = `land-${borough.id}`
+    mesh.receiveShadow = true
     group.add(mesh)
   }
+  await pause()
 
   const water = new Mesh(buildWaterGeometry(geo.water.sea, config.water.extraM), materials.water)
   water.name = 'water'
@@ -87,15 +108,19 @@ function buildCity(
       const material = isDimmed ? materials[`${kind}Dimmed`] : materials[kind]
       const mesh = new Mesh(buildParkGeometry(polygons, parkY), material)
       mesh.name = isDimmed ? `parks-${kind}-dimmed` : `parks-${kind}`
+      mesh.receiveShadow = true
       group.add(mesh)
     }
   }
+  await pause()
 
   const subwayGeometry = buildSubwayGeometry(
     subwaySegments(geo.subway.lines, colorById, top + config.subway.liftM),
   )
-  if (config.subway.casing) {
-    const casing = new LineSegments2(subwayGeometry, materials.subwayCasing)
+  const casing = config.subway.casing
+    ? new LineSegments2(subwayGeometry, materials.subwayCasing)
+    : null
+  if (casing !== null) {
     casing.name = 'subway-casing'
     casing.renderOrder = 1
     group.add(casing)
@@ -113,6 +138,7 @@ function buildCity(
   )
   stations.name = 'stations'
   group.add(stations)
+  await pause()
 
   const chips = terminalChips(geo.subway.lines, geo.subway.stations)
   const labels = new Mesh(
@@ -156,7 +182,11 @@ function buildCity(
     group.add(chips)
   }
 
+  await pause()
   const pins = buildPins(geo.places.pins, palette, config, top, materials.gradientMap)
+  pins.group.traverse((object) => {
+    if (object instanceof Mesh) object.castShadow = true
+  })
   group.add(pins.group)
 
   const chipped = new Set(anchors.map((entry) => entry.id))
@@ -172,6 +202,11 @@ function buildCity(
     group,
     pins,
     boroughs,
+    gradientMap: materials.gradientMap,
+    dimmed,
+    setOutlines(visible) {
+      if (casing !== null) casing.visible = visible
+    },
     applyDistance(distance) {
       pins.applyDistance(distance)
       labels.visible = distance <= config.labels.maxDistanceM
@@ -201,36 +236,61 @@ function buildCity(
 }
 
 interface CityProps {
-  /** Validated before the canvas mounts (CitySceneClient). */
-  readonly geo: GeoBase
-  readonly palette: ScenePalette
+  /** Built by the canvas (buildCity), which also disposes of it. */
+  readonly city: CityObjects
   readonly config: SceneConfig
-  /** The chip text (map.expandingSoon), rendered by the server. */
-  readonly expandingSoon: string
+  /** The tier's outlines setting. */
+  readonly outlines: boolean
   /** Called once, after the first frame that shows the city. */
   readonly onReady: () => void
   /** Receives the built city for the test hooks. */
   readonly cityRef: RefObject<CityObjects | null>
 }
 
-export function City({ geo, palette, config, expandingSoon, onReady, cityRef }: CityProps) {
-  const city = useMemo(
-    () => buildCity(geo, palette, config, expandingSoon),
-    [geo, palette, config, expandingSoon],
-  )
-
+export function City({ city, config, outlines, onReady, cityRef }: CityProps) {
   useEffect(() => {
     cityRef.current = city
     return () => {
       if (cityRef.current === city) cityRef.current = null
     }
   }, [city, cityRef])
+  const gl = useThree((state) => state.gl)
+  const camera = useThree((state) => state.camera)
+  const scene = useThree((state) => state.scene)
   const controls = useThree((state) => state.controls)
   const invalidate = useThree((state) => state.invalidate)
   const placed = useRef(false)
   const reported = useRef(false)
+  const [compiled, setCompiled] = useState(false)
 
-  useEffect(() => () => city.dispose(), [city])
+  useEffect(() => {
+    city.setOutlines(outlines)
+    invalidate()
+  }, [city, outlines, invalidate])
+
+  // The shaders compile before the city joins the scene (lit by the scene's lights), so the
+  // first frame that shows it does not stall on compilation. compileAsync needs
+  // KHR_parallel_shader_compile (three warns without it, e.g. on SwiftShader); without it the
+  // compile is synchronous but still happens before the city's first frame.
+  useEffect(() => {
+    let active = true
+    const done = () => {
+      if (!active) return
+      perfMark('cc:3d:compiled')
+      setCompiled(true)
+      invalidate()
+    }
+    if (gl.extensions.has('KHR_parallel_shader_compile')) {
+      void gl.compileAsync(city.group, camera, scene).then(done)
+    } else {
+      gl.compile(city.group, camera, scene)
+      // A task later, so the compile is not one task with the commit that mounted the city.
+      void yieldToMain().then(done)
+    }
+    return () => {
+      active = false
+    }
+  }, [city, gl, camera, scene, invalidate])
 
   useEffect(() => {
     if (!(controls instanceof MapControls)) return
@@ -244,11 +304,12 @@ export function City({ geo, palette, config, expandingSoon, onReady, cityRef }: 
 
   // Ready once a frame has drawn the city with its markers placed for the camera.
   useFrame(() => {
-    if (reported.current || !placed.current) return
+    if (reported.current || !placed.current || !compiled) return
     reported.current = true
     onReady()
   })
 
+  if (!compiled) return null
   return (
     <>
       <primitive object={city.group} />

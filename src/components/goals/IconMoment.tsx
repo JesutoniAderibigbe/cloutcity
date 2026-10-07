@@ -98,6 +98,7 @@ export function IconMoment() {
       aria-describedby={bodyId}
       data-icon-moment={step}
       data-cc-feature="cc-feature:icon-moment"
+      data-cc-notice="icon"
       className="pointer-events-auto relative max-h-full w-full max-w-[var(--overlay-sheet-max-w)] self-center overflow-y-auto overscroll-contain rounded-3xl border border-pink-400 bg-night-900 p-5 shadow-2xl"
     >
       <div aria-hidden="true" className="icon-moment-burst pointer-events-none absolute inset-0" />

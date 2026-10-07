@@ -1,0 +1,5 @@
+{
+  "registration": {
+    "idleTimeoutMs": 5000
+  }
+}

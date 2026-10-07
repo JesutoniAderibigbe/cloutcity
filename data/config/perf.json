@@ -2,6 +2,7 @@
   "shellJsGzKB": 180,
   "shellHeadroomGzKB": 20,
   "sceneChunkJsGzKB": 350,
+  "apartmentChunkJsGzKB": 40,
   "totalJsToPlayableGzKB": 550,
   "baseGeoGzKB": 400,
   "districtBuildingsGzKB": {
@@ -31,6 +32,22 @@
     "mid": 400000,
     "high": 800000
   },
+  "apartment": {
+    "drawCallsMax": {
+      "low": 24,
+      "mid": 32,
+      "high": 56
+    },
+    "trianglesMax": {
+      "low": 12000,
+      "mid": 20000,
+      "high": 30000
+    },
+    "avatarReserve": {
+      "drawCalls": 6,
+      "triangles": 4000
+    }
+  },
   "dprCap": {
     "low": 1,
     "mid": 1.5,
@@ -41,6 +58,32 @@
     "mid": "blob-or-baked",
     "high": "pcf-directional"
   },
+  "shadowMapSizePx": {
+    "low": 0,
+    "mid": 0,
+    "high": 2048
+  },
+  "antialias": {
+    "low": false,
+    "mid": true,
+    "high": true
+  },
+  "outlines": {
+    "low": false,
+    "mid": true,
+    "high": true
+  },
+  "buildingDensity": {
+    "low": 0.5,
+    "mid": 0.8,
+    "high": 1
+  },
+  "lodDistanceScale": {
+    "low": 0.6,
+    "mid": 1,
+    "high": 1.4
+  },
+  "postprocessing": "none",
   "otherPlayersMax": {
     "low": 8,
     "mid": 16,
@@ -59,7 +102,45 @@
   "idleFramesMax": 0,
   "fpsStepDown": {
     "belowFps": 28,
-    "sustainMs": 3000
+    "sustainMs": 3000,
+    "sampleMs": 250,
+    "threshold": 0.9,
+    "cooldownMs": 10000,
+    "maxSteps": 2
+  },
+  "tierPicker": {
+    "lowRendererPatterns": [
+      "swiftshader",
+      "llvmpipe",
+      "softpipe",
+      "software",
+      "microsoft basic render",
+      "mali-4\\d\\d",
+      "mali-t[6-8]\\d\\d",
+      "adreno \\(tm\\) [2-5]\\d\\d",
+      "powervr sgx",
+      "powervr rogue ge8\\d{3}",
+      "intel\\(r\\) hd graphics [2-5]\\d\\d\\b"
+    ],
+    "highRendererPatterns": [
+      "apple m\\d",
+      "geforce",
+      "quadro",
+      "radeon (rx|pro)",
+      "adreno \\(tm\\) (7[3-9]\\d|[89]\\d\\d)",
+      "mali-g7[1-9]",
+      "xclipse"
+    ],
+    "lowBelow": {
+      "maxTextureSize": 4096,
+      "deviceMemoryGb": 4,
+      "cores": 4
+    },
+    "highAtLeast": {
+      "maxTextureSize": 16384,
+      "deviceMemoryGb": 8,
+      "cores": 8
+    }
   },
   "throttleProfiles": {
     "cc-mid-4g": {
@@ -73,6 +154,15 @@
       }
     }
   },
+  "perfRun": {
+    "coldRuns": 3,
+    "coldTier": "low",
+    "profile": "cc-mid-4g",
+    "maxLoadPerCore": 0.75,
+    "loadWaitMaxMs": 600000,
+    "loadPollMs": 5000,
+    "lockWaitMaxMs": 1800000
+  },
   "audioLazyGzKB": {
     "low": 600,
     "mid": 1000,
@@ -80,6 +170,37 @@
   },
   "audioFileMaxKB": 600,
   "audioRuntimeJsGzKB": 20,
+  "serviceWorkerGzKB": 15,
+  "precacheGzKB": 1000,
+  "buildingTrianglesMax": {
+    "low": 160000,
+    "mid": 300000,
+    "high": 480000
+  },
+  "landmarkTrianglesMax": {
+    "bridge": {
+      "low": 1200,
+      "mid": 3500,
+      "high": 7000
+    },
+    "building": {
+      "low": 600,
+      "mid": 1800,
+      "high": 3500
+    },
+    "station": {
+      "low": 600,
+      "mid": 1800,
+      "high": 3500
+    },
+    "government": {
+      "low": 600,
+      "mid": 1800,
+      "high": 3500
+    }
+  },
+  "landmarkTrianglesOverride": {},
+  "landmarkLodRatioMax": 0.5,
   "models": {
     "vehicle": {
       "trianglesMax": {

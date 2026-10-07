@@ -13,16 +13,54 @@ import { copy } from '@/lib/copy'
 // namespace never ships in the shell (DEC-11).
 import '@/lib/copy/ns/map'
 import { balance, perf, scene } from '@/lib/data/config'
+import { QUALITY_TIERS, type QualityTier } from '@/lib/data/schemas/config'
 import { geoBounds, homes } from '@/lib/data/content'
+import { districtAssets } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
 import { HOME_IDS } from '@/lib/data/homes'
 import { modelRef } from '@/lib/data/models'
 import { project } from '@/lib/geo/projection'
 import { scenePalette } from '@/lib/theme'
+import { landmarksLayer } from '@/lib/world/landmarksLayer'
+import { mapPlaces, placeName } from '@/lib/world/places'
+import { ApartmentMount } from './apartment/ApartmentMount'
 import { boundsToLocal } from './camera/limits'
 import { CitySceneClient } from './CitySceneClient'
 import { MapAttribution } from './MapAttribution'
-import type { SceneProps } from './types'
+import type { SceneProps, SceneQuality, TierRenderSettings } from './types'
+
+function tierSettings(tier: QualityTier): TierRenderSettings {
+  return {
+    dprCap: perf.dprCap[tier],
+    antialias: perf.antialias[tier],
+    shadows: perf.shadows[tier],
+    shadowMapSizePx: perf.shadowMapSizePx[tier],
+    outlines: perf.outlines[tier],
+    buildingDensity: perf.buildingDensity[tier],
+    lodDistanceScale: perf.lodDistanceScale[tier],
+  }
+}
+
+/** The tier picker's thresholds and every tier's settings, so the client loads no config. */
+function sceneQuality(): SceneQuality {
+  return {
+    picker: perf.tierPicker,
+    stepDown: perf.fpsStepDown,
+    tiers: Object.fromEntries(
+      QUALITY_TIERS.map((tier) => [tier, tierSettings(tier)]),
+    ) as SceneQuality['tiers'],
+  }
+}
+
+/** The modelled landmarks' names from copy (generic labels where trademarked, LEGAL-1). */
+function landmarkNames(): Record<string, string> {
+  const modelled = new Set(landmarksLayer.models.map((entry) => entry.id))
+  return Object.fromEntries(
+    mapPlaces()
+      .filter((place) => modelled.has(place.id))
+      .map((place) => [place.id, placeName(place)]),
+  )
+}
 
 /** The player's avatar parts from scene.json `models.player`, fitted by the head's top. */
 function playerModel(): SceneProps['playerModel'] {
@@ -46,8 +84,11 @@ export function CityScene() {
     ) as SceneProps['homesLocal'],
     startHome: balance.start.home,
     boundsLocal: boundsToLocal(geoBounds),
-    // Quality tiers arrive with S04b; until then every device gets the mid tier's cap.
-    dprCap: perf.dprCap.mid,
+    quality: sceneQuality(),
+    buildings: Object.fromEntries(
+      QUALITY_TIERS.map((tier) => [tier, districtAssets(tier)]),
+    ) as SceneProps['buildings'],
+    travelAnimation: balance.transit.animation,
     playerModel: playerModel(),
     overlayRows,
     freeRow: FREE_SCENE_GRID_ROW,
@@ -59,11 +100,17 @@ export function CityScene() {
       lost: copy('map.lost'),
       fallback: copy('map.fallback'),
       expandingSoon: copy('map.expandingSoon'),
+      landmarkNames: landmarkNames(),
     },
   }
   return (
     <div className="absolute inset-0">
       <CitySceneClient {...props} />
+      {/* The apartment's canvas draws here while the Home panel shows the room (S16,
+          src/scene/apartment/ApartmentMount.tsx); empty, it takes no space or pointer events. */}
+      <div data-scene-slot="room" className="absolute inset-0 empty:hidden">
+        <ApartmentMount />
+      </div>
       <MapAttribution
         nyc={copy('map.attribution.nyc')}
         mta={copy('map.attribution.mta')}

@@ -1,15 +1,17 @@
 'use client'
 
 /**
- * The player's avatar at their home (S05). The toon capsule placeholder stands there at once;
- * the hand-made avatar (S04h: the shared rig with a head and a body) loads after the map is
- * playable and replaces it once assembled. The capsule stays while the model loads, when it
- * fails, on devices reporting little memory and on the tiers in scene.json
- * `models.player.capsuleTiers`. Both rescale with the camera distance on every controls change,
- * then request one frame: the map renders on demand, so the avatar never adds idle frames.
+ * The player's avatar where they stand: home (S05) or a place after a trip (S08). The toon
+ * capsule placeholder stands there at once; the hand-made avatar (S04h: the shared rig with a
+ * head and a body) loads after the city has drawn and replaces it once assembled. The capsule
+ * stays while the model loads, when it fails, on devices reporting little memory and on the
+ * tiers in scene.json `models.player.capsuleTiers`. Both rescale with the camera distance on
+ * every controls change, then request one frame: the map renders on demand, so the avatar never
+ * adds idle frames.
  */
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
+import type { Group } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { LocalPoint } from '@/lib/geo/projection'
 import { toScene } from '../geo/coords'
@@ -39,6 +41,10 @@ interface PlayerAvatarProps {
   readonly tier: ModelTier
   /** False until the city has drawn: the model never competes with the playable path. */
   readonly loadModel: boolean
+  /** Called once the avatar stands at its home (the map is playable from its next frame). */
+  readonly onPlaced?: () => void
+  /** Receives the avatar's group, which a trip moves along its route (S08). */
+  readonly groupRef?: RefObject<Group | null>
 }
 
 /** navigator.deviceMemory (GB, Chromium only); undefined where the browser does not say. */
@@ -68,18 +74,33 @@ export function PlayerAvatar({
   models,
   tier,
   loadModel,
+  onPlaced,
+  groupRef,
 }: PlayerAvatarProps) {
   const built = useMemo(() => buildAvatar(color, toonRamp, avatar), [color, toonRamp, avatar])
   const controls = useThree((state) => state.controls)
   const invalidate = useThree((state) => state.invalidate)
-  const [showModel] = useState(() => wantsAvatarModel(models.player, tier, deviceMemoryGB()))
+  // Follows the active tier: a runtime step-down to a capsule tier swaps the capsule back in.
+  const showModel = useMemo(
+    () => wantsAvatarModel(models.player, tier, deviceMemoryGB()),
+    [models.player, tier],
+  )
 
   useEffect(() => () => built.dispose(), [built])
 
   useEffect(() => {
+    if (groupRef === undefined) return
+    groupRef.current = built.group
+    return () => {
+      if (groupRef.current === built.group) groupRef.current = null
+    }
+  }, [built, groupRef])
+
+  useEffect(() => {
     toScene(at, groundY, built.group.position)
+    onPlaced?.()
     invalidate()
-  }, [built, at, groundY, invalidate])
+  }, [built, at, groundY, onPlaced, invalidate])
 
   useEffect(() => {
     if (!(controls instanceof MapControls)) return

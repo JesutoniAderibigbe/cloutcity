@@ -42,9 +42,9 @@ test('stays silent until the sound control is tapped, and remembers "My own musi
   const toggle = page.getByRole('button', { name: 'My own music' })
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
 
-  await openFromHud(page, 'Sound settings')
+  await openFromHud(page, 'Settings')
   await expect(
-    page.getByRole('region', { name: 'Sound' }).getByRole('checkbox', { name: 'My own music' }),
+    page.getByRole('region', { name: 'Settings' }).getByRole('checkbox', { name: 'My own music' }),
   ).toBeChecked()
 
   await page.reload()

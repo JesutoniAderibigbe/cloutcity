@@ -4,7 +4,14 @@ import { describe, expect, it } from 'vitest'
 import { GeoConfigSchema } from '../../src/lib/data/schemas/config'
 import { SubwayFileSchema } from '../../src/lib/data/schemas/world'
 import { LockSchema } from './lock'
-import { MTA_ATTRIBUTION, renderSourcesMd } from './sources-md'
+import {
+  LION_METADATA_URL,
+  MAPPLUTO_DISCLAIMER,
+  MTA_ATTRIBUTION,
+  NAME_NOT_DOWNLOADED,
+  renderSourcesMd,
+} from './sources-md'
+import { pageFile } from './lock'
 
 const ROOT = join(import.meta.dirname, '../..')
 const read = (path: string) => readFileSync(join(ROOT, path), 'utf8')
@@ -74,11 +81,70 @@ describe('data/geo/SOURCES.md', () => {
     expect(sourcesMd).toMatch(/derived data: simplified\s+artwork/)
   })
 
+  it.each(lock.pagedSources.map((s) => [s.id, s] as const))(
+    'records %s: query, count query and count, retrieval date and every page hash',
+    (_id, source) => {
+      for (const text of [
+        `- Source id: \`${source.id}\``,
+        `- Query: <${source.url}>`,
+        `- Count query: <${source.countUrl}> (${source.count} features)`,
+        source.catalogUrl,
+        source.terms.url,
+      ]) {
+        expect(sourcesMd).toContain(text)
+      }
+      source.pages.forEach((page, index) => {
+        expect(sourcesMd).toContain(
+          `\`.cache/geo/${pageFile(source.id, index)}\` (${page.bytes} bytes, sha256 \`${page.sha256}\`)`,
+        )
+      })
+    },
+  )
+
+  it('documents the OTI building footprints: item, terms, NAME not downloaded, outputs', () => {
+    expect(lock.pagedSources).toHaveLength(config.districts.length)
+    expect(sourcesMd).toContain('## NYC Office of Technology and Innovation (NYC Open Data)')
+    expect(sourcesMd).toContain(
+      'https://www.arcgis.com/home/item.html?id=870bf69e8a8044aea4488e564c0b4010',
+    )
+    expect(NAME_NOT_DOWNLOADED).toMatch(/^NAME field not downloaded/)
+    expect(sourcesMd).toContain('NAME field not downloaded')
+    expect(sourcesMd).toContain('`geo/districts/<district>.<tier>.derived.json`')
+    expect(sourcesMd).toContain('HEIGHT_ROOF` feet × 0.3048')
+    expect(sourcesMd).toMatch(
+      /Catalogue page: <https:\/\/data\.cityofnewyork\.us\/d\/5zhs-2jue> \(to re-verify from a US network/,
+    )
+    expect(sourcesMd).toMatch(
+      /Required attribution: data from NYC Open Data, provided by the NYC Office of Technology and\s+Innovation/,
+    )
+  })
+
+  it('documents MapPLUTO: item, re-verify note, what was downloaded, and the DCP disclaimer', () => {
+    expect(sourcesMd).toContain(
+      'https://www.arcgis.com/home/item.html?id=1564ace0b4f44318ac39920737f9bd07',
+    )
+    expect(sourcesMd).toMatch(/dwn-pluto-mappluto\.page> \(to re-verify from a US network/)
+    expect(sourcesMd).toContain('`geo/blocks.<tier>.derived.json`')
+    expect(sourcesMd).toContain('No lot geometry, address, owner')
+    expect(sourcesMd).toContain(`> ${MAPPLUTO_DISCLAIMER}`)
+    expect(MAPPLUTO_DISCLAIMER).toMatch(
+      /^MapPLUTO is being provided by the Department of City Planning/,
+    )
+  })
+
   it('lists every terminal extension', () => {
     for (const ext of subway.terminalExtensions) {
       expect(sourcesMd).toContain(
         `Line \`${ext.lineId}\` extended ${ext.gapM} m to station \`${ext.stationId}\``,
       )
     }
+  })
+
+  it('documents the LION queries: the data dictionary, the codes used and the frames file', () => {
+    expect(sourcesMd).toContain('### LION street centerlines (landmark frames)')
+    expect(sourcesMd).toContain(LION_METADATA_URL)
+    expect(sourcesMd).toContain('`landmarks/frames.derived.json`')
+    expect(sourcesMd).toMatch(/E entrance\/exit ramp/)
+    expect(sourcesMd).toContain('The Department of City Planning make no representation')
   })
 })
