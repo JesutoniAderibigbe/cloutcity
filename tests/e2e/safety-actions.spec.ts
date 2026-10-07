@@ -109,6 +109,28 @@ test.describe('player actions', () => {
     expect(await calls(page)).toEqual(['block:fake-Rival', 'unblock:fake-Rival'])
   })
 
+  test("Undo closes when the server's undo window does, not the local default", async ({
+    page,
+  }) => {
+    // The server's window (undo_expires_at) is 1 s; moderation.json says 10 s. An Undo offered
+    // past the server's window would unblock without restoring what the block ended.
+    const harness = await boot(page, {
+      handle: 'Rival',
+      layout: 'inline',
+      endsFriendship: true,
+      undoSeconds: 1,
+    })
+    await tap(page, harness.getByRole('button', { name: 'Block @Rival' }))
+    await tap(
+      page,
+      harness.locator('[data-block-confirm]').getByRole('button', { name: 'Block @Rival' }),
+    )
+    await expect(toast(page)).toContainText('@Rival is blocked.')
+    await expect(
+      toast(page).getByRole('button', { name: 'Undo and bring @Rival back' }),
+    ).toHaveCount(0, { timeout: 3_000 })
+  })
+
   test('a refused action says why in plain words', async ({ page }) => {
     const harness = await boot(page, {
       handle: 'Rival',

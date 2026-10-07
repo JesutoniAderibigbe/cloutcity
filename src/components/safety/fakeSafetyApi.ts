@@ -13,6 +13,8 @@ export interface FakeSafetyApiOptions {
   /** What block_player reports it ended. */
   readonly endsFriendship?: boolean
   readonly notices?: readonly AccountNotice[]
+  /** The server's undo window for a block (default 10 s); undo ids past it restore nothing. */
+  readonly undoSeconds?: number
 }
 
 export interface FakeSafetyApi extends SafetyApi {
@@ -23,6 +25,7 @@ export interface FakeSafetyApi extends SafetyApi {
 export function createFakeSafetyApi(options: FakeSafetyApiOptions = {}): FakeSafetyApi {
   const calls: string[] = []
   const blocked = new Map<string, string>()
+  const undoExpiry = new Map<string, number>()
   const muted = new Set<string>()
   const reports = new Set<string>()
   let undo = 0
@@ -39,19 +42,28 @@ export function createFakeSafetyApi(options: FakeSafetyApiOptions = {}): FakeSaf
     calls,
     block: (target) =>
       answer('block', target, () => {
+        // Already blocked: block_player changes nothing and offers no undo.
+        if (blocked.has(target)) {
+          return { undoId: null, undoExpiresAt: null, friendshipEnded: false, roommateEnded: false }
+        }
         undo += 1
         const undoId = `undo-${undo}`
+        const expiresAt = Date.now() + (options.undoSeconds ?? 10) * 1000
         blocked.set(target, undoId)
+        undoExpiry.set(undoId, expiresAt)
         return {
           undoId,
-          undoExpiresAt: new Date(Date.now() + 10_000).toISOString(),
+          undoExpiresAt: new Date(expiresAt).toISOString(),
           friendshipEnded: options.endsFriendship ?? false,
           roommateEnded: false,
         }
       }),
     unblock: (target, undoId) =>
       answer('unblock', target, () => {
-        const restored = undoId !== undefined && blocked.get(target) === undoId
+        const restored =
+          undoId !== undefined &&
+          blocked.get(target) === undoId &&
+          (undoExpiry.get(undoId) ?? 0) > Date.now()
         const unblocked = blocked.delete(target)
         return {
           unblocked,

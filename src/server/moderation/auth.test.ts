@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bearerToken, isModerator, parseModeratorEmails } from './auth'
+import { bearerToken, isModerator, parseModeratorEmails, tokenSignInMethods } from './auth'
 
 describe('parseModeratorEmails', () => {
   it('reads a comma-separated list, trimmed and lower-cased', () => {
@@ -47,5 +47,17 @@ describe('bearerToken', () => {
     expect(bearerToken('Basic abc')).toBeNull()
     expect(bearerToken(null)).toBeNull()
     expect(bearerToken('Bearer a b')).toBeNull()
+  })
+})
+
+describe('tokenSignInMethods', () => {
+  const token = (payload: unknown) =>
+    `h.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.s`
+  it('reads the amr methods, and nothing from a token it cannot read', () => {
+    expect(tokenSignInMethods(token({ amr: [{ method: 'otp', timestamp: 1 }] }))).toEqual(['otp'])
+    expect(tokenSignInMethods(token({ amr: 'otp' }))).toEqual([])
+    expect(tokenSignInMethods(token({}))).toEqual([])
+    expect(tokenSignInMethods('no-dots')).toEqual([])
+    expect(tokenSignInMethods('h.%%%.s')).toEqual([])
   })
 })

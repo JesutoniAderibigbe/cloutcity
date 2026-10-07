@@ -18,6 +18,7 @@ export interface SafetyTestHook {
     readonly layout: PlayerActionsLayout
     readonly failures?: Readonly<Partial<Record<keyof SafetyApi, ApiErrorCode>>>
     readonly endsFriendship?: boolean
+    readonly undoSeconds?: number
   }): void
   unmount(): void
   /** The fake API's calls so far, as `method:target`. */
@@ -44,9 +45,9 @@ export function installSafetyTestHook(): void {
     host = null
   }
   const hook: SafetyTestHook = {
-    mount: ({ handle, layout, failures, endsFriendship }) => {
+    mount: ({ handle, layout, failures, endsFriendship, undoSeconds }) => {
       unmount()
-      api = createFakeSafetyApi({ failures, endsFriendship })
+      api = createFakeSafetyApi({ failures, endsFriendship, undoSeconds })
       const zone = document.querySelector('[data-overlay-zone="sheet"] > div')
       if (zone === null) throw new Error('the sheet zone is not rendered')
       host = document.createElement('div')

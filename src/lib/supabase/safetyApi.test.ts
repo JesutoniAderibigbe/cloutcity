@@ -53,6 +53,18 @@ describe('safetyApi', () => {
     expect(t.calls).toEqual([{ fn: 'block_player', args: { p_target: TARGET } }])
   })
 
+  it('block of a player already blocked is a success with no undo (the server changes nothing)', async () => {
+    const t = transport({
+      block_player: ok([
+        { undo_id: null, undo_expires_at: null, friendship_ended: false, roommate_ended: false },
+      ]),
+    })
+    expect(await createSafetyApi(t).block(TARGET)).toEqual({
+      ok: true,
+      data: { undoId: null, undoExpiresAt: null, friendshipEnded: false, roommateEnded: false },
+    })
+  })
+
   it('unblock passes the undo id only when given', async () => {
     const row = ok([{ unblocked: true, friendship_restored: true, roommate_restored: false }])
     const t = transport({ unblock_player: row })

@@ -1,3 +1,5 @@
+import { request as httpRequest } from 'node:http'
+import { createClient } from '@supabase/supabase-js'
 import { expect, test } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
 import { database, newGuest, newPermanentUser } from './helpers/seed'
@@ -14,7 +16,12 @@ test.skip(({ isMobile }) => !isMobile, 'runs once, on mobile-390')
 test.use({ injectedConsoleErrors: [/status of 409/] })
 
 const stack = localStack()
-const sql = database(stack)
+// Opened and closed per group of tests: with fullyParallel, one worker can run this file's
+// tests in several groups, and a connection ended after the first would fail the next.
+let sql: ReturnType<typeof database>
+test.beforeAll(() => {
+  sql = database(stack)
+})
 test.afterAll(async () => {
   await sql.end()
 })
@@ -73,14 +80,90 @@ test('a non-moderator and a guest are refused; no token is a 401', async ({ requ
   expect(action.status()).toBe(403)
 })
 
-test('the sign-in answer is the same for a moderator and anyone else', async ({ request }) => {
-  const forMod = await request.post('/api/mod/sign-in', { data: { email: E2E_MODERATOR_EMAIL } })
+/** POSTs JSON with a Host header of the caller's choosing (fetch cannot set one). */
+function postWithHost(
+  base: string,
+  path: string,
+  host: string,
+  body: unknown,
+): Promise<{ status: number; json: unknown }> {
+  const data = JSON.stringify(body)
+  return new Promise((resolve, reject) => {
+    const req = httpRequest(
+      new URL(path, base),
+      {
+        method: 'POST',
+        headers: {
+          host,
+          'x-forwarded-host': host,
+          'content-type': 'application/json',
+          'content-length': Buffer.byteLength(data),
+        },
+      },
+      (res) => {
+        let text = ''
+        res.on('data', (chunk: Buffer) => (text += chunk.toString()))
+        res.on('end', () => resolve({ status: res.statusCode ?? 0, json: JSON.parse(text) }))
+      },
+    )
+    req.on('error', reject)
+    req.end(data)
+  })
+}
+
+test('the sign-in answer is the same for a moderator and anyone else', async ({
+  request,
+  baseURL,
+}) => {
+  await clearMail(E2E_MODERATOR_EMAIL)
+  // A spoofed Host must not choose where the link lands (SITE_URL's /mod; handlers.test.ts).
+  const forMod = await postWithHost(baseURL ?? '', '/api/mod/sign-in', 'attacker.example', {
+    email: E2E_MODERATOR_EMAIL,
+  })
   const forOther = await request.post('/api/mod/sign-in', {
     data: { email: `nobody-${crypto.randomUUID()}@example.test` },
   })
-  expect(forMod.status()).toBe(202)
+  expect(forMod.status).toBe(202)
   expect(forOther.status()).toBe(202)
-  expect(await forMod.json()).toEqual(await forOther.json())
+  expect(forMod.json).toEqual(await forOther.json())
+  // Locally the stack swaps a redirect it does not allow for its site_url, so only the absence
+  // of the spoofed host is checked here.
+  const redirectTo = new URL(await signInLink(E2E_MODERATOR_EMAIL)).searchParams.get('redirect_to')
+  expect(redirectTo ?? '').not.toContain('attacker.example')
+})
+
+test("the moderator's address with a password session (no emailed link) is refused", async ({
+  request,
+}) => {
+  // With email confirmations off (the local stack), anyone can sign up with an address and get
+  // it marked confirmed. Only a session from the emailed link (amr otp) is a moderator's.
+  const admin = createClient(stack.apiUrl, stack.serviceRoleKey, {
+    auth: { persistSession: false },
+  })
+  const password = `pw-${crypto.randomUUID()}`
+  const [existing] = await sql<{ id: string }[]>`
+    select id from auth.users where email = ${E2E_MODERATOR_EMAIL}
+  `
+  const updated =
+    existing === undefined
+      ? await admin.auth.admin.createUser({
+          email: E2E_MODERATOR_EMAIL,
+          password,
+          email_confirm: true,
+        })
+      : await admin.auth.admin.updateUserById(existing.id, { password })
+  if (updated.error !== null) throw updated.error
+  const client = createClient(stack.apiUrl, stack.anonKey, { auth: { persistSession: false } })
+  const { data, error } = await client.auth.signInWithPassword({
+    email: E2E_MODERATOR_EMAIL,
+    password,
+  })
+  if (error !== null || data.session === null) throw error ?? new Error('no session')
+  const response = await request.get('/api/mod/queue', {
+    headers: { authorization: `Bearer ${data.session.access_token}` },
+  })
+  expect(response.status()).toBe(403)
+  expect(await response.json()).toEqual({ ok: false, code: 'not_moderator' })
 })
 
 test('a moderator signs in by email link, opens a seeded case and suspends; one audit row', async ({

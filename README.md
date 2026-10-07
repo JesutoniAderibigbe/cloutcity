@@ -554,11 +554,13 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   Supabase session (`storageKey: 'cloutcity-mod-auth'`, `src/lib/supabase/modAuth.ts`), so it
   never touches the game's guest session. Sign-in is an emailed link: `POST /api/mod/sign-in`
   answers the same 202 for every address and sends the link (after the response) only to one on
-  `MODERATOR_EMAILS`; it is rate limited per IP (`moderation.json` `console`, per server
+  `MODERATOR_EMAILS`, landing on `<SITE_URL>/mod` (server env, never the request's Host header;
+  unset turns sign-in off); it is rate limited per IP (`moderation.json` `console`, per server
   instance). `GET /api/mod/queue`, `GET /api/mod/case/<player id>` and `POST /api/mod/action` need
   `Authorization: Bearer <access token>`; `src/server/moderation/handlers.ts` checks it with
-  `auth.getUser`, then the email (confirmed, non-anonymous, on the list), and answers 401/403
-  otherwise. Every response is `no-store` and `noindex` and carries `X-Correlation-Id`, which is
+  `auth.getUser`, then the email (confirmed, non-anonymous, on the list) and that the session came
+  from an emailed link (`amr` `otp`, so a password or guest account that set the address is
+  refused), and answers 401/403 otherwise. Every response is `no-store` and `noindex` and carries `X-Correlation-Id`, which is
   also the audit row's correlation id. `/mod?case=<player id>` opens one case directly. Locally the
   magic link lands on `site_url` (`supabase/config.toml`); add the `/mod` URL of your dev server
   to `additional_redirect_urls` to land on the console, and set the hosted project's redirect

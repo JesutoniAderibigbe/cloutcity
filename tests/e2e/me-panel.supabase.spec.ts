@@ -19,7 +19,12 @@ test.use({
 test.skip(({ isMobile }) => !isMobile, 'runs once, on mobile-390')
 
 const stack = localStack()
-const sql = database(stack)
+// Opened and closed per group of tests: with fullyParallel, one worker can run this file's
+// tests in several groups, and a connection ended after the first would fail the next.
+let sql: ReturnType<typeof database>
+test.beforeAll(() => {
+  sql = database(stack)
+})
 test.afterAll(async () => {
   await sql.end()
 })

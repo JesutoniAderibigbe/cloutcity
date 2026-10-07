@@ -5,18 +5,39 @@
  * the note and snapshot, and the audit history once a moderator acts.
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import {
   expectRpcError,
   newAttestedGuest,
   newPermanentUser,
   serviceClient,
+  sql,
   type Guest,
 } from './helpers'
 
 const service = serviceClient() as unknown as SupabaseClient
 const moderator = newPermanentUser()
 const key = () => `it-${crypto.randomUUID()}`
+
+// The local stack is shared and never reset, so open cases from every earlier run pile up and the
+// queue (at most 200) cannot be assumed to reach a new case. Cases this file opens are moved to
+// the front of their priority (oldest first) and closed again afterwards; only its own rows.
+const seeded: string[] = []
+async function frontOfQueue(...targets: Guest[]) {
+  const ids = targets.map((target) => target.id)
+  seeded.push(...ids)
+  await sql`
+    update private.reports set created_at = timestamptz '2001-01-01T00:00:00Z'
+    where target_id in ${sql(ids)}
+  `
+}
+afterAll(async () => {
+  if (seeded.length === 0) return
+  await sql`
+    update private.reports set status = 'dismissed', resolved_at = now()
+    where target_id in ${sql(seeded)} and status = 'open'
+  `
+})
 
 async function report(reporter: Guest, target: Guest, reason: string, note: string | null = null) {
   const { error } = await reporter.client.rpc('submit_report', {
@@ -60,9 +81,12 @@ describe('mod_queue and mod_case (S18b part 2)', () => {
     await report(a, low, 'spam')
     await report(b, low, 'scam')
     await report(a, high, 'self_harm')
+    await frontOfQueue(low, high)
     const { cases } = await queue()
     const lowCase = cases.find((item) => item.case_id === low.id)
     const highCase = cases.find((item) => item.case_id === high.id)
+    expect(highCase, 'the seeded high-priority case is in the queue').toBeDefined()
+    expect(lowCase, 'the seeded low-priority case is in the queue').toBeDefined()
     expect(lowCase).toMatchObject({
       reports: 2,
       reporters: 2,
@@ -82,6 +106,8 @@ describe('mod_queue and mod_case (S18b part 2)', () => {
   it('shows a case with notes and snapshots, then the audit row after an action', async () => {
     const [target, reporter] = await Promise.all([newAttestedGuest(), newAttestedGuest()])
     await report(reporter, target, 'harassment', 'kept following me')
+    await frontOfQueue(target)
+    expect((await queue()).cases.some((item) => item.case_id === target.id)).toBe(true)
     const args = { p_moderator_id: (await moderator).id, p_case: target.id }
     const before = await service.rpc('mod_case', args)
     expect(before.error).toBeNull()

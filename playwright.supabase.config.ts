@@ -62,6 +62,8 @@ export default defineConfig({
       // moderator (tests/e2e/helpers/stack.ts E2E_MODERATOR_EMAIL), never a real address.
       SUPABASE_SERVICE_ROLE_KEY: stack.serviceRoleKey,
       MODERATOR_EMAILS: E2E_MODERATOR_EMAIL,
+      // Where /mod sign-in links land (never the request's Host header).
+      SITE_URL: BASE_URL,
     },
   },
 })

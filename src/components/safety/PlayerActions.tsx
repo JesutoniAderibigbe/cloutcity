@@ -38,6 +38,18 @@ type View = 'actions' | 'block' | 'report'
 const msFromNow = (ms: number) => Date.now() + ms
 
 /**
+ * When a block's Undo closes: the server's `undo_expires_at` when it is sooner, else
+ * `blockUndoSeconds` from when the request was sent (the server's window cannot have opened
+ * before that). An Undo after the server's window would only unblock without restoring what
+ * the block ended.
+ */
+export function blockUndoUntil(sentAtMs: number, serverExpiresAt: string): number {
+  const local = sentAtMs + moderationConfig.blockUndoSeconds * 1000
+  const server = Date.parse(serverExpiresAt)
+  return Number.isNaN(server) ? local : Math.min(local, server)
+}
+
+/**
  * The one player-actions component every player surface uses (S18b; CLAUDE.md "Block, mute,
  * report on every player surface"): Add friend (hidden until S20 builds friends), Mute, Block and
  * Report. Mute acts at once with an Undo toast; Block asks first (BlockConfirm), then shows an
@@ -136,34 +148,38 @@ export function PlayerActions({
   }
 
   async function block(): Promise<boolean> {
+    const sentAt = Date.now()
     const result = await api.block(player.id)
     if (!result.ok) {
       fail(result.code, 'block')
       return false
     }
     setBlocked(true)
-    const { undoId, friendshipEnded, roommateEnded } = result.data
+    const { undoId, undoExpiresAt, friendshipEnded, roommateEnded } = result.data
     const ended = friendshipEnded || roommateEnded
-    showSafetyToast(
-      copy(ended ? 'safety.toast.blockedEnded' : 'safety.toast.blocked', { handle }),
-      {
-        label: copy('safety.toast.undoLabel', { handle }),
-        untilMs: msFromNow(moderationConfig.blockUndoSeconds * 1000),
-        run: () => {
-          void api.unblock(player.id, undoId).then((undone) => {
-            if (!undone.ok) {
-              showSafetyToast(rpcErrorText(undone.code))
-              return
-            }
-            setBlocked(false)
-            const restored = undone.data.friendshipRestored || undone.data.roommateRestored
-            showSafetyToast(
-              copy(restored ? 'safety.toast.restored' : 'safety.toast.unblocked', { handle }),
-            )
-          })
-        },
+    const text = copy(ended ? 'safety.toast.blockedEnded' : 'safety.toast.blocked', { handle })
+    // Already blocked (another surface or device): nothing changed, so there is no Undo.
+    if (undoId === null || undoExpiresAt === null) {
+      showSafetyToast(text)
+      return true
+    }
+    showSafetyToast(text, {
+      label: copy('safety.toast.undoLabel', { handle }),
+      untilMs: blockUndoUntil(sentAt, undoExpiresAt),
+      run: () => {
+        void api.unblock(player.id, undoId).then((undone) => {
+          if (!undone.ok) {
+            showSafetyToast(rpcErrorText(undone.code))
+            return
+          }
+          setBlocked(false)
+          const restored = undone.data.friendshipRestored || undone.data.roommateRestored
+          showSafetyToast(
+            copy(restored ? 'safety.toast.restored' : 'safety.toast.unblocked', { handle }),
+          )
+        })
       },
-    )
+    })
     return true
   }
 

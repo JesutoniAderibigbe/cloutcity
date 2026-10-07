@@ -26,6 +26,12 @@ export interface ModRpcResponse {
 export interface ModRouteDeps {
   /** False when the server has no Supabase service configuration: every route answers 503. */
   readonly configured: boolean
+  /**
+   * The console's absolute URL (`<SITE_URL>/mod`), where sign-in links land; null when SITE_URL
+   * is not set, and sign-in then answers 503 for everyone. Never built from the request, whose
+   * Host header the caller controls.
+   */
+  readonly modUrl: string | null
   readonly allowed: ReadonlySet<string>
   readonly getUser: (token: string) => Promise<AuthUserLike | null>
   /** Calls a service-role RPC. */
@@ -56,6 +62,22 @@ export function respond(body: unknown, status: number, correlationId: string): R
 
 const failure = (code: string, status: number, correlationId: string) =>
   respond({ ok: false, code }, status, correlationId)
+
+/**
+ * `<SITE_URL>/mod` from the server's SITE_URL (an http(s) origin, any path ignored), or null when
+ * it is missing or not one.
+ */
+export function modUrlFrom(siteUrl: string | undefined): string | null {
+  const raw = siteUrl?.trim() ?? ''
+  if (raw === '') return null
+  try {
+    const url = new URL(raw)
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null
+    return new URL('/mod', url.origin).toString()
+  } catch {
+    return null
+  }
+}
 
 /** The HTTP status an RPC error maps to: SQLSTATE PTxyz → xyz, anything else 500. */
 export function statusOfRpcError(error: { readonly code?: string }): number {
@@ -94,13 +116,13 @@ export async function handleSignIn(request: Request, deps: ModRouteDeps): Promis
   }
   const body = SignInSchema.safeParse(await readJson(request))
   if (!body.success) return failure('invalid_argument', 400, correlationId)
-  if (!deps.configured) {
+  const redirectTo = deps.modUrl
+  if (!deps.configured || redirectTo === null) {
     logger.warn('Moderator sign-in is not configured on this server')
     return failure('not_configured', 503, correlationId)
   }
   const email = body.data.email
   if (isAllowedEmail(email, deps.allowed)) {
-    const redirectTo = new URL('/mod', request.url).toString()
     deps.afterResponse(async () => {
       try {
         await deps.sendSignInLink(email, redirectTo)

@@ -31,8 +31,10 @@ import {
 } from './rpc'
 
 export interface BlockResult {
-  readonly undoId: string
-  readonly undoExpiresAt: string
+  /** Null when the player was already blocked: nothing changed, so there is nothing to undo. */
+  readonly undoId: string | null
+  /** When the server's undo window closes (its clock); null with `undoId`. */
+  readonly undoExpiresAt: string | null
   readonly friendshipEnded: boolean
   readonly roommateEnded: boolean
 }
@@ -94,8 +96,8 @@ export interface SafetyTransport extends RpcTransport {
 
 const BlockSchema = oneRow(
   z.object({
-    undo_id: z.string(),
-    undo_expires_at: z.string(),
+    undo_id: z.nullable(z.string()),
+    undo_expires_at: z.nullable(z.string()),
     friendship_ended: z.boolean(),
     roommate_ended: z.boolean(),
   }),

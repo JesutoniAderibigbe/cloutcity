@@ -1,7 +1,7 @@
 import 'server-only'
 /**
  * The real dependencies of the /api/mod/* handlers: the server's Supabase clients,
- * MODERATOR_EMAILS, Next's `after` and the per-instance sign-in limiter. Read once per server
+ * MODERATOR_EMAILS, SITE_URL (where sign-in links land), Next's `after` and the per-instance sign-in limiter. Read once per server
  * instance; a change to MODERATOR_EMAILS needs a redeploy (or restart), like any server env.
  */
 import moderationJson from '@data/config/moderation.json'
@@ -9,7 +9,7 @@ import { after } from 'next/server'
 import { log, newCorrelationId } from '@/lib/log'
 import { anonServerClient, serverSupabaseEnv, serviceClient } from '@/server/supabase/service'
 import { parseModeratorEmails } from './auth'
-import type { ModRouteDeps } from './handlers'
+import { modUrlFrom, type ModRouteDeps } from './handlers'
 import { createRateLimiter } from './rateLimit'
 
 const { console: consoleConfig } = moderationJson
@@ -26,6 +26,7 @@ export function modRouteDeps(): ModRouteDeps {
   const env = serverSupabaseEnv()
   deps = {
     configured: env !== null,
+    modUrl: modUrlFrom(process.env.SITE_URL),
     allowed: parseModeratorEmails(process.env.MODERATOR_EMAILS),
     getUser: async (token) => {
       if (env === null) return null
