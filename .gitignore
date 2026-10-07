@@ -36,6 +36,11 @@ playwright/.cache/
 
 # --- geo download cache (raw NYC Open Data / MTA GTFS files; npm run geo:build) ---
 /.cache/
+/.cache/blender/
+
+# --- Blender landmark builds (npm run landmarks:blender): review renders, Python bytecode ---
+/previews/
+scripts/blender/**/__pycache__/
 
 # --- Supabase CLI local state ---
 supabase/.temp/

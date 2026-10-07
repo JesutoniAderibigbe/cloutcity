@@ -104,7 +104,7 @@ const tokenRef = z.string().regex(TOKEN_NAME)
 
 /**
  * The 3D city's colours, as palette token names (never hex), so the scene and the DOM share one
- * palette. Land keys are the borough ids (BOROUGHS in content.ts; this file imports only zod).
+ * palette. Land keys are the borough ids (BOROUGHS in content.ts, not imported here).
  */
 export const ScenePaletteRefsSchema = z.strictObject({
   background: tokenRef,

@@ -55,7 +55,10 @@ describe('compose', () => {
 
   it('maps every role through the palette', () => {
     const palette = Object.fromEntries(
-      LANDMARK_ROLES.map((role, i) => [role, `#${String(i + 1).repeat(6)}`]),
+      LANDMARK_ROLES.map((role, i) => [
+        role,
+        `#${(i + 1).toString(16).padStart(2, '0').repeat(3)}`,
+      ]),
     ) as LandmarkPalette
     for (const role of LANDMARK_ROLES) {
       expect(roleColor(palette, role).getHexString()).toBe(palette[role].slice(1))

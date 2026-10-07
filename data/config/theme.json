@@ -26,7 +26,12 @@
     "glass-400": "#7f9eb2",
     "roof-600": "#5b5f63",
     "lamp-200": "#ffe7a1",
-    "dim-500": "#77746e"
+    "dim-500": "#77746e",
+    "granite-300": "#bab2a5",
+    "tan-300": "#c8b99a",
+    "steel-800": "#5a554d",
+    "asphalt-700": "#64625e",
+    "wood-500": "#94765a"
   },
   "themeColor": "night-950",
   "scene": {
@@ -69,7 +74,13 @@
       "accent": "taxi-400",
       "window": "lamp-200",
       "outline": "night-950",
-      "dimmed": "dim-500"
+      "dimmed": "dim-500",
+      "granite": "granite-300",
+      "bridge-tan": "tan-300",
+      "steel-dark": "steel-800",
+      "asphalt": "asphalt-700",
+      "wood-plank": "wood-500",
+      "lamp": "lamp-200"
     }
   }
 }

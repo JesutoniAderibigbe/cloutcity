@@ -36,6 +36,7 @@ import {
 } from './schemas/content'
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
+import { BlenderLockSchema, LandmarkMeasurementsSchema } from './schemas/landmarkBlender'
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
 import { SceneConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
@@ -68,8 +69,9 @@ import { baseCopy } from '@/lib/copy/all'
 const DATA = join(import.meta.dirname, '../../../data')
 
 /**
- * The schema for each data file. Copy files are matched by pattern in `schemaFor`: each
- * copy/<ns>/base.json is a NamespaceBaseSchema, any other copy/<ns>/<pack>.json a SlangPackSchema.
+ * The schema for each data file. Some files are matched by pattern in `schemaFor`: each
+ * copy/<ns>/base.json is a NamespaceBaseSchema, any other copy/<ns>/<pack>.json a SlangPackSchema,
+ * landmarks/measurements/<id>.json and landmarks/blender/<id>.lock.json the S07c schemas.
  */
 const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'audio/manifest.json': AudioManifestSchema,
@@ -111,6 +113,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
 }
 
 function schemaFor(file: string): z.ZodType | undefined {
+  if (/^landmarks\/measurements\/[a-z0-9-]+\.json$/.test(file)) return LandmarkMeasurementsSchema
+  if (/^landmarks\/blender\/[a-z0-9-]+\.lock\.json$/.test(file)) return BlenderLockSchema
   if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
   if (/^copy\/[\w-]+\/[\w-]+\.json$/.test(file)) return SlangPackSchema
   return SCHEMAS[file]

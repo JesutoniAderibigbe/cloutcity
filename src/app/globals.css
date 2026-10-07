@@ -32,6 +32,11 @@
   --color-roof-600: var(--palette-roof-600);
   --color-lamp-200: var(--palette-lamp-200);
   --color-dim-500: var(--palette-dim-500);
+  --color-granite-300: var(--palette-granite-300);
+  --color-tan-300: var(--palette-tan-300);
+  --color-steel-800: var(--palette-steel-800);
+  --color-asphalt-700: var(--palette-asphalt-700);
+  --color-wood-500: var(--palette-wood-500);
 }
 
 @theme {

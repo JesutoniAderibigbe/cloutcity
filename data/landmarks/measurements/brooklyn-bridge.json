@@ -1,0 +1,138 @@
+{
+  "id": "brooklyn-bridge",
+  "retrieved": "2026-10-07",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q125006 (Brooklyn Bridge)",
+      "url": "https://www.wikidata.org/wiki/Q125006",
+      "licence": "CC0-1.0"
+    },
+    {
+      "id": "chamber-1906",
+      "title": "Chamber of Commerce of the State of New York, Rapid Transit in New York City and in the Other Great Cities (1906), ch. 4 \"Bridges to Brooklyn\"",
+      "url": "https://nycsubway.org/wiki/Chapter_04:_Bridges_to_Brooklyn",
+      "licence": "public-domain"
+    }
+  ],
+  "dimensions": {
+    "towerHeightM": {
+      "valueM": 84,
+      "source": "wikidata",
+      "note": "height (P2048): tower top above the water. The 1906 text gives 272 ft (82.9 m)."
+    },
+    "mainSpanM": {
+      "valueM": 486.3,
+      "source": "wikidata",
+      "note": "main span (P2787)"
+    },
+    "totalLengthM": {
+      "valueM": 1825.4,
+      "source": "wikidata",
+      "note": "length (P2043) 5,989 ft. The game fits the bridge to its LION frame (spanM), so the approaches are shorter."
+    },
+    "deckWidthM": {
+      "valueM": 25.9,
+      "source": "wikidata",
+      "note": "width (P2049), 85 ft"
+    },
+    "midspanClearanceM": {
+      "valueM": 41,
+      "source": "wikidata",
+      "note": "vertical clearance (P2793): the deck top at mid-span"
+    },
+    "roadwayAtTowersM": {
+      "valueM": 36.35,
+      "source": "chamber-1906",
+      "note": "\"at the towers the height of the roadway is 119.25 feet\""
+    },
+    "towerAtWater": {
+      "widthM": 42.98,
+      "depthM": 17.98,
+      "source": "chamber-1906",
+      "note": "141 by 59 ft at high water"
+    },
+    "towerAtRoadway": {
+      "widthM": 39.93,
+      "depthM": 14.63,
+      "source": "chamber-1906",
+      "note": "131 by 48 ft at the roadway"
+    },
+    "towerAtCornice": {
+      "widthM": 38.4,
+      "depthM": 13.11,
+      "source": "chamber-1906",
+      "note": "126 by 43 ft at the base of the cornice"
+    },
+    "archSpanM": {
+      "valueM": 10.29,
+      "source": "chamber-1906",
+      "note": "the three columns above the roadway are united by arches of 33.75 ft span"
+    },
+    "archRadiusM": {
+      "valueM": 14.68,
+      "source": "chamber-1906",
+      "note": "each arch is two arcs of 48 1/6 ft radius (a pointed arch)"
+    },
+    "archApexAboveRoadwayM": {
+      "valueM": 35.66,
+      "source": "estimate",
+      "note": "117 ft, a commonly quoted figure not found in the public-domain text read; sets where the arches spring"
+    },
+    "corniceBaseM": {
+      "valueM": 76,
+      "source": "estimate",
+      "note": "height of the cornice base above the water, proportioned from the tower top and arch apex"
+    },
+    "mainCables": {
+      "count": 4,
+      "diameterM": 0.4,
+      "source": "chamber-1906",
+      "note": "four cables, finished diameter 15.75 in"
+    },
+    "suspenders": {
+      "count": 1520,
+      "diameterM": 0.044,
+      "source": "chamber-1906",
+      "note": "1,520 suspender ropes, 1 5/8 to 1 3/4 in"
+    },
+    "promenadeAboveDeckM": {
+      "valueM": 3.66,
+      "source": "chamber-1906",
+      "note": "the promenade is 12 ft above the floor beams"
+    },
+    "outerRoadwayWidthM": {
+      "valueM": 5.72,
+      "source": "chamber-1906",
+      "note": "outside roadways 18.75 ft wide in the clear"
+    },
+    "approachBrooklynM": {
+      "valueM": 295.96,
+      "source": "chamber-1906",
+      "note": "Brooklyn approach 971 ft"
+    },
+    "approachManhattanM": {
+      "valueM": 476.25,
+      "source": "chamber-1906",
+      "note": "New York approach 1,562.5 ft"
+    },
+    "sideSpanM": {
+      "valueM": 283.4,
+      "source": "derived",
+      "note": "(total length - both approaches - main span) / 2, from the values above"
+    },
+    "anchorage": {
+      "widthM": 36,
+      "depthM": 39,
+      "source": "estimate",
+      "note": "stylised anchorage blocks sized to take the cables; mostly hidden under the game's land top"
+    }
+  },
+  "readabilityScale": {
+    "mainCable": 3,
+    "suspender": 5,
+    "stay": 5,
+    "lamp": 3,
+    "note": "Thin members are drawn this many times their true width so they read at game distance; suspenders and stays are also grouped (drawn sparser than the real 1,520)."
+  }
+}
