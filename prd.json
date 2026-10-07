@@ -133,6 +133,17 @@
       "attempts": 0
     },
     {
+      "id": "S04g",
+      "phase": 1,
+      "title": "Interface theme follows the day/night cycle",
+      "acceptance": "The interface (HUD, tabs, sheets, panels, toasts, welcome card) switches between a day palette and the existing night palette following the same personal game clock and keyframes as S04f (user decision 2026-10-07); both palettes are tokens in config/theme.json; the switch is driven by a data attribute on the root element set from a boot island, so the shell carries only the CSS variables (shell budget holds) and pages render in the night palette until the game clock is known (welcome card, legal pages and the WebGL fallback included); every text and control colour pair meets WCAG 2.2 AA contrast in both palettes (automated contrast test over the tokens plus axe in both themes); the change cross-fades over config milliseconds and is instant under prefers-reduced-motion; no layout shift when switching; darwin screenshot baselines exist for both palettes at 390 and 1280; the console guard passes.",
+      "requires": [],
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
       "id": "S04e",
       "phase": 1,
       "title": "Offline and caching",
