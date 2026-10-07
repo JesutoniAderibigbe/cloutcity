@@ -161,7 +161,7 @@
       "requires": [],
       "acceptance": "Audio system with separate music, sfx, ambience and voice channels plus master, each with its own volume; a one-tap HUD control and a settings toggle for 'My own music' mute in-game music only while sfx and ambience keep playing, with visible now-playing state and an accessible name; the choice is remembered per device (and synced to the account in S18c) and nothing overrides it; audio unlocks only from a deliberate tap on the audio choice or the sound control (GR-13); where the browser supports it, the audio session is set to mix with other apps (for example Safari's navigator.audioSession, checked against current docs) and sfx never take over the media session; all audio assets are CC0 or otherwise licensed and listed in /data/audio/SOURCES.md, with no third-party streams; audio loads lazily after the map is playable; unit tests for mixer state; Playwright proves no audio requests before the choice and that muting music keeps sfx enabled; mixing with a background music app on real iOS and Android is listed under Needs human review.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
@@ -297,7 +297,7 @@
       "requires": [],
       "acceptance": "Integer clout from item cloutValue (counts only while owned or equipped; a buy/sell loop cannot farm clout, proven by test), first paycheck, and a flex action with seeded-random viral chance weighted by outfit style score and the landmark flexMultiplier when flexing at a landmark; style score multiplies clout gains; six levels (Nobody, Local, Scene Regular, Known, Famous, Icon) in config with HUD progress; a level-up event is emitted; every clout change writes a typed ledger entry (source, amount, currency) so premium items (S25) plug in and can be capped and S18c can check plausibility without engine changes; unit tests.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },

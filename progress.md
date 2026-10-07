@@ -178,6 +178,14 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   bodega-breakfast 20 min $6 +40 hunger +5 mood, home-meal 45 min $4 5 energy +50 hunger,
   walk-in-the-park 60 min 10 energy +15 mood.
 
+- S13 clout (TUNE-4 placeholders): first paycheck +10 clout; flex 30 min, 10 energy, $0, base 4 clout,
+  once per place per game day, max 3/day, at flex landmarks (their multiplier) and boutiques, never at
+  clubs; viral chance min(0.4, (0.05 + 0.005×style)×place), viral ×5; style +2%/point, cap +50%, applies
+  to flex/event/paycheck only (club clout is exactly the configured value: nightlife is flavour only,
+  DEC-12); item styleValue common 1–2, medium 3–5, rare 8–10, gifts 0; ledger 100 entries; premium cap
+  200 (< Icon 5000); level-up toast 6000 ms, paused on hover/focus. Result: job bots end at 10 clout,
+  Nobody; barista flex bot 28 flexes, 1 viral, Local on day 16, 170 clout, min cash $147, final $596.
+
 ## Blocked tasks
 (none yet)
 
@@ -275,4 +283,13 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   day, service-role-only money tables (livemode=false), Vitest integration harness. Bug-hunter: gate
   scanner hardened against comments/strings, exposed-schema guard, 17 security probes (124 integration
   tests). Follow-ups SEC-4..8 in OPEN-ISSUES. Dev gates: unit 1895, integration 124, e2e 292.
+- S13 (attempt 1, passed): derived clout total (earned ledger + item clout + capped premium), first
+  paycheck clout, flex with seeded viral roll, style multiplier, six levels, CloutMeter (presentational)
+  + lazy HUD island, level-up toast, save v7. Bug-hunter: overflow-safe save repair, toast fits at
+  390/844×390, anti-farming tests. Fix cycle: DEC-12 (no style on club clout, no flex at clubs),
+  LevelUp.fromPeak, toast pauses on hover/focus. Dev gates: unit 2084, e2e 358.
+- S05b (attempt 1, passed): audio system with "my own music" mode; integrated after S05c as an eager
+  sound-control boot island + lazy settings sheet, `audio` copy namespace, hooks behind
+  NEXT_PUBLIC_TEST_HOOKS. At 390 px the sound control is icon-only below `sm` (UX-7; S05 restores the
+  visible text in the two-row HUD). Dev gates: unit 2084, integration 124, e2e 358, shell 141.9 KB.
 
