@@ -683,3 +683,38 @@ describe('keep this device from a trimmed revision: the ledger baselines (R1)', 
     expect(result.status).toBe(200)
   })
 })
+
+describe('HUNT cycle 6: baseline abuse', () => {
+  it('a kept game behind its baseline in taps is refused (regressed)', async () => {
+    const { live, mine, shared } = await longRunTrimmed()
+    const result = await keep(live, { ...mine, actions: shared.actions - 500 }, 10)
+    expect(result.status).toBe(422)
+    expect(findingsOf(live.backend)).toContain('regressed')
+  })
+
+  it('a kept game behind its baseline in clock is refused (regressed)', async () => {
+    const { live, mine, shared } = await longRunTrimmed()
+    const back = { ...mine, clock: { ...mine.clock, minute: shared.clock.minute - 600 } }
+    const result = await keep(live, back, 10)
+    expect(result.status).toBe(422)
+    expect(findingsOf(live.backend)).toContain('regressed')
+  })
+
+  it('a prestige count that does not match its run (to dodge the baseline) is refused', async () => {
+    const { live, mine } = await longRunTrimmed()
+    const forged = {
+      ...mine,
+      actions: mine.actions + 100_000,
+      prestige: { ...mine.prestige, count: 1 },
+    }
+    const result = await keep(live, forged, 10)
+    expect(result.status).not.toBe(200)
+  })
+
+  it('a forged run 2 without a whole prestige history (to take the lenient path) is refused', async () => {
+    const { live, mine } = await longRunTrimmed()
+    const forged = { ...mine, goals: { ...mine.goals, run: 2 } }
+    const result = await keep(live, forged, 10)
+    expect(result.status).not.toBe(200)
+  })
+})
