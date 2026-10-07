@@ -6,7 +6,8 @@
  * What the worker may keep:
  *  - the precache: the build's static JS/CSS/SVG/fonts, the icons, `/`, `/offline`, the legal
  *    pages, the manifest and the versioned base geo and fallback map (src/app/serwist/[path]);
- *  - `cc-geo-<version>`: other versioned geo (`/geo/...?v=`), cache-first;
+ *  - `cc-geo-<version>`: other versioned geo (`/geo/...?v=`), cache-first, only at a content
+ *    version this build knows ({@link geoVersionsOf}), so junk `v` values cannot grow it;
  *  - `cc-audio-<version>`: our own audio files, cache-first, only once the runtime fetches them
  *    (after the player's audio choice); never precached;
  *  - `cc-models-<version>`: the hand-made 3D models (S04h), cache-first, only once the scene
@@ -51,14 +52,38 @@ export interface RequestFacts {
   readonly sameOrigin: boolean
 }
 
-/** Geo the worker caches: same-origin GET `/geo/...` carrying its `?v=` content version. */
-export function isVersionedGeo({ url, method, sameOrigin }: RequestFacts): boolean {
-  return (
-    sameOrigin &&
-    method === 'GET' &&
-    url.pathname.startsWith('/geo/') &&
-    (url.searchParams.get('v') ?? '') !== ''
-  )
+/** A geo content version: the first 12 hex digits of a sha256 (src/lib/data/geo.ts). */
+export const GEO_VERSION = /^[0-9a-f]{12}$/
+
+/**
+ * The geo content versions this build serves: the base geo's and every district and block file's
+ * (the `?v=` of each baked-in district URL). The geo route caches nothing else (F4).
+ */
+export function geoVersionsOf(
+  config: Pick<ServiceWorkerConfig, 'geoVersion' | 'districtUrls'>,
+): ReadonlySet<string> {
+  const versions = new Set([config.geoVersion])
+  for (const url of Object.values(config.districtUrls).flat()) {
+    const version = new URL(url, 'https://x.invalid').searchParams.get('v')
+    if (version !== null) versions.add(version)
+  }
+  return new Set([...versions].filter((version) => GEO_VERSION.test(version)))
+}
+
+/**
+ * Geo the worker caches: a same-origin GET `/geo/...` fetch (never a navigation) whose only query
+ * is `?v=` set to one of `versions` ({@link geoVersionsOf}). Each geo route ignores `v`, so
+ * anything looser would let any `v` value (or extra parameter) add another entry (F4).
+ */
+export function isVersionedGeo(
+  { url, method, mode, sameOrigin }: RequestFacts,
+  versions: ReadonlySet<string>,
+): boolean {
+  if (!sameOrigin || method !== 'GET' || mode === 'navigate') return false
+  if (!url.pathname.startsWith('/geo/')) return false
+  const keys = [...url.searchParams.keys()]
+  const version = url.searchParams.get('v') ?? ''
+  return keys.length === 1 && keys[0] === 'v' && GEO_VERSION.test(version) && versions.has(version)
 }
 
 /**
@@ -83,15 +108,47 @@ export function isVersionedModel({ url, method, sameOrigin }: RequestFacts): boo
   return sameOrigin && method === 'GET' && url.search === '' && MODEL_PATH.test(url.pathname)
 }
 
+/**
+ * Vercel Skew Protection (NEXT_DEPLOYMENT_ID) makes Next add `?dpl=<deployment id>` to every
+ * build asset URL. The precache entries carry no query, so the precache ignores it when matching
+ * (`ignoreURLParametersMatching`, with Serwist's default `utm_`/`fbclid`), and the chunk route
+ * accepts it and caches under the URL without it (F1). The request itself keeps it, so the CDN
+ * still serves the right deployment.
+ */
+export const DEPLOYMENT_PARAM = 'dpl'
+export const PRECACHE_IGNORED_PARAMS: readonly RegExp[] = [/^utm_/, /^fbclid$/, /^dpl$/]
+const DEPLOYMENT_ID = /^[A-Za-z0-9_-]{1,128}$/
+
+/** True when the URL has no query, or only a single well-formed `dpl` deployment id. */
+export function hasOnlyDeploymentQuery(url: URL): boolean {
+  if (url.search === '') return true
+  const keys = [...url.searchParams.keys()]
+  return (
+    keys.length === 1 &&
+    keys[0] === DEPLOYMENT_PARAM &&
+    DEPLOYMENT_ID.test(url.searchParams.get(DEPLOYMENT_PARAM) ?? '')
+  )
+}
+
+/** The URL without its `dpl` deployment id: the cache key of a build asset. */
+export function withoutDeploymentId(href: string): string {
+  const url = new URL(href)
+  url.searchParams.delete(DEPLOYMENT_PARAM)
+  return url.href
+}
+
 /** A build JS chunk: content-hashed, so its URL never changes content. */
 export const CHUNK_PATH = /^\/_next\/static\/chunks\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*\.js$/
 
 /**
- * A same-origin build chunk the precache does not hold (PERF-7): GET, no query. Precached chunks
- * never reach this route (Serwist answers them from the precache first).
+ * A same-origin build chunk the precache does not hold (PERF-7): GET, no query but a `dpl`
+ * deployment id ({@link hasOnlyDeploymentQuery}). Precached chunks never reach this route
+ * (Serwist answers them from the precache first).
  */
 export function isBuildChunk({ url, method, sameOrigin }: RequestFacts): boolean {
-  return sameOrigin && method === 'GET' && url.search === '' && CHUNK_PATH.test(url.pathname)
+  return (
+    sameOrigin && method === 'GET' && hasOnlyDeploymentQuery(url) && CHUNK_PATH.test(url.pathname)
+  )
 }
 
 /**
@@ -192,6 +249,8 @@ export function parseWarmTierMessage(data: unknown): WarmTierMessage | null {
 export interface ServiceWorkerConfig {
   /** Build revision: precache revisions of the HTML entries. */
   readonly revision: string
+  /** The base geo's content version (`/geo/base?v=`, src/lib/data/geo.ts). */
+  readonly geoVersion: string
   readonly geoCache: string
   readonly audioCache: string
   readonly modelsCache: string
@@ -214,9 +273,10 @@ export function warmTierUrls(
   tier: WarmTier,
   origin: string,
 ): string[] {
+  const versions = geoVersionsOf(config)
   return config.districtUrls[tier].filter((url) => {
     const parsed = new URL(url, origin)
     const sameOrigin = parsed.origin === origin
-    return isVersionedGeo({ url: parsed, method: 'GET', mode: 'cors', sameOrigin })
+    return isVersionedGeo({ url: parsed, method: 'GET', mode: 'cors', sameOrigin }, versions)
   })
 }

@@ -78,10 +78,26 @@ test.describe('service worker', () => {
       page,
       context,
       baseURL,
+      request,
     }) => {
+      // The geo route caches only versions this build serves (F4), so the probes use the high
+      // tier's real district URLs: headless Chromium is on the low tier, so neither the scene
+      // nor the tier warm fetches them on its own.
+      const body = await (await request.get(SERVICE_WORKER_PATH)).text()
+      const [allowedUrl, authUrl, privateUrl, cookieUrl] = warmUrlsFromWorker(body).high
+      const geoVersion = /url:"\/geo\/base\?v=([0-9a-f]{12})"/.exec(body)?.[1] ?? ''
+      if (!allowedUrl || !authUrl || !privateUrl || !cookieUrl || geoVersion === '')
+        throw new Error('the served worker names too few high-tier district URLs')
+      const probes = {
+        allowed: allowedUrl,
+        credentialed: authUrl,
+        private: privateUrl,
+        cookie: cookieUrl,
+        missing: `/geo/missing?v=${geoVersion}`,
+      }
       // Fulfilled by the test for the worker's own fetch: proves context.route sees worker
-      // requests, and that a `private` response is refused.
-      await context.route('**/geo/base?v=probe-private', (route) =>
+      // requests, and that a `private` or cookie-varying response is refused.
+      await context.route(`**${privateUrl}`, (route) =>
         route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -89,7 +105,7 @@ test.describe('service worker', () => {
           body: '{}',
         }),
       )
-      await context.route('**/geo/base?v=probe-cookie', (route) =>
+      await context.route(`**${cookieUrl}`, (route) =>
         route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -102,20 +118,20 @@ test.describe('service worker', () => {
       await waitForActiveWorker(page)
       await reloadControlled(page)
 
-      const statuses = await page.evaluate(async () => {
+      const statuses = await page.evaluate(async (urls) => {
         const get = async (url: string, init?: RequestInit) => (await fetch(url, init)).status
         return {
-          allowed: await get('/geo/base?v=probe-ok'),
-          credentialed: await get('/geo/base?v=probe-auth', {
+          allowed: await get(urls.allowed),
+          credentialed: await get(urls.credentialed, {
             headers: { Authorization: 'Bearer probe' },
           }),
-          private: await get('/geo/base?v=probe-private'),
-          cookie: await get('/geo/base?v=probe-cookie'),
-          missing: await get('/geo/missing?v=probe-404'),
+          private: await get(urls.private),
+          cookie: await get(urls.cookie),
+          missing: await get(urls.missing),
           api: await get('/api/probe'),
           mod: await get('/mod'),
         }
-      })
+      }, probes)
       expect(statuses).toMatchObject({ allowed: 200, credentialed: 200, private: 200, cookie: 200 })
 
       const contents = await cacheContents(page)
@@ -123,16 +139,16 @@ test.describe('service worker', () => {
         urls.map((url) => ({ cache, url: new URL(url) })),
       )
       // Positive control: an allowed versioned geo response is stored in the geo cache.
-      const allowed = all.find(({ url }) => url.searchParams.get('v') === 'probe-ok')
+      const pathOf = (url: URL) => `${url.pathname}${url.search}`
+      const allowed = all.find(({ url }) => pathOf(url) === probes.allowed)
       expect(allowed?.cache).toMatch(/^cc-geo-[0-9a-f]{12}$/)
 
+      const refused = [probes.credentialed, probes.private, probes.cookie, probes.missing]
       for (const { cache, url } of all) {
         const where = `${cache}: ${url.href}`
         expect(url.origin, where).toBe(baseURL)
         expect(url.pathname, where).not.toMatch(/^\/(?:api|mod|serwist|og)(?:\/|$)/)
-        expect(url.searchParams.get('v') ?? '', where).not.toMatch(
-          /^probe-(?:auth|private|cookie|404)$/,
-        )
+        expect(refused, where).not.toContain(pathOf(url))
         if (url.pathname.startsWith('/audio/')) expect(cache, where).toMatch(/^cc-audio-/)
       }
       // The precache holds the app shell and the offline page.
@@ -143,11 +159,41 @@ test.describe('service worker', () => {
     })
   })
 
+  test('never caches geo at a junk version, with extra parameters or as a navigation (F4)', async ({
+    page,
+    request,
+  }) => {
+    const body = await (await request.get(SERVICE_WORKER_PATH)).text()
+    const geoVersion = /url:"\/geo\/base\?v=([0-9a-f]{12})"/.exec(body)?.[1] ?? ''
+    expect(geoVersion).not.toBe('')
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForActiveWorker(page)
+    await reloadControlled(page)
+    await page.evaluate(async (version) => {
+      for (const url of [
+        '/geo/base?v=junk0',
+        '/geo/base?v=0123456789ab',
+        `/geo/base?v=${version}&x=1`,
+        `/geo/fallback?x=1&v=${version}`,
+      ])
+        await fetch(url)
+    }, geoVersion)
+    for (let i = 0; i < 2; i += 1) await page.goto(`/geo/base?v=junk${i}&x=${i}`)
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    const cached = await geoCacheUrls(page)
+    expect(cached.filter((url) => /junk|0123456789ab|[?&]x=/.test(url))).toEqual([])
+  })
+
   test('a new build waits for the player, then replaces old versioned caches', async ({
     page,
     context,
     checkA11y,
+    request,
   }) => {
+    const kept = warmUrlsFromWorker(await (await request.get(SERVICE_WORKER_PATH)).text()).high[0]
+    if (kept === undefined) throw new Error('the served worker names no high-tier district URL')
     const shipNewBuild = await installOlderBuild(context)
     await page.goto('/')
     await waitForWelcomeGate(page)
@@ -156,11 +202,11 @@ test.describe('service worker', () => {
     await reloadControlled(page)
 
     // Caches an older build left behind, and one the current build owns.
-    await page.evaluate(async () => {
+    await page.evaluate(async (url) => {
       await (await caches.open('cc-geo-0123456789ab')).put('/geo/base?v=old', new Response('{}'))
       await (await caches.open('cc-audio-0123456789ab')).put('/audio/old.webm', new Response(''))
-      await fetch('/geo/base?v=probe-kept')
-    })
+      await fetch(url)
+    }, kept)
     const before = Object.keys(await cacheContents(page))
     const current = before.find((name) => /^cc-geo-/.test(name) && name !== 'cc-geo-0123456789ab')
     expect(current, 'the current geo cache').toBeDefined()

@@ -90,6 +90,7 @@ export function serviceWorkerConfig(): ServiceWorkerConfig {
   })
   return {
     revision,
+    geoVersion,
     geoCache: runtimeCacheName('geo', geoVersion),
     audioCache: runtimeCacheName('audio', audioVersion),
     // The model manifest's own content hash (S04h): a rebuilt model set gets a new cache, and the

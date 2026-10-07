@@ -27,10 +27,13 @@ import {
   isPageNavigation,
   isVersionedGeo,
   isVersionedModel,
+  PRECACHE_IGNORED_PARAMS,
+  geoVersionsOf,
   parseWarmTierMessage,
   refuseSensitive,
   staleCacheNames,
   warmTierUrls,
+  withoutDeploymentId,
   type RequestFacts,
   type ServiceWorkerConfig,
   type WarmTier,
@@ -49,6 +52,13 @@ const neverCacheSensitive: SerwistPlugin = {
   cacheWillUpdate: ({ request, response }) => refuseSensitive({ request, response }),
 }
 
+/** Build assets are cached under their URL without Skew Protection's `?dpl=` (F1). */
+const dropDeploymentId: SerwistPlugin = {
+  cacheKeyWillBeUsed: ({ request }) => withoutDeploymentId(request.url),
+}
+
+const geoVersions = geoVersionsOf(config)
+
 function facts({
   request,
   url,
@@ -63,13 +73,17 @@ function facts({
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
-  precacheOptions: { cleanupOutdatedCaches: true },
+  precacheOptions: {
+    cleanupOutdatedCaches: true,
+    // Serwist's defaults plus `dpl` (F1): with NEXT_DEPLOYMENT_ID every asset URL carries it.
+    ignoreURLParametersMatching: [...PRECACHE_IGNORED_PARAMS],
+  },
   skipWaiting: false,
   clientsClaim: false,
   navigationPreload: false,
   runtimeCaching: [
     {
-      matcher: (options) => isVersionedGeo(facts(options)),
+      matcher: (options) => isVersionedGeo(facts(options), geoVersions),
       handler: new CacheFirst({ cacheName: config.geoCache, plugins: [neverCacheSensitive] }),
     },
     {
@@ -83,7 +97,10 @@ const serwist = new Serwist({
     {
       // PERF-7: chunks the precache leaves out (src/lib/pwa/lazyChunks.ts), once they load.
       matcher: (options) => isBuildChunk(facts(options)),
-      handler: new CacheFirst({ cacheName: config.chunksCache, plugins: [neverCacheSensitive] }),
+      handler: new CacheFirst({
+        cacheName: config.chunksCache,
+        plugins: [neverCacheSensitive, dropDeploymentId],
+      }),
     },
     {
       matcher: (options) => isPageNavigation(facts(options)),

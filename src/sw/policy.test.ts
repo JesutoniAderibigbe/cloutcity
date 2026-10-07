@@ -13,11 +13,15 @@ import {
   isSensitive,
   isVersionedGeo,
   isVersionedModel,
+  PRECACHE_IGNORED_PARAMS,
+  geoVersionsOf,
+  hasOnlyDeploymentQuery,
   parseWarmTierMessage,
   refuseSensitive,
   runtimeCacheName,
   staleCacheNames,
   warmTierUrls,
+  withoutDeploymentId,
   type CacheCandidate,
   type RequestFacts,
   type ServiceWorkerConfig,
@@ -73,19 +77,50 @@ describe('staleCacheNames', () => {
   })
 })
 
+/** The geo versions of a small build: the base geo's and one district file's. */
+const GEO_VERSIONS: ReadonlySet<string> = new Set(['57ef63e13a99', 'abc123def456'])
+
 describe('isVersionedGeo', () => {
-  it('matches same-origin GET geo with a ?v= version', () => {
-    expect(isVersionedGeo(facts('/geo/base?v=57ef63e13a99'))).toBe(true)
-    expect(isVersionedGeo(facts('/geo/districts/qn01?v=abc'))).toBe(true)
+  const geo = (path: string, overrides: Partial<Omit<RequestFacts, 'url'>> = {}) =>
+    isVersionedGeo(facts(path, overrides), GEO_VERSIONS)
+
+  it('matches same-origin GET geo fetches at a version this build serves', () => {
+    expect(geo('/geo/base?v=57ef63e13a99')).toBe(true)
+    expect(geo('/geo/districts/low/qn01?v=abc123def456')).toBe(true)
+    expect(geo('/geo/districts/low/qn01?v=abc123def456', { mode: 'same-origin' })).toBe(true)
   })
 
   it('refuses unversioned, other paths, other origins and other methods', () => {
-    expect(isVersionedGeo(facts('/geo/base'))).toBe(false)
-    expect(isVersionedGeo(facts('/geo/base?v='))).toBe(false)
-    expect(isVersionedGeo(facts('/geography?v=1'))).toBe(false)
-    expect(isVersionedGeo(facts('/api/geo?v=1'))).toBe(false)
-    expect(isVersionedGeo(facts('/geo/base?v=1', { sameOrigin: false }))).toBe(false)
-    expect(isVersionedGeo(facts('/geo/base?v=1', { method: 'POST' }))).toBe(false)
+    expect(geo('/geo/base')).toBe(false)
+    expect(geo('/geo/base?v=')).toBe(false)
+    expect(geo('/geography?v=57ef63e13a99')).toBe(false)
+    expect(geo('/api/geo?v=57ef63e13a99')).toBe(false)
+    expect(geo('/geo/base?v=57ef63e13a99', { sameOrigin: false })).toBe(false)
+    expect(geo('/geo/base?v=57ef63e13a99', { method: 'POST' })).toBe(false)
+  })
+
+  it('refuses junk versions, extra parameters and navigations, so the cache stays bounded (F4)', () => {
+    // A well-formed version this build does not serve, and malformed ones.
+    expect(geo('/geo/base?v=0123456789ab')).toBe(false)
+    for (const v of ['junk0', '57EF63E13A99', '57ef63e13a9', '57ef63e13a99a', 'probe-ok']) {
+      expect(geo(`/geo/base?v=${v}`), v).toBe(false)
+    }
+    expect(geo('/geo/base?v=57ef63e13a99&x=1')).toBe(false)
+    expect(geo('/geo/base?x=1&v=57ef63e13a99')).toBe(false)
+    expect(geo('/geo/base?v=57ef63e13a99&v=abc123def456')).toBe(false)
+    expect(geo('/geo/base?v=57ef63e13a99', { mode: 'navigate' })).toBe(false)
+  })
+
+  it("knows the base geo's version and every baked-in district file's", () => {
+    const versions = geoVersionsOf({
+      geoVersion: '57ef63e13a99',
+      districtUrls: {
+        low: ['/geo/districts/low/qn01?v=abc123def456', '/geo/blocks/low?v=0000aaaa1111'],
+        mid: ['/geo/blocks/mid?v=not-a-version'],
+        high: [],
+      },
+    })
+    expect([...versions].sort()).toEqual(['0000aaaa1111', '57ef63e13a99', 'abc123def456'])
   })
 })
 
@@ -144,7 +179,7 @@ describe('isVersionedModel', () => {
 
   it('never overlaps the geo, audio or navigation rules', () => {
     for (const file of modelFiles) {
-      expect(isVersionedGeo(facts(file)), file).toBe(false)
+      expect(isVersionedGeo(facts(file), GEO_VERSIONS), file).toBe(false)
       expect(isOwnAudio(facts(file)), file).toBe(false)
     }
   })
@@ -168,8 +203,32 @@ describe('isBuildChunk (PERF-7)', () => {
 
   it('never overlaps the geo, audio, model or navigation rules', () => {
     const chunk = facts('/_next/static/chunks/a.js')
-    expect(isVersionedGeo(chunk) || isOwnAudio(chunk) || isVersionedModel(chunk)).toBe(false)
+    expect(
+      isVersionedGeo(chunk, GEO_VERSIONS) || isOwnAudio(chunk) || isVersionedModel(chunk),
+    ).toBe(false)
     expect(isPageNavigation(chunk)).toBe(false)
+  })
+
+  it('accepts a Skew Protection deployment id and caches under the URL without it (F1)', () => {
+    const chunk = '/_next/static/chunks/0prcds_0rkht5.js'
+    expect(isBuildChunk(facts(`${chunk}?dpl=dpl_hunt123`))).toBe(true)
+    expect(hasOnlyDeploymentQuery(new URL(`${chunk}?dpl=dpl_hunt123`, ORIGIN))).toBe(true)
+    expect(withoutDeploymentId(`${ORIGIN}${chunk}?dpl=dpl_hunt123`)).toBe(`${ORIGIN}${chunk}`)
+    expect(withoutDeploymentId(`${ORIGIN}${chunk}`)).toBe(`${ORIGIN}${chunk}`)
+    // Anything beyond one well-formed dpl is still refused.
+    expect(isBuildChunk(facts(`${chunk}?dpl=a&x=1`))).toBe(false)
+    expect(isBuildChunk(facts(`${chunk}?dpl=a&dpl=b`))).toBe(false)
+    expect(isBuildChunk(facts(`${chunk}?dpl=`))).toBe(false)
+    expect(isBuildChunk(facts(`${chunk}?dpl=a%2Fb`))).toBe(false)
+  })
+
+  it("has the precache ignore dpl as well as Serwist's default utm_ and fbclid (F1)", () => {
+    const ignored = (name: string) => PRECACHE_IGNORED_PARAMS.some((pattern) => pattern.test(name))
+    expect(ignored('dpl')).toBe(true)
+    expect(ignored('utm_source')).toBe(true)
+    expect(ignored('fbclid')).toBe(true)
+    expect(ignored('v')).toBe(false)
+    expect(ignored('dplx')).toBe(false)
   })
 
   it('has a per-build cache the activate cleanup removes once a newer build takes over', () => {
@@ -183,30 +242,33 @@ describe('isBuildChunk (PERF-7)', () => {
 describe('warmTierUrls', () => {
   const config: ServiceWorkerConfig = {
     revision: 'r',
+    geoVersion: '57ef63e13a99',
     geoCache: 'cc-geo-a',
     audioCache: 'cc-audio-a',
     modelsCache: 'cc-models-a',
     chunksCache: 'cc-chunks-a',
     districtUrls: {
       low: [
-        '/geo/districts/low/queens?v=abc',
+        '/geo/districts/low/queens?v=abc123def456',
+        '/geo/blocks/low?v=0000aaaa1111',
+        // A malformed version is never warmed.
         '/geo/blocks/low?v=def',
         // Never baked in by the build; filtered all the same.
         '/geo/districts/low/x',
         '/api/save',
-        'https://evil.example/geo/districts/low/queens?v=abc',
+        'https://evil.example/geo/districts/low/queens?v=abc123def456',
       ],
-      mid: ['/geo/blocks/mid?v=1'],
+      mid: ['/geo/blocks/mid?v=111122223333'],
       high: [],
     },
   }
 
   it("keeps only the tier's same-origin versioned geo", () => {
     expect(warmTierUrls(config, 'low', ORIGIN)).toEqual([
-      '/geo/districts/low/queens?v=abc',
-      '/geo/blocks/low?v=def',
+      '/geo/districts/low/queens?v=abc123def456',
+      '/geo/blocks/low?v=0000aaaa1111',
     ])
-    expect(warmTierUrls(config, 'mid', ORIGIN)).toEqual(['/geo/blocks/mid?v=1'])
+    expect(warmTierUrls(config, 'mid', ORIGIN)).toEqual(['/geo/blocks/mid?v=111122223333'])
     expect(warmTierUrls(config, 'high', ORIGIN)).toEqual([])
   })
 })
