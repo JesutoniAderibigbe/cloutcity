@@ -1,4 +1,4 @@
-import { MeshBasicMaterial, PerspectiveCamera } from 'three'
+import { Color, MeshBasicMaterial, PerspectiveCamera } from 'three'
 import { describe, expect, it } from 'vitest'
 import { encodePath } from '@/lib/geo/codec'
 import { ORIGIN, PROJECTION_ID } from '@/lib/geo/projection'
@@ -6,7 +6,7 @@ import { BLOCK_TRIANGLES, buildBlockGeometry, buildBlocks } from './buildBlocks'
 import { BlocksMiniSchema } from './schema'
 
 const materials = { normal: new MeshBasicMaterial(), dimmed: new MeshBasicMaterial() }
-const COLORS = { block: '#9a9286', dimmed: '#5a5852', jitter: 0.1 }
+const COLORS = { blocks: ['#9a9286', '#b5654a'], dimmed: '#5a5852', jitter: 0 }
 
 /** Queens blocks in a row along x every 500 m, plus one Bronx block. */
 const file = BlocksMiniSchema.parse({
@@ -54,6 +54,32 @@ describe('buildBlocks', () => {
     expect(meshes.map((m) => m.name)).toEqual(['blocks-queens', 'blocks-bronx'])
     expect((meshes[1] as unknown as { material: unknown }).material).toBe(materials.dimmed)
     expect(blocks.view()).toEqual({ total: 21, drawn: 0, triangles: 0 })
+    blocks.dispose()
+  })
+
+  it('colours each block from the palette, and blocks on dimmed land with the dimmed colour', () => {
+    const blocks = buildBlocks(file, 30, COLORS, new Set(['bronx']), materials)
+    const above = new PerspectiveCamera(90, 1, 1, 100_000)
+    above.position.set(5000, 8000, -1500)
+    above.lookAt(5000, 0, -1500)
+    above.updateMatrixWorld()
+    blocks.cull(above, 100_000)
+    const hexes = (name: string) => {
+      const mesh = blocks.group.getObjectByName(name) as unknown as {
+        count: number
+        instanceColor: { array: Float32Array }
+      }
+      return new Set(
+        Array.from(
+          { length: mesh.count },
+          (_, i) => `#${new Color().fromArray(mesh.instanceColor.array, i * 3).getHexString()}`,
+        ),
+      )
+    }
+    const queens = hexes('blocks-queens')
+    // Twenty blocks in view: both palette colours appear, and nothing else.
+    expect(queens).toEqual(new Set(COLORS.blocks))
+    expect([...hexes('blocks-bronx')]).toEqual([COLORS.dimmed])
     blocks.dispose()
   })
 

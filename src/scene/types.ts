@@ -41,11 +41,15 @@ export interface ScenePalette {
   readonly toonRamp: readonly number[]
   /** District buildings and procedural blocks (S04d). */
   readonly buildings: {
-    readonly wall: string
+    /** District facades, one picked per mass. */
+    readonly walls: readonly string[]
     readonly roof: string
     /** The warm light of a lit window at night. */
     readonly window: string
-    readonly block: string
+    /** Low blocks outside the districts, one picked per block. */
+    readonly blocks: readonly string[]
+    /** The one colour blocks on "expanding soon" land are dimmed from. */
+    readonly dimmedBlock: string
   }
   /** The landmark kit's role colours (S07a). */
   readonly landmarks: LandmarkPalette

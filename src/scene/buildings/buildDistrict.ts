@@ -46,10 +46,12 @@ export function massTriangles(rings: readonly (readonly LocalPoint[])[]): number
 }
 
 export interface DistrictColors {
-  readonly wall: string
+  /**
+   * Facade colours, one picked per mass, so a district reads as a mix of brick, brownstone,
+   * limestone, concrete and glass rather than one colour. Repeat a colour to weight it.
+   */
+  readonly walls: readonly string[]
   readonly roof: string
-  /** Mixed into some facades, so a district reads as brick, brownstone and concrete. */
-  readonly accent: string
   /** Facade brightness spread (scene.json buildings.wallJitter). */
   readonly jitter: number
   /**
@@ -57,6 +59,13 @@ export interface DistrictColors {
    * repeats, running along each ring and up from the ground; roofs sit at uv (0, 0), a wall texel.
    */
   readonly windowTile: { readonly u: number; readonly v: number }
+}
+
+/** The entry a 0..1 `noise` value lands on (`items` must not be empty). */
+export function pick<T>(items: readonly T[], noise: number): T {
+  const item = items[Math.min(items.length - 1, Math.floor(noise * items.length))]
+  if (item === undefined) throw new Error('pick needs at least one item')
+  return item
 }
 
 /** A deterministic 0..1 value per mass index (no Math.random: a rebuild looks the same). */
@@ -117,8 +126,7 @@ export async function buildDistrictGeometry(
   const indexEnds = new Uint32Array(masses.length)
   const triangleEnds = new Uint32Array(masses.length)
 
-  const wall = new Color(colors.wall)
-  const accent = new Color(colors.accent)
+  const walls = colors.walls.map((hex) => new Color(hex))
   const roof = new Color(colors.roof)
   const facade = new Color()
   let v = 0
@@ -153,10 +161,7 @@ export async function buildDistrictGeometry(
   for (const [m, mass] of masses.entries()) {
     const noise = massNoise(m)
     const shade = 1 + colors.jitter * (2 * massNoise(m + 7919) - 1)
-    facade
-      .copy(wall)
-      .lerp(accent, noise < 0.35 ? noise : 0)
-      .multiplyScalar(shade)
+    facade.copy(pick(walls, noise)).multiplyScalar(shade)
     const top = groundY + mass.h
 
     // Walls: one quad per edge, outward for the outer ring and into each courtyard for holes.

@@ -23,7 +23,7 @@ import {
 } from 'three'
 import { decodePath } from '@/lib/geo/codec'
 import type { BoroughId } from '../geo/schema'
-import { massNoise } from './buildDistrict'
+import { massNoise, pick } from './buildDistrict'
 import type { Blocks } from './schema'
 
 export const BLOCK_TRIANGLES = 10
@@ -124,11 +124,15 @@ export interface BlocksObjects {
 }
 
 export interface BlockColors {
-  readonly block: string
+  /** Block colours, one picked per block (repeat a colour to weight it). */
+  readonly blocks: readonly string[]
   /** Blocks on dimmed land ("expanding soon"), already mixed towards the background. */
   readonly dimmed: string
   readonly jitter: number
 }
+
+/** Offsets the colour pick's noise from the shade's (any constant far from the block count). */
+const BLOCK_COLOR_SEED = 0x51ed
 
 const _matrix = new Matrix4()
 const _position = new Vector3()
@@ -150,7 +154,7 @@ export function buildBlocks(
   const group = new Group()
   group.name = 'blocks'
   const geometry = buildBlockGeometry()
-  const base = new Color(colors.block)
+  const bases = colors.blocks.map((hex) => new Color(hex))
   const dim = new Color(colors.dimmed)
   const color = new Color()
   const half = (file.sizeM * Math.SQRT2) / 2
@@ -169,7 +173,10 @@ export function buildBlocks(
       _position.set(point.x, groundY, -point.y)
       _scale.set(file.sizeM, h, file.sizeM)
       _matrix.compose(_position, _rotation, _scale).toArray(matrices, i * 16)
-      const shade = 1 + colors.jitter * (2 * massNoise(serial++) - 1)
+      const shade = 1 + colors.jitter * (2 * massNoise(serial) - 1)
+      // A second, independent noise picks the colour, so shade and colour don't correlate.
+      const base = pick(bases, massNoise(serial + BLOCK_COLOR_SEED))
+      serial++
       color
         .copy(dimmed ? dim : base)
         .multiplyScalar(shade)

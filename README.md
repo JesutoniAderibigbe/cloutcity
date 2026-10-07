@@ -329,7 +329,9 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
   colours for `day` and `night`, the cross-fade and the glass settings), `themeColor`, `world`
   (3D-only colours: land, haze, subway ribbons, room surfaces, keyframe skies), `sky` (each
   day/night keyframe's colour slots), `scene` (the city's colour roles, as `world` or `models`
-  tokens) and `models` (the hand-made models' materials).
+  tokens) and `models` (the hand-made models' materials). `scene.buildings.walls` and `.blocks` are
+  lists: each district mass and each low block picks one by a deterministic noise, so a district
+  mixes brick, brownstone, limestone, concrete and glass (repeat a token to weight it).
 - **Interface theme (S04g).** Light frosted cards by day, dark glass by night, taxi yellow the one
   accent. The stock Tailwind palette is removed (`--color-*: initial` in `src/app/globals.css`):
   components use only the semantic colours `canvas`, `glass` (the `glass` utility), `surface`,
