@@ -479,6 +479,19 @@
       "attempts": 0
     },
     {
+      "phase": 4,
+      "requires": [
+        "supabase"
+      ],
+      "review": true,
+      "blocked": false,
+      "attempts": 0,
+      "id": "S19a",
+      "title": "Delete account and data",
+      "acceptance": "A signed-in player can delete their account from the Me tab after a clear confirm step that says what is lost; the server (service role, Bearer auth) deletes the auth user and cascades profile, saves and social rows, keeping only banned-identity hashes and any moderation evidence the legal ruling (SEC-12) requires; a guest is told how to clear local progress instead; the local game is reset afterwards; integration tests prove the cascade and that another user's data is untouched; e2e covers the confirm flow.",
+      "passes": false
+    },
+    {
       "id": "S20",
       "phase": 4,
       "title": "Invite link and friends",
