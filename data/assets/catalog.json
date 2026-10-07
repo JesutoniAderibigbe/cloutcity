@@ -259,7 +259,11 @@
       "clips": [],
       "loadPhase": "after-playable",
       "instanced": true,
-      "nameKey": "models.name.taxi"
+      "nameKey": "models.name.taxi",
+      "remap": {
+        "#f1c55e": "taxi-400"
+      },
+      "remapMaxDeltaE": 1
     },
     {
       "id": "sedan",
@@ -1138,10 +1142,7 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": ["glass-600"],
-      "glow": {
-        "glass-600": "window-200"
-      },
+      "emissive": [],
       "slots": [
         {
           "name": "facade",
@@ -1188,10 +1189,7 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": ["glass-600"],
-      "glow": {
-        "glass-600": "window-200"
-      },
+      "emissive": [],
       "slots": [
         {
           "name": "facade",
@@ -1238,10 +1236,7 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": ["glass-600"],
-      "glow": {
-        "glass-600": "window-200"
-      },
+      "emissive": [],
       "slots": [
         {
           "name": "facade",
@@ -1288,10 +1283,7 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": ["glass-600"],
-      "glow": {
-        "glass-600": "window-200"
-      },
+      "emissive": [],
       "slots": [
         {
           "name": "facade",

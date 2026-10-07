@@ -202,7 +202,8 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
 
 - **Catalog.** `data/assets/catalog.json` lists the packs (licence, licence-file phrases, pin,
   colour grade) and the models (entries, category, real-world fit, pivot, per-tier
-  simplification, palette swatches and anchors, night-glow tokens, recolour slots, rig clips,
+  simplification, palette swatches and anchors (`remap`, with an optional tight
+  `remapMaxDeltaE` to pin one exact pack colour), night-glow tokens, recolour slots, rig clips,
   load phase, copy name key). The schema allows only CC0/MIT packs and project-original Blender
   sources.
 - **Build.** `npm run assets:build` downloads into `.cache/assets/` (sha256-checked against

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "3de1720f959354ad",
+  "assetVersion": "158ef5de7b6552b2",
   "models": [
     {
       "id": "taxi",
@@ -15,24 +15,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/taxi.low.752dce5e.glb",
-          "sha256": "752dce5e8b5572c336eb2920f45712ae3da472e280bc04ac99b8cce61a0e27cf",
-          "bytes": 28144,
-          "gzBytes": 18652,
+          "file": "/models/taxi.low.88ea255d.glb",
+          "sha256": "88ea255d8c6b16e0c9d7f68fc33e15fce033a216cf7d71eddf9378035d96d10f",
+          "bytes": 27860,
+          "gzBytes": 18344,
           "triangles": 1058
         },
         "mid": {
-          "file": "/models/taxi.high.46a80e6f.glb",
-          "sha256": "46a80e6f5493985cbe9bde1029c4c38d1317a1e6a71d39c080f4bb0c84fdb23a",
-          "bytes": 32600,
-          "gzBytes": 20217,
+          "file": "/models/taxi.high.f6e1872d.glb",
+          "sha256": "f6e1872d038eb11a28c5d938f705e628fd70122002437953d565af183e6c1303",
+          "bytes": 32184,
+          "gzBytes": 20953,
           "triangles": 1256
         },
         "high": {
-          "file": "/models/taxi.high.46a80e6f.glb",
-          "sha256": "46a80e6f5493985cbe9bde1029c4c38d1317a1e6a71d39c080f4bb0c84fdb23a",
-          "bytes": 32600,
-          "gzBytes": 20217,
+          "file": "/models/taxi.high.f6e1872d.glb",
+          "sha256": "f6e1872d038eb11a28c5d938f705e628fd70122002437953d565af183e6c1303",
+          "bytes": 32184,
+          "gzBytes": 20953,
           "triangles": 1256
         }
       }
@@ -711,28 +711,28 @@
       "nameKey": "models.name.buildingA",
       "bounds": { "min": [-5.3015, 0, -5.64], "max": [5.3015, 15.516, 5.64] },
       "slots": ["facade"],
-      "emissive": true,
+      "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-a.low.3bc64f10.glb",
-          "sha256": "3bc64f10e4cd27d71ed5ba55afeafd881e795e213fec2b3c2c5bc007487a3f7e",
-          "bytes": 20244,
-          "gzBytes": 10872,
+          "file": "/models/building-a.low.a9812087.glb",
+          "sha256": "a9812087a60ca59de74045fb38aa7b7c217fd11bdbf65bf6f6ef90568717b0a8",
+          "bytes": 19712,
+          "gzBytes": 10797,
           "triangles": 877
         },
         "mid": {
-          "file": "/models/building-a.mid.5a0b0913.glb",
-          "sha256": "5a0b09131f50ac2d60f63aabb4e9648f18a771ffed09ff1ae12b33e2e350b59b",
-          "bytes": 21344,
-          "gzBytes": 12152,
+          "file": "/models/building-a.mid.e619c04c.glb",
+          "sha256": "e619c04cd5767eb87a3bebc05676d44b445bfcc4296df86e1c057bb7af20be3b",
+          "bytes": 20808,
+          "gzBytes": 12076,
           "triangles": 938
         },
         "high": {
-          "file": "/models/building-a.high.85656684.glb",
-          "sha256": "85656684058fbb17bbdd511d61215fe02510269a190f47483034e39c1d69d641",
-          "bytes": 25152,
-          "gzBytes": 13756,
+          "file": "/models/building-a.high.f01b65f0.glb",
+          "sha256": "f01b65f09ae11901e341907feeeab18c4ac33c06f1a191626b6da9dd52162d70",
+          "bytes": 24588,
+          "gzBytes": 13681,
           "triangles": 1252
         }
       }
@@ -746,28 +746,28 @@
       "nameKey": "models.name.buildingB",
       "bounds": { "min": [-5.82, 0, -5.64], "max": [5.82, 15.516, 5.64] },
       "slots": ["facade"],
-      "emissive": true,
+      "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-b.low.f05ffb51.glb",
-          "sha256": "f05ffb51395f92a7eddb2871683c37d273a9b0224c297fe5c135363e2e3cba3b",
-          "bytes": 23516,
-          "gzBytes": 13117,
+          "file": "/models/building-b.low.2567ba3b.glb",
+          "sha256": "2567ba3b42be81d9e6bb6f3f0294f4ea1e23e15785231312eb980fa1d75244d2",
+          "bytes": 22940,
+          "gzBytes": 13039,
           "triangles": 991
         },
         "mid": {
-          "file": "/models/building-b.mid.8367ab5c.glb",
-          "sha256": "8367ab5c4779b13642e79b4850f54451119b502c53026acf5667e15776b275ab",
-          "bytes": 23540,
-          "gzBytes": 13172,
+          "file": "/models/building-b.mid.3d58ca6e.glb",
+          "sha256": "3d58ca6e2557fdcb125e4526b8f587230693ae632e9449ce2cc3979fc307c288",
+          "bytes": 22964,
+          "gzBytes": 13086,
           "triangles": 991
         },
         "high": {
-          "file": "/models/building-b.high.fdd1317d.glb",
-          "sha256": "fdd1317d451aca908bf9f52572485d45938d501542fe60774546759b2757787d",
-          "bytes": 26744,
-          "gzBytes": 14149,
+          "file": "/models/building-b.high.fb24e69d.glb",
+          "sha256": "fb24e69d74c93ae73d15b9a92f16b048f2bb9a00f5aa8d985b2852ac07f0f5a2",
+          "bytes": 26148,
+          "gzBytes": 14067,
           "triangles": 1276
         }
       }
@@ -781,28 +781,28 @@
       "nameKey": "models.name.buildingC",
       "bounds": { "min": [-5.3015, 0, -6.54], "max": [5.3015, 10.716, 6.54] },
       "slots": ["facade"],
-      "emissive": true,
+      "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-c.low.5589572c.glb",
-          "sha256": "5589572c4784b711ac68cedc8009d5cddd7fe3e0523a663194c725b504979cb8",
-          "bytes": 19268,
-          "gzBytes": 11212,
+          "file": "/models/building-c.low.55053605.glb",
+          "sha256": "55053605014d5fe980beaa258a6c9d699ec39b594583781879f9d14ead032134",
+          "bytes": 18676,
+          "gzBytes": 11097,
           "triangles": 786
         },
         "mid": {
-          "file": "/models/building-c.mid.94ff7980.glb",
-          "sha256": "94ff79803d23e81e5199416c48378e2dd52e0d3a2c44066f34b40d2cb2f65dd2",
-          "bytes": 21104,
-          "gzBytes": 12657,
+          "file": "/models/building-c.mid.a47c8db5.glb",
+          "sha256": "a47c8db54fb7268d6307262ee4f66747beb3b7f165246cf6cdc9276dd128420b",
+          "bytes": 20516,
+          "gzBytes": 12547,
           "triangles": 896
         },
         "high": {
-          "file": "/models/building-c.high.ce2d2f35.glb",
-          "sha256": "ce2d2f356b5ea5583d1db85dbea21056d2358ae58c9691eeec7af235e5065a14",
-          "bytes": 24816,
-          "gzBytes": 14196,
+          "file": "/models/building-c.high.ddc043f4.glb",
+          "sha256": "ddc043f466dc1a6da1214862bbdf38a17397d4b54d056d7d310650f469148405",
+          "bytes": 24200,
+          "gzBytes": 14094,
           "triangles": 1195
         }
       }
@@ -816,28 +816,28 @@
       "nameKey": "models.name.buildingD",
       "bounds": { "min": [-5.04, 0, -5.4], "max": [5.04, 15.516, 5.4] },
       "slots": ["facade"],
-      "emissive": true,
+      "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-d.low.f086f3fa.glb",
-          "sha256": "f086f3fa34b352efa784b58297d3edaf3f9eec343d8319ea0a576b7ba2b3e2bc",
-          "bytes": 18080,
-          "gzBytes": 11199,
+          "file": "/models/building-d.low.f6aadfdd.glb",
+          "sha256": "f6aadfdd8528b046f42c03bb2c5e0eb8dbdd165126677eb74628f268bcbc765a",
+          "bytes": 17508,
+          "gzBytes": 11098,
           "triangles": 786
         },
         "mid": {
-          "file": "/models/building-d.mid.9c54bd09.glb",
-          "sha256": "9c54bd09033eadcff402f197e92961238825c8bc95e237745294f23736b68f4f",
-          "bytes": 18988,
-          "gzBytes": 11729,
+          "file": "/models/building-d.mid.257213d3.glb",
+          "sha256": "257213d39caccb281b0dd4f8e523edfa6b0fb035ff0e5cda1c094e67b7bc3b47",
+          "bytes": 18408,
+          "gzBytes": 11626,
           "triangles": 824
         },
         "high": {
-          "file": "/models/building-d.high.87efb6f7.glb",
-          "sha256": "87efb6f7f21d3670f3bf9b8a9f2330d8a2eb01eb6db730a907be7f97e42837dc",
-          "bytes": 22808,
-          "gzBytes": 13534,
+          "file": "/models/building-d.high.ad7a0b8e.glb",
+          "sha256": "ad7a0b8e8bce6a1684781939fd3690389f651ab7f2c0fb7a3db5a3686371e139",
+          "bytes": 22212,
+          "gzBytes": 13428,
           "triangles": 1100
         }
       }
