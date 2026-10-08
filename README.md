@@ -18,17 +18,16 @@ npm run dev                       # http://localhost:3000
 No environment variables are needed to play: without Supabase the game runs local-only. Env
 files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names.
 
-| Variable                                                    | Used by                                                                                                                          | Default                                                            |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `NEXT_PUBLIC_LOG_LEVEL`                                     | `src/lib/log.ts` minimum level (`debug`, `info`, `warn`, `error`)                                                                | `debug` in dev, `info` in production                               |
-| `E2E_PORT`                                                  | Port Playwright serves the production build on                                                                                   | `3100`                                                             |
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The guest's anonymous Supabase session (`src/lib/supabase/env.ts`); inlined at build time                                        | unset: local-only play                                             |
-| `E2E_SUPABASE_PORT`                                         | Port of the opt-in `npm run e2e:supabase` build                                                                                  | `3110`                                                             |
-| `SUPABASE_SERVICE_ROLE_KEY`                                 | Server only (`src/server/supabase/service.ts`): the `/api/mod/*` routes and cloud saves (POST `/api/save`); never `NEXT_PUBLIC_` | unset: `/mod` and `/api/save` answer 503, saves stay on the device |
-| `SUPABASE_URL`                                              | The project URL for the cloud-save server code, if it differs from `NEXT_PUBLIC_SUPABASE_URL`                                    | `NEXT_PUBLIC_SUPABASE_URL`                                         |
-| `MODERATOR_EMAILS`                                          | Server only: comma-separated emails allowed into `/mod` (`src/server/moderation/auth.ts`)                                        | unset or empty: nobody                                             |
-| `SITE_URL`                                                  | Server only: this site's origin; `/mod` sign-in links land on `<SITE_URL>/mod`                                                   | unset: `/mod` sign-in is off                                       |
-| `NEXT_PUBLIC_SITE_URL`                                      | Account links (S19) land on `<NEXT_PUBLIC_SITE_URL>/auth/callback`; must equal `SITE_URL` (the build fails otherwise)            | unset: accounts are off (fail closed)                              |
+| Variable                                                    | Used by                                                                                                                                                            | Default                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
+| `NEXT_PUBLIC_LOG_LEVEL`                                     | `src/lib/log.ts` minimum level (`debug`, `info`, `warn`, `error`)                                                                                                  | `debug` in dev, `info` in production                         |
+| `E2E_PORT`                                                  | Port Playwright serves the production build on                                                                                                                     | `3100`                                                       |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Accounts and the player's Supabase session (`src/lib/supabase/env.ts`); inlined at build time                                                                      | unset: local-only play                                       |
+| `E2E_SUPABASE_PORT`                                         | Port of the opt-in `npm run e2e:supabase` build                                                                                                                    | `3110`                                                       |
+| `SUPABASE_SERVICE_ROLE_KEY`                                 | Server only (`src/server/supabase/service.ts`): `/api/mod/*`, cloud saves (POST `/api/save`) and log-in by username (POST `/api/auth/login`); never `NEXT_PUBLIC_` | unset: those routes answer 503 (log in by email still works) |
+| `SUPABASE_URL`                                              | The project URL for the cloud-save server code, if it differs from `NEXT_PUBLIC_SUPABASE_URL`                                                                      | `NEXT_PUBLIC_SUPABASE_URL`                                   |
+| `MODERATOR_EMAILS`                                          | Server only: comma-separated emails allowed into `/mod` (`src/server/moderation/auth.ts`)                                                                          | unset or empty: nobody                                       |
+| `SITE_URL`                                                  | Server only: this site's origin; `/mod` sign-in links land on `<SITE_URL>/mod`                                                                                     | unset: `/mod` sign-in is off                                 |
 
 ## Scripts
 
@@ -134,27 +133,35 @@ A modal declares itself open with `useModalPresence(open)` (`src/components/over
 while one is open, the scene and every zone behind it stay mounted but are inert and dimmed, and
 focus returns to the scene's `<main>` when it closes.
 
-## Welcome card (18+ check, consent, sound)
+## Entry: landing, sign up, log in (DEC-62)
 
-On first visit `src/components/welcome/WelcomeGate.tsx` shows one card over the loading map: a
-neutral year-of-birth picker (no default, no hint of the threshold), the Terms/Privacy consent
-(`/terms`, `/privacy`, placeholders pending legal review) and the sound choice. The rules are pure
-in `src/engine/ageGate.ts` (New York year; only a birth year at least `minimumAge + 1` back
-passes, since the birthday is unknown); numbers live in `data/config/onboarding.json`.
+Onboarding works like Lagos Life: `src/components/welcome/WelcomeGate.tsx` (a boot island) puts a
+landing card over the live, loading city with **Sign up** and **Log in**. Playing needs an account;
+there is no guest play. Offline, the landing says an account needs a connection; a returning
+signed-in player never sees it (the gate reads supabase-js's stored session,
+`src/state/entry.ts`, without loading supabase-js) and plays offline.
 
-- **18+:** `src/state/onboarding.ts` stores under `cloutcity:onboarding` the attestation (boolean
-  and timestamp), the consent version and timestamp, and the sound choice. The birth year is
-  never stored, logged or sent. The guest session hook (`src/state/session.ts`) runs only after
-  this; S05 adds the anonymous Supabase sign-in there, then records these answers on the server
-  profile with `attest_and_consent` (see Local Supabase).
-- **Under 18:** an in-voice screen, and the gate locks on that device for `underAgeLockHours`
-  (setting the clock back keeps it locked). No session starts.
-- Returning players never see the card. A record from a newer build is respected and never
-  overwritten; an invalid one is ignored and the card shows.
-- The form follows the shared pattern (`src/lib/forms/`): one zod/mini schema whose messages are
-  copy keys, `fieldErrors()` for every error at once, `firstInvalid()` for focus.
-- Picking a sound option does nothing audible. Submitting a passing card is the deliberate tap
-  that turns sound on (GR-13, see Audio); under-age and invalid submits never do.
+- **Sign up** (`src/components/account/AuthScreen.tsx`, lazy): username (the S18a handle rules
+  and filter, with a live preview, GR-6), email and password (rules shown: at least
+  `data/config/account.json` `password.minLength`, 8), the neutral year-of-birth picker (no
+  default, no hint of the threshold) and the Terms/Privacy consent, in one form with the shared
+  pattern (`src/lib/forms/`: one zod/mini schema whose messages are copy keys, every error at
+  once, focus on the first). Then the sound choice, whose submit is the tap that turns sound on
+  (GR-13), then the character creator (Look, Traits, Dream, neighbourhood roll, Home), then the
+  furnished room (`src/state/onboardingFlow.ts`), where the first-run tour leads to the first
+  purchase.
+- **Log in** with a username or email and the password. A returning account skips the creator
+  and lands in its room once the cloud save has been restored (`src/lib/account/afterLogin.ts`);
+  an account with no creator record opens the creator.
+- **18+:** the rules are pure in `src/engine/ageGate.ts` (New York year; only a birth year at
+  least `minimumAge + 1` back passes); numbers live in `data/config/onboarding.json`.
+  `src/state/onboarding.ts` stores under `cloutcity:onboarding` the attestation (boolean and
+  timestamp), the consent version and timestamp, and the sound choice; the server profile gets
+  the same through `attest_and_consent` at sign-up. The birth year is never stored, logged or
+  sent. **Under 18:** nothing is sent and no account is made; an in-voice screen, and the gate
+  locks on that device for `underAgeLockHours` (setting the clock back keeps it locked).
+- A build without Supabase configured (local-only, the default e2e suite) keeps the S05a welcome
+  card (`WelcomeCard.tsx`, lazy): the 18+ check, consent and sound, then solo play.
 
 ## Audio
 
@@ -574,7 +581,7 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   slack and the pace credit are per-player token buckets the server carries between uploads, and
   each history row keeps them (DEC-19). Only an account with no save at all uploads under
   first-upload rules (never rejected for real-time reasons).
-- **Cloud save sync** (S18c): once the guest session connects, `src/state/cloudSync.ts` (lazy)
+- **Cloud save sync** (S18c): once the session connects, `src/state/cloudSync.ts` (lazy)
   restores the account's save or uploads this device's to POST `/api/save`
   (`src/server/saves/handleUpload.ts`, Node, never cached), debounced (`sync.json`), queued
   offline, flushed with a keepalive request when the tab hides, and paused when the server
@@ -969,7 +976,7 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   case's reports with notes and snapshots, holds, sanctions and history) feed the console.
 - **/mod console** (S18b part 2). `src/app/mod` is its own route, `noindex`, with its own
   Supabase session (`storageKey: 'cloutcity-mod-auth'`, `src/lib/supabase/modAuth.ts`), so it
-  never touches the game's guest session. Sign-in is an emailed link: `POST /api/mod/sign-in`
+  never touches the game's own session. Sign-in is an emailed link: `POST /api/mod/sign-in`
   answers the same 202 for every address and sends the link (after the response) only to one on
   `MODERATOR_EMAILS`, landing on `<SITE_URL>/mod` (server env, never the request's Host header;
   unset turns sign-in off); it is rate limited per IP (`moderation.json` `console`, per server
@@ -991,7 +998,7 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   lists, or an honest "playing solo" state without a session. Every player surface must use
   `src/components/safety/PlayerActions.tsx` (Mute, Block with confirm, Report; Add friend joins
   with S20) with the shared `safetyApi` (`src/lib/supabase/safetyApi.ts`). Moderator notices
-  load once the guest session connects and show as a modal with an appeal form. The e2e suite
+  load once the session connects and show as a modal with an appeal form. The e2e suite
   drives PlayerActions through `window.__cloutcityTest.safety` with an in-memory API.
 - **Retention.** `private.purge_expired_safety_data()` applies `moderation.json` `retention` and
   never touches a player with any report under legal hold. The migration enables `pg_cron` and
@@ -1001,67 +1008,74 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   (`RPC_ERRORS` in `attestation.ts`; `parseRpcError()` reads it).
 - **Browser bundle.** `@supabase/supabase-js` may reach browser code only through a dynamic
   `import()`; `src/lib/client-imports.test.ts` fails on a static import chain from a client entry.
-- **Guest session (S05).** After the 18+ card, `src/state/session.ts` plays local at once and, if
-  `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set, waits for the map to be
-  playable, imports `src/lib/supabase/supabaseAuth.ts` lazily, reuses or starts an anonymous
-  session (default `sb-<ref>-auth-token` key) and records the attestation. A rate limit or no
-  network keeps local play (info; no network retries once when back online); sign-ins switched
-  off or any other refusal warn. `npm run e2e:supabase` checks it against the local stack.
-- **Accounts (S19).** A guest saves their progress on the _same_ user (so the profile with its
-  attestation and consent, the handle and the cloud save all stay): `updateUser({ email })` sends
-  a confirmation link, `linkIdentity` adds Google (manual linking). Logging in is
-  `signInWithOtp({ shouldCreateUser: false })` (the email has a link and a 6-digit code) or
-  `signInWithOAuth`. No passwords. The templates
-  (`supabase/templates/{magic_link,email_change}.html`) always link to `<site_url>/auth/callback`
-  (or `<site_url>/mod` for the console's own sign-in), never to a redirect the request named, with
-  the one-time token in the URL fragment so it never reaches a server, CDN or router log.
-  `/auth/callback` (`src/app/auth/callback`, a static page, `no-store`, `Referrer-Policy:
-no-referrer`, never handled by the service worker) wipes the token from the URL at once, names
-  the address (masked) and finishes only on a tap of Finish (mail scanners open links on their
-  own). A save confirmation link is used only on the device that asked: an anonymous session with a
-  waiting upgrade for that very address (`cloutcity:account` keeps a hash of it, never the address);
-  anywhere else the token is left unused and the page says to finish on that device, where the
-  6-digit code from the same email also works (verified on a throwaway client; only this browser's
-  own guest is refreshed). A log-in link is always verified on a throwaway client and taken at once
-  only when its account has the address this browser asked a link for
-  (`cloutcity:login-requested`: a time and an address hash, set once the link was sent); any other
-  asks "Log in as <the server's address, masked>?" first. A played game last synced to any other
-  account always gets the conflict sheet. Google's PKCE code is exchanged at once. `public.check_account_email` answers `ok` or
-  `not_allowed` before a link is sent (rate limited, `data/config/account.json` `emailCheck`), and
-  triggers on `auth.users` and `auth.identities` (insert and email updates) refuse a banned email
-  however GoTrue is called. Banned emails are hashed canonically (`private.canonical_email`: lower
-  case, trimmed, `+tag` dropped unless nothing would be left, Gmail dots and googlemail.com
-  folded), with bans recorded before
-  that still matched by their legacy hash. `private.require_permanent()` is the gate for features
-  that need a saved account. On the client, `src/lib/supabase/accountAuth.ts` (lazy, with supabase-js) does
-  the calls, `src/lib/supabase/accountSession.ts` follows the account (an upgrade confirmed on another
-  device is picked up by polling; a log-in to another account restarts cloud sync, whose restore
-  table or conflict sheet decides; sign-out stops it and never creates a new guest on the next
-  boot) and `src/state/account.ts` keeps the device's flags (no email). Locally, the links go to the stack's `site_url` (e2e and
-  integration tests open the same path on the server under test), and the stack has
-  `enable_confirmations = true` (so an email change is confirmed by its link, as in production),
-  manual linking on, the lane ports' `/auth/callback` and `/mod` allowlisted, and Google off;
-  Mailpit catches every email (`npx supabase status` prints its URL).
-- **Deploy checklist (S19).**
-  - **USER ACTION: Google OAuth client.** In Google Cloud Console set up the OAuth consent screen
-    (app name, Terms and Privacy URLs, scopes `email` and `profile`) and create a Web client with
-    the redirect URI `https://<project-ref>.supabase.co/auth/v1/callback`; enter its client id and
-    secret under Auth > Providers > Google. The round trip is a manual check on staging.
-  - **USER ACTION: custom SMTP** (Resend, Postmark, SES or similar) with SPF and DKIM on the
-    sending domain, then raise the hosted email rate limit: the built-in mailer only reaches the
-    project's team at 2 emails an hour.
-  - In the dashboard: enable **manual linking**; keep **email confirmations** and **secure email
-    change** on; paste both templates (Auth > Email Templates: Magic Link, Change Email Address);
-    Site URL = the production origin; redirect URLs `<SITE_URL>/auth/callback` and
-    `<SITE_URL>/mod`.
-  - Vercel env: `NEXT_PUBLIC_SITE_URL` equal to `SITE_URL`.
-  - With Turnstile on, the log-in requests need the captcha token wired in
-    (`setCaptchaProvider` in `accountAuth.ts`) before launch.
-  - The Privacy page (S27) states that we keep the account's email and Google identity (email,
-    provider id), and why.
-- **Production** (set in the Supabase dashboard, not `config.toml`): enable anonymous sign-ins,
-  set the anonymous sign-in rate limit per IP (locally raised to 1000/h for tests) and turn on
-  Turnstile under Auth > Bot and Abuse Protection (CAPTCHA). The local stack has no CAPTCHA.
+- **Session (S05, DEC-62).** Once the device's welcome steps are done, `src/state/session.ts`
+  plays local at once and, if `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are
+  set, waits for the map to be playable, imports `src/lib/supabase/supabaseAuth.ts` lazily,
+  reuses the account session stored on this device (default `sb-<ref>-auth-token` key) and
+  records the attestation. It never creates a session: with none (signed out) play stays local
+  and the landing asks the player to log in. A rate limit or no network keeps local play (info;
+  no network retries once when back online); any other refusal warns.
+- **Accounts (S19, DEC-61).** Username, email and password; no confirmation email, no password
+  reset and no email service for players.
+  - **Sign up** is `signUp({ email, password })`, which with confirmations off returns a session
+    at once, then `attest_and_consent`, then the username (`check_handle`, `set_handle`). If only
+    the username is refused (taken, filtered) the account already exists and the form asks for
+    another one. A guest from before DEC-62 (an anonymous session still on the device) signs up
+    with `updateUser({ email, password })` on their own user, so the game, profile and cloud save
+    carry over. A different saved account left signed in is signed out first.
+  - **Log in** by email is `signInWithPassword` in the browser. By username it is POST
+    `/api/auth/login` (`src/server/auth/login.ts`): the server looks the username's email up with
+    the service role (`public.login_email_for_handle`, service role only, saved accounts only),
+    signs in with the anon key and returns only the session's tokens, which the browser adopts
+    with `setSession`. The browser never learns an account's email. Every wrong pair gets the
+    same 401 `invalid_credentials`, and the route is rate limited per client IP and per typed
+    identifier (`data/config/account.json` `login`) through `public.consume_login_attempt`
+    (service role only; SHA-256 keys in `private.login_attempts`, never an IP or name in the
+    clear). GoTrue's own per-IP limit (`sign_in_sign_ups`) also applies, and because every
+    username log-in reaches GoTrue from the server's IP it is shared by all players: a GoTrue 429
+    there answers `rate_limited`.
+  - **Banned emails:** triggers on `auth.users` and `auth.identities` (insert and email updates)
+    refuse a banned email however GoTrue is called, so a banned email can neither sign up nor be
+    added to a guest. Banned emails are hashed canonically (`private.canonical_email`: lower
+    case, trimmed, `+tag` dropped unless nothing would be left, Gmail dots and googlemail.com
+    folded), with bans recorded before that still matched by their legacy hash.
+    `public.check_account_email` (the S19 pre-check) still exists but the game no longer calls
+    it. `private.require_permanent()` is the gate for features that need a saved account.
+  - **On the client**, `src/lib/supabase/accountAuth.ts` (lazy, with supabase-js) does the calls
+    and `src/lib/supabase/accountSession.ts` follows the account: a log-in restarts cloud sync for
+    it (S18c's restore table or the conflict sheet decides; a played game last synced to another
+    account always gets the sheet), and sign-out stops sync and brings the landing back (no new
+    guest). Google sign-in is hidden (not wired); `/auth/callback` is gone.
+  - **Unverified emails.** Nobody confirms the email at sign-up, so anyone can sign up with an
+    address that is not theirs, and that address is then taken. They cannot use it to get into
+    someone else's account: logging in always needs that account's password. An email change on
+    a saved account stays pending (it would need an emailed link), and the game offers none.
+  - **The moderator console** still signs in with an emailed link (`magic_link.html` always links
+    to `<site_url>/mod`). Without an email service it reaches only the Supabase project's team
+    (the built-in mailer), which is enough for staff but is the one place email is still needed.
+  - Locally, `supabase/config.toml` has `enable_confirmations = false`,
+    `minimum_password_length = 8` (it must match `password.minLength`;
+    `src/lib/account/parity.test.ts` checks), manual linking off, the lane ports' `/mod`
+    allowlisted, and Google off; Mailpit catches the console's emails (`npx supabase status`
+    prints its URL).
+- **Deploy checklist (S19, DEC-61).**
+  - **USER ACTION:** in the Supabase dashboard, **Authentication > Providers > Email**: turn
+    **OFF "Confirm email"**. Without this a sign-up gets no session and the form says accounts
+    aren't set up (it fails closed). Set **Minimum password length** to 8 (as
+    `data/config/account.json` `password.minLength`).
+  - Paste `supabase/templates/magic_link.html` under Auth > Email Templates > Magic Link (for
+    `/mod`); Site URL = the production origin; redirect URL `<SITE_URL>/mod`.
+  - Vercel env: `SUPABASE_SERVICE_ROLE_KEY` (log in by username needs it) and `SITE_URL`.
+  - The client IP for the log-in rate limit is the first `x-forwarded-for` hop, which Vercel
+    sets; behind another proxy, check that header cannot be supplied by the client.
+  - With Turnstile on, the sign-up and log-in requests need the captcha token wired in
+    (`setCaptchaProvider` in `accountAuth.ts`, and the server route) before launch.
+  - The Privacy page (S27) states that we keep the account's email and why, and that it is not
+    verified.
+- **Production** (set in the Supabase dashboard, not `config.toml`): turn on Turnstile under Auth >
+  Bot and Abuse Protection (CAPTCHA) and set the sign-in/sign-up rate limit per IP with the
+  server's username log-ins in mind. Anonymous sign-ins are still enabled for guests from before
+  DEC-62 (the game creates no new ones); the local stack has no CAPTCHA.
 
 ## Ignored paths
 
