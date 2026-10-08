@@ -39,6 +39,11 @@ export const LANDMARK_ROLES = [
   'lamp',
   'patina',
   'gilt',
+  'screen-white',
+  'screen-cyan',
+  'screen-magenta',
+  'screen-amber',
+  'signal',
 ] as const
 export type LandmarkRole = (typeof LANDMARK_ROLES)[number]
 
