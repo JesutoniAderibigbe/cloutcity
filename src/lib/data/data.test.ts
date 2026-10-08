@@ -58,7 +58,9 @@ import {
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
 import {
   AmbientConfigSchema,
+  AreaLabelsFileSchema,
   PinMarksConfigSchema,
+  PlotsConfigSchema,
   SceneConfigSchema,
   StreetPropsConfigSchema,
 } from './schemas/scene'
@@ -145,7 +147,9 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/perf.json': PerfConfigSchema,
   'config/phone.json': PhoneConfigSchema,
   'config/pinMarks.json': PinMarksConfigSchema,
+  'config/plots.json': PlotsConfigSchema,
   'places/icons.json': PlaceIconsConfigSchema,
+  'places/areaLabels.json': AreaLabelsFileSchema,
   'config/profile.json': ProfileConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/props.json': StreetPropsConfigSchema,

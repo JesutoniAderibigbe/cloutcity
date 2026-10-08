@@ -19,6 +19,9 @@ import {
 } from 'three'
 import type { Placement } from '@/lib/world/streetProps'
 
+/** What a merge needs of a placement (street props, and the place plots of S04m). */
+export type PlacedModel = Pick<Placement, 'model' | 'x' | 'y' | 'rotation' | 'lift'>
+
 /** A loaded static model, as src/scene/models/prepare.ts hands it over. */
 export interface PropModel {
   readonly geometry: BufferGeometry
@@ -77,7 +80,7 @@ const _v = new Vector3()
 
 /** placement (on the land top, turned about +y) × the model's own node transform. */
 export function placementMatrix(
-  placement: Placement,
+  placement: PlacedModel,
   groundY: number,
   model: Matrix4,
   out: Matrix4,
@@ -97,7 +100,7 @@ function isEmissive(attribute: Attribute | undefined, index: number): boolean {
  * current slice has run long enough (src/scene/schedule.ts createSlicer).
  */
 export async function mergeChunk(
-  placements: readonly Placement[],
+  placements: readonly PlacedModel[],
   models: ReadonlyMap<string, PropModel>,
   groundY: number,
   /** Where glowing vertices sample the mask; null: nothing glows. */
@@ -106,7 +109,7 @@ export async function mergeChunk(
 ): Promise<MergedChunk> {
   let vertexCount = 0
   let indexCount = 0
-  const drawn: { placement: Placement; model: PropModel }[] = []
+  const drawn: { placement: PlacedModel; model: PropModel }[] = []
   for (const placement of placements) {
     const model = models.get(placement.model)
     if (model === undefined) continue

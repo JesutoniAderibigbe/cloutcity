@@ -830,6 +830,18 @@ camera starts over it).
   the nearest few (`data/config/pinMarks.json`), keeping labels off icons, name chips and the HUD;
   one mesh and atlas with the chips' material settings, so no new shader program. The Places
   list shows the same icons and category labels (`categories` copy namespace).
+- **Map styles (S04m, DEC-59).** Two looks, switched live from a chip in the map's bottom-start
+  corner (`src/scene/style/MapStyleChip.tsx`, lazy) or Phone → Settings, persisted under
+  `cloutcity:map-style` (`src/state/mapStyle.ts`). `scene.json` `mapStyles` holds each style's
+  camera, background height and density, plots on or off, pin and bubble style, subway lift and
+  colour tokens. **Game map** (default, Lagos-style): every venue and home stands on a plot
+  (`data/config/plots.json`: lawn, plaza or parking yard and a recoloured CC0 building, merged per
+  square onto the district material by the lazy `src/scene/plots/layer.ts`), district masses and
+  fill blocks keep clear of plots and are drawn lower and lighter, venue pins float over their
+  roofs as big icon bubbles, and big area names (`data/places/areaLabels.json`, `map.area.*`
+  copy) lie on the water and over the neighbourhoods. **Real NYC**: the full city as before.
+  Both share every material: a switch changes colours, heights, visibility and instance data and
+  rebuilds the buildings layer, never a shader program.
 - **Config.** Camera start, zoom/tilt/turn limits, layer heights, line widths, marker and chip
   sizes, the shadow and the day/night keyframes live in `data/config/scene.json`; scene colours
   are world tokens in the `scene` block of `data/config/theme.json` (resolved to hex on the

@@ -1,0 +1,162 @@
+{
+  "plotM": 84,
+  "slabM": 0.6,
+  "kerbM": 3,
+  "clearM": 8,
+  "buildingBackM": 17,
+  "buildingHeightScale": 0.75,
+  "bubbleClearM": 40,
+  "chunkM": 1600,
+  "lawn": "lawn-400",
+  "kerb": "kerb-100",
+  "aprons": {
+    "plaza": "plaza-100",
+    "parking": "parking-500"
+  },
+  "stripe": {
+    "color": "paint-100",
+    "widthM": 0.6,
+    "lengthM": 7,
+    "gapM": 4.2
+  },
+  "roof": {
+    "from": "iron-900",
+    "to": "roofslate-200"
+  },
+  "trees": {
+    "models": ["tree-round", "tree-oak"],
+    "insetM": 7,
+    "scale": 1.8
+  },
+  "bush": {
+    "model": "bush",
+    "scale": 5,
+    "spacingM": 7
+  },
+  "styles": {
+    "bodega": {
+      "model": "building-c",
+      "footprintM": 44,
+      "facade": "mustard-300",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awninggreen-500"
+      },
+      "trees": 2,
+      "bushes": 0
+    },
+    "food-spot": {
+      "model": "building-a",
+      "footprintM": 44,
+      "facade": "tomato-400",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningcream-100"
+      },
+      "trees": 2,
+      "bushes": 0
+    },
+    "coffee-shop": {
+      "model": "building-c",
+      "footprintM": 44,
+      "facade": "latte-300",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningred-500"
+      },
+      "trees": 2,
+      "bushes": 2
+    },
+    "club": {
+      "model": "building-b",
+      "footprintM": 48,
+      "facade": "grape-400",
+      "apron": "parking",
+      "awning": null,
+      "trees": 0,
+      "bushes": 0
+    },
+    "boutique": {
+      "model": "building-d",
+      "footprintM": 44,
+      "facade": "bubblegum-300",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningcream-100"
+      },
+      "trees": 2,
+      "bushes": 2
+    },
+    "thrift": {
+      "model": "building-a",
+      "footprintM": 44,
+      "facade": "lagoon-400",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningorange-400"
+      },
+      "trees": 2,
+      "bushes": 0
+    },
+    "gym": {
+      "model": "building-b",
+      "footprintM": 48,
+      "facade": "cobalt-400",
+      "apron": "parking",
+      "awning": null,
+      "trees": 2,
+      "bushes": 0
+    },
+    "job-site": {
+      "model": "building-d",
+      "footprintM": 48,
+      "facade": "denim-500",
+      "apron": "parking",
+      "awning": null,
+      "trees": 2,
+      "bushes": 0
+    },
+    "subway-station": {
+      "model": null,
+      "footprintM": 0,
+      "facade": null,
+      "apron": "plaza",
+      "awning": null,
+      "trees": 4,
+      "bushes": 4
+    },
+    "home": {
+      "model": "building-c",
+      "footprintM": 44,
+      "facade": "brickhome-400",
+      "apron": "none",
+      "awning": null,
+      "trees": 3,
+      "bushes": 3
+    }
+  },
+  "areas": {
+    "water": {
+      "heightM": 56,
+      "liftM": 1,
+      "fill": "kerb-100",
+      "halo": null,
+      "haloWidth": 0
+    },
+    "neighborhood": {
+      "heightM": 46,
+      "liftM": 16,
+      "fill": "denim-500",
+      "halo": "kerb-100",
+      "haloWidth": 0.16
+    },
+    "fontPx": 96,
+    "letterSpacing": 0.18,
+    "alphaTest": 0.5
+  }
+}

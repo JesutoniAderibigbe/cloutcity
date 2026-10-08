@@ -5,7 +5,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { scene } from '@/lib/data/config'
 import { districtAssets } from '@/lib/data/districts'
 import type { DistrictMass } from './buildDistrict'
-import { createBuildingsLayer, type BuildingsLayerOptions } from './layer'
+import {
+  createBuildingsLayer,
+  softenBlocks,
+  softenMasses,
+  type BuildingsLayerOptions,
+} from './layer'
 
 const DATA = join(import.meta.dirname, '../../../data')
 const assets = districtAssets('low')
@@ -186,5 +191,37 @@ describe('buildings layer', () => {
     expect(blocks.trees).toBeGreaterThan(0)
     expect(blocks.trees).toBeLessThanOrEqual(4000)
     layer.dispose()
+  })
+})
+
+describe('map style softening (S04m)', () => {
+  const square = (cx: number, cy: number, s: number) => [
+    { x: cx - s, y: cy - s },
+    { x: cx + s, y: cy - s },
+    { x: cx + s, y: cy + s },
+    { x: cx - s, y: cy + s },
+  ]
+  const clearings = [{ x: 0, y: 0, half: 50 }]
+
+  it('drops masses in a plot clearing and scales the rest', () => {
+    const masses = [
+      { h: 30, rings: [square(0, 0, 5)], prominence: 3000 },
+      { h: 30, rings: [square(48, 0, 10)], prominence: 12000 },
+      { h: 20, rings: [square(200, 0, 5)], prominence: 2000 },
+    ]
+    const kept = softenMasses(masses, clearings, 0.5)
+    expect(kept).toHaveLength(1)
+    expect(kept[0]?.h).toBe(10)
+    expect(softenMasses(masses, [], 1)).toEqual(masses)
+  })
+
+  it('drops blocks reaching into a clearing and scales the rest', () => {
+    const file = {
+      sizeM: 20,
+      groups: [{ borough: 'queens', angleDeg: 0, p: [0, 0, 55, 0, 300, 0], h: [10, 10, 9] }],
+    } as unknown as Parameters<typeof softenBlocks>[0]
+    const soft = softenBlocks(file, clearings, 0.5)
+    expect(soft.groups[0]?.p).toEqual([300, 0])
+    expect(soft.groups[0]?.h).toEqual([5])
   })
 })

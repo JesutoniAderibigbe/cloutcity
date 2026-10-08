@@ -160,7 +160,13 @@ describe('buildPins', () => {
     const pins = buildPins([{ ...first, liftM: 50 }, ...rest], palette, sceneConfig, top, ramp)
     pins.applyDistance(4500)
     const instanced = mesh(pins.group, `pins-${first.kind}`)
+    // A venue's lift (its plot building, S04m) applies only while the map style asks for it.
+    pins.setVenueLift(true)
     expect(instanced.instanceMatrix.array[13]).toBeCloseTo(top + sceneConfig.pins.liftM + 50, 6)
+    if (first.kind === 'venue') {
+      pins.setVenueLift(false)
+      expect(instanced.instanceMatrix.array[13]).toBeCloseTo(top + sceneConfig.pins.liftM, 6)
+    }
     expect(pins.groundOf(first.id)?.toArray()).toEqual([first.x, top, -first.y])
     expect(pins.groundOf('nope')).toBeNull()
     pins.dispose()

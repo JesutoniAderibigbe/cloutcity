@@ -7,9 +7,20 @@
  * district and block builders) only once the city has drawn, so none of it weighs on the
  * playable path (PERF-6).
  */
+import plotsJson from '@data/config/plots.json'
 import { Group, Mesh, Vector3, type Camera, type Material } from 'three'
 import type { DistrictAssets } from '@/lib/data/districts'
-import type { SceneConfig } from '@/lib/data/schemas/scene'
+import type { MapStyle, PlotsConfig, SceneConfig } from '@/lib/data/schemas/scene'
+import { log } from '@/lib/log'
+import {
+  inClearing,
+  planPlots,
+  plotClearings,
+  plotPlaces,
+  type PlotClearing,
+  type PlotPlace,
+} from '@/lib/world/venuePlots'
+import { homePoints, worldHex } from '@/lib/world/mapDressing'
 import { toLocal } from '../geo/coords'
 import type { BoroughId } from '../geo/schema'
 import { createSlicer } from '../schedule'
@@ -29,6 +40,8 @@ import {
   type DistrictGeometry,
   type DistrictMass,
 } from './buildDistrict'
+import type { WindowMask } from '../props/mergeChunk'
+import type { PlotsLayer, PlotsView } from '../plots/layer'
 import { BlocksMiniSchema, DistrictBuildingsMiniSchema, type Blocks } from './schema'
 import { distanceToDistrict, drawDistances, type ViewPoint } from './view'
 
@@ -63,6 +76,8 @@ export interface BuildingsLayerView {
     readonly plates: number
     readonly trees: number
   }
+  /** The place plots (S04m), or null before their chunk loads (or with no plots). */
+  readonly plots: PlotsView | null
 }
 
 export interface BuildingsLayerOptions {
@@ -71,6 +86,13 @@ export interface BuildingsLayerOptions {
   readonly config: SceneConfig['buildings']
   readonly districtColors: DistrictColors
   readonly blockColors: BlockColors
+  /** The map style's background height (S04m): masses and blocks at this share. Default 1. */
+  readonly heightScale?: number
+  /**
+   * The map style's colours (S04m), theme tokens resolved here, in this lazy chunk: walls, roof
+   * and blocks replace `districtColors` and `blockColors` where given.
+   */
+  readonly styleColors?: MapStyle['colors']
   /** How the tier dresses its blocks (S04i fill-lite); default: one box per block, no trees. */
   readonly blockFill?: BlockFill
   readonly dimmedBoroughs: ReadonlySet<BoroughId>
@@ -93,8 +115,71 @@ export interface BuildingsLayerOptions {
   readonly onDistrictReady?: (id: string, masses: readonly DistrictMass[]) => void
   /** The tier's procedural blocks are drawn: street props keep out of them (S04i). */
   readonly onBlocksReady?: (blocks: Blocks) => void
+  /**
+   * The place plots (S04m): the pins (venues get plots) and the page's plot assets. District
+   * masses and fill blocks keep clear of every plot; the plots themselves load lazily.
+   */
+  readonly plots?: {
+    readonly pins: readonly (Omit<PlotPlace, 'kind'> & { readonly kind: string })[]
+    readonly mask: WindowMask | null
+    readonly cacheMaxEntries: number
+  }
   readonly fetchJson?: (url: string) => Promise<unknown>
   readonly yieldFn?: () => Promise<void>
+}
+
+/**
+ * The masses outside every clearing, at `heightScale` of their height (S04m): a mass goes when
+ * its first ring's centroid or any of its corners lies in a plot's clearing.
+ */
+export function softenMasses(
+  masses: readonly DistrictMass[],
+  clearings: readonly PlotClearing[],
+  heightScale: number,
+): DistrictMass[] {
+  return masses
+    .filter((mass) => {
+      const outer = mass.rings[0] ?? []
+      if (outer.length === 0) return true
+      const centre = {
+        x: outer.reduce((sum, p) => sum + p.x, 0) / outer.length,
+        y: outer.reduce((sum, p) => sum + p.y, 0) / outer.length,
+      }
+      return !inClearing(centre, clearings) && !outer.some((p) => inClearing(p, clearings))
+    })
+    .map((mass) =>
+      heightScale === 1
+        ? mass
+        : {
+            ...mass,
+            h: Math.max(1, mass.h * heightScale),
+            prominence: mass.prominence * heightScale,
+          },
+    )
+}
+
+/** The blocks outside every clearing (a block's half-size counts), at `heightScale`. */
+export function softenBlocks(
+  file: Blocks,
+  clearings: readonly PlotClearing[],
+  heightScale: number,
+): Blocks {
+  const margin = file.sizeM / 2
+  return {
+    ...file,
+    groups: file.groups.flatMap((group) => {
+      const p: number[] = []
+      const h: number[] = []
+      group.h.forEach((height, i) => {
+        const x = group.p[i * 2] ?? 0
+        const y = group.p[i * 2 + 1] ?? 0
+        if (inClearing({ x, y }, clearings, margin)) return
+        p.push(x, y)
+        h.push(Math.max(1, Math.round(height * heightScale)))
+      })
+      return h.length === 0 ? [] : [{ ...group, p, h }]
+    }),
+  }
 }
 
 export interface BuildingsLayer {
@@ -123,7 +208,20 @@ async function defaultFetchJson(url: string): Promise<unknown> {
   return (await response.json()) as unknown
 }
 
-export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsLayer {
+export function createBuildingsLayer(input: BuildingsLayerOptions): BuildingsLayer {
+  const style = input.styleColors ?? {}
+  const options: BuildingsLayerOptions = {
+    ...input,
+    districtColors: {
+      ...input.districtColors,
+      ...(style.walls === undefined ? {} : { walls: style.walls.map(worldHex) }),
+      ...(style.roof === undefined ? {} : { roof: worldHex(style.roof) }),
+    },
+    blockColors: {
+      ...input.blockColors,
+      ...(style.blocks === undefined ? {} : { blocks: style.blocks.map(worldHex) }),
+    },
+  }
   const fetchJson = options.fetchJson ?? defaultFetchJson
   const group = new Group()
   group.name = 'buildings'
@@ -140,6 +238,15 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
   let busy = 0
   const queue: string[] = []
   let pumping = false
+  const heightScale = options.heightScale ?? 1
+  const clearings =
+    options.plots === undefined
+      ? []
+      : plotClearings(
+          planPlots(plotPlaces(options.plots.pins, homePoints()), plotsJson as PlotsConfig),
+          plotsJson as PlotsConfig,
+        )
+  let plots: PlotsLayer | null = null
 
   const ranges = () => drawDistances(options.config, scale)
 
@@ -192,8 +299,9 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
       const parsed = BlocksMiniSchema.safeParse(await fetchJson(options.assets.blocksUrl))
       if (!parsed.success) throw new Error('invalid blocks file')
       if (disposed) return
+      const file = softenBlocks(parsed.data, clearings, heightScale)
       const built = buildBlocks(
-        parsed.data,
+        file,
         options.groundY,
         options.blockColors,
         options.dimmedBoroughs,
@@ -212,7 +320,7 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
       options.onChange()
       // Apart from the build: a listener's failure is reported, but the blocks stay drawn.
       try {
-        options.onBlocksReady?.(parsed.data)
+        options.onBlocksReady?.(file)
       } catch (error) {
         fail(options.assets.blocksUrl, error)
       }
@@ -235,7 +343,7 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
       if (!parsed.success || parsed.data.district !== id) throw new Error('invalid district file')
       if (disposed) return
       const step = createSlicer(options.config.buildSliceMs, options.yieldFn)
-      const masses = districtMasses(parsed.data)
+      const masses = softenMasses(districtMasses(parsed.data), clearings, heightScale)
       const built = await buildDistrictGeometry(
         masses,
         options.groundY,
@@ -276,6 +384,36 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
     }
   }
 
+  /** The place plots' chunk (S04m), once: never on the playable path. */
+  function loadPlots(): void {
+    const settings = options.plots
+    if (settings === undefined) return
+    import('../plots/layer')
+      .then(({ createPlotsLayer }) => {
+        if (disposed) return
+        plots = createPlotsLayer({
+          assets: options.assets.plots,
+          pins: settings.pins,
+          tier: options.assets.tier,
+          groundY: options.groundY,
+          material: options.materials.district,
+          mask: settings.mask,
+          windowTileCells: options.config.windowTileCells,
+          buildSliceMs: options.config.buildSliceMs,
+          cacheMaxEntries: settings.cacheMaxEntries,
+          prepare: options.prepare,
+          onChange: options.onChange,
+          ...(options.yieldFn === undefined ? {} : { yieldFn: options.yieldFn }),
+        })
+        group.add(plots.group)
+      })
+      .catch((error: unknown) =>
+        log.info('venue plots: chunk not loaded', {
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+      )
+  }
+
   /** Loads queued districts one at a time, nearest first. */
   async function pump(): Promise<void> {
     if (pumping) return
@@ -296,6 +434,7 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
       if (started || disposed) return
       started = true
       void loadBlocks()
+      loadPlots()
       applyView()
     },
     setView(next) {
@@ -341,11 +480,13 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
           plates: blockView?.plates ?? 0,
           trees: blockView?.trees ?? 0,
         },
+        plots: plots?.view() ?? null,
       }
     },
     dispose() {
       disposed = true
       queue.length = 0
+      plots?.dispose()
       for (const entry of entries.values()) {
         entry.mesh?.geometry.dispose()
         entry.mesh?.removeFromParent()

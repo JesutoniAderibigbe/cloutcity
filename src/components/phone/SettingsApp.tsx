@@ -7,9 +7,12 @@ import { CLEAN_SCREEN_ATTR } from '@/components/nav/CleanScreenExit'
 import { resumeTour } from '@/components/tour/tourControl'
 import { copy, type CopyKey } from '@/lib/copy'
 import { SHORTCUTS_SCREEN, phoneConfig } from '@/lib/phone/phoneConfig'
+import { MAP_STYLES } from '@/lib/world/mapStyleIds'
 import { dismissHudPanel } from '@/state/hudPanel'
+import { setMapStyle, useMapStyle } from '@/state/mapStyle'
 import { PHONE_BUTTON } from './phoneUi'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/map'
 import '@/lib/copy/ns/phone'
 
 const LEGAL = [
@@ -42,12 +45,13 @@ function useCleanScreen(): boolean {
 
 /**
  * Settings & Help (S58, S48 lite): sound and graphics (the settings sheet), the clean-screen
- * HUD toggle, the tour replay, the keyboard shortcuts (also opened with `?`, which lands here at
+ * HUD toggle, the map style (S04m, also on the map's chip), the tour replay, the keyboard shortcuts (also opened with `?`, which lands here at
  * the shortcuts), the Help questions from data/copy and the fine print.
  */
 export function SettingsApp({ screen }: { readonly screen: string }) {
   const shortcutsRef = useRef<HTMLHeadingElement>(null)
   const clean = useCleanScreen()
+  const mapStyle = useMapStyle()
 
   // `?` asks for the shortcuts: bring them into view and give them focus.
   useEffect(() => {
@@ -113,6 +117,33 @@ export function SettingsApp({ screen }: { readonly screen: string }) {
               />
             </span>
           </button>
+          <div data-phone-setting="map-style" className={`${ROW} rounded-none`}>
+            <RowText
+              icon="🗺️"
+              title={copy('phone.settings.mapStyle')}
+              hint={copy('phone.settings.mapStyleHint')}
+            />
+            <span
+              role="group"
+              aria-label={copy('phone.settings.mapStyle')}
+              className="flex shrink-0 rounded-full border border-line-strong bg-track p-0.5 text-xs font-semibold"
+            >
+              {MAP_STYLES.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={mapStyle === id}
+                  data-map-style-option={id}
+                  onClick={() => setMapStyle(id)}
+                  className={`min-h-11 rounded-full px-2.5 focus-visible:outline-2 focus-visible:outline-focus ${
+                    mapStyle === id ? 'bg-taxi text-on-taxi' : 'text-fg'
+                  }`}
+                >
+                  {copy(id === 'game' ? 'map.style.game' : 'map.style.real')}
+                </button>
+              ))}
+            </span>
+          </div>
           <button
             type="button"
             data-phone-setting="tour"

@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { STREET_PROP_MODELS } from './config'
 import { VehicleKitConfigSchema } from './ambientKit'
 import { LandmarkSceneConfigSchema } from './landmarkModels'
+import { MAP_STYLES } from '@/lib/world/mapStyleIds'
 
 const HEX = z.string().regex(/^#[0-9a-f]{6}$/i)
 const VEC3 = z.tuple([z.number(), z.number(), z.number()])
@@ -309,6 +310,76 @@ export const AmbientConfigSchema = z.strictObject({
   vehicleKit: VehicleKitConfigSchema,
 })
 export type AmbientConfigFile = z.infer<typeof AmbientConfigSchema>
+
+const TOKEN = z.string().regex(/^[a-z]+-\d{2,3}$/)
+const MODEL_ID = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+
+export { MAP_STYLES, type MapStyleId } from '@/lib/world/mapStyleIds'
+
+const tierRatios = z.strictObject({ low: ratio.max(1), mid: ratio.max(1), high: ratio.max(1) })
+
+/**
+ * One map style: its default camera, how the background city is drawn, whether places stand on
+ * plots (plots.json), how pins and their icon bubbles look, and theme world tokens that replace
+ * the base palette's (theme.json `scene`) while it is shown. Both styles share every material and
+ * shader program: a switch changes colours, heights, visibility and instance data only.
+ */
+const MapStyleSchema = z.strictObject({
+  camera: z.strictObject({
+    distanceM: metres,
+    /** The distance on a portrait screen (a phone), which shows far less of the map across. */
+    portraitDistanceM: metres,
+    polarDeg: z.number().min(0).lt(90),
+  }),
+  buildings: z.strictObject({
+    /** District masses and fill blocks are drawn at this share of their real height. */
+    heightScale: ratio.max(1),
+    /** Multiplies the tier's perf.json buildingDensity. */
+    densityScale: tierRatios,
+  }),
+  /** Places and homes stand on plots with a building (data/config/plots.json). */
+  plots: z.boolean(),
+  /**
+   * The subway ribbons rise this much above `subway.liftM`: over a flattened background the
+   * elevated lines would otherwise meet the roofs of the masses under them.
+   */
+  subwayLiftM: z.number().nonnegative(),
+  pins: z.strictObject({
+    /** Venue pins float over their plot buildings (the places layer's lift). */
+    venueLift: z.boolean(),
+    /** Venue pins draw their cone; off, the icon bubble alone marks the place. */
+    venueCones: z.boolean(),
+  }),
+  /** Overrides of data/config/pinMarks.json. */
+  marks: z.strictObject({
+    iconPx: metres,
+    labelPx: metres,
+    maxLabels: z.int().min(0).max(32),
+    ringWidth: ratio.max(0.3),
+    pullToCamera: z.number().min(0).max(2),
+  }),
+  colors: z.strictObject({
+    walls: z.array(TOKEN).min(1).optional(),
+    roof: TOKEN.optional(),
+    /** The fill blocks' colours (theme.json `scene.buildings.blocks`). */
+    blocks: z.array(TOKEN).min(1).optional(),
+    land: z.record(z.string(), TOKEN).optional(),
+    park: TOKEN.optional(),
+    /**
+     * The water: each day/night keyframe's water colour is scaled per channel by this colour
+     * over the base palette's water, so night water stays dark.
+     */
+    water: TOKEN.optional(),
+  }),
+})
+export type MapStyle = z.infer<typeof MapStyleSchema>
+
+export const MapStylesSchema = z.strictObject({
+  default: z.enum(MAP_STYLES),
+  game: MapStyleSchema,
+  real: MapStyleSchema,
+})
+export type MapStyles = z.infer<typeof MapStylesSchema>
 
 export const SceneConfigSchema = z.strictObject({
   /** The camera starts over the player's home (data/homes/homes.json), not a fixed point. */
@@ -628,6 +699,8 @@ export const SceneConfigSchema = z.strictObject({
   }),
   /** The landmark kit's levels of detail and look per quality tier (S07a). */
   landmarks: LandmarkSceneConfigSchema,
+  /** The switchable map styles (S04m). */
+  mapStyles: MapStylesSchema,
   /**
    * District buildings and procedural blocks (S04d). Windows are a mask texture repeated over
    * the district walls (one cell per `floorM` storey and `windowSpacingM` of wall), glowing with
@@ -782,6 +855,112 @@ export const PinMarksConfigSchema = z.strictObject({
   alphaTest: z.number().gt(0).lt(1),
 })
 export type PinMarksConfig = z.infer<typeof PinMarksConfigSchema>
+
+/** How one kind of area name is drawn. */
+const AreaLookSchema = z.strictObject({
+  /** Letter height on the ground. */
+  heightM: metres,
+  /** Height above the water (water) or the land top (neighbourhoods). */
+  liftM: z.number().nonnegative(),
+  fill: TOKEN,
+  /** The outline around each letter (null: none). */
+  halo: TOKEN.nullable(),
+  /** The outline's width as a share of the font size. */
+  haloWidth: z.number().min(0).max(0.5),
+})
+
+/** What paves a plot's front yard (S04m): nothing (lawn), a plaza or a parking lot. */
+export const PLOT_APRONS = ['none', 'plaza', 'parking'] as const
+export type PlotApron = (typeof PLOT_APRONS)[number]
+
+/** One category's plot: its building (a CC0 model with a recoloured facade) and dressing. */
+const PlotStyleSchema = z
+  .strictObject({
+    /** The building model, or null for a plot without one (a station's square). */
+    model: MODEL_ID.nullable(),
+    /** The building's longer side in metres: the model is scaled uniformly to fit. */
+    footprintM: z.number().nonnegative(),
+    /** Theme world token of the facade (the model's `facade` slot), or null to keep it. */
+    facade: TOKEN.nullable(),
+    apron: z.enum(PLOT_APRONS),
+    /** An awning across the building's front, its `canvas` slot in a theme token. */
+    awning: z.strictObject({ model: MODEL_ID, color: TOKEN }).nullable(),
+    trees: z.int().min(0).max(4),
+    bushes: z.int().min(0).max(8),
+  })
+  .refine((style) => (style.model === null) === (style.footprintM === 0), {
+    error: 'a plot with a building needs footprintM > 0, one without needs 0',
+  })
+
+/**
+ * data/config/plots.json (S04m, DEC-59): every playable place and home stands on its own plot,
+ * a square lawn with a kerb, its front yard paved as a plaza or a parking lot by category, and a
+ * chunky, colourful CC0 building facing the camera, like the places of a game map. District
+ * buildings and fill blocks keep clear of each plot (its square plus `clearM`). Colours are theme
+ * world tokens; the server resolves them.
+ */
+export const PlotsConfigSchema = z.strictObject({
+  /** The plot square's side. */
+  plotM: metres,
+  slabM: metres,
+  /** The kerb ring around the lawn. */
+  kerbM: metres,
+  /** Extra clearance around the square where district buildings and blocks are removed. */
+  clearM: z.number().nonnegative(),
+  /** How far north of the place's point the building's centre stands (its front yard). */
+  buildingBackM: z.number().nonnegative(),
+  /** Buildings are squashed to this share of their fitted height: chunky, game-map proportions. */
+  buildingHeightScale: ratio.max(1),
+  /** A venue's pin (and its icon bubble) floats this far above its building's roof. */
+  bubbleClearM: z.number().nonnegative(),
+  /** Plots are merged into one mesh per square of this side (one draw call each). */
+  chunkM: metres,
+  lawn: TOKEN,
+  kerb: TOKEN,
+  aprons: z.strictObject({ plaza: TOKEN, parking: TOKEN }),
+  /** Parking bay lines. */
+  stripe: z.strictObject({ color: TOKEN, widthM: metres, lengthM: metres, gapM: metres }),
+  /** The pack's dark roofs and trim, lightened (one baked colour to another). */
+  roof: z.strictObject({ from: TOKEN, to: TOKEN }),
+  trees: z.strictObject({ models: z.array(MODEL_ID).min(1), insetM: metres, scale: metres }),
+  bush: z.strictObject({ model: MODEL_ID, scale: metres, spacingM: metres }),
+  /** Per place category (a venue's type), plus `home`. */
+  styles: z.record(MODEL_ID, PlotStyleSchema),
+  /**
+   * Big area names on the game map (data/places/areaLabels.json): water bodies painted on the
+   * water, neighbourhoods floating just over the flattened background, like a game map's.
+   */
+  areas: z.strictObject({
+    water: AreaLookSchema,
+    neighborhood: AreaLookSchema,
+    /** Atlas text height in pixels, and the gap between letters as a share of it. */
+    fontPx: z.int().min(16).max(256),
+    letterSpacing: z.number().min(0).max(1),
+    alphaTest: z.number().gt(0).lt(1),
+  }),
+})
+
+export const AREA_KINDS = ['water', 'neighborhood'] as const
+
+/** data/places/areaLabels.json: the game map's area names (S04m); text is copy (`map.area.*`). */
+export const AreaLabelsFileSchema = z.strictObject({
+  labels: z
+    .array(
+      z.strictObject({
+        id: MODEL_ID,
+        kind: z.enum(AREA_KINDS),
+        nameKey: z.string().regex(/^map\.area\.[a-zA-Z]+$/),
+        location: z.strictObject({
+          lat: z.number().min(40.4).max(41),
+          lng: z.number().min(-74.3).max(-73.6),
+        }),
+        /** Text direction, counter-clockwise from east (along a river). */
+        angleDeg: z.number().min(-90).max(90),
+      }),
+    )
+    .min(1),
+})
+export type PlotsConfig = z.infer<typeof PlotsConfigSchema>
 
 /**
  * What the city's 3D chunk reads: the scene config without the blocks other code reads itself

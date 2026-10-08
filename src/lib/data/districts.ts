@@ -17,7 +17,9 @@ import type { BuildingDistrictId } from '@/lib/geo/sources'
 import type { AmbientAssets, AmbientModelAsset } from '@/scene/ambient/assets'
 import { pedestrianModelIds } from '@/scene/ambient/kitIds'
 import type { StreetPropsAssets } from '@/scene/props/layer'
-import { perf, props as propsConfig } from './config'
+import type { PlotAssets } from '@/scene/plots/layer'
+import { plotModels } from '@/lib/world/venuePlots'
+import { perf, plots as plotsConfig, props as propsConfig } from './config'
 import { geoManifest } from './geo'
 import { modelRef } from './models'
 import { parseDataFile } from './parse'
@@ -74,6 +76,8 @@ export interface DistrictAssets {
   readonly props: StreetPropsAssets | null
   /** The living city (S04l, every tier): loaded after playable, never precached. */
   readonly ambient: AmbientAssets
+  /** Place plots (S04m, every tier): loaded after playable, never precached. */
+  readonly plots: PlotAssets
 }
 
 /** Everything the scene loads for one tier's buildings. */
@@ -92,6 +96,18 @@ export function districtAssets(tier: QualityTier): DistrictAssets {
     blocksUrl: `/geo/blocks/${tier}?v=${fileVersion(blocksDataPath(tier))}`,
     props: streetPropsAssets(tier),
     ambient: ambientAssets(tier),
+    plots: plotAssets(tier),
+  }
+}
+
+/**
+ * What the page carries for the place plots (S04m): each plot model's GLB for the tier, nothing
+ * more (the page's payload counts toward the shell). The lazy plots chunk reads plots.json, the
+ * homes, the theme colours and the area names itself (src/lib/world/mapDressing.ts).
+ */
+export function plotAssets(tier: QualityTier): PlotAssets {
+  return {
+    files: Object.fromEntries(plotModels(plotsConfig).map((id) => [id, modelRef(id).files[tier]])),
   }
 }
 

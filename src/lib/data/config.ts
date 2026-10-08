@@ -6,6 +6,7 @@ import layoutJson from '@data/config/layout.json'
 import moderationJson from '@data/config/moderation.json'
 import onboardingJson from '@data/config/onboarding.json'
 import perfJson from '@data/config/perf.json'
+import plotsJson from '@data/config/plots.json'
 import progressionJson from '@data/config/progression.json'
 import propsJson from '@data/config/props.json'
 import realtimeJson from '@data/config/realtime.json'
@@ -26,7 +27,7 @@ import {
   createProgressionConfigSchema,
   ThemeConfigSchema,
 } from './schemas/config'
-import { SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
+import { PlotsConfigSchema, SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
 
 export const audio = parseDataFile('config/audio.json', AudioConfigSchema, audioJson)
 export const balance = parseDataFile('config/balance.json', BalanceConfigSchema, balanceJson)
@@ -53,3 +54,4 @@ export const sync = parseDataFile('config/sync.json', SyncConfigSchema, syncJson
 export const theme = parseDataFile('config/theme.json', ThemeConfigSchema, themeJson)
 export const scene = parseDataFile('config/scene.json', SceneConfigSchema, sceneJson)
 export const props = parseDataFile('config/props.json', StreetPropsConfigSchema, propsJson)
+export const plots = parseDataFile('config/plots.json', PlotsConfigSchema, plotsJson)
