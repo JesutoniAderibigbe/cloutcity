@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "wedge-building",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "854d13bc66d2b18839966e025ea47da00c2b8f68dfc7745c9f95e10a90895adb",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/wedge-building/lod0.glb",
+      "sha256": "7afa2ce2568f652878159f10a9b11095092fd7c6c430e9fa8f58e2b1131e7512",
+      "bytes": 18952,
+      "triangles": 1332,
+      "uncompressedBytes": 127012
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/wedge-building/lod1.glb",
+      "sha256": "6e9e4e8067236d829726e928106e1718356b1afeff23aa2fab939d1d4a1831c3",
+      "bytes": 10444,
+      "triangles": 594,
+      "uncompressedBytes": 57108
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/wedge-building/lod2.glb",
+      "sha256": "0bd57042b344eecc9d3485d988dcaed6a1ee7a834b79982db0f24c980d582f16",
+      "bytes": 6176,
+      "triangles": 264,
+      "uncompressedBytes": 26080
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/wedge-building/lod3.glb",
+      "sha256": "630e6137cc12c68f4e6eaebed443f2258f7ac4d41c5b17ba6300216cd466a966",
+      "bytes": 3992,
+      "triangles": 96,
+      "uncompressedBytes": 10284
+    }
+  ]
+}

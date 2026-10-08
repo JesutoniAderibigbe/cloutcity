@@ -225,4 +225,30 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1184 triangles, 21116 bytes (`public/landmarks/queensboro-bridge/lod2.glb`)
 - L3: 424 triangles, 9192 bytes (`public/landmarks/queensboro-bridge/lod3.glb`)
 
+### wedge-building
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q220728 (the Fifth Avenue wedge building), CC0-1.0, <https://www.wikidata.org/wiki/Q220728>
+
+Dimensions:
+
+- `heightM`: 94 m (wikidata): height (P2048) above the street
+- `floors`: 22 (wikidata): floors above ground (P1101): one window band per storey
+- `lengthM`: 58 m (estimate): length of the wedge along its axis (the S07a kit's stylised plan)
+- `baseWidthM`: 26 m (estimate): width of the wide back
+- `prowWidthM`: 2 m (estimate): width of the truncated prow
+- `podiumM`: 8 m (estimate): the low podium's height, set out 0.6 m
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.12, widths ×1.2. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.12 and widths x1.2, so the wedge reads beside the real-scale district without leaving the frame's exclusion.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1332 triangles, 18952 bytes (`public/landmarks/wedge-building/lod0.glb`)
+- L1: 594 triangles, 10444 bytes (`public/landmarks/wedge-building/lod1.glb`)
+- L2: 264 triangles, 6176 bytes (`public/landmarks/wedge-building/lod2.glb`)
+- L3: 96 triangles, 3992 bytes (`public/landmarks/wedge-building/lod3.glb`)
+
 <!-- measurements:end -->
