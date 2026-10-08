@@ -364,6 +364,73 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L2: 594 triangles, 11748 bytes (`public/landmarks/deco-spire/lod2.glb`)
 - L3: 290 triangles, 7184 bytes (`public/landmarks/deco-spire/lod3.glb`)
 
+### flushing-meadows
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q745296 (Flushing Meadows Corona Park) and the points of its features: Q717956, Q4571746, Q1320229, Q2306200, Q1852081, Q1072882, CC0-1.0, <https://www.wikidata.org/wiki/Q745296>
+
+Dimensions:
+
+- `heightM`: 69 m (estimate): the tallest observation deck's top above the park (about 226 ft)
+- `treeLowM`: 12 m (estimate): the lower canopy height of the tree masses
+- `treeHighM`: 19 m (estimate): the upper canopy height
+- `treeSpacingM`: 60 m (estimate): canopy mound spacing at the finest level at density 1
+- `parkHeadingDeg`: 160 m (estimate): the compass heading of the park's long axis and its lakes
+- `fountainPool`: 40.746389, -73.845 (wikidata): the fair's central plaza (the steel globe's point, Q717956 P625): drawn as a generic round fountain pool with plain jets; no globe replica (LEGAL-1)
+- `fountainRadiusM`: 40 m (estimate): the round pool's radius
+- `jetM`: 6 m (estimate): the fountain jets' height
+- `pavilion`: 40.744028, -73.844417 (wikidata): the 1964 exposition pavilion (Q4571746, P625): generic observation towers beside an open ring of columns
+- `ringAxes`: 53 × 38 m (estimate): the open ring pavilion's semi-axes
+- `ringM`: 30 m (estimate): the ring pavilion's columns' height
+- `ringColumns`: 16 (estimate): columns round the ring
+- `towerHighM`: 69 m (derived): the tallest tower's deck top: the measured height
+- `towerMidM`: 46 m (estimate): the middle tower's deck top (about 150 ft)
+- `towerLowM`: 18 m (estimate): the low tower's deck top (about 60 ft)
+- `towerDeckRadiusM`: 14 m (estimate): the round decks' radius
+- `towerShaftRadiusM`: 3.5 m (estimate): each tower shaft's radius
+- `museum`: 40.745833, -73.846667 (wikidata): the art museum's building (Q1320229, P625): a generic long low hall
+- `museumPlan`: 110 × 60 m (estimate): the museum hall's length and width
+- `museumM`: 12 m (estimate): the museum hall's height
+- `science`: 40.747445, -73.851628 (wikidata): the science museum (Q2306200, P625): a generic hall
+- `sciencePlan`: 90 × 55 m (estimate): its length and width
+- `scienceM`: 24 m (estimate): its height
+- `tennis`: 40.75, -73.8475 (wikidata): the tennis centre (Q1852081, P625): paved ground, no trees (its venues are not drawn)
+- `tennisAxes`: 260 × 190 m (estimate): the paved tennis grounds' semi-axes
+- `ballpark`: 40.756986, -73.845783 (wikidata): the Queens ballpark's point (Q1072882, P625): kept clear for its own model
+- `ballparkClearM`: 230 m (estimate): the radius kept clear round the ballpark
+- `longPool`: 40.7485, -73.8436 (estimate): a long formal pool north of the plaza, by eye
+- `longPoolAxes`: 170 × 26 m (estimate): its semi-axes
+- `longPoolHeadingDeg`: 20 m (estimate): its long axis' compass heading
+- `meadowLake`: 40.7305, -73.8395 (estimate): Meadow Lake's middle, by eye
+- `meadowLakeAxes`: 560 × 215 m (estimate): its semi-axes (about 94 acres)
+- `willowLake`: 40.7215, -73.8318 (estimate): Willow Lake's middle, by eye
+- `willowLakeAxes`: 380 × 190 m (estimate): its semi-axes (about 57 acres)
+- `fairLawn`: 40.7415, -73.8428 (estimate): the open lawns south of the pavilion, by eye
+- `fairLawnAxes`: 240 × 150 m (estimate): their semi-axes
+- `pathWidthM`: 10 m (estimate): the promenades' width
+- `lampSpacingM`: 80 m (estimate): lamps along the promenades at the finest level
+- `spine0`: 40.7525, -73.8445 (estimate): promenade point 0: the north fairgrounds (by eye)
+- `spine1`: 40.7466, -73.8452 (estimate): promenade point 1: west of the plaza (by eye)
+- `spine2`: 40.742, -73.8446 (estimate): promenade point 2: past the pavilion (by eye)
+- `spine3`: 40.736, -73.844 (estimate): promenade point 3: Meadow Lake's north-west shore (by eye)
+- `spine4`: 40.727, -73.841 (estimate): promenade point 4: along Meadow Lake's west shore (by eye)
+- `spine5`: 40.72, -73.8355 (estimate): promenade point 5: Willow Lake's north shore (by eye)
+- `spine6`: 40.716, -73.83 (estimate): promenade point 6: the south end (by eye)
+- `cross0`: 40.7472, -73.8505 (estimate): cross promenade end 0: the science museum (by eye)
+- `cross1`: 40.7458, -73.8392 (estimate): cross promenade end 1: the east side (by eye)
+
+Readability scale (drawn width ÷ true width): structures ×1.6, paths ×2, lamp ×3.
+
+Game scale: heights ×1.8, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8; the plan stays the map's park outline (x1.0); structures and promenades take the readability scale.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6716 triangles, 164828 bytes (`public/landmarks/flushing-meadows/lod0.glb`)
+- L1: 3250 triangles, 78660 bytes (`public/landmarks/flushing-meadows/lod1.glb`)
+- L2: 1094 triangles, 27128 bytes (`public/landmarks/flushing-meadows/lod2.glb`)
+- L3: 522 triangles, 11984 bytes (`public/landmarks/flushing-meadows/lod3.glb`)
+
 ### high-line
 
 Retrieved 2026-10-08. Sources:

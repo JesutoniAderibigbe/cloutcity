@@ -13,10 +13,11 @@ lines up with data/geo/parks.derived.json.
 - `area`: the map's park polygons [[outer, *holes]] of [(x, y)]; `inset`: trees keep this far
   inside the outline;
 - `trees`: {spacing (per level at density 1), height (lo, hi), lift};
-- `clearings`: [{kind: "lawn" | "water", cx, cy, rx, ry, heading}] (heading: compass degrees of
-  the rx axis);
+- `clearings`: [{kind: "lawn" | "water" | "plaza" | "keep", cx, cy, rx, ry, heading}] (heading:
+  compass degrees of the rx axis; "keep" holds trees off ground another landmark stands on);
 - `paths`: [{points [(x, y)], width, closed, lamps (spacing or 0)}];
-- `structures`: [{kind: "terrace" | "folly", ...}] (see `_terrace`, `_folly`);
+- `structures`: [{kind: "terrace" | "folly" | "fountain" | "towers" | "hall", ...}] (see
+  `_terrace`, `_folly`, `_pool_fountain`, `_towers`, `_hall`);
 - `detail`: trim scale; `perimeter_lamps`: spacing of the lamps that ring the park (0 for none).
 """
 
@@ -172,7 +173,7 @@ def build(spec, level, view, density, builder):
             if path["lamps"] > 0:
                 _lamps(builder, spec, path["points"], path["closed"], path["lamps"] / flags["lamps"], z0, lamp)
     for s in spec["structures"]:
-        {"terrace": _terrace, "folly": _folly}[s["kind"]](spec, s, flags["detail"], builder)
+        STRUCTURES[s["kind"]](spec, s, flags["detail"], builder)
     _trees(spec, flags, density, rng, builder)
     return builder
 
@@ -203,8 +204,11 @@ def _disc(builder, c, z0, sides):
         # A pale shore ring under the water, showing round its edge.
         builder.add(_flat(ellipse(c, sides, 5.0), z0, WATER_LIFT), "granite", tone=0.9, jitter=False)
         builder.add(_flat(ellipse(c, sides), z0, WATER_LIFT + 0.1), "water", jitter=False)
-    else:
+    elif c["kind"] == "plaza":
+        builder.add(_flat(ellipse(c, sides), z0, LAWN_LIFT), "granite", tone=c.get("tone", 0.95), jitter=False)
+    elif c["kind"] == "lawn":
         builder.add(_flat(ellipse(c, sides), z0, LAWN_LIFT), "lawn", tone=c.get("tone", 1.0))
+    # "keep": ground another landmark stands on (no trees, nothing drawn).
 
 
 def wet(x, y, spec, pad=6.0):
@@ -436,3 +440,83 @@ def _folly(spec, s, detail, builder):
         v.co.x += tx
         v.co.y += ty
     builder.add(roof, "roof", tone=0.9)
+
+
+def _pool_fountain(spec, s, detail, builder):
+    """A round pool with a low rim, a plinth in the middle and a ring of plain water jets
+    (generic: no sculpture or globe). The jets catch the lights at night."""
+    k = spec["detail"]
+    z0 = spec["land_top"]
+    sides = (24, 16, 10)[min(detail, 2)] if detail else 10
+    x, y, r = s["x"], s["y"], s["radius"]
+    builder.add(setback_ring(x, y, z0, z0 + 0.9 * k, r + 2.0 * k, sides), "stone", tone=1.05)
+    builder.add(_flat(ellipse({"cx": x, "cy": y, "rx": r, "ry": r, "heading": 0.0}, sides), z0, 1.0 * k), "water",
+                jitter=False)
+    builder.add(setback_ring(x, y, z0, z0 + 2.0 * k, r * 0.18, sides // 2), "stone", tone=1.1)
+    jets = s["jets"] if detail else max(4, s["jets"] // 3)
+    glow = builder.colour("lamp", 0.3)
+    for i in range(jets):
+        a = 2 * math.pi * i / jets
+        jx, jy = x + r * 0.62 * math.cos(a), y + r * 0.62 * math.sin(a)
+        cone = setback.cone(z0 + 1.0 * k, z0 + s["jet_h"], 0.9 * k, 0.0, 4)
+        for v in cone.verts:
+            v.co.x += jx
+            v.co.y += jy
+        builder.add(cone, "water", tone=1.45, jitter=False, glow=glow)
+
+
+def _towers(spec, s, detail, builder):
+    """Observation towers (round shafts with round decks at different heights) beside an open
+    ring pavilion (columns round an ellipse under a ring beam): generic exposition towers."""
+    k = spec["detail"]
+    z0 = spec["land_top"]
+    flood = facade.floodlight(builder)
+    sides = 12 if detail >= 2 else (8 if detail else 6)
+    for t in s["shafts"]:
+        x, y = s["x"] + t["dx"], s["y"] + t["dy"]
+        builder.add(setback_ring(x, y, z0, z0 + t["deck"] - t["deck_t"], t["r"], sides), "stone", tone=0.92,
+                    glow=flood)
+        builder.add(setback_ring(x, y, z0 + t["deck"] - t["deck_t"], z0 + t["deck"], t["deck_r"], sides), "stone",
+                    tone=1.08, glow=flood)
+        if detail:
+            # The deck's glazed band, lit at night.
+            builder.add(setback_ring(x, y, z0 + t["deck"] - t["deck_t"] * 0.85, z0 + t["deck"] - t["deck_t"] * 0.2,
+                                     t["deck_r"] + 0.1, sides), "glass", tone=0.8, glow=builder.colour("window", 0.6))
+    ring = s["ring"]
+    n = ring["columns"] if detail else max(6, ring["columns"] // 2)
+    cx, cy = s["x"] + ring["dx"], s["y"] + ring["dy"]
+    pts = [(cx + ring["rx"] * math.cos(2 * math.pi * i / n), cy + ring["ry"] * math.sin(2 * math.pi * i / n))
+           for i in range(n)]
+    for px, py in pts:
+        builder.add(setback_ring(px, py, z0, z0 + ring["h"], 0.9 * k, 4 if detail < 2 else 6), "stone", tone=0.95,
+                    jitter=False)
+    if detail:
+        for i in range(n):
+            (ax, ay), (bx, by) = pts[i], pts[(i + 1) % n]
+            dx, dy = bx - ax, by - ay
+            length = math.hypot(dx, dy) or 1.0
+            nx, ny = -dy / length * 1.0 * k, dx / length * 1.0 * k
+            beam = [(ax - nx, ay - ny), (bx - nx, by - ny), (bx + nx, by + ny), (ax + nx, ay + ny)]
+            area = sum(beam[j][0] * beam[(j + 1) % 4][1] - beam[(j + 1) % 4][0] * beam[j][1] for j in range(4))
+            builder.add(setback.extrude(beam if area > 0 else list(reversed(beam)), z0 + ring["h"] - 2.0 * k,
+                                        z0 + ring["h"]), "stone", tone=1.05, glow=flood)
+
+
+def _hall(spec, s, detail, builder):
+    """A long low exhibition hall: a pale block, a band of windows, a flat roof edge."""
+    k = spec["detail"]
+    z0 = spec["land_top"]
+    t = math.radians(s["heading"])
+    ux, uy = math.sin(t), math.cos(t)
+    vx, vy = uy, -ux
+    hl, hw = s["length"] / 2, s["width"] / 2
+    pts = [(s["x"] + ux * a + vx * b, s["y"] + uy * a + vy * b) for a, b in ((-hl, -hw), (hl, -hw), (hl, hw), (-hl, hw))]
+    area = sum(pts[i][0] * pts[(i + 1) % 4][1] - pts[(i + 1) % 4][0] * pts[i][1] for i in range(4))
+    pts = pts if area > 0 else list(reversed(pts))
+    builder.add(setback.extrude(pts, z0, z0 + s["height"]), "stone", tone=1.0, glow=builder.colour("lamp", 0.24))
+    if detail:
+        facade.window_bands(builder, pts, z0 + s["height"] * 0.3, z0 + s["height"] * 0.8, 1, 0.1 * s["width"],
+                            env.seeded_rng(spec["id"], "hall-%d" % detail), share=0.7)
+
+
+STRUCTURES = {"terrace": _terrace, "folly": _folly, "fountain": _pool_fountain, "towers": _towers, "hall": _hall}
