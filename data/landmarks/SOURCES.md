@@ -225,6 +225,39 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1184 triangles, 21116 bytes (`public/landmarks/queensboro-bridge/lod2.glb`)
 - L3: 424 triangles, 9192 bytes (`public/landmarks/queensboro-bridge/lod3.glb`)
 
+### statue-of-liberty
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q9202 (Statue of Liberty), CC0-1.0, <https://www.wikidata.org/wiki/Q9202>
+- `nps`: National Park Service, Statue of Liberty National Monument, "Statue Statistics", public-domain, <https://www.nps.gov/stli/learn/historyculture/statue-statistics.htm>
+
+Dimensions:
+
+- `heightM`: 92.99 m (nps): ground to tip of torch, 305 ft 1 in
+- `statueM`: 46.05 m (nps): top of base to torch, 151 ft 1 in (Wikidata height 46 m)
+- `pedestalTopM`: 46.94 m (nps): ground to the top of the pedestal, 154 ft (Wikidata gives the pedestal 47 m)
+- `pedestalM`: 27.13 m (estimate): the granite pedestal alone, the commonly given 89 ft; the fort below takes the rest of the 46.94 m
+- `heelToHeadM`: 33.86 m (nps): heel to top of head, 111 ft 1 in
+- `headM`: 5.26 m (nps): chin to cranium, 17 ft 3 in
+- `headWidthM`: 3.05 m (nps): width of head, 10 ft
+- `armM`: 3.66 × 12.8 m (nps): right arm: width 12 ft (widthM), length 42 ft (depthM)
+- `waistM`: 10.67 m (nps): width of waist, 35 ft
+- `tablet`: 4.14 × 7.19 m (nps): tablet 13 ft 7 in wide (widthM) by 23 ft 7 in long (depthM), 2 ft thick
+- `pedestalPlan`: 28 × 19 m (estimate): the pedestal's base (widthM) and top (depthM) width, proportioned by eye
+- `fort`: 100 × 76 m (estimate): the eleven-point star fort's outer (widthM) and inner (depthM) diameter, proportioned by eye
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.8, widths ×1.8. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights and widths x1.8, so the statue reads from Battery Park at the 3,000-4,500 m game camera (S07b acceptance).
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1070 triangles, 18888 bytes (`public/landmarks/statue-of-liberty/lod0.glb`)
+- L1: 476 triangles, 10544 bytes (`public/landmarks/statue-of-liberty/lod1.glb`)
+- L2: 218 triangles, 6704 bytes (`public/landmarks/statue-of-liberty/lod2.glb`)
+- L3: 100 triangles, 4264 bytes (`public/landmarks/statue-of-liberty/lod3.glb`)
+
 ### wedge-building
 
 Retrieved 2026-10-08. Sources:

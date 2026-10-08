@@ -34,7 +34,7 @@ def build_level(module, spec, data, level, density):
     builder = prim.Builder(
         data["palette"],
         env.seeded_rng(data["id"], "L%d" % level),
-        chamfer_ratio=CHAMFER_RATIO if module.ARCHETYPE.LEVELS[level]["chamfer"] else 0.0,
+        chamfer_ratio=CHAMFER_RATIO if module.ARCHETYPE.LEVELS[level].get("chamfer", False) else 0.0,
     )
     return module.ARCHETYPE.build(spec, level, view, density, builder)
 
