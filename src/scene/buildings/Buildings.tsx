@@ -88,7 +88,14 @@ export function Buildings({
         colors: 'vertex',
         ...(mask === null
           ? {}
-          : { windows: { uniform: glow, mask, color: palette.buildings.window } }),
+          : {
+              windows: {
+                uniform: glow,
+                mask,
+                color: palette.buildings.window,
+                mipBias: config.buildings.windowMipBias,
+              },
+            }),
       }),
       blocks: createBuildingMaterial({ gradientMap, colors: 'instance' }),
       blocksDimmed: createBuildingMaterial({ gradientMap, colors: 'instance' }),

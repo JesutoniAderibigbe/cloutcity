@@ -425,6 +425,11 @@ export const SceneConfigSchema = z.strictObject({
      * vary within the tile.
      */
     windowTileCells: z.int().min(1).max(16),
+    /**
+     * Mip bias of the window mask (TUNE-16): above 0, a wall reads the mask's averaged mips
+     * sooner, so distant facades glow evenly instead of showing one-pixel dotted windows.
+     */
+    windowMipBias: z.number().min(0).max(4),
     /** The window pattern costs fragment work: off where the tier has no headroom. */
     windows: z.strictObject({ low: z.boolean(), mid: z.boolean(), high: z.boolean() }),
     /** Per-building spread of the facade's brightness (0.12 = plus or minus 12%). */

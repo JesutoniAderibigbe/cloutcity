@@ -160,10 +160,10 @@
           "azimuthDeg": 285,
           "elevationDeg": 3
         },
-        "sunIntensity": 0.45,
+        "sunIntensity": 0.75,
         "shadowIntensity": 0.5,
-        "ambientIntensity": 0.95,
-        "hemisphereIntensity": 0.85,
+        "ambientIntensity": 1.0,
+        "hemisphereIntensity": 0.95,
         "nightGlow": 0.7
       },
       {
@@ -356,6 +356,7 @@
     "loadMarginM": 1500,
     "buildSliceMs": 8,
     "windowTileCells": 4,
+    "windowMipBias": 1.25,
     "fill": {
       "lots": {
         "low": 0,

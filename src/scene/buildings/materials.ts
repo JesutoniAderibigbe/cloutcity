@@ -82,6 +82,8 @@ export interface BuildingMaterialOptions {
     readonly uniform: IUniform<number>
     readonly mask: Texture
     readonly color: string
+    /** scene.json `buildings.windowMipBias` (TUNE-16). */
+    readonly mipBias: number
   }
 }
 
@@ -95,6 +97,7 @@ export function createBuildingMaterial(options: BuildingMaterialOptions): MeshTo
       uniform: options.windows.uniform,
       mask: options.windows.mask,
       color: options.windows.color,
+      maskBias: options.windows.mipBias,
     })
   }
   return material
