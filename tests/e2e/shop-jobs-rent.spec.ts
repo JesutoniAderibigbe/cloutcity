@@ -232,13 +232,6 @@ const RENT_PERIOD = balance.time.rentPeriodGameDays
 const DAY = balance.time.gameDayHours * 60
 
 const inventoryDialog = (page: Page) => page.getByRole('dialog', { name: 'Inventory' })
-/** What has focus, as `TAG:text` (short), so a focus failure names where focus went. */
-const focused = (page: Page) =>
-  page.evaluate(() => {
-    const active = document.activeElement
-    if (active === null) return 'none'
-    return `${active.tagName}:${(active.textContent ?? '').trim().slice(0, 20)}`
-  })
 
 async function shopList(page: Page) {
   const items = await page.evaluate(() => window.__cloutcityTest?.hud?.shop() ?? [])
@@ -287,7 +280,9 @@ test.describe('shop and inventory: double taps and focus', () => {
     expect(after.cash).toBe(before.cash - item.price)
   })
 
-  test('a single tap that buys a wearable moves focus to the shop heading', async ({ page }) => {
+  // S04k: focus goes to the bought item's row, which shows the result, not to the shop heading
+  // above a long list (the result used to land off-screen).
+  test('a single tap that buys a wearable moves focus to its row', async ({ page }) => {
     const { wearables } = await shopList(page)
     const [item] = wearables
     if (item === undefined) throw new Error('no wearable')
@@ -295,7 +290,9 @@ test.describe('shop and inventory: double taps and focus', () => {
     const buy = shopRow(page, item.id).getByRole('button', { name: /^Buy / })
     await buy.click()
     await expect(buy).toBeDisabled()
-    await expect.poll(() => focused(page)).toBe('H3:Shop')
+    await expect(shopRow(page, item.id)).toBeFocused()
+    await expect(shopRow(page, item.id).locator('[data-shop-feedback="bought"]')).toBeVisible()
+    await expect(shopRow(page, item.id).locator('[data-shop-feedback="bought"]')).toBeInViewport()
   })
 
   test('gift Buy taps stack up to the cap, then the button says the hands are full', async ({
@@ -308,7 +305,7 @@ test.describe('shop and inventory: double taps and focus', () => {
     await openThrift(page, start)
     const buy = shopRow(page, gift.id).getByRole('button', { name: /^Buy / })
     // Double taps while two more fit (each tap buys one), then single taps up to the cap; the
-    // last tap disables the button, so focus must move to the shop heading.
+    // last tap disables the button, so focus must move to the gift's row (S04k).
     for (let i = 0; i + 2 < MAX_GIFT_STACK; i += 2) await buy.dblclick()
     while (((await hudState(page)).gifts[gift.id] ?? 0) < MAX_GIFT_STACK) await buy.click()
     await expect(buy).toBeDisabled()
@@ -316,7 +313,7 @@ test.describe('shop and inventory: double taps and focus', () => {
     expect(after.gifts[gift.id]).toBe(MAX_GIFT_STACK)
     expect(after.cash).toBe(start - MAX_GIFT_STACK * gift.price)
     await expect(buy).toHaveAccessibleName(new RegExp(`${MAX_GIFT_STACK}`))
-    await expect.poll(() => focused(page)).toBe('H3:Shop')
+    await expect(shopRow(page, gift.id)).toBeFocused()
   })
 
   test('a double tap on Wear leaves the item worn', async ({ page }) => {
