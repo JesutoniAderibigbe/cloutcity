@@ -10,7 +10,7 @@
  * `streetProps` caps, are merged one mesh each onto the district material (mergeChunk.ts): one
  * draw call per chunk and no new shader program. Building runs in time slices; nothing is drawn
  * above `props.showBelowDistanceM`, and only a change of what is drawn requests a frame, so an
- * idle map still renders nothing. Props are never pickable. three only, no React.
+ * props add no frames of their own. Props are never pickable. three only, no React.
  */
 import perfJson from '@data/config/perf.json'
 import propsJson from '@data/config/props.json'

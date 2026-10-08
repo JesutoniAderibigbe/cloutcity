@@ -249,8 +249,7 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
   Lambert on low; or toon) and its baked vertex colours. `ModelInstances` draws every placement
   of a static model as one InstancedMesh; `_SLOT` recolours make one colour-buffer variant.
   `AvatarModel` binds a head and a body to one skeleton and poses them with the rig's clips; it
-  holds a continuous frame lease only while `animate` is true, so an idle map still draws zero
-  frames. Night glow uses the S04f contract: the shared material is patched with
+  holds a continuous frame lease only while `animate` is true, so it adds no frames of its own. Night glow uses the S04f contract: the shared material is patched with
   `patchNightGlow(material, 'attribute', …)`, so each `_EMISSIVE` vertex glows at
   `models.emissive.nightIntensity × uNightGlow` (the day/night rig writes `uNightGlow`;
   `dayIntensity` stays 0). The showcase sets `uNightGlow` from its own time-of-day preset.
@@ -788,7 +787,20 @@ camera starts over it).
   out any street prop inside a procedural fill block's footprint (roof water towers excepted). Each chunk
   is one merged mesh on the district material, so props add no shader program; streetlight lamps
   and taxi signs glow by sampling a lit window of the district window mask. Nothing is pickable,
-  and nothing loads or draws at the default view or on low.
+  and nothing loads on low. The default camera (scene.json `camera.distanceM`, 1100 m since S04l)
+  sits inside `showBelowDistanceM`, so props draw from the start on mid and high.
+- **Living city (S04l, DEC-52).** After the map is playable, CityCanvas lazily mounts
+  `src/scene/ambient/AmbientLife.tsx` (marker `ambient life: `): cars, taxis and buses drive the
+  LION streets on the right-hand lane and stop at seeded traffic lights, pedestrians walk the
+  sidewalks around places, homes and landmarks (never near a memorial), and subway trains run
+  the real lines between stations. Positions are a pure function of `data/config/ambient.json`
+  `seed` and the city clock (`src/lib/world/ambient/`), drawn as colour-bucket InstancedMeshes
+  on the blocks' material recipe, so no new shader program; counts are capped by `perf.json`
+  `ambient`. Its ticker requests at most `fpsCap` frames a second while something ambient is in
+  view, and nothing while the tab is hidden, the apartment or creator has the screen, or under
+  reduced motion (a frozen snapshot). The FPS step-down lowers `density.steps` before it drops a
+  tier. Test-hook builds read `localStorage['cc:test:ambient']` (`live`, or `frozen:<ms>`) and
+  default to a frozen clock, so specs stay deterministic; `scene.ambient()` reports what is drawn.
 - **Landmarks (S07a).** `src/scene/landmarks/Landmarks.tsx` builds the code-built kit models
   (`buildLandmark`) after the first frame, nearest first, each in a drei `Detailed` with the
   tier's levels and distances (`scene.json` `landmarks.lod`); teaser landmarks on "expanding
@@ -817,8 +829,9 @@ camera starts over it).
   shared gradient ramp (`toonRamp`).
 - **Camera.** three's `MapControls` (`src/scene/camera/CameraRig.tsx`): one finger or left drag
   pans, pinch or wheel zooms towards the pointer, two fingers or right drag rotate and tilt; the
-  target stays inside `data/geo/bounds.json`. Rendering is on demand (`frameloop="demand"`), so an
-  idle map draws zero frames.
+  target stays inside `data/geo/bounds.json`. Rendering is on demand (`frameloop="demand"`): while the
+  map is visible the living city (S04l) paces capped frames; hidden, behind the apartment or
+  creator, or under reduced motion with nothing moving, it draws none.
 - **Attribution.** `src/scene/MapAttribution.tsx` is a small "Map data" chip in the screen's
   bottom-end corner above the tab bar, moving up to the free scene row's corner while a sheet is
   open (UX-15, CSS only); a tap shows the NYC Open Data and MTA lines (a one-line form when the

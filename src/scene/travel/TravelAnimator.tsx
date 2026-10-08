@@ -9,7 +9,7 @@
  *
  * The camera follows the traveller in the free scene row (the rig's target is the framed point,
  * FreeRowFraming) until the player's own gesture takes the camera back. The scene renders only
- * while the trip animates (one frame requested per frame, then none: idle stays at zero frames),
+ * while the trip animates (one frame requested per frame, then none of its own),
  * and the runtime step-down measures FPS over it (`beginContinuous('travel')`).
  *
  * It tells the trip store whether it can animate at all: not before the city has drawn (it is
