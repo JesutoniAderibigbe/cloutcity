@@ -44,6 +44,21 @@ export function boroughAccess(
   }
 }
 
+/**
+ * Whether a player with `clout` may go to the place with `placeId` in `borough`: its borough's
+ * access, except that a memorial is open to everyone (DEC-46: a memorial is never locked behind
+ * clout or held out as a reward). The category comes from `config.places`, never the caller.
+ */
+export function placeBoroughAccess(
+  placeId: string,
+  borough: Borough,
+  clout: number,
+  config: EngineConfig,
+): BoroughAccess {
+  if (config.places.get(placeId) === 'memorial') return { status: 'open' }
+  return boroughAccess(borough, clout, config)
+}
+
 /** `boroughAccess` for every borough. */
 export function boroughAccessAll(
   clout: number,

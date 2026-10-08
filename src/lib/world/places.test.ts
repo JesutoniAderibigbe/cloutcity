@@ -85,8 +85,11 @@ describe('gating places', () => {
 })
 
 describe('accessible names explain the lock', () => {
+  // Memorials are never locked (DEC-46), so they are left out here; see below.
   const locked = mapPlaces().filter(
-    (entry) => entry.borough === 'brooklyn' || entry.borough === 'manhattan',
+    (entry) =>
+      (entry.borough === 'brooklyn' || entry.borough === 'manhattan') &&
+      entry.category !== 'memorial',
   )
 
   it.each(Object.entries(packs))('in the %s pack, every locked place says why', (_pack, copy) => {
@@ -173,6 +176,7 @@ describe('accessible names at and around the unlock level', () => {
     (_pack, copy) => {
       for (const entry of mapPlaces()) {
         if (entry.borough !== 'brooklyn' && entry.borough !== 'manhattan') continue
+        if (entry.category === 'memorial') continue
         const threshold = minClout(unlock[entry.borough])
         const plain = placeName(entry, { copy })
         const open = placeAccessibleName(entry, placeAccess(entry, threshold), { copy })

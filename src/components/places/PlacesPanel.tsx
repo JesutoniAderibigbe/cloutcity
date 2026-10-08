@@ -7,8 +7,10 @@ import { isAtPlace } from '@/engine/game'
 import { copy } from '@/lib/copy'
 import { homeName } from '@/lib/economyCopy'
 import {
+  boroughAccessFor,
   boroughClosedReason,
   boroughs,
+  isMemorial,
   mapPlaces,
   placeAccess,
   placeAccessibleName,
@@ -216,10 +218,12 @@ export function PlacesPanel() {
             const inBorough = places.filter((place) => place.borough === borough.id)
             if (inBorough.length === 0) return null
             const headingId = `${titleId}-${borough.id}`
-            const reason = boroughClosedReason(
-              borough.id,
-              placeAccess({ borough: borough.id }, clout),
-            )
+            const reason = boroughClosedReason(borough.id, boroughAccessFor(borough.id, clout))
+            // A borough's lock never attaches to a memorial (DEC-46): in a locked borough the
+            // memorials sit apart from the locked places, under a plain note, and stay open.
+            const memorials =
+              reason === null ? [] : inBorough.filter((place) => isMemorial(place.id))
+            const gated = inBorough.filter((place) => !memorials.includes(place))
             return (
               <section
                 key={borough.id}
@@ -230,7 +234,17 @@ export function PlacesPanel() {
                   {placeName({ id: borough.id, nameKey: borough.nameKey })}
                 </h3>
                 {reason === null ? null : <p className="text-xs text-muted">{reason}</p>}
-                <ul className="flex flex-col gap-1.5">{inBorough.map(placeButton)}</ul>
+                {gated.length === 0 ? null : (
+                  <ul className="flex flex-col gap-1.5">{gated.map(placeButton)}</ul>
+                )}
+                {memorials.length === 0 ? null : (
+                  <>
+                    <p data-memorials-open="" className="text-xs text-muted">
+                      {copy('places.memorials.open')}
+                    </p>
+                    <ul className="flex flex-col gap-1.5">{memorials.map(placeButton)}</ul>
+                  </>
+                )}
               </section>
             )
           })}

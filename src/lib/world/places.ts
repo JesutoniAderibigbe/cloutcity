@@ -12,7 +12,7 @@
 import boroughsJson from '@data/boroughs/boroughs.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
-import { boroughAccess, type BoroughAccess } from '@/engine/boroughs'
+import { boroughAccess, placeBoroughAccess, type BoroughAccess } from '@/engine/boroughs'
 import { engineConfig, type EngineConfig } from '@/engine/config'
 import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from '@/lib/copy'
 import type { BoroughsFile } from '@/lib/data/schemas/world'
@@ -100,13 +100,25 @@ export function boroughRenderState(
     : { state: 'dimmed', teaserLandmarkIds: entry.teaserLandmarkIds, teaserKey: entry.teaserKey }
 }
 
-/** Whether a player with `clout` may go to `place` (gated by its borough). */
+/**
+ * Whether a player with `clout` may go to `place`: gated by its borough, except a memorial, which
+ * is open to everyone (DEC-46).
+ */
 export function placeAccess(
-  place: Pick<MapPlace, 'borough'>,
+  place: Pick<MapPlace, 'id' | 'borough'>,
   clout: number,
   config: EngineConfig = engineConfig,
 ): BoroughAccess {
-  return boroughAccess(place.borough, clout, config)
+  return placeBoroughAccess(place.id, place.borough, clout, config)
+}
+
+/** Whether a player with `clout` may enter `borough` (the Places panel's borough headings). */
+export function boroughAccessFor(
+  borough: Borough,
+  clout: number,
+  config: EngineConfig = engineConfig,
+): BoroughAccess {
+  return boroughAccess(borough, clout, config)
 }
 
 function requireKey(key: string | undefined, what: string): CopyKey {
@@ -150,6 +162,11 @@ export function boroughClosedReason(
   }
 }
 
+/** True when the place with `id` is a memorial (judged on the engine's own place data). */
+export function isMemorial(id: string, config: EngineConfig = engineConfig): boolean {
+  return config.places.get(id) === 'memorial'
+}
+
 /**
  * The accessible name of a place control: its name, plus why it is closed when it is
  * ("Brooklyn Bridge. Brooklyn is locked: ..."), so a locked place explains itself.
@@ -161,6 +178,8 @@ export function placeAccessibleName(
 ): string {
   const { copy = activeCopy } = options
   const name = placeName(place, options)
+  // No lock or level copy ever attaches to a memorial (DEC-46), whatever access is passed.
+  if (isMemorial(place.id)) return name
   const reason = boroughClosedReason(place.borough, access, options)
   return reason === null ? name : copy('places.locked.label', { place: name, reason })
 }
