@@ -295,7 +295,9 @@
       "screen-cyan": "billboard-300",
       "screen-magenta": "billboard-400",
       "screen-amber": "billboard-500",
-      "signal": "signal-500"
+      "signal": "signal-500",
+      "foliage": "leaf-700",
+      "lawn": "grass-500"
     },
     "buildings": {
       "walls": [

@@ -11,8 +11,7 @@ from archetypes import district
 from cclib import inputs
 
 ARCHETYPE = district
-#: perf.json has no neighbourhood caps yet: it is budgeted as a building.
-CATEGORY = "building"
+CATEGORY = "neighborhood"
 
 SCREEN_ROLES = ("screen-magenta", "screen-cyan", "screen-amber", "screen-white")
 

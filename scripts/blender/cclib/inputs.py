@@ -91,4 +91,7 @@ def caps_for(category, perf, override=None):
         if len(values) != 3:
             raise ValueError("--caps takes low/mid/high")
         return dict(zip(TIERS, values))
-    return dict(perf["landmarkTrianglesMax"][category])
+    caps = perf["landmarkTrianglesMax"]
+    if category not in caps:
+        raise ValueError("perf.json landmarkTrianglesMax has no %r caps (it has %s)" % (category, ", ".join(sorted(caps))))
+    return dict(caps[category])

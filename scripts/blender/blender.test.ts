@@ -17,7 +17,11 @@ import placesJson from '../../data/landmarks/landmarks.json'
 import perfJson from '../../data/config/perf.json'
 import sceneJson from '../../data/config/scene.json'
 import { LandmarkMeasurementsSchema } from '../../src/lib/data/schemas/landmarkBlender.ts'
-import { ARCHETYPE_CATEGORY, type Archetype } from '../../src/lib/data/schemas/landmarkModels.ts'
+import {
+  ARCHETYPE_CATEGORY,
+  CAP_CATEGORIES,
+  type Archetype,
+} from '../../src/lib/data/schemas/landmarkModels.ts'
 import { BLENDER_DIR, MEASUREMENTS_DIR, ROOT, measuredIds } from './inputs.ts'
 import { prepareGltf } from '../../src/scene/models/prepare.ts'
 import { checkLandmark, readLock, sourcesProblems } from './run.ts'
@@ -148,10 +152,9 @@ describe.each(built)('%s shipped GLBs', (id) => {
   )
   const model = modelsJson.models.find((entry) => entry.id === id)
   // The perf.json cap category: the S07a model's, or for a landmark without one the place's
-  // own when perf.json has caps for it, else building (monuments, neighbourhoods, memorial).
+  // own when perf.json has caps for it, else building (the memorial).
   const place = placesJson.landmarks.find((entry) => entry.id === id)
-  const capped = ['bridge', 'building', 'station', 'government'] as const
-  const placeCategory = capped.find((c) => c === place?.category) ?? 'building'
+  const placeCategory = CAP_CATEGORIES.find((c) => c === place?.category) ?? 'building'
   const category =
     model === undefined ? placeCategory : ARCHETYPE_CATEGORY[model.archetype as Archetype]
 
