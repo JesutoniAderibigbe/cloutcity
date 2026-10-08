@@ -111,6 +111,9 @@ export function disposeModel(model: LoadedModel): void {
 }
 
 /** Downloads, decodes and prepares one model file. */
-export async function loadModel(model: ModelRef, file: string): Promise<LoadedModel> {
+export async function loadModel(
+  model: Pick<ModelRef, 'id' | 'kind'>,
+  file: string,
+): Promise<LoadedModel> {
   return prepareGltf(await gltfLoader().loadAsync(file), model)
 }

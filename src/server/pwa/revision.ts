@@ -11,7 +11,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import audioManifestJson from '@data/audio/manifest.json'
 import modelManifestJson from '@data/assets/manifest.json'
-import { districtAssetUrls } from '@/lib/data/districts'
+import { districtAssetUrls, streetsUrl } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
 import { isChunkPath, optionalChunkMarkers } from '@/lib/pwa/lazyChunks'
 import { runtimeCacheName, type ServiceWorkerConfig } from '@/sw/policy'
@@ -104,6 +104,7 @@ export function serviceWorkerConfig(): ServiceWorkerConfig {
       mid: districtAssetUrls('mid'),
       high: districtAssetUrls('high'),
     },
+    streetsUrl: streetsUrl(),
   }
 }
 

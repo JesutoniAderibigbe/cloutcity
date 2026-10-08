@@ -163,5 +163,99 @@
     }
   },
   "landmarkFrontMaxM": 80,
-  "landmarkExclusionMarginM": 10
+  "landmarkExclusionMarginM": 10,
+  "streets": {
+    "zones": [
+      {
+        "id": "ditmars-steinway",
+        "label": "Ditmars-Steinway",
+        "center": {
+          "lat": 40.7681,
+          "lng": -73.9113
+        },
+        "radiusM": 450
+      },
+      {
+        "id": "sunnyside",
+        "label": "Sunnyside",
+        "center": {
+          "lat": 40.7395,
+          "lng": -73.933
+        },
+        "radiusM": 450
+      },
+      {
+        "id": "crown-heights",
+        "label": "Crown Heights",
+        "center": {
+          "lat": 40.684,
+          "lng": -73.9459
+        },
+        "radiusM": 700
+      },
+      {
+        "id": "bushwick",
+        "label": "Bushwick",
+        "center": {
+          "lat": 40.704,
+          "lng": -73.922
+        },
+        "radiusM": 450
+      },
+      {
+        "id": "gowanus",
+        "label": "Gowanus",
+        "center": {
+          "lat": 40.677,
+          "lng": -73.988
+        },
+        "radiusM": 450
+      },
+      {
+        "id": "fort-greene",
+        "label": "Fort Greene",
+        "center": {
+          "lat": 40.699,
+          "lng": -73.971
+        },
+        "radiusM": 450
+      },
+      {
+        "id": "lower-east-side",
+        "label": "Lower East Side",
+        "center": {
+          "lat": 40.7195,
+          "lng": -73.9935
+        },
+        "radiusM": 850
+      },
+      {
+        "id": "union-square",
+        "label": "Union Square",
+        "center": {
+          "lat": 40.7315,
+          "lng": -73.99
+        },
+        "radiusM": 750
+      },
+      {
+        "id": "chelsea",
+        "label": "Chelsea",
+        "center": {
+          "lat": 40.7435,
+          "lng": -73.9995
+        },
+        "radiusM": 800
+      }
+    ],
+    "lookOnlyClearM": 150,
+    "exclusionMarginM": 10,
+    "simplifyM": 1,
+    "carveMarginM": 2,
+    "carveTiers": ["mid", "high"],
+    "defaultWidthFt": 30,
+    "wideMinFt": 60,
+    "reachM": 6,
+    "parkProbeM": 8
+  }
 }

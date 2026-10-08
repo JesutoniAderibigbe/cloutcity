@@ -43,14 +43,24 @@ import {
   type LocalPoint,
 } from '../../src/lib/geo/projection.ts'
 import { buildingSourceId, type GeoSourceId, type LionSourceId } from '../../src/lib/geo/sources.ts'
+import { streetSourceId, type StreetSourceId } from '../../src/lib/geo/streetSources.ts'
 import { blocksFileText, buildBlocks, readDensity } from './blocks.ts'
 import { buildingsFileText, districtTier, readDistrictFootprints } from './buildings.ts'
 import { douglasPeucker } from './douglas-peucker.ts'
 import { readGtfsSubway } from './gtfs.ts'
 import { readLandmarkExclusions } from './landmark-exclusions.ts'
 import { buildLandmarkFrames, type FramePlace } from './landmarks.ts'
-import type { Lock } from './lock.ts'
+import { streetZoneCircles, type Lock } from './lock.ts'
 import { renderSourcesMd, type TerminalExtension } from './sources-md.ts'
+import {
+  buildStreets,
+  carveBlocks,
+  carvesTier,
+  readStreetSegments,
+  streetsFileText,
+  type StreetSegment,
+  type StreetsResult,
+} from './streets.ts'
 
 export interface GeoBoundsInput {
   readonly west: number
@@ -70,6 +80,8 @@ export interface RawGeoInputs {
   readonly density: unknown
   /** Paged source id (`oti-buildings-<district>`) → parsed JSON of each page, in order. */
   readonly buildings: ReadonlyMap<string, readonly unknown[]>
+  /** Paged source id (`dcp-lion-props-<zone>`) → parsed JSON of each page, in order (S04i). */
+  readonly streets: ReadonlyMap<string, readonly unknown[]>
   /** Parsed NYC DCP LION GeoJSON, one exact-street query per source. */
   readonly lion: ReadonlyMap<LionSourceId, unknown>
 }
@@ -114,7 +126,11 @@ export interface BlockStat {
   readonly path: string
   readonly instances: number
   readonly triangles: number
+  /** Blocks carved out for real-street props (S04i, D9). */
+  readonly carved: number
 }
+
+export type StreetStat = StreetsResult['stats'] & { readonly path: string }
 
 export interface GeoBuildResult {
   /** Path relative to data/ → file text. Sorted by path. */
@@ -126,6 +142,7 @@ export interface GeoBuildResult {
   readonly droppedParks: readonly string[]
   readonly districtStats: readonly DistrictStat[]
   readonly blockStats: readonly BlockStat[]
+  readonly streetStats: StreetStat
 }
 
 export const OUTPUT_FILES = {
@@ -136,6 +153,8 @@ export const OUTPUT_FILES = {
   zones: 'zones/zones.derived.json',
   zoneShapes: 'zones/zone-shapes.derived.json',
   landmarkFrames: 'landmarks/frames.derived.json',
+  /** Street chains for street props (S04i): lazy, mid and high only (perf.json streetsGzKB). */
+  streets: 'geo/streets.derived.json',
   manifest: 'geo/manifest.derived.json',
   sources: 'geo/SOURCES.md',
 } as const
@@ -672,7 +691,34 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     }
   }
 
-  // 8. Procedural blocks everywhere else, per tier.
+  // 8. Street chains for street props (S04i), clear of memorials and landmark grounds.
+  const zoneCircles = streetZoneCircles(config)
+  const segments = new Map<StreetSourceId, StreetSegment[]>()
+  for (const zone of zoneCircles) {
+    const sourceId = streetSourceId(zone.id)
+    const entry = lock.pagedSources.find((source) => source.id === sourceId)
+    const pages = raw.streets.get(sourceId)
+    if (entry === undefined || pages === undefined) {
+      throw new Error(`geo build: no LION streets for prop zone ${zone.id}`)
+    }
+    segments.set(sourceId, readStreetSegments(sourceId, pages, entry.count))
+  }
+  const streets = buildStreets(
+    {
+      zones: zoneCircles,
+      segments,
+      exclusions,
+      memorials: params.landmarks.places
+        .filter((place) => place.category === 'memorial')
+        .map((place) => project(place.location)),
+      parks,
+    },
+    config.streets,
+  )
+  const districtIds = new Set<string>(config.districts.map((district) => district.id))
+  const extraZones = streets.zones.filter((zone) => !districtIds.has(zone.id))
+
+  // 9. Procedural blocks everywhere else, per tier.
   const density = readDensity(raw.density, expected.communityDistricts)
   const blockInputs = {
     land,
@@ -685,7 +731,11 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
   }
   const blockStats: BlockStat[] = []
   for (const tier of QUALITY_TIERS) {
-    const blocks = buildBlocks(blockInputs, config.blocks, tier)
+    const built = buildBlocks(blockInputs, config.blocks, tier)
+    const carve = carvesTier(config.streets, tier)
+    const { blocks, carved } = carve
+      ? carveBlocks(built, streets, extraZones, config.streets)
+      : { blocks: built, carved: 0 }
     if (blocks.instances > config.blocks.maxInstances[tier]) {
       throw new Error(
         `geo build: ${blocks.instances} ${tier} blocks exceed blocks.maxInstances.${tier} (${config.blocks.maxInstances[tier]})`,
@@ -694,10 +744,16 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     const path = blocksFilePath(tier)
     tieredFiles.set(path, blocksFileText(tier, blocks))
     tiered.set(path, { group: 'blocks', tier })
-    blockStats.push({ tier, path, instances: blocks.instances, triangles: blocks.triangles })
+    blockStats.push({
+      tier,
+      path,
+      instances: blocks.instances,
+      triangles: blocks.triangles,
+      carved,
+    })
   }
 
-  // 9. Files, manifest and SOURCES.md.
+  // 10. Files, manifest and SOURCES.md.
   const files = new Map<string, string>([
     [OUTPUT_FILES.land, toText({ ...header(dcpBoroughs, DCP_NOTICE), boroughs: land })],
     [OUTPUT_FILES.water, toText({ ...header(dcpBoroughs, DCP_NOTICE), sea })],
@@ -709,6 +765,7 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     [OUTPUT_FILES.zones, toText({ ...header(dcpNtas, DCP_NOTICE), zones: zoneMeta })],
     [OUTPUT_FILES.zoneShapes, toText({ ...header(dcpNtas, DCP_NOTICE), zones: zoneShapes })],
     [OUTPUT_FILES.landmarkFrames, toText(landmarkFramesFile)],
+    [OUTPUT_FILES.streets, streetsFileText(streets)],
     [OUTPUT_FILES.sources, renderSourcesMd(lock, config, terminalExtensions)],
     ...tieredFiles,
   ])
@@ -718,7 +775,9 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
       const tier = tiered.get(path)
       return {
         path,
-        group: tier?.group ?? (BASE_FILES.includes(path) ? 'base' : 'docs'),
+        group:
+          tier?.group ??
+          (path === OUTPUT_FILES.streets ? 'streets' : BASE_FILES.includes(path) ? 'base' : 'docs'),
         ...(tier === undefined ? {} : { tier: tier.tier }),
         bytes: Buffer.byteLength(text),
         sha256: sha256(text),
@@ -733,6 +792,7 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     droppedParks,
     districtStats,
     blockStats,
+    streetStats: { ...streets.stats, path: OUTPUT_FILES.streets },
   }
 }
 

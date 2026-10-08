@@ -35,6 +35,7 @@ const DEFAULT_PERF = {
   totalJsToPlayableGzKB: 550,
   baseGeoGzKB: 400,
   districtBuildingsGzKB: { low: 150, mid: 300, high: 400 },
+  streetsGzKB: { low: 0, mid: 60, high: 60 },
   apartmentChunkJsGzKB: 40,
   serviceWorkerGzKB: 15,
   precacheGzKB: 1000,
@@ -154,6 +155,8 @@ function withDistricts(root: string, tiers = ['low', 'mid', 'high'], seed = 21) 
     )
     writeFileSync(join(root, `.next/server/app/geo/blocks/${tier}.body`), noisyChunk(seed + 1))
   }
+  // S04i: the street props' chains, built with the districts.
+  writeFileSync(join(root, '.next/server/app/geo/streets.body'), noisyChunk(seed + 2))
   return root
 }
 
@@ -398,6 +401,18 @@ describe('budget CLI', () => {
       expect(result.stdout).toMatch(/^FAIL District buildings \(low\)/m)
       expect(result.stdout).toMatch(/^PASS District buildings \(mid\)/m)
       expect(result.status).toBe(1)
+    })
+
+    it('checks the streets against the smallest streetsGzKB of the tiers that fetch them (S04i)', () => {
+      const ok = runBudget(withDistricts(fakeProject()))
+      expect(ok.stdout).toMatch(
+        /^PASS Streets \(\/geo\/streets, lazy\).*\n {2}fetched on mid and high/m,
+      )
+      const tight = runBudget(
+        withDistricts(fakeProject({ streetsGzKB: { low: 0, mid: 60, high: 0.001 } })),
+      )
+      expect(tight.stdout).toMatch(/^FAIL Streets/m)
+      expect(tight.status).toBe(1)
     })
 
     it('fails loudly when a tier has no district bodies', () => {

@@ -22,6 +22,7 @@ import type { BuildingsHandle, BuildingsState } from './buildings/Buildings'
 import type { BoroughView, CityObjects } from './City'
 import type { LandmarksHandle, LandmarksState } from './landmarks/Landmarks'
 import type { PinKind, PinStyle } from './geo/schema'
+import type { StreetPropsView } from './props/layer'
 import { nightGlowSource } from './lighting/nightGlow'
 import { continuousSince } from './quality/continuity'
 import { SUN_LIGHT_NAME } from './SunLight'
@@ -117,6 +118,18 @@ export interface SceneLightingState {
   readonly sun: { readonly intensity: number; readonly shadowIntensity: number }
 }
 
+/** Street props (S04i): `off` on a tier without them, `idle` before the camera came close. */
+export type ScenePropsState =
+  | { readonly status: 'off' | 'idle' }
+  | (StreetPropsView & {
+      /** Every chunk mesh draws with the district buildings' own material object. */
+      readonly material: 'district' | 'other'
+      /** No chunk mesh uses three's raycast (they ignore the raycaster). */
+      readonly raycastOff: boolean
+      /** Chunk meshes built (drawn or kept for panning back). */
+      readonly meshes: number
+    })
+
 export interface SceneTestHook {
   /** True once a frame has drawn the city. */
   readonly ready: boolean
@@ -148,10 +161,14 @@ export interface SceneTestHook {
   buildings(): BuildingsState | null
   /** Modelled landmarks (S07a): build state, current level, triangles, screen points. */
   landmarks(): LandmarksState | null
+  /** Street props (S04i); null before the buildings mount. */
+  props(): ScenePropsState | null
   /** The day/night lighting (S04f). */
   lighting(): SceneLightingState
   /** Shader programs the renderer holds (renderer.info.programs). */
   programs(): number
+  /** Each held program's name and cache key, sorted: what a new program is when the count moves. */
+  programKeys(): string[]
   /**
    * Names of the meshes whose material carries the night glow (S04f), or of their nearest named
    * group, sorted. A memorial never appears; memorial pins share the pin meshes but their
@@ -171,6 +188,17 @@ declare global {
 }
 
 const vec = (v: Vec3): Vec3 => ({ x: v.x, y: v.y, z: v.z })
+
+/** The district buildings' material: the one every `district-<id>` mesh draws with. */
+function districtMaterial(scene: Object3D): unknown {
+  let found: unknown = null
+  scene.traverse((object) => {
+    if (found === null && object instanceof Mesh && object.name.startsWith('district-')) {
+      found = object.material
+    }
+  })
+  return found
+}
 
 export function TestHooks({
   readyRef,
@@ -299,6 +327,22 @@ export function TestHooks({
       },
       buildings: () => buildingsRef.current?.state() ?? null,
       landmarks: () => landmarksRef.current?.state() ?? null,
+      props: () => {
+        const handle = buildingsRef.current?.props()
+        if (handle === undefined) return null
+        if (!handle.enabled) return { status: 'off' }
+        if (handle.layer === null) return { status: 'idle' }
+        const meshes = handle.layer.meshes()
+        return {
+          ...handle.layer.view(),
+          material: meshes.every((mesh) => mesh.material === districtMaterial(scene))
+            ? 'district'
+            : 'other',
+          // A type-only import keeps the props chunk out of the 3D chunk: compare with three's.
+          raycastOff: meshes.every((mesh) => mesh.raycast !== Mesh.prototype.raycast),
+          meshes: meshes.length,
+        }
+      },
       lighting: () => {
         const sun = scene.getObjectByName(SUN_LIGHT_NAME)
         return {
@@ -317,6 +361,8 @@ export function TestHooks({
         }
       },
       programs: () => gl.info.programs?.length ?? 0,
+      programKeys: () =>
+        (gl.info.programs ?? []).map((program) => `${program.name} ${program.cacheKey}`).sort(),
       glowingMeshes: () => {
         const names = new Set<string>()
         scene.traverse((object) => {

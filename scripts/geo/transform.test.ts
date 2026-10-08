@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ParksFileSchema,
   SubwayFileSchema,
+  StreetsFileSchema,
   WaterFileSchema,
   ZoneShapesFileSchema,
   ZonesFileSchema,
@@ -16,7 +17,7 @@ import { FIXTURE_BOROUGHS, FIXTURE_NTAS, FIXTURE_PARAMS, fixtureInputs } from '.
 import { OUTPUT_FILES, buildGeoOutputs, tieredOutputPaths, type GeoBuildResult } from './transform'
 
 /** sha256 over every output (path, newline, text) in path order. Update only on purpose. */
-const FIXTURE_GOLDEN = '08c364b1a5fa11b62ddf9d49677575d80827e046c21e329991d24faeb10ad42d'
+const FIXTURE_GOLDEN = '6d90f7dfcf9094c5eecb61921d055666add5c36acc1a3287c3411704985f8b07'
 
 function digest(result: GeoBuildResult): string {
   const hash = createHash('sha256')
@@ -55,7 +56,13 @@ describe('buildGeoOutputs on the synthetic fixture', () => {
     expect(ZonesFileSchema.parse(json(result, OUTPUT_FILES.zones)).derived).toBe(true)
     expect(ZoneShapesFileSchema.parse(json(result, OUTPUT_FILES.zoneShapes)).derived).toBe(true)
     const manifest = GeoManifestSchema.parse(json(result, OUTPUT_FILES.manifest))
-    expect(manifest.files).toHaveLength(14)
+    expect(manifest.files).toHaveLength(15)
+    expect(manifest.files.filter((f) => f.group === 'streets').map((f) => f.path)).toEqual([
+      OUTPUT_FILES.streets,
+    ])
+    const streets = StreetsFileSchema.parse(json(result, OUTPUT_FILES.streets))
+    expect(streets.sources).toEqual(['dcp-lion-props-midtown', 'dcp-lion-props-sunnyside'])
+    expect(streets.zones.map((zone) => zone.id)).toEqual(['midtown', 'sunnyside'])
     expect(
       manifest.files.filter((f) => f.group === 'district').map((f) => [f.path, f.tier]),
     ).toEqual([

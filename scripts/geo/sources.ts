@@ -8,9 +8,12 @@
  *   differs from the lock fails ("upstream changed") and leaves the old cache in place.
  * - update: download every source and accept what arrives, rewriting the lock.
  * - offline: never fetch; a missing or stale cache fails.
+ * - add: like default for every source the lock already pins (its definition unchanged), like
+ *   update for the rest, so a newly configured source can be pinned without re-downloading (and
+ *   possibly re-pinning) the ones already in the lock.
  *
- * Paged sources (district building footprints) follow the same modes page by page; --update
- * also checks that the pages add up to the query's returnCountOnly total.
+ * Paged sources (district building footprints, prop-zone streets) follow the same modes page by
+ * page; --update also checks that the pages add up to the query's returnCountOnly total.
  */
 import { createHash } from 'node:crypto'
 import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
@@ -27,7 +30,7 @@ import {
   type SourceDefinition,
 } from './lock.ts'
 
-export type SourceMode = 'default' | 'update' | 'offline'
+export type SourceMode = 'default' | 'update' | 'offline' | 'add'
 
 export type FetchLike = (url: string, init: RequestInit) => Promise<Response>
 
@@ -42,7 +45,7 @@ export interface EnsureSourcesOptions {
   readonly log?: (line: string) => void
   /** Injected so tests do not wait for retry backoff. */
   readonly sleep?: (ms: number) => Promise<void>
-  /** Paged sources to fetch (lock.ts buildingSourceDefinitions); none when omitted. */
+  /** Paged sources to fetch (lock.ts pagedSourceDefinitions); none when omitted. */
   readonly pagedDefinitions?: readonly PagedSourceDefinition[]
 }
 
@@ -147,7 +150,10 @@ async function writeCache(path: string, bytes: Uint8Array): Promise<void> {
   await rename(part, path)
 }
 
-function lockEntryFor(lock: Lock | undefined, definition: SourceDefinition): LockEntry {
+function currentLockEntry(
+  lock: Lock | undefined,
+  definition: SourceDefinition,
+): LockEntry | undefined {
   const entry = lock?.sources.find((source) => source.id === definition.id)
   const stale =
     entry === undefined ||
@@ -158,15 +164,25 @@ function lockEntryFor(lock: Lock | undefined, definition: SourceDefinition): Loc
     entry.catalogUrl !== definition.catalogUrl ||
     entry.terms.name !== definition.terms.name ||
     entry.terms.url !== definition.terms.url
-  if (stale) {
-    throw new Error(
-      `scripts/geo/sources.lock.json is missing or out of date for ${definition.id}; rerun with --update`,
-    )
-  }
+  return stale ? undefined : entry
+}
+
+function outOfDate(id: string): Error {
+  return new Error(
+    `scripts/geo/sources.lock.json is missing or out of date for ${id}; rerun with --update (or --add for new sources)`,
+  )
+}
+
+function lockEntryFor(lock: Lock | undefined, definition: SourceDefinition): LockEntry {
+  const entry = currentLockEntry(lock, definition)
+  if (entry === undefined) throw outOfDate(definition.id)
   return entry
 }
 
-function pagedEntryFor(lock: Lock | undefined, definition: PagedSourceDefinition): PagedLockEntry {
+function currentPagedEntry(
+  lock: Lock | undefined,
+  definition: PagedSourceDefinition,
+): PagedLockEntry | undefined {
   const entry = lock?.pagedSources.find((source) => source.id === definition.id)
   const stale =
     entry === undefined ||
@@ -178,12 +194,19 @@ function pagedEntryFor(lock: Lock | undefined, definition: PagedSourceDefinition
     entry.catalogUrl !== definition.catalogUrl ||
     entry.terms.name !== definition.terms.name ||
     entry.terms.url !== definition.terms.url
-  if (stale) {
-    throw new Error(
-      `scripts/geo/sources.lock.json is missing or out of date for ${definition.id}; rerun with --update`,
-    )
-  }
+  return stale ? undefined : entry
+}
+
+function pagedEntryFor(lock: Lock | undefined, definition: PagedSourceDefinition): PagedLockEntry {
+  const entry = currentPagedEntry(lock, definition)
+  if (entry === undefined) throw outOfDate(definition.id)
   return entry
+}
+
+/** The mode one source is handled in: `add` resolves to default or update per source. */
+function sourceMode(mode: SourceMode, pinned: boolean): Exclude<SourceMode, 'add'> {
+  if (mode !== 'add') return mode
+  return pinned ? 'default' : 'update'
 }
 
 // ArcGIS answers some failed queries with HTTP 200 and an `error` object, so both are parsed.
@@ -254,7 +277,8 @@ async function ensurePaged(
   sleep: (ms: number) => Promise<void>,
   log: (line: string) => void,
 ): Promise<{ entry: PagedLockEntry; pages: Uint8Array[] }> {
-  const { cacheDir, lock, mode, today } = options
+  const { cacheDir, lock, today } = options
+  const mode = sourceMode(options.mode, currentPagedEntry(lock, definition) !== undefined)
   if (mode === 'update') {
     log(`download ${definition.id}`)
     const { count, pages } = await downloadPaged(definition, fetchImpl, sleep, log)
@@ -311,7 +335,7 @@ async function ensurePaged(
 }
 
 export async function ensureSources(options: EnsureSourcesOptions): Promise<EnsuredSources> {
-  const { cacheDir, lock, mode, today } = options
+  const { cacheDir, lock, today } = options
   const fetchImpl = options.fetch ?? ((url, init) => fetch(url, init))
   const log = options.log ?? (() => undefined)
   const sleep = options.sleep ?? defaultSleep
@@ -321,6 +345,7 @@ export async function ensureSources(options: EnsureSourcesOptions): Promise<Ensu
   const files = new Map<string, Uint8Array>()
   for (const definition of SOURCE_DEFINITIONS) {
     const path = join(cacheDir, definition.file)
+    const mode = sourceMode(options.mode, currentLockEntry(lock, definition) !== undefined)
 
     if (mode === 'update') {
       log(`download ${definition.id}`)

@@ -14,6 +14,8 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'model-showcase', marker: 'cc-feature:model-showcase' },
   // The apartment's decor models (src/scene/apartment/decorModels.ts), once the room is up.
   { id: 'apartment-decor-models', marker: 'apartment decor models: ' },
+  // Street props (S04i, src/scene/props/layer.ts): mid and high only, once the camera zooms in.
+  { id: 'street-props', marker: 'street props: ' },
   // The /mod console (S18b): moderators only; /mod itself is never precached.
   { id: 'mod-console', marker: 'data-mod-error' },
   // supabase-js (S18): it only works online (sign-in, cloud saves, profiles, safety), so an

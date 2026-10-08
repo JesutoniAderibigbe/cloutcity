@@ -12,8 +12,10 @@ import {
   SOURCE_DEFINITIONS,
   buildingSourceDefinition,
   buildingSourceDefinitions,
+  pagedSourceDefinitions,
   pageFile,
   pageUrl,
+  streetSourceDefinition,
   type Lock,
 } from './lock'
 import { GeoConfigSchema } from '../../src/lib/data/schemas/config'
@@ -602,6 +604,49 @@ describe('paged building sources', () => {
     )
   })
 
+  it('--add pins only what the lock lacks: pinned sources come from the cache, untouched', async () => {
+    await seedCache()
+    const { fetch: pages } = pagedFetch([2000, 37])
+    const files = fakeFetch()
+    const first = await ensureSources({
+      ...base,
+      cacheDir,
+      mode: 'update',
+      fetch: async (url, init) =>
+        SOURCE_DEFINITIONS.some((d) => d.url === url) ? files.fetch(url, init) : pages(url, init),
+      pagedDefinitions: [definition],
+    })
+    // A newly configured street zone: only its count and page are fetched.
+    const zone = { ...district, id: 'astoria' as const }
+    const street = streetSourceDefinition(zone)
+    const calls: string[] = []
+    const added = await ensureSources({
+      ...base,
+      cacheDir,
+      lock: first.lock,
+      mode: 'add',
+      today: '2026-12-01',
+      fetch: async (url) => {
+        calls.push(url)
+        if (url === street.countUrl) return new Response(JSON.stringify({ count: 1 }))
+        if (url === pageUrl(street, 0)) {
+          return new Response(JSON.stringify({ type: 'FeatureCollection', features: [feature] }))
+        }
+        return new Response('nope', { status: 404 })
+      },
+      pagedDefinitions: [definition, street],
+    })
+    expect(calls).toEqual([street.countUrl, pageUrl(street, 0)])
+    expect(added.lock.sources).toEqual(first.lock.sources)
+    expect(added.lock.pagedSources[0]).toEqual(first.lock.pagedSources[0])
+    expect(added.lock.pagedSources[1]).toMatchObject({
+      id: 'dcp-lion-props-astoria',
+      count: 1,
+      retrieved: '2026-12-01',
+    })
+    expect(LockSchema.safeParse(added.lock).success).toBe(true)
+  })
+
   it('--update fails when the pages do not add up to the count', async () => {
     const { fetch } = pagedFetch([2000, 5], 2004)
     const files = fakeFetch()
@@ -747,8 +792,28 @@ describe('building source queries', () => {
     const lock = LockSchema.parse(
       JSON.parse(readFileSync(join(ROOT, 'scripts/geo/sources.lock.json'), 'utf8')),
     )
-    for (const entry of lock.pagedSources) {
+    const buildings = lock.pagedSources.filter((entry) => entry.id.startsWith('oti-buildings-'))
+    expect(buildings).toHaveLength(config.districts.length)
+    for (const entry of buildings) {
       expect(new URL(entry.url).searchParams.getAll('outFields')).toEqual(['HEIGHT_ROOF'])
+    }
+  })
+
+  it('every committed street props query asks only for the segment id, name and width (S04i)', () => {
+    const lock = LockSchema.parse(
+      JSON.parse(readFileSync(join(ROOT, 'scripts/geo/sources.lock.json'), 'utf8')),
+    )
+    const streets = lock.pagedSources.filter((entry) => entry.id.startsWith('dcp-lion-props-'))
+    expect(streets.map((entry) => entry.id)).toEqual(
+      pagedSourceDefinitions(config)
+        .map((definition) => definition.id)
+        .filter((id) => id.startsWith('dcp-lion-props-')),
+    )
+    for (const entry of streets) {
+      const params = new URL(entry.url).searchParams
+      expect(params.getAll('outFields')).toEqual(['SegmentID,Street,StreetWidth_Min'])
+      expect(params.get('where')).toBe("RW_TYPE=' 1' AND FeatureTyp='0' AND RB_Layer IN ('B','G')")
+      expect(params.get('orderByFields')).toBe('SegmentID,OBJECTID')
     }
   })
 

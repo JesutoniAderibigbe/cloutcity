@@ -102,7 +102,9 @@ describe('data/geo/SOURCES.md', () => {
   )
 
   it('documents the OTI building footprints: item, terms, NAME not downloaded, outputs', () => {
-    expect(lock.pagedSources).toHaveLength(config.districts.length)
+    expect(lock.pagedSources.filter((s) => s.id.startsWith('oti-buildings-'))).toHaveLength(
+      config.districts.length,
+    )
     expect(sourcesMd).toContain('## NYC Office of Technology and Innovation (NYC Open Data)')
     expect(sourcesMd).toContain(
       'https://www.arcgis.com/home/item.html?id=870bf69e8a8044aea4488e564c0b4010',
@@ -117,6 +119,16 @@ describe('data/geo/SOURCES.md', () => {
     expect(sourcesMd).toMatch(
       /Required attribution: data from NYC Open Data, provided by the NYC Office of Technology and\s+Innovation/,
     )
+  })
+
+  it('documents the street props LION queries: one per prop zone, filter, fields, outputs (S04i)', () => {
+    const streets = lock.pagedSources.filter((s) => s.id.startsWith('dcp-lion-props-'))
+    expect(streets).toHaveLength(config.districts.length + config.streets.zones.length)
+    expect(sourcesMd).toContain('### LION street centerlines (street props)')
+    expect(sourcesMd).toContain("`RW_TYPE=' 1' AND FeatureTyp='0' AND RB_Layer IN ('B','G')`")
+    expect(sourcesMd).toContain('`outFields=SegmentID,Street,StreetWidth_Min`')
+    expect(sourcesMd).toContain('`geo/streets.derived.json`')
+    expect(sourcesMd).toContain('No street name is kept.')
   })
 
   it('documents MapPLUTO: item, re-verify note, what was downloaded, and the DCP disclaimer', () => {

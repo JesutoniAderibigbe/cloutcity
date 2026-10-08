@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { AUDIO_CHANNELS, AUDIO_SOURCE_TYPES } from '../../audio/channels'
 import { ORIGIN, PROJECTION_ID } from '../../geo/projection'
 import { BUILDING_DISTRICT_IDS, DERIVED_SOURCE_IDS, GEO_SOURCE_IDS } from '../../geo/sources'
+import { STREET_SOURCE_IDS, STREET_ZONE_IDS } from '../../geo/streetSources'
 import { QUALITY_TIERS } from './config'
 import { BOROUGHS, BoroughSchema, CopyKeyRefSchema, IdSchema, listOf } from './content'
 import { LandmarkFrameSchema } from './landmarkModels'
@@ -195,6 +196,62 @@ export const BlocksFileSchema = z.strictObject({
 })
 export type BlocksFile = z.infer<typeof BlocksFileSchema>
 
+/** Chain flags: 1 park on the left, 2 park on the right, 4 a wide street (S04i). */
+export const STREET_FLAG_MAX = 7
+
+/**
+ * data/geo/streets.derived.json: the LION street chains street props stand on (S04i), one file
+ * for every tier that draws them, as columns. `n` vertices per chain over the one delta-encoded
+ * path `p`; `w` the half-width of each chain (metres, to 0.5 m); `j` the junction vertex indices
+ * (into the whole path, delta-encoded, ascending); `e` the flags of each chain. `zones` are the
+ * prop zone circles and `clear` the circles (memorials) no prop may enter.
+ */
+export const StreetsFileSchema = z
+  .strictObject({
+    format: z.literal('cc-streets-v1'),
+    derived: z.literal(true),
+    notice: z.string().min(1),
+    sources: z.array(z.enum(STREET_SOURCE_IDS)).min(1),
+    projection: ProjectionRefSchema,
+    zones: z
+      .array(
+        z.strictObject({
+          id: z.enum(STREET_ZONE_IDS),
+          x: metre,
+          y: metre,
+          r: z.number().positive(),
+        }),
+      )
+      .min(1),
+    clear: z.array(z.strictObject({ x: metre, y: metre, r: z.number().positive() })),
+    chains: z.strictObject({
+      n: z.array(z.int().min(2)),
+      p: z.array(metre).refine((p) => p.length % 2 === 0, { error: 'odd coordinate count' }),
+      w: z.array(z.number().positive().multipleOf(0.5)),
+      j: z.array(z.int().nonnegative()),
+      e: z.array(z.int().min(0).max(STREET_FLAG_MAX)),
+    }),
+  })
+  .refine(
+    ({ chains }) =>
+      chains.w.length === chains.n.length &&
+      chains.e.length === chains.n.length &&
+      chains.p.length === 2 * chains.n.reduce((sum, n) => sum + n, 0),
+    { error: 'n, w and e need one entry per chain, and p one point per vertex' },
+  )
+  .refine(
+    ({ chains }) => {
+      const vertices = chains.n.reduce((sum, n) => sum + n, 0)
+      let at = 0
+      return chains.j.every((delta, i) => {
+        at += delta
+        return (i === 0 || delta > 0) && at < vertices
+      })
+    },
+    { error: 'junction indices must ascend and stay inside the path' },
+  )
+export type StreetsFile = z.infer<typeof StreetsFileSchema>
+
 const TIERED_PATH = new RegExp(
   `^geo/(?:districts/(?:${BUILDING_DISTRICT_IDS.join('|')})|blocks)\\.(?:${QUALITY_TIERS.join('|')})\\.derived\\.json$`,
 )
@@ -224,9 +281,10 @@ export const GeoManifestSchema = z.strictObject({
             ),
           /**
            * `base` ships with the map (perf.json baseGeoGzKB); `district` and `blocks` load per
-           * quality tier (perf.json districtBuildingsGzKB); `docs` never ships.
+           * quality tier (perf.json districtBuildingsGzKB); `streets` loads only when the camera
+           * zooms in on mid and high (perf.json streetsGzKB); `docs` never ships.
            */
-          group: z.enum(['base', 'docs', 'district', 'blocks']),
+          group: z.enum(['base', 'docs', 'district', 'blocks', 'streets']),
           /** Set exactly for `district` and `blocks` files. */
           tier: z.enum(QUALITY_TIERS).optional(),
           bytes: z.int().positive(),
