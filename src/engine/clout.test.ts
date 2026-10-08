@@ -77,7 +77,7 @@ describe('levels (CLAUDE.md ladder)', () => {
     const names = ['nobody', 'local', 'sceneRegular', 'known', 'famous', 'icon'].map(
       (id) => baseCopy.strings[`clout.levels.${id}.name`],
     )
-    expect(names).toEqual(['Nobody', 'Local', 'Scene Regular', 'Known', 'Famous', 'Icon'])
+    expect(names).toEqual(['Newcomer', 'Local', 'Scene Regular', 'Known', 'Famous', 'Icon'])
   })
 
   it('every level above the first has a level-up message', () => {

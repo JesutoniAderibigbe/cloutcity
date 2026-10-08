@@ -52,7 +52,7 @@ describe('job copy', () => {
     const lock = jobLock(initialSnapshot(engineConfig).player, 'junior-dev', engineConfig)
     if (lock === null) throw new Error('junior dev should be locked for a new player')
     expect(jobLockedLabel(lock, { copy: plain })).toBe(
-      "Junior dev is locked: reach Local clout to unlock it. You're at Nobody.",
+      "Junior dev is locked: reach Local clout to unlock it. You're at Newcomer.",
     )
     const voiced = jobLockedLabel(lock, { copy: nyc })
     expect(voiced).toMatch(/Junior dev/)
