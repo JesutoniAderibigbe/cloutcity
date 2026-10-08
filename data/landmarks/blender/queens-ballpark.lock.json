@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "queens-ballpark",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "937d9d88c43a23b0cd7d0aef169b8b414aea1e4fbe756434c48468318a722fc2",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/queens-ballpark/lod0.glb",
+      "sha256": "6b7ebc50d625435fc4bd4a9150dbec5c3c0c3c4bc92567fbfcb4417dfbc077cf",
+      "bytes": 45476,
+      "triangles": 2948,
+      "uncompressedBytes": 288120
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/queens-ballpark/lod1.glb",
+      "sha256": "b20e1d40ce2be7725203aedffa59c70e2f045588c2631b032b4a52ad7de9bb3e",
+      "bytes": 21864,
+      "triangles": 1274,
+      "uncompressedBytes": 122444
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/queens-ballpark/lod2.glb",
+      "sha256": "a7ffe6d2421b0ffb73fb029f3ffebedaedb798e20205d5fb46259192613d6df2",
+      "bytes": 12852,
+      "triangles": 582,
+      "uncompressedBytes": 56160
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/queens-ballpark/lod3.glb",
+      "sha256": "9064dddf9b5a57dd6422559e483b9583336f5cff47d1906619ae82817dceb041",
+      "bytes": 6736,
+      "triangles": 224,
+      "uncompressedBytes": 22632
+    }
+  ]
+}
