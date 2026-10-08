@@ -1,0 +1,241 @@
+{
+  "id": "central-park",
+  "base": "land",
+  "park": "park-mn6491",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q160409 (Central Park) and its features: Q532029 Bethesda Terrace and Fountain, Q816268 Belvedere Castle, Q1190219 the Reservoir, Q903865 Great Lawn and Turtle Pond, Q902461 Sheep Meadow, Q3508849 Harlem Meer, Q7757717 The Pond, Q5163141 Conservatory Water, Q5061610 the Mall, Q63337240 North Woods and North Meadow",
+      "url": "https://www.wikidata.org/wiki/Q160409",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 27,
+      "source": "estimate",
+      "note": "the folly tower's roof tip above the surrounding park (the rock outcrop and a square tower), proportioned by eye"
+    },
+    "treeLowM": {
+      "valueM": 14,
+      "source": "estimate",
+      "note": "the lower canopy height of the tree masses"
+    },
+    "treeHighM": {
+      "valueM": 22,
+      "source": "estimate",
+      "note": "the upper canopy height of the tree masses (below the folly)"
+    },
+    "treeSpacingM": {
+      "valueM": 52,
+      "source": "estimate",
+      "note": "the spacing of canopy mounds at the finest level at density 1 (each mound a clump of trees)"
+    },
+    "bethesda": {
+      "lat": 40.7741,
+      "lng": -73.9711,
+      "source": "wikidata",
+      "note": "Bethesda Terrace and Fountain (Q532029, P625): the generic terrace and fountain, facing up the park toward the lake"
+    },
+    "terrace": {
+      "widthM": 70,
+      "depthM": 60,
+      "source": "estimate",
+      "note": "the terrace and its fountain plaza: width across the park and depth toward the lake"
+    },
+    "terraceM": {
+      "valueM": 6,
+      "source": "estimate",
+      "note": "the upper terrace above the plaza"
+    },
+    "fountainRadiusM": {
+      "valueM": 14,
+      "source": "estimate",
+      "note": "the fountain basin's radius"
+    },
+    "fountainM": {
+      "valueM": 7,
+      "source": "estimate",
+      "note": "the tiered fountain's height (no figure, LEGAL-1)"
+    },
+    "belvedere": {
+      "lat": 40.7794,
+      "lng": -73.9691,
+      "source": "wikidata",
+      "note": "Belvedere Castle (Q816268, P625): the generic folly on its rock"
+    },
+    "rockM": {
+      "valueM": 12,
+      "source": "estimate",
+      "note": "the rock outcrop the folly stands on, above the park"
+    },
+    "rockRadiusM": {
+      "valueM": 30,
+      "source": "estimate",
+      "note": "the outcrop's radius at its foot"
+    },
+    "keep": {
+      "widthM": 12,
+      "depthM": 9,
+      "source": "estimate",
+      "note": "the folly's half-length and height (its keep)"
+    },
+    "towerWidthM": {
+      "valueM": 7,
+      "source": "estimate",
+      "note": "the folly tower's side"
+    },
+    "towerRoofM": {
+      "valueM": 4,
+      "source": "estimate",
+      "note": "the turret roof's rise"
+    },
+    "reservoir": {
+      "lat": 40.7864,
+      "lng": -73.9623,
+      "source": "estimate",
+      "note": "the Reservoir's middle, centred across the park and north of the Great Lawn (the Wikidata Q1190219 point, 40.785089, -73.960475, lies near its south-east shore)"
+    },
+    "reservoirAxes": {
+      "widthM": 420,
+      "depthM": 300,
+      "source": "derived",
+      "note": "semi-axes along and across the park: an ellipse of about the reservoir's Wikidata area (43 ha, P2046; drawn 92 %), kept between the drives and clear of the Great Lawn"
+    },
+    "greatLawn": {
+      "lat": 40.7813,
+      "lng": -73.9665,
+      "source": "wikidata",
+      "note": "Great Lawn and Turtle Pond (Q903865, P625, first point)"
+    },
+    "greatLawnAxes": {
+      "widthM": 150,
+      "depthM": 105,
+      "source": "estimate",
+      "note": "the Great Lawn's semi-axes along and across the park"
+    },
+    "turtlePond": {
+      "lat": 40.77985,
+      "lng": -73.96855,
+      "source": "estimate",
+      "note": "Turtle Pond, between the Great Lawn and the folly (by eye)"
+    },
+    "turtlePondAxes": {
+      "widthM": 80,
+      "depthM": 32,
+      "source": "estimate",
+      "note": "Turtle Pond's semi-axes"
+    },
+    "sheepMeadow": {
+      "lat": 40.771944,
+      "lng": -73.975,
+      "source": "wikidata",
+      "note": "Sheep Meadow (Q902461, P625)"
+    },
+    "sheepMeadowAxes": {
+      "widthM": 158.5,
+      "depthM": 121.9,
+      "source": "derived",
+      "note": "semi-axes of an ellipse of Sheep Meadow's Wikidata area (15 acres, P2046)"
+    },
+    "harlemMeer": {
+      "lat": 40.7966,
+      "lng": -73.9517,
+      "source": "wikidata",
+      "note": "Harlem Meer (Q3508849, P625)"
+    },
+    "harlemMeerAxes": {
+      "widthM": 140.8,
+      "depthM": 100.6,
+      "source": "estimate",
+      "note": "Harlem Meer's semi-axes (about 11 acres)"
+    },
+    "pond": {
+      "lat": 40.766361,
+      "lng": -73.97449,
+      "source": "wikidata",
+      "note": "The Pond (Q7757717, P625)"
+    },
+    "pondAxes": {
+      "widthM": 95,
+      "depthM": 45,
+      "source": "estimate",
+      "note": "The Pond's semi-axes"
+    },
+    "conservatoryWater": {
+      "lat": 40.77418,
+      "lng": -73.96747,
+      "source": "wikidata",
+      "note": "Conservatory Water (Q5163141, P625)"
+    },
+    "conservatoryWaterAxes": {
+      "widthM": 60,
+      "depthM": 38,
+      "source": "estimate",
+      "note": "Conservatory Water's semi-axes"
+    },
+    "lake": {
+      "lat": 40.7763,
+      "lng": -73.9718,
+      "source": "estimate",
+      "note": "the Lake's middle, north of the terrace (no Wikidata point found; by eye)"
+    },
+    "lakeAxes": {
+      "widthM": 210,
+      "depthM": 105,
+      "source": "estimate",
+      "note": "the Lake's semi-axes (about 20 acres)"
+    },
+    "northMeadow": {
+      "lat": 40.7935,
+      "lng": -73.9585,
+      "source": "estimate",
+      "note": "North Meadow, south of the North Woods point (Q63337240), by eye"
+    },
+    "northMeadowAxes": {
+      "widthM": 190,
+      "depthM": 120,
+      "source": "estimate",
+      "note": "North Meadow's semi-axes"
+    },
+    "mallSouth": {
+      "lat": 40.771111,
+      "lng": -73.971667,
+      "source": "wikidata",
+      "note": "the Mall (Q5061610, P625, second point): its south end; it runs to the terrace"
+    },
+    "mallWidthM": {
+      "valueM": 12,
+      "source": "estimate",
+      "note": "the Mall's paved width"
+    },
+    "driveWidthM": {
+      "valueM": 9,
+      "source": "estimate",
+      "note": "the park drive's width"
+    },
+    "driveInset": {
+      "widthM": 130,
+      "depthM": 95,
+      "source": "estimate",
+      "note": "how far the loop drive runs inside the park outline: from each long side and from each end"
+    },
+    "lampSpacingM": {
+      "valueM": 80,
+      "source": "estimate",
+      "note": "lamps along the drive at the finest level"
+    }
+  },
+  "readabilityScale": {
+    "structures": 2,
+    "paths": 2,
+    "lamp": 3,
+    "note": "Structures are drawn twice their real plan and the drive and Mall twice their width so they read in a park 4 km long; lamps three times a lamp head."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.0,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 (trees, the folly, the terrace); the plan stays the map's park outline (x1.0) so the model fits the green the map draws; structures and paths take the readability scale instead."
+  }
+}

@@ -165,6 +165,64 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1200 triangles, 22852 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
 - L3: 584 triangles, 13288 bytes (`public/landmarks/brooklyn-bridge/lod3.glb`)
 
+### central-park
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q160409 (Central Park) and its features: Q532029 Bethesda Terrace and Fountain, Q816268 Belvedere Castle, Q1190219 the Reservoir, Q903865 Great Lawn and Turtle Pond, Q902461 Sheep Meadow, Q3508849 Harlem Meer, Q7757717 The Pond, Q5163141 Conservatory Water, Q5061610 the Mall, Q63337240 North Woods and North Meadow, CC0-1.0, <https://www.wikidata.org/wiki/Q160409>
+
+Dimensions:
+
+- `heightM`: 27 m (estimate): the folly tower's roof tip above the surrounding park (the rock outcrop and a square tower), proportioned by eye
+- `treeLowM`: 14 m (estimate): the lower canopy height of the tree masses
+- `treeHighM`: 22 m (estimate): the upper canopy height of the tree masses (below the folly)
+- `treeSpacingM`: 52 m (estimate): the spacing of canopy mounds at the finest level at density 1 (each mound a clump of trees)
+- `bethesda`: 40.7741, -73.9711 (wikidata): Bethesda Terrace and Fountain (Q532029, P625): the generic terrace and fountain, facing up the park toward the lake
+- `terrace`: 70 × 60 m (estimate): the terrace and its fountain plaza: width across the park and depth toward the lake
+- `terraceM`: 6 m (estimate): the upper terrace above the plaza
+- `fountainRadiusM`: 14 m (estimate): the fountain basin's radius
+- `fountainM`: 7 m (estimate): the tiered fountain's height (no figure, LEGAL-1)
+- `belvedere`: 40.7794, -73.9691 (wikidata): Belvedere Castle (Q816268, P625): the generic folly on its rock
+- `rockM`: 12 m (estimate): the rock outcrop the folly stands on, above the park
+- `rockRadiusM`: 30 m (estimate): the outcrop's radius at its foot
+- `keep`: 12 × 9 m (estimate): the folly's half-length and height (its keep)
+- `towerWidthM`: 7 m (estimate): the folly tower's side
+- `towerRoofM`: 4 m (estimate): the turret roof's rise
+- `reservoir`: 40.7864, -73.9623 (estimate): the Reservoir's middle, centred across the park and north of the Great Lawn (the Wikidata Q1190219 point, 40.785089, -73.960475, lies near its south-east shore)
+- `reservoirAxes`: 420 × 300 m (derived): semi-axes along and across the park: an ellipse of about the reservoir's Wikidata area (43 ha, P2046; drawn 92 %), kept between the drives and clear of the Great Lawn
+- `greatLawn`: 40.7813, -73.9665 (wikidata): Great Lawn and Turtle Pond (Q903865, P625, first point)
+- `greatLawnAxes`: 150 × 105 m (estimate): the Great Lawn's semi-axes along and across the park
+- `turtlePond`: 40.77985, -73.96855 (estimate): Turtle Pond, between the Great Lawn and the folly (by eye)
+- `turtlePondAxes`: 80 × 32 m (estimate): Turtle Pond's semi-axes
+- `sheepMeadow`: 40.771944, -73.975 (wikidata): Sheep Meadow (Q902461, P625)
+- `sheepMeadowAxes`: 158.5 × 121.9 m (derived): semi-axes of an ellipse of Sheep Meadow's Wikidata area (15 acres, P2046)
+- `harlemMeer`: 40.7966, -73.9517 (wikidata): Harlem Meer (Q3508849, P625)
+- `harlemMeerAxes`: 140.8 × 100.6 m (estimate): Harlem Meer's semi-axes (about 11 acres)
+- `pond`: 40.766361, -73.97449 (wikidata): The Pond (Q7757717, P625)
+- `pondAxes`: 95 × 45 m (estimate): The Pond's semi-axes
+- `conservatoryWater`: 40.77418, -73.96747 (wikidata): Conservatory Water (Q5163141, P625)
+- `conservatoryWaterAxes`: 60 × 38 m (estimate): Conservatory Water's semi-axes
+- `lake`: 40.7763, -73.9718 (estimate): the Lake's middle, north of the terrace (no Wikidata point found; by eye)
+- `lakeAxes`: 210 × 105 m (estimate): the Lake's semi-axes (about 20 acres)
+- `northMeadow`: 40.7935, -73.9585 (estimate): North Meadow, south of the North Woods point (Q63337240), by eye
+- `northMeadowAxes`: 190 × 120 m (estimate): North Meadow's semi-axes
+- `mallSouth`: 40.771111, -73.971667 (wikidata): the Mall (Q5061610, P625, second point): its south end; it runs to the terrace
+- `mallWidthM`: 12 m (estimate): the Mall's paved width
+- `driveWidthM`: 9 m (estimate): the park drive's width
+- `driveInset`: 130 × 95 m (estimate): how far the loop drive runs inside the park outline: from each long side and from each end
+- `lampSpacingM`: 80 m (estimate): lamps along the drive at the finest level
+
+Readability scale (drawn width ÷ true width): structures ×2, paths ×2, lamp ×3.
+
+Game scale: heights ×1.8, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 (trees, the folly, the terrace); the plan stays the map's park outline (x1.0) so the model fits the green the map draws; structures and paths take the readability scale instead.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6748 triangles, 171052 bytes (`public/landmarks/central-park/lod0.glb`)
+- L1: 3290 triangles, 83288 bytes (`public/landmarks/central-park/lod1.glb`)
+- L2: 1179 triangles, 29900 bytes (`public/landmarks/central-park/lod2.glb`)
+- L3: 570 triangles, 14368 bytes (`public/landmarks/central-park/lod3.glb`)
+
 ### city-hall
 
 Retrieved 2026-10-08. Sources:
