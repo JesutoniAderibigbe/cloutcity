@@ -542,7 +542,7 @@
         "distanceM": 700,
         "polarDeg": 38,
         "portraitDistanceM": 1050,
-        "wideStartOffsetM": { "x": 0, "y": -216 }
+        "wideStartOffsetM": { "x": 0, "y": -180 }
       },
       "buildings": {
         "heightScale": 0.32,
