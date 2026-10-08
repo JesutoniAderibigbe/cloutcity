@@ -46,6 +46,7 @@ export const LANDMARK_ROLES = [
   'signal',
   'foliage',
   'lawn',
+  'water',
 ] as const
 export type LandmarkRole = (typeof LANDMARK_ROLES)[number]
 

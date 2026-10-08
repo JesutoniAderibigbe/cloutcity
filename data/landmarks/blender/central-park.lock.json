@@ -5,7 +5,7 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "f7e49d190cff7bace26c464e0358d03a2e694ba7093da65067557d959baf989c",
+  "inputsSha": "9b934550196b2102fee2961afd0786e1991809ed5f9bab3be94f776516618082",
   "caps": {
     "low": 1200,
     "mid": 3500,
@@ -15,15 +15,15 @@
     {
       "level": 0,
       "file": "public/landmarks/central-park/lod0.glb",
-      "sha256": "34cb9a6c7f5c60bf01781a6aaf49e778541bd11d0e307017861fe21af1fc6047",
-      "bytes": 171052,
+      "sha256": "0ba62751906a6cf34c294b1f7b76074fa747289cca25b595ff59694c2526c5cf",
+      "bytes": 171044,
       "triangles": 6748,
       "uncompressedBytes": 894932
     },
     {
       "level": 1,
       "file": "public/landmarks/central-park/lod1.glb",
-      "sha256": "0703cbf4d48357cd2fac4fb39e8ed78d33e5f4fe72ba2c018c54c7ab13b1cd1a",
+      "sha256": "80e14046786e14b797d29c24438c0101520a7d308ac6983bf51c9369ccee3e54",
       "bytes": 83288,
       "triangles": 3290,
       "uncompressedBytes": 419832
@@ -31,7 +31,7 @@
     {
       "level": 2,
       "file": "public/landmarks/central-park/lod2.glb",
-      "sha256": "35d7daf8b1087ae6e9048e2a77953ae3b3ef2039b80d036964838939ec44718f",
+      "sha256": "4ebba39f3503e0d0f629b1ff99dfc0e5123917a61d41ca4897a9466f810c07c5",
       "bytes": 29900,
       "triangles": 1179,
       "uncompressedBytes": 143200
@@ -39,8 +39,8 @@
     {
       "level": 3,
       "file": "public/landmarks/central-park/lod3.glb",
-      "sha256": "96285b38de7bc0fb3f9655d9c18c1bc6bbbebcc18df3c78caae81d00a277ced8",
-      "bytes": 14368,
+      "sha256": "33bad6f2d9a25b90e79a7020686005a52d8cc5ea0faa1b06fca17b07d6961140",
+      "bytes": 14364,
       "triangles": 570,
       "uncompressedBytes": 62852
     }

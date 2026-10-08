@@ -218,10 +218,10 @@ Game scale: heights ×1.8, widths ×1. Game scale (orchestrator decision 2026-10
 
 Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
 
-- L0: 6748 triangles, 171052 bytes (`public/landmarks/central-park/lod0.glb`)
+- L0: 6748 triangles, 171044 bytes (`public/landmarks/central-park/lod0.glb`)
 - L1: 3290 triangles, 83288 bytes (`public/landmarks/central-park/lod1.glb`)
 - L2: 1179 triangles, 29900 bytes (`public/landmarks/central-park/lod2.glb`)
-- L3: 570 triangles, 14368 bytes (`public/landmarks/central-park/lod3.glb`)
+- L3: 570 triangles, 14364 bytes (`public/landmarks/central-park/lod3.glb`)
 
 ### city-hall
 

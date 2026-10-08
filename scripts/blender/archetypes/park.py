@@ -40,7 +40,6 @@ LEVELS = {
 LAWN_LIFT = 0.35
 WATER_LIFT = 0.25
 PATH_LIFT = 0.5
-WATER_TONE = 0.86
 LAMP_LIFT = 4.0
 #: A lamplit drive glows faintly at night, so the park's drives draw its outline in the dark.
 PATH_GLOW = 0.3
@@ -203,7 +202,7 @@ def _disc(builder, c, z0, sides):
     if c["kind"] == "water":
         # A pale shore ring under the water, showing round its edge.
         builder.add(_flat(ellipse(c, sides, 5.0), z0, WATER_LIFT), "granite", tone=0.9, jitter=False)
-        builder.add(_flat(ellipse(c, sides), z0, WATER_LIFT + 0.1), "glass", tone=WATER_TONE, jitter=False)
+        builder.add(_flat(ellipse(c, sides), z0, WATER_LIFT + 0.1), "water", jitter=False)
     else:
         builder.add(_flat(ellipse(c, sides), z0, LAWN_LIFT), "lawn", tone=c.get("tone", 1.0))
 
@@ -381,7 +380,7 @@ def _fountain(spec, s, centre, detail, flood, builder):
     sides = (16, 12, 8)[min(detail, 2)] if detail else 8
     r = s["fountain"]
     builder.add(setback_ring(fx, fy, z0, z0 + 1.2 * k, r, sides), "stone", tone=1.05, glow=flood)
-    builder.add(setback_ring(fx, fy, z0, z0 + 1.0 * k, r * 0.9, sides), "glass", tone=WATER_TONE)
+    builder.add(setback_ring(fx, fy, z0, z0 + 1.0 * k, r * 0.9, sides), "water")
     tiers = 2 if detail else 1
     zt = z0 + 1.0 * k
     for i in range(tiers):
