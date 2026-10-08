@@ -298,6 +298,36 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L2: 386 triangles, 9744 bytes (`public/landmarks/city-hall/lod2.glb`)
 - L3: 168 triangles, 5940 bytes (`public/landmarks/city-hall/lod3.glb`)
 
+### coney-island-boardwalk
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q4380603 (Riegelmann Boardwalk), CC0-1.0, <https://www.wikidata.org/wiki/Q4380603>
+
+Dimensions:
+
+- `heightM`: 10.5 m (estimate): the shelters' roofs above the street (deck 3 m plus shelters 7.5 m): the model's top
+- `lengthM`: 2700 m (estimate): the stretch modelled, centred on the Wikidata point (the boardwalk runs about 4.3 km in all)
+- `widthM`: 24.4 m (estimate): the commonly published 80 ft
+- `deckM`: 3 m (estimate): the deck above the beach
+- `headingDeg`: 76 m (estimate): the boardwalk's compass heading (east-north-east along the shore), by eye
+- `beachM`: 110 m (estimate): the beach between the boardwalk and the water line
+- `pier`: 12 × 300 m (estimate): the fishing pier: width (widthM) and length out from the boardwalk (depthM)
+- `shelter`: 18 × 10 m (estimate): a generic roofed shelter on the deck
+- `shelterM`: 7.5 m (estimate): the shelters' height above the deck
+- `pierWestM`: 350 m (estimate): how far west of the Wikidata point the fishing pier leaves the boardwalk
+
+Readability scale (drawn width ÷ true width): width ×1.6, lamp ×3.
+
+Game scale: heights ×1.6, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.6; lengths real, widths at the readability scale.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6970 triangles, 106416 bytes (`public/landmarks/coney-island-boardwalk/lod0.glb`)
+- L1: 3290 triangles, 52344 bytes (`public/landmarks/coney-island-boardwalk/lod1.glb`)
+- L2: 1130 triangles, 21256 bytes (`public/landmarks/coney-island-boardwalk/lod2.glb`)
+- L3: 122 triangles, 4384 bytes (`public/landmarks/coney-island-boardwalk/lod3.glb`)
+
 ### deco-spire
 
 Retrieved 2026-10-08. Sources:

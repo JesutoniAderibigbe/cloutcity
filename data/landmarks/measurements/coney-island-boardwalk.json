@@ -1,0 +1,77 @@
+{
+  "id": "coney-island-boardwalk",
+  "base": "land",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q4380603 (Riegelmann Boardwalk)",
+      "url": "https://www.wikidata.org/wiki/Q4380603",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 10.5,
+      "source": "estimate",
+      "note": "the shelters' roofs above the street (deck 3 m plus shelters 7.5 m): the model's top"
+    },
+    "lengthM": {
+      "valueM": 2700,
+      "source": "estimate",
+      "note": "the stretch modelled, centred on the Wikidata point (the boardwalk runs about 4.3 km in all)"
+    },
+    "widthM": {
+      "valueM": 24.4,
+      "source": "estimate",
+      "note": "the commonly published 80 ft"
+    },
+    "deckM": {
+      "valueM": 3.0,
+      "source": "estimate",
+      "note": "the deck above the beach"
+    },
+    "headingDeg": {
+      "valueM": 76,
+      "source": "estimate",
+      "note": "the boardwalk's compass heading (east-north-east along the shore), by eye"
+    },
+    "beachM": {
+      "valueM": 110,
+      "source": "estimate",
+      "note": "the beach between the boardwalk and the water line"
+    },
+    "pier": {
+      "widthM": 12,
+      "depthM": 300,
+      "source": "estimate",
+      "note": "the fishing pier: width (widthM) and length out from the boardwalk (depthM)"
+    },
+    "shelter": {
+      "widthM": 18,
+      "depthM": 10,
+      "source": "estimate",
+      "note": "a generic roofed shelter on the deck"
+    },
+    "shelterM": {
+      "valueM": 7.5,
+      "source": "estimate",
+      "note": "the shelters' height above the deck"
+    },
+    "pierWestM": {
+      "valueM": 350,
+      "source": "estimate",
+      "note": "how far west of the Wikidata point the fishing pier leaves the boardwalk"
+    }
+  },
+  "readabilityScale": {
+    "width": 1.6,
+    "lamp": 3,
+    "note": "The deck is drawn 1.6 times its width so it reads along 2.7 km; lamps three times a lamp head. No rides, no signs, no text (LEGAL-1)."
+  },
+  "gameScale": {
+    "height": 1.6,
+    "plan": 1.0,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.6; lengths real, widths at the readability scale."
+  }
+}

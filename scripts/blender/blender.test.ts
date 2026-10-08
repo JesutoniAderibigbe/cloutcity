@@ -29,13 +29,7 @@ import { checkLandmark, readLock, sourcesProblems } from './run.ts'
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 
 /** Landmarks still waiting for their Blender model (S07c): every other landmark is built. */
-const PENDING = new Set([
-  'flushing-meadows',
-  'queens-ballpark',
-  'brooklyn-arena',
-  'coney-island-boardwalk',
-  'bronx-ballpark',
-])
+const PENDING = new Set(['flushing-meadows', 'queens-ballpark', 'brooklyn-arena', 'bronx-ballpark'])
 
 const TIER_FINEST = { high: 0, mid: 1, low: 2 } as const
 const landTop = sceneJson.land.heightM - sceneJson.land.baseM
