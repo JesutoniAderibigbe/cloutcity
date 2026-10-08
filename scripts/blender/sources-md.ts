@@ -26,6 +26,7 @@ function value(dimension: Dimension): string {
   if ('valueM' in dimension) return `${dimension.valueM} m`
   if ('widthM' in dimension) return `${dimension.widthM} × ${dimension.depthM} m`
   if ('diameterM' in dimension) return `${dimension.count} × ${dimension.diameterM} m diameter`
+  if ('lat' in dimension) return `${dimension.lat}, ${dimension.lng}`
   return `${dimension.count}`
 }
 

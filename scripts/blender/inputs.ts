@@ -90,6 +90,9 @@ export function buildInputs(id: string): Record<string, unknown> {
   // A scene role names a models or world token (DEC-26); same lookup order as cclib/inputs.py.
   const colours = { ...theme.colors, ...theme.world, ...theme.models }
   const perf = readJson('data/config/perf.json') as Record<string, unknown>
+  const measurements = JSON.parse(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`), 'utf8')) as {
+    park?: string
+  }
   const scripts = Object.fromEntries(
     scriptFiles(id).map((file) => [file, sha256(readFileSync(join(BLENDER_DIR, file)))]),
   )
@@ -106,6 +109,20 @@ export function buildInputs(id: string): Record<string, unknown> {
       landmarkTrianglesMax: perf.landmarkTrianglesMax,
       landmarkLodRatioMax: perf.landmarkLodRatioMax,
     },
+    // Only park models read the map's park area and the landmark's location (cclib/inputs.py).
+    ...(measurements.park === undefined ? {} : { park: parkInputs(id, measurements.park) }),
+  }
+}
+
+function parkInputs(id: string, parkId: string): Record<string, unknown> {
+  const parks = readJson('data/geo/parks.derived.json') as { projection: unknown; parks: Entry[] }
+  const places = readJson('data/landmarks/landmarks.json') as {
+    landmarks: (Entry & { location: unknown })[]
+  }
+  return {
+    projection: parks.projection,
+    area: entryOf(parks.parks, parkId),
+    location: entryOf(places.landmarks, id)?.location ?? null,
   }
 }
 
