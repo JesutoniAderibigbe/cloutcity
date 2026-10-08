@@ -15,9 +15,10 @@
     "welcome.audio.own": "I'll bring my own",
     "welcome.audio.error": "Choose a sound option: Play our music or I'll bring my own.",
     "welcome.submit": "Start playing",
-    "welcome.footer.create": "Create account",
-    "welcome.footer.login": "Have an account? Log in",
-    "welcome.audioOnly": "You're logged in. Last thing: how do you want the sound?",
-    "welcome.consentAgain": "Our Terms or Privacy Policy changed since you last agreed."
+    "welcome.landing.title": "Clout City: NYC",
+    "welcome.landing.body": "Tap In. Blow Up. Make it in New York, live with real players.",
+    "welcome.landing.signup": "Sign up free",
+    "welcome.landing.login": "Log in",
+    "welcome.landing.offline": "You need a connection to create your account."
   }
 }

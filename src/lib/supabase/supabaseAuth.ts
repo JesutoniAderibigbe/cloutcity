@@ -1,21 +1,17 @@
 /**
- * The guest's anonymous Supabase session (S05). Loaded only through `import()` from
- * src/state/session.ts, after the 18+ attestation, with a valid configuration and once the map
- * is playable, so @supabase/supabase-js never reaches the shell or the boot islands
- * (src/lib/client-imports.test.ts, src/lib/shell-boundary.test.ts).
+ * The game's Supabase session (S05, S19, DEC-62). Loaded only through `import()` from
+ * src/state/session.ts and the account screens, so @supabase/supabase-js never reaches the shell
+ * or the boot islands (src/lib/client-imports.test.ts, src/lib/shell-boundary.test.ts).
  *
- * A session this device already holds (supabase-js keeps it under its default
- * `sb-<project ref>-auth-token` key, Q7) is reused, a guest's or a saved account's (S19);
- * otherwise it signs in anonymously, unless the player signed out of an account on this device
- * (then nothing is created: sign-out never silently becomes a new guest). Either way the welcome
- * card's attestation and consent are then recorded on the server (`attest_and_consent`, S18,
- * idempotent: the first attestation wins), which every social, realtime and purchase RPC
- * requires.
+ * The session this device holds (supabase-js keeps it under its default
+ * `sb-<project ref>-auth-token` key, Q7) is the player's account, signed in by the sign-up or
+ * log-in screen; nothing here ever creates one, so a signed-out device never silently becomes a
+ * guest. The welcome card's attestation and consent are recorded on the server on every connect
+ * (`attest_and_consent`, S18, idempotent: the first attestation wins), which every social,
+ * realtime and purchase RPC requires.
  *
- * The client uses the PKCE flow (S19): a Google round trip comes back to /auth/callback with a
- * code only this browser can exchange. It never reads tokens from the URL itself
- * (`detectSessionInUrl: false`): only /auth/callback finishes a link, so /mod's own sign-in
- * fragment can never be picked up by the game (NOTE-23).
+ * The client uses the PKCE flow and never reads tokens from the URL (`detectSessionInUrl:
+ * false`), so /mod's own sign-in link can never be picked up by the game (NOTE-23).
  *
  * Nothing here logs: the caller logs the outcome without the user id or any token.
  */
@@ -35,7 +31,7 @@ export interface AuthFailure {
 export type ConnectResult =
   | { readonly ok: true; readonly reused: boolean; readonly permanent: boolean }
   | { readonly ok: false; readonly stage: 'session'; readonly failure: AuthFailure }
-  /** No session, and the player signed out of an account here: no guest is created. */
+  /** No account session on this device: nothing is created (DEC-62). */
   | { readonly ok: false; readonly stage: 'signed-out' }
   | {
       readonly ok: false
@@ -85,38 +81,24 @@ function clientFor(env: SupabaseEnv): SupabaseClient<Database> {
 }
 
 /**
- * Reuses the session on this device or starts an anonymous one (unless `signedOut`), then
- * records the attestation. Never throws.
+ * Reuses the account session on this device (DEC-62: nobody plays as a guest any more, so no
+ * anonymous sign-in ever happens here; a guest session from before is reused until its player
+ * signs up on it), then records the attestation. No session: `signed-out`, and play stays on
+ * this device. Never throws.
  */
-export async function connectAnonymous(
+export async function connectSession(
   env: SupabaseEnv,
   attestation: AttestationArgs,
-  options: { readonly signedOut: boolean } = { signedOut: false },
 ): Promise<ConnectResult> {
   try {
     const client = clientFor(env)
-    let reused = false
-    let permanent = false
     const existing = await client.auth.getSession()
     if (existing.error !== null) {
       return { ok: false, stage: 'session', failure: failureOf(existing.error) }
     }
-    if (existing.data.session !== null) {
-      reused = true
-      permanent = existing.data.session.user.is_anonymous !== true
-    } else if (options.signedOut) {
-      return { ok: false, stage: 'signed-out' }
-    } else {
-      const { data, error } = await client.auth.signInAnonymously()
-      if (error !== null) return { ok: false, stage: 'session', failure: failureOf(error) }
-      if (data.session === null) {
-        return {
-          ok: false,
-          stage: 'session',
-          failure: { name: 'NoSession', status: undefined, code: undefined },
-        }
-      }
-    }
+    if (existing.data.session === null) return { ok: false, stage: 'signed-out' }
+    const reused = true
+    const permanent = existing.data.session.user.is_anonymous !== true
 
     const { data, error } = await client.rpc('attest_and_consent', attestation)
     if (error !== null) return { ok: false, stage: 'attest', code: parseRpcError(error) }

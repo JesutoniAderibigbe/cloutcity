@@ -1,42 +1,28 @@
 /**
- * The account coordinator (S19): what changes on this device when the account behind the guest
- * client changes. Loaded lazily with supabase-js once the guest session has connected
- * (src/state/session.ts), and started once per page. It lives beside the Supabase modules, not in
- * src/state, because it calls supabase-js (src/lib/client-imports.test.ts).
+ * The account coordinator (S19, DEC-62): what changes on this device when the account behind the
+ * game client changes. Loaded lazily with supabase-js once the session has connected
+ * (src/state/session.ts) or the player has signed up or logged in, and started once per page. It
+ * lives beside the Supabase modules, not in src/state, because it calls supabase-js
+ * (src/lib/client-imports.test.ts).
  *
- * - Same user, now saved (a guest's email link opened here or on another device, or Google
- *   linked): status `permanent`, the sync record notes the saved owner, nothing restarts.
- * - Another user signed in (a log-in from the Me tab or the sheet): cloud sync restarts on the
- *   same client for that account (S18c's restore table decides: upload, adopt, or ask), the
- *   moderator notices reload, and the device's attestation is recorded for the account
- *   (idempotent: an attested account keeps its own).
- * - Signed out (here, or in another tab): sync stops, the game stays playable on this device,
- *   and `signedOut` is remembered so the next boot never quietly creates a new guest.
- * - An email upgrade link is out: this device asks the server whether it was confirmed, on
- *   focus and every `upgradePollMs`, since the link may be opened on another device.
+ * - Same user, now saved (a guest from before DEC-62 who signed up on their own session): status
+ *   `permanent`, the sync record notes the saved owner, nothing restarts.
+ * - Another user signed in (a log-in): cloud sync restarts on the same client for that account
+ *   (S18c's restore table decides: upload, adopt, or ask), the moderator notices reload, and the
+ *   device's attestation is recorded for the account (idempotent: the first one wins).
+ * - Signed out (here, or in another tab): sync stops, the game stays on this device, and the
+ *   landing comes back (src/state/entry.ts): nobody plays on as a guest.
  *
  * Nothing here logs an email, a user id or a token.
  */
 import type { AuthChangeEvent, Session, SupabaseClient, User } from '@supabase/supabase-js'
 import { log, type Logger } from '@/lib/log'
-import {
-  accountConfig,
-  accountIdentityStore,
-  accountStore,
-  upgradePending,
-  type AccountStore,
-} from '@/state/account'
+import { accountConfig, accountIdentityStore } from '@/state/account'
 import { clearAccountNotices } from '@/state/accountNotices'
+import { setSignedIn } from '@/state/entry'
 import { guestSessionStore, type GuestSessionStore } from '@/state/guestSession'
-import { armSavePrompt } from '@/state/savePrompt'
 import { syncStatusStore, type SyncStatusStore } from '@/state/syncStatus'
-import {
-  identityOf,
-  pollUpgraded,
-  signOutLocal,
-  type AccountIdentity,
-  type AccountResult,
-} from './accountAuth'
+import { identityOf, signOutLocal, type AccountIdentity, type AccountResult } from './accountAuth'
 import type { AttestationArgs } from './attestation'
 import type { Database } from './database.types'
 import type { SupabaseEnv } from './env'
@@ -47,8 +33,9 @@ export interface AccountSessionDeps {
   readonly env: SupabaseEnv
   readonly session: GuestSessionStore
   readonly sync: SyncStatusStore
-  readonly account: AccountStore
   readonly identity: typeof accountIdentityStore
+  /** Whether an account is signed in on this device (the entry gate's signal). */
+  readonly setSignedIn: (signedIn: boolean) => void
   /** Cloud sync (src/state/cloudSync.ts), loaded with this module. */
   readonly cloud: {
     start(client: SupabaseClient<Database>): void
@@ -61,20 +48,13 @@ export interface AccountSessionDeps {
   readonly loadNotices: () => void
   /** This device's 18+ attestation and consent (the welcome card's), or null. */
   readonly attestation: () => AttestationArgs | null
-  readonly pollUpgraded: (env: SupabaseEnv) => Promise<AccountIdentity | null>
   readonly signOutLocal: (env: SupabaseEnv) => Promise<AccountResult>
-  readonly now: () => number
-  /** Runs `listener` on focus and when the page becomes visible; returns a way to stop. */
-  readonly onFocus: (listener: () => void) => () => void
-  readonly every: (ms: number, listener: () => void) => () => void
   /** Defers work out of supabase-js's auth callback (its docs: never await auth calls in it). */
   readonly defer: (task: () => void) => void
   readonly logger: Logger
 }
 
 export interface AccountSession {
-  /** Starts watching for a confirmed email upgrade (after an upgrade link was sent). */
-  watchUpgrade(): void
   /**
    * Signs this device out. Unless `force`, it first gives unsent progress up to
    * `signOutFlushTimeoutMs` to reach the account and answers `unsent` when it could not.
@@ -87,7 +67,8 @@ export function createAccountSession(deps: AccountSessionDeps, user: User): Acco
   const { logger } = deps
   let current: AccountIdentity = identityOf(user)
   let stopped = false
-  let stopPoll: (() => void) | null = null
+  // Signed out on this device: the next sign-in (even to the same account) starts over.
+  let signedOutHere = false
   const cleanups: (() => void)[] = []
 
   const show = (identity: AccountIdentity | null) => {
@@ -100,17 +81,10 @@ export function createAccountSession(deps: AccountSessionDeps, user: User): Acco
     deps.session.setState({ status: permanent ? 'permanent' : 'anonymous', reason: null, reused })
   }
 
-  const settledPermanent = () => {
-    deps.account.getState().setSignedOut(false)
-    deps.account.getState().setPendingUpgrade(null)
-    stopPoll?.()
-    stopPoll = null
-  }
-
   const upgraded = (identity: AccountIdentity) => {
     if (stopped || current.permanent) return
     current = identity
-    settledPermanent()
+    deps.setSignedIn(true)
     deps.cloud.markPermanent()
     setOnline(true)
     show(identity)
@@ -118,8 +92,9 @@ export function createAccountSession(deps: AccountSessionDeps, user: User): Acco
   }
 
   const switched = (next: User) => {
+    signedOutHere = false
     current = identityOf(next)
-    if (current.permanent) settledPermanent()
+    if (current.permanent) deps.setSignedIn(true)
     clearAccountNotices()
     deps.cloud.restart(deps.client)
     setOnline(current.permanent)
@@ -142,14 +117,13 @@ export function createAccountSession(deps: AccountSessionDeps, user: User): Acco
   const signedOut = () => {
     if (stopped) return
     deps.cloud.stop()
-    deps.account.getState().setSignedOut(true)
-    deps.account.getState().setPendingUpgrade(null)
-    stopPoll?.()
-    stopPoll = null
     deps.session.setState({ status: 'local', reason: 'signed-out', reused: false })
     deps.sync.setState({ status: 'signedOut', identity: 'guest', controls: null })
     show(null)
     clearAccountNotices()
+    signedOutHere = true
+    // The landing comes back over the game: nobody plays on as a guest (DEC-62).
+    deps.setSignedIn(false)
     logger.info('Signed out of the account on this device')
   }
 
@@ -161,34 +135,10 @@ export function createAccountSession(deps: AccountSessionDeps, user: User): Acco
     }
     const next = session?.user
     if (next === undefined) return
-    if (next.id !== current.userId) {
+    if (signedOutHere || next.id !== current.userId) {
       deps.defer(() => switched(next))
     } else if (next.is_anonymous !== true && !current.permanent) {
       deps.defer(() => upgraded(identityOf(next)))
-    }
-  }
-
-  const poll = () => {
-    if (stopped || current.permanent) return
-    if (!upgradePending(deps.account.getState().pendingUpgradeAt, deps.now())) {
-      // The link ran out (an hour): stop asking until the player sends another.
-      deps.account.getState().setPendingUpgrade(null)
-      stopPoll?.()
-      stopPoll = null
-      return
-    }
-    void deps.pollUpgraded(deps.env).then((identity) => {
-      if (identity !== null && identity.userId === current.userId) upgraded(identity)
-    })
-  }
-
-  const watchUpgrade = () => {
-    if (stopped || current.permanent || stopPoll !== null) return
-    const stopFocus = deps.onFocus(poll)
-    const stopTimer = deps.every(accountConfig.upgradePollMs, poll)
-    stopPoll = () => {
-      stopFocus()
-      stopTimer()
     }
   }
 
@@ -197,15 +147,10 @@ export function createAccountSession(deps: AccountSessionDeps, user: User): Acco
 
   show(current)
   setOnline(current.permanent)
-  if (current.permanent) settledPermanent()
+  if (current.permanent) deps.setSignedIn(true)
   deps.cloud.start(deps.client)
-  if (!current.permanent && deps.account.getState().pendingUpgradeAt !== null) {
-    watchUpgrade()
-    poll()
-  }
 
   return {
-    watchUpgrade,
     async signOut(force) {
       if (!force) {
         const flushed = await deps.cloud.flushNow(accountConfig.signOutFlushTimeoutMs)
@@ -219,7 +164,6 @@ export function createAccountSession(deps: AccountSessionDeps, user: User): Acco
     },
     stop() {
       stopped = true
-      stopPoll?.()
       for (const cleanup of cleanups.splice(0)) cleanup()
     },
   }
@@ -237,32 +181,15 @@ export function browserAccountSessionDeps(
     attestation,
     session: guestSessionStore,
     sync: syncStatusStore,
-    account: accountStore,
     identity: accountIdentityStore,
+    setSignedIn,
     cloud,
     loadNotices: () => {
       void import('@/lib/safety/loadNotices')
         .then((module) => module.loadAccountNotices())
         .catch(() => undefined)
     },
-    pollUpgraded,
     signOutLocal,
-    now: () => Date.now(),
-    onFocus: (listener) => {
-      const visible = () => {
-        if (document.visibilityState === 'visible') listener()
-      }
-      window.addEventListener('focus', listener)
-      document.addEventListener('visibilitychange', visible)
-      return () => {
-        window.removeEventListener('focus', listener)
-        document.removeEventListener('visibilitychange', visible)
-      }
-    },
-    every: (ms, listener) => {
-      const timer = window.setInterval(listener, ms)
-      return () => window.clearInterval(timer)
-    },
     defer: (task) => {
       window.setTimeout(task, 0)
     },
@@ -306,14 +233,13 @@ export async function startAccountSession(
     ),
     user,
   )
-  armSavePrompt()
   return running
 }
 
 /**
- * Starts the coordinator after a log-in on a device that had no session running it (signed out
- * of an account here, so no guest was created): the account just signed in takes over, with its
- * own attestation (an existing account always has one).
+ * Starts the coordinator after a sign-up or log-in on a device that had no session running it
+ * (a first visit, or signed out here): the account just signed in takes over. Its attestation
+ * was recorded by the sign-up, or is the account's own.
  */
 export async function ensureAccountSession(env: SupabaseEnv): Promise<void> {
   if (running !== undefined) return

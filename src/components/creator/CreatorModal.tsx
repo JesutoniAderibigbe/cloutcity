@@ -11,6 +11,7 @@ import { copy, type CopyKey } from '@/lib/copy'
 import { formatCount } from '@/lib/format'
 import { creatorActions } from '@/state/creatorActions'
 import { closeCreator } from '@/state/creatorOpen'
+import { creatorClosed } from '@/state/onboardingFlow'
 import { STEP_COMPONENTS } from './stepRegistry'
 import { CREATOR_BUTTON, type StepBinding } from './stepTypes'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -42,6 +43,9 @@ function returnFocus() {
  */
 export function CreatorModal() {
   useModalPresence(true)
+  // DEC-62: during onboarding, closing the creator (finished or not) lands the player in their
+  // room, where the tour picks up.
+  useEffect(() => creatorClosed, [])
   const dialog = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const steps = creatorSteps(creatorConfig)

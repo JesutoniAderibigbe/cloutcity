@@ -8,7 +8,7 @@ import { BlockedMutedList } from '@/components/safety/BlockedMutedList'
 import { copy, copyParts, type CopyKey } from '@/lib/copy'
 import type { MyProfile } from '@/lib/forms/handle'
 import { connectedProfileApi, type ProfileApi } from '@/lib/supabase/profileApi'
-import { authCallbackUrl, supabaseEnv } from '@/lib/supabase/env'
+import { supabaseEnv } from '@/lib/supabase/env'
 import { safetyApi } from '@/lib/supabase/safetyApi'
 import { guestSessionStore, isOnlineSession, type GuestSessionState } from '@/state/guestSession'
 import { closeHudPanel } from '@/state/hudPanel'
@@ -26,8 +26,7 @@ const AccountSection = lazyIsland(
 
 /** Whether the account section has anything to show for this session. */
 function showsAccount(session: GuestSessionState): boolean {
-  if (supabaseEnv() === null || authCallbackUrl() === null) return false
-  return isOnlineSession(session) || session.reason === 'signed-out'
+  return supabaseEnv() !== null && session.status === 'permanent'
 }
 
 const sessionState = () => guestSessionStore.getState()

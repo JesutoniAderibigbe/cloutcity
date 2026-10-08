@@ -1,8 +1,8 @@
 /**
- * The bridge between the welcome card's local record (S05a) and the server's attestation RPCs
+ * The bridge between the device's local 18+ record (S05a) and the server's attestation RPCs
  * (S18, supabase/migrations/*_s18_profiles_attestation.sql). Pure: no Supabase import, so it
- * costs nothing in the shell bundle; the session code (S05) passes its output to
- * `supabase.rpc('attest_and_consent', ...)` right after `signInAnonymously()`.
+ * costs nothing in the shell bundle; the sign-up (DEC-62) and the session code (S05) pass its
+ * output to `supabase.rpc('attest_and_consent', ...)`.
  */
 import * as z from 'zod/mini'
 import type { AudioChoice } from '@/lib/forms/welcome'

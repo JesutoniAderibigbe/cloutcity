@@ -703,63 +703,59 @@ describe('S19 account chunks render with only their own namespaces', () => {
   const configure = () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'http://127.0.0.1:54321')
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon')
-    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://cloutcity.example')
   }
 
-  it('the account sheet in both modes, for every session state', async () => {
+  it('the sign-up and log-in screen, every error it can show, and the landing', async () => {
     configure()
-    const { AccountSheet } = await import('@/components/account/AccountSheet')
-    const { openAccountSheet } = await import('@/state/accountSheet')
-    const { guestSessionStore } = await import('@/state/guestSession')
-    const states = [
-      { status: 'anonymous', reason: null },
-      { status: 'permanent', reason: null },
-      { status: 'connecting', reason: null },
-      { status: 'local', reason: 'offline' },
-      { status: 'local', reason: 'signed-out' },
-      { status: 'local', reason: 'no-config' },
-    ] as const
-    for (const mode of ['save', 'login'] as const) {
-      openAccountSheet(mode)
-      for (const state of states) {
-        guestSessionStore.setState({ ...state, reused: false })
-        expect(renderToStaticMarkup(createElement(AccountSheet))).toContain(
-          'cc-feature:account-sheet',
-        )
-      }
+    const { AuthScreen } = await import('@/components/account/AuthScreen')
+    const props = {
+      titleId: 't',
+      introId: 'i',
+      onBack: () => {},
+      onSwitch: () => {},
+      onFinished: () => {},
     }
+    expect(
+      renderToStaticMarkup(createElement(AuthScreen, { ...props, start: 'signup' })),
+    ).toContain('data-auth-screen="signup"')
+    expect(renderToStaticMarkup(createElement(AuthScreen, { ...props, start: 'login' }))).toContain(
+      'data-auth-screen="login"',
+    )
+    renderToStaticMarkup(createElement(AuthScreen, { ...props, start: 'finish' }))
+    // Errors are picked at run time: from the server's answer and from the shared schemas.
+    const { copy } = await import('./index')
+    const forms = await import('@/lib/forms/account')
+    for (const key of Object.values(forms.ACCOUNT_ERROR_KEY)) expect(copy(key)).not.toBe('')
+    const signUp = forms.createAccountSchema().safeParse({ username: '', email: 'x', password: '' })
+    const login = forms.createLoginSchema().safeParse({ identifier: '', password: '' })
+    for (const issue of [...(signUp.error?.issues ?? []), ...(login.error?.issues ?? [])]) {
+      expect(copy(issue.message as Parameters<typeof copy>[0])).not.toBe('')
+    }
+    const { WelcomeGate } = await import('@/components/welcome/WelcomeGate')
+    renderToStaticMarkup(createElement(WelcomeGate))
     vi.unstubAllEnvs()
   })
 
-  it('the Me panel account section, the banner, the nudge, the welcome log-in and the callback', async () => {
+  it('the Me panel account section, signed in or not', async () => {
     configure()
     const { MePanel } = await import('@/components/profile/MePanel')
+    const { AccountSection } = await import('@/components/account/AccountSection')
     const { guestSessionStore } = await import('@/state/guestSession')
+    const { accountIdentityStore } = await import('@/state/account')
     for (const state of [
-      { status: 'anonymous', reason: null },
       { status: 'permanent', reason: null },
       { status: 'local', reason: 'signed-out' },
     ] as const) {
-      guestSessionStore.setState({ ...state, reused: false })
+      const session = { ...state, reused: false }
+      guestSessionStore.setState(session)
       renderToStaticMarkup(createElement(MePanel))
+      for (const maskedEmail of [null, 'j•••@example.com']) {
+        accountIdentityStore.setState({
+          identity: { userId: 'u1', permanent: true, maskedEmail, provider: 'email' },
+        })
+        renderToStaticMarkup(createElement(AccountSection, { session }))
+      }
     }
-    // The banner reads the stores' server snapshots here (no milestone yet): it renders nothing,
-    // and its copy is checked statically (key-usage.test.ts).
-    const { SaveProgressBanner } = await import('@/components/account/SaveProgressBanner')
-    renderToStaticMarkup(createElement(SaveProgressBanner))
-    const { SaveNudge } = await import('@/components/account/SaveNudge')
-    expect(renderToStaticMarkup(createElement(SaveNudge))).toContain('Save')
-    const { WelcomeLogin } = await import('@/components/account/WelcomeLogin')
-    renderToStaticMarkup(
-      createElement(WelcomeLogin, {
-        titleId: 't',
-        introId: 'i',
-        onBack: () => {},
-        onLoggedIn: () => {},
-      }),
-    )
-    const { AuthCallback } = await import('@/components/account/AuthCallback')
-    renderToStaticMarkup(createElement(AuthCallback))
     vi.unstubAllEnvs()
   })
 })

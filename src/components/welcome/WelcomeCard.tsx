@@ -4,19 +4,16 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { birthYearOptions, currentCityYear, isAdultBirthYear } from '@/engine/ageGate'
 import { copy, copyParts, type CopyKey } from '@/lib/copy'
 import { fieldErrors, firstInvalid, type FieldErrors } from '@/lib/forms/errors'
-import type { AccountAttestation } from '@/lib/account/handoff'
 import {
   AUDIO_CHOICES,
   EMPTY_WELCOME_VALUES,
-  WELCOME_MODE_FIELDS,
+  WELCOME_FIELDS,
   createWelcomeSchema,
   type AudioChoice,
   type WelcomeField,
-  type WelcomeMode,
   type WelcomeValues,
 } from '@/lib/forms/welcome'
 import { unlockAudioFromGesture } from '@/lib/audio/unlock'
-import { openAccountSheet } from '@/state/accountSheet'
 import { onboardingConfig, onboardingStore } from '@/state/onboarding'
 import { startGuestSession } from '@/state/session'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -25,26 +22,7 @@ import '@/lib/copy/ns/welcome'
 interface WelcomeCardProps {
   readonly titleId: string
   readonly introId: string
-  /**
-   * The 18+ check the logged-in account holds on the server (S19): the card then asks only the
-   * sound choice, plus the consent if the Terms changed since. Null for a new player.
-   */
-  readonly account?: AccountAttestation | null
-  /**
-   * Shows the account footer (S19): "Create account" (the card, then the save sheet) and "Have
-   * an account? Log in" (calls this). Absent when this build has no account configuration.
-   */
-  readonly onLogin?: () => void
 }
-
-/** What a logged-in account still needs to be asked on this device. */
-export function welcomeModeFor(account: AccountAttestation | null | undefined): WelcomeMode {
-  if (account === null || account === undefined) return 'full'
-  return account.consentVersion === onboardingConfig.consentVersion ? 'audio' : 'consent'
-}
-
-const FOOTER_BUTTON =
-  'min-h-11 rounded-full px-4 text-sm font-semibold text-taxi-ink underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 const ERROR_ID: Readonly<Record<WelcomeField, string>> = {
   birthYear: 'welcome-birth-year-error',
@@ -115,18 +93,13 @@ function ConsentLabel() {
  * Picking a sound option does nothing audible; submitting a passing card is the deliberate tap
  * that turns sound on (GR-13), with music muted from the start under "I'll bring my own".
  */
-export function WelcomeCard({ titleId, introId, account = null, onLogin }: WelcomeCardProps) {
-  const mode = welcomeModeFor(account)
-  const asks = WELCOME_MODE_FIELDS[mode]
+export function WelcomeCard({ titleId, introId }: WelcomeCardProps) {
   // Client-only (the gate renders nothing on the server), so reading the clock here is safe.
   const [currentYear] = useState(() => currentCityYear(Date.now()))
   const [values, setValues] = useState<WelcomeValues>(EMPTY_WELCOME_VALUES)
   const [attempted, setAttempted] = useState(false)
 
-  const schema = useMemo(
-    () => createWelcomeSchema(currentYear, onboardingConfig, mode),
-    [currentYear, mode],
-  )
+  const schema = useMemo(() => createWelcomeSchema(currentYear, onboardingConfig), [currentYear])
   const years = useMemo(
     () => birthYearOptions(currentYear, onboardingConfig.birthYearSpan),
     [currentYear],
@@ -148,46 +121,25 @@ export function WelcomeCard({ titleId, introId, account = null, onLogin }: Welco
     setAttempted(true)
     const parsed = schema.safeParse(values)
     if (!parsed.success) {
-      const field = firstInvalid(asks, errors)
-      const target = { birthYear, consent, audio: firstAudio }[field ?? asks[0] ?? 'audio']
+      const field = firstInvalid(WELCOME_FIELDS, errors)
+      const target = { birthYear, consent, audio: firstAudio }[field ?? 'birthYear']
       target.current?.focus()
       return
     }
-    // "Create account" submits the same card, then opens the save sheet (S19, Q2 ruling).
-    const submitter = (event.nativeEvent as SubmitEvent).submitter
-    const createAccount = submitter instanceof HTMLElement && submitter.dataset.intent === 'save'
     const nowMs = Date.now()
     const onboarding = onboardingStore.getState()
+    if (!isAdultBirthYear(Number(parsed.data.birthYear), nowMs, onboardingConfig)) {
+      onboarding.refuseUnderAge(nowMs)
+      return
+    }
     const choice = {
       consentVersion: onboardingConfig.consentVersion,
       audioChoice: parsed.data.audio,
     }
-    if (account !== null) {
-      // The server already holds this account's 18+ check: it is never asked again (S19, Q1).
-      const consentKept =
-        mode === 'audio' && account.consentVersion !== null && account.consentedAt !== null
-          ? { version: account.consentVersion, at: account.consentedAt }
-          : null
-      if (
-        !onboarding.completeFromAccount(
-          { attestedAt: account.attestedAt, consent: consentKept },
-          choice,
-          nowMs,
-        )
-      ) {
-        return
-      }
-    } else {
-      if (!isAdultBirthYear(Number(parsed.data.birthYear), nowMs, onboardingConfig)) {
-        onboarding.refuseUnderAge(nowMs)
-        return
-      }
-      if (!onboarding.completeAdult(choice, nowMs)) return
-    }
+    if (!onboarding.completeAdult(choice, nowMs)) return
     // Synchronously, still inside the submit gesture: Safari only starts audio there.
     unlockAudioFromGesture()
     startGuestSession()
-    if (createAccount) openAccountSheet('save')
   }
 
   return (
@@ -202,57 +154,50 @@ export function WelcomeCard({ titleId, introId, account = null, onLogin }: Welco
           {copy('welcome.title')}
         </h2>
         <p id={introId} className="text-sm text-muted">
-          {mode === 'full' ? copy('welcome.intro') : copy('welcome.audioOnly')}
+          {copy('welcome.intro')}
         </p>
       </header>
 
       <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
-        {asks.includes('birthYear') ? (
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="welcome-birth-year" className="text-sm font-semibold text-fg">
-              {copy('welcome.birthYear.label')}
-            </label>
-            <select
-              ref={birthYear}
-              id="welcome-birth-year"
-              name="birthYear"
-              value={values.birthYear}
-              onChange={(event) => update({ birthYear: event.target.value })}
-              className="min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-base text-fg focus-visible:outline-2 focus-visible:outline-focus"
-              {...invalidProps('birthYear', shown)}
-            >
-              <option value="">{copy('welcome.birthYear.placeholder')}</option>
-              {years.map((year) => (
-                <option key={year} value={String(year)}>
-                  {String(year)}
-                </option>
-              ))}
-            </select>
-            <FieldError field="birthYear" errors={shown} />
-          </div>
-        ) : null}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="welcome-birth-year" className="text-sm font-semibold text-fg">
+            {copy('welcome.birthYear.label')}
+          </label>
+          <select
+            ref={birthYear}
+            id="welcome-birth-year"
+            name="birthYear"
+            value={values.birthYear}
+            onChange={(event) => update({ birthYear: event.target.value })}
+            className="min-h-11 w-full rounded-xl border border-line bg-canvas px-3 text-base text-fg focus-visible:outline-2 focus-visible:outline-focus"
+            {...invalidProps('birthYear', shown)}
+          >
+            <option value="">{copy('welcome.birthYear.placeholder')}</option>
+            {years.map((year) => (
+              <option key={year} value={String(year)}>
+                {String(year)}
+              </option>
+            ))}
+          </select>
+          <FieldError field="birthYear" errors={shown} />
+        </div>
 
-        {asks.includes('consent') ? (
-          <div>
-            {mode === 'consent' ? (
-              <p className="text-sm text-muted">{copy('welcome.consentAgain')}</p>
-            ) : null}
-            <label className={`${CHOICE_LABEL} items-start text-sm text-fg`}>
-              <input
-                ref={consent}
-                id="welcome-consent"
-                type="checkbox"
-                name="consent"
-                checked={values.consent}
-                onChange={(event) => update({ consent: event.target.checked })}
-                className={CHOICE_INPUT}
-                {...invalidProps('consent', shown)}
-              />
-              <ConsentLabel />
-            </label>
-            <FieldError field="consent" errors={shown} />
-          </div>
-        ) : null}
+        <div>
+          <label className={`${CHOICE_LABEL} items-start text-sm text-fg`}>
+            <input
+              ref={consent}
+              id="welcome-consent"
+              type="checkbox"
+              name="consent"
+              checked={values.consent}
+              onChange={(event) => update({ consent: event.target.checked })}
+              className={CHOICE_INPUT}
+              {...invalidProps('consent', shown)}
+            />
+            <ConsentLabel />
+          </label>
+          <FieldError field="consent" errors={shown} />
+        </div>
 
         <fieldset role="radiogroup" className="flex flex-col" {...invalidProps('audio', shown)}>
           <legend className="text-sm font-semibold text-fg">{copy('welcome.audio.legend')}</legend>
@@ -279,16 +224,6 @@ export function WelcomeCard({ titleId, introId, account = null, onLogin }: Welco
         >
           {copy('welcome.submit')}
         </button>
-        {onLogin === undefined || account !== null ? null : (
-          <div data-welcome-account="" className="flex flex-wrap justify-center gap-x-2">
-            <button type="submit" data-intent="save" className={FOOTER_BUTTON}>
-              {copy('welcome.footer.create')}
-            </button>
-            <button type="button" onClick={onLogin} className={FOOTER_BUTTON}>
-              {copy('welcome.footer.login')}
-            </button>
-          </div>
-        )}
       </form>
     </div>
   )
