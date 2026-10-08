@@ -73,6 +73,8 @@ export interface TownsfolkUpdate {
   readonly targetY: number
   /** The FPS step-down's share of active slots (densityShare, without the night blend). */
   readonly share: number
+  /** The day/night rig's night blend, 0 (day) to 1 (night): where new cycles are spent. */
+  readonly night?: number
 }
 
 export interface TownsfolkView {
@@ -372,6 +374,7 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
         tf.focusRadiusM[tier],
         input.tS,
         input.share,
+        input.night ?? 0,
       )
       if (n > dist.length) {
         dist = new Float64Array(n * 2)
@@ -403,7 +406,8 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
         if (stepper === undefined || kitHeight <= 0) continue
         const kit = stepper.meshes
         const slot = kit.count++
-        const size = (h * fade) / kitHeight
+        // A local going in or out of a door shrinks or grows there (S04r).
+        const size = (h * fade * s.fade) / kitHeight
         position.set(s.x, groundY, -s.y)
         quaternion.setFromAxisAngle(up, s.yaw)
         scale.set(size, size, size)

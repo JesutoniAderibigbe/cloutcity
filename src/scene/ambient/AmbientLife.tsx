@@ -216,6 +216,7 @@ export default function AmbientLife({
     const memorials: Circle[] = geo.places.pins
       .filter((pin) => pin.style === 'memorial')
       .map((pin) => ({ x: pin.x, y: pin.y, r: 0 }))
+    const kindOf = new Map(geo.places.pins.map((pin) => [pin.id, pin.category]))
     const anchors: PedestrianAnchor[] = [
       ...geo.places.pins
         .filter((pin) => pin.style === 'normal')
@@ -334,7 +335,11 @@ export default function AmbientLife({
       config,
       material: created.material,
       groundY,
-      venues,
+      // Each place's kind sets its day and night pull (S04r).
+      venues: venues.map((venue) => ({
+        ...venue,
+        kind: venue.kind ?? kindOf.get(venue.id),
+      })),
       // The player's drawn height (src/scene/avatar/buildAvatar.ts mapCharacterHeight),
       // repeated so this chunk does not pull the avatar builder in.
       playerHeight: (distance) =>
@@ -518,6 +523,7 @@ export default function AmbientLife({
         targetX: target.x,
         targetY: -target.z,
         share: densityShare(config.density, levelRef.current, 0),
+        night: nightRef.current,
       }) ?? null
     planesViewRef.current =
       planesRef.current?.update({

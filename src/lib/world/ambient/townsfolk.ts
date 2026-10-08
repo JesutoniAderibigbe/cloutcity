@@ -6,15 +6,23 @@
  *
  * Every local belongs to a place (`perVenue` of them) and lives in staggered cycles of `epochS`.
  * Each cycle it is at one place (home, or one of its home's `neighbours` nearest places within a
- * walk of `maxWalkShare` of a cycle), standing on a ring in front of that place in one pose for
- * the whole stay (idle, talking to the ring's centre, or waving at the camera; the scene plays
- * the pose's clip), and at the end of the cycle it walks to the next cycle's place (S04q): it
- * turns on the spot, eases into a constant walking pace along the sidewalks of the street graph
- * the cars use (or a smoothed straight line where no street route is short enough), swings round
- * corners, eases to a stop on its next spot and turns to the pose it holds there. The walk ends
- * exactly where and as the next stay begins, so a local never jumps between the two.
- * Everything is a pure function of (seed, place, slot, city time): a reload, or another device,
- * shows the same local at the same spot.
+ * walk of `maxWalkShare` of a cycle, weighted by the place's `pull` by day and by night: clubs
+ * and lounges fill up at night, food spots and coffee by day), and at the end of the cycle it
+ * walks to the next cycle's place (S04q): it turns on the spot, eases into a constant walking
+ * pace along the sidewalks of the street graph the cars use (or a smoothed straight line where no
+ * street route is short enough), swings round corners, eases to a stop on its next spot and turns
+ * to the pose it holds there. The walk ends exactly where and as the next stay begins, so a local
+ * never jumps between the two.
+ *
+ * S04r makes them social. A place's locals pair up into crews that share a clock: in a cycle a
+ * crew meets up (`crew.meetShare`) its members walk to one place from wherever they were, wave
+ * hello, huddle facing each other and talk, then wave goodbye and part, or walk off together side
+ * by side. A stay on the ring is split into segments of idle and talk with a turn between, and
+ * often a stroll round the plaza mid-stay; some stays are spent inside (walk to the door, shrink
+ * in, come back out later); a local standing idle waves at a passer-by. A cycle's place is chosen
+ * once, under the night blend of the moment it is first needed, so dusk never re-routes a walk.
+ * Everything else is a pure function of (seed, place, slot, city time): a reload, or another
+ * device, shows the same local at the same spot.
  *
  * Distances are planned for locals `heightM` tall (the map style's tallest person, which they are
  * at every zoom but the closest): ring spacing, the sidewalk they keep to and their pace (in
@@ -40,6 +48,8 @@ export interface TownsfolkVenue {
   readonly id: string
   readonly x: number
   readonly y: number
+  /** The place's category (`club`, `coffee-shop`, ...): its day and night `pull`. */
+  readonly kind?: string
 }
 
 /** The two body variants, in kit order (src/scene/ambient/kitIds.ts TOWNSFOLK_VARIANTS). */
@@ -80,6 +90,8 @@ export interface TownsfolkSample {
   pose: TownsfolkPose
   /** Metres a second along the walk (0 while standing or turning). */
   speed: number
+  /** Size share, 1 drawn in full; below 1 while going in or coming out of a door (S04r). */
+  fade: number
 }
 
 export interface TownsfolkPalette {
@@ -106,13 +118,19 @@ export interface TownsfolkSim {
   readonly samples: readonly TownsfolkSample[]
   /**
    * Writes every active local whose home is within `radiusM` of (x, y) (plus a walk) at city
-   * time `tS` into `samples`, and returns how many.
+   * time `tS` into `samples`, and returns how many (locals inside a place are left out).
+   * `night` (0 day to 1 night) weights the places new cycles are spent at.
    */
-  collect(x: number, y: number, radiusM: number, tS: number, share: number): number
+  collect(x: number, y: number, radiusM: number, tS: number, share: number, night?: number): number
   /** The place index a local is at (or leaving) in the cycle that holds `tS` (tests). */
   venueAt(resident: number, tS: number): number
   /** The walk a local takes at the end of the cycle holding `tS`, or null when it stays (tests). */
   walkOf(resident: number, tS: number): TownsfolkWalk | null
+  /** The stay a local is on (or leaving) in the cycle that holds `tS` (tests). */
+  stayAt(
+    resident: number,
+    tS: number,
+  ): { venue: number; kind: TownsfolkStayKind; crew: number } | null
 }
 
 /** One walk between two stays. */
@@ -302,6 +320,32 @@ function dijkstra(graph: StreetGraph, from: number, to: number, limitM: number):
   return edges.reverse()
 }
 
+/** What a local spends a stay doing (S04r). */
+export type TownsfolkStayKind = 'ring' | 'crew' | 'inside'
+
+/** One stay, planned for a cycle. Mutable scratch (no allocation per tick). */
+interface Stay {
+  venue: number
+  kind: TownsfolkStayKind
+  /** Where the local stands (the door, for a stay inside). */
+  x: number
+  y: number
+  /** What it turns to while talking: its ring's centre, or its crew's huddle. */
+  fx: number
+  fy: number
+  /** The crew's leader (resident index) on a crew stay, else -1. */
+  crew: number
+}
+
+const newStay = (): Stay => ({ venue: 0, kind: 'ring', x: 0, y: 0, fx: 0, fy: 0, crew: -1 })
+
+/** Facing (fx, fy) from (x, y): yaw = atan2(dx, -dy) turns the model's +z that way. */
+const faceTo = (x: number, y: number, fx: number, fy: number) => Math.atan2(fx - x, -(fy - y))
+
+/** Facing north (into a door) and south (out of it, towards the camera). */
+const NORTH = Math.PI
+const SOUTH = 0
+
 export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
   const { venues, seed, config, tier, palette, graph } = options
   const h = options.heightM
@@ -310,16 +354,40 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
   const has = (pose: TownsfolkPose) => poses.includes(pose)
   const standing: TownsfolkPose = has('idle') ? 'idle' : (poses[0] ?? 'idle')
   const walking: TownsfolkPose = has('walk') ? 'walk' : standing
+  const talking: TownsfolkPose = has('talk') ? 'talk' : standing
   const speed = config.walkHeightsPerS * h
   // The longest walk a cycle allows (turns and easing included).
   const maxWalkS = config.epochS * config.maxWalkShare
   const maxWalkM = Math.max(0, (maxWalkS - 2 * config.turnS - config.easeS) * speed)
   const ringSlots = perVenue * 2
+  const { crew: crewConfig, passWave } = config
+
+  // ---- residents and their crews ------------------------------------------------------------
+  /**
+   * Each place's locals pair up into crews (S04r): slots 0-1, 2-3, ...; an odd last slot makes
+   * the last crew a trio. A crew shares its cycle's clock, so its members meet up, part and walk
+   * off together on the same beat.
+   */
+  const crews = perVenue < 2 ? 1 : Math.floor(perVenue / 2)
+  const crewOfSlot = (slot: number) =>
+    perVenue < 2 ? 0 : Math.min(Math.floor(slot / 2), crews - 1)
+  const crewSize = (crew: number) =>
+    perVenue < 2 ? 1 : crew < crews - 1 ? 2 : perVenue - 2 * (crews - 1)
 
   const residents: Resident[] = []
+  /** Per resident: its crew's leader (resident index), member index, crew size and hash. */
+  const leaderOf: number[] = []
+  const memberOf: number[] = []
+  const sizeOf: number[] = []
+  const crewHash: number[] = []
   venues.forEach((venue, v) => {
     for (let slot = 0; slot < perVenue; slot++) {
       const { profile, hash, rng } = townsfolkProfile(seed, venue.id, slot, config)
+      const crew = crewOfSlot(slot)
+      leaderOf.push(v * perVenue + 2 * crew)
+      memberOf.push(slot - 2 * crew)
+      sizeOf.push(crewSize(crew))
+      crewHash.push(hashInt(seed, hashString(venue.id), crew, 0x81))
       residents.push({
         profile,
         home: v,
@@ -338,14 +406,72 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
   const neighbours = venues.map((_, v) => nearest(venues, v, config.neighbours, maxWalkM * 0.8))
   // Each place's ring turns by its own hash, so neighbouring rings do not look stamped.
   const ringTurn = venues.map((venue) => hash01(seed, hashString(venue.id), 0x71) * Math.PI * 2)
+  /** How strongly a place draws visitors by day and by night (`pull`, by its kind). */
+  const pullDay = venues.map((venue) => config.pull[venue.kind ?? '']?.[0] ?? 1)
+  const pullNight = venues.map((venue) => config.pull[venue.kind ?? '']?.[1] ?? 1)
 
-  const offsetOf = (r: Resident) => hash01(seed, r.hash, 0x72) * config.epochS
-  const epochOf = (r: Resident, tS: number) => Math.floor((tS + offsetOf(r)) / config.epochS)
+  // A crew's members share one clock: their cycles start and end together.
+  const offsetOf = (i: number) => hash01(seed, crewHash[i] ?? 0, 0x72) * config.epochS
+  const epochOf = (i: number, tS: number) => Math.floor((tS + offsetOf(i)) / config.epochS)
 
-  const venueIn = (r: Resident, epoch: number): number => {
-    const near = neighbours[r.home] ?? []
-    if (near.length === 0 || hash01(seed, r.hash, epoch, 0x73) < config.homeShare) return r.home
-    return near[hashInt(seed, r.hash, epoch, 0x74) % near.length] ?? r.home
+  /** The night blend the next new choice is made under (latched per cycle, so never a jump). */
+  let night = 0
+  const pullOf = (v: number) => (pullDay[v] ?? 1) * (1 - night) + (pullNight[v] ?? 1) * night
+
+  /**
+   * Where a home's local (or crew) goes in a cycle: home (`homeShare`), else a place among home
+   * and its neighbours weighted by their pull at this time of day.
+   */
+  const choose = (home: number, key: number, epoch: number, salt: number): number => {
+    const near = neighbours[home] ?? []
+    if (near.length === 0 || hash01(seed, key, epoch, salt) < config.homeShare) return home
+    let total = pullOf(home)
+    for (const v of near) total += pullOf(v)
+    let pick = hash01(seed, key, epoch, salt + 1) * total - pullOf(home)
+    if (pick < 0) return home
+    for (const v of near) {
+      pick -= pullOf(v)
+      if (pick < 0) return v
+    }
+    return near[near.length - 1] ?? home
+  }
+
+  /**
+   * A cycle's place is chosen once, under the night blend of the moment it is first needed (the
+   * cycle before, for the walk there), and kept: dusk never re-routes a walk under way.
+   */
+  // Four cycles a slot: the one before, this one and the next are read together.
+  const memoEpoch = new Float64Array(residents.length * 4).fill(Number.NaN)
+  const memoVenue = new Int32Array(residents.length * 4)
+  const latched = (slot: number, epoch: number, pickIt: () => number): number => {
+    const k = slot * 4 + (epoch & 3)
+    if (memoEpoch[k] === epoch) return memoVenue[k] ?? 0
+    const venue = pickIt()
+    memoEpoch[k] = epoch
+    memoVenue[k] = venue
+    return venue
+  }
+  const crewMemoEpoch = new Float64Array(residents.length * 4).fill(Number.NaN)
+  const crewMemoVenue = new Int32Array(residents.length * 4)
+  const latchedCrew = (leader: number, epoch: number, pickIt: () => number): number => {
+    const k = leader * 4 + (epoch & 3)
+    if (crewMemoEpoch[k] === epoch) return crewMemoVenue[k] ?? 0
+    const venue = pickIt()
+    crewMemoEpoch[k] = epoch
+    crewMemoVenue[k] = venue
+    return venue
+  }
+
+  /** Whether a crew meets up in a cycle (all its members at one place, in a huddle). */
+  const together = (i: number, epoch: number) =>
+    (sizeOf[i] ?? 1) > 1 && hash01(seed, crewHash[i] ?? 0, epoch, 0x82) < crewConfig.meetShare
+
+  const venueIn = (i: number, r: Resident, epoch: number): number => {
+    if (together(i, epoch)) {
+      const leader = leaderOf[i] ?? i
+      return latchedCrew(leader, epoch, () => choose(r.home, crewHash[i] ?? 0, epoch, 0x86))
+    }
+    return latched(i, epoch, () => choose(r.home, r.hash, epoch, 0x73))
   }
 
   /** The ring slot a local takes at a place: home slots are even, visitors take the odd gaps. */
@@ -357,31 +483,51 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
 
   const centreX = (venue: number) => venues[venue]?.x ?? 0
   const centreY = (venue: number) => (venues[venue]?.y ?? 0) - config.frontM
+  const angleOf = (r: Resident, venue: number) =>
+    (ringTurn[venue] ?? 0) + (slotAt(r, venue) / ringSlots) * Math.PI * 2
 
-  const spotOf = (r: Resident, venue: number): XY => {
-    const angle = ringTurn[venue] ?? 0
-    const theta = angle + (slotAt(r, venue) / ringSlots) * Math.PI * 2
-    return {
-      x: centreX(venue) + Math.sin(theta) * ringRadius,
-      y: centreY(venue) + Math.cos(theta) * ringRadius,
+  /** The door a local goes in and out of: just in front of the place's point. */
+  const doorX = (venue: number) => centreX(venue)
+  const doorY = (venue: number) => (venues[venue]?.y ?? 0) - config.inside.doorM
+  /** How far past the door a local walks in while it fades. */
+  const stepInM = config.inside.stepOfHeight * h
+
+  /** Writes the stay of resident `i` in `epoch` into `out`. */
+  const stayOf = (i: number, r: Resident, epoch: number, out: Stay): Stay => {
+    const venue = venueIn(i, r, epoch)
+    out.venue = venue
+    out.crew = -1
+    if (together(i, epoch)) {
+      // A huddle just outside the ring, where the leader's ring spot is: members face its middle.
+      const leader = residents[leaderOf[i] ?? i] ?? r
+      const theta = angleOf(leader, venue)
+      const out1 = ringRadius + crewConfig.outOfHeight * h
+      out.fx = centreX(venue) + Math.sin(theta) * out1
+      out.fy = centreY(venue) + Math.cos(theta) * out1
+      const size = sizeOf[i] ?? 1
+      const phi = theta + Math.PI / 2 + ((memberOf[i] ?? 0) / size) * Math.PI * 2
+      const rad = crewConfig.huddleOfHeight * h
+      out.x = out.fx + Math.sin(phi) * rad
+      out.y = out.fy + Math.cos(phi) * rad
+      out.kind = 'crew'
+      out.crew = leaderOf[i] ?? i
+      return out
     }
-  }
-
-  const standingPose = (r: Resident, epoch: number): TownsfolkPose => {
-    const roll = hash01(seed, r.hash, epoch, 0x75)
-    if (has('talk') && roll < config.poseShare.talk) return 'talk'
-    if (has('wave') && roll < config.poseShare.talk + config.poseShare.wave) return 'wave'
-    return standing
-  }
-
-  /** Where a local faces through a stay: the ring's centre to talk, else the camera (south). */
-  const standingYaw = (r: Resident, epoch: number, venue: number, pose: TownsfolkPose) => {
-    if (pose === 'talk') {
-      const at = spotOf(r, venue)
-      // yaw = atan2(dx, -dy) turns the model's +z that way.
-      return Math.atan2(centreX(venue) - at.x, -(centreY(venue) - at.y))
+    if (hash01(seed, r.hash, epoch, 0x83) < config.inside.share) {
+      out.kind = 'inside'
+      out.x = doorX(venue)
+      out.y = doorY(venue)
+      out.fx = out.x
+      out.fy = out.y + 1
+      return out
     }
-    return (hash01(seed, r.hash, epoch, 0x76) * 2 - 1) * config.faceJitterRad
+    const theta = angleOf(r, venue)
+    out.kind = 'ring'
+    out.x = centreX(venue) + Math.sin(theta) * ringRadius
+    out.y = centreY(venue) + Math.cos(theta) * ringRadius
+    out.fx = centreX(venue)
+    out.fy = centreY(venue)
+    return out
   }
 
   // ---- street routes between places ---------------------------------------------------------
@@ -430,10 +576,13 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
     return best
   }
 
-  /** The sidewalk polyline from one place's street node to another's, or null. */
-  const routes = new Map<number, XY[] | null>()
-  const routeOf = (from: number, to: number): XY[] | null => {
-    const key = from * venues.length + to
+  /**
+   * The sidewalk polyline from one place's street node to another's, or null. `lane` (metres,
+   * right of the walking direction) spreads a crew walking together side by side.
+   */
+  const routes = new Map<string, XY[] | null>()
+  const routeOf = (from: number, to: number, lane: number): XY[] | null => {
+    const key = `${from}>${to}>${Math.round(lane * 100)}`
     if (routes.has(key)) return routes.get(key) ?? null
     let route: XY[] | null = null
     const a = accessOf(from)
@@ -449,7 +598,7 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
           if (edge === undefined) continue
           const forward = edge.from === node
           const pts = forward ? edge.points : [...edge.points].reverse()
-          const sidewalk = edge.halfWidthM + config.sidewalkOfHeight * h
+          const sidewalk = edge.halfWidthM + config.sidewalkOfHeight * h + lane
           for (let k = points.length === 0 ? 0 : 1; k < pts.length; k++) {
             const p = pts[k]
             if (p !== undefined) points.push(p)
@@ -474,19 +623,56 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
     return total
   }
 
+  /** A walk at a constant cruising pace (at least `speed`) along smoothed points. */
+  const walkAlong = (points: readonly XY[], streets: boolean, fitS: number): TownsfolkWalk => {
+    const path = makePath(smoothPolyline(points, 3))
+    // A long way round (the straight fallback's S) walks a little faster to fit the cycle.
+    const pace = Math.max(speed, path.length / Math.max(1, fitS))
+    const ease = Math.min(config.easeS, path.length / pace)
+    return {
+      path,
+      speedMps: pace,
+      durationS: path.length / pace + ease + 2 * config.turnS,
+      streets,
+    }
+  }
+
+  const sa = newStay()
+  const sb = newStay()
+  const sc = newStay()
+
   /** The walk that ends a resident's stay in `epoch`, cached for the cycle in progress. */
   const walks = new Map<number, { epoch: number; walk: TownsfolkWalk | null }>()
   const walkFor = (index: number, r: Resident, epoch: number): TownsfolkWalk | null => {
     const cached = walks.get(index)
     if (cached !== undefined && cached.epoch === epoch) return cached.walk
-    const from = venueIn(r, epoch)
-    const to = venueIn(r, epoch + 1)
+    const here = stayOf(index, r, epoch, newStay())
+    const next = stayOf(index, r, epoch + 1, newStay())
+    const from = here.venue
+    const to = next.venue
+    const a: XY = { x: here.x, y: here.y }
+    const b: XY = { x: next.x, y: next.y }
     let walk: TownsfolkWalk | null = null
-    if (from !== to) {
-      const a = spotOf(r, from)
-      const b = spotOf(r, to)
+    const fitS = maxWalkS - 2 * config.turnS - config.easeS
+    if (from === to) {
+      // Across the same place (to a huddle, the door or back): a short, gently bent walk.
+      const d = Math.hypot(b.x - a.x, b.y - a.y)
+      if (d > 0.05 * h) {
+        const bend = (hash01(seed, r.hash, epoch, 0x87) - 0.5) * 0.4
+        const mid = {
+          x: (a.x + b.x) / 2 + (b.y - a.y) * bend,
+          y: (a.y + b.y) / 2 - (b.x - a.x) * bend,
+        }
+        walk = walkAlong([a, mid, b], false, fitS)
+      }
+    } else {
+      // A crew leaving together walks side by side: each member a lane of its own.
+      const side =
+        here.kind === 'crew' && next.kind === 'crew' && here.crew === next.crew
+          ? ((memberOf[index] ?? 0) - ((sizeOf[index] ?? 1) - 1) / 2) * crewConfig.laneOfHeight * h
+          : 0
       const straight = Math.hypot(b.x - a.x, b.y - a.y)
-      const route = routeOf(from, to)
+      const route = routeOf(from, to, side)
       let points: XY[] = [a, b]
       let streets = false
       if (route !== null) {
@@ -502,51 +688,106 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
         const ga = gateOf(from)
         const gb = gateOf(to)
         const my = Math.min(ga.y, gb.y)
-        points = [a, ga, { x: ga.x, y: my }, { x: gb.x, y: my }, gb, b]
+        const inner: XY[] = [ga, { x: ga.x, y: my }, { x: gb.x, y: my }, gb]
+        const lanes =
+          side === 0
+            ? inner
+            : offsetPolyline(
+                inner,
+                inner.map(() => side),
+              ).points
+        points = [a, ...lanes, b]
       }
-      const path = makePath(smoothPolyline(points, 3))
-      // A long way round (the straight fallback's S) walks a little faster to fit the cycle.
-      const pace = Math.max(
-        speed,
-        path.length / Math.max(1, maxWalkS - 2 * config.turnS - config.easeS),
-      )
-      const ease = Math.min(config.easeS, path.length / pace)
-      walk = {
-        path,
-        speedMps: pace,
-        durationS: path.length / pace + ease + 2 * config.turnS,
-        streets,
-      }
+      walk = walkAlong(points, streets, fitS)
     }
     walks.set(index, { epoch, walk })
     return walk
   }
 
+  /**
+   * A stroll in the middle of a ring stay (S04r): out round a point near the place and back to
+   * the same spot, a loop rather than an about-turn. Null when the stay has no room for one.
+   */
+  const strolls = new Map<number, { epoch: number; start: number; walk: TownsfolkWalk | null }>()
+  const strollFor = (index: number, r: Resident, epoch: number, stay: Stay, leaveS: number) => {
+    const cached = strolls.get(index)
+    if (cached !== undefined && cached.epoch === epoch) return cached
+    let walk: TownsfolkWalk | null = null
+    let start = 0
+    if (hash01(seed, r.hash, epoch, 0x88) < config.stroll.share) {
+      const psi = hash01(seed, r.hash, epoch, 0x89) * Math.PI * 2
+      const reach = ringRadius + config.stroll.outOfHeight * h
+      const tx = centreX(stay.venue) + Math.sin(psi) * reach
+      const ty = centreY(stay.venue) + Math.cos(psi) * reach
+      const dx = tx - stay.x
+      const dy = ty - stay.y
+      const mx = (stay.x + tx) / 2
+      const my = (stay.y + ty) / 2
+      const w = config.stroll.loopShare
+      const a: XY = { x: stay.x, y: stay.y }
+      const loop = walkAlong(
+        [
+          a,
+          { x: mx + dy * w, y: my - dx * w },
+          { x: tx, y: ty },
+          { x: mx - dy * w, y: my + dx * w },
+          a,
+        ],
+        false,
+        Infinity,
+      )
+      const room = leaveS - loop.durationS - 2 * config.segmentS
+      if (room > 0) {
+        walk = loop
+        start = config.segmentS + hash01(seed, r.hash, epoch, 0x8a) * room
+      }
+    }
+    const entry = { epoch, start, walk }
+    strolls.set(index, entry)
+    return entry
+  }
+
+  /** A ring stay's pose in segment `seg`: idle, talking to the ring, or waving at the camera. */
+  const segmentPose = (r: Resident, epoch: number, seg: number, crew: boolean): TownsfolkPose => {
+    const roll = hash01(seed, r.hash, epoch, 0x90 + seg)
+    if (crew) return roll < crewConfig.talkShare ? talking : standing
+    if (has('talk') && roll < config.poseShare.talk) return 'talk'
+    if (has('wave') && roll < config.poseShare.talk + config.poseShare.wave) return 'wave'
+    return standing
+  }
+
+  /** A ring stay's yaw through segment `seg` (talk: to the ring's centre; else the camera's way). */
+  const segmentYaw = (r: Resident, epoch: number, seg: number, stay: Stay): number => {
+    if (segmentPose(r, epoch, seg, false) === 'talk')
+      return faceTo(stay.x, stay.y, stay.fx, stay.fy)
+    return (hash01(seed, r.hash, epoch, 0xa0 + seg) * 2 - 1) * config.faceJitterRad
+  }
+
+  /** Where a standing local faces at `tau` into its stay (turning between segments). */
+  const yawAt = (r: Resident, epoch: number, stay: Stay, tau: number, leaveS: number): number => {
+    if (stay.kind === 'crew') return faceTo(stay.x, stay.y, stay.fx, stay.fy)
+    if (stay.kind === 'inside') return tau <= 0 ? NORTH : SOUTH
+    const t = Math.max(0, Math.min(leaveS, tau))
+    const seg = Math.floor(t / config.segmentS)
+    const yaw = segmentYaw(r, epoch, seg, stay)
+    if (seg === 0) return yaw
+    const into = t - seg * config.segmentS
+    return turnTowards(segmentYaw(r, epoch, seg - 1, stay), yaw, into / config.turnS)
+  }
+
   const samples: TownsfolkSample[] = []
   const at = { x: 0, y: 0, dx: 0, dy: 1 }
 
-  const write = (out: TownsfolkSample, index: number, r: Resident, tS: number): void => {
-    const shifted = tS + offsetOf(r)
-    const epoch = Math.floor(shifted / config.epochS)
-    const tau = shifted - epoch * config.epochS
-    const from = venueIn(r, epoch)
-    const walk = walkFor(index, r, epoch)
-    const leaveS = config.epochS - (walk?.durationS ?? 0)
-    out.resident = index
-    out.speed = 0
-    const pose = standingPose(r, epoch)
-    const yaw = standingYaw(r, epoch, from, pose)
-    if (walk === null || tau < leaveS) {
-      const spot = spotOf(r, from)
-      out.x = spot.x
-      out.y = spot.y
-      out.pose = pose
-      out.yaw = yaw
-      return
-    }
+  /** A local `t` seconds into a walk: turning off, easing along, turning to `toYaw` on arrival. */
+  const writeWalk = (
+    out: TownsfolkSample,
+    walk: TownsfolkWalk,
+    t: number,
+    fromYaw: number,
+    toYaw: number,
+  ): void => {
     const path = walk.path
     const lookM = config.turnLookOfHeight * h
-    const t = tau - leaveS
     const moveS = walk.durationS - 2 * config.turnS
     out.pose = walking
     if (t < config.turnS) {
@@ -554,7 +795,7 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
       sampleAt(path, 0, at)
       out.x = at.x
       out.y = at.y
-      out.yaw = turnTowards(yaw, headingAt(path, lookM, lookM), t / config.turnS)
+      out.yaw = turnTowards(fromYaw, headingAt(path, lookM, lookM), t / config.turnS)
       return
     }
     if (t < config.turnS + moveS) {
@@ -566,23 +807,122 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
       out.speed = v
       return
     }
-    // Arrived: turning to the pose held on the next spot (where the next stay starts).
-    const nextPose = standingPose(r, epoch + 1)
-    const to = venueIn(r, epoch + 1)
+    // Arrived: turning to the pose held next (where the next stay or stand starts).
     sampleAt(path, path.length, at)
     out.x = at.x
     out.y = at.y
     out.yaw = turnTowards(
       headingAt(path, path.length - lookM, lookM),
-      standingYaw(r, epoch + 1, to, nextPose),
+      toYaw,
       (t - config.turnS - moveS) / config.turnS,
     )
+  }
+
+  /** Writes one local at city time `tS`; false while it is inside (not drawn). */
+  const write = (out: TownsfolkSample, index: number, r: Resident, tS: number): boolean => {
+    const shifted = tS + offsetOf(index)
+    const epoch = Math.floor(shifted / config.epochS)
+    const tau = shifted - epoch * config.epochS
+    const stay = stayOf(index, r, epoch, sa)
+    const walk = walkFor(index, r, epoch)
+    const leaveS = config.epochS - (walk?.durationS ?? 0)
+    out.resident = index
+    out.speed = 0
+    out.fade = 1
+    if (walk !== null && tau >= leaveS) {
+      const next = stayOf(index, r, epoch + 1, sb)
+      const toYaw = yawAt(r, epoch + 1, next, 0, config.epochS)
+      // `next` is scratch: read the leaving yaw from this stay again (sa still holds it).
+      writeWalk(out, walk, tau - leaveS, yawAt(r, epoch, stay, leaveS, leaveS), toYaw)
+      return true
+    }
+    if (stay.kind === 'inside') {
+      // In at the door at the start, out of it at the end; inside (not drawn) in between.
+      const prev = stayOf(index, r, epoch - 1, sb)
+      const cameIn = !(prev.kind === 'inside' && prev.venue === stay.venue)
+      const next = stayOf(index, r, epoch + 1, sc)
+      const goesOut = !(next.kind === 'inside' && next.venue === stay.venue)
+      const fadeS = Math.min(config.inside.fadeS, leaveS / 2)
+      let u = -1
+      if (cameIn && tau < fadeS) {
+        u = tau / fadeS
+        out.yaw = NORTH
+      } else if (goesOut && tau > leaveS - fadeS) {
+        u = (leaveS - tau) / fadeS
+        out.yaw = SOUTH
+      }
+      if (u < 0) return false
+      out.x = stay.x
+      out.y = stay.y + u * stepInM
+      out.pose = walking
+      out.fade = 1 - u
+      out.speed = fadeS > 0 ? stepInM / fadeS : 0
+      return true
+    }
+    out.x = stay.x
+    out.y = stay.y
+    if (stay.kind === 'crew') {
+      out.yaw = faceTo(stay.x, stay.y, stay.fx, stay.fy)
+      // Hello as they meet; goodbye before they part (a crew leaving together just goes).
+      const prev = stayOf(index, r, epoch - 1, sb)
+      const met = Math.hypot(prev.x - stay.x, prev.y - stay.y) > 0.05 * h
+      const next = stayOf(index, r, epoch + 1, sc)
+      const parts = walk !== null && !(next.kind === 'crew' && next.crew === stay.crew)
+      if (has('wave') && ((met && tau < config.waveS) || (parts && tau >= leaveS - config.waveS))) {
+        out.pose = 'wave'
+        return true
+      }
+      out.pose = segmentPose(r, epoch, Math.floor(tau / config.segmentS), true)
+      return true
+    }
+    const stroll = strollFor(index, r, epoch, stay, leaveS)
+    if (stroll.walk !== null && tau >= stroll.start && tau < stroll.start + stroll.walk.durationS) {
+      const end = stroll.start + stroll.walk.durationS
+      writeWalk(
+        out,
+        stroll.walk,
+        tau - stroll.start,
+        yawAt(r, epoch, stay, stroll.start, leaveS),
+        yawAt(r, epoch, stay, end, leaveS),
+      )
+      return true
+    }
+    out.pose = segmentPose(r, epoch, Math.floor(Math.min(tau, leaveS) / config.segmentS), false)
+    out.yaw = yawAt(r, epoch, stay, tau, leaveS)
+    return true
+  }
+
+  /**
+   * Small reactions (S04r): a local standing idle waves while another (not of its crew) walks
+   * past within `passWave.radiusOfHeight`.
+   */
+  const reactRadius = passWave.radiusOfHeight * h
+  const react = (n: number): void => {
+    if (!has('wave') || passWave.share <= 0) return
+    for (let i = 0; i < n; i++) {
+      const s = samples[i]
+      if (s === undefined || s.pose !== standing || s.speed > 0 || s.fade < 1) continue
+      const r = residents[s.resident]
+      if (r === undefined || hash01(seed, r.hash, 0x84) >= passWave.share) continue
+      for (let j = 0; j < n; j++) {
+        const w = samples[j]
+        if (w === undefined || j === i || w.speed <= 0 || w.fade < 1) continue
+        if (leaderOf[w.resident] === leaderOf[s.resident]) continue
+        const dx = w.x - s.x
+        const dy = w.y - s.y
+        if (dx * dx + dy * dy <= reactRadius * reactRadius) {
+          s.pose = 'wave'
+          break
+        }
+      }
+    }
   }
 
   return {
     residents,
     samples,
-    collect(x, y, radiusM, tS, share) {
+    collect(x, y, radiusM, tS, share, nightBlend = 0) {
+      night = Math.max(0, Math.min(1, nightBlend))
       let n = 0
       const reach = radiusM + maxWalkM
       for (let i = 0; i < residents.length; i++) {
@@ -595,21 +935,27 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
         if (hash01(seed, r.hash, 0x78) >= share) continue
         let sample = samples[n]
         if (sample === undefined) {
-          sample = { resident: 0, x: 0, y: 0, yaw: 0, pose: standing, speed: 0 }
+          sample = { resident: 0, x: 0, y: 0, yaw: 0, pose: standing, speed: 0, fade: 1 }
           samples.push(sample)
         }
-        write(sample, i, r, tS)
-        n++
+        if (write(sample, i, r, tS)) n++
       }
+      react(n)
       return n
     },
     venueAt(resident, tS) {
       const r = residents[resident]
-      return r === undefined ? -1 : venueIn(r, epochOf(r, tS))
+      return r === undefined ? -1 : venueIn(resident, r, epochOf(resident, tS))
     },
     walkOf(resident, tS) {
       const r = residents[resident]
-      return r === undefined ? null : walkFor(resident, r, epochOf(r, tS))
+      return r === undefined ? null : walkFor(resident, r, epochOf(resident, tS))
+    },
+    stayAt(resident, tS) {
+      const r = residents[resident]
+      if (r === undefined) return null
+      const stay = stayOf(resident, r, epochOf(resident, tS), sc)
+      return { venue: stay.venue, kind: stay.kind, crew: stay.crew }
     },
   }
 }

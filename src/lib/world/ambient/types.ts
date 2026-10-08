@@ -239,6 +239,28 @@ export interface TownsfolkConfig {
   readonly homeShare: number
   readonly poses: PerAmbientTier<readonly TownsfolkPose[]>
   readonly poseShare: { readonly talk: number; readonly wave: number }
+  readonly segmentS: number
+  readonly waveS: number
+  readonly crew: {
+    readonly meetShare: number
+    readonly talkShare: number
+    readonly huddleOfHeight: number
+    readonly outOfHeight: number
+    readonly laneOfHeight: number
+  }
+  readonly inside: {
+    readonly share: number
+    readonly doorM: number
+    readonly fadeS: number
+    readonly stepOfHeight: number
+  }
+  readonly stroll: {
+    readonly share: number
+    readonly outOfHeight: number
+    readonly loopShare: number
+  }
+  readonly passWave: { readonly share: number; readonly radiusOfHeight: number }
+  readonly pull: Readonly<Record<string, readonly [number, number]>>
   readonly frames: { readonly walk: PerAmbientTier<number>; readonly stand: PerAmbientTier<number> }
   readonly phaseGroups: PerAmbientTier<number>
   readonly faceJitterRad: number

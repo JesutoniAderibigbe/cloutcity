@@ -270,6 +270,52 @@ const TownsfolkConfigSchema = z.strictObject({
   poseShare: z
     .strictObject({ talk: chance, wave: chance })
     .refine((share) => share.talk + share.wave <= 1, { error: 'pose shares exceed 1' }),
+  /** A ring stay is split into segments this long, each idle or talking (S04r). */
+  segmentS: z.number().positive(),
+  /** Seconds a hello or goodbye wave lasts. */
+  waveS: z.number().positive(),
+  /**
+   * Crews (S04r): a place's locals in pairs (a trio when odd) sharing a clock. In a cycle that
+   * meets (`meetShare`) a crew huddles at one place, members `huddleOfHeight` from its middle,
+   * which stands `outOfHeight` beyond the ring; they talk `talkShare` of the time, and a crew
+   * walking on together keeps `laneOfHeight` apart side by side.
+   */
+  crew: z.strictObject({
+    meetShare: chance,
+    talkShare: chance,
+    huddleOfHeight: z.number().positive(),
+    outOfHeight: z.number().nonnegative(),
+    laneOfHeight: z.number().nonnegative(),
+  }),
+  /**
+   * Stays spent inside (S04r): the local walks to the door (`doorM` south of the place point),
+   * walks in `stepOfHeight` while it shrinks away over `fadeS`, and comes back out the same way.
+   */
+  inside: z.strictObject({
+    share: chance,
+    doorM: z.number().nonnegative(),
+    fadeS: z.number().positive(),
+    stepOfHeight: z.number().nonnegative(),
+  }),
+  /**
+   * A stroll mid-stay (S04r): a loop out to a point `outOfHeight` beyond the ring and back, as
+   * wide as `loopShare` of its length.
+   */
+  stroll: z.strictObject({
+    share: chance,
+    outOfHeight: z.number().nonnegative(),
+    loopShare: z.number().nonnegative().max(1),
+  }),
+  /** A local standing idle (`share` of them) waves while another walks past within the radius. */
+  passWave: z.strictObject({ share: chance, radiusOfHeight: z.number().positive() }),
+  /**
+   * How strongly a place draws visitors, by venue type, as [day, night] weights (1 when not
+   * listed): clubs and lounges fill up at night, food spots and coffee by day.
+   */
+  pull: z.record(
+    z.string().regex(/^[a-z][a-z0-9-]*$/),
+    z.tuple([z.number().nonnegative(), z.number().nonnegative()]),
+  ),
   /**
    * Animation frames baked from each pose's rig clip (src/scene/ambient/pedestrianKits.ts):
    * the walk cycle, and each standing pose's (idle, talk, wave) loop.

@@ -155,9 +155,15 @@ describe('townsfolk (S04o)', () => {
 
   it('stands locals on a ring in front of their place, spaced for their height', () => {
     const s = sim('mid', [{ id: 'solo', x: 0, y: 0 }])
-    const n = s.collect(0, 0, 1000, 0, 1)
-    const spots = s.samples.slice(0, n)
-    for (const p of spots) expect(p.pose).not.toBe('walk')
+    // Locals on a ring stay (crews huddle just beyond it; others are inside or strolling).
+    const spots: { x: number; y: number }[] = []
+    for (let t = 0; t < tf.epochS * 4; t += 7) {
+      const n = s.collect(0, 0, 1000, t, 1)
+      for (const p of s.samples.slice(0, n)) {
+        if (s.stayAt(p.resident, t)?.kind === 'ring' && p.pose !== 'walk') spots.push({ ...p })
+      }
+    }
+    expect(spots.length).toBeGreaterThan(0)
     const radii = spots.map((p) => Math.hypot(p.x, p.y + tf.frontM))
     for (const r of radii) expect(r).toBeCloseTo(radii[0] ?? 0, 6)
     expect(radii[0]).toBeGreaterThanOrEqual(tf.minRingOfHeight * H)
@@ -248,6 +254,168 @@ describe('townsfolk (S04o)', () => {
     const moving = speeds.filter((v) => v > 0)
     expect(moving.length).toBeGreaterThan(10)
     expect(moving[0]).toBeLessThan(Math.max(...moving) * 0.5)
+  })
+})
+
+/** A town of 12 places 160 m apart, of every kind the pull weighs. */
+const TOWN: TownsfolkVenue[] = Array.from({ length: 12 }, (_, i) => ({
+  id: `t${i}`,
+  x: (i % 4) * 160,
+  y: Math.floor(i / 4) * 160,
+  kind: ['club', 'coffee-shop', 'food-spot', 'gym', 'lounge', 'bodega'][i % 6],
+}))
+
+describe('townsfolk social life (S04r)', () => {
+  it('walks far more than it stands: about a third of the locals are on the move', () => {
+    const s = sim('mid', TOWN)
+    let walking = 0
+    let total = 0
+    for (let t = 0; t < tf.epochS * 30; t += 1) {
+      const n = s.collect(240, 160, 2000, t, 1)
+      for (let i = 0; i < n; i++) {
+        if (s.samples[i]?.pose === 'walk') walking++
+        total++
+      }
+    }
+    expect(walking / total).toBeGreaterThan(0.22)
+    expect(walking / total).toBeLessThan(0.6)
+  })
+
+  it('meets up in crews: one place, facing each other, waving hello, then talking', () => {
+    const s = sim('mid', TOWN)
+    let checked = 0
+    for (let t = 0; t < tf.epochS * 20 && checked < 20; t += tf.epochS / 4) {
+      const n = s.collect(240, 160, 2000, t, 1)
+      const crews = new Map<number, { x: number; y: number; yaw: number; venue: number }[]>()
+      for (let i = 0; i < n; i++) {
+        const p = s.samples[i]
+        if (p === undefined || p.pose === 'walk') continue
+        const stay = s.stayAt(p.resident, t)
+        if (stay?.kind !== 'crew') continue
+        const list = crews.get(stay.crew) ?? []
+        list.push({ x: p.x, y: p.y, yaw: p.yaw, venue: stay.venue })
+        crews.set(stay.crew, list)
+      }
+      for (const members of crews.values()) {
+        if (members.length < 2) continue
+        const cx = members.reduce((sum, m) => sum + m.x, 0) / members.length
+        const cy = members.reduce((sum, m) => sum + m.y, 0) / members.length
+        for (const m of members) {
+          expect(m.venue).toBe(members[0]?.venue)
+          // Close together (a conversation), each turned to the huddle's middle.
+          expect(Math.hypot(m.x - cx, m.y - cy)).toBeLessThan(H)
+          const toward = Math.atan2(cx - m.x, -(cy - m.y))
+          expect(Math.abs(Math.cos(m.yaw - toward))).toBeGreaterThan(0.5)
+          expect(Math.cos(m.yaw - toward)).toBeGreaterThan(0)
+        }
+        checked++
+      }
+    }
+    expect(checked).toBeGreaterThan(5)
+    // Somewhere a crew waves hello as it meets.
+    let waved = false
+    for (let t = 0; t < tf.epochS * 20 && !waved; t += 0.5) {
+      const n = s.collect(240, 160, 2000, t, 1)
+      for (let i = 0; i < n && !waved; i++) {
+        const p = s.samples[i]
+        if (p?.pose === 'wave' && s.stayAt(p.resident, t)?.kind === 'crew') waved = true
+      }
+    }
+    expect(waved).toBe(true)
+  })
+
+  it('goes in and out of places: shrinking at the door, hidden inside, never a jump', () => {
+    const s = sim('mid', TOWN)
+    const seen = new Map<number, { x: number; y: number; t: number }>()
+    let hidden = 0
+    let fading = 0
+    for (let t = 0; t < tf.epochS * 20; t += 0.25) {
+      const n = s.collect(240, 160, 2000, t, 1)
+      hidden += s.residents.length - n
+      for (let i = 0; i < n; i++) {
+        const p = s.samples[i]
+        if (p === undefined) continue
+        if (p.fade < 1) {
+          fading++
+          expect(p.fade).toBeGreaterThanOrEqual(0)
+          expect(s.stayAt(p.resident, t)?.kind).toBe('inside')
+        }
+        const before = seen.get(p.resident)
+        // Back from inside: out of the same door it went in by.
+        if (before !== undefined && t - before.t > 0.3) {
+          expect(Math.hypot(p.x - before.x, p.y - before.y)).toBeLessThan(H)
+        }
+        seen.set(p.resident, { x: p.x, y: p.y, t })
+      }
+    }
+    expect(hidden).toBeGreaterThan(0)
+    expect(fading).toBeGreaterThan(0)
+  })
+
+  it('fills the clubs and lounges at night, the coffee and food spots by day', () => {
+    const share = (night: number) => {
+      const s = sim('mid', TOWN)
+      const at: Record<string, number> = {}
+      for (let t = 0; t < tf.epochS * 30; t += 2) {
+        const n = s.collect(240, 160, 2000, t, 1, night)
+        for (let i = 0; i < n; i++) {
+          const p = s.samples[i]
+          const stay = p === undefined ? null : s.stayAt(p.resident, t)
+          const kind = stay === null ? undefined : TOWN[stay.venue]?.kind
+          if (kind !== undefined) at[kind] = (at[kind] ?? 0) + 1
+        }
+      }
+      return (kind: string) => at[kind] ?? 0
+    }
+    const day = share(0)
+    const night = share(1)
+    expect(night('club')).toBeGreaterThan(day('club') * 2)
+    expect(night('lounge')).toBeGreaterThan(day('lounge') * 1.5)
+    expect(day('coffee-shop')).toBeGreaterThan(night('coffee-shop') * 2)
+    expect(day('food-spot')).toBeGreaterThan(night('food-spot') * 1.5)
+  })
+
+  it("keeps a cycle's place when night falls mid-cycle (no re-routed walk, no jump)", () => {
+    const s = sim('high', TOWN)
+    const last = new Map<number, { x: number; y: number }>()
+    let fastest = 0
+    const dt = 0.1
+    for (let t = 0; t < tf.epochS * 6; t += dt) {
+      // Dusk falls over three cycles.
+      const n = s.collect(240, 160, 2000, t, 1, Math.min(1, t / (tf.epochS * 3)))
+      for (let i = 0; i < n; i++) {
+        const p = s.samples[i]
+        if (p === undefined) continue
+        const before = last.get(p.resident)
+        if (before !== undefined) {
+          fastest = Math.max(fastest, Math.hypot(p.x - before.x, p.y - before.y) / dt)
+        }
+        last.set(p.resident, { x: p.x, y: p.y })
+      }
+    }
+    expect(fastest).toBeLessThan(tf.walkHeightsPerS * H * 2.5)
+  })
+
+  it('waves at a passer-by now and then', () => {
+    const s = sim('mid', TOWN)
+    let reactions = 0
+    for (let t = 0; t < tf.epochS * 10; t += 1) {
+      const n = s.collect(240, 160, 2000, t, 1)
+      for (let i = 0; i < n; i++) {
+        const p = s.samples[i]
+        if (p?.pose !== 'wave' || s.stayAt(p.resident, t)?.kind !== 'ring') continue
+        // Waving on a ring stay with a walker close by.
+        for (let j = 0; j < n; j++) {
+          const w = s.samples[j]
+          if (w === undefined || w.speed <= 0) continue
+          if (Math.hypot(w.x - p.x, w.y - p.y) <= tf.passWave.radiusOfHeight * H) {
+            reactions++
+            break
+          }
+        }
+      }
+    }
+    expect(reactions).toBeGreaterThan(0)
   })
 })
 

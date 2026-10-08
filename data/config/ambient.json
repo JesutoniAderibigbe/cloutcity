@@ -196,7 +196,7 @@
     "frontM": 40,
     "spacingOfHeight": 0.6,
     "minRingOfHeight": 0.45,
-    "epochS": 120,
+    "epochS": 110,
     "walkHeightsPerS": 0.7,
     "easeS": 0.9,
     "turnS": 0.6,
@@ -205,16 +205,50 @@
     "maxDetour": 1.9,
     "accessM": 220,
     "maxWalkShare": 0.6,
-    "neighbours": 3,
-    "homeShare": 0.6,
+    "neighbours": 5,
+    "homeShare": 0.2,
     "poses": {
       "low": ["idle", "walk"],
       "mid": ["idle", "talk", "wave", "walk"],
       "high": ["idle", "talk", "wave", "walk"]
     },
     "poseShare": {
-      "talk": 0.5,
-      "wave": 0.15
+      "talk": 0.45,
+      "wave": 0.05
+    },
+    "segmentS": 10,
+    "waveS": 2.6,
+    "crew": {
+      "meetShare": 0.5,
+      "talkShare": 0.8,
+      "huddleOfHeight": 0.42,
+      "outOfHeight": 0.6,
+      "laneOfHeight": 0.55
+    },
+    "inside": {
+      "share": 0.16,
+      "doorM": 6,
+      "fadeS": 1.2,
+      "stepOfHeight": 0.5
+    },
+    "stroll": {
+      "share": 0.85,
+      "outOfHeight": 2.4,
+      "loopShare": 0.35
+    },
+    "passWave": {
+      "share": 0.5,
+      "radiusOfHeight": 3
+    },
+    "pull": {
+      "club": [0.2, 4],
+      "lounge": [0.35, 3.2],
+      "food-spot": [2.4, 0.9],
+      "food-cart": [2, 0.6],
+      "coffee-shop": [2.8, 0.3],
+      "bodega": [1, 1.5],
+      "gym": [1.4, 0.4],
+      "park": [1.6, 0.3]
     },
     "frames": {
       "walk": {
