@@ -305,6 +305,34 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1184 triangles, 21116 bytes (`public/landmarks/queensboro-bridge/lod2.glb`)
 - L3: 424 triangles, 9192 bytes (`public/landmarks/queensboro-bridge/lod3.glb`)
 
+### staten-island-ferry
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q5927015 (Saint George Terminal), CC0-1.0, <https://www.wikidata.org/wiki/Q5927015>
+
+Dimensions:
+
+- `heightM`: 20 m (estimate): the terminal hall's roof above the street
+- `hall`: 110 × 60 m (estimate): the terminal hall's front width and depth
+- `hallFloors`: 3 (estimate): storeys of windows on the hall
+- `pavilion`: 14 × 12 m (estimate): each entrance pavilion's plan
+- `pavilionM`: 12 m (estimate): the pavilions' height
+- `pavilionSpacingM`: 42 m (estimate): between the pavilions' centres (three pavilions)
+- `canopy`: 100 × 18 m (estimate): the canopy's length and width
+- `canopyM`: 9 m (estimate): the canopy's height
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.4, widths ×1.05. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.4 and widths x1.05, within the frame's exclusion, so the station reads at the game camera. Wikidata gives no dimensions, so every number is an estimate (the S07a kit's stylised proportions).
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1666 triangles, 23064 bytes (`public/landmarks/staten-island-ferry/lod0.glb`)
+- L1: 710 triangles, 12396 bytes (`public/landmarks/staten-island-ferry/lod1.glb`)
+- L2: 334 triangles, 7436 bytes (`public/landmarks/staten-island-ferry/lod2.glb`)
+- L3: 102 triangles, 4448 bytes (`public/landmarks/staten-island-ferry/lod3.glb`)
+
 ### statue-of-liberty
 
 Retrieved 2026-10-08. Sources:
