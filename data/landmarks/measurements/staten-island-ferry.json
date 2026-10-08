@@ -1,0 +1,65 @@
+{
+  "id": "staten-island-ferry",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q5927015 (Saint George Terminal)",
+      "url": "https://www.wikidata.org/wiki/Q5927015",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 20,
+      "source": "estimate",
+      "note": "the terminal hall's roof above the street"
+    },
+    "hall": {
+      "widthM": 110,
+      "depthM": 60,
+      "source": "estimate",
+      "note": "the terminal hall's front width and depth"
+    },
+    "hallFloors": {
+      "count": 3,
+      "source": "estimate",
+      "note": "storeys of windows on the hall"
+    },
+    "pavilion": {
+      "widthM": 14,
+      "depthM": 12,
+      "source": "estimate",
+      "note": "each entrance pavilion's plan"
+    },
+    "pavilionM": {
+      "valueM": 12,
+      "source": "estimate",
+      "note": "the pavilions' height"
+    },
+    "pavilionSpacingM": {
+      "valueM": 42,
+      "source": "estimate",
+      "note": "between the pavilions' centres (three pavilions)"
+    },
+    "canopy": {
+      "widthM": 100,
+      "depthM": 18,
+      "source": "estimate",
+      "note": "the canopy's length and width"
+    },
+    "canopyM": {
+      "valueM": 9,
+      "source": "estimate",
+      "note": "the canopy's height"
+    }
+  },
+  "readabilityScale": {
+    "note": "Generic and sign-free (LEGAL-1): no signage, no clock, no sculpture."
+  },
+  "gameScale": {
+    "height": 1.4,
+    "plan": 1.05,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.4 and widths x1.05, within the frame's exclusion, so the station reads at the game camera. Wikidata gives no dimensions, so every number is an estimate (the S07a kit's stylised proportions)."
+  }
+}

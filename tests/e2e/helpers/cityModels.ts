@@ -19,7 +19,8 @@ export const landmarksState = (page: Page) =>
 
 /**
  * Waits until the district buildings and landmark models that load after the map's first frame
- * (S04d, S07a) have finished, and on-demand rendering is idle again.
+ * (S04d, S07a), then the Blender landmark models (S07c, loaded or failed and kept their kit),
+ * have finished, and on-demand rendering is idle again.
  */
 export async function waitForCityModels(page: Page): Promise<void> {
   await page.waitForFunction(
@@ -32,10 +33,18 @@ export async function waitForCityModels(page: Page): Promise<void> {
         !buildings.busy &&
         buildings.blocks.status !== 'loading' &&
         landmarks?.done === true &&
+        landmarks.glbDone &&
         scene?.pendingFrames() === 0
       )
     },
     null,
     { polling: 'raf', timeout: SCENE_READY_TIMEOUT_MS },
+  )
+}
+
+/** Every landmark model file (S07c) refused, so each landmark keeps its code-built kit. */
+export async function blockLandmarkModels(page: Page): Promise<void> {
+  await page.route(/\/landmarks\/[a-z0-9-]+\/lod[0-3]\.glb/, (route) =>
+    route.abort('internetdisconnected'),
   )
 }

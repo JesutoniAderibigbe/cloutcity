@@ -17,6 +17,7 @@ import {
   createDayNightUniforms,
   glslFloat,
   isNightGlowExcluded,
+  maskLitVertices,
   nightGlowSource,
   patchNightGlow,
   type NightGlowSource,
@@ -182,5 +183,25 @@ describe('glslFloat', () => {
     expect(glslFloat(1)).toBe('1.0')
     expect(glslFloat(1.25)).toBe('1.25')
     expect(glslFloat(0)).toBe('0.0')
+  })
+})
+
+describe('maskLitVertices (S07c)', () => {
+  // A 2×2 mask, lit only at texel (1, 0).
+  const mask = { image: { data: new Uint8Array([0, 255, 0, 0]), width: 2, height: 2 } }
+  const uvs = (values: number[]) => ({
+    count: values.length / 2,
+    getX: (i: number) => values[i * 2] ?? 0,
+    getY: (i: number) => values[i * 2 + 1] ?? 0,
+  })
+
+  it('counts the vertices that sample a lit texel, the mask repeating', () => {
+    expect(maskLitVertices(uvs([0, 0, 0.75, 0.25, 1.75, 0.25, 0.25, 0.75]), mask)).toBe(2)
+    expect(maskLitVertices(uvs([0.75, 0.25, 0.75, 0.25]), mask, 1)).toBe(1)
+  })
+
+  it('lights nothing where every uv reads a wall texel, or no uv samples (0, 0)', () => {
+    expect(maskLitVertices(uvs([0, 0, 0, 0, 0, 0]), mask)).toBe(0)
+    expect(maskLitVertices(undefined, mask)).toBe(0)
   })
 })

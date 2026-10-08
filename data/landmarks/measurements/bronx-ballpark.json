@@ -1,0 +1,138 @@
+{
+  "id": "bronx-ballpark",
+  "base": "land",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q753529 (the Bronx ballpark)",
+      "url": "https://www.wikidata.org/wiki/Q753529",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 48,
+      "source": "estimate",
+      "note": "the light towers' tops above the street, proportioned by eye"
+    },
+    "fenceLeftM": {
+      "valueM": 96.9,
+      "source": "estimate",
+      "note": "home plate to the left-field foul pole (318 ft)"
+    },
+    "fenceCentreM": {
+      "valueM": 124.4,
+      "source": "estimate",
+      "note": "home plate to the centre-field fence"
+    },
+    "fenceRightM": {
+      "valueM": 95.7,
+      "source": "estimate",
+      "note": "home plate to the right-field foul pole"
+    },
+    "basePathM": {
+      "valueM": 27.43,
+      "source": "derived",
+      "note": "the 90 ft between bases (the rules of baseball)"
+    },
+    "moundM": {
+      "valueM": 18.44,
+      "source": "derived",
+      "note": "home plate to the pitcher's plate, 60 ft 6 in (the rules of baseball)"
+    },
+    "centreFieldHeadingDeg": {
+      "valueM": 60,
+      "source": "estimate",
+      "note": "compass heading from home plate to centre field, by eye"
+    },
+    "homeOffsetM": {
+      "valueM": 55,
+      "source": "estimate",
+      "note": "how far home plate stands back from the landmark point (Wikidata P625), toward the stands"
+    },
+    "foulM": {
+      "valueM": 16,
+      "source": "estimate",
+      "note": "foul ground from the foul lines and behind home plate to the stands"
+    },
+    "lowerDepthM": {
+      "valueM": 30,
+      "source": "estimate",
+      "note": "the lower deck's depth"
+    },
+    "lowerFrontM": {
+      "valueM": 2.5,
+      "source": "estimate",
+      "note": "the lower deck's front row above the field"
+    },
+    "lowerTopM": {
+      "valueM": 14,
+      "source": "estimate",
+      "note": "the lower deck's back row above the field"
+    },
+    "upperSetbackM": {
+      "valueM": 22,
+      "source": "estimate",
+      "note": "the upper deck's front row back from the lower deck's"
+    },
+    "upperDepthM": {
+      "valueM": 34,
+      "source": "estimate",
+      "note": "the upper deck's depth"
+    },
+    "upperFrontM": {
+      "valueM": 21,
+      "source": "estimate",
+      "note": "the upper deck's front above the field (the suites below it)"
+    },
+    "upperTopM": {
+      "valueM": 40,
+      "source": "estimate",
+      "note": "the upper deck's back row above the field"
+    },
+    "upperReachM": {
+      "valueM": 85,
+      "source": "estimate",
+      "note": "how far out along each foul line the upper deck runs"
+    },
+    "bleacherDepthM": {
+      "valueM": 22,
+      "source": "estimate",
+      "note": "the outfield bleachers' depth"
+    },
+    "bleacherTopM": {
+      "valueM": 10,
+      "source": "estimate",
+      "note": "the outfield bleachers' top"
+    },
+    "scoreboardWidthM": {
+      "valueM": 40,
+      "source": "estimate",
+      "note": "the scoreboard panel's width (a plain screen, no text)"
+    },
+    "scoreboardHeightM": {
+      "valueM": 16,
+      "source": "estimate",
+      "note": "the scoreboard panel's height"
+    },
+    "scoreboardBaseM": {
+      "valueM": 14,
+      "source": "estimate",
+      "note": "the scoreboard panel's bottom above the street"
+    },
+    "capacity": {
+      "count": 49642,
+      "source": "wikidata",
+      "note": "maximum capacity (P1083), for scale"
+    }
+  },
+  "readabilityScale": {
+    "note": "A generic ballpark (LEGAL-1: no logos, team names, sponsor marks or text; the scoreboard is a plain screen). Pale stone facade with a pale canopy."
+  },
+  "gameScale": {
+    "height": 1.6,
+    "plan": 1.15,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.6 and plan x1.15, so the bowl reads at the 3,000-4,500 m game camera without its stands standing steeper than a real rake."
+  }
+}

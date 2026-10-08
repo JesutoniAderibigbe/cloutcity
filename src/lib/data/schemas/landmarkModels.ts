@@ -37,6 +37,17 @@ export const LANDMARK_ROLES = [
   'asphalt',
   'wood-plank',
   'lamp',
+  'patina',
+  'gilt',
+  'screen-white',
+  'screen-cyan',
+  'screen-magenta',
+  'screen-amber',
+  'signal',
+  'sand',
+  'foliage',
+  'lawn',
+  'water',
 ] as const
 export type LandmarkRole = (typeof LANDMARK_ROLES)[number]
 
@@ -48,6 +59,20 @@ const RoleSchema = z.enum(PART_ROLES)
 /** The landmark categories that get a model (S07b adds memorial: no window or emissive roles). */
 export const MODEL_CATEGORIES = ['bridge', 'building', 'station', 'government'] as const
 export type ModelCategory = (typeof MODEL_CATEGORIES)[number]
+
+/**
+ * The categories perf.json caps landmark triangles for: the code-built model categories plus
+ * those only the Blender models (S07c) depict. Kept apart from MODEL_CATEGORIES, which also
+ * says which landmarks need a code-built model in models.json.
+ */
+export const CAP_CATEGORIES = [
+  ...MODEL_CATEGORIES,
+  'stadium',
+  'monument',
+  'park',
+  'neighborhood',
+] as const
+export type CapCategory = (typeof CAP_CATEGORIES)[number]
 
 /** The part roles each category may use. */
 export const CATEGORY_ROLES: Readonly<Record<ModelCategory, readonly PartRole[]>> = {
@@ -521,25 +546,39 @@ export const LandmarkFrameSchema = z.strictObject({
   /** Bridges: the axis ends, first in the first borough the bridge spans. */
   ends: z.tuple([PointSchema, PointSchema]).optional(),
   spanM: metres.optional(),
-  exclusion: ExclusionRectSchema,
-  /** Height of the model's top above its base, unscaled: where a pin sits clear of it. */
+  /** The S07a kit model's ground (absent for a landmark placed at its location only). */
+  exclusion: ExclusionRectSchema.optional(),
+  /**
+   * The Blender model's ground (S07c, from its lock's footprint at game scale): what district
+   * buildings, fill blocks and streets keep clear of when present (`exclusion` otherwise). Empty
+   * for a park the map already draws; several rectangles for a corridor (the High Line).
+   */
+  grounds: z.array(ExclusionRectSchema).optional(),
+  /**
+   * Height of the model's top above its base: where a pin sits clear of it (the larger of the
+   * kit model's top and the Blender model's game-scale top).
+   */
   pinLiftM: metres,
   /**
-   * What the frame was derived from: the LION street, the number of straight LION line pieces used, and either the bridge's
-   * principal-axis centre or the distance from the location to the fronting street.
+   * What the frame was derived from: the LION street, the number of straight LION line pieces
+   * used, and either the bridge's principal-axis centre or the distance from the location to
+   * the fronting street. Absent for a landmark placed at its landmarks.json location (S07c:
+   * monuments, parks, neighbourhoods, the memorial), turned by its measurements' heading.
    */
-  lion: z.union([
-    z.strictObject({
-      street: LionStreetSchema,
-      segments: z.int().positive(),
-      axisCentre: PointSchema,
-    }),
-    z.strictObject({
-      street: LionStreetSchema,
-      segments: z.int().positive(),
-      frontM: nonNegativeMetres,
-    }),
-  ]),
+  lion: z
+    .union([
+      z.strictObject({
+        street: LionStreetSchema,
+        segments: z.int().positive(),
+        axisCentre: PointSchema,
+      }),
+      z.strictObject({
+        street: LionStreetSchema,
+        segments: z.int().positive(),
+        frontM: nonNegativeMetres,
+      }),
+    ])
+    .optional(),
 })
 export type LandmarkFrame = z.infer<typeof LandmarkFrameSchema>
 
@@ -589,6 +628,8 @@ export const LandmarkSceneConfigSchema = z
     windows: z.strictObject({ low: z.literal(false), mid: z.boolean(), high: z.boolean() }),
     labelMaxDistanceM: metres,
     outlineWidthM: metres,
+    /** Blender models (S07c): a teaser's colours are mixed this far toward the teaser colour. */
+    teaserDim: z.number().min(0).max(1),
   })
   .refine(
     (config) => Object.values(config.lod).every((tier) => tier.cullM > LANDMARK_FOCUS_DISTANCE_M),
@@ -598,12 +639,12 @@ export type LandmarkSceneConfig = z.infer<typeof LandmarkSceneConfigSchema>
 
 /** Per-tier triangle caps (perf.json): unknown category keys fail. */
 const trianglesPerTier = perTier(z.int().positive())
-export const LandmarkTrianglesMaxSchema = z.strictObject({
-  bridge: trianglesPerTier,
-  building: trianglesPerTier,
-  station: trianglesPerTier,
-  government: trianglesPerTier,
-})
+export const LandmarkTrianglesMaxSchema = z.strictObject(
+  Object.fromEntries(CAP_CATEGORIES.map((category) => [category, trianglesPerTier])) as Record<
+    CapCategory,
+    typeof trianglesPerTier
+  >,
+)
 /** Per-landmark overrides of the category caps, by landmark id. */
 export const LandmarkTrianglesOverrideSchema = z.record(IdSchema, trianglesPerTier)
 

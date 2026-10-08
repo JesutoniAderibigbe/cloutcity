@@ -26,3 +26,8 @@ export function placeIcon(group: PlaceIconGroup): string {
 export function placeIconLabelKey(group: PlaceIconGroup): string {
   return config.groups[group].labelKey
 }
+
+/** Every icon group, in data/places/icons.json order (the store directory's sections). */
+export function placeIconGroups(): readonly PlaceIconGroup[] {
+  return Object.keys(config.groups) as PlaceIconGroup[]
+}

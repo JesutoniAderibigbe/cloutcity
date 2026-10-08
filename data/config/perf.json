@@ -176,7 +176,7 @@
   "audioFileMaxKB": 600,
   "audioRuntimeJsGzKB": 20,
   "serviceWorkerGzKB": 15,
-  "precacheGzKB": 1000,
+  "precacheGzKB": 1150,
   "buildingTrianglesMax": {
     "low": 160000,
     "mid": 300000,
@@ -276,6 +276,26 @@
       "low": 600,
       "mid": 1800,
       "high": 3500
+    },
+    "stadium": {
+      "low": 600,
+      "mid": 1800,
+      "high": 3500
+    },
+    "monument": {
+      "low": 600,
+      "mid": 1800,
+      "high": 3500
+    },
+    "park": {
+      "low": 1200,
+      "mid": 3500,
+      "high": 7000
+    },
+    "neighborhood": {
+      "low": 1200,
+      "mid": 3500,
+      "high": 7000
     }
   },
   "landmarkTrianglesOverride": {},

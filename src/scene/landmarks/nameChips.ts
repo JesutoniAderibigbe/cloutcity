@@ -5,7 +5,7 @@
  * CLAUDE.md "Map and landmarks"); the models carry no text. three only, no React; the atlas
  * needs a 2D canvas (browser).
  */
-import { BufferAttribute, BufferGeometry, CanvasTexture, SRGBColorSpace } from 'three'
+import { BufferAttribute, BufferGeometry, CanvasTexture, Matrix4, SRGBColorSpace } from 'three'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import { LAY_FLAT_X } from '../geo/coords'
 
@@ -56,24 +56,39 @@ export function createNameAtlas(
   return texture
 }
 
-/** One flat quad per chip (facing up, reading north-up), each sampling its atlas row. */
-export function buildNameChipGeometry(
+/**
+ * How large chips draw at a camera distance (S07c): full size from `fullSizeDistanceM` out,
+ * shrinking in proportion closer in, never below `minScale`.
+ */
+export function chipScale(
+  distanceM: number,
+  size: Pick<ChipConfig, 'fullSizeDistanceM' | 'minScale'>,
+): number {
+  return Math.min(1, Math.max(size.minScale, distanceM / size.fullSizeDistanceM))
+}
+
+const _flat = new Matrix4().makeRotationX(LAY_FLAT_X)
+
+/**
+ * Writes every chip's quad, `scale` times its configured size about its own centre, into a
+ * position attribute (in the XY plane, then laid flat like the rest of the map).
+ */
+export function writeChipPositions(
+  positions: BufferAttribute,
   chips: readonly NameChip[],
   size: Pick<ChipConfig, 'widthM' | 'heightM'>,
-): BufferGeometry {
-  const positions = new Float32Array(chips.length * 12)
-  const uvs = new Float32Array(chips.length * 8)
-  const index = new Uint16Array(chips.length * 6)
-  const halfW = size.widthM / 2
-  const halfH = size.heightM / 2
-  const rows = Math.max(1, chips.length)
+  scale = 1,
+): void {
+  const halfW = (size.widthM / 2) * scale
+  const halfH = (size.heightM / 2) * scale
+  const array = positions.array
   chips.forEach((chip, i) => {
     const west = chip.x - halfW
     const east = chip.x + halfW
     const south = chip.y - halfH
     const north = chip.y + halfH
     // In the XY plane (x east, y north, z up) before laying flat: z carries the height.
-    positions.set(
+    array.set(
       [
         west,
         south,
@@ -90,6 +105,22 @@ export function buildNameChipGeometry(
       ],
       i * 12,
     )
+  })
+  positions.applyMatrix4(_flat)
+  positions.needsUpdate = true
+}
+
+/** One flat quad per chip (facing up, reading north-up), each sampling its atlas row. */
+export function buildNameChipGeometry(
+  chips: readonly NameChip[],
+  size: Pick<ChipConfig, 'widthM' | 'heightM'>,
+): BufferGeometry {
+  const positions = new BufferAttribute(new Float32Array(chips.length * 12), 3)
+  const uvs = new Float32Array(chips.length * 8)
+  const index = new Uint16Array(chips.length * 6)
+  const rows = Math.max(1, chips.length)
+  writeChipPositions(positions, chips, size)
+  chips.forEach((_chip, i) => {
     // Canvas rows run top-down; texture v runs bottom-up.
     const bottom = 1 - (i + 1) / rows
     const top = 1 - i / rows
@@ -98,9 +129,9 @@ export function buildNameChipGeometry(
     index.set([v, v + 1, v + 2, v, v + 2, v + 3], i * 6)
   })
   const geometry = new BufferGeometry()
-  geometry.setAttribute('position', new BufferAttribute(positions, 3))
+  geometry.setAttribute('position', positions)
   geometry.setAttribute('uv', new BufferAttribute(uvs, 2))
   geometry.setIndex(new BufferAttribute(index, 1))
-  geometry.rotateX(LAY_FLAT_X)
+  geometry.computeBoundingSphere()
   return geometry
 }

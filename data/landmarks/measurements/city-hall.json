@@ -1,0 +1,126 @@
+{
+  "id": "city-hall",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q1065206 (New York City Hall)",
+      "url": "https://www.wikidata.org/wiki/Q1065206",
+      "licence": "CC0-1.0"
+    },
+    {
+      "id": "nps-survey-1959",
+      "title": "National Park Service, National Survey of Historic Sites and Buildings: New York City Hall (1959; NRHP 66000539)",
+      "url": "https://npgallery.nps.gov/NRHP/GetAsset/NHLS/66000539_text",
+      "licence": "public-domain"
+    }
+  ],
+  "dimensions": {
+    "lengthM": {
+      "valueM": 65.76,
+      "source": "wikidata",
+      "note": "length (P2043, 215.75 ft): the front from wing end to wing end"
+    },
+    "storeys": {
+      "count": 2,
+      "source": "wikidata",
+      "note": "number of floors above ground (P1101): two storeys over a raised basement"
+    },
+    "heightM": {
+      "valueM": 42,
+      "source": "estimate",
+      "note": "the cupola's tip above the street, proportioned by eye (no PD/CC0 figure found); a plain needle stands in for the statue (LEGAL-1: no figures)"
+    },
+    "wallM": {
+      "valueM": 16,
+      "source": "estimate",
+      "note": "the main cornice above the street: a raised basement and two tall storeys"
+    },
+    "basementM": {
+      "valueM": 3.5,
+      "source": "estimate",
+      "note": "the raised basement storey, drawn as a darker rusticated band"
+    },
+    "atticM": {
+      "valueM": 1.6,
+      "source": "estimate",
+      "note": "the balustrade over the cornice"
+    },
+    "roofM": {
+      "valueM": 3,
+      "source": "estimate",
+      "note": "the low hipped roof behind the balustrade"
+    },
+    "centreBlock": {
+      "widthM": 37.76,
+      "depthM": 32,
+      "source": "derived",
+      "note": "the front length less the two wings; the depth is an estimate"
+    },
+    "wing": {
+      "widthM": 14,
+      "depthM": 5,
+      "source": "estimate",
+      "note": "each end wing's width (two bays) and how far it projects ahead of the centre block (the C-shaped plan the NPS survey's engravings show)"
+    },
+    "portico": {
+      "widthM": 22,
+      "depthM": 5,
+      "source": "estimate",
+      "note": "the central columned portico at the main storey, with a balustrade over it"
+    },
+    "porticoM": {
+      "valueM": 9,
+      "source": "estimate",
+      "note": "the portico's top above the street"
+    },
+    "porticoColumns": {
+      "count": 6,
+      "source": "estimate",
+      "note": "columns across the portico front"
+    },
+    "stepsM": {
+      "valueM": 6,
+      "source": "estimate",
+      "note": "how far the broad front steps run out ahead of the portico"
+    },
+    "cupolaBaseWidthM": {
+      "valueM": 9,
+      "source": "estimate",
+      "note": "the cupola's square lower stage across (the clock stage, drawn plain: no dial or text)"
+    },
+    "cupolaBaseM": {
+      "valueM": 6,
+      "source": "estimate",
+      "note": "the square lower stage's height"
+    },
+    "cupolaDrumDiameterM": {
+      "valueM": 7.6,
+      "source": "estimate",
+      "note": "the colonnaded drum across"
+    },
+    "cupolaDrumM": {
+      "valueM": 7,
+      "source": "estimate",
+      "note": "the colonnaded drum's height"
+    },
+    "cupolaDomeM": {
+      "valueM": 4.5,
+      "source": "estimate",
+      "note": "the dome's rise over the drum"
+    },
+    "lanternM": {
+      "valueM": 2.5,
+      "source": "estimate",
+      "note": "the small lantern on the dome"
+    }
+  },
+  "readabilityScale": {
+    "note": "No thin members: columns are drawn at their real proportion to the bay, windows as punched glass quads."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.25,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 so the hall and its cupola read at the 3,000-4,500 m game camera; the plan x1.25, the most that fits the frame's exclusion (86 x 60 m)."
+  }
+}

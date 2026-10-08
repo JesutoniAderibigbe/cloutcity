@@ -15,7 +15,7 @@ import {
   fixtureInputs,
   fixtureLion,
 } from './fixtures/synthetic'
-import { bearingDeg, buildLandmarkFrames, principalAxis } from './landmarks'
+import { bearingDeg, buildLandmarkFrames, groundsOf, principalAxis } from './landmarks'
 import { OUTPUT_FILES, buildGeoOutputs } from './transform'
 
 const ROOT = join(import.meta.dirname, '../..')
@@ -91,6 +91,34 @@ describe('frames on the synthetic city', () => {
     expect('frontM' in (hall?.lion ?? {}) ? hall?.lion : undefined).toMatchObject({
       frontM: expect.closeTo(17, 0),
     })
+  })
+})
+
+describe('Blender placements (S07c)', () => {
+  const config = { landmarkExclusionMarginM: 10 } as Parameters<typeof groundsOf>[3]
+  const placement = {
+    id: 'test-tower',
+    base: 'land' as const,
+    headingDeg: 90,
+    topM: 120,
+    exclusions: [{ x: 0, y: 20, halfLengthM: 30, halfWidthM: 10, angleDeg: 0 }],
+  }
+
+  it('turns a model rectangle clockwise by the heading about the anchor, grown by the margin', () => {
+    // Heading 90 (east): the model's north (+y 20) lands 20 m east; its east axis points south.
+    expect(groundsOf(placement, { x: 100, y: 200 }, 90, config)).toEqual([
+      { x: 120, y: 200, halfLengthM: 40, halfWidthM: 20, angleDeg: 270 },
+    ])
+  })
+
+  it('keeps a rectangle unturned at heading 0 and wraps the angle into [0, 360)', () => {
+    const [rect] = groundsOf(
+      { ...placement, exclusions: [{ ...placement.exclusions[0]!, angleDeg: 350 }] },
+      { x: 0, y: 0 },
+      0,
+      config,
+    )
+    expect(rect).toMatchObject({ x: 0, y: 20, angleDeg: 350 })
   })
 })
 

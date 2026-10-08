@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { lazyIsland } from '@/components/overlay/lazyIsland'
-import { closeHudPanel, hudPanelStore } from '@/state/hudPanel'
+import { dismissHudPanel, hudPanelStore } from '@/state/hudPanel'
 import { closePlacesPanel, placesPanelStore, usePlacesPanel } from '@/state/placesPanel'
 
 // DEC-11: the shell carries only this mount. The panel, with the place data, the game store (for
@@ -32,7 +32,7 @@ export function PlacesPanelMount() {
     const offPlaces = placesPanelStore.subscribe((state, previous) => {
       const playerOpened = state.open && !state.auto
       const wasPlayerOpened = previous.open && !previous.auto
-      if (playerOpened && !wasPlayerOpened) closeHudPanel()
+      if (playerOpened && !wasPlayerOpened) dismissHudPanel()
     })
     return () => {
       offHud()

@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "id": "september-11-memorial",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "3a05d6dd5f775a4dd59614768805a080da7e645e15811b9902c592b95aae214b",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "placement": {
+    "topM": 13.6,
+    "exclusions": [
+      {
+        "x": 0,
+        "y": 0,
+        "halfLengthM": 90,
+        "halfWidthM": 110,
+        "angleDeg": 0
+      }
+    ]
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/september-11-memorial/lod0.glb",
+      "sha256": "3f3033fd1e3e5c9531847d0cb939051933452799c67a11b6e15fad8aa5212861",
+      "bytes": 58708,
+      "triangles": 3372,
+      "uncompressedBytes": 318204
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/september-11-memorial/lod1.glb",
+      "sha256": "2c451168469c13e7eb9d7fa50d0406354d7ffcdfd4649542058d7d57d4e929a1",
+      "bytes": 30428,
+      "triangles": 1660,
+      "uncompressedBytes": 163608
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/september-11-memorial/lod2.glb",
+      "sha256": "76d7805d6576c278a0303366f259c753714a2920a80598326b2a8ea158a1acea",
+      "bytes": 10188,
+      "triangles": 460,
+      "uncompressedBytes": 47280
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/september-11-memorial/lod3.glb",
+      "sha256": "f3c8947799e5149713a83c0eb7782589d9c3c587cd30cb6093b50bdb12270fe7",
+      "bytes": 6204,
+      "triangles": 228,
+      "uncompressedBytes": 24236
+    }
+  ]
+}

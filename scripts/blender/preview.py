@@ -90,13 +90,13 @@ def box_object(name, x0, x1, y0, y1, z0, z1, material):
     return obj
 
 
-def import_level(path, level, body, windows, heading_rad, offset=(0.0, 0.0, 0.0)):
+def import_level(path, level, material, heading_rad, offset=(0.0, 0.0, 0.0)):
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=path, import_shading="FLAT")
     objects = [o for o in bpy.data.objects if o not in before and o.type == "MESH"]
     for obj in objects:
         obj.data.materials.clear()
-        obj.data.materials.append(windows if obj.name.endswith("-windows") else body)
+        obj.data.materials.append(material)
         obj.rotation_mode = "XYZ"
         obj.rotation_euler = (0.0, 0.0, heading_rad)
         obj.location = offset
@@ -104,23 +104,28 @@ def import_level(path, level, body, windows, heading_rad, offset=(0.0, 0.0, 0.0)
     return objects
 
 
-def context(data, heading_rad):
-    """Water, and land slabs at the land top beyond each end of a bridge (or under a building)."""
+def context(data, heading_rad, report):
+    """Water, and land slabs at the land top: under a building, or along a bridge's axis where
+    its landmark script says the land is (report.json `context.land`)."""
     theme = inputs.read_json("data", "config", "theme.json")
     water = solid_material("preview-water", (1.0, 1.0, 1.0))
     land = solid_material("preview-land", theme_colour(theme, theme["scene"]["land"]["brooklyn"]))
     box_object("water", -20000, 20000, -20000, 20000, -1.0, 0.0, water)
     top = inputs.land_top_y(data["scene"])
-    frame = data["frame"]
-    if frame["base"] != "water":
-        box_object("land", -3000, 3000, -3000, 3000, 0.0, top, land)
+    if data["frame"]["base"] != "water":
+        box_object("land", -6000, 6000, -6000, 6000, 0.0, top, land)
+        # The map's park green under a park model (report.json `context.green`: outer rings).
+        green = solid_material("preview-green", theme_colour(theme, theme["scene"]["park"]))
+        for i, ring in enumerate(report["context"].get("green", [])):
+            mesh = bpy.data.meshes.new("land-green-%d" % i)
+            mesh.from_pydata([(x, y, top + 0.05) for x, y in ring], [], [list(range(len(ring)))])
+            mesh.materials.append(green)
+            obj = bpy.data.objects.new("land-green-%d" % i, mesh)
+            bpy.context.scene.collection.objects.link(obj)
+            obj.rotation_euler = (0.0, 0.0, heading_rad)
         return
-    half = frame["spanM"] / 2.0
-    towers = data["model"]["params"]["towers"]["offsetsM"]
-    # Shorelines just landward of each tower (the towers stand on piers in the river).
-    shore = (towers[0] - 260.0, towers[1] + 70.0)
-    for name, y0, y1 in (("land-a", -half - 2500, shore[0]), ("land-b", shore[1], half + 2500)):
-        obj = box_object(name, -2500, 2500, y0, y1, 0.0, top, land)
+    for i, (y0, y1) in enumerate(report["context"]["land"]):
+        obj = box_object("land-%d" % i, -2500, 2500, max(y0, -6000.0), min(y1, 6000.0), 0.0, top, land)
         obj.rotation_euler = (0.0, 0.0, heading_rad)
 
 
@@ -128,7 +133,7 @@ def keyframe(scene_cfg, keyframe_id):
     return next(k for k in scene_cfg["dayNight"]["keyframes"] if k["id"] == keyframe_id)
 
 
-def lights(data, keyframe_id, windows):
+def lights(data, keyframe_id, material):
     """The S04f keyframe's light: sun, world fill, harbour colour and the lamps' night glow."""
     scene_cfg = data["scene"]
     theme = inputs.read_json("data", "config", "theme.json")
@@ -159,7 +164,7 @@ def lights(data, keyframe_id, windows):
     bsdf = bpy.data.materials["preview-water"].node_tree.nodes.get("Principled BSDF")
     bsdf.inputs["Base Color"].default_value = (water[0], water[1], water[2], 1.0)
     glow = k["nightGlow"] * scene_cfg["models"]["emissive"]["nightIntensity"]
-    windows.node_tree.nodes.get("Principled BSDF").inputs["Emission Strength"].default_value = glow
+    shade.set_glow(material, glow)
 
 
 def camera(target, distance, polar_deg, azimuth_deg, fov_deg):
@@ -219,9 +224,9 @@ def tier_level(scene_cfg, tier, distance, bridge):
     return levels[max(i for i, d in enumerate(switches) if d <= distance)]
 
 
-def import_all(directory, body, windows, heading_rad, offset):
+def import_all(directory, material, heading_rad, offset):
     return {
-        lv: import_level(os.path.join(directory, "lod%d.glb" % lv), lv, body, windows, heading_rad, offset)
+        lv: import_level(os.path.join(directory, "lod%d.glb" % lv), lv, material, heading_rad, offset)
         for lv in lod.LEVELS
     }
 
@@ -237,24 +242,31 @@ def main():
     fov = scene_cfg["camera"]["fovDeg"]
     heading_rad = -math.radians(data["frame"]["headingDeg"])
     bridge = data["frame"]["base"] == "water"
-    body, windows = shade.materials(data["palette"])
+    material = shade.preview_material()
     os.makedirs(args.out, exist_ok=True)
     prefix = os.path.join(args.out, args.label + "-" if args.label else "")
 
-    context(data, heading_rad)
-    levels = import_all(args.glb, body, windows, heading_rad, (0.0, 0.0, 0.0))
+    context(data, heading_rad, report)
+    levels = import_all(args.glb, material, heading_rad, (0.0, 0.0, 0.0))
     top = max(e["bbox"]["max"][1] for e in report["levels"])
     centre = (0.0, 0.0, top * 0.35)
-    tower_s = data["model"]["params"]["towers"]["offsetsM"][1] if bridge else 0.0
+    tower_s = report["context"]["focus"] if bridge else 0.0
     tower = (-math.sin(heading_rad) * tower_s, math.cos(heading_rad) * tower_s, top * 0.55)
     polar = scene_cfg["camera"]["polarDeg"]
     # The azimuth limit whose camera looks most nearly along a bridge, so its arches show.
     arch_az = scene_cfg["camera"]["azimuthDeg"]["max"]
+    if not bridge:
+        # A building: the azimuth (within the camera's limits) that looks most nearly at its front.
+        front_az = (180.0 - data["frame"]["headingDeg"] + 180.0) % 360.0 - 180.0
+        limits = scene_cfg["camera"]["azimuthDeg"]
+        arch_az = min(max(front_az, limits["min"]), limits["max"])
+    # How far the close views stand: a landmark script may bring them in for a small building.
+    close = report["context"].get("closeM", 420.0)
     views = (("default", scene_cfg["camera"]["distanceM"]), ("focus", scene_cfg["focus"]["maxDistanceM"]))
 
     eevee()
     for keyframe_id in ("golden", "night", "day"):
-        lights(data, keyframe_id, windows)
+        lights(data, keyframe_id, material)
         for view, distance in views:
             if keyframe_id == "day" and view == "focus":
                 continue
@@ -266,17 +278,17 @@ def main():
         if keyframe_id == "day":
             continue
         show_only(levels, 0)
-        camera(tower, 420.0, polar["default"], arch_az, fov)
+        camera(tower, close, polar["default"], arch_az, fov)
         render("%sclose-tower-p48-%s.png" % (prefix, keyframe_id), WIDE)
-        camera(tower, 420.0, polar["max"], arch_az, fov)
+        camera(tower, close, polar["max"], arch_az, fov)
         render("%sclose-tower-p60-%s.png" % (prefix, keyframe_id), WIDE)
 
     if args.compare:
         # The true-scale build beside this one, shifted across the bridge axis.
         side = (math.cos(heading_rad) * COMPARE_GAP_M, math.sin(heading_rad) * COMPARE_GAP_M, 0.0)
-        other = import_all(args.compare, body, windows, heading_rad, side)
+        other = import_all(args.compare, material, heading_rad, side)
         middle = (side[0] / 2, side[1] / 2, centre[2])
-        lights(data, "golden", windows)
+        lights(data, "golden", material)
         for view, distance in views + (("near", 1500.0),):
             level = tier_level(scene_cfg, "high", distance, bridge)
             show_only(levels, level)

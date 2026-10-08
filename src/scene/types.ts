@@ -72,11 +72,6 @@ export interface SceneCopy {
   readonly fallback: string
   /** The ground label on "expanding soon" boroughs. */
   readonly expandingSoon: string
-  /**
-   * Name chip text per modelled landmark id (S07a): the landmark's copy name, which is its
-   * generic label where the real name is trademarked.
-   */
-  readonly landmarkNames: Readonly<Record<string, string>>
 }
 
 /** One quality tier's render settings (data/config/perf.json), resolved on the server. */

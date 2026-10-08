@@ -1,0 +1,226 @@
+{
+  "id": "prospect-park",
+  "base": "land",
+  "park": "park-bk5591",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q1049632 (Prospect Park) and its features: Q106694860 Prospect Park Lake, Q4931524 Prospect Park Boathouse, Q6647480 Litchfield Villa",
+      "url": "https://www.wikidata.org/wiki/Q1049632",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 21,
+      "source": "estimate",
+      "note": "the villa's tower top above the park, proportioned by eye"
+    },
+    "treeLowM": {
+      "valueM": 13,
+      "source": "estimate",
+      "note": "the lower canopy height of the tree masses"
+    },
+    "treeHighM": {
+      "valueM": 19,
+      "source": "estimate",
+      "note": "the upper canopy height (below the villa tower)"
+    },
+    "treeSpacingM": {
+      "valueM": 48,
+      "source": "estimate",
+      "note": "canopy mound spacing at the finest level at density 1"
+    },
+    "longMeadowNorth": {
+      "lat": 40.6685,
+      "lng": -73.9695,
+      "source": "estimate",
+      "note": "the Long Meadow's northern half, by eye"
+    },
+    "longMeadowNorthAxes": {
+      "widthM": 330,
+      "depthM": 140,
+      "source": "estimate",
+      "note": "its semi-axes, the long one running south-south-west"
+    },
+    "longMeadowSouth": {
+      "lat": 40.6627,
+      "lng": -73.9732,
+      "source": "estimate",
+      "note": "the Long Meadow's southern half, by eye"
+    },
+    "longMeadowSouthAxes": {
+      "widthM": 290,
+      "depthM": 130,
+      "source": "estimate",
+      "note": "its semi-axes"
+    },
+    "longMeadowHeadingDeg": {
+      "valueM": 205,
+      "source": "estimate",
+      "note": "the compass heading of the Long Meadow's long axis"
+    },
+    "nethermead": {
+      "lat": 40.6597,
+      "lng": -73.9683,
+      "source": "estimate",
+      "note": "the Nethermead, the park's middle meadow, by eye"
+    },
+    "nethermeadAxes": {
+      "widthM": 170,
+      "depthM": 115,
+      "source": "estimate",
+      "note": "its semi-axes"
+    },
+    "lake": {
+      "lat": 40.6535,
+      "lng": -73.968,
+      "source": "estimate",
+      "note": "Prospect Park Lake's middle, by eye (Wikidata Q106694860 gives no point)"
+    },
+    "lakeAxes": {
+      "widthM": 420,
+      "depthM": 190,
+      "source": "derived",
+      "note": "semi-axes of an ellipse of the lake's Wikidata area (60 acres, P2046), the long axis east-north-east"
+    },
+    "lakeHeadingDeg": {
+      "valueM": 75,
+      "source": "estimate",
+      "note": "the compass heading of the lake's long axis"
+    },
+    "lullwater": {
+      "lat": 40.6573,
+      "lng": -73.9652,
+      "source": "estimate",
+      "note": "the Lullwater, the narrow water from the boathouse down to the lake, by eye"
+    },
+    "lullwaterAxes": {
+      "widthM": 240,
+      "depthM": 34,
+      "source": "estimate",
+      "note": "its semi-axes, the long one north-south"
+    },
+    "boathouse": {
+      "lat": 40.660833,
+      "lng": -73.965278,
+      "source": "wikidata",
+      "note": "Prospect Park Boathouse (Q4931524, P625): a generic pale pavilion and terrace over the water"
+    },
+    "boathouse2": {
+      "widthM": 40,
+      "depthM": 26,
+      "source": "estimate",
+      "note": "the boathouse terrace's width and depth"
+    },
+    "boathouseM": {
+      "valueM": 9,
+      "source": "estimate",
+      "note": "the boathouse's height"
+    },
+    "villa": {
+      "lat": 40.666944,
+      "lng": -73.973889,
+      "source": "wikidata",
+      "note": "Litchfield Villa (Q6647480, P625): a generic villa with a square tower"
+    },
+    "villaKeep": {
+      "widthM": 10,
+      "depthM": 9,
+      "source": "estimate",
+      "note": "the villa's half-length and height"
+    },
+    "villaTowerWidthM": {
+      "valueM": 6,
+      "source": "estimate",
+      "note": "the villa tower's side"
+    },
+    "villaRoofM": {
+      "valueM": 3,
+      "source": "estimate",
+      "note": "the tower's pointed roof"
+    },
+    "driveWidthM": {
+      "valueM": 9,
+      "source": "estimate",
+      "note": "the park drive's width"
+    },
+    "lampSpacingM": {
+      "valueM": 80,
+      "source": "estimate",
+      "note": "lamps along the drive at the finest level"
+    },
+    "drive0": {
+      "lat": 40.6703,
+      "lng": -73.9688,
+      "source": "estimate",
+      "note": "loop drive point 0: north, near Grand Army Plaza (by eye)"
+    },
+    "drive1": {
+      "lat": 40.6668,
+      "lng": -73.9722,
+      "source": "estimate",
+      "note": "loop drive point 1: west side (by eye)"
+    },
+    "drive2": {
+      "lat": 40.6618,
+      "lng": -73.9758,
+      "source": "estimate",
+      "note": "loop drive point 2: south-west (by eye)"
+    },
+    "drive3": {
+      "lat": 40.656,
+      "lng": -73.972,
+      "source": "estimate",
+      "note": "loop drive point 3: west of the lake (by eye)"
+    },
+    "drive4": {
+      "lat": 40.6512,
+      "lng": -73.97,
+      "source": "estimate",
+      "note": "loop drive point 4: south-west of the lake (by eye)"
+    },
+    "drive5": {
+      "lat": 40.6503,
+      "lng": -73.966,
+      "source": "estimate",
+      "note": "loop drive point 5: south of the lake (by eye)"
+    },
+    "drive6": {
+      "lat": 40.654,
+      "lng": -73.964,
+      "source": "estimate",
+      "note": "loop drive point 6: east of the lake (by eye)"
+    },
+    "drive7": {
+      "lat": 40.66,
+      "lng": -73.9645,
+      "source": "estimate",
+      "note": "loop drive point 7: east side (by eye)"
+    },
+    "drive8": {
+      "lat": 40.666,
+      "lng": -73.965,
+      "source": "estimate",
+      "note": "loop drive point 8: north-east (by eye)"
+    },
+    "drive9": {
+      "lat": 40.6698,
+      "lng": -73.966,
+      "source": "estimate",
+      "note": "loop drive point 9: north (by eye)"
+    }
+  },
+  "readabilityScale": {
+    "structures": 2,
+    "paths": 2,
+    "lamp": 3,
+    "note": "Structures are drawn twice their real plan and the drive twice its width so they read at game distance; lamps three times a lamp head."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.0,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8; the plan stays the map's park outline (x1.0); structures and the drive take the readability scale."
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "id": "high-line",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "8d7f235dfb8adc182ee15b5659bad28155f54d5559db81ea0400c460a40b3f29",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "placement": {
+    "topM": 27,
+    "exclusions": [
+      {
+        "x": -257.8,
+        "y": -846.7,
+        "halfLengthM": 115.5,
+        "halfWidthM": 12,
+        "angleDeg": 83
+      },
+      {
+        "x": -205,
+        "y": -646.9,
+        "halfLengthM": 117.1,
+        "halfWidthM": 12,
+        "angleDeg": 67.6
+      },
+      {
+        "x": -88.7,
+        "y": -413.7,
+        "halfLengthM": 167.9,
+        "halfWidthM": 12,
+        "angleDeg": 60.8
+      },
+      {
+        "x": 48.6,
+        "y": -166.6,
+        "halfLengthM": 138.8,
+        "halfWidthM": 12,
+        "angleDeg": 61.1
+      },
+      {
+        "x": 257.8,
+        "y": 211,
+        "halfLengthM": 316.8,
+        "halfWidthM": 12,
+        "angleDeg": 61
+      },
+      {
+        "x": 224,
+        "y": 577.5,
+        "halfLengthM": 219.4,
+        "halfWidthM": 12,
+        "angleDeg": 151.2
+      },
+      {
+        "x": 105.6,
+        "y": 794,
+        "halfLengthM": 144.7,
+        "halfWidthM": 12,
+        "angleDeg": 61.5
+      },
+      {
+        "x": 262,
+        "y": 860.6,
+        "halfLengthM": 117.5,
+        "halfWidthM": 12,
+        "angleDeg": 331.7
+      }
+    ]
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/high-line/lod0.glb",
+      "sha256": "295b6b6c67a975c565a1bdc17a7793ad23f0c53d27eebacaf653436a5f6322f7",
+      "bytes": 133940,
+      "triangles": 6680,
+      "uncompressedBytes": 772008
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/high-line/lod1.glb",
+      "sha256": "ffc0ddd171fbb1534ae9fffa05d952250401d6c2a492e7e0064ac6e577120313",
+      "bytes": 63584,
+      "triangles": 3232,
+      "uncompressedBytes": 357156
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/high-line/lod2.glb",
+      "sha256": "76c03b37c939ae7b6432268ca3cff52b0570ad3f7bd9ae46a149353edb6bfe8a",
+      "bytes": 24920,
+      "triangles": 1191,
+      "uncompressedBytes": 129616
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/high-line/lod3.glb",
+      "sha256": "eaf0618e87e929e37e685f096caf5c5244ed45cb3e544606c62c8d237852a010",
+      "bytes": 13688,
+      "triangles": 589,
+      "uncompressedBytes": 61936
+    }
+  ]
+}

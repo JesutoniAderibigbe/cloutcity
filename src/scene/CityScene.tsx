@@ -23,8 +23,6 @@ import { HOME_IDS } from '@/lib/data/homes'
 import { modelRef } from '@/lib/data/models'
 import { project } from '@/lib/geo/projection'
 import { scenePalette, skyColors } from '@/lib/theme'
-import { landmarksLayer } from '@/lib/world/landmarksLayer'
-import { mapPlaces, placeName } from '@/lib/world/places'
 import { ApartmentMount } from './apartment/ApartmentMount'
 import { boundsToLocal } from './camera/limits'
 import { CitySceneClient } from './CitySceneClient'
@@ -53,16 +51,6 @@ function sceneQuality(): SceneQuality {
       QUALITY_TIERS.map((tier) => [tier, tierSettings(tier)]),
     ) as SceneQuality['tiers'],
   }
-}
-
-/** The modelled landmarks' names from copy (generic labels where trademarked, LEGAL-1). */
-function landmarkNames(): Record<string, string> {
-  const modelled = new Set(landmarksLayer.models.map((entry) => entry.id))
-  return Object.fromEntries(
-    mapPlaces()
-      .filter((place) => modelled.has(place.id))
-      .map((place) => [place.id, placeName(place)]),
-  )
 }
 
 /** The player's avatar parts from scene.json `models.player`, fitted by the head's top. */
@@ -124,7 +112,6 @@ export function CityScene() {
       lost: copy('map.lost'),
       fallback: copy('map.fallback'),
       expandingSoon: copy('map.expandingSoon'),
-      landmarkNames: landmarkNames(),
     },
   }
   return (
