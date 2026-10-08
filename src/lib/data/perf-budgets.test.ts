@@ -38,9 +38,12 @@ function tableRows(): Map<string, Record<Tier, string>> {
   return rows
 }
 
-/** "≤ 180 KB" → 180, "≤ 1.2 MB" → 1200 (KB = 1000 bytes, as scripts/budget.ts uses). */
+/**
+ * "≤ 180 KB" → 180, "≤ 1.2 MB" → 1200 (KB = 1000 bytes, as scripts/budget.ts uses). A trailing
+ * parenthetical note ("≤ 560 KB (user raised …, DEC-47)") is the decision record, not the value.
+ */
 function kb(cell: string): number {
-  const match = /^≤ ([\d.]+) (KB|MB)$/.exec(cell)
+  const match = /^≤ ([\d.]+) (KB|MB)(?: \(.+\))?$/.exec(cell)
   if (!match) throw new Error(`Not a size budget: ${cell}`)
   const value = Number(match[1])
   return match[2] === 'MB' ? Math.round(value * 1000) : value
