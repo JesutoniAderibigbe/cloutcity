@@ -1,10 +1,10 @@
 'use client'
 
 /**
- * The creator's avatar preview (S16a, A2.3): a second, small WebGL canvas with the player's look
- * under a fixed studio light (scene.json `avatarLook.preview`, D11), so swatches always read true
- * whatever the time of day. Its own lazy chunk (the creator imports it with next/dynamic), not
- * counted on the playable path.
+ * The creator's avatar preview (S16a, A2.3; S04p: the Look step's hero): a second WebGL canvas
+ * with the player's look under a fixed studio light (scene.json `avatarLook.preview`, D11), so
+ * swatches always read true whatever the time of day. Its own lazy chunk (the creator imports it
+ * with next/dynamic), not counted on the playable path.
  *
  * - The city hands it the screen while it is open (src/state/sceneFocus.ts `creator`): the map
  *   renders no frames, so only one scene draws.

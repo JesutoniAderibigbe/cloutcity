@@ -124,7 +124,9 @@ export function CreatorModal() {
       data-creator=""
       data-creator-step={step}
       data-cc-feature="cc-feature:creator"
-      className="pointer-events-auto flex max-h-full w-full max-w-[var(--overlay-sheet-max-w)] flex-col gap-3 self-center overflow-hidden rounded-3xl border border-line glass p-4 shadow-2xl"
+      // On a wide screen the Look step takes the whole free height and a wider card, so the
+      // preview stands beside the choices at full size, as Lagos Life's creator does (S04p).
+      className={`pointer-events-auto flex max-h-full w-full max-w-[var(--overlay-sheet-max-w)] flex-col gap-3 self-center overflow-hidden rounded-3xl border border-line glass p-4 shadow-2xl ${step === 'look' ? 'lg:h-full lg:max-w-5xl' : ''}`}
     >
       <header className="flex items-start justify-between gap-2">
         <div className="min-w-0">

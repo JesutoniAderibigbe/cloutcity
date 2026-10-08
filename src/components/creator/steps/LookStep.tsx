@@ -136,77 +136,92 @@ export default function LookStep({ bind }: StepProps) {
   }
 
   return (
-    <section data-creator-look="" className="flex flex-col gap-3">
-      <p className="text-sm text-muted">{copy('creator.look.intro')}</p>
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="h-48 w-40 shrink-0 overflow-hidden rounded-2xl bg-canvas">
+    <section
+      data-creator-look=""
+      className="flex flex-col gap-3 lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-5"
+    >
+      {/* S04p: the preview is the hero, as in Lagos Life's creator: the full card width on a
+          phone, and the full height of a left column on a wide screen, the choices scrolling
+          beside it. */}
+      <div className="flex flex-col gap-2 lg:min-h-0">
+        <div
+          data-creator-preview=""
+          className="relative h-[min(34svh,20rem)] w-full shrink-0 overflow-hidden rounded-2xl bg-canvas lg:h-auto lg:min-h-0 lg:flex-1"
+        >
           <AvatarPreviewCanvas
             avatar={{ look: draft, worn }}
             tier={tier}
             label={copy('creator.look.preview')}
             fallback={<p className="p-2 text-sm text-fg">{lookSummary(draft)}</p>}
           />
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <p className="sr-only">{lookSummary(draft)}</p>
           <button
             type="button"
             data-creator-surprise=""
             onKeyDown={onKeyDown}
             onPointerDown={onPointerDown}
             onClick={(event) => guard(event, 'surprise', surprise)}
-            className={`${CREATOR_BUTTON} bg-raised text-fg`}
+            className={`${CREATOR_BUTTON} absolute right-3 bottom-3 glass text-fg shadow-md`}
           >
             {copy('creator.look.surprise')}
           </button>
-          <p aria-live="polite" className="min-h-5 text-sm text-taxi-ink">
+          <p
+            aria-live="polite"
+            className="pointer-events-none absolute top-3 left-3 max-w-[calc(100%-1.5rem)] text-sm font-semibold text-taxi-ink"
+          >
             {note}
           </p>
         </div>
+        <p className="sr-only">{lookSummary(draft)}</p>
       </div>
 
-      {LOOK_CATEGORIES.map((category) => (
-        <section
-          key={category.id}
-          data-look-category={category.id}
-          aria-labelledby={`creator-look-${category.id}`}
-          className="flex flex-col gap-2"
-        >
-          <h3 id={`creator-look-${category.id}`} className="text-xs font-bold text-muted uppercase">
-            {copy(category.titleKey)}
-          </h3>
-          {category.fields.map((field) => {
-            const choices = lookChoices(field, draft, options)
-            const swatch = choices.some((choice) => choice.token !== undefined)
-            return (
-              <fieldset key={field} className="flex flex-col gap-1.5">
-                <legend className="text-sm font-semibold text-fg">
-                  {copy(FIELD_LEGEND[field])}
-                  {swatch ? (
-                    <span className="font-normal text-muted">: {nameOf(field, draft)}</span>
+      <div className="flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
+        <p className="text-sm text-muted">{copy('creator.look.intro')}</p>
+        {LOOK_CATEGORIES.map((category) => (
+          <section
+            key={category.id}
+            data-look-category={category.id}
+            aria-labelledby={`creator-look-${category.id}`}
+            className="flex flex-col gap-2"
+          >
+            <h3
+              id={`creator-look-${category.id}`}
+              className="text-xs font-bold text-muted uppercase"
+            >
+              {copy(category.titleKey)}
+            </h3>
+            {category.fields.map((field) => {
+              const choices = lookChoices(field, draft, options)
+              const swatch = choices.some((choice) => choice.token !== undefined)
+              return (
+                <fieldset key={field} className="flex flex-col gap-1.5">
+                  <legend className="text-sm font-semibold text-fg">
+                    {copy(FIELD_LEGEND[field])}
+                    {swatch ? (
+                      <span className="font-normal text-muted">: {nameOf(field, draft)}</span>
+                    ) : null}
+                  </legend>
+                  {field === 'hairStyle' && hiddenBy !== undefined ? (
+                    <p className="text-xs text-muted">
+                      {copy('creator.look.hairHidden', { headwear: optionName(hiddenBy.nameKey) })}
+                    </p>
                   ) : null}
-                </legend>
-                {field === 'hairStyle' && hiddenBy !== undefined ? (
-                  <p className="text-xs text-muted">
-                    {copy('creator.look.hairHidden', { headwear: optionName(hiddenBy.nameKey) })}
-                  </p>
-                ) : null}
-                <div className={`flex flex-wrap ${swatch ? 'gap-2.5 p-1' : 'gap-1.5'}`}>
-                  {choices.map((choice) => (
-                    <Choice
-                      key={choice.id}
-                      field={field}
-                      choice={choice}
-                      checked={draft[field] === choice.id}
-                      onPick={() => pick(field, choice.id)}
-                    />
-                  ))}
-                </div>
-              </fieldset>
-            )
-          })}
-        </section>
-      ))}
+                  <div className={`flex flex-wrap ${swatch ? 'gap-2.5 p-1' : 'gap-1.5'}`}>
+                    {choices.map((choice) => (
+                      <Choice
+                        key={choice.id}
+                        field={field}
+                        choice={choice}
+                        checked={draft[field] === choice.id}
+                        onPick={() => pick(field, choice.id)}
+                      />
+                    ))}
+                  </div>
+                </fieldset>
+              )
+            })}
+          </section>
+        ))}
+      </div>
     </section>
   )
 }
