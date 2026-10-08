@@ -1,4 +1,4 @@
-import { expect, test } from './fixtures/test'
+import { expect, test, waitForWelcomeGate } from './fixtures/test'
 
 const TAB_NAMES = ['Map', 'Phone: coming soon', 'Shop: coming soon', 'Me']
 const MIN_TARGET_PX = 44
@@ -51,6 +51,10 @@ test.describe('bottom tab bar', () => {
     else await me.click()
     await expect(me).toHaveAttribute('aria-current', 'page')
     await expect(map).not.toHaveAttribute('aria-current')
+    // The Me panel loads lazily and takes focus when it opens: let it, before the keyboard part.
+    await expect(
+      page.getByRole('dialog', { name: 'Me' }).getByRole('heading', { name: 'Me' }),
+    ).toBeFocused()
 
     await map.focus()
     await page.keyboard.press('Enter')
@@ -64,6 +68,8 @@ test.describe('bottom tab bar', () => {
     page,
   }) => {
     await page.goto('/')
+    // Until the welcome gate has decided, everything behind it is inert and takes no focus.
+    await waitForWelcomeGate(page)
     const nav = page.getByRole('navigation', { name: 'Main' })
     for (const name of ['Phone', 'Shop']) {
       const tab = nav.getByRole('button', { name: `${name}: coming soon`, exact: true })

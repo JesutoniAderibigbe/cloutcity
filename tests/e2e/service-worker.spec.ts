@@ -180,8 +180,7 @@ test.describe('service worker', () => {
         await fetch(url)
     }, geoVersion)
     for (let i = 0; i < 2; i += 1) await page.goto(`/geo/base?v=junk${i}&x=${i}`)
-    await page.goto('/')
-    await waitForWelcomeGate(page)
+    // Read the caches from the last (same-origin) page: no need to boot the map again.
     const cached = await geoCacheUrls(page)
     expect(cached.filter((url) => /junk|0123456789ab|[?&]x=/.test(url))).toEqual([])
   })
@@ -214,9 +213,10 @@ test.describe('service worker', () => {
     // A "new build": the served worker differs from the one installed (installOlderBuild).
     await updateToWaitingWorker(page)
 
-    // The new worker waits: nothing is swapped under the player until they choose.
+    // The new worker waits: nothing is swapped under the player until they choose. The page
+    // registers its worker only once the map is playable and the browser is idle.
     const notice = updateNotice(page)
-    await expect(notice).toBeVisible()
+    await expect(notice).toBeVisible({ timeout: 30_000 })
     await expect(notice).toContainText(copyText('offline.update.message'))
     await checkA11y()
     expect(Object.keys(await cacheContents(page))).toContain('cc-geo-0123456789ab')
@@ -254,7 +254,8 @@ test.describe('service worker', () => {
     const here = updateNotice(page)
     const there = updateNotice(other)
     await expect(here).toBeVisible()
-    await expect(there).toBeVisible()
+    // The other tab registers its worker only once its map is playable and the browser is idle.
+    await expect(there).toBeVisible({ timeout: 30_000 })
     const action = copyText('offline.update.action')
     await Promise.all([
       other.waitForEvent('load'),
