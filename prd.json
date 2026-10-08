@@ -207,6 +207,17 @@
       "attempts": 0
     },
     {
+      "id": "S58",
+      "phase": 1,
+      "title": "Phone apps hub and Shop directory",
+      "acceptance": "Pulled into v2 (user ruling 2026-10-08, DEC-53). The Phone tab opens a phone-style app grid like Lagos Life, in Clout City's own style: Bank (balance, weekly bills with due day, money history from the ledger — S43 lite), Updates (one inbox of goals, rent, events, creator offer — S47 lite, GR-9/GR-21 caps), Jobs (every job and shift with pay, energy and where), Places (opens the Places panel), Goals, Closet (inventory and outfits), Home, Profile (Me), Settings and Help (S48 lite: help FAQ, keyboard shortcuts, replay tour, clean-screen toggle); each app is a lazy chunk with copy in /data; apps that need later features show an honest 'coming later' card. The Shop tab becomes a store directory: every store the player can buy from, grouped by category, with distance and 'Get there' (the premium store replaces it in S25/S26). Phone and Shop lose the 'Soon' badges. Accessible, 44 px targets, both themes, playable path and precache unchanged (OPTIONAL_CHUNK_MARKERS).",
+      "requires": [],
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
       "id": "S16b",
       "phase": 1,
       "title": "Sims-like characters on a CC0 realistic base",
@@ -520,7 +531,7 @@
       "phase": 3,
       "title": "Buy mode 2.0: grid, paint, floors, wardrobe",
       "requires": [],
-      "acceptance": "Placement grid per home tier with footprints (1×1, 2×1, wall); move, rotate, sell and storage by tap or keyboard/DOM (A11Y-3). At least 10 furniture categories from CC0 packs within budgets. Wall paint and floor finishes with try-before-buy, visible to visitors (S45). Outfits by occasion (everyday, work, gym, sleep, night out). Colour variants have human names (A11Y-1). Rare luxury items carry weekly upkeep from config as cash sinks. Sale values depreciate and buy-sell loops cannot farm clout (S13 test extended). Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); player-to-player cash and items only through the server-authoritative player economy (S56, DEC-38); the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
+      "acceptance": "Pulled into v2 (DEC-53): the home must look furnished like Lagos Life from the start (starter room furnished by default, avatar standing in it). Placement grid per home tier with footprints (1×1, 2×1, wall); move, rotate, sell and storage by tap or keyboard/DOM (A11Y-3). At least 10 furniture categories from CC0 packs within budgets. Wall paint and floor finishes with try-before-buy, visible to visitors (S45). Outfits by occasion (everyday, work, gym, sleep, night out). Colour variants have human names (A11Y-1). Rare luxury items carry weekly upkeep from config as cash sinks. Sale values depreciate and buy-sell loops cannot farm clout (S13 test extended). Engine stays pure; data/config/copy in /data; grants only via the grant function (ECON-1); player-to-player cash and items only through the server-authoritative player economy (S56, DEC-38); the S12 bot still meets its targets; axe clean, 44 px targets, GR-1/2/8 form rules where forms exist; within perf.json budgets (lazy chunks, shell untouched).",
       "review": false,
       "passes": false,
       "blocked": false,
