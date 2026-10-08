@@ -759,6 +759,8 @@ export const SceneConfigSchema = z.strictObject({
     tweenMs: z.int().nonnegative(),
     /** The camera ends at most this far from the place. */
     maxDistanceM: metres,
+    /** The Map tab's glide back to the player at the default view (src/state/mapTab.ts). */
+    recenterMs: z.int().nonnegative(),
   }),
   /**
    * Travel (S08): the vehicle the avatar rides in, sized as a multiple of the avatar's height (so

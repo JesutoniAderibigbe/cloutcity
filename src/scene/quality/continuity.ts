@@ -10,7 +10,7 @@
  */
 
 /** What keeps the scene animating. */
-export type ContinuousSource = 'gesture' | 'flight' | 'travel' | 'ambient'
+export type ContinuousSource = 'gesture' | 'flight' | 'recenter' | 'travel' | 'ambient'
 
 const sources = new Set<ContinuousSource>()
 let since: number | null = null

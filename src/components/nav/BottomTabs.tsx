@@ -10,6 +10,7 @@ import {
   useHudPanel,
   type HudPanel,
 } from '@/state/hudPanel'
+import { showMap } from '@/state/mapTab'
 
 export const TABS = [
   { id: 'home', labelKey: 'tabs.home', icon: '🏠' },
@@ -37,8 +38,10 @@ function isTyping(target: EventTarget | null): boolean {
 
 /**
  * Bottom tab bar. Home (first, DEC-59) opens the Home panel with the 3D room, where the game
- * starts (S40). Map is the city and closes any panel; Phone opens the phone's app grid, Shop
- * the store directory and Me the Me panel, all in the sheet zone (S18a, S58). A tab is current
+ * starts (S40). Map always brings the city to the front, closing any panel or sheet, and on the
+ * map already glides the camera back to the player (src/state/mapTab.ts). Phone opens the
+ * phone's app grid, Shop the store directory and Me the Me panel, all in the sheet zone (S18a,
+ * S58). A tab is current
  * while its panel is open, and tapping it again closes it. Each tab carries `data-hud-panel`, so
  * focus comes back to it when its panel closes (PanelDialog). The `?` key opens the keyboard
  * shortcuts in the phone's Settings & Help (S58), unless the player is typing or a modal is up.
@@ -60,7 +63,7 @@ export function BottomTabs() {
   }, [])
 
   const choose = (id: TabId) => {
-    if (id === 'map') dismissHudPanel()
+    if (id === 'map') showMap()
     else if (hudPanelStore.getState().panel === id) dismissHudPanel()
     else openHudPanel(id)
   }
