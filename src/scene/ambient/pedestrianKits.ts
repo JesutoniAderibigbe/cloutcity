@@ -20,13 +20,15 @@ import {
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import {
   PEDESTRIAN_BUCKETS,
+  type AmbientTier,
+  type TownsfolkConfig,
   type PedestrianBucket,
   type PedestrianKit,
   type PedestrianKitSource,
 } from '@/lib/world/ambient/types'
 import type { RigModel, SkinnedPartModel } from '../models/prepare'
 import { groundParts, partsBounds, splitIntoBuckets } from './buckets'
-import { PEDESTRIANS, WALK_CLIP, pedestrianModelIds } from './kitIds'
+import { PEDESTRIANS, TOWNSFOLK_VARIANTS, WALK_CLIP, pedestrianModelIds } from './kitIds'
 import type { AmbientLoadedModel, AmbientModelLoader } from './vehicleKits'
 
 export type ScenePedestrianKit = PedestrianKit<BufferGeometry>
@@ -60,12 +62,17 @@ interface PosedPart {
   readonly slots: readonly string[]
 }
 
-function posable(part: SkinnedPartModel, slots: readonly string[], rig: RigModel): PosedPart {
+function posable(
+  part: SkinnedPartModel,
+  slots: readonly string[],
+  rig: RigModel,
+  clipName: string,
+): PosedPart {
   const root = cloneSkinned(part.scene)
   const meshes = skinnedMeshesOf(root)
   if (meshes.length === 0) throw new Error('pedestrian part has no skinned mesh')
-  const clip = rig.clips.find((candidate) => candidate.name === WALK_CLIP)
-  if (clip === undefined) throw new Error(`rig has no clip "${WALK_CLIP}"`)
+  const clip = rig.clips.find((candidate) => candidate.name === clipName)
+  if (clip === undefined) throw new Error(`rig has no clip "${clipName}"`)
   const mixer = new AnimationMixer(root)
   mixer.clipAction(clip).play()
   return { root, mixer, meshes, slots }
@@ -194,13 +201,17 @@ export function bakePedestrian(
   id: string,
   rig: RigModel,
   parts: readonly { readonly model: SkinnedPartModel; readonly slots: readonly string[] }[],
+  /** Another clip, posed at this share of it (S04o townsfolk); the walk's widest stride else. */
+  at?: { readonly clip: string; readonly share: number },
 ): ScenePedestrianKit {
-  const posed = parts.map((part) => posable(part.model, part.slots, rig))
+  const clipName = at?.clip ?? WALK_CLIP
+  const posed = parts.map((part) => posable(part.model, part.slots, rig, clipName))
   try {
     const [first] = posed
     if (first === undefined) throw new Error('a pedestrian needs a part')
-    const clip = rig.clips.find((candidate) => candidate.name === WALK_CLIP)
-    const time = midStrideTime(first, clip?.duration ?? 0)
+    const clip = rig.clips.find((candidate) => candidate.name === clipName)
+    const duration = clip?.duration ?? 0
+    const time = at === undefined ? midStrideTime(first, duration) : duration * at.share
     for (const part of posed) pose(part, time)
     const tagged = posed.map(bucketTagged)
     const combined = concat(tagged)
@@ -247,6 +258,37 @@ export const s16bPedestrians: ScenePedestrianKitSource = async (tier, loadModels
           { model: asSkinned(entry, variant.model), slots: entry?.ref.slots ?? [] },
         ]),
       )
+    }
+  } catch (error) {
+    for (const kit of kits) kit.dispose()
+    throw error
+  }
+  return kits
+}
+
+/**
+ * The townsfolk kits of a tier (S04o): every body (TOWNSFOLK_VARIANTS) in every pose of
+ * ambient.json `townsfolk.poses[tier]`, body-major (kit = body × poses + pose). The walk is posed
+ * at its widest stride like the pedestrians; the standing poses at `poseTime` of their clip.
+ */
+export async function bakeTownsfolkKits(
+  tier: AmbientTier,
+  config: Pick<TownsfolkConfig, 'poses' | 'poseTime'>,
+  loadModels: AmbientModelLoader,
+): Promise<ScenePedestrianKit[]> {
+  const ids = [...new Set(TOWNSFOLK_VARIANTS.flatMap((variant) => [variant.rig, variant.model]))]
+  const byId = new Map((await loadModels(ids)).map((entry) => [entry.ref.id, entry]))
+  const kits: ScenePedestrianKit[] = []
+  try {
+    for (const variant of TOWNSFOLK_VARIANTS) {
+      const rig = byId.get(variant.rig)?.model
+      if (rig?.kind !== 'rig') throw new Error(`"${variant.rig}" is not a rig`)
+      const entry = byId.get(variant.model)
+      const parts = [{ model: asSkinned(entry, variant.model), slots: entry?.ref.slots ?? [] }]
+      for (const pose of config.poses[tier]) {
+        const at = pose === 'walk' ? undefined : { clip: pose, share: config.poseTime[pose] }
+        kits.push(bakePedestrian(`${variant.model}-${pose}`, rig, parts, at))
+      }
     }
   } catch (error) {
     for (const kit of kits) kit.dispose()

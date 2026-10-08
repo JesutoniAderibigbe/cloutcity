@@ -138,10 +138,10 @@ export interface AmbientLayer {
 }
 
 /** The ambient meshes ignore the raycaster: nothing ambient is ever picked. */
-const noRaycast: Object3D['raycast'] = () => {}
+export const noRaycast: Object3D['raycast'] = () => {}
 
 /** Bucket meshes of one kit sharing one matrix attribute. */
-interface KitMeshes {
+export interface KitMeshes {
   readonly meshes: readonly InstancedMesh[]
   /** Indices of the meshes whose colour is the instance's (paint, skin, top, bottom). */
   readonly recolour: readonly { readonly mesh: InstancedMesh; readonly bucket: string }[]
@@ -151,7 +151,7 @@ interface KitMeshes {
   count: number
 }
 
-function kitMeshes(
+export function kitMeshes(
   name: string,
   parts: readonly {
     readonly bucket: string

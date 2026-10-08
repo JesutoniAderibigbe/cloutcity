@@ -55,6 +55,7 @@ import type { SceneProps } from './types'
 const PinMarks = lazy(() => import('./pins/PinMarks'))
 // The map style chip (S04m): after the city is playable, never on its path.
 const MapStyleChip = lazy(() => import('./style/MapStyleChip'))
+const TownsfolkCard = lazy(() => import('./townsfolk/TownsfolkCard'))
 // The trip animation (S08) is never needed before the player picks a trip, so it loads after the
 // city is playable (S04k, PERF-6). Until it has loaded a trip cuts to its arrival, as it does
 // while the apartment has the screen (setTravelAnimator).
@@ -307,6 +308,16 @@ function CityScene3D({
     }),
     [config.camera, look],
   )
+  // The townsfolk (S04o) hang out at the place pins where the map draws them.
+  const venues = useMemo(
+    () =>
+      built === null || built instanceof Error
+        ? []
+        : built.pins.pins
+            .filter((pin) => pin.kind === 'venue' && pin.style === 'normal')
+            .map((pin) => ({ id: pin.id, x: pin.x, y: pin.y })),
+    [built],
+  )
   const placeId = spot?.kind === 'place' ? spot.placeId : null
   const rest = useMemo(() => {
     if (placeId === null || built === null || built instanceof Error) return home
@@ -429,6 +440,7 @@ function CityScene3D({
                   geo={parsed.geo}
                   subwayPalette={palette.subwayLines}
                   homes={homeList}
+                  venues={venues}
                   createMaterial={() =>
                     createBuildingMaterial({ gradientMap: built.gradientMap, colors: 'instance' })
                   }
@@ -462,6 +474,11 @@ function CityScene3D({
       {cityReady ? (
         <Suspense>
           <MapStyleChip />
+        </Suspense>
+      ) : null}
+      {cityReady && !hidden ? (
+        <Suspense>
+          <TownsfolkCard />
         </Suspense>
       ) : null}
     </div>

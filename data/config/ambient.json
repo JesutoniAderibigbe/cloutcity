@@ -157,5 +157,149 @@
       "tailMinRed": 0.3,
       "tailMaxGreenShare": 0.25
     }
+  },
+  "townsfolk": {
+    "perVenue": {
+      "low": 3,
+      "mid": 4,
+      "high": 5
+    },
+    "maxShown": {
+      "low": 8,
+      "mid": 20,
+      "high": 30
+    },
+    "focusRadiusM": {
+      "low": 1500,
+      "mid": 1800,
+      "high": 2200
+    },
+    "showBelowDistanceM": {
+      "low": 3000,
+      "mid": 3500,
+      "high": 4000
+    },
+    "heightOfPlayer": 0.95,
+    "frontM": 40,
+    "spacingOfHeight": 0.6,
+    "minRingOfHeight": 0.45,
+    "epochS": 120,
+    "walkSpeedMps": 26,
+    "maxWalkShare": 0.6,
+    "neighbours": 3,
+    "homeShare": 0.6,
+    "poses": {
+      "low": ["idle", "walk"],
+      "mid": ["idle", "talk", "wave", "walk"],
+      "high": ["idle", "talk", "wave", "walk"]
+    },
+    "poseShare": {
+      "talk": 0.5,
+      "wave": 0.15
+    },
+    "poseTime": {
+      "idle": 0.25,
+      "talk": 0.4,
+      "wave": 0.3
+    },
+    "faceJitterRad": 0.5,
+    "bobOfHeight": 0.025,
+    "bobHz": 1.6,
+    "hair": [
+      "#1c1714",
+      "#2b1d14",
+      "#3d2818",
+      "#5a3a22",
+      "#7a4a26",
+      "#a8743f",
+      "#c9a464",
+      "#8f2f1c",
+      "#6b6b6b"
+    ],
+    "names": {
+      "woman": [
+        "Maya",
+        "Aaliyah",
+        "Sofia",
+        "Priya",
+        "Mei",
+        "Destiny",
+        "Gabriela",
+        "Zainab",
+        "Keisha",
+        "Lena",
+        "Fatima",
+        "Camila",
+        "Jasmine",
+        "Nia",
+        "Ana",
+        "Yuki",
+        "Imani",
+        "Rosa",
+        "Amara",
+        "Chloe",
+        "Valentina",
+        "Tanisha",
+        "Hana",
+        "Esperanza",
+        "Dani",
+        "Ifeoma",
+        "Grace",
+        "Nadia",
+        "Lucia",
+        "Simone"
+      ],
+      "man": [
+        "Marcus",
+        "Diego",
+        "Jamal",
+        "Kenji",
+        "Andre",
+        "Luis",
+        "Omar",
+        "Malik",
+        "Tyrese",
+        "Ravi",
+        "Kwame",
+        "Mateo",
+        "Jin",
+        "Darnell",
+        "Samir",
+        "Eli",
+        "Tomas",
+        "Dev",
+        "Kofi",
+        "Javier",
+        "Hector",
+        "Nico",
+        "Isaiah",
+        "Arjun",
+        "Theo",
+        "Moses",
+        "Danny",
+        "Rafael",
+        "Chidi",
+        "Sean"
+      ],
+      "initials": "ABCDEFGHJKLMNOPRSTVWZ"
+    },
+    "vibes": [
+      "chopped",
+      "playlist",
+      "onebr",
+      "icedCoffee",
+      "knowsDj",
+      "thrift",
+      "content",
+      "fiveMin",
+      "bodegaCat",
+      "battery",
+      "nightShift",
+      "rooftop",
+      "sneakers",
+      "openMic",
+      "brunch",
+      "bike"
+    ]
   }
 }

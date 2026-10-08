@@ -48,6 +48,7 @@ export type CopyKey =
   | keyof (typeof import('@data/copy/sync/base.json'))['strings']
   | keyof (typeof import('@data/copy/tabs/base.json'))['strings']
   | keyof (typeof import('@data/copy/tour/base.json'))['strings']
+  | keyof (typeof import('@data/copy/townsfolk/base.json'))['strings']
   | keyof (typeof import('@data/copy/travel/base.json'))['strings']
   | keyof (typeof import('@data/copy/venues/base.json'))['strings']
   | keyof (typeof import('@data/copy/voice/base.json'))['strings']

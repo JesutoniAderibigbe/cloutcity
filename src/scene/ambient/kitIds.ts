@@ -23,3 +23,24 @@ export const PEDESTRIANS: PerAmbientTier<readonly NpcVariant[]> = {
 export function pedestrianModelIds(tier: AmbientTier): string[] {
   return [...new Set(PEDESTRIANS[tier].flatMap((variant) => [variant.rig, variant.model]))]
 }
+
+/**
+ * The townsfolk's bodies (S04o), in `TOWNSFOLK_BODIES` order (woman, man): both on every tier,
+ * so the locals are of every look. The same merged `npc-*` models as the pedestrians, never the
+ * player look's parts (UX-3).
+ */
+export const TOWNSFOLK_VARIANTS: readonly NpcVariant[] = ['npc-woman', 'npc-man'].map((model) => {
+  const variant = NPC_VARIANTS.find((candidate) => candidate.model === model)
+  if (variant === undefined) throw new Error(`no npc variant "${model}"`)
+  return variant
+})
+
+/** Every character model a tier's living city loads: its pedestrians' and the townsfolk's. */
+export function characterModelIds(tier: AmbientTier): string[] {
+  return [
+    ...new Set([
+      ...pedestrianModelIds(tier),
+      ...TOWNSFOLK_VARIANTS.flatMap((variant) => [variant.rig, variant.model]),
+    ]),
+  ]
+}

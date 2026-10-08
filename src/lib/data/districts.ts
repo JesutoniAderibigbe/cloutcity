@@ -15,7 +15,7 @@ import geoConfigJson from '@data/config/geo.json'
 import { project } from '@/lib/geo/projection'
 import type { BuildingDistrictId } from '@/lib/geo/sources'
 import type { AmbientAssets, AmbientModelAsset } from '@/scene/ambient/assets'
-import { pedestrianModelIds } from '@/scene/ambient/kitIds'
+import { characterModelIds } from '@/scene/ambient/kitIds'
 import type { StreetPropsAssets } from '@/scene/props/layer'
 import type { PlotAssets } from '@/scene/plots/layer'
 import { plotModels } from '@/lib/world/venuePlots'
@@ -125,7 +125,7 @@ export function ambientAssets(tier: QualityTier): AmbientAssets {
   const vehicles = ambientConfig.vehicles.models[tier].filter((id) =>
     id.startsWith('bus') ? caps.bus[tier] > 0 : caps.vehicle[tier] > 0,
   )
-  const pedestrians = caps.pedestrian[tier] > 0 ? pedestrianModelIds(tier) : []
+  const pedestrians = caps.pedestrian[tier] > 0 ? characterModelIds(tier) : []
   return {
     streetsUrl: streetsUrl(),
     vehicles: vehicles.map(asset),
