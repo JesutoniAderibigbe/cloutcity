@@ -35,6 +35,7 @@ import {
   EventsFileSchema,
   HomesFileSchema,
   HomeInteriorsFileSchema,
+  NeighborhoodsFileSchema,
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
@@ -64,6 +65,14 @@ import {
   ZonesFileSchema,
 } from './schemas/world'
 import { ModelManifestSchema, ShowcaseSchema } from './schemas/assets'
+import {
+  AvatarEngineTablesSchema,
+  AvatarOptionsSchema,
+  AvatarSceneFileSchema,
+  AvatarSwatchesFileSchema,
+  TraitsFileSchema,
+} from './schemas/avatar'
+import { CreatorConfigSchema } from './schemas/creator'
 import { CatalogSchema } from '../../../scripts/assets/schema'
 import {
   audio,
@@ -101,11 +110,17 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'assets/manifest.json': ModelManifestSchema,
   'assets/showcase.json': ShowcaseSchema,
   'audio/manifest.json': AudioManifestSchema,
+  'avatar/engine.derived.json': AvatarEngineTablesSchema,
+  'avatar/options.json': AvatarOptionsSchema,
+  'avatar/scene.derived.json': AvatarSceneFileSchema,
+  'avatar/swatches.derived.json': AvatarSwatchesFileSchema,
+  'avatar/traits.json': TraitsFileSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
   'config/account.json': AccountConfigSchema,
   'config/audio.json': AudioConfigSchema,
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,
+  'config/creator.json': CreatorConfigSchema,
   'config/geo.json': GeoConfigSchema,
   'config/handles.json': HandlesConfigSchema,
   'config/layout.json': LayoutConfigSchema,
@@ -133,6 +148,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
   'homes/interiors.json': HomeInteriorsFileSchema,
+  'homes/neighborhoods.json': NeighborhoodsFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/frames.derived.json': LandmarkFramesFileSchema,
@@ -202,6 +218,7 @@ describe('/data files', () => {
     'zones',
     'audio',
     'assets',
+    'avatar',
     'boroughs',
     'homes',
     'config',
@@ -364,7 +381,10 @@ describe('config/perf.json', () => {
         'avatar-head': { trianglesMax: { low: 350, mid: 400, high: 400 }, gzKBMax: 11 },
         'avatar-body': { trianglesMax: { low: 400, mid: 650, high: 650 }, gzKBMax: 15 },
         'avatar-accessory': { trianglesMax: { low: 100, mid: 100, high: 100 }, gzKBMax: 4 },
+        // S16a A0.3: approved by the user (the measured hijab is 220 triangles, 2.3 KB gz).
+        'avatar-hair': { trianglesMax: { low: 240, mid: 300, high: 300 }, gzKBMax: 4 },
       },
+      avatar: { trianglesMax: { low: 1300, mid: 1700, high: 1700 } },
     })
   })
 
@@ -919,6 +939,7 @@ describe('content schemas', () => {
     cloutValue: 1,
     styleValue: 1,
     statEffects: { mood: 2 },
+    look: { part: 'outfit', outfit: 'outfit-01', top: 'teal' },
   }
 
   it('rejects an item that sells for more than it costs, or an unknown stat', () => {

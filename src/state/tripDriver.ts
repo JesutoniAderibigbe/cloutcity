@@ -93,7 +93,7 @@ function shouldCut(): boolean {
   return (
     prefersReducedMotion() ||
     !tripStore.getState().animator ||
-    sceneFocusStore.getState().focus === 'room' ||
+    sceneFocusStore.getState().focus !== 'city' ||
     document.visibilityState === 'hidden'
   )
 }

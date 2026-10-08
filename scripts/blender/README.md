@@ -47,6 +47,10 @@ PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 blender -b --factory-startup -noaudio
 - `run.ts`, `inputs.ts`, `ship.ts`, `sources-md.ts`: the npm entry point, the input digest, the
   runtime packing of each level (one mesh, `_EMISSIVE` lamps, the S04h quantize + meshopt finish)
   and the SOURCES.md section.
+- `avatar/<id>.py` (S16a, DEC-28): the avatar attachments (hair pieces, head coverings, facial
+  hair, accessories). These belong to `npm run blender:build` (`build.ts`, `run.py`, `lock.json`,
+  outputs in `out/`), not to the landmark build: the lock pins only `run.py` and the script, so
+  each script carries its own copy of the shared helpers, and they never import `cclib`.
 
 ## Rules
 

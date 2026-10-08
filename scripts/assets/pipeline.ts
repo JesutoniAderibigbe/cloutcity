@@ -49,6 +49,7 @@ import { TextureCache, triangleColours, triangleIndices } from './bake.ts'
 import { recessedPanes } from './recess.ts'
 import { externalUris, readGltfContainer, resolveUri, type Pack } from './fetch.ts'
 import {
+  deltaE2000,
   harmoniseAll,
   hexToLinear,
   linearToHex,
@@ -58,7 +59,7 @@ import {
   type Rgb,
   type Anchor,
 } from './harmonise.ts'
-import type { Model } from './schema.ts'
+import type { Box3, Model } from './schema.ts'
 
 export interface BuiltTier {
   readonly bytes: Uint8Array
@@ -204,15 +205,85 @@ interface Classified {
   readonly label: string
 }
 
-/** `_SLOT` value: 1 + the first slot whose tokens (and joints, for skinned parts) match; else 0. */
-function slotOf(model: Model, token: string | undefined, joint?: string): number {
+const inBox = (box: Box3, p: readonly number[]) =>
+  [0, 1, 2].every((k) => (p[k] ?? 0) >= (box.min[k] ?? 0) && (p[k] ?? 0) <= (box.max[k] ?? 0))
+
+/**
+ * `_SLOT` value: 1 + the first slot whose tokens (and joints, for skinned parts) match, whose
+ * `box` (if any) holds the triangle's centroid (fitted metres) and whose `exclude` box does not;
+ * else 0.
+ */
+function slotOf(
+  model: Model,
+  token: string | undefined,
+  joint?: string,
+  centroid?: readonly number[],
+): number {
   if (token === undefined) return 0
   const index = model.slots.findIndex(
     (slot) =>
       slot.tokens.includes(token) &&
-      (slot.joints === undefined || (joint !== undefined && slot.joints.includes(joint))),
+      (slot.joints === undefined || (joint !== undefined && slot.joints.includes(joint))) &&
+      (slot.box === undefined || (centroid !== undefined && inBox(slot.box, centroid))) &&
+      (slot.exclude === undefined || centroid === undefined || !inBox(slot.exclude.box, centroid)),
   )
   return index + 1
+}
+
+/** Each triangle's centroid in fitted metres (`scale` × source units) of a deindexed primitive. */
+function centroids(prim: Primitive, scale: number): number[][] {
+  const position = prim.getAttribute('POSITION')
+  if (position === null) return []
+  const p: number[] = []
+  const out: number[][] = []
+  for (let t = 0; t < position.getCount() / 3; t++) {
+    const c = [0, 0, 0]
+    for (let k = 0; k < 3; k++) {
+      position.getElement(t * 3 + k, p)
+      for (let a = 0; a < 3; a++) c[a] = (c[a] ?? 0) + ((p[a] ?? 0) * scale) / 3
+    }
+    out.push(c)
+  }
+  return out
+}
+
+/** Whether a triangle matches a `strip` rule: its source colour near one listed, inside the box. */
+function stripped(model: Model, colour: Rgb, centroid: readonly number[]): boolean {
+  if (model.strip === undefined) return false
+  const lab = linearToLab(colour)
+  return model.strip.some(
+    (rule) =>
+      inBox(rule.box, centroid) &&
+      rule.colors.some(
+        (hex) => deltaE2000(lab, linearToLab(hexToLinear(hex))) <= (rule.maxDeltaE ?? 2),
+      ),
+  )
+}
+
+/** Keeps the triangles of a deindexed primitive where `keep` is true. */
+function keepTriangles(doc: Document, prim: Primitive, keep: readonly boolean[]): void {
+  for (const semantic of prim.listSemantics()) {
+    const src = prim.getAttribute(semantic)
+    const array = src?.getArray()
+    if (src === null || array === null || array === undefined) continue
+    const size = src.getElementSize()
+    const Ctor = array.constructor as new (length: number) => TypedArray
+    const out = new Ctor(keep.filter(Boolean).length * 3 * size)
+    let at = 0
+    keep.forEach((kept, t) => {
+      if (!kept) return
+      for (let i = 0; i < 3 * size; i++) out[at++] = array[t * 3 * size + i] ?? 0
+    })
+    prim.setAttribute(
+      semantic,
+      doc
+        .createAccessor()
+        .setType(src.getType())
+        .setArray(out)
+        .setNormalized(src.getNormalized())
+        .setBuffer(src.getBuffer()),
+    )
+  }
 }
 
 const colourKey = (rgb: Rgb) => `${rgb[0]},${rgb[1]},${rgb[2]}`
@@ -601,10 +672,17 @@ async function buildSkinned(
     const textures = new TextureCache()
     const material = placeholderMaterial(doc)
     for (const prim of kept.listPrimitives()) simplifySource(doc, prim, model.tiers[tier])
-    const prims = kept.listPrimitives().map((prim) => ({
-      prim,
-      colours: triangleColours(prim, textures, pack.source.factorEncoding),
-    }))
+    const fitScale = 'scale' in model.fit ? model.fit.scale : 1
+    const prims = kept.listPrimitives().map((prim) => {
+      const colours = triangleColours(prim, textures, pack.source.factorEncoding)
+      // Every triangle owns its corners from here on (flat colours), so centroids and the strip
+      // mask line up with the colours triangle by triangle.
+      deindex(doc, prim)
+      const centres = centroids(prim, fitScale)
+      const keep = colours.map((colour, t) => !stripped(model, colour, centres[t] ?? [0, 0, 0]))
+      if (keep.some((kept) => !kept)) keepTriangles(doc, prim, keep)
+      return { prim, colours: colours.filter((_, t) => keep[t]) }
+    })
     const classify = colourClassifier(
       model,
       ctx,
@@ -616,8 +694,8 @@ async function buildSkinned(
         .find((node) => node.getMesh() === kept)
         ?.getSkin() ?? null
     for (const { prim, colours } of prims) {
-      deindex(doc, prim)
       const joints = dominantJoints(prim, skin)
+      const centres = centroids(prim, fitScale)
       for (const semantic of prim.listSemantics()) {
         if (/^(?:TEXCOORD_\d+|TANGENT|COLOR_\d+)$/.test(semantic)) prim.setAttribute(semantic, null)
       }
@@ -633,7 +711,7 @@ async function buildSkinned(
           rgb.set([toU8(c.linear[0]), toU8(c.linear[1]), toU8(c.linear[2])], v * 3)
           const g = c.emissive ?? [0, 0, 0]
           glow.set([toU8(g[0]), toU8(g[1]), toU8(g[2])], v * 3)
-          slot[v] = slotOf(model, c.token, joints[t])
+          slot[v] = slotOf(model, c.token, joints[t], centres[t])
         }
       }
       const buffer = root.listBuffers()[0] ?? doc.createBuffer()

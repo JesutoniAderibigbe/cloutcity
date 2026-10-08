@@ -4,6 +4,8 @@ import { IconMomentMount } from '@/components/goals/IconMomentMount'
 import { HudFrame } from '@/components/hud/HudFrame'
 import { HudPanelMount } from '@/components/hud/HudPanelMount'
 import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
+import { CreatorMount } from '@/components/creator/CreatorMount'
+import { CreatorOfferMount } from '@/components/creator/CreatorOfferMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OfflineSupportMount } from '@/components/offline/OfflineSupportMount'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
@@ -34,6 +36,7 @@ export default function HomePage() {
             <WelcomeMount />
             <IconMomentMount />
             <AccountNoticesMount />
+            <CreatorMount />
           </>
         }
         slots={{
@@ -48,6 +51,7 @@ export default function HomePage() {
           toast: (
             <>
               <LevelUpToastMount />
+              <CreatorOfferMount />
               <SafetyToastMount />
             </>
           ),

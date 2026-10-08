@@ -3,6 +3,7 @@
  * economy and flex bots replayed as uploads at a real pace), and each tampering is repaired or
  * rejected as the module comment rules.
  */
+import { initialCreatorState, initialRolls } from './creator'
 import { describe, expect, it } from 'vitest'
 import baselineJson from '@data/sim/economy-baseline.derived.json'
 import { sync } from '@/lib/data/config'
@@ -75,6 +76,8 @@ function asSave(step: BotStep, actions: number): SaveState {
     grants: step.grants,
     prestige: step.prestige,
     actions,
+    creator: initialCreatorState,
+    rolls: initialRolls,
   }
 }
 

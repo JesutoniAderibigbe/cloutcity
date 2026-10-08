@@ -2343,7 +2343,13 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
@@ -2405,6 +2411,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -2415,7 +2449,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -2519,13 +2559,35 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
       "loadPhase": "creator",
       "instanced": false,
-      "nameKey": "models.name.headFemaleB"
+      "nameKey": "models.name.headFemaleB",
+      "remap": {
+        "#b26345": "hair-500",
+        "#bb6a4a": "hair-500",
+        "#bf6e4d": "hair-300",
+        "#c57150": "hair-300",
+        "#ca7653": "hair-300",
+        "#ce7956": "hair-300",
+        "#d17c59": "hair-300",
+        "#d57f5a": "hair-300",
+        "#d9835d": "hair-300",
+        "#de8660": "hair-300",
+        "#e28a62": "hair-300",
+        "#e68e65": "hair-300",
+        "#ea9168": "hair-300"
+      },
+      "remapMaxDeltaE": 1
     },
     {
       "id": "body-female-b",
@@ -2581,6 +2643,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -2591,7 +2681,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -2695,7 +2791,13 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
@@ -2757,6 +2859,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -2767,7 +2897,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -2871,13 +3007,35 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
       "loadPhase": "creator",
       "instanced": false,
-      "nameKey": "models.name.headFemaleD"
+      "nameKey": "models.name.headFemaleD",
+      "remap": {
+        "#b26345": "hair-500",
+        "#b66648": "hair-500",
+        "#bb6a4a": "hair-500",
+        "#bf6e4d": "hair-300",
+        "#c57150": "hair-300",
+        "#ca7653": "hair-300",
+        "#d17c59": "hair-300",
+        "#d57f5a": "hair-300",
+        "#d9835d": "hair-300",
+        "#de8660": "hair-300",
+        "#e28a62": "hair-300",
+        "#e68e65": "hair-300",
+        "#ea9168": "hair-300"
+      },
+      "remapMaxDeltaE": 1
     },
     {
       "id": "body-female-d",
@@ -2933,6 +3091,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -2943,7 +3129,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -3047,7 +3239,13 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
@@ -3109,6 +3307,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -3119,7 +3345,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -3223,13 +3455,31 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
       "loadPhase": "creator",
       "instanced": false,
-      "nameKey": "models.name.headFemaleF"
+      "nameKey": "models.name.headFemaleF",
+      "remap": {
+        "#865643": "hair-500",
+        "#8a5743": "hair-500",
+        "#8e5843": "hair-500",
+        "#925943": "hair-500",
+        "#9a5a43": "hair-500",
+        "#9d5b43": "hair-500",
+        "#a15c43": "hair-500",
+        "#a85e43": "hair-500",
+        "#ac5f43": "hair-500"
+      },
+      "remapMaxDeltaE": 1
     },
     {
       "id": "body-female-f",
@@ -3285,6 +3535,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -3295,7 +3573,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -3399,13 +3683,38 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
       "loadPhase": "creator",
       "instanced": false,
-      "nameKey": "models.name.headMaleA"
+      "nameKey": "models.name.headMaleA",
+      "strip": [
+        {
+          "colors": [
+            "#a5accf",
+            "#9fa7c8",
+            "#aab2d5",
+            "#9ba3c3",
+            "#afb7dc",
+            "#b7c0e6",
+            "#bac2e9",
+            "#d0d0e1",
+            "#e1e1ec"
+          ],
+          "box": {
+            "min": [-0.4, 0.96, -0.07],
+            "max": [0.4, 1.15, 0.42]
+          }
+        }
+      ]
     },
     {
       "id": "body-male-a",
@@ -3461,6 +3770,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -3471,7 +3808,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -3575,7 +3918,13 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
@@ -3637,6 +3986,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -3647,7 +4024,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -3751,7 +4134,13 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
@@ -3813,6 +4202,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -3823,7 +4240,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -3927,13 +4350,31 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
       "loadPhase": "creator",
       "instanced": false,
-      "nameKey": "models.name.headMaleD"
+      "nameKey": "models.name.headMaleD",
+      "remap": {
+        "#b26345": "hair-500",
+        "#bf6e4d": "hair-300",
+        "#ce7956": "hair-300",
+        "#d17c59": "hair-300",
+        "#d57f5a": "hair-300",
+        "#d9835d": "hair-300",
+        "#de8660": "hair-300",
+        "#e28a62": "hair-300",
+        "#e68e65": "hair-300"
+      },
+      "remapMaxDeltaE": 1
     },
     {
       "id": "body-male-d",
@@ -3989,6 +4430,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -3999,7 +4468,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -4103,13 +4578,50 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
       "loadPhase": "creator",
       "instanced": false,
-      "nameKey": "models.name.headMaleE"
+      "nameKey": "models.name.headMaleE",
+      "strip": [
+        {
+          "colors": [
+            "#a5accf",
+            "#9fa7c8",
+            "#aab2d5",
+            "#9ba3c3",
+            "#afb7dc",
+            "#b7c0e6",
+            "#bac2e9",
+            "#d0d0e1",
+            "#e1e1ec"
+          ],
+          "box": {
+            "min": [-0.4, 0.96, -0.07],
+            "max": [0.4, 1.15, 0.42]
+          }
+        }
+      ],
+      "remap": {
+        "#865643": "hair-500",
+        "#925943": "hair-500",
+        "#975943": "hair-500",
+        "#9a5a43": "hair-500",
+        "#9d5b43": "hair-500",
+        "#a15c43": "hair-500",
+        "#a45d43": "hair-500",
+        "#a85e43": "hair-500",
+        "#ac5f43": "hair-500"
+      },
+      "remapMaxDeltaE": 1
     },
     {
       "id": "body-male-e",
@@ -4165,6 +4677,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -4175,7 +4715,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -4279,13 +4825,107 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
+          "exclude": {
+            "box": {
+              "min": [-0.29, 0.86, 0.346],
+              "max": [0.29, 1.14, 0.358]
+            }
+          }
         }
       ],
       "clips": [],
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.headMaleF"
+    },
+    {
+      "id": "head-base",
+      "source": "kenney-mini-characters",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "character-male-b.glb"
+        }
+      ],
+      "mesh": "head-mesh",
+      "category": "avatar-head",
+      "fit": {
+        "scale": 2.2
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 0.6,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1.0,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1.0,
+          "error": 0.02
+        }
+      },
+      "swatches": [
+        "skin-100",
+        "skin-200",
+        "skin-300",
+        "skin-400",
+        "skin-500",
+        "skin-600",
+        "skin-700",
+        "skin-800",
+        "hair-900"
+      ],
+      "maxDeltaE": 30,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800"
+          ]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headBase",
+      "strip": [
+        {
+          "colors": [
+            "#b66648",
+            "#c57150",
+            "#bb6a4a",
+            "#bf6e4d",
+            "#ca7653",
+            "#865643",
+            "#8a5743",
+            "#ce7956"
+          ],
+          "box": {
+            "min": [-0.36, 0.55, 0.23],
+            "max": [0.36, 0.99, 0.53]
+          }
+        },
+        {
+          "colors": ["#afb7dc", "#a5accf", "#949bba"],
+          "box": {
+            "min": [0.33, 1.06, -0.2],
+            "max": [0.49, 1.21, 0.09]
+          },
+          "maxDeltaE": 8
+        }
+      ]
     },
     {
       "id": "body-male-f",
@@ -4341,6 +4981,34 @@
       "emissive": [],
       "slots": [
         {
+          "name": "shoes",
+          "tokens": [
+            "skin-100",
+            "skin-200",
+            "skin-300",
+            "skin-400",
+            "skin-500",
+            "skin-600",
+            "skin-700",
+            "skin-800",
+            "denim-600",
+            "navy-800",
+            "olive-600",
+            "rust-500",
+            "cream-100",
+            "charcoal-800",
+            "red-600",
+            "mustard-400",
+            "teal-600",
+            "blush-300",
+            "white-50"
+          ],
+          "box": {
+            "min": [-1.5, 0.066, -1],
+            "max": [1.5, 0.198, 1]
+          }
+        },
+        {
           "name": "skin",
           "tokens": [
             "skin-100",
@@ -4351,7 +5019,13 @@
             "skin-600",
             "skin-700",
             "skin-800"
-          ]
+          ],
+          "exclude": {
+            "box": {
+              "min": [-1.5, 0, -1],
+              "max": [1.5, 0.198, 1]
+            }
+          }
         },
         {
           "name": "top",
@@ -4537,6 +5211,689 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.hearingAid"
+    },
+    {
+      "id": "facial-stubble",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "facial-stubble.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.facialStubble",
+      "attach": "head"
+    },
+    {
+      "id": "facial-moustache",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "facial-moustache.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.facialMoustache",
+      "attach": "head"
+    },
+    {
+      "id": "facial-goatee",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "facial-goatee.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.facialGoatee",
+      "attach": "head"
+    },
+    {
+      "id": "facial-full-beard",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "facial-full-beard.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.facialFullBeard",
+      "attach": "head"
+    },
+    {
+      "id": "acc-gold-hoops",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "acc-gold-hoops.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["gold-400"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.accGoldHoops",
+      "attach": "head"
+    },
+    {
+      "id": "acc-subway-tote",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "acc-subway-tote.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["cream-100", "iron-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["cream-100"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.accSubwayTote",
+      "attach": "torso"
+    },
+    {
+      "id": "hair-afro",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-afro.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairAfro",
+      "attach": "head"
+    },
+    {
+      "id": "hair-locs",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-locs.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairLocs",
+      "attach": "head"
+    },
+    {
+      "id": "hair-box-braids",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-box-braids.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairBoxBraids",
+      "attach": "head"
+    },
+    {
+      "id": "hair-cornrows",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-cornrows.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairCornrows",
+      "attach": "head"
+    },
+    {
+      "id": "hair-buzz",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-buzz.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairBuzz",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-hijab",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-hijab.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearHijab",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-turban",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-turban.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearTurban",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-durag",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-durag.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearDurag",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-beanie",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-beanie.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearBeanie",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-ballcap",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-ballcap.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearBallcap",
+      "attach": "head"
     }
   ],
   "excluded": [

@@ -124,11 +124,24 @@ const FitSchema = z.union([
   z.strictObject({ scale: z.number().positive() }),
 ])
 
+/** An axis-aligned box in fitted metres (after `fit`), tested against a triangle's centroid. */
+const BoxSchema = z
+  .strictObject({ min: vec3, max: vec3 })
+  .refine((box) => box.min.every((v, i) => v <= (box.max[i] ?? v)), { error: 'min above max' })
+export type Box3 = z.infer<typeof BoxSchema>
+
 const SlotSchema = z.strictObject({
   name: IdSchema,
   tokens: z.array(token).min(1),
   /** Skinned only: limit the slot to triangles whose strongest joint is one of these. */
   joints: z.array(z.string().min(1)).min(1).optional(),
+  /** Limit the slot to triangles inside this box (S16a: a body's `shoes` are its feet). */
+  box: BoxSchema.optional(),
+  /**
+   * Leave out the triangles inside this box (S16a SLOT-1): the eyes, brows and mouth drawn on the
+   * face share the dark hair colours, so the face's front plane stays fixed-colour.
+   */
+  exclude: z.strictObject({ box: BoxSchema }).optional(),
 })
 
 export const ModelSchema = z
@@ -143,6 +156,23 @@ export const ModelSchema = z
     entries: z.array(EntrySchema).min(1),
     /** Skinned only: the mesh to keep from the entry (heads and bodies share one rig). */
     mesh: z.string().min(1).optional(),
+    /**
+     * Skinned only (S16a D3): triangles dropped before the bake, a source colour (sRGB hex,
+     * before grading; within `maxDeltaE` CIEDE2000, default 2) inside a box (fitted metres): a
+     * head's baked glasses, cap or beard, so choosing a hairstyle never chooses an extra too.
+     */
+    strip: z
+      .array(
+        z.strictObject({
+          colors: z.array(hex).min(1),
+          box: BoxSchema,
+          maxDeltaE: z.number().positive().max(20).optional(),
+        }),
+      )
+      .min(1)
+      .optional(),
+    /** Avatar attachments (S16a D8): the rig joint a static model follows. */
+    attach: z.enum(['head', 'torso']).optional(),
     category: z.enum(MODEL_CATEGORIES),
     fit: FitSchema,
     /** Where the origin sits after fitting. `source` keeps the authored origin. */
@@ -197,6 +227,14 @@ export const ModelSchema = z
   .refine((model) => model.kind !== 'rig' || model.clips.length > 0, {
     error: 'a rig needs at least one clip',
     path: ['clips'],
+  })
+  .refine((model) => model.kind === 'skinned' || model.strip === undefined, {
+    error: 'only skinned models strip triangles',
+    path: ['strip'],
+  })
+  .refine((model) => model.attach === undefined || model.kind === 'static', {
+    error: 'only static models attach to a joint',
+    path: ['attach'],
   })
   .refine((model) => (model.kind === 'skinned') === (model.mesh !== undefined), {
     error: 'skinned models (and only they) name the mesh to keep',

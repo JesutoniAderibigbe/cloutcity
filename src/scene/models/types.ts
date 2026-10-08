@@ -14,6 +14,8 @@ export interface ModelRef {
   readonly category: ModelManifestEntry['category']
   /** Recolourable slot names, in `_SLOT` order (attribute value = index + 1). */
   readonly slots: readonly string[]
+  /** Avatar attachments (S16a): the rig joint the model follows, in the character's frame. */
+  readonly attach?: 'head' | 'torso'
   readonly emissive: boolean
   readonly clips: readonly string[]
   /** Fitted bounds in metres; rigs have none. */

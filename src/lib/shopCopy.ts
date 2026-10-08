@@ -7,10 +7,12 @@ import {
   findItem,
   isDecor,
   isWearable,
+  shopPrice,
   type ItemDef,
   type ItemError,
   type ItemSlot,
 } from '@/engine/items'
+import type { PlayerState } from '@/engine/game'
 import type { RarityTier } from '@/lib/data/schemas/config'
 import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from './copy'
 import { formatCount, formatMoney } from './format'
@@ -23,6 +25,11 @@ import '@/lib/copy/ns/shop'
 export interface ShopCopyOptions {
   readonly copy?: CopyFn
   readonly config?: EngineConfig
+  /**
+   * The player the shop is pricing for (GR-11): prices then come from the engine's `shopPrice`
+   * (their shop-price trait, S16a), the same number `buyItem` charges. Without it, the list price.
+   */
+  readonly player?: Pick<PlayerState, 'traits'>
 }
 
 function requireKey(key: string, what: string): CopyKey {
@@ -34,6 +41,13 @@ function item(itemId: string, config: EngineConfig): ItemDef {
   const found = findItem(itemId, config)
   if (found === undefined) throw new Error(`data/items/items.json has no item "${itemId}"`)
   return found
+}
+
+/** What the shop charges for `itemId`: the player's `shopPrice`, or the list price. */
+export function priceFor(itemId: string, options: ShopCopyOptions = {}): number {
+  const { config = engineConfig, player } = options
+  const found = item(itemId, config)
+  return player === undefined ? found.price : shopPrice(found, player, config)
 }
 
 export function itemName(itemId: string, options: ShopCopyOptions = {}): string {
@@ -56,10 +70,10 @@ export function rarityName(rarity: RarityTier, { copy = activeCopy }: ShopCopyOp
 
 /** The buy control's label, e.g. "Buy Cargo pants for $28". */
 export function buyLabel(itemId: string, options: ShopCopyOptions = {}): string {
-  const { copy = activeCopy, config = engineConfig } = options
+  const { copy = activeCopy } = options
   return copy('shop.buy.label', {
     item: itemName(itemId, options),
-    price: formatMoney(item(itemId, config).price),
+    price: formatMoney(priceFor(itemId, options)),
   })
 }
 
@@ -68,8 +82,8 @@ export function buyLabel(itemId: string, options: ShopCopyOptions = {}): string 
  * name of the disabled buy control (CLAUDE.md "Accessibility").
  */
 export function cannotAffordLabel(itemId: string, cash: number, options: ShopCopyOptions = {}) {
-  const { copy = activeCopy, config = engineConfig } = options
-  const { price } = item(itemId, config)
+  const { copy = activeCopy } = options
+  const price = priceFor(itemId, options)
   return copy('shop.buy.locked', {
     item: itemName(itemId, options),
     price: formatMoney(price),
@@ -153,7 +167,7 @@ export function shopItemDetails(itemId: string, options: ShopCopyOptions = {}): 
   return copy('shop.item.details', {
     kind: shopItemKind(found, options),
     rarity: rarityName(found.rarity, options),
-    price: formatMoney(found.price),
+    price: formatMoney(priceFor(itemId, options)),
   })
 }
 

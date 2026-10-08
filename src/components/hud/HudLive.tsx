@@ -5,19 +5,22 @@
  * clock, its speed, clout with the goal line (the Goals button, S15), and the three stats. Each
  * cell subscribes to the slice of the save it shows, so a passing game minute re-renders the
  * clock and the stats, not the clout cell. It also starts the game clock (Q12), tells the Icon
- * moment mount when the moment is due, tells the 3D map which home the player lives in and
- * where they stand, and switches the interface theme with the clock (S04g, ThemeSync.ts).
+ * moment mount when the moment is due, tells the 3D map which home the player lives in, where
+ * they stand and how their avatar looks (S16a), and switches the interface theme with the clock
+ * (S04g, ThemeSync.ts).
  *
  * It renders a fragment of grid cells in the HudFrame grid (hudLayout.ts), box for box the same
  * as HudSkeleton.
  */
 import { useEffect, useMemo } from 'react'
+import { publicAvatar } from '@/engine/appearance'
 import { minutesPerDay } from '@/engine/clock'
 import { cloutProgress } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import { claimableCount } from '@/engine/goals'
 import type { StatKey } from '@/engine/stats'
 import { copy, type CopyKey } from '@/lib/copy'
+import { goalLineKey } from '@/lib/careerGoal'
 import { cloutLevelName } from '@/lib/economyCopy'
 import { formatCount, formatMoney } from '@/lib/format'
 import { setMinuteOfDay } from '@/state/dayClock'
@@ -27,6 +30,7 @@ import { clockView, nextSpeed, statsView } from '@/state/hudView'
 import { setIconMomentPending } from '@/state/iconMoment'
 import { onboardingStore } from '@/state/onboarding'
 import { setPlayerHome } from '@/state/playerHome'
+import { setPlayerLook } from '@/state/playerLook'
 import { setPlayerSpot, useTripClockMinute } from '@/state/trip'
 import { gameStore, useGameStore } from '@/state/store'
 import type { UiThemeClock } from '@/lib/dayNight/uiSchedule'
@@ -57,13 +61,15 @@ export function HudLive({ themeClock }: HudLiveProps) {
 
 /**
  * The live island's side effects: the game clock, the Icon moment signal, the player's home and
- * the minute of day the day/night cycle reads.
+ * look, and the minute of day the day/night cycle reads.
  */
 function useHudEffects() {
   const icon = useGameStore((state) => state.goals.icon)
   const home = useGameStore((state) => state.player.home)
   const minuteOfDay = useGameStore((state) => state.clock.minute % minutesPerDay(engineConfig))
   const location = useGameStore((state) => state.player.location)
+  const look = useGameStore((state) => state.player.look)
+  const inventory = useGameStore((state) => state.player.inventory)
 
   // Passive time runs once the welcome card is complete; one driver however often this mounts.
   useEffect(() => startGameClock({ game: gameStore, onboarding: onboardingStore }), [])
@@ -74,6 +80,7 @@ function useHudEffects() {
 
   useEffect(() => setPlayerHome(home), [home])
   useEffect(() => setPlayerSpot(location), [location])
+  useEffect(() => setPlayerLook(publicAvatar({ look, inventory })), [look, inventory])
 
   useEffect(() => setMinuteOfDay(minuteOfDay), [minuteOfDay])
 
@@ -142,7 +149,7 @@ const TROPHY_ICON =
 
 /**
  * Clout with the goal line (S05): the whole cell is the Goals button (a 44 px target), its top
- * line the goal "Make it in New York"; the clout meter is drawn over its lower half but lets
+ * line the goal ("Make it in New York", or the Dream's goal once one is chosen, S16a); the clout meter is drawn over its lower half but lets
  * taps through, and keeps its own accessible progress bar. The button's name counts the
  * rewards ready to claim; no toast ever announces one (GR-9).
  */
@@ -159,7 +166,8 @@ function CloutCell() {
     () => claimableCount({ clock, player, goals, grants, prestige, events }, engineConfig),
     [clock, player, goals, grants, prestige, events],
   )
-  const goal = copy('hud.goalLine')
+  // The Dream sets the goal line (S16a); before one is chosen, the plain goal.
+  const goal = copy(goalLineKey(player.careerPath))
   const label =
     ready === 0
       ? copy('hud.goals', { goal })

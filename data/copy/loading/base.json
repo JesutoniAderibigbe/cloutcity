@@ -23,6 +23,8 @@
     "loading.notices": "Loading a message from the moderators",
     "loading.cloudSave": "Loading your cloud save",
     "loading.rentNotice": "Loading the rent notice",
-    "loading.account": "Loading your account"
+    "loading.account": "Loading your account",
+    "loading.creator": "Loading Make it you",
+    "loading.creatorOffer": "Loading the Make it you offer"
   }
 }

@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { engineConfig } from '@/engine/config'
-import { giftCount, isDecor, isWearable, shopItems, type ShopItemDef } from '@/engine/items'
+import {
+  giftCount,
+  isDecor,
+  isWearable,
+  shopItems,
+  shopPrice,
+  type ShopItemDef,
+} from '@/engine/items'
 import { shopBlock } from '@/engine/placeActions'
 import type { Place } from '@/engine/places'
 import { ignoreKeyRepeat } from '@/components/overlay/useActionGuard'
@@ -44,13 +51,16 @@ function buyBlockReason(
     const max = engineConfig.items.maxGiftStack
     if (giftCount(inventory, item.id) >= max) return stackFullLabel(item.id, max)
   }
-  if (cash < item.price) return cannotAffordLabel(item.id, cash)
+  // The player's price (GR-11): the one buyItem charges, with their shop-price trait.
+  if (cash < shopPrice(item, state.player, engineConfig)) {
+    return cannotAffordLabel(item.id, cash, { player: state.player })
+  }
   return null
 }
 
 /**
  * The shop at a boutique or thrift store (S10a), inside the place sheet: every item for sale
- * with its name, slot, rarity and price, and a Buy button. A disabled Buy button says why in
+ * with its name, slot, rarity and this player's price (`shopPrice`, GR-11), and a Buy button. A disabled Buy button says why in
  * its accessible name (closed, owned, hands full, or the cash shortfall). Buying goes through
  * the store to the engine; the result or refusal shows in the status line.
  */
@@ -130,7 +140,7 @@ export function ShopSection({
             >
               <div className="min-w-0">
                 <p className="font-semibold text-fg">{itemName(item.id)}</p>
-                <p className="text-xs text-muted">{shopItemDetails(item.id)}</p>
+                <p className="text-xs text-muted">{shopItemDetails(item.id, { player })}</p>
                 {reason === null ? null : <p className="text-xs text-taxi-ink">{reason}</p>}
               </div>
               <button
@@ -138,8 +148,11 @@ export function ShopSection({
                 disabled={reason !== null}
                 aria-label={
                   reason === null
-                    ? buyLabel(item.id)
-                    : copy('place.action.blockedLabel', { action: buyLabel(item.id), reason })
+                    ? buyLabel(item.id, { player })
+                    : copy('place.action.blockedLabel', {
+                        action: buyLabel(item.id, { player }),
+                        reason,
+                      })
                 }
                 onKeyDown={ignoreKeyRepeat}
                 onClick={(event) => buy(item.id, event.currentTarget)}

@@ -11,6 +11,8 @@ import {
   type Rollovers,
   type TickOptions,
 } from './clock'
+import type { CareerPathId } from '@/lib/data/avatarIds'
+import type { Look } from './appearance'
 import { initialCloutState, type CloutState } from './clout'
 import type { EngineConfig, HomeId } from './config'
 import { initialApartment, type ApartmentState } from './home'
@@ -57,6 +59,21 @@ export interface GameSnapshot {
     readonly location: PlayerLocation
     /** Transit state (S08): the delay roll's generator, saved so a reload cannot re-roll. */
     readonly transit: TransitState
+    /** The creator's look: option ids only (S16a, src/engine/appearance.ts). */
+    readonly look: Look
+    /** Chosen trait ids, none until the creator's Traits step (src/engine/traits.ts). */
+    readonly traits: readonly string[]
+    /** Personal-clock minute the traits were last chosen, or null. */
+    readonly traitsChangedAt: number | null
+    /** The Dream: null until chosen (src/engine/career.ts). */
+    readonly careerPath: CareerPathId | null
+    /** Personal-clock minute the career path was last chosen, or null. */
+    readonly careerChangedAt: number | null
+    /**
+     * The start neighborhood the player moved into (the creator's Home step, after the roll), or
+     * null: the home then stands at its default point (src/engine/neighborhoods.ts `homePoint`).
+     */
+    readonly neighborhood: string | null
   }
 }
 
@@ -125,6 +142,12 @@ export function initialSnapshot(config: EngineConfig): GameSnapshot {
       apartment: initialApartment,
       location: HOME_LOCATION,
       transit: initialTransitState,
+      look: config.avatar.defaults,
+      traits: [],
+      traitsChangedAt: null,
+      careerPath: null,
+      careerChangedAt: null,
+      neighborhood: null,
     },
   }
 }

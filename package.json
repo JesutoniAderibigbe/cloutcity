@@ -30,7 +30,8 @@
     "audio:build": "node scripts/audio/build.ts",
     "assets:build": "node scripts/assets/build.ts",
     "blender:build": "node scripts/blender/build.ts",
-    "econ:update": "vitest run src/engine/sim --update"
+    "econ:update": "vitest run src/engine/sim --update",
+    "avatar:update": "vitest run src/lib/data/avatar-derived.test.ts --update"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",

@@ -2,6 +2,7 @@
  * Property tests: tampered or partial saves never throw on load, and whatever loads (or migrates)
  * is a valid current save. Older-format copies of played saves migrate with their progress.
  */
+import { V12_PLAYER_KEYS } from '@/engine/test-support'
 import { describe, expect, it } from 'vitest'
 import { engineConfig as config } from '@/engine/config'
 import { createRng } from '@/engine/rng'
@@ -131,7 +132,12 @@ describe('tampered saves', () => {
     for (const save of SAVES) {
       const j = JSON.parse(JSON.stringify(save)) as Record<string, Any>
       const p = j.player
-      const v10 = { ...j }
+      // v11 (S18c) had none of the S16a (v12) fields.
+      const v11 = structuredClone(j)
+      for (const key of V12_PLAYER_KEYS) delete v11.player[key]
+      delete v11.creator
+      delete v11.rolls
+      const v10 = { ...v11 }
       delete v10.actions
       const v9 = structuredClone(v10)
       delete v9.player.location
@@ -176,7 +182,8 @@ describe('tampered saves', () => {
         8: v8,
         9: v9,
         10: v10,
-        11: j,
+        11: v11,
+        12: j,
       }
       for (let v = 1; v <= SAVE_VERSION; v += 1) {
         let m

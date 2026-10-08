@@ -10,47 +10,18 @@
  * at each home's own data positions, which the fixed 2.1 m wall modules cannot follow.
  */
 import manifestJson from '@data/assets/manifest.json'
-import sceneJson from '@data/config/scene.json'
 import { Group, Mesh, type IUniform, type Material, type Object3D } from 'three'
 import type { QualityTier } from '@/lib/data/schemas/config'
-import type { SceneConfig } from '@/lib/data/schemas/scene'
 import { createModelMaterial } from '../models/materials'
 import type { LoadedModel, StaticModel } from '../models/prepare'
 import { acquireModels } from '../models/runtime'
+import { modelsConfig } from './modelsConfig'
 import { disposeRecolored, recolorGeometry } from '../models/slots'
 import type { ModelRef } from '../models/types'
 import type { ApartmentVisuals, DecorVisual } from './visuals'
 
-type ModelsConfig = SceneConfig['models']
-
 function fail(what: string): never {
   throw new Error(`apartment decor models: ${what}`)
-}
-
-/**
- * scene.json `models`, narrowed from the loosely typed JSON import (the file itself is checked
- * against its zod schema in src/lib/data/data.test.ts; classic zod must not ship here).
- */
-function modelsConfig(): ModelsConfig {
-  const raw = sceneJson.models
-  const material = (value: string) =>
-    value === 'lambert' || value === 'standard' ? value : fail(`litMaterial ${value}`)
-  const shading = raw.shading === 'lit' || raw.shading === 'toon' ? raw.shading : fail('shading')
-  return {
-    ...raw,
-    shading,
-    litMaterial: {
-      low: material(raw.litMaterial.low),
-      mid: material(raw.litMaterial.mid),
-      high: material(raw.litMaterial.high),
-    },
-    player: {
-      ...raw.player,
-      capsuleTiers: raw.player.capsuleTiers.map((tier) =>
-        tier === 'low' || tier === 'mid' || tier === 'high' ? tier : fail(`capsule tier ${tier}`),
-      ),
-    },
-  }
 }
 
 interface DecorEntry {
@@ -63,7 +34,7 @@ interface DecorEntry {
 /** Each mapped decor item's model, resolved from the manifest. */
 export function decorEntries(): ReadonlyMap<string, DecorEntry> {
   const entries = new Map<string, DecorEntry>()
-  for (const [itemId, { model, slot }] of Object.entries(sceneJson.models.decor)) {
+  for (const [itemId, { model, slot }] of Object.entries(modelsConfig().decor)) {
     const entry = manifestJson.models.find((candidate) => candidate.id === model)
     if (entry === undefined || entry.kind !== 'static' || entry.bounds === undefined) {
       fail(`${itemId} names "${model}", which is not a static model in the manifest`)

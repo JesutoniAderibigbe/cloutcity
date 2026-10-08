@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "offerAfterActions": 1,
+  "waitForTour": true,
+  "steps": [
+    {
+      "id": "look"
+    },
+    {
+      "id": "traits",
+      "pick": 2
+    },
+    {
+      "id": "dream"
+    },
+    {
+      "id": "origin",
+      "enabled": false
+    },
+    {
+      "id": "neighborhood",
+      "roll": "neighborhood"
+    },
+    {
+      "id": "home"
+    }
+  ],
+  "rolls": {
+    "neighborhood": {
+      "scope": "save"
+    }
+  },
+  "changeCooldownGameDays": 7
+}

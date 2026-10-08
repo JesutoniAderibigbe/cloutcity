@@ -23,6 +23,7 @@ export function toModelRef(model: ModelManifestEntry): ModelRef {
     kind: model.kind,
     category: model.category,
     slots: model.slots,
+    ...(model.attach === undefined ? {} : { attach: model.attach }),
     emissive: model.emissive,
     clips: model.clips,
     ...(model.bounds === undefined ? {} : { bounds: model.bounds }),

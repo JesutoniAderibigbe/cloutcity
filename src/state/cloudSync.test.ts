@@ -23,7 +23,7 @@ import {
   type CloudSyncDeps,
 } from './cloudSync'
 import { createSafeJsonStorage } from './storage'
-import { createGameStore, persistedOf, type PersistedState } from './store'
+import { STORE_KEY, createGameStore, persistedOf, type PersistedState } from './store'
 import { createSyncStatusStore } from './syncStatus'
 
 class MemoryStorage implements Storage {
@@ -573,6 +573,12 @@ describe('cloud save sync: review probes (S18c bug-hunter)', () => {
 
   /** A second tab of the same game: the same storage (and device id), its own page state. */
   const secondTab = (s: ReturnType<typeof setup>) => {
+    // The same game: tab B loads tab A's save. (A guest's new game starts with a random look,
+    // S16a, so two games that were never saved are different games.)
+    s.local.setItem(
+      STORE_KEY,
+      JSON.stringify({ state: persistedOf(s.game.getState()), version: SAVE_VERSION }),
+    )
     const logger = createLogger({ sink: () => {} })
     const game = createGameStore(
       createSafeJsonStorage<PersistedState>(() => s.local, logger),

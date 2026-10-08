@@ -16,6 +16,21 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'apartment-decor-models', marker: 'apartment decor models: ' },
   // Street props (S04i, src/scene/props/layer.ts): mid and high only, once the camera zooms in.
   { id: 'street-props', marker: 'street props: ' },
+  // The look runtime (S16a): the full look options and derived avatar refs (resolveLook.ts), with
+  // the map avatar's model chunk, the room avatar and the creator preview.
+  { id: 'avatar-look', marker: 'resolveLook: unknown option' },
+  // The full look options and traits (src/engine/creatorConfig.ts), which the bundler may split
+  // into a chunk the look runtime and the creator share (`colorSlot` is only in options.json).
+  { id: 'look-options', marker: 'colorSlot' },
+  // The creator's avatar preview canvas (S16a, AvatarPreviewCanvas.tsx).
+  { id: 'avatar-preview', marker: 'preview-avatar' },
+  // The "Make it you" creator (S16a A3): its modal and steps, opened by the player.
+  { id: 'creator', marker: 'data-creator-progress' },
+  // Its offer toast (shown once, after the first action; lazyIsland `hideFailure` offline).
+  { id: 'creator-offer', marker: 'data-creator-offer' },
+  // The creator's flow, config and copy, which the bundler may split from the modal (an error
+  // code only src/engine/creatorFlow.ts holds).
+  { id: 'creator-flow', marker: 'ROLL_DISABLED' },
   // The /mod console (S18b): moderators only; /mod itself is never precached.
   { id: 'mod-console', marker: 'data-mod-error' },
   // supabase-js (S18): it only works online (sign-in, cloud saves, profiles, safety), so an

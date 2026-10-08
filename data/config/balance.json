@@ -111,6 +111,27 @@
     "ledger": { "maxEntries": 100 },
     "caps": { "byCurrency": { "usd": 200 } }
   },
+  "career": {
+    "paths": {
+      "influencer": {
+        "bonus": { "kind": "clout-pct", "source": "flex", "pct": 20 }
+      },
+      "streamer": {
+        "bonus": {
+          "kind": "clout-pct",
+          "source": "event",
+          "pct": 20,
+          "exceptEventTags": ["nightlife"]
+        }
+      },
+      "artist-dj": {
+        "bonus": { "kind": "home-clout-pct", "pct": 25 }
+      },
+      "founder-hustler": {
+        "bonus": { "kind": "resale-pts", "pts": 10 }
+      }
+    }
+  },
   "costs": { "food": { "min": 4, "max": 12 }, "subwayFare": 3 },
   "transit": {
     "minTripM": 25,

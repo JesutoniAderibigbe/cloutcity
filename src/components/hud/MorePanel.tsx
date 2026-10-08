@@ -4,6 +4,7 @@ import { setSoundSheetOpen } from '@/components/audio/soundSheet'
 import { resumeTour } from '@/components/tour/tourControl'
 import { syncLabel } from '@/components/sync/syncCopy'
 import { copy } from '@/lib/copy'
+import { openCreator } from '@/state/creatorOpen'
 import { closeHudPanel, openHudPanel } from '@/state/hudPanel'
 import { useSyncStatus } from '@/state/syncStatus'
 import { PANEL_BUTTON, PanelDialog } from './PanelDialog'
@@ -11,7 +12,8 @@ import { PANEL_BUTTON, PanelDialog } from './PanelDialog'
 import '@/lib/copy/ns/hud'
 
 /**
- * The HUD's More panel (S05, Q3; S06; Home, S16; cloud save, S18c): Inventory, Rent and Home
+ * The HUD's More panel (S05, Q3; S06; Home, S16; cloud save, S18c; Your look, S16a): Inventory,
+ * Rent, Home and Your look
  * (which also have their own buttons on wide screens), the cloud save status (a chip from
  * 704 px), the sound settings and Help, which brings back the tour. The More button shows at
  * every width. Each item opens its own sheet in place of this one, or closes it; Escape or Close
@@ -23,6 +25,8 @@ export function MorePanel() {
     { key: 'inventory', label: copy('hud.inventory'), open: () => openHudPanel('inventory') },
     { key: 'rent', label: copy('hud.rent'), open: () => openHudPanel('rent') },
     { key: 'home', label: copy('hud.home'), open: () => openHudPanel('home') },
+    // S16a: the creator (a button of its own from `lg`).
+    { key: 'look', label: copy('hud.yourLook'), open: openCreator },
     { key: 'cloud', label: syncLabel(status, identity), open: () => openHudPanel('cloud') },
     {
       key: 'sound',

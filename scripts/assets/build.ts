@@ -176,7 +176,11 @@ export function pressureReport(manifest: ModelManifest, caps: PerfConfig['models
     ['apartment', (c) => c === 'furniture' || c === 'room-shell'],
     [
       'creator parts',
-      (c) => c === 'avatar-head' || c === 'avatar-body' || c === 'avatar-accessory',
+      (c) =>
+        c === 'avatar-head' ||
+        c === 'avatar-body' ||
+        c === 'avatar-accessory' ||
+        c === 'avatar-hair',
     ],
   ]
   const total = (models: ModelManifest['models'], tier: (typeof MODEL_TIERS)[number]) => {

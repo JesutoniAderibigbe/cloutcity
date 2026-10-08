@@ -15,6 +15,8 @@ import { TOUR_KEY, doneTourSeed } from './tour-seed'
  *    Welcome-card specs opt out with `test.use({ onboarding: 'fresh' })`;
  *  - a finished first-run tour (S06), so no coach marks sit over other flows. Tour specs opt out
  *    with `test.use({ tour: 'fresh' })`;
+ *  - no "Make it you" creator offer (S16a) after the first action; creator specs opt in with
+ *    `test.use({ creatorOffer: 'on' })`;
  *  - a player who starts at home and must travel to a place before its actions work (S08,
  *    DEC-22). Specs about a place's own rules use `test.use({ location: 'follow' })`: every place
  *    picked (pin, Places panel, hook) then puts the player there, as if they had travelled
@@ -111,6 +113,12 @@ interface Fixtures {
   location: 'home' | 'follow'
   locationSeed: void
   /**
+   * `off` (default): the S16a creator offer never shows, so it sits over no other flow after the
+   * first action. Creator specs (and the first-session notice count) use `on`.
+   */
+  creatorOffer: 'off' | 'on'
+  creatorOfferSeed: void
+  /**
    * How long the guard keeps listening after the test body ends, so late async warnings
    * (a failed fetch, an effect after the last assertion) still fail the test. Override with
    * `use: { consoleSettleMs }` in playwright.config.ts or `test.use()`.
@@ -185,6 +193,21 @@ export const test = base.extend<Fixtures>({
   ],
 
   location: ['home', { option: true }],
+
+  creatorOffer: ['off', { option: true }],
+
+  creatorOfferSeed: [
+    async ({ page, creatorOffer }, use) => {
+      if (creatorOffer === 'off') {
+        // Honoured only in test-hook builds (src/components/creator/CreatorOffer.tsx).
+        await page.addInitScript(() => {
+          window.__CLOUTCITY_E2E_CREATOR_OFFER__ = 'off'
+        })
+      }
+      await use()
+    },
+    { auto: true },
+  ],
 
   locationSeed: [
     async ({ page, location }, use) => {

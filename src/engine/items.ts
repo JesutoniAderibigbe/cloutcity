@@ -5,7 +5,8 @@
  * Rules:
  * - Wearables (clothing, makeup) are owned at most once each (ALREADY_OWNED) and worn in their
  *   slot, one item per slot. Gifts stack up to `items.maxGiftStack` per gift (STACK_FULL).
- * - Buying costs `price` in cash (INSUFFICIENT_FUNDS if short; nothing changes on failure).
+ * - Buying costs `price` in cash, changed by the player's shop-price trait (S16a, `shopPrice`)
+ *   (INSUFFICIENT_FUNDS if short; nothing changes on failure).
  * - Selling pays the resale value (see `resaleValue`): a gift's `sellValue`, or a wearable's
  *   `sellValue` less `depreciationPctPerGameDay` for each whole game day owned, never below
  *   `minResalePct` of it. Resale is always below the price, so a buy/sell loop only loses cash.
@@ -27,9 +28,10 @@
  *   first (which can lower clout, so the level is settled); decor kept through prestige is a
  *   look only and the shop refuses it (PRESTIGE_KEPT).
  */
+import { resaleBonusPts } from './career'
 import { recordClout, settleLevel, type LevelUp } from './clout'
 import type { EngineConfig } from './config'
-import type { GameSnapshot } from './game'
+import type { GameSnapshot, PlayerState } from './game'
 import {
   ITEM_SLOTS,
   isDecor,
@@ -44,6 +46,7 @@ import {
   type WearableDef,
 } from './itemCatalog'
 import { applyStatChanges } from './stats'
+import { traitAdjustedPrice } from './traits'
 
 export { ITEM_SLOTS, isDecor, isGift, isWearable }
 export type { DecorDef, DecorFit, DecorVariant, GiftDef, ItemDef, ItemSlot, WearableDef }
@@ -165,20 +168,33 @@ export function daysOwned(acquiredMinute: number, nowMinute: number, config: Eng
 }
 
 /**
- * Whole dollars an owned item sells for now. Integer maths only: percentages are whole, so
- * the floor is exact.
+ * Whole dollars an owned item sells for now. `bonusPts` (a founder/hustler's career bonus,
+ * src/engine/career.ts `resaleBonusPts`) adds that many percentage points of the price before
+ * any depreciation; the balance schema keeps the result below any price a player can pay.
+ * Integer maths only: percentages are whole, so the floor is exact.
  */
 export function resaleValue(
   item: ItemDef,
   acquiredMinute: number,
   nowMinute: number,
   config: EngineConfig,
+  bonusPts = 0,
 ): number {
-  if (!isWearable(item) && !isDecor(item)) return item.sellValue
+  const sellValue = item.sellValue + Math.floor((item.price * bonusPts) / 100)
+  if (!isWearable(item) && !isDecor(item)) return sellValue
   const { depreciationPctPerGameDay, minResalePct } = config.items
   const days = daysOwned(acquiredMinute, nowMinute, config)
   const pct = Math.max(minResalePct, 100 - depreciationPctPerGameDay * days)
-  return Math.floor((item.sellValue * pct) / 100)
+  return Math.floor((sellValue * pct) / 100)
+}
+
+/** What `item` costs this player in the shop: its price with their shop-price trait (S16a). */
+export function shopPrice(
+  item: ItemDef,
+  player: Pick<PlayerState, 'traits'>,
+  config: EngineConfig,
+): number {
+  return traitAdjustedPrice(item.price, player, config)
 }
 
 function withInventory(snapshot: GameSnapshot, inventory: Inventory, cash = snapshot.player.cash) {
@@ -217,16 +233,17 @@ export function buyItem(
     if (count >= max) return { ok: false, error: { code: 'STACK_FULL', itemId, max } }
     next = { ...inventory, gifts: setGiftCount(inventory.gifts, itemId, count + 1) }
   }
-  if (cash < item.price) {
+  const price = shopPrice(item, snapshot.player, config)
+  if (cash < price) {
     return {
       ok: false,
-      error: { code: 'INSUFFICIENT_FUNDS', required: item.price, available: cash },
+      error: { code: 'INSUFFICIENT_FUNDS', required: price, available: cash },
     }
   }
-  const bought = withInventory(snapshot, next, cash - item.price)
-  if (!isWearable(item)) return { ok: true, snapshot: bought, price: item.price, levelUp: null }
+  const bought = withInventory(snapshot, next, cash - price)
+  if (!isWearable(item)) return { ok: true, snapshot: bought, price, levelUp: null }
   const record = auditItem(bought, item, 'buy', config)
-  return { ok: true, snapshot: record.snapshot, price: item.price, levelUp: record.levelUp }
+  return { ok: true, snapshot: record.snapshot, price, levelUp: record.levelUp }
 }
 
 /**
@@ -275,7 +292,8 @@ export function sellItem(
     const owned = inventory.wearables.find((entry) => entry.itemId === itemId)
     if (owned === undefined) return { ok: false, error: { code: 'NOT_OWNED', itemId } }
     if (isPrestigeKept(owned)) return { ok: false, error: { code: 'PRESTIGE_KEPT', itemId } }
-    const amount = resaleValue(item, owned.acquiredMinute, snapshot.clock.minute, config)
+    const bonus = resaleBonusPts(snapshot.player, config)
+    const amount = resaleValue(item, owned.acquiredMinute, snapshot.clock.minute, config, bonus)
     const next: Inventory = {
       ...inventory,
       wearables: inventory.wearables.filter((entry) => entry.itemId !== itemId),
@@ -286,7 +304,8 @@ export function sellItem(
   }
   const count = giftCount(inventory, itemId)
   if (count === 0) return { ok: false, error: { code: 'NOT_OWNED', itemId } }
-  const amount = resaleValue(item, snapshot.clock.minute, snapshot.clock.minute, config)
+  const bonus = resaleBonusPts(snapshot.player, config)
+  const amount = resaleValue(item, snapshot.clock.minute, snapshot.clock.minute, config, bonus)
   const next = { ...inventory, gifts: setGiftCount(inventory.gifts, itemId, count - 1) }
   return { ok: true, snapshot: withInventory(snapshot, next, cash + amount), amount, levelUp: null }
 }
@@ -301,7 +320,8 @@ function sellDecor(
   const owned = inventory.decor.find((entry) => entry.itemId === itemId)
   if (owned === undefined) return { ok: false, error: { code: 'NOT_OWNED', itemId } }
   if (isPrestigeKept(owned)) return { ok: false, error: { code: 'PRESTIGE_KEPT', itemId } }
-  const amount = resaleValue(item, owned.acquiredMinute, snapshot.clock.minute, config)
+  const bonus = resaleBonusPts(snapshot.player, config)
+  const amount = resaleValue(item, owned.acquiredMinute, snapshot.clock.minute, config, bonus)
   const placed = Object.fromEntries(
     Object.entries(apartment.placed).filter(([, placedId]) => placedId !== itemId),
   )

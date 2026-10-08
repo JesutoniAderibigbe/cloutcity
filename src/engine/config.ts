@@ -8,6 +8,7 @@
  * so the engine stays off classic zod and out of the shell JS budget
  * (src/lib/client-imports.test.ts).
  */
+import avatarEngineJson from '@data/avatar/engine.derived.json'
 import balanceJson from '@data/config/balance.json'
 import progressionJson from '@data/config/progression.json'
 import eventsJson from '@data/events/events.json'
@@ -17,7 +18,18 @@ import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
 import { STYLED_SOURCES, type StyledSourceId } from '@/lib/data/cloutSources'
 import { GOAL_FACTS, PRESTIGE_PARTS, type GoalFact, type PrestigePart } from '@/lib/data/goalFacts'
-import type { BalanceConfig, BoroughAccessRule, ProgressionConfig } from '@/lib/data/schemas/config'
+import {
+  ROLL_KINDS,
+  ROLL_SCOPES,
+  TRAIT_EFFECT_KINDS,
+  type AvatarEngineTables,
+} from '@/lib/data/avatarIds'
+import type {
+  BalanceConfig,
+  BoroughAccessRule,
+  CareerConfig,
+  ProgressionConfig,
+} from '@/lib/data/schemas/config'
 import type { Borough, GameEvent, LocationCategory } from '@/lib/data/schemas/content'
 import { DECOR_FITS, catalogFromJson, type DecorFit, type ItemDef } from './itemCatalog'
 
@@ -79,6 +91,20 @@ export interface EngineConfig {
   readonly grants: ProgressionConfig['grants']
   /** What prestige requires, earns, resets and keeps (src/engine/prestige.ts). */
   readonly prestige: ProgressionConfig['prestige']
+  /**
+   * The look option ids, defaults and random chances (S16a, src/engine/appearance.ts), from the
+   * compact data/avatar/engine.derived.json. Models, tokens and names are the creator's
+   * (src/engine/creatorConfig.ts), off the playable path.
+   */
+  readonly avatar: AvatarEngineTables['avatar']
+  /** Each trait's modifiers, their cap and the pick count (src/engine/traits.ts). */
+  readonly traits: AvatarEngineTables['traits']
+  /** Career paths and their bonuses (balance.json `career`; src/engine/career.ts). */
+  readonly career: CareerConfig
+  /** The creator offer threshold, the change cooldown and roll scopes (src/engine/creator.ts). */
+  readonly creator: AvatarEngineTables['creator']
+  /** Start neighborhood ids, the neighborhood roll's pool. */
+  readonly neighborhoods: AvatarEngineTables['neighborhoods']
 }
 
 /**
@@ -224,6 +250,46 @@ function homeSlots(json: typeof interiorsJson): Readonly<Record<HomeId, readonly
   }
 }
 
+export function oneOf<T extends string>(value: unknown, options: readonly T[], where: string): T {
+  if (typeof value !== 'string' || !(options as readonly string[]).includes(value)) {
+    throw new Error(`${where}: "${String(value)}" is not one of ${options.join(', ')}`)
+  }
+  return value as T
+}
+
+/**
+ * JSON imports widen enums to string, so the career bonuses are narrowed here; anything else
+ * throws at load (fail fast). CareerConfigSchema checks balance.json in the data tests.
+ */
+function careerRules(json: typeof balanceJson.career): CareerConfig {
+  for (const [id, path] of Object.entries(json.paths)) {
+    const bonus = path.bonus as { readonly kind?: unknown; readonly source?: unknown }
+    const where = `config/balance.json career.paths.${id}`
+    const kind = oneOf(bonus.kind, ['clout-pct', 'home-clout-pct', 'resale-pts'] as const, where)
+    if (kind === 'clout-pct') oneOf(bonus.source, ['flex', 'event'] as const, where)
+  }
+  return json as CareerConfig
+}
+
+/**
+ * The compact S16a tables (data/avatar/engine.derived.json, validated by
+ * AvatarEngineTablesSchema). JSON imports widen enum keys to string, so they are narrowed here;
+ * anything else throws at load (fail fast).
+ */
+function avatarTables(json: typeof avatarEngineJson): AvatarEngineTables {
+  const where = 'avatar/engine.derived.json'
+  for (const effects of Object.values(json.traits.effects)) {
+    for (const kind of Object.keys(effects)) oneOf(kind, TRAIT_EFFECT_KINDS, `${where} traits`)
+  }
+  for (const [kind, scope] of Object.entries(json.creator.rolls)) {
+    oneOf(kind, ROLL_KINDS, `${where} rolls`)
+    oneOf(scope, ROLL_SCOPES, `${where} rolls`)
+  }
+  return json as AvatarEngineTables
+}
+
+const avatarEngine = avatarTables(avatarEngineJson)
+
 /**
  * balance.json `transit` plus the subway fare, for src/engine/transit/config.ts. Built here so
  * the balance file has one importer in the client graph: the bundler then keeps one copy of it
@@ -256,4 +322,9 @@ export const engineConfig: EngineConfig = {
   goals: progression.goals,
   grants: progression.grants,
   prestige: progression.prestige,
+  avatar: avatarEngine.avatar,
+  traits: avatarEngine.traits,
+  career: careerRules(balanceJson.career),
+  creator: avatarEngine.creator,
+  neighborhoods: avatarEngine.neighborhoods,
 }

@@ -70,6 +70,7 @@ import {
   totalClout,
   type CloutState,
 } from './clout'
+import { topResaleBonusPts } from './career'
 import { transitBalance, type EngineConfig, type GoalDef } from './config'
 import { victoryGoal } from './goals'
 import {
@@ -86,6 +87,7 @@ import { emptyInventory, findItem, isDecor, isPrestigeKept, type Inventory } fro
 import { jobIds, shiftWage } from './jobs'
 import { rentFor } from './rent'
 import { applyRepairs, type Repair } from './repairs'
+import { scaleByPct } from './traits'
 import { createSaveSchema, type SaveState } from './save'
 
 export { applyRepairs, type Repair } from './repairs'
@@ -1140,14 +1142,24 @@ function checkCloutRate(
   return findings
 }
 
-/** Whole dollars a wearable or gift change between two inventories was bought and sold for. */
+/**
+ * Whole dollars a wearable or gift change between two inventories was bought and sold for, at
+ * the bound most generous to the player (S16a): every buy at the deepest shop-price discount
+ * traits allow, every sale with the largest career resale bonus, so no honest player's cash is
+ * ever out of bounds whatever traits or Dream they hold (or held earlier in the window).
+ */
 function itemTrade(
   before: Inventory,
   after: Inventory,
   config: EngineConfig,
 ): { readonly bought: number; readonly sold: number; readonly giftsGone: number } {
-  const price = (itemId: string) => findItem(itemId, config)?.price ?? 0
-  const sellValue = (itemId: string) => findItem(itemId, config)?.sellValue ?? 0
+  const bonusPts = topResaleBonusPts(config)
+  const price = (itemId: string) =>
+    scaleByPct(findItem(itemId, config)?.price ?? 0, -config.traits.maxModifierPct)
+  const sellValue = (itemId: string) => {
+    const item = findItem(itemId, config)
+    return item === undefined ? 0 : item.sellValue + Math.floor((item.price * bonusPts) / 100)
+  }
   const copy = (owned: { itemId: string; acquiredMinute: number }) =>
     `${owned.itemId}@${owned.acquiredMinute}`
   const had = new Set(before.wearables.map(copy))

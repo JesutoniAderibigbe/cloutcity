@@ -29,6 +29,8 @@ function v7(save: SaveState = base): Record<string, unknown> {
   delete out.grants
   delete out.prestige
   delete out.actions
+  delete out.creator
+  delete out.rolls
   return out
 }
 
@@ -58,8 +60,8 @@ function claimedSave(): SaveState {
 const roundTrip = (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown
 
 describe('save v8', () => {
-  it('is version 11 (S18c after S08), and a fresh save has no visits, goals, grants or prestige', () => {
-    expect(SAVE_VERSION).toBe(11)
+  it('is version 12 (S16a after S18c), and a fresh save has no visits, goals, grants or prestige', () => {
+    expect(SAVE_VERSION).toBe(12)
     const fresh = initialSave(config)
     expect(fresh.player.visited).toEqual({})
     expect(fresh.goals).toEqual(initialGoalsState)

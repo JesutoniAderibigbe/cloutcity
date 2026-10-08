@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
-import { ITEM_SLOTS, shopItems } from '@/engine/items'
+import { ITEM_SLOTS, findItem, shopItems, shopPrice } from '@/engine/items'
 import { createCopy } from '@/lib/copy'
 import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { formatMoney } from './format'
@@ -16,6 +16,7 @@ import {
   itemName,
   rarityName,
   sellLabel,
+  shopItemDetails,
   slotName,
   soldNotice,
   unequipLabel,
@@ -41,6 +42,26 @@ describe('shop copy', () => {
     expect(sellLabel('designer-puffer', 1192, plain)).toBe('Sell Designer puffer for $1,192')
     expect(boughtNotice('cargo-pants', 28, plain)).toBe('Bought Cargo pants for $28.')
     expect(soldNotice('cargo-pants', 11, plain)).toBe('Sold Cargo pants for $11.')
+  })
+
+  it("prices for the player when given one: the shop-price trait's price, as buyItem charges (GR-11)", () => {
+    const thrifty = { traits: ['thrifty'] }
+    const item = findItem('cargo-pants', engineConfig)
+    if (item === undefined) throw new Error('no cargo pants')
+    const price = shopPrice(item, thrifty, engineConfig)
+    expect(price).toBeLessThan(item.price)
+    expect(buyLabel('cargo-pants', { ...plain, player: thrifty })).toBe(
+      `Buy Cargo pants for ${formatMoney(price)}`,
+    )
+    expect(cannotAffordLabel('cargo-pants', 0, { ...plain, player: thrifty })).toContain(
+      `costs ${formatMoney(price)}.`,
+    )
+    expect(shopItemDetails('cargo-pants', { ...plain, player: thrifty })).toContain(
+      formatMoney(price),
+    )
+    expect(buyLabel('cargo-pants', { ...plain, player: { traits: [] } })).toBe(
+      buyLabel('cargo-pants', plain),
+    )
   })
 
   it('a buy the player cannot afford names the price, the cash and the shortfall', () => {

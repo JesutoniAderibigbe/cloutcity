@@ -429,7 +429,9 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   `floor(price * resalePct[rarity] / 100)`), less `depreciationPctPerGameDay` per game day
   owned for wearables and decor, never below `minResalePct` (`balance.json` `items`). Decor is
   owned once and sells back out of its slot; selling a wearable or decor kept through prestige
-  is refused (`PRESTIGE_KEPT`).
+  is refused (`PRESTIGE_KEPT`). Every wearable has a `look` (S16a): a top sets the outfit (a
+  body option) and top colour, a bottom or shoes their colour, an accessory an attachment model,
+  makeup `{ "part": "none" }`; the ids come from `data/avatar/options.json`.
 - **Apartment** (`home.ts`, slots in `data/homes/interiors.json`, numbers in `balance.json`
   `home`): decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface,
   `homeScore`, and at least two colour `variants`, each a palette token and a `colors.*` copy
@@ -482,6 +484,37 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   listed in `prestige.resets`. To add a goal: add it to `progression.json` (a fact from
   `src/lib/data/goalFacts.ts`), add `goals.goal.<camelId>.name` and `.hint` to
   `data/copy/goals/base.json`, and run `npm test`.
+- **Look, traits, career and the creator** (S16a). A look is option ids only
+  (`data/avatar/options.json`, each mapping to S04h catalog models and `theme.json` `models`
+  tokens). Traits (`data/avatar/traits.json`, pick 2) carry `effects[]` of ±10% on energy cost,
+  mood gains, shop prices and trip length; career paths (`balance.json` `career`) give a flex,
+  event (not nightlife), home-clout or resale bonus, never club, grant, premium or item clout;
+  both changes wait `changeCooldownGameDays` (`data/config/creator.json`, which also holds the
+  offer rule, the step registry with the disabled `origin` seam, and roll scopes). Copy keys
+  follow the ids (`career.<camelId>.name|goal|bonus`, `neighborhoods.<camelId>.name`).
+  - On the playable path the engine reads only the compact `data/avatar/engine.derived.json`
+    (ids, defaults, random chances, trait modifiers, offer and roll rules; PERF-6): `appearance.ts`
+    (`randomLook` for a guest's start, seeded from `crypto` by `src/state/randomSeed.ts`;
+    `repairLook`; `publicAvatar`), `traits.ts` and `career.ts` (the modifiers every action
+    applies) and `creator.ts` (the offer, counted by the store on every committed action). After
+    editing any S16a source file, run `npm run avatar:update` and commit the derived file.
+  - The creator and avatar chunks read the full files through `creatorConfig.ts`:
+    `creatorFlow.ts` (steps, `chooseLook`/`chooseTraits`/`chooseCareer`, `commitRoll`, which
+    writes the neighborhood roll before the reveal, and `moveIntoNeighborhood`), `avatarLook.ts`
+    (`effectiveLook`: worn items over the look, attachments capped) and `neighborhoods.ts`
+    (`homePoint`). `src/state/creatorActions.ts` applies the flow to the store, and the HUD
+    publishes the look and worn items for the 3D chunks (`src/state/playerLook.ts`).
+  - Drawing it (S16a A2, `src/scene/avatar/`): `resolveLook` turns the drawn look into ModelRefs
+    and slot colours from `data/avatar/scene.derived.json` (the avatar models, look colours,
+    accessory placement from scene.json `avatarLook`, the preview's studio light), skipping parts
+    A0 has not built yet; `LookAvatar` draws it on the map (mid/high; the low tier's capsule wears
+    the look's top colour), in the apartment (at `avatarAnchor`, inside `avatarReserve`) and in
+    `AvatarPreviewCanvas` (its own chunk: studio light, idle clip only while shown, the city paused
+    through `sceneFocus` `creator`, context lost on close, a DOM fallback without WebGL2;
+    `/dev/look` shows it in test builds). These chunks are left out of the precache (PERF-7).
+  - To add a look option: add it to `options.json` with a `nameKey` in `data/copy/avatar/`
+    (colours in `data/copy/colors/`), run `npm run avatar:update`, then `npm test`
+    (`src/lib/data/avatar-data.test.ts` resolves every model and token).
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
 - **Save plausibility** (`plausibility.ts`, S18c): `checkUpload(prev, next, context, ceilings)`
@@ -558,6 +591,11 @@ checks that the measured pace stays below the config-derived per-tap bound) and 
 it. After
 tuning `balance.json` on purpose, run `npm run econ:update`, check the target tests still pass,
 and log the change in the progress.md Tuning log.
+
+`src/engine/sim/economy.matrix.test.ts` (S16a) plays every career path with the best and the
+worst trait pair (found by playing all 28 pairs) against the same bands
+(`src/engine/sim/targets.ts`), on every entry job and as the flex bot. Its runs are not part of
+the baseline.
 
 ## Logging
 

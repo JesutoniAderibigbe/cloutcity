@@ -14,6 +14,11 @@
       "styleValue": 2,
       "statEffects": {
         "mood": 3
+      },
+      "look": {
+        "part": "outfit",
+        "outfit": "outfit-03",
+        "top": "white"
       }
     },
     {
@@ -30,6 +35,11 @@
       "styleValue": 5,
       "statEffects": {
         "mood": 5
+      },
+      "look": {
+        "part": "outfit",
+        "outfit": "outfit-07",
+        "top": "denim"
       }
     },
     {
@@ -46,6 +56,11 @@
       "styleValue": 10,
       "statEffects": {
         "mood": 8
+      },
+      "look": {
+        "part": "outfit",
+        "outfit": "outfit-10",
+        "top": "charcoal"
       }
     },
     {
@@ -62,6 +77,10 @@
       "styleValue": 1,
       "statEffects": {
         "mood": 2
+      },
+      "look": {
+        "part": "bottom",
+        "color": "moss"
       }
     },
     {
@@ -78,6 +97,10 @@
       "styleValue": 4,
       "statEffects": {
         "mood": 4
+      },
+      "look": {
+        "part": "bottom",
+        "color": "navy"
       }
     },
     {
@@ -94,6 +117,10 @@
       "styleValue": 2,
       "statEffects": {
         "mood": 2
+      },
+      "look": {
+        "part": "shoes",
+        "color": "white"
       }
     },
     {
@@ -110,6 +137,10 @@
       "styleValue": 9,
       "statEffects": {
         "mood": 7
+      },
+      "look": {
+        "part": "shoes",
+        "color": "red"
       }
     },
     {
@@ -126,6 +157,10 @@
       "styleValue": 1,
       "statEffects": {
         "mood": 2
+      },
+      "look": {
+        "part": "attachment",
+        "model": "acc-subway-tote"
       }
     },
     {
@@ -142,6 +177,10 @@
       "styleValue": 4,
       "statEffects": {
         "mood": 4
+      },
+      "look": {
+        "part": "attachment",
+        "model": "acc-gold-hoops"
       }
     },
     {
@@ -158,6 +197,9 @@
       "styleValue": 1,
       "statEffects": {
         "mood": 2
+      },
+      "look": {
+        "part": "none"
       }
     },
     {
@@ -174,6 +216,9 @@
       "styleValue": 3,
       "statEffects": {
         "mood": 4
+      },
+      "look": {
+        "part": "none"
       }
     },
     {
@@ -190,6 +235,9 @@
       "styleValue": 8,
       "statEffects": {
         "mood": 6
+      },
+      "look": {
+        "part": "none"
       }
     },
     {

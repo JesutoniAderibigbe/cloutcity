@@ -1,0 +1,454 @@
+{
+  "version": 1,
+  "skinTones": [
+    {
+      "id": "tone-01",
+      "token": "skin-050",
+      "nameKey": "avatar.skin.tone01"
+    },
+    {
+      "id": "tone-02",
+      "token": "skin-100",
+      "nameKey": "avatar.skin.tone02"
+    },
+    {
+      "id": "tone-03",
+      "token": "skin-200",
+      "nameKey": "avatar.skin.tone03"
+    },
+    {
+      "id": "tone-04",
+      "token": "skin-300",
+      "nameKey": "avatar.skin.tone04"
+    },
+    {
+      "id": "tone-05",
+      "token": "skin-400",
+      "nameKey": "avatar.skin.tone05"
+    },
+    {
+      "id": "tone-06",
+      "token": "skin-450",
+      "nameKey": "avatar.skin.tone06"
+    },
+    {
+      "id": "tone-07",
+      "token": "skin-500",
+      "nameKey": "avatar.skin.tone07"
+    },
+    {
+      "id": "tone-08",
+      "token": "skin-600",
+      "nameKey": "avatar.skin.tone08"
+    },
+    {
+      "id": "tone-09",
+      "token": "skin-700",
+      "nameKey": "avatar.skin.tone09"
+    },
+    {
+      "id": "tone-10",
+      "token": "skin-750",
+      "nameKey": "avatar.skin.tone10"
+    },
+    {
+      "id": "tone-11",
+      "token": "skin-800",
+      "nameKey": "avatar.skin.tone11"
+    },
+    {
+      "id": "tone-12",
+      "token": "skin-900",
+      "nameKey": "avatar.skin.tone12"
+    }
+  ],
+  "hairColors": [
+    {
+      "id": "black",
+      "token": "hair-900",
+      "nameKey": "colors.hair.black"
+    },
+    {
+      "id": "dark-brown",
+      "token": "hair-700",
+      "nameKey": "colors.hair.darkBrown"
+    },
+    {
+      "id": "auburn",
+      "token": "hair-500",
+      "nameKey": "colors.hair.auburn"
+    },
+    {
+      "id": "light-brown",
+      "token": "hair-300",
+      "nameKey": "colors.hair.lightBrown"
+    },
+    {
+      "id": "blonde",
+      "token": "hair-100",
+      "nameKey": "colors.hair.blonde"
+    },
+    {
+      "id": "grey",
+      "token": "hair-200",
+      "nameKey": "colors.hair.grey"
+    },
+    {
+      "id": "silver",
+      "token": "hair-050",
+      "nameKey": "colors.hair.silver"
+    },
+    {
+      "id": "copper",
+      "token": "hair-400",
+      "nameKey": "colors.hair.copper"
+    },
+    {
+      "id": "pink",
+      "token": "rose-400",
+      "nameKey": "colors.hair.pink"
+    },
+    {
+      "id": "blue",
+      "token": "cobalt-500",
+      "nameKey": "colors.hair.blue"
+    }
+  ],
+  "hairStyles": [
+    {
+      "id": "style-01",
+      "head": "head-female-a",
+      "nameKey": "avatar.hairStyle.style01"
+    },
+    {
+      "id": "style-02",
+      "head": "head-female-b",
+      "nameKey": "avatar.hairStyle.style02"
+    },
+    {
+      "id": "style-03",
+      "head": "head-female-c",
+      "nameKey": "avatar.hairStyle.style03"
+    },
+    {
+      "id": "style-04",
+      "head": "head-female-d",
+      "nameKey": "avatar.hairStyle.style04"
+    },
+    {
+      "id": "style-05",
+      "head": "head-female-e",
+      "nameKey": "avatar.hairStyle.style05"
+    },
+    {
+      "id": "style-06",
+      "head": "head-female-f",
+      "nameKey": "avatar.hairStyle.style06"
+    },
+    {
+      "id": "style-07",
+      "head": "head-male-a",
+      "nameKey": "avatar.hairStyle.style07"
+    },
+    {
+      "id": "style-10",
+      "head": "head-male-d",
+      "nameKey": "avatar.hairStyle.style10"
+    },
+    {
+      "id": "style-11",
+      "head": "head-male-e",
+      "nameKey": "avatar.hairStyle.style11"
+    },
+    {
+      "id": "style-12",
+      "head": "head-male-f",
+      "nameKey": "avatar.hairStyle.style12"
+    },
+    {
+      "id": "afro",
+      "head": "head-base",
+      "piece": "hair-afro",
+      "nameKey": "avatar.hairStyle.afro"
+    },
+    {
+      "id": "locs",
+      "head": "head-base",
+      "piece": "hair-locs",
+      "nameKey": "avatar.hairStyle.locs"
+    },
+    {
+      "id": "box-braids",
+      "head": "head-base",
+      "piece": "hair-box-braids",
+      "nameKey": "avatar.hairStyle.boxBraids"
+    },
+    {
+      "id": "cornrows",
+      "head": "head-base",
+      "piece": "hair-cornrows",
+      "nameKey": "avatar.hairStyle.cornrows"
+    },
+    {
+      "id": "buzz",
+      "head": "head-base",
+      "piece": "hair-buzz",
+      "nameKey": "avatar.hairStyle.buzz"
+    }
+  ],
+  "facialHair": [
+    {
+      "id": "none",
+      "nameKey": "avatar.facialHair.none"
+    },
+    {
+      "id": "stubble",
+      "model": "facial-stubble",
+      "nameKey": "avatar.facialHair.stubble"
+    },
+    {
+      "id": "moustache",
+      "model": "facial-moustache",
+      "nameKey": "avatar.facialHair.moustache"
+    },
+    {
+      "id": "goatee",
+      "model": "facial-goatee",
+      "nameKey": "avatar.facialHair.goatee"
+    },
+    {
+      "id": "full-beard",
+      "model": "facial-full-beard",
+      "nameKey": "avatar.facialHair.fullBeard"
+    }
+  ],
+  "headwear": [
+    {
+      "id": "none",
+      "nameKey": "avatar.headwear.none"
+    },
+    {
+      "id": "hijab",
+      "model": "headwear-hijab",
+      "hidesHair": true,
+      "colorSlot": "fabric",
+      "nameKey": "avatar.headwear.hijab"
+    },
+    {
+      "id": "turban",
+      "model": "headwear-turban",
+      "hidesHair": true,
+      "colorSlot": "fabric",
+      "nameKey": "avatar.headwear.turban"
+    },
+    {
+      "id": "durag",
+      "model": "headwear-durag",
+      "hidesHair": true,
+      "colorSlot": "fabric",
+      "nameKey": "avatar.headwear.durag"
+    },
+    {
+      "id": "beanie",
+      "model": "headwear-beanie",
+      "hidesHair": true,
+      "colorSlot": "fabric",
+      "nameKey": "avatar.headwear.beanie"
+    },
+    {
+      "id": "ballcap",
+      "model": "headwear-ballcap",
+      "hidesHair": true,
+      "colorSlot": "fabric",
+      "nameKey": "avatar.headwear.ballcap"
+    }
+  ],
+  "eyewear": [
+    {
+      "id": "none",
+      "nameKey": "avatar.eyewear.none"
+    },
+    {
+      "id": "glasses",
+      "model": "glasses",
+      "nameKey": "avatar.eyewear.glasses"
+    },
+    {
+      "id": "sunglasses",
+      "model": "sunglasses",
+      "nameKey": "avatar.eyewear.sunglasses"
+    }
+  ],
+  "ears": [
+    {
+      "id": "none",
+      "nameKey": "avatar.ears.none"
+    },
+    {
+      "id": "hearing-aid",
+      "model": "hearing-aid",
+      "nameKey": "avatar.ears.hearingAid"
+    }
+  ],
+  "outfits": [
+    {
+      "id": "outfit-01",
+      "body": "body-female-a",
+      "nameKey": "avatar.outfit.outfit01"
+    },
+    {
+      "id": "outfit-02",
+      "body": "body-female-b",
+      "nameKey": "avatar.outfit.outfit02"
+    },
+    {
+      "id": "outfit-03",
+      "body": "body-female-c",
+      "nameKey": "avatar.outfit.outfit03"
+    },
+    {
+      "id": "outfit-04",
+      "body": "body-female-d",
+      "nameKey": "avatar.outfit.outfit04"
+    },
+    {
+      "id": "outfit-05",
+      "body": "body-female-e",
+      "nameKey": "avatar.outfit.outfit05"
+    },
+    {
+      "id": "outfit-06",
+      "body": "body-female-f",
+      "nameKey": "avatar.outfit.outfit06"
+    },
+    {
+      "id": "outfit-07",
+      "body": "body-male-a",
+      "nameKey": "avatar.outfit.outfit07"
+    },
+    {
+      "id": "outfit-08",
+      "body": "body-male-b",
+      "nameKey": "avatar.outfit.outfit08"
+    },
+    {
+      "id": "outfit-09",
+      "body": "body-male-c",
+      "nameKey": "avatar.outfit.outfit09"
+    },
+    {
+      "id": "outfit-10",
+      "body": "body-male-d",
+      "nameKey": "avatar.outfit.outfit10"
+    },
+    {
+      "id": "outfit-11",
+      "body": "body-male-e",
+      "nameKey": "avatar.outfit.outfit11"
+    },
+    {
+      "id": "outfit-12",
+      "body": "body-male-f",
+      "nameKey": "avatar.outfit.outfit12"
+    }
+  ],
+  "garmentColors": [
+    {
+      "id": "denim",
+      "token": "denim-600",
+      "nameKey": "colors.denim.name"
+    },
+    {
+      "id": "navy",
+      "token": "navy-800",
+      "nameKey": "colors.navy.name"
+    },
+    {
+      "id": "moss",
+      "token": "olive-600",
+      "nameKey": "colors.moss.name"
+    },
+    {
+      "id": "rust",
+      "token": "rust-500",
+      "nameKey": "colors.rust.name"
+    },
+    {
+      "id": "ivory",
+      "token": "cream-100",
+      "nameKey": "colors.ivory.name"
+    },
+    {
+      "id": "charcoal",
+      "token": "charcoal-800",
+      "nameKey": "colors.charcoal.name"
+    },
+    {
+      "id": "red",
+      "token": "red-600",
+      "nameKey": "colors.red.name"
+    },
+    {
+      "id": "gold",
+      "token": "mustard-400",
+      "nameKey": "colors.gold.name"
+    },
+    {
+      "id": "teal",
+      "token": "teal-600",
+      "nameKey": "colors.teal.name"
+    },
+    {
+      "id": "blush",
+      "token": "blush-300",
+      "nameKey": "colors.blush.name"
+    },
+    {
+      "id": "white",
+      "token": "white-50",
+      "nameKey": "colors.white.name"
+    }
+  ],
+  "shoeColors": ["white", "charcoal", "red", "gold"],
+  "heights": [
+    {
+      "id": "short",
+      "scale": 0.96,
+      "nameKey": "avatar.height.short"
+    },
+    {
+      "id": "average",
+      "scale": 1,
+      "nameKey": "avatar.height.average"
+    },
+    {
+      "id": "tall",
+      "scale": 1.04,
+      "nameKey": "avatar.height.tall"
+    }
+  ],
+  "defaults": {
+    "skin": "tone-05",
+    "hairStyle": "style-01",
+    "hairColor": "black",
+    "facialHair": "none",
+    "headwear": "none",
+    "eyewear": "none",
+    "ears": "none",
+    "outfit": "outfit-01",
+    "top": "teal",
+    "bottom": "denim",
+    "shoes": "white",
+    "height": "average"
+  },
+  "random": {
+    "facialHair": 0.25,
+    "eyewear": 0.2,
+    "headwear": 0.08,
+    "hearingAid": 0.05
+  },
+  "attachments": {
+    "max": 4,
+    "priority": ["headwear", "hairPiece", "facialHair", "eyewear", "ears", "item"]
+  }
+}

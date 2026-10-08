@@ -13,7 +13,7 @@
  * - Tiers (perf.json): low draws no shadows, mid draws blob shadows, high one directional
  *   PCFShadowMap (the object form: R3F's `shadows` boolean means PCFSoft, deprecated in r182).
  */
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap, PerspectiveCamera } from 'three'
 import type { QualityTier } from '@/lib/data/schemas/config'
@@ -43,6 +43,9 @@ import type { DecorModels } from './decorModels'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 import { createPlaceholderVisuals } from './visuals'
 import type { ApartmentViewProps, SlotTap } from './types'
+
+// The player's avatar (S16a) loads in its own chunk with the model and look runtimes.
+const RoomAvatar = lazy(() => import('./RoomAvatar'))
 
 const GL = {
   antialias: true,
@@ -337,6 +340,9 @@ export default function ApartmentCanvas({
           objectsRef={objectsRef}
           readyRef={readyRef}
         />
+        <Suspense fallback={null}>
+          <RoomAvatar interior={interior} tier={tier} toonRamp={toonRamp} />
+        </Suspense>
         <ApartmentTestHook
           home={home}
           tier={tier}

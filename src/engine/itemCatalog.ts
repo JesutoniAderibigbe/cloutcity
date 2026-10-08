@@ -5,7 +5,7 @@
  * that does not fit throws at load (fail fast), without pulling classic zod into the client.
  */
 import type { RarityTier } from '@/lib/data/schemas/config'
-import type { DecorFit, Item } from '@/lib/data/schemas/content'
+import type { DecorFit, Item, ItemLook } from '@/lib/data/schemas/content'
 import { STAT_KEYS, type StatChanges } from './stats'
 
 /** Outfit slots, in display order. Mirrors ITEM_SLOTS in src/lib/data/schemas/content.ts. */
@@ -43,6 +43,17 @@ interface ItemBase {
 export interface WearableDef extends ItemBase {
   readonly category: 'clothing' | 'makeup'
   readonly slot: ItemSlot
+  /** What wearing it does to the avatar (S16a, src/engine/appearance.ts `effectiveLook`). */
+  readonly look: ItemLook
+}
+
+/** The look part each slot's items use (mirrors SLOT_LOOK_PARTS in schemas/content.ts). */
+const SLOT_LOOK_PART: Readonly<Record<ItemSlot, ItemLook['part']>> = {
+  top: 'outfit',
+  bottom: 'bottom',
+  shoes: 'shoes',
+  accessory: 'attachment',
+  face: 'none',
 }
 
 /** A gift: stacks, and is consumed when used on yourself or an NPC. */
@@ -106,7 +117,7 @@ function narrow(raw: RawItem, index: number): ItemDef {
     throw new Error(`data/items/items.json: items[${index}].${field} does not fit the engine`)
   }
   const { id, nameKey, descriptionKey, category, slot, rarity, currency } = raw
-  const { price, sellValue, cloutValue, styleValue, statEffects, decor } = raw
+  const { price, sellValue, cloutValue, styleValue, statEffects, decor, look } = raw
   if (typeof id !== 'string') return fail('id')
   if (typeof nameKey !== 'string') return fail('nameKey')
   if (typeof descriptionKey !== 'string') return fail('descriptionKey')
@@ -140,9 +151,10 @@ function narrow(raw: RawItem, index: number): ItemDef {
   if (category === 'clothing' || category === 'makeup') {
     if (!oneOf<ItemSlot>(slot, ITEM_SLOTS)) return fail('slot')
     if ((category === 'makeup') !== (slot === 'face')) return fail('slot')
-    return { ...base, category, slot }
+    return { ...base, category, slot, look: narrowLook(look, slot, fail) }
   }
   if (slot !== undefined) return fail('slot')
+  if (look !== undefined) return fail('look')
   if (category === 'decor') {
     if (cloutValue !== 0) return fail('cloutValue')
     if (styleValue !== 0) return fail('styleValue')
@@ -150,6 +162,28 @@ function narrow(raw: RawItem, index: number): ItemDef {
   }
   if (decor !== undefined) return fail('decor')
   return { ...base, category }
+}
+
+function narrowLook(raw: unknown, slot: ItemSlot, fail: (field: string) => never): ItemLook {
+  if (typeof raw !== 'object' || raw === null) return fail('look')
+  const look = raw as Record<string, unknown>
+  const id = (key: string) => {
+    const value = look[key]
+    return typeof value === 'string' && value.length > 0 ? value : fail(`look.${key}`)
+  }
+  if (look.part !== SLOT_LOOK_PART[slot]) return fail('look.part')
+  switch (look.part) {
+    case 'outfit':
+      return { part: 'outfit', outfit: id('outfit'), top: id('top') }
+    case 'bottom':
+      return { part: 'bottom', color: id('color') }
+    case 'shoes':
+      return { part: 'shoes', color: id('color') }
+    case 'attachment':
+      return { part: 'attachment', model: id('model') }
+    default:
+      return { part: 'none' }
+  }
 }
 
 function narrowDecor(raw: unknown, fail: (field: string) => never): DecorDef['decor'] {

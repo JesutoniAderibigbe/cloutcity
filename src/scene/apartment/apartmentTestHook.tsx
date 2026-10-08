@@ -12,7 +12,7 @@ import { Mesh, PCFShadowMap, type BufferGeometry } from 'three'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { ApartmentObjects } from './buildApartment'
 import { avatarReserve, tierBudget } from './data'
-import type { ApartmentPlacement } from './types'
+import { ROOM_AVATAR_NAME, type ApartmentPlacement } from './types'
 
 export interface ApartmentSlotState {
   readonly id: string
@@ -57,6 +57,11 @@ export interface ApartmentTestHook {
   slots(): ApartmentSlotState[]
   /** One slot's tap point in client CSS pixels, or null. */
   slotScreen(slotId: string): { x: number; y: number } | null
+  /**
+   * The player's avatar in the room (S16a): whether its model is drawn, its meshes (the head and
+   * body, then any `-attachment`) and its triangles; null when no avatar group is in the room.
+   */
+  avatar(): { drawn: boolean; meshes: string[]; triangles: number } | null
 }
 
 declare global {
@@ -139,6 +144,19 @@ export function ApartmentTestHook({
       },
       slots,
       slotScreen: (slotId) => slots().find((slot) => slot.id === slotId)?.screen ?? null,
+      avatar: () => {
+        const group = get().scene.getObjectByName(ROOM_AVATAR_NAME)
+        if (group === undefined) return null
+        const meshes: string[] = []
+        let triangles = 0
+        group.traverseVisible((object) => {
+          if (!(object instanceof Mesh)) return
+          meshes.push(object.name)
+          const geometry = object.geometry as BufferGeometry
+          triangles += (geometry.index?.count ?? geometry.getAttribute('position').count) / 3
+        })
+        return { drawn: meshes.length > 0, meshes, triangles }
+      },
     }
     window.__cloutcityTest = { ...window.__cloutcityTest, apartment: hook }
     return () => {

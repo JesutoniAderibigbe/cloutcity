@@ -199,7 +199,8 @@ export function uploadMark(save: unknown): string | null {
 
 /**
  * A game nobody has played yet: nothing in it is worth keeping over the account's save. The tap
- * count alone is not enough: a save from before it existed (v8) upgrades with 0 taps.
+ * count alone is not enough: a save from before it existed (v8) upgrades with 0 taps. Creator
+ * choices (S16a) count as play; the random starting look alone does not.
  */
 function untouched(save: SaveState): boolean {
   const { player } = save
@@ -214,7 +215,11 @@ function untouched(save: SaveState): boolean {
     player.inventory.wearables.length === 0 &&
     player.inventory.gifts.length === 0 &&
     Object.keys(player.visited).length === 0 &&
-    Object.keys(player.clubNights).length === 0
+    Object.keys(player.clubNights).length === 0 &&
+    player.traits.length === 0 &&
+    player.careerPath === null &&
+    save.creator.completedAt === null &&
+    Object.keys(save.rolls).length === 0
   )
 }
 
@@ -834,6 +839,8 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
           state.prestige !== prev.prestige ||
           state.events !== prev.events ||
           state.actions !== prev.actions ||
+          state.creator !== prev.creator ||
+          state.rolls !== prev.rolls ||
           state.speed !== prev.speed
         ) {
           schedule()

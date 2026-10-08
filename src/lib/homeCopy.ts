@@ -8,6 +8,7 @@
  * src/lib/data/homes-data.test.ts) rather than through the classic-zod loader.
  */
 import interiorsJson from '@data/homes/interiors.json'
+import { homeScorePct } from '@/engine/career'
 import { engineConfig, type EngineConfig, type HomeId } from '@/engine/config'
 import { homeClout, homeScore, slotsFor, type HomeError, type HomeLock } from '@/engine/home'
 import { moveInCost } from '@/engine/housing'
@@ -85,14 +86,16 @@ export function variantName(itemId: string, variantId: string, options: HomeCopy
 
 /** "Home score 14: +14 clout", saying so when the home clout cap holds it. */
 export function homeScoreLine(
-  player: Pick<PlayerState, 'home' | 'inventory' | 'apartment'>,
+  player: Pick<PlayerState, 'home' | 'inventory' | 'apartment' | 'careerPath'>,
   options: HomeCopyOptions = {},
 ): string {
   const { copy = activeCopy, config = engineConfig } = options
   const score = homeScore(player, config)
   const clout = homeClout(player, config)
   const vars = { score: formatCount(score), clout: formatCount(clout) }
-  return copy(score > config.home.maxClout ? 'home.scoreCapped' : 'home.score', vars)
+  // Capped when the cap, not the score (with any career home bonus), sets the clout.
+  const uncapped = Math.floor((score * homeScorePct(player, config)) / 100)
+  return copy(uncapped > config.home.maxClout ? 'home.scoreCapped' : 'home.score', vars)
 }
 
 /** "Queens room, rent $280/wk". */

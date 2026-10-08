@@ -368,6 +368,21 @@
         "high": 100
       },
       "gzKBMax": 4
+    },
+    "avatar-hair": {
+      "trianglesMax": {
+        "low": 240,
+        "mid": 300,
+        "high": 300
+      },
+      "gzKBMax": 4
+    }
+  },
+  "avatar": {
+    "trianglesMax": {
+      "low": 1300,
+      "mid": 1700,
+      "high": 1700
     }
   }
 }

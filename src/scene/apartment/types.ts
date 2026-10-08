@@ -35,3 +35,6 @@ export interface ApartmentView {
 export interface ApartmentViewProps extends ApartmentView {
   readonly onSlotTap: (tap: SlotTap) => void
 }
+
+/** Name of the room avatar's group (S16a; the apartment test hook finds it by name). */
+export const ROOM_AVATAR_NAME = 'apartment-avatar'

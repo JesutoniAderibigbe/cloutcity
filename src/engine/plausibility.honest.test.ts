@@ -5,6 +5,7 @@
  * 40 steps, is accepted in full. A public level behind the save's is a display delay, never a
  * refusal.
  */
+import { initialCreatorState, initialRolls } from './creator'
 import { describe, expect, it } from 'vitest'
 import baselineJson from '@data/sim/economy-baseline.derived.json'
 import { sync } from '@/lib/data/config'
@@ -51,6 +52,8 @@ function asSave(step: BotStep, actions: number): SaveState {
     grants: step.grants,
     prestige: step.prestige,
     actions,
+    creator: initialCreatorState,
+    rolls: initialRolls,
   }
 }
 

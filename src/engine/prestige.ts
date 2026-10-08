@@ -17,6 +17,8 @@
  *   over. The apartment follows the run's home: kept decor stays in the slots the new run's
  *   home also has (src/engine/home.ts `placementsAfterMove`); the move log (the audit trail for
  *   save plausibility) is kept.
+ * - Who the player is always carries over (S16a): the look, traits, career path (with its change
+ *   cooldown) and neighborhood; the creator state and save-scoped rolls are left as they are.
  *
  * It is atomic: either everything above happens or nothing does.
  */
@@ -137,6 +139,14 @@ function nextRunPlayer(player: PlayerState, config: EngineConfig): PlayerState {
     // A new run starts at home; the delay roll's generator carries on (no re-rolls).
     location: fresh.location,
     transit: player.transit,
+    // Who the player is carries over (S16a): the look, traits, Dream (with its cooldown) and
+    // the neighborhood, which is rolled once per save (Q10).
+    look: player.look,
+    traits: player.traits,
+    traitsChangedAt: player.traitsChangedAt,
+    careerPath: player.careerPath,
+    careerChangedAt: player.careerChangedAt,
+    neighborhood: player.neighborhood,
   }
   // The new run's level is where its kept clout lands (premium, and the home's base score): no
   // level-up is reported for clout carried over.
