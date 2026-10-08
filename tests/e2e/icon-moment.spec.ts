@@ -241,12 +241,23 @@ test.describe('the Icon moment: keyboard, focus, run 2, motion', () => {
     await expect(confirm.getByRole('heading', { name: 'Run it back?' })).toBeFocused()
     // The description adds to the title rather than reading it a second time.
     await expect(confirm).toHaveAccessibleDescription(/^Start from zero, keep what's yours\./)
+    // Unclaimed goal rewards would be given up: the confirm says how many (grants stay explicit).
+    const unclaimed = confirm.locator('[data-prestige-unclaimed]')
+    await expect(unclaimed).toBeVisible()
+    await expect(unclaimed).toContainText(/goal rewards? you haven't claimed/)
+    // The way out is on screen without scrolling, above the tab bar.
+    const notYet = confirm.getByRole('button', { name: 'Not yet' })
+    await expect(notYet).toBeInViewport({ ratio: 1 })
+    const tabs = await page.locator('[data-overlay-zone="tabs"]').boundingBox()
+    const box = await notYet.boundingBox()
+    if (tabs !== null && box !== null) expect(box.y + box.height).toBeLessThanOrEqual(tabs.y)
+    // "Not yet" comes first (it stays on screen above the tab bar at 390 x 844).
     await page.keyboard.press('Shift+Tab')
-    await expect(confirm.getByRole('button', { name: 'Not yet' })).toBeFocused()
-    await page.keyboard.press('Tab')
     await expect(
       confirm.getByRole('button', { name: 'Start over at Nobody, keep your badges' }),
     ).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(confirm.getByRole('button', { name: 'Not yet' })).toBeFocused()
     await page.keyboard.press('Escape')
     await expect(dialog.getByRole('heading', { name: 'Icon status' })).toBeFocused()
     expect((await state(page)).level).toBe('icon')

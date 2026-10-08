@@ -141,7 +141,7 @@ function useScrolls(ref: RefObject<HTMLElement | null>, enabled: boolean): boole
 /** The panel's live result line: what the last action did, in voice. */
 export function PanelStatus({ text }: { readonly text: string | null }) {
   return (
-    <p role="status" className="min-h-5 text-sm font-semibold text-taxi-ink">
+    <p role="status" data-panel-status="" className="min-h-5 text-sm font-semibold text-taxi-ink">
       {text}
     </p>
   )

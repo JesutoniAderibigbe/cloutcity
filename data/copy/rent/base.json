@@ -12,6 +12,8 @@
     "rent.owed": "Back rent and fees owed: {owed}.",
     "rent.square": "You owe nothing right now.",
     "rent.lastNotice.heading": "Last rent notice",
-    "rent.lastNotice.none": "No rent has come due this session."
+    "rent.lastNotice.none": "No rent has come due this session.",
+    "rent.toast.close": "Close",
+    "rent.toast.closeLabel": "Close the rent notice"
   }
 }

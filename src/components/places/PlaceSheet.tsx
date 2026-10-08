@@ -1,22 +1,14 @@
 'use client'
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useModalOpen } from '@/components/overlay/modalState'
 import { engineConfig } from '@/engine/config'
 import { isAtPlace, type GameSnapshot } from '@/engine/game'
-import { hasShop, placeActions, type PlaceAction } from '@/engine/placeActions'
+import { homeActions, hasShop, placeActions } from '@/engine/placeActions'
 import type { Place } from '@/engine/places'
 import { copy, isCopyKey, type CopyKey } from '@/lib/copy'
-import { rentNotice } from '@/lib/economyCopy'
 import { log } from '@/lib/log'
-import {
-  placeActionAccessibleName,
-  placeActionDetails,
-  placeActionDone,
-  placeActionName,
-  placeBlockReason,
-  placeHoursLine,
-} from '@/lib/world/placeActionCopy'
+import { clubDoorLine, placeHoursLine } from '@/lib/world/placeActionCopy'
 import { findPlace, placeName } from '@/lib/world/places'
 import { arrivalText, homeBlurb } from '@/lib/world/travelCopy'
 import {
@@ -35,6 +27,7 @@ import {
   useTripArrival,
   type TripArrival,
 } from '@/state/trip'
+import { ActionList, type DoneOutcome } from './ActionList'
 import { ShopSection } from './ShopSection'
 import { TravelSection } from './TravelSection'
 import { TripProgress } from './TripProgress'
@@ -166,12 +159,19 @@ function ArrivalNote({ arrival }: { readonly arrival: TripArrival }) {
 }
 
 /**
- * The home card (reserved id `home`, S08): where the player lives, and the way back there from
- * anywhere. The Home panel (HUD) is where the apartment itself is decorated.
+ * The home card (reserved id `home`, S08): where the player lives, the way back there from
+ * anywhere, and what they can do there (B1): sleep, nap and cook, which bring energy and
+ * fullness back. Away from home those rows stay listed, each saying to head home first
+ * (DEC-22), under "Get there". The Home panel (HUD) is where the apartment itself is decorated.
  */
 function HomeCard() {
-  const home = useGameStore((state) => state.player.home)
-  const atHome = useGameStore((state) => state.player.location.kind === 'home')
+  const clock = useGameStore((state) => state.clock)
+  const player = useGameStore((state) => state.player)
+  const snapshot: GameSnapshot = useMemo(() => ({ clock, player }), [clock, player])
+  const actions = useMemo(() => homeActions(snapshot, engineConfig), [snapshot])
+  const [resultShown, setResultShown] = useState(false)
+  const home = player.home
+  const atHome = player.location.kind === 'home'
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const name = copy('travel.home.title')
@@ -218,10 +218,20 @@ function HomeCard() {
           headingId={`${titleId}-travel`}
         />
       )}
-      {arrival === null ? null : <ArrivalNote arrival={arrival} />}
+      {arrival === null || resultShown ? null : <ArrivalNote arrival={arrival} />}
+      <ActionList
+        headingId={`${titleId}-actions`}
+        actions={actions}
+        place={null}
+        snapshot={snapshot}
+        perform={performHomeAction}
+        onResultShown={setResultShown}
+      />
     </div>
   )
 }
+
+const performHomeAction = (actionId: string) => gameStore.getState().performHomeAction(actionId)
 
 const BUTTON =
   'min-h-11 rounded-xl px-3 py-2 text-left font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
@@ -231,15 +241,7 @@ function PlaceCard({ place }: { readonly place: Place }) {
   const player = useGameStore((state) => state.player)
   const snapshot: GameSnapshot = useMemo(() => ({ clock, player }), [clock, player])
   const view = useMemo(() => placeActions(place, snapshot, engineConfig), [place, snapshot])
-  // The result of the last action, and which action it was. That action stays disabled while
-  // its result shows, so a fast double tap cannot run it twice; `busy` is the same guard,
-  // set synchronously, for taps that land before React re-renders.
-  const [result, setResult] = useState<{ readonly actionId: string; readonly text: string } | null>(
-    null,
-  )
-  const busy = useRef<string | null>(null)
-  const refocus = useRef<string | null>(null)
-  const dismissButton = useRef<HTMLButtonElement>(null)
+  const [resultShown, setResultShown] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const name = placeName(place)
@@ -257,58 +259,20 @@ function PlaceCard({ place }: { readonly place: Place }) {
   useTitleFocus(ref)
   useEscapeCloses(ref)
 
-  // A new result takes focus to its Dismiss button (the action's own button is now
-  // disabled); dismissing gives focus back to that action.
-  useEffect(() => {
-    if (result !== null) {
-      dismissButton.current?.focus()
-      return
-    }
-    const actionId = refocus.current
-    refocus.current = null
-    if (actionId === null) return
-    ref.current
-      ?.querySelector<HTMLButtonElement>(`button[data-place-action="${CSS.escape(actionId)}"]`)
-      ?.focus()
-  }, [result])
-
-  const run = (action: PlaceAction) => {
-    if (busy.current === action.id) return
-    busy.current = action.id
-    const cashBefore = gameStore.getState().player.cash
-    const outcome = gameStore.getState().performPlaceAction(place, action.id)
-    if (outcome.ok) {
+  const perform = useCallback(
+    (actionId: string) => gameStore.getState().performPlaceAction(place, actionId),
+    [place],
+  )
+  const onDone = useCallback(
+    (outcome: DoneOutcome, actionId: string, cashBefore: number) =>
       reportPlaceActionDone({
         placeId: place.id,
-        actionId: action.id,
+        actionId,
         cashBefore,
         cashAfter: outcome.snapshot.player.cash,
-      })
-      // Rent that fell due while the action ran is part of what it did.
-      const text = [
-        placeActionDone(outcome, place),
-        ...outcome.rent.map((event) => rentNotice(event)),
-      ]
-      setResult({ actionId: action.id, text: text.join(' ') })
-      return
-    }
-    // The UI only enables allowed actions, so a refusal here means the state moved under it.
-    log.info('A place action was refused', { placeId: place.id, code: outcome.error.code })
-    const text =
-      outcome.error.code === 'BLOCKED' ? placeBlockReason(outcome.error.block, place) : null
-    if (text === null) {
-      busy.current = null
-      setResult(null)
-    } else {
-      setResult({ actionId: action.id, text })
-    }
-  }
-
-  const dismiss = () => {
-    refocus.current = result?.actionId ?? null
-    busy.current = null
-    setResult(null)
-  }
+      }),
+    [place],
+  )
 
   const info = 'category' in place ? place.infoKey : place.blurbKey
 
@@ -330,15 +294,18 @@ function PlaceCard({ place }: { readonly place: Place }) {
           <h2
             id={titleId}
             tabIndex={-1}
-            className={`text-base leading-tight font-extrabold focus:outline-none ${
-              lookOnly ? 'text-fg' : 'text-fg'
-            }`}
+            className="text-base leading-tight font-extrabold text-fg focus:outline-none"
           >
             {name}
           </h2>
           <p className="text-xs text-muted">
             {view.kind === 'look-only' ? copy('place.memorial.label') : placeHoursLine(view.hours)}
           </p>
+          {view.kind === 'actions' && view.door !== null ? (
+            <p data-club-door={view.door.met ? 'met' : 'below'} className="text-xs text-muted">
+              {clubDoorLine(view.door, snapshot)}
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -361,78 +328,19 @@ function PlaceCard({ place }: { readonly place: Place }) {
           headingId={`${titleId}-travel`}
         />
       )}
-      {arrival === null || result !== null ? null : <ArrivalNote arrival={arrival} />}
+      {arrival === null || resultShown ? null : <ArrivalNote arrival={arrival} />}
       {view.kind === 'look-only' ? (
         <p className="text-sm text-muted">{copy('place.memorial.note')}</p>
       ) : (
-        <section aria-labelledby={`${titleId}-actions`} className="flex flex-col gap-1.5">
-          <h3 id={`${titleId}-actions`} className="text-xs font-bold text-muted uppercase">
-            {copy('place.actions.heading')}
-          </h3>
-          {view.actions.length === 0 ? (
-            <p className="text-sm text-muted">{copy('place.actions.none')}</p>
-          ) : (
-            <ul className="flex flex-col gap-1.5">
-              {view.actions.map((action) => {
-                const resultShowing = action.block === null && result?.actionId === action.id
-                return (
-                  <li key={action.id}>
-                    <button
-                      type="button"
-                      disabled={action.block !== null || resultShowing}
-                      data-place-action={action.id}
-                      aria-label={
-                        resultShowing
-                          ? copy('place.action.blockedLabel', {
-                              action: placeActionAccessibleName(action, place, snapshot),
-                              reason: copy('place.busy.reason'),
-                            })
-                          : placeActionAccessibleName(action, place, snapshot)
-                      }
-                      onClick={(event) => {
-                        // The second click of a mouse double click: the sheet grows with the
-                        // result, so it can land on the next action, which must not run.
-                        if (event.detail > 1) return
-                        run(action)
-                      }}
-                      className={`${BUTTON} flex w-full flex-col bg-raised text-fg enabled:hover:bg-pressed disabled:opacity-70`}
-                    >
-                      <span>{placeActionName(action)}</span>
-                      <span className="text-xs font-normal text-muted">
-                        {placeActionDetails(action, snapshot)}
-                      </span>
-                      {action.block === null ? null : (
-                        <span className="text-xs font-normal text-taxi-ink">
-                          {placeBlockReason(action.block, place)}
-                        </span>
-                      )}
-                      {resultShowing ? (
-                        <span className="text-xs font-normal text-taxi-ink">
-                          {copy('place.busy.reason')}
-                        </span>
-                      ) : null}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-          <div className="flex items-center justify-between gap-2">
-            <p role="status" className="text-sm font-semibold text-taxi-ink">
-              {result?.text}
-            </p>
-            {result === null ? null : (
-              <button
-                ref={dismissButton}
-                type="button"
-                onClick={dismiss}
-                className={`${BUTTON} min-w-11 shrink-0 bg-raised text-center text-fg`}
-              >
-                {copy('place.result.dismiss')}
-              </button>
-            )}
-          </div>
-        </section>
+        <ActionList
+          headingId={`${titleId}-actions`}
+          actions={view.actions}
+          place={place}
+          snapshot={snapshot}
+          perform={perform}
+          onDone={onDone}
+          onResultShown={setResultShown}
+        />
       )}
       {view.kind !== 'look-only' && hasShop(place) ? (
         <ShopSection place={place} headingId={`${titleId}-shop`} />

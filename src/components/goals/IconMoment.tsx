@@ -4,9 +4,11 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useModalPresence } from '@/components/overlay/modalState'
 import { trapTab } from '@/components/overlay/trapTab'
 import { engineConfig } from '@/engine/config'
+import { claimableCount } from '@/engine/goals'
 import { prestigeBadge } from '@/engine/grants'
 import { copy } from '@/lib/copy'
 import { cloutLevelName } from '@/lib/economyCopy'
+import { formatCount } from '@/lib/format'
 import { badgeName, prestigePartName } from '@/lib/goalsCopy'
 import { log } from '@/lib/log'
 import { shareMoment, type ShareOutcome } from '@/lib/share/shareMoment'
@@ -44,6 +46,9 @@ export function IconMoment() {
   const [shared, setShared] = useState<ShareOutcome | null>(null)
   const [refused, setRefused] = useState(false)
   const run = useGameStore((state) => state.goals.run)
+  // Rewards reached and not claimed: prestige starts the goals over, so they would be lost.
+  // Grants are always the player's explicit claim, never automatic, so the confirm warns.
+  const unclaimed = useGameStore((state) => claimableCount(state, engineConfig))
 
   useEffect(() => {
     dialog.current?.querySelector<HTMLElement>('h2')?.focus()
@@ -162,6 +167,16 @@ export function IconMoment() {
             <p className="font-semibold text-taxi-ink">
               {copy('goals.icon.confirm.badge', { badge })}
             </p>
+            {unclaimed === 0 ? null : (
+              <p data-prestige-unclaimed={unclaimed} className="font-semibold text-taxi-ink">
+                {copy(
+                  unclaimed === 1
+                    ? 'goals.icon.confirm.unclaimedOne'
+                    : 'goals.icon.confirm.unclaimed',
+                  { count: formatCount(unclaimed) },
+                )}
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <section aria-label={copy('goals.icon.confirm.resets')}>
@@ -188,20 +203,25 @@ export function IconMoment() {
           <p role="status" className="min-h-5 text-sm font-semibold text-taxi-ink">
             {refused ? copy('goals.icon.confirm.refused') : null}
           </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={confirmPrestige}
-              className={`${BUTTON} bg-taxi text-on-taxi`}
-            >
-              {copy('goals.icon.confirm.go', { level: startLevel })}
-            </button>
+          {/* Pinned to the bottom of the scrolling dialog, "Not yet" first, so the way out is
+              always on screen above the tab bar at 390 x 844, however long the lists run. */}
+          <div
+            data-prestige-actions=""
+            className="sticky -bottom-5 -mx-5 -mb-5 flex flex-wrap gap-2 rounded-b-3xl glass px-5 pt-2 pb-5"
+          >
             <button
               type="button"
               onClick={() => setStep('moment')}
               className={`${BUTTON} bg-raised text-fg`}
             >
               {copy('goals.icon.confirm.back')}
+            </button>
+            <button
+              type="button"
+              onClick={confirmPrestige}
+              className={`${BUTTON} flex-1 bg-taxi text-on-taxi`}
+            >
+              {copy('goals.icon.confirm.go', { level: startLevel })}
             </button>
           </div>
         </div>

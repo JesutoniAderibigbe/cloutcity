@@ -176,7 +176,7 @@ test.describe('home and apartment', () => {
         .locator('[data-home-slot="surface-1"]')
         .getByRole('button', { name: /^Put .+ in storage$/ }),
     ).toBeFocused()
-    await expect(dialog.getByRole('status')).toContainText('Windowsill')
+    await expect(dialog.locator('[data-panel-status]')).toContainText('Windowsill')
 
     // Home clout is the placed decor's score, and the HUD meter counts it.
     const gain = decorScore(PLANT)
@@ -317,7 +317,7 @@ test.describe('home and apartment', () => {
     await expect.poll(async () => (await hudState(page)).home).toBe(brooklyn)
     await expect(dialog.locator('[data-home-current]')).toHaveText(`Brooklyn 1BR, rent $${rent}/wk`)
     await expect(dialog.locator('[data-home-slot]')).toHaveCount(slots)
-    await expect(dialog.getByRole('status')).toContainText('Brooklyn 1BR')
+    await expect(dialog.locator('[data-panel-status]')).toContainText('Brooklyn 1BR')
   })
 
   test('the room stays within every tier budget with the avatar reserve kept free, and idles', async ({
