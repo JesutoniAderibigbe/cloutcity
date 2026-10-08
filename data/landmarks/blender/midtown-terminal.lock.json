@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "midtown-terminal",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "3c712d605eadd08be9142a887b1daf31fda4072be91b3d7473ec754850d4e8a2",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/midtown-terminal/lod0.glb",
+      "sha256": "feb05f2a317ffdbbba5c68fa702891d90f173854b74f6f088cb01a7d86bc2cce",
+      "bytes": 25840,
+      "triangles": 2410,
+      "uncompressedBytes": 232572
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/midtown-terminal/lod1.glb",
+      "sha256": "dec1e0e4ac6cc4b8aeba67c4bb7a2541391cedbf23cd1a9187c7a74a0624d144",
+      "bytes": 13004,
+      "triangles": 1034,
+      "uncompressedBytes": 100760
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/midtown-terminal/lod2.glb",
+      "sha256": "22cf3501ad3e6c1550a77510e834914e7f7c82f32eb9b75c8dfbd61b38adac49",
+      "bytes": 8052,
+      "triangles": 478,
+      "uncompressedBytes": 47432
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/midtown-terminal/lod3.glb",
+      "sha256": "5ea82b4a48134e85b1b8979277f142b84ca1e61c7814e29d52e76fcb287168d7",
+      "bytes": 4692,
+      "triangles": 156,
+      "uncompressedBytes": 16336
+    }
+  ]
+}

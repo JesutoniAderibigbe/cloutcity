@@ -189,6 +189,32 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1192 triangles, 24160 bytes (`public/landmarks/manhattan-bridge/lod2.glb`)
 - L3: 584 triangles, 13456 bytes (`public/landmarks/manhattan-bridge/lod3.glb`)
 
+### midtown-terminal
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q11290 (the 42nd Street terminal), CC0-1.0, <https://www.wikidata.org/wiki/Q11290>
+
+Dimensions:
+
+- `heightM`: 36 m (estimate): the main hall's roof ridge above the street
+- `hall`: 90 × 60 m (estimate): the main hall's front width (widthM) and depth (depthM)
+- `hallM`: 30 m (estimate): the main hall's walls, to the cornice
+- `wings`: 25 × 50 m (estimate): each side wing's width and depth
+- `wingsM`: 20 m (estimate): the side wings' height
+- `arches`: 10 × 20 m (estimate): three tall arched front windows: width (widthM) and height to the crown (depthM)
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.4, widths ×1.1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.4 and widths x1.1, within the frame's exclusion, so the station reads at the game camera. Wikidata gives no dimensions, so every number is an estimate (the S07a kit's stylised proportions).
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 2410 triangles, 25840 bytes (`public/landmarks/midtown-terminal/lod0.glb`)
+- L1: 1034 triangles, 13004 bytes (`public/landmarks/midtown-terminal/lod1.glb`)
+- L2: 478 triangles, 8052 bytes (`public/landmarks/midtown-terminal/lod2.glb`)
+- L3: 156 triangles, 4692 bytes (`public/landmarks/midtown-terminal/lod3.glb`)
+
 ### queensboro-bridge
 
 Retrieved 2026-10-08. Sources:
