@@ -14,10 +14,13 @@ import {
   SubwayFileSchema,
   WaterFileSchema,
 } from '@/lib/data/schemas/world'
+import { ARCHETYPES } from '@/lib/data/schemas/landmarkModels'
+import { landmarksLayer } from '@/lib/world/landmarksLayer'
 import { placesLayer } from '@/lib/world/placesLayer'
 import {
   BOROUGH_IDS,
   GEO_BASE_FORMAT,
+  LANDMARK_ARCHETYPES,
   LandMiniSchema,
   PlacesMiniSchema,
   ParksMiniSchema,
@@ -155,10 +158,35 @@ describe('parseGeoBase', () => {
     parks,
     subway,
     places: placesLayer,
+    landmarks: JSON.parse(JSON.stringify(landmarksLayer)) as unknown,
   }
 
   it('returns the layers of a valid body', () => {
     expect(parseGeoBase(body).land.boroughs).toHaveLength(BOROUGH_IDS.length)
+    expect(parseGeoBase(body).landmarks.models.map((m) => m.id)).toEqual(
+      landmarksLayer.models.map((m) => m.id),
+    )
+  })
+
+  it('rejects a landmarks layer whose entries are malformed (S07a)', () => {
+    type Entry = { model: Json; frame: Json; style: string }
+    const models = () => clone(body.landmarks) as { models: Entry[] }
+    const swapped = models()
+    if (swapped.models[0]) swapped.models[0].model = { ...swapped.models[0].model, id: 'other' }
+    const archetype = models()
+    if (archetype.models[0])
+      archetype.models[0].model = { ...archetype.models[0].model, archetype: 'castle' }
+    const heading = models()
+    if (heading.models[0]) heading.models[0].frame = { ...heading.models[0].frame, headingDeg: 360 }
+    const style = models()
+    if (style.models[0]) style.models[0].style = 'glowing'
+    for (const landmarks of [swapped, archetype, heading, style, undefined]) {
+      expect(safeParseGeoBase({ ...body, landmarks }).ok).toBe(false)
+    }
+  })
+
+  it('lists the same archetypes as the classic models schema', () => {
+    expect([...LANDMARK_ARCHETYPES]).toEqual([...ARCHETYPES])
   })
 
   it('rejects a wrong format, a bad version or a missing layer, naming the path only', () => {

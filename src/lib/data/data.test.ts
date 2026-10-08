@@ -18,16 +18,22 @@ import {
   JOB_IDS,
   LayoutConfigSchema,
   ModerationConfigSchema,
+  OfflineConfigSchema,
   OnboardingConfigSchema,
   PerfConfigSchema,
+  type PerfConfig,
+  ProfileConfigSchema,
   ProgressionConfigSchema,
   RealtimeConfigSchema,
+  SyncConfigSchema,
   ThemeConfigSchema,
+  TourConfigSchema,
   createProgressionConfigSchema,
 } from './schemas/config'
 import {
   EventsFileSchema,
   HomesFileSchema,
+  HomeInteriorsFileSchema,
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
@@ -37,24 +43,41 @@ import {
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
 import { SceneConfigSchema } from './schemas/scene'
+import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
+  BlocksFileSchema,
   BoroughsFileSchema,
+  BuildingsFileSchema,
   GeoBoundsSchema,
   GeoManifestSchema,
   LandFileSchema,
+  LandmarkFramesFileSchema,
   ParksFileSchema,
   SubwayFileSchema,
   WaterFileSchema,
   ZoneShapesFileSchema,
   ZonesFileSchema,
 } from './schemas/world'
-import { audio, balance, layout, onboarding, perf, progression, realtime, theme } from './config'
+import { ModelManifestSchema, ShowcaseSchema } from './schemas/assets'
+import { CatalogSchema } from '../../../scripts/assets/schema'
+import {
+  audio,
+  balance,
+  layout,
+  onboarding,
+  perf,
+  progression,
+  realtime,
+  sync,
+  theme,
+} from './config'
 import {
   audioManifest,
   events,
   geoBounds,
+  homeInteriors,
   items,
   jobs,
   landmarks,
@@ -70,6 +93,9 @@ const DATA = join(import.meta.dirname, '../../../data')
  * copy/<ns>/base.json is a NamespaceBaseSchema, any other copy/<ns>/<pack>.json a SlangPackSchema.
  */
 const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
+  'assets/catalog.json': CatalogSchema,
+  'assets/manifest.json': ModelManifestSchema,
+  'assets/showcase.json': ShowcaseSchema,
   'audio/manifest.json': AudioManifestSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
   'config/audio.json': AudioConfigSchema,
@@ -79,12 +105,16 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/handles.json': HandlesConfigSchema,
   'config/layout.json': LayoutConfigSchema,
   'config/moderation.json': ModerationConfigSchema,
+  'config/offline.json': OfflineConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
+  'config/profile.json': ProfileConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/realtime.json': RealtimeConfigSchema,
   'config/scene.json': SceneConfigSchema,
+  'config/sync.json': SyncConfigSchema,
   'config/theme.json': ThemeConfigSchema,
+  'config/tour.json': TourConfigSchema,
   'copy/handleWords.json': HandleWordsSchema,
   'copy/superlatives.json': SuperlativesSchema,
   'events/events.json': EventsFileSchema,
@@ -95,9 +125,12 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/subway.derived.json': SubwayFileSchema,
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
+  'homes/interiors.json': HomeInteriorsFileSchema,
   'items/items.json': ItemsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
+  'landmarks/frames.derived.json': LandmarkFramesFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
+  'landmarks/models.json': LandmarkModelsFileSchema,
   'moderation/handle-blocklist.json': HandleBlocklistSchema,
   'premium/premium.json': PremiumFileSchema,
   'sim/economy-baseline.derived.json': EconomyBaselineSchema,
@@ -107,6 +140,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
 }
 
 function schemaFor(file: string): z.ZodType | undefined {
+  if (/^geo\/districts\/[a-z0-9-]+\.[a-z]+\.derived\.json$/.test(file)) return BuildingsFileSchema
+  if (/^geo\/blocks\.[a-z]+\.derived\.json$/.test(file)) return BlocksFileSchema
   if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
   if (/^copy\/[\w-]+\/[\w-]+\.json$/.test(file)) return SlangPackSchema
   return SCHEMAS[file]
@@ -157,6 +192,7 @@ describe('/data files', () => {
     'geo',
     'zones',
     'audio',
+    'assets',
     'boroughs',
     'homes',
     'config',
@@ -210,6 +246,8 @@ describe('config/perf.json', () => {
       // S05c: the shell keeps 20 KB of the budget free for features still to land.
       shellHeadroomGzKB: 20,
       sceneChunkJsGzKB: 350,
+      // S16: the apartment's lazy 3D chunk, reported apart from the before-playable 3D chunk.
+      apartmentChunkJsGzKB: 40,
       totalJsToPlayableGzKB: 550,
       baseGeoGzKB: 400,
       districtBuildingsGzKB: { low: 150, mid: 300, high: 400 },
@@ -219,13 +257,37 @@ describe('config/perf.json', () => {
       playableWarmMs: 2500,
       drawCallsMax: { low: 60, mid: 120, high: 200 },
       trianglesMax: { low: 150_000, mid: 400_000, high: 800_000 },
+      // S04f (Q9): measured shader programs at the default view after the models load (low 9,
+      // mid 10, high 13, day and night alike) + 10%, rounded up. A new cap, not a raised one.
+      programsMax: { low: 10, mid: 11, high: 15 },
+      // S16 apartment caps (TUNE-8 placeholders), with room kept for S16a's avatar.
+      apartment: {
+        drawCallsMax: { low: 24, mid: 32, high: 56 },
+        trianglesMax: { low: 12_000, mid: 20_000, high: 30_000 },
+        avatarReserve: { drawCalls: 6, triangles: 4000 },
+      },
       dprCap: { low: 1, mid: 1.5, high: 2 },
       shadows: { low: 'none', mid: 'blob-or-baked', high: 'pcf-directional' },
+      // S04b per-tier render settings (TUNE-6 placeholders).
+      shadowMapSizePx: { low: 0, mid: 0, high: 2048 },
+      antialias: { low: false, mid: true, high: true },
+      outlines: { low: false, mid: true, high: true },
+      buildingDensity: { low: 0.5, mid: 0.8, high: 1 },
+      lodDistanceScale: { low: 0.6, mid: 1, high: 1.4 },
+      postprocessing: 'none',
       otherPlayersMax: { low: 8, mid: 16, high: 24 },
       otherPlayersStyle: { low: 'billboard', mid: 'model', high: 'model' },
       medianFpsMin: { low: 30, mid: 45, high: 55 },
       idleFramesMax: 0,
-      fpsStepDown: { belowFps: 28, sustainMs: 3000 },
+      fpsStepDown: {
+        belowFps: 28,
+        sustainMs: 3000,
+        sampleMs: 250,
+        threshold: 0.9,
+        cooldownMs: 10_000,
+        maxSteps: 2,
+      },
+      tierPicker: perf.tierPicker,
       throttleProfiles: {
         'cc-mid-4g': {
           downloadKbps: 4000,
@@ -235,9 +297,44 @@ describe('config/perf.json', () => {
           viewport: { width: 390, height: 844 },
         },
       },
+      perfRun: {
+        coldRuns: 3,
+        coldTier: 'low',
+        profile: 'cc-mid-4g',
+        maxLoadPerCore: 0.75,
+        loadWaitMaxMs: 600_000,
+        loadPollMs: 5000,
+        lockWaitMaxMs: 1_800_000,
+      },
       audioLazyGzKB: { low: 600, mid: 1000, high: 1400 },
       audioFileMaxKB: 600,
       audioRuntimeJsGzKB: 20,
+      // S04e: the service worker script and its install-time precache (not in CLAUDE.md's table).
+      serviceWorkerGzKB: 15,
+      precacheGzKB: 1000,
+      buildingTrianglesMax: { low: 160_000, mid: 300_000, high: 480_000 },
+      landmarkTrianglesMax: {
+        bridge: { low: 1200, mid: 3500, high: 7000 },
+        building: { low: 600, mid: 1800, high: 3500 },
+        station: { low: 600, mid: 1800, high: 3500 },
+        government: { low: 600, mid: 1800, high: 3500 },
+      },
+      landmarkTrianglesOverride: {},
+      landmarkLodRatioMax: 0.5,
+      // S04h (TUNE-12): per-asset caps set from the Part 1 measurements with ~15–25% headroom.
+      models: {
+        vehicle: { trianglesMax: { low: 1200, mid: 1500, high: 1500 }, gzKBMax: 25 },
+        'street-prop': { trianglesMax: { low: 600, mid: 600, high: 600 }, gzKBMax: 12 },
+        tree: { trianglesMax: { low: 500, mid: 500, high: 500 }, gzKBMax: 8 },
+        building: { trianglesMax: { low: 1200, mid: 1200, high: 1500 }, gzKBMax: 18 },
+        'building-detail': { trianglesMax: { low: 200, mid: 200, high: 200 }, gzKBMax: 4 },
+        furniture: { trianglesMax: { low: 600, mid: 800, high: 800 }, gzKBMax: 16 },
+        'room-shell': { trianglesMax: { low: 200, mid: 200, high: 200 }, gzKBMax: 4 },
+        'avatar-rig': { trianglesMax: { low: 0, mid: 0, high: 0 }, gzKBMax: 8 },
+        'avatar-head': { trianglesMax: { low: 350, mid: 400, high: 400 }, gzKBMax: 11 },
+        'avatar-body': { trianglesMax: { low: 400, mid: 650, high: 650 }, gzKBMax: 15 },
+        'avatar-accessory': { trianglesMax: { low: 100, mid: 100, high: 100 }, gzKBMax: 4 },
+      },
     })
   })
 
@@ -249,6 +346,74 @@ describe('config/perf.json', () => {
     expect(PerfConfigSchema.safeParse({ ...valid, shellJsGzKB: 0 }).success).toBe(false)
     const softShadows = { low: 'none', mid: 'blob-or-baked', high: 'pcf-soft' }
     expect(PerfConfigSchema.safeParse({ ...valid, shadows: softShadows }).success).toBe(false)
+    const apartment = valid.apartment as Record<string, unknown>
+    const reserveFillsLow = { ...apartment, avatarReserve: { drawCalls: 24, triangles: 1 } }
+    expect(PerfConfigSchema.safeParse({ ...valid, apartment: reserveFillsLow }).success).toBe(false)
+  })
+
+  describe('S04b quality tier rules', () => {
+    const valid = () => readJson('config/perf.json') as PerfConfig
+    const accepts = (change: Partial<PerfConfig>) =>
+      PerfConfigSchema.safeParse({ ...valid(), ...change }).success
+
+    it('accepts the shipped file', () => {
+      expect(accepts({})).toBe(true)
+    })
+
+    it('needs every renderer pattern to compile', () => {
+      const { tierPicker } = valid()
+      expect(accepts({ tierPicker: { ...tierPicker, lowRendererPatterns: ['mali-('] } })).toBe(
+        false,
+      )
+      expect(accepts({ tierPicker: { ...tierPicker, highRendererPatterns: ['[a-'] } })).toBe(false)
+      expect(accepts({ tierPicker: { ...tierPicker, highRendererPatterns: [] } })).toBe(false)
+      expect(accepts({ tierPicker: { ...tierPicker, lowRendererPatterns: [''] } })).toBe(false)
+    })
+
+    it('keeps every high threshold at or above its low threshold', () => {
+      const { tierPicker } = valid()
+      const atLow = { ...tierPicker, highAtLeast: tierPicker.lowBelow }
+      expect(accepts({ tierPicker: atLow })).toBe(true)
+      const below = { ...tierPicker, highAtLeast: { ...tierPicker.highAtLeast, cores: 2 } }
+      expect(accepts({ tierPicker: below })).toBe(false)
+    })
+
+    it('needs sustainMs to be a whole number of sampleMs windows', () => {
+      const { fpsStepDown } = valid()
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, sampleMs: 300 } })).toBe(true)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, sampleMs: 400 } })).toBe(false)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, sampleMs: 0 } })).toBe(false)
+    })
+
+    it('bounds the step-down threshold and step count', () => {
+      const { fpsStepDown } = valid()
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, threshold: 1 } })).toBe(true)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, threshold: 0 } })).toBe(false)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, threshold: 1.1 } })).toBe(false)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, maxSteps: 0 } })).toBe(true)
+      expect(accepts({ fpsStepDown: { ...fpsStepDown, maxSteps: 3 } })).toBe(false)
+    })
+
+    it('sizes a shadow map exactly where the tier has the directional PCF shadow', () => {
+      expect(accepts({ shadowMapSizePx: { low: 0, mid: 0, high: 0 } })).toBe(false)
+      expect(accepts({ shadowMapSizePx: { low: 0, mid: 512, high: 2048 } })).toBe(false)
+      expect(accepts({ shadowMapSizePx: { low: 0, mid: 0, high: 1.5 } })).toBe(false)
+    })
+
+    it('bounds building density to (0, 1] and allows no postprocessing', () => {
+      expect(accepts({ buildingDensity: { low: 0, mid: 0.8, high: 1 } })).toBe(false)
+      expect(accepts({ buildingDensity: { low: 0.5, mid: 0.8, high: 1.2 } })).toBe(false)
+      expect(PerfConfigSchema.safeParse({ ...valid(), postprocessing: 'bloom' }).success).toBe(
+        false,
+      )
+    })
+
+    it('needs an odd number of cold runs and a known throttle profile', () => {
+      const { perfRun } = valid()
+      expect(accepts({ perfRun: { ...perfRun, coldRuns: 1 } })).toBe(true)
+      expect(accepts({ perfRun: { ...perfRun, coldRuns: 4 } })).toBe(false)
+      expect(accepts({ perfRun: { ...perfRun, profile: 'cc-slow-3g' } })).toBe(false)
+    })
   })
 })
 
@@ -279,6 +444,53 @@ describe('config/realtime.json and moderation', () => {
         retention: { evidenceDays: 900, reportRowDays: 730, auditDays: 730, appealDays: 180 },
       }).success,
     ).toBe(false)
+  })
+})
+
+describe('config/sync.json (S18c)', () => {
+  const valid = () => structuredClone(readJson('config/sync.json')) as Record<string, unknown>
+
+  it('holds the S18c defaults (TUNE-10 placeholders)', () => {
+    expect(sync).toMatchObject({
+      debounceMs: 10_000,
+      maxWaitMs: 60_000,
+      maxSaveBytes: 262_144,
+      keepaliveMaxBytes: 61_440,
+      plausibility: { margin: 1.5, maxActionsPerRealMinute: 40, burstRealMinutes: 5 },
+    })
+  })
+
+  it("matches the saves table's own size check", () => {
+    const migrations = join(DATA, '../supabase/migrations')
+    const sql = readdirSync(migrations)
+      .filter((file) => file.endsWith('.sql'))
+      .map((file) => readFileSync(join(migrations, file), 'utf8'))
+      .join('\n')
+    const limit = /octet_length\(data::text\) <= (\d+)/.exec(sql)?.[1]
+    expect(Number(limit)).toBe(sync.maxSaveBytes)
+  })
+
+  it.each<[string, (file: Record<string, unknown>) => void]>([
+    ['a debounce longer than the max wait', (file) => void (file.debounceMs = 120_000)],
+    ['a retry base above its max', (file) => void (file.retry = { baseMs: 10, maxMs: 5 })],
+    ['a keepalive body over 64 KiB', (file) => void (file.keepaliveMaxBytes = 65_537)],
+    ['a keepalive body over the save limit', (file) => void (file.maxSaveBytes = 1000)],
+    ['more uploads than fit a minute', (file) => void (file.maxUploadsPerMinute = 13)],
+    [
+      'a margin below 1',
+      (file) =>
+        void (file.plausibility = {
+          margin: 0.9,
+          maxActionsPerRealMinute: 40,
+          burstRealMinutes: 5,
+        }),
+    ],
+    ['an unknown key', (file) => void (file.extra = 1)],
+  ])('rejects %s', (_label, mutate) => {
+    const file = valid()
+    expect(SyncConfigSchema.safeParse(file).success).toBe(true)
+    mutate(file)
+    expect(SyncConfigSchema.safeParse(file).success).toBe(false)
   })
 })
 
@@ -407,21 +619,39 @@ describe('data/audio/manifest.json and public/audio', () => {
 })
 
 describe('config/theme.json', () => {
-  it('has the night palette: deep indigo, hot pink, taxi yellow and neutrals', () => {
-    expect(Object.keys(theme.colors)).toEqual(
-      expect.arrayContaining(['night-950', 'pink-400', 'taxi-400', 'ink-50']),
-    )
+  it('has the real-world interface (DEC-26): one taxi yellow, no indigo or hot pink in the UI', () => {
+    expect(theme.colors['taxi-400']).toBe('#f5b800')
+    expect(theme.models['taxi-400']).toBe('#f5b800')
+    for (const ui of [theme.ui.day, theme.ui.night]) {
+      expect(ui.taxi).toBe('taxi-400')
+      for (const token of Object.values(ui))
+        expect(token).not.toMatch(/^(night|pink|indigo|violet)-/)
+    }
+    expect(
+      Object.keys(theme.colors).filter((token) => /^(night|indigo|violet)-/.test(token)),
+    ).toEqual([])
   })
 
-  it('rejects a bad hex and a themeColor that names no token', () => {
-    expect(
-      ThemeConfigSchema.safeParse({ colors: { 'pink-400': 'pink' }, themeColor: 'pink-400' })
-        .success,
-    ).toBe(false)
-    expect(
-      ThemeConfigSchema.safeParse({ colors: { 'pink-400': '#ff4fa3' }, themeColor: 'nope-1' })
-        .success,
-    ).toBe(false)
+  it('rejects a bad hex, a themeColor that names no token and a ui colour that names none', () => {
+    const valid = () =>
+      structuredClone(readJson('config/theme.json')) as {
+        colors: Record<string, string>
+        themeColor: { day: string; night: string }
+        ui: { day: Record<string, string> }
+      }
+    expect(ThemeConfigSchema.safeParse(valid()).success).toBe(true)
+    const badHex = valid()
+    badHex.colors['taxi-400'] = 'yellow'
+    expect(ThemeConfigSchema.safeParse(badHex).success).toBe(false)
+    const badThemeColor = valid()
+    badThemeColor.themeColor.night = 'nope-1'
+    expect(ThemeConfigSchema.safeParse(badThemeColor).success).toBe(false)
+    const badUi = valid()
+    badUi.ui.day.fg = 'nope-100'
+    expect(ThemeConfigSchema.safeParse(badUi).success).toBe(false)
+    const missingToken = valid()
+    delete missingToken.ui.day.meter
+    expect(ThemeConfigSchema.safeParse(missingToken).success).toBe(false)
   })
 })
 
@@ -767,6 +997,8 @@ describe('cross-file references', () => {
     venues: venues.flatMap((entry) => [entry.nameKey, entry.blurbKey]),
     landmarks: landmarks.flatMap((entry) => [entry.nameKey, entry.infoKey]),
     club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
+    colors: items.flatMap((entry) => entry.decor?.variants.map((variant) => variant.nameKey) ?? []),
+    housing: Object.values(homeInteriors).flatMap((home) => home.slots.map((slot) => slot.nameKey)),
   }
 
   it('every copy key named by content exists in data/copy', () => {

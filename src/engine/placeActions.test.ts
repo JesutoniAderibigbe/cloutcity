@@ -6,13 +6,18 @@ import { initialSnapshot, type GameSnapshot } from './game'
 import {
   clubNightKey,
   flexMultiplier,
-  performPlaceAction,
-  placeActions,
+  performPlaceAction as performPlaceActionAnywhere,
+  placeActions as placeActionsAnywhere,
   placeHoursNow,
   type PlaceAction,
   type PlaceView,
 } from './placeActions'
-import { withClout } from './test-support'
+import {
+  atPlace,
+  performPlaceActionHere as performPlaceAction,
+  placeActionsHere as placeActions,
+  withClout,
+} from './test-support'
 
 /** Fixed numbers so these tests do not move when balance.json is tuned (S12). */
 const config: EngineConfig = {
@@ -76,6 +81,7 @@ const config: EngineConfig = {
       club: [],
       'job-site': [],
     },
+    homeActions: ['sleep', 'nap', 'home-meal'],
     actions: {
       coffee: { durationMin: 15, cashCost: 5, energyCost: 0, statEffects: { energy: 10 } },
       'street-meal': { durationMin: 30, cashCost: 9, energyCost: 0, statEffects: { hunger: 45 } },
@@ -599,5 +605,44 @@ describe('club clout at most once per game night (orchestrator ruling, S09)', ()
     if (!result.ok) throw new Error(result.error.code)
     expect(result.cloutGained).toBe(10)
     expect(result.snapshot.player.clubNights).toEqual({ 'probe-club': 5, 'other-club': 5 })
+  })
+})
+
+describe('the player must be there (DEC-22)', () => {
+  const bodega = venue('bodega')
+
+  it('away, every action is blocked with `away`, after the rule reasons and before funds', () => {
+    const view = placeActionsAnywhere(bodega, snapshotWith({ cash: 0 }), config)
+    expect(actionsOf(view).every((entry) => entry.block?.code === 'away')).toBe(true)
+    const here = placeActionsAnywhere(bodega, atPlace(snapshotWith({ cash: 0 }), bodega.id), config)
+    expect(action(here, 'bodega-breakfast').block).toMatchObject({ code: 'funds' })
+  })
+
+  it('a closed place says it is closed before it says the player is away', () => {
+    const coffee = venue('coffee-shop')
+    const view = placeActionsAnywhere(coffee, snapshotWith({ minute: at('23:00') }), config)
+    expect(actionsOf(view).every((entry) => entry.block?.code === 'closed')).toBe(true)
+  })
+
+  it('at another place still counts as away', () => {
+    const view = placeActionsAnywhere(bodega, atPlace(snapshotWith(), 'somewhere-else'), config)
+    expect(action(view, 'bodega-breakfast').block).toEqual({ code: 'away' })
+  })
+
+  it('performPlaceAction re-checks it: refused and nothing changes', () => {
+    const before = snapshotWith()
+    expect(performPlaceActionAnywhere(before, bodega, 'bodega-breakfast', config)).toEqual({
+      ok: false,
+      error: { code: 'BLOCKED', block: { code: 'away' } },
+    })
+    const done = performPlaceActionAnywhere(
+      atPlace(before, bodega.id),
+      bodega,
+      'bodega-breakfast',
+      config,
+    )
+    expect(done.ok).toBe(true)
+    if (done.ok)
+      expect(done.snapshot.player.location).toEqual({ kind: 'place', placeId: bodega.id })
   })
 })

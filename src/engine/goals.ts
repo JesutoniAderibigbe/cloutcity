@@ -8,7 +8,7 @@
  *   does not take the goal back. It is idempotent, so the store runs it after every
  *   state-changing action (never on the passive tick).
  * - Level goals read **goal clout** (`goalClout`): earned clout minus granted clout, plus item
- *   clout, never premium. Granted value never counts toward goal progress (ECON-1), so no reward,
+ *   and home clout, never premium. Granted value never counts toward goal progress (ECON-1), so no reward,
  *   compensation or promo can carry a player to the next goal. The HUD and every gate (borough,
  *   job, club door) still read the total (src/engine/clout.ts `totalClout`).
  * - A goal's reward is claimed by hand through the one grant function (src/engine/grants.ts),

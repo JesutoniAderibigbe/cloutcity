@@ -3,6 +3,10 @@ import type { PlaceTestHook } from '@/components/places/placeTestHook'
 import { expect, test } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 /**
  * The place hook is installed and the 3D map has finished starting: on SwiftShader the map's
  * start keeps the main thread busy for seconds (PERF-4), so the overlay checks below wait for
@@ -237,12 +241,23 @@ test.describe('the Icon moment: keyboard, focus, run 2, motion', () => {
     await expect(confirm.getByRole('heading', { name: 'Run it back?' })).toBeFocused()
     // The description adds to the title rather than reading it a second time.
     await expect(confirm).toHaveAccessibleDescription(/^Start from zero, keep what's yours\./)
+    // Unclaimed goal rewards would be given up: the confirm says how many (grants stay explicit).
+    const unclaimed = confirm.locator('[data-prestige-unclaimed]')
+    await expect(unclaimed).toBeVisible()
+    await expect(unclaimed).toContainText(/goal rewards? you haven't claimed/)
+    // The way out is on screen without scrolling, above the tab bar.
+    const notYet = confirm.getByRole('button', { name: 'Not yet' })
+    await expect(notYet).toBeInViewport({ ratio: 1 })
+    const tabs = await page.locator('[data-overlay-zone="tabs"]').boundingBox()
+    const box = await notYet.boundingBox()
+    if (tabs !== null && box !== null) expect(box.y + box.height).toBeLessThanOrEqual(tabs.y)
+    // "Not yet" comes first (it stays on screen above the tab bar at 390 x 844).
     await page.keyboard.press('Shift+Tab')
-    await expect(confirm.getByRole('button', { name: 'Not yet' })).toBeFocused()
-    await page.keyboard.press('Tab')
     await expect(
       confirm.getByRole('button', { name: 'Start over at Nobody, keep your badges' }),
     ).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(confirm.getByRole('button', { name: 'Not yet' })).toBeFocused()
     await page.keyboard.press('Escape')
     await expect(dialog.getByRole('heading', { name: 'Icon status' })).toBeFocused()
     expect((await state(page)).level).toBe('icon')
@@ -273,6 +288,62 @@ test.describe('the Icon moment: keyboard, focus, run 2, motion', () => {
     const goals = page.getByRole('dialog', { name: 'Goals' })
     await expect(goals.locator('[data-badge]')).toHaveText(['Prestige I', 'Prestige II'])
     await expect(goals).toContainText('Run 3')
+  })
+
+  test('after Keep playing, claim a reward, then prestige from the Goals panel', async ({
+    page,
+    checkA11y,
+  }) => {
+    await seedNearIcon(page)
+    await stubShare(page)
+    await boot(page)
+    await crossIcon(page)
+    await moment(page).getByRole('button', { name: 'Keep playing' }).click()
+    await expect(page.locator('[data-icon-moment]')).toHaveCount(0)
+
+    // Prestige waits in Goals for an Icon player, with the badge it earns named from config.
+    await goalsButton(page).click()
+    const goals = page.getByRole('dialog', { name: 'Goals' })
+    const entry = goals.locator('[data-goals-prestige]')
+    await expect(entry).toBeVisible()
+    await expect(entry).toHaveAccessibleName(
+      'Prestige: start over at Nobody and earn the Prestige I badge',
+    )
+    await checkA11y()
+
+    // Claim one reward first; the confirm then counts what is still unclaimed.
+    const claimable = goals.locator('[data-goal] button:not([aria-disabled])')
+    const before = await claimable.count()
+    expect(before).toBeGreaterThan(0)
+    await claimable.first().click()
+    await expect(goals.locator('[data-panel-status]')).toContainText('claimed')
+    await expect(claimable).toHaveCount(before - 1)
+
+    // Opened from Goals, Not yet closes the confirm and gives focus back to the entry. The panel's
+    // action guard ignores a click on another row in the spot just tapped until its cooldown ends.
+    await expect(goals.locator('[aria-busy="true"]')).toHaveCount(0)
+    await entry.click()
+    const confirm = page.getByRole('dialog', { name: 'Run it back?' })
+    await expect(confirm.getByRole('heading', { name: 'Run it back?' })).toBeFocused()
+    if (before - 1 > 0) {
+      await expect(confirm.locator('[data-prestige-unclaimed]')).toHaveAttribute(
+        'data-prestige-unclaimed',
+        String(before - 1),
+      )
+      await expect(confirm).toContainText('Claim them in Goals first')
+    }
+    await confirm.getByRole('button', { name: 'Not yet' }).click()
+    await expect(page.locator('[data-icon-moment]')).toHaveCount(0)
+    await expect(entry).toBeFocused()
+
+    // And the prestige itself: run 2 at Nobody with the badge, and no entry until Icon again.
+    await entry.click()
+    await confirm.getByRole('button', { name: 'Start over at Nobody, keep your badges' }).click()
+    await expect(page.locator('[data-icon-moment]')).toHaveCount(0)
+    expect((await state(page)).level).toBe('nobody')
+    await expect(goals.locator('[data-badge]')).toHaveText(['Prestige I'])
+    await expect(goals).toContainText('Run 2')
+    await expect(goals.locator('[data-goals-prestige]')).toHaveCount(0)
   })
 
   test('reduced motion: the celebration does not animate', async ({ page }) => {

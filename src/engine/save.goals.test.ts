@@ -28,6 +28,7 @@ function v7(save: SaveState = base): Record<string, unknown> {
   delete out.goals
   delete out.grants
   delete out.prestige
+  delete out.actions
   return out
 }
 
@@ -57,8 +58,8 @@ function claimedSave(): SaveState {
 const roundTrip = (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown
 
 describe('save v8', () => {
-  it('is version 8, and a fresh save has no visits, goals, grants or prestige', () => {
-    expect(SAVE_VERSION).toBe(8)
+  it('is version 11 (S18c after S08), and a fresh save has no visits, goals, grants or prestige', () => {
+    expect(SAVE_VERSION).toBe(11)
     const fresh = initialSave(config)
     expect(fresh.player.visited).toEqual({})
     expect(fresh.goals).toEqual(initialGoalsState)
@@ -110,7 +111,7 @@ describe('v7 -> v8', () => {
     expect(save.goals.icon).toEqual({ reachedAt: NOW, acknowledged: false })
   })
 
-  it('every version v1 to v8 loads into the v8 form', () => {
+  it('every version v1 to v8 loads into the current form', () => {
     const saves: [number, unknown][] = [
       [1, { player: { cash: 1 } }],
       [2, { clock: base.clock, player: { cash: 2, stats: base.player.stats }, speed: 1 }],
@@ -310,6 +311,7 @@ describe('kept looks in the save (S15, Q-8)', () => {
           wearables: [{ ...tee, prestigeKept: true }],
           gifts: [],
           outfit: { top: tee.itemId },
+          decor: [],
         },
       },
     }

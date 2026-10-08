@@ -97,7 +97,7 @@
       "clout": 25
     },
     "log": {
-      "maxEntries": 1000
+      "maxEntries": 200
     }
   },
   "prestige": {

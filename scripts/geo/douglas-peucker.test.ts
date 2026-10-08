@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { distanceToPolyline } from '../../src/lib/geo/polygon'
-import { douglasPeucker } from './douglas-peucker'
+import { douglasPeucker, douglasPeuckerRing } from './douglas-peucker'
 
 describe('douglasPeucker', () => {
   it('keeps both endpoints and drops collinear points', () => {
@@ -41,5 +41,49 @@ describe('douglasPeucker', () => {
   it('returns short inputs unchanged', () => {
     expect(douglasPeucker([], 1)).toEqual([])
     expect(douglasPeucker([{ x: 1, y: 2 }], 1)).toEqual([{ x: 1, y: 2 }])
+  })
+})
+
+describe('douglasPeuckerRing', () => {
+  const closed = (ring: readonly { x: number; y: number }[]) => [...ring, ring[0] ?? { x: 0, y: 0 }]
+
+  it('simplifies all the way round a ring, within the tolerance', () => {
+    // A 100 × 40 rectangle with a 0.6 m bump on every side, starting mid-edge.
+    const ring = [
+      { x: 50, y: 0 },
+      { x: 100, y: 0 },
+      { x: 100.6, y: 20 },
+      { x: 100, y: 40 },
+      { x: 50, y: 40.6 },
+      { x: 0, y: 40 },
+      { x: -0.6, y: 20 },
+      { x: 0, y: 0 },
+    ]
+    const simplified = douglasPeuckerRing(ring, 1)
+    expect(simplified).toHaveLength(5)
+    for (const point of ring) {
+      expect(distanceToPolyline(point, closed(simplified))).toBeLessThanOrEqual(1)
+    }
+    expect(douglasPeuckerRing(ring, 0.5)).toEqual(ring)
+  })
+
+  it('keeps a sliver narrower than the tolerance rather than collapsing it', () => {
+    const sliver = [
+      { x: 0, y: 0 },
+      { x: 30, y: 0 },
+      { x: 30, y: 2 },
+      { x: 0, y: 2 },
+    ]
+    expect(douglasPeuckerRing(sliver, 4)).toEqual(sliver)
+  })
+
+  it('leaves triangles and shorter rings alone', () => {
+    const triangle = [
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      { x: 0, y: 10 },
+    ]
+    expect(douglasPeuckerRing(triangle, 100)).toEqual(triangle)
+    expect(douglasPeuckerRing([], 1)).toEqual([])
   })
 })

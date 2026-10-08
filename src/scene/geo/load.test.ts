@@ -34,4 +34,36 @@ describe('loadGeoBase', () => {
     vi.stubGlobal('fetch', async () => new Response('{"format":', { status: 200 }))
     expect(await loadGeoBase(url())).toEqual({ ok: false, failure: { reason: 'geo-json' } })
   })
+
+  it('forgets a failed download, so the next call tries again (TRV-1)', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('boom', { status: 500 }))
+      .mockImplementation(async () => Response.json({ format: 'x' }))
+    vi.stubGlobal('fetch', fetchMock)
+    const target = url()
+    expect((await loadGeoBase(target)).ok).toBe(false)
+    expect(await loadGeoBase(target)).toEqual({ ok: true, body: { format: 'x' } })
+    // A body that arrived is kept.
+    await loadGeoBase(target)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps one request in flight: callers during a failing download share it', async () => {
+    let fail: (response: Response) => void = () => undefined
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          fail = resolve
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const target = url()
+    const first = loadGeoBase(target)
+    const second = loadGeoBase(target)
+    expect(second).toBe(first)
+    fail(new Response('boom', { status: 500 }))
+    expect((await second).ok).toBe(false)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
 })

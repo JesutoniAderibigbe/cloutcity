@@ -105,14 +105,14 @@
     "events.effect.cashGain": "Get {amount}",
     "events.effect.cashCost": "Costs {amount}",
     "events.effect.time": "{minutes} min",
-    "events.effect.statUp": "{stat} +{amount}",
-    "events.effect.statDown": "{stat} -{amount}",
-    "events.effect.cloutUp": "Clout +{amount}",
-    "events.effect.cloutDown": "Clout -{amount}",
+    "events.effect.statUp": "+{amount} {stat}",
+    "events.effect.statDown": "-{amount} {stat}",
+    "events.effect.cloutUp": "+{amount} clout",
+    "events.effect.cloutDown": "-{amount} clout",
     "events.effect.itemGrant": "New item",
     "events.effect.itemConsume": "Uses an item",
-    "events.stat.energy": "Energy",
-    "events.stat.hunger": "Fullness",
-    "events.stat.mood": "Mood"
+    "events.stat.energy": "energy",
+    "events.stat.hunger": "fullness",
+    "events.stat.mood": "mood"
   }
 }

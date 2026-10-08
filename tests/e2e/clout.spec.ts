@@ -4,6 +4,10 @@ import type { PlaceTestHook } from '@/components/places/placeTestHook'
 import { expect, test } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 // S13: flexing at a landmark earns clout, the HUD clout meter follows it, and crossing a level
 // shows the level-up toast in the toast zone. Places are opened and the player set up through
 // the place test hook (src/components/places/placeTestHook.ts); actions still run through the
@@ -86,7 +90,8 @@ test.describe('clout, flexing and levels', () => {
 
     await flex.click()
     await expect(card.getByRole('status')).toHaveText(
-      /^(Queens ballpark at golden hour\. The algorithm is about to eat\.|Gone viral\. The whole city's reposting\.) \+\d+ clout$/,
+      // Noon: the flex copy names the light it was posted in (S04f keyframe `day`).
+      /^(Queens ballpark in broad daylight\. The algorithm is about to eat\.|Gone viral\. The whole city's reposting\.) \+\d+ clout$/,
     )
     const after = await state(page)
     expect(after.clout).toBeGreaterThan(0)

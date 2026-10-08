@@ -68,9 +68,7 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     const { copy, isCopyKey } = await import('./index')
 
     expect(renderToStaticMarkup(createElement(SoundControl))).toContain('Tap for sound')
-    expect(renderToStaticMarkup(createElement(SoundSettingsSheet))).toContain(
-      'Close sound settings',
-    )
+    expect(renderToStaticMarkup(createElement(SoundSettingsSheet))).toContain('Close settings')
     const titled = audioManifest.tracks.filter((track) => track.titleKey !== undefined)
     expect(titled.length).toBeGreaterThan(0)
     for (const track of titled) {
@@ -118,9 +116,13 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     const { engineConfig } = await import('@/engine/config')
     const { initialSnapshot } = await import('@/engine/game')
     const { performPlaceAction, placeActions } = await import('@/engine/placeActions')
-    const { playerWithClout } = await import('@/engine/test-support')
+    const { atPlace, playerWithClout } = await import('@/engine/test-support')
 
     const ids = [...venues, ...landmarks].map((place) => place.id)
+    // The home card (S08) renders from the same chunk.
+    expect(renderToStaticMarkup(createElement(PlaceSheet, { placeId: 'home' }))).toContain(
+      'data-place-sheet="home"',
+    )
     for (const placeId of ids) {
       expect(renderToStaticMarkup(createElement(PlaceSheet, { placeId }))).toContain(
         `data-place-sheet="${placeId}"`,
@@ -145,7 +147,9 @@ describe('feature copy renders with only its own namespaces loaded', () => {
       if (place === undefined) throw new Error(`no place ${placeId}`)
       for (const minute of minutes) {
         for (const player of players) {
-          const snapshot = { clock: { minute, remainderMs: 0 }, player }
+          // Standing there (DEC-22), so every other rule is reached; away is checked below.
+          const snapshot = atPlace({ clock: { minute, remainderMs: 0 }, player }, placeId)
+          copyFns.placeBlockReason({ code: 'away' }, place)
           const view = placeActions(place, snapshot, engineConfig)
           if (view.kind === 'look-only') continue
           copyFns.placeHoursLine(view.hours)
@@ -179,14 +183,20 @@ describe('feature copy renders with only its own namespaces loaded', () => {
 
   it('the places panel chunk: every borough and place, open, locked and expanding soon', async () => {
     const { PlacesPanel } = await import('@/components/places/PlacesPanel')
-    const { mapPlaces, placeAccess, placeAccessibleName, boroughs, boroughClosedReason } =
-      await import('@/lib/world/places')
+    const {
+      mapPlaces,
+      placeAccess,
+      placeAccessibleName,
+      boroughs,
+      boroughAccessFor,
+      boroughClosedReason,
+    } = await import('@/lib/world/places')
     const markup = renderToStaticMarkup(createElement(PlacesPanel))
     expect(markup).toContain('data-cc-feature="cc-feature:places-panel"')
     for (const place of mapPlaces()) expect(markup).toContain(`data-place-button="${place.id}"`)
     for (const clout of [0, 1_000_000]) {
       for (const borough of boroughs)
-        boroughClosedReason(borough.id, placeAccess({ borough: borough.id }, clout))
+        boroughClosedReason(borough.id, boroughAccessFor(borough.id, clout))
       for (const place of mapPlaces()) {
         expect(placeAccessibleName(place, placeAccess(place, clout))).not.toBe('')
       }
@@ -256,7 +266,69 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     expect(await registered()).not.toContain('hud')
     const { MorePanel } = await import('@/components/hud/MorePanel')
     const more = renderToStaticMarkup(createElement(MorePanel))
-    for (const text of ['Inventory', 'Rent', 'Sound settings']) expect(more).toContain(text)
+    for (const text of ['Inventory', 'Rent', 'Home', 'Settings']) expect(more).toContain(text)
+  })
+
+  it('the home chunk: slots, colours, storage, moves, locks and every home error (S16)', async () => {
+    const { HomePanel } = await import('@/components/hud/HomePanel')
+    const { engineConfig } = await import('@/engine/config')
+    const { isDecor } = await import('@/engine/items')
+    const homeCopy = await import('@/lib/homeCopy')
+    const { HOME_IDS } = await import('@/lib/data/homes')
+    const { slotsFor } = await import('@/engine/home')
+
+    const fresh = renderToStaticMarkup(createElement(HomePanel))
+    for (const text of ['Queens room', 'Home score 0', 'Storage', 'Brooklyn 1BR. ']) {
+      expect(fresh).toContain(text)
+    }
+    // A server render reads the store's initial snapshot, so the rows for owned decor are
+    // driven through the helpers they render with.
+    const decor = engineConfig.items.catalog.filter(isDecor)
+    const { copy } = await import('./index')
+    for (const key of ['home.storage.pickUp', 'home.slot.remove', 'home.slot.placeHere'] as const) {
+      expect(copy(key)).not.toBe('')
+    }
+    for (const item of decor) {
+      expect(homeCopy.pickUpLabel(item.id)).not.toBe('')
+      expect(homeCopy.fitsLine(item.id)).not.toBe('')
+      expect(homeCopy.placeLabel(item.id, 'queens-room', 'wall-1')).not.toBe('')
+    }
+    for (const home of HOME_IDS) {
+      for (const slot of slotsFor(home, engineConfig)) {
+        expect(homeCopy.slotName(home, slot.id)).not.toBe('')
+      }
+    }
+    for (const item of decor) {
+      for (const variant of item.decor.variants) {
+        expect(homeCopy.variantChangedNotice(item.id, variant.id)).not.toBe('')
+      }
+      expect(homeCopy.pickedNotice(item.id)).not.toBe('')
+    }
+    for (const home of HOME_IDS) expect(homeCopy.movedNotice(home)).not.toBe('')
+    const errors = [
+      { code: 'UNKNOWN_ITEM', itemId: 'x' },
+      { code: 'NOT_DECOR', itemId: 'x' },
+      { code: 'NOT_OWNED', itemId: 'x' },
+      { code: 'UNKNOWN_SLOT', slotId: 'x' },
+      { code: 'WRONG_SLOT_KIND', itemId: 'x', slotId: 'x', fits: 'wall', kind: 'floor' },
+      { code: 'UNKNOWN_VARIANT', itemId: 'x', variantId: 'x' },
+      { code: 'UNKNOWN_HOME', home: 'x' },
+      { code: 'CURRENT_HOME', home: 'queens-room' },
+      { code: 'FUNDS_SHORT', home: 'brooklyn-1br', required: 600, available: 1 },
+      {
+        code: 'BOROUGH_LOCKED',
+        home: 'brooklyn-1br',
+        borough: 'brooklyn',
+        access: { status: 'locked', required: 'local', current: 'nobody' },
+      },
+      {
+        code: 'BOROUGH_LOCKED',
+        home: 'manhattan-loft',
+        borough: 'manhattan',
+        access: { status: 'expanding-soon' },
+      },
+    ] as const
+    for (const error of errors) expect(homeCopy.homeErrorText(error)).not.toBe('')
   })
 
   it('the goals chunk: every goal line, status, reward and claim label (S15)', async () => {
@@ -506,5 +578,104 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     for (const rarity of balanceJson.rarityTiers) {
       shop.rarityName(rarity as Parameters<typeof shop.rarityName>[0])
     }
+  })
+})
+
+describe('S18a/S18b chunks render with only their own namespaces', () => {
+  it('the Me panel: the not-connected state for every reason, and the public card', async () => {
+    const { MePanel } = await import('@/components/profile/MePanel')
+    const { PublicCard } = await import('@/components/profile/PublicCard')
+    const { guestSessionStore } = await import('@/state/guestSession')
+    const reasons = ['no-config', 'offline', 'rate-limited', 'disabled', 'error'] as const
+    for (const reason of reasons) {
+      guestSessionStore.setState({ status: 'local', reason, reused: false })
+      expect(renderToStaticMarkup(createElement(MePanel))).toContain('cc-feature:me-panel')
+    }
+    for (const status of ['idle', 'connecting', 'refused'] as const) {
+      guestSessionStore.setState({ status, reason: null, reused: false })
+      renderToStaticMarkup(createElement(MePanel))
+    }
+    for (const [level, career] of [
+      ['nobody', null],
+      ['scene-regular', 'artist-dj'],
+      ['icon', 'founder-hustler'],
+    ] as const) {
+      const profile = {
+        handle: 'Bold_Bodega42',
+        public_level: level,
+        career_path: career,
+        avatar: {},
+        handle_generated: true,
+        free_handle_change: true,
+        handle_changes_left: 2,
+        next_handle_change_at: null,
+      }
+      expect(renderToStaticMarkup(createElement(PublicCard, { profile }))).toContain(
+        '@Bold_Bodega42',
+      )
+    }
+  })
+
+  it('the safety chunk: player actions in both layouts, the report form, the toast and notices', async () => {
+    const { PlayerActions } = await import('@/components/safety/PlayerActions')
+    const { ReportForm } = await import('@/components/safety/ReportForm')
+    const { CrisisPanel } = await import('@/components/safety/CrisisPanel')
+    const { BlockConfirm } = await import('@/components/safety/BlockConfirm')
+    const { unavailableSafetyApi } = await import('@/lib/supabase/safetyApi')
+    const api = unavailableSafetyApi()
+    const player = { id: 'p', handle: 'Rival' }
+    for (const layout of ['inline', 'menu'] as const) {
+      expect(renderToStaticMarkup(createElement(PlayerActions, { player, layout, api }))).toContain(
+        `data-player-actions="${layout}"`,
+      )
+    }
+    for (const kind of ['player', 'handle'] as const) {
+      renderToStaticMarkup(
+        createElement(ReportForm, {
+          handle: 'Rival',
+          target: 'p',
+          kind,
+          api,
+          onSubmitted() {},
+          onCancel() {},
+        }),
+      )
+    }
+    expect(renderToStaticMarkup(createElement(CrisisPanel))).toContain('988')
+    renderToStaticMarkup(
+      createElement(BlockConfirm, { handle: 'Rival', busy: false, onConfirm() {}, onCancel() {} }),
+    )
+  })
+
+  it('the notice modal and the toast', async () => {
+    const { AccountNotices } = await import('@/components/safety/AccountNotices')
+    const { SafetyToast } = await import('@/components/safety/SafetyToast')
+    const { setAccountNotices } = await import('@/state/accountNotices')
+    const { showSafetyToast } = await import('@/state/safetyToast')
+    const { unavailableSafetyApi } = await import('@/lib/supabase/safetyApi')
+    const { NOTICE_KINDS } = await import('@/lib/safety/reports')
+    for (const kind of NOTICE_KINDS) {
+      setAccountNotices(
+        [
+          {
+            id: kind,
+            kind,
+            reason: 'spam',
+            endsAt: '2026-10-14T00:00:00Z',
+            createdAt: '2026-10-07T00:00:00Z',
+            sanctionId: 's',
+          },
+        ],
+        unavailableSafetyApi(),
+      )
+      renderToStaticMarkup(createElement(AccountNotices))
+    }
+    showSafetyToast('Blocked', { label: 'Undo', untilMs: Date.now() + 1000, run() {} })
+    renderToStaticMarkup(createElement(SafetyToast))
+  })
+
+  it('the /mod console', async () => {
+    const { ModConsole } = await import('@/components/mod/ModConsole')
+    expect(renderToStaticMarkup(createElement(ModConsole))).toContain('Moderation')
   })
 })

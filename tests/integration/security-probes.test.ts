@@ -184,7 +184,8 @@ describe('RLS through PostgREST features', () => {
         table === 'profiles' ? 'id' : table === 'friendships' ? 'requester_id' : 'user_id'
       const { data, error } = await client
         .from(table)
-        .select('*')
+        // saves hides its flag columns from clients (S18c): name the readable ones.
+        .select(table === 'saves' ? 'user_id, data' : '*')
         .or(`${column}.eq.${a.id},${column}.eq.${b.id},${column}.neq.${stranger.id}`)
       expect(error, table).toBeNull()
       expect(data, table).toEqual([])
@@ -284,8 +285,8 @@ describe('grants and account deletion', () => {
   async function seed(userId: string) {
     const [grant] = await sql<{ id: string }[]>`
       insert into public.grants (user_id, kind, idempotency_key, cash_amount, cap_amount,
-        eligibility, reason, issued_by)
-      values (${userId}, 'boost_reward', ${`probe:${crypto.randomUUID()}`}, 10, 10, '{}',
+        clout_cap, eligibility, reason, issued_by)
+      values (${userId}, 'boost_reward', ${`probe:${crypto.randomUUID()}`}, 10, 10, 0, '{}',
         'probe', 'system')
       returning id
     `

@@ -39,6 +39,27 @@ export function formatCount(count: number): string {
   return COUNT.format(Math.round(count) || 0)
 }
 
+const COUNT_EXACT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+const COUNT_COMPACT_DOWN = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  roundingMode: 'floor',
+})
+/** Below this a progress count is shown exactly; above it, compact and rounded down. */
+const EXACT_PROGRESS_BELOW = 10_000
+
+/**
+ * A count on the way to a target (the clout meter): never rounded up, so 4,996 of 5,000 can
+ * never read as "5K of 5K". Exact with grouping below 10,000 (`4996` → `"4,996"`), compact and
+ * rounded down above (`15_274` → `"15K"`, `19_990` → `"19K"`). Whole: the value is floored first.
+ */
+export function formatProgressCount(count: number): string {
+  assertFinite(count, 'Count')
+  const whole = Math.floor(count) || 0
+  return Math.abs(whole) < EXACT_PROGRESS_BELOW
+    ? COUNT_EXACT.format(whole)
+    : COUNT_COMPACT_DOWN.format(whole)
+}
+
 /** A whole-percent value (a volume slider, 0-100): `80` → `"80%"`. */
 export function formatPercent(percent: number): string {
   assertFinite(percent, 'Percent')
@@ -138,4 +159,21 @@ export function wallClockParts(epochMs: number, timeZone: string): WallClockPart
     weekday: new Date(Date.UTC(year, month - 1, day)).getUTCDay(),
     utcOffsetMinutes: Math.round((wallAsUtc - wholeSecondMs) / 60_000),
   }
+}
+
+let calendarDate: Intl.DateTimeFormat | undefined
+
+/**
+ * A calendar date for player-facing text (S18a: when the next handle change opens, when a
+ * suspension ends): `"October 9, 2026"`, in `timeZone` (default: the player's own). Takes an
+ * instant (epoch milliseconds or an ISO timestamp); an invalid one throws.
+ */
+export function formatDate(instant: number | string, timeZone?: string): string {
+  const epochMs = typeof instant === 'number' ? instant : Date.parse(instant)
+  assertFinite(epochMs, 'Date')
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
+  if (timeZone !== undefined)
+    return new Intl.DateTimeFormat('en-US', { ...options, timeZone }).format(epochMs)
+  calendarDate ??= new Intl.DateTimeFormat('en-US', options)
+  return calendarDate.format(epochMs)
 }

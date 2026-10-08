@@ -128,7 +128,7 @@ test.describe('events', () => {
     await page.keyboard.press('Enter')
 
     await expect(dialog).toContainText('Treat secured.')
-    await expect(dialog).toContainText('Costs $2, 5 min, Mood +10')
+    await expect(dialog).toContainText('Costs $2, 5 min, +10 mood')
     const proceed = dialog.getByRole('button', { name: 'Continue' })
     await expect(proceed).toBeFocused()
     expect(await gameState(page)).toMatchObject({
@@ -158,13 +158,13 @@ test.describe('events', () => {
       ).ok,
     ).toBe(true)
     const post = page.getByRole('dialog', { name: 'Viral moment' }).getByRole('button', {
-      name: /Post it.*Clout \+6/,
+      name: /Post it.*\+6 clout/,
     })
     if (test.info().project.use.hasTouch) await post.tap()
     else await post.click()
     await expect(page.getByRole('dialog')).toContainText('Notifications won')
     // S13: event clout is applied now (no outfit, so unscaled), not kept pending.
-    await expect(page.getByRole('dialog')).toContainText('Clout +6')
+    await expect(page.getByRole('dialog')).toContainText('+6 clout')
     const state = await gameState(page)
     expect(state.clout).toBe(6)
     expect(state.pendingEffects).toBe(0)
@@ -201,6 +201,9 @@ const STORE_KEY = 'cloutcity:game'
 // goals, grants and prestige), not imported for the same reason. A seeded save without the v8
 // fields loads with them fresh.
 const SAVE_VERSION = 8
+// The version every load re-saves as (src/engine/save.ts SAVE_VERSION: v9 apartment, v10 location and
+// transit, v11 cloud sync), not imported for the same reason.
+const CURRENT_SAVE_VERSION = 11
 
 /** True when a click at the centre of the sheet zone lands outside every overlay zone. */
 function sheetPassesThrough(page: Page) {
@@ -395,7 +398,7 @@ test.describe('events: edge cases', () => {
       .poll(() =>
         page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '{}').version, STORE_KEY),
       )
-      .toBe(SAVE_VERSION)
+      .toBe(CURRENT_SAVE_VERSION)
   })
 
   test('a save from a newer build is not overwritten by opening or resolving an event', async ({

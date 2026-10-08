@@ -7,13 +7,16 @@
  *   reward, so a player who already claimed it gets a replay, never a second badge), then the
  *   parts in `prestige.resets` start over. Clout always resets except premium (real-money)
  *   clout, which is kept, folded into the ledger's compacted totals; the ledger's `seq` carries
- *   on so entries stay unique across runs. The flex and event generators keep their state, so a
- *   new run cannot replay the same rolls. Goals always reset, to the next run (`run + 1`), so
+ *   on so entries stay unique across runs. The flex, event and transit-delay generators keep
+ *   their state, so a new run cannot replay the same rolls. The new run starts at home. Goals always reset, to the next run (`run + 1`), so
  *   every goal can be reached and (with `rewardsRepeat`) rewarded again.
  * - The parts in `prestige.keeps` carry over: the personal clock and speed, the grant log (the
  *   audit trail), prestige itself (count, badges, history) and premium clout. The shipped config
- *   also keeps the inventory (user ruling Q-8): owned wearables and the outfit carry over as
- *   looks only (`keptInventory`: no clout, style or resale value), and gifts start over.
+ *   also keeps the inventory (user ruling Q-8): owned wearables, the outfit and decor carry over
+ *   as looks only (`keptInventory`: no clout, style, home score or resale value), and gifts start
+ *   over. The apartment follows the run's home: kept decor stays in the slots the new run's
+ *   home also has (src/engine/home.ts `placementsAfterMove`); the move log (the audit trail for
+ *   save plausibility) is kept.
  *
  * It is atomic: either everything above happens or nothing does.
  */
@@ -24,6 +27,7 @@ import { initialEventsState, type EventsState } from './events'
 import { initialSnapshot, type PlayerState } from './game'
 import { initialGoalsState, victoryGoal, type GoalsState } from './goals'
 import { grant, type GrantRecord, type GrantSnapshot } from './grants'
+import { placementsAfterMove } from './home'
 import { emptyInventory, type Inventory } from './items'
 import { initialRent } from './rent'
 
@@ -98,13 +102,15 @@ function nextRunClout(clout: CloutState, config: EngineConfig): CloutState {
 /**
  * What a kept inventory carries into the new run (user ruling Q-8): every owned wearable as a
  * look only (`prestigeKept`: no clout, style or resale; marked worn, so first-wear stat effects
- * never land again) and the outfit as worn. Gifts are consumables and start over.
+ * never land again) and the outfit as worn; every owned decor item as a look only too (no home
+ * score or resale), in its chosen colour. Gifts are consumables and start over.
  */
 function keptInventory(inventory: Inventory): Inventory {
   return {
     wearables: inventory.wearables.map((owned) => ({ ...owned, worn: true, prestigeKept: true })),
     gifts: [],
     outfit: inventory.outfit,
+    decor: inventory.decor.map((owned) => ({ ...owned, prestigeKept: true })),
   }
 }
 
@@ -112,18 +118,27 @@ function nextRunPlayer(player: PlayerState, config: EngineConfig): PlayerState {
   const fresh = initialSnapshot(config).player
   const pick = <K extends keyof PlayerState>(key: K, part: PrestigePart): PlayerState[K] =>
     resets(part, config) ? fresh[key] : player[key]
+  const home = pick('home', 'home')
+  const keepsInventory = !resets('inventory', config)
   const next: PlayerState = {
     cash: pick('cash', 'cash'),
     stats: pick('stats', 'stats'),
     clout: nextRunClout(player.clout, config),
     flex: resets('flex', config) ? { ...fresh.flex, rngState: player.flex.rngState } : player.flex,
-    home: pick('home', 'home'),
+    home,
     rent: resets('rent', config) ? initialRent : player.rent,
-    inventory: resets('inventory', config) ? emptyInventory : keptInventory(player.inventory),
+    inventory: keepsInventory ? keptInventory(player.inventory) : emptyInventory,
     clubNights: pick('clubNights', 'clubNights'),
     visited: pick('visited', 'visited'),
+    apartment: {
+      placed: keepsInventory ? placementsAfterMove(player.apartment.placed, home, config) : {},
+      moveLog: player.apartment.moveLog,
+    },
+    // A new run starts at home; the delay roll's generator carries on (no re-rolls).
+    location: fresh.location,
+    transit: player.transit,
   }
-  // The new run's level is where its kept clout lands (premium, and items if kept): no
+  // The new run's level is where its kept clout lands (premium, and the home's base score): no
   // level-up is reported for clout carried over.
   return { ...next, clout: { ...next.clout, peakLevel: playerLevel(next, config).index } }
 }

@@ -6,6 +6,7 @@ import { initialEventsState } from './events'
 import { initialFlexState } from './game'
 import { initialGoalsState } from './goals'
 import { initialGrantsState } from './grants'
+import { initialApartment } from './home'
 import { emptyInventory, type Inventory } from './items'
 import { initialPrestigeState } from './prestige'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
@@ -24,11 +25,12 @@ const valid: Inventory = {
   ],
   gifts: [{ itemId: 'bodega-flowers', count: 3 }],
   outfit: { top: 'bodega-graphic-tee' },
+  decor: [],
 }
 
 describe('save v4 schema', () => {
-  it('is version 8 (v4 inventory, v5 events, v6 club nights, v7 clout ledger, v8 goals) and a fresh save has an empty inventory', () => {
-    expect(SAVE_VERSION).toBe(8)
+  it('is version 11 (v4 inventory, v5 events, v6 club nights, v7 clout ledger, v8 goals, v9 apartment, v10 location, v11 actions) and a fresh save has an empty inventory', () => {
+    expect(SAVE_VERSION).toBe(11)
     expect(initialSave(config).player.inventory).toEqual(emptyInventory)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
@@ -105,11 +107,15 @@ describe('save v3 -> v4', () => {
           inventory: emptyInventory,
           clubNights: {},
           visited: {},
+          apartment: initialApartment,
+          location: { kind: 'home' },
+          transit: { rngState: 0 },
         },
         events: initialEventsState(),
         goals: initialGoalsState,
         grants: initialGrantsState,
         prestige: initialPrestigeState,
+        actions: 0,
       },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)
@@ -195,6 +201,7 @@ describe('loading repairs the inventory and keeps the rest', () => {
       wearables: [{ itemId: 'cargo-pants', acquiredMinute: 1, worn: false }],
       gifts: [{ itemId: 'bodega-flowers', count: 2 }],
       outfit: {},
+      decor: [],
     })
   })
 

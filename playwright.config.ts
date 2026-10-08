@@ -30,10 +30,12 @@ export const SUPABASE_BLANK_ENV = {
 }
 
 export const SUPABASE_SPECS = '**/*.supabase.spec.ts'
+/** Specs that only make sense in the NEXT_DEPLOYMENT_ID build (playwright.dpl.config.ts). */
+export const DPL_SPECS = '**/*.dpl.spec.ts'
 
 export default defineConfig({
   testDir: 'tests/e2e',
-  testIgnore: SUPABASE_SPECS,
+  testIgnore: [SUPABASE_SPECS, DPL_SPECS],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -47,6 +49,10 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: 'retain-on-failure',
     launchOptions: { args: WEBGL_LAUNCH_ARGS },
+    // The production build registers a service worker (S04e) that precaches the app: left on,
+    // every spec would fetch the whole precache and could be served from it. Specs that test
+    // offline support opt in with `test.use({ serviceWorkers: 'allow' })`.
+    serviceWorkers: 'block',
   },
   projects: [
     {

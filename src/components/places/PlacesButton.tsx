@@ -29,8 +29,8 @@ export function PlacesButton() {
       data-places-button=""
       aria-expanded={shown}
       onClick={() => (shown ? closePlacesPanel() : openPlacesPanel())}
-      className={`flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400 hud-wide:px-3 hud-short:px-0 ${
-        shown ? 'bg-pink-400 text-night-950' : 'bg-night-800 text-ink-50'
+      className={`flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus hud-wide:px-3 hud-short:px-0 ${
+        shown ? 'bg-taxi text-on-taxi' : 'bg-raised text-fg'
       }`}
     >
       <svg

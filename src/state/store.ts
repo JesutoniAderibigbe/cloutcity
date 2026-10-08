@@ -28,9 +28,10 @@ import {
   type EventOutcome,
   type OpenResult,
 } from '@/engine/events'
-import { advanceMinutes, tick } from '@/engine/game'
+import { advanceMinutes, tick, type GameSnapshot } from '@/engine/game'
 import { findGoal, syncGoals, victoryGoal, type GoalsState } from '@/engine/goals'
-import { grant, type GrantResult } from '@/engine/grants'
+import { grant, markGrantsSynced, type GrantResult } from '@/engine/grants'
+import { moveHome, placeDecor, removeDecor, setDecorVariant, type HomeResult } from '@/engine/home'
 import {
   buyItem,
   equipItem,
@@ -43,6 +44,7 @@ import {
 import { workShift, type ShiftResult } from '@/engine/jobs'
 import {
   buyAtShop,
+  performHomeAction,
   performPlaceAction,
   type PlaceActionResult,
   type ShopBuyResult,
@@ -50,9 +52,11 @@ import {
 import type { Place } from '@/engine/places'
 import { prestige as startNextRun, type PrestigeResult } from '@/engine/prestige'
 import type { RentEvent } from '@/engine/rent'
+import { applyRepairs, type Repair } from '@/engine/repairs'
 import {
   NewerSaveError,
   SAVE_VERSION,
+  countAction,
   createSaveSchema,
   initialSave,
   loadSave,
@@ -67,6 +71,19 @@ export const STORE_VERSION = SAVE_VERSION
 
 export const PersistedStateSchema = createSaveSchema(engineConfig)
 export type PersistedState = SaveState
+
+/**
+ * What a trip computed (S08): the snapshot after it, and the rent charged on the way. The travel
+ * chunk computes it with the transit engine (src/engine/transit/trip.ts `takeTrip`); the store
+ * only applies it, so the transit engine and its data never load with the store (DEC-11).
+ */
+export type TripCommit =
+  | {
+      readonly ok: true
+      readonly snapshot: GameSnapshot
+      readonly rent: readonly RentEvent[]
+    }
+  | { readonly ok: false }
 
 export interface GameActions {
   /** Passive time: real ms since the last tick, while the tab is (or is not) visible. */
@@ -91,10 +108,36 @@ export interface GameActions {
   /** Uses one gift on yourself or an NPC; it is consumed. Never another player. */
   consumeGift(itemId: string, target: GiftTarget): ReturnType<typeof consumeGift>
   /**
+   * Places owned decor in a slot of the current home (whatever sat there goes to storage). A
+   * level reached through the home score shows the level-up toast.
+   */
+  placeDecor(itemId: string, slotId: string): ReturnType<typeof placeDecor>
+  /** Takes the decor in a slot of the current home back to storage. */
+  removeDecor(slotId: string): ReturnType<typeof removeDecor>
+  /** Shows owned decor in another of its colour variants. */
+  setDecorVariant(itemId: string, variantId: string): HomeResult
+  /**
+   * Moves home at once, paying the move-in cost. The engine refuses the current home, a home in a
+   * locked borough and a move the player cannot afford, in that order.
+   */
+  moveHome(home: string): ReturnType<typeof moveHome>
+  /**
    * Does one action from a place's action sheet. The engine re-checks the borough, opening
    * hours, club door, job lock, funds and energy; the state changes only when the result is ok.
    */
   performPlaceAction(place: Place, actionId: string): PlaceActionResult
+  /**
+   * Does one home action (sleep, nap, a home-cooked meal): the engine re-checks that the player
+   * is at home, then funds and energy; the clock fast-forwards like any action.
+   */
+  performHomeAction(actionId: string): PlaceActionResult
+  /**
+   * Takes a trip in one step (DEC-22): `compute` gets the current snapshot and returns the
+   * engine's result; an ok result replaces the clock and player at once (fare paid, clock
+   * fast-forwarded, rent charged, location moved) before any animation starts. Returns what
+   * `compute` returned.
+   */
+  commitTrip<R extends TripCommit>(compute: (snapshot: GameSnapshot) => R): R
   /**
    * Fast-forwards the personal clock by whole game minutes (decay and rent apply). Used by the
    * e2e hook; no player-facing control waits without an action yet.
@@ -133,6 +176,17 @@ export interface GameActions {
    * and lets saving resume. Nothing else ever overwrites that save.
    */
   discardNewerSaveAndStartFresh(): void
+  /**
+   * Cloud sync (S18c): replaces the game with the account's save (restored on load, or the
+   * player chose the cloud copy in a conflict). `save` (written as save format `version`) is
+   * untrusted and validated like a local save, an older format upgraded; an unusable one, or one
+   * from a newer build, changes nothing and returns false.
+   */
+  adoptCloudSave(save: unknown, version: number): boolean
+  /** Cloud sync (S18c): applies the repairs the server made to an accepted upload. */
+  applyRepairs(repairs: readonly Repair[]): void
+  /** Cloud sync (S18c): marks the grant records the server holds as synced. */
+  markGrantsSynced(keys: readonly string[]): void
 }
 
 /** Session-only status, never persisted. */
@@ -205,8 +259,9 @@ export function mergeGameState(
 
 /**
  * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout
- * ledger, flex state, home, rent, inventory, club nights, visits), speed, event state, goals,
- * the grant log and prestige. The sub-minute remainder alone is not, so a visible tab does not
+ * ledger, flex state, home, rent, inventory with decor, club nights, visits, the apartment's
+ * placements and move log, location and transit state), speed, event state, goals,
+ * the grant log, prestige and the action count. The sub-minute remainder alone is not, so a visible tab does not
  * write on every tick (a reload loses at most one game minute's worth of carried real time).
  */
 function saveSignature(value: StorageValue<unknown> | null): string | undefined {
@@ -219,6 +274,7 @@ function saveSignature(value: StorageValue<unknown> | null): string | undefined 
     goals?: unknown
     grants?: unknown
     prestige?: unknown
+    actions?: unknown
   }
   return JSON.stringify([
     value.version,
@@ -229,6 +285,7 @@ function saveSignature(value: StorageValue<unknown> | null): string | undefined 
     state.goals,
     state.grants,
     state.prestige,
+    state.actions,
   ])
 }
 
@@ -292,9 +349,9 @@ function levelUpPatch(levelUp: LevelUp | null, goals: GoalsState): Partial<GameS
 }
 
 /** The persisted part of the state: what a save holds. */
-function persistedOf(state: PersistedState): PersistedState {
-  const { clock, player, speed, events, goals, grants, prestige: prestigeState } = state
-  return { clock, player, speed, events, goals, grants, prestige: prestigeState }
+export function persistedOf(state: PersistedState): PersistedState {
+  const { clock, player, speed, events, goals, grants, prestige: prestigeState, actions } = state
+  return { clock, player, speed, events, goals, grants, prestige: prestigeState, actions }
 }
 
 export function createGameStore(storage: PersistStorage<PersistedState>, logger: Logger = log) {
@@ -302,10 +359,6 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
   const store = createStore<GameState>()(
     persist(
       (set, get) => {
-        /**
-         * Applies a state-changing action's result, then records any goal it reached
-         * (src/engine/goals.ts `syncGoals`). Never on the passive tick: time alone reaches no goal.
-         */
         /**
          * The passive clock's sub-minute carry (S05). A visible tab ticks every second, but the
          * clock shows whole game minutes, so the carry lives here and the state changes (and
@@ -322,9 +375,20 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         const keepCarry = () => {
           if (carry !== null) carry = { clock: get().clock, ms: carry.ms }
         }
+        /**
+         * Applies a state-changing action's result, counts the tap (`SaveState.actions`, which
+         * the server's save plausibility reads), then records any goal it reached
+         * (src/engine/goals.ts `syncGoals`). Never on the passive tick: time alone reaches no
+         * goal and is no tap.
+         */
         const commit = (patch: Partial<GameState>, levelUp: LevelUp | null = null) => {
-          const { save } = syncGoals({ ...get(), ...patch }, engineConfig)
-          set({ ...patch, goals: save.goals, ...levelUpPatch(levelUp, save.goals) })
+          const { save } = syncGoals(countAction({ ...get(), ...patch }), engineConfig)
+          set({
+            ...patch,
+            actions: save.actions,
+            goals: save.goals,
+            ...levelUpPatch(levelUp, save.goals),
+          })
           keepCarry()
         }
         return {
@@ -408,6 +472,26 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
             if (result.ok) set({ player: result.snapshot.player })
             return result
           },
+          placeDecor: (itemId, slotId) => {
+            const result = placeDecor(get(), itemId, slotId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          removeDecor: (slotId) => {
+            const result = removeDecor(get(), slotId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          setDecorVariant: (itemId, variantId) => {
+            const result = setDecorVariant(get(), itemId, variantId, engineConfig)
+            if (result.ok) set({ player: result.snapshot.player })
+            return result
+          },
+          moveHome: (home) => {
+            const result = moveHome(get(), home, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
           performPlaceAction: (place, actionId) => {
             const state = get()
             const result = performPlaceAction(state, place, actionId, engineConfig)
@@ -420,6 +504,30 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
                 },
                 result.levelUp,
               )
+            }
+            return result
+          },
+          performHomeAction: (actionId) => {
+            const state = get()
+            const result = performHomeAction(state, actionId, engineConfig)
+            if (result.ok) {
+              commit({
+                clock: result.snapshot.clock,
+                player: result.snapshot.player,
+                lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+              })
+            }
+            return result
+          },
+          commitTrip: (compute) => {
+            const state = get()
+            const result = compute({ clock: state.clock, player: state.player })
+            if (result.ok) {
+              commit({
+                clock: result.snapshot.clock,
+                player: result.snapshot.player,
+                lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+              })
             }
             return result
           },
@@ -482,7 +590,9 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
             )
             if (result.ok && !result.replayed) {
               const { player, grants, prestige: prestigeState } = result.save
-              set({ player, grants, prestige: prestigeState })
+              // Through `commit` (N-1): the claim is a tap, a level-up it causes shows its
+              // toast, and goals are synced like after any other action.
+              commit({ player, grants, prestige: prestigeState }, result.levelUp)
             }
             return result
           },
@@ -492,6 +602,8 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
               carry = null
               set({
                 ...result.save,
+                // A new run counts its taps from 0 (SaveState.actions).
+                actions: 0,
                 eventOutcome: null,
                 lastLevelUp: null,
                 lastRentEvent: null,
@@ -515,6 +627,41 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
               lastRentEvent: null,
               lastLevelUp: null,
             })
+          },
+          adoptCloudSave: (save, version) => {
+            if (version > STORE_VERSION) return false
+            let adopted: PersistedState
+            if (version === STORE_VERSION) {
+              const result = loadSave(save, engineConfig)
+              if (!result.ok) {
+                logger.info('Ignoring a cloud save that failed validation', {
+                  issues: result.issues,
+                })
+                return false
+              }
+              adopted = result.save
+            } else {
+              const migrated = migrateSave(save, version, engineConfig)
+              if (migrated.outcome !== 'carried') return false
+              adopted = migrated.save
+            }
+            carry = null
+            set({
+              ...adopted,
+              eventOutcome: null,
+              lastRentEvent: null,
+              lastLevelUp: null,
+            })
+            return true
+          },
+          applyRepairs: (repairs) => {
+            if (repairs.length === 0) return
+            set(applyRepairs(persistedOf(get()), repairs))
+            keepCarry()
+          },
+          markGrantsSynced: (keys) => {
+            const grants = markGrantsSynced(get().grants, keys)
+            if (grants !== get().grants) set({ grants })
           },
         }
       },

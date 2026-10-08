@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { engineConfig } from '@/engine/config'
-import { giftCount, isWearable, shopItems, type GiftDef, type WearableDef } from '@/engine/items'
+import { giftCount, isDecor, isWearable, shopItems, type ShopItemDef } from '@/engine/items'
 import { shopBlock } from '@/engine/placeActions'
 import type { Place } from '@/engine/places'
 import { ignoreKeyRepeat } from '@/components/overlay/useActionGuard'
@@ -22,7 +22,7 @@ import { placeBlockReason } from '@/lib/world/placeActionCopy'
 import { gameStore, useGameStore, type GameState } from '@/state/store'
 
 const BUTTON =
-  'min-h-11 min-w-11 shrink-0 rounded-xl bg-night-800 px-3 py-2 text-center text-sm font-semibold text-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400 enabled:hover:bg-night-700 disabled:opacity-70'
+  'min-h-11 min-w-11 shrink-0 rounded-xl bg-raised px-3 py-2 text-center text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus enabled:hover:bg-pressed disabled:opacity-70'
 
 /**
  * Why the player cannot buy `item` here right now, as player-facing text, or null when they
@@ -30,17 +30,16 @@ const BUTTON =
  * which re-runs them on every buy.
  */
 function buyBlockReason(
-  item: WearableDef | GiftDef,
+  item: ShopItemDef,
   place: Place,
   state: Pick<GameState, 'clock' | 'player'>,
 ): string | null {
   const block = shopBlock(place, state, engineConfig)
   if (block !== null) return placeBlockReason(block, place)
   const { inventory, cash } = state.player
-  if (isWearable(item)) {
-    if (inventory.wearables.some((owned) => owned.itemId === item.id)) {
-      return alreadyOwnedLabel(item.id)
-    }
+  if (isWearable(item) || isDecor(item)) {
+    const owned = isWearable(item) ? inventory.wearables : inventory.decor
+    if (owned.some((entry) => entry.itemId === item.id)) return alreadyOwnedLabel(item.id)
   } else {
     const max = engineConfig.items.maxGiftStack
     if (giftCount(inventory, item.id) >= max) return stackFullLabel(item.id, max)
@@ -116,7 +115,7 @@ export function ShopSection({
       <h3
         id={headingId}
         tabIndex={-1}
-        className="text-xs font-bold text-ink-300 uppercase focus:outline-none"
+        className="text-xs font-bold text-muted uppercase focus:outline-none"
       >
         {copy('shop.heading')}
       </h3>
@@ -127,12 +126,12 @@ export function ShopSection({
             <li
               key={item.id}
               data-shop-item={item.id}
-              className="flex items-center justify-between gap-2 rounded-xl bg-night-950/60 p-2"
+              className="flex items-center justify-between gap-2 rounded-xl bg-canvas/60 p-2"
             >
               <div className="min-w-0">
-                <p className="font-semibold text-ink-50">{itemName(item.id)}</p>
-                <p className="text-xs text-ink-300">{shopItemDetails(item.id)}</p>
-                {reason === null ? null : <p className="text-xs text-taxi-400">{reason}</p>}
+                <p className="font-semibold text-fg">{itemName(item.id)}</p>
+                <p className="text-xs text-muted">{shopItemDetails(item.id)}</p>
+                {reason === null ? null : <p className="text-xs text-taxi-ink">{reason}</p>}
               </div>
               <button
                 type="button"
@@ -156,7 +155,7 @@ export function ShopSection({
       <p
         aria-live="polite"
         data-shop-status=""
-        className="min-h-5 text-sm font-semibold text-taxi-400"
+        className="min-h-5 text-sm font-semibold text-taxi-ink"
       >
         {result?.text}
       </p>

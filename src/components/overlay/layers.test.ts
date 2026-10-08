@@ -5,6 +5,8 @@ import {
   OVERLAY_LAYER_ORDER,
   OVERLAY_ZONES,
   ZONE_GRID_ROW,
+  BANNER_HEIGHT_VAR,
+  BANNER_MIN_VAR,
   HUD_COMPACT_HEIGHT_VAR,
   HUD_HEIGHT_VAR,
   layerZIndex,
@@ -56,6 +58,22 @@ describe('overlay layers', () => {
     expect(fixed).toBeLessThanOrEqual(390)
     const tracks = overlayGridTracks(overlayLayout)
     expect(tracks[3]).toBe(`minmax(${overlayLayout.freeSceneMinHeightPx}px, 1fr)`)
+  })
+
+  it('floors the banner row at its height only while it shows a notice with buttons (UI-8)', () => {
+    const tracks = overlayGridTracks(overlayLayout)
+    expect(tracks[1]).toBe(`minmax(var(${BANNER_MIN_VAR}, 0px), ${overlayLayout.bannerHeightPx}px)`)
+    expect(overlayLayout.bannerHeightPx).toBeGreaterThanOrEqual(44 + 2 * 2)
+    expect(overlayCssVars(overlayLayout)).toMatchObject({
+      [BANNER_HEIGHT_VAR]: `${overlayLayout.bannerHeightPx}px`,
+    })
+    // 568x320 with the two-row HUD: the banner, HUD, free scene minimum and tab bar still fit.
+    const fixed =
+      overlayLayout.bannerHeightPx +
+      overlayLayout.hudHeightPx +
+      overlayLayout.freeSceneMinHeightPx +
+      overlayLayout.tabBarHeightPx
+    expect(fixed).toBeLessThanOrEqual(320)
   })
 
   it('keeps a free scene row tall enough for the map attribution and its 44 px link', () => {

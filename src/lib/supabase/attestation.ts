@@ -82,6 +82,9 @@ export const RPC_ERRORS = [
   'idempotency_conflict',
   'already_resolved',
   'case_not_found',
+  // S18c cloud save sync (supabase/migrations/*_s18c_save_sync.sql).
+  'revision_conflict',
+  'version_regressed',
 ] as const
 export type RpcErrorCode = (typeof RPC_ERRORS)[number]
 

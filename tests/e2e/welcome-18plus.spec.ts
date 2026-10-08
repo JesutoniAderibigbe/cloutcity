@@ -32,7 +32,10 @@ test('an adult passes the card, which never shows again', async ({ page, baseURL
   const hud = page.getByRole('heading', { level: 1, name: 'Clout City: NYC' })
   await expect(hud).toBeVisible()
   expect(await hud.evaluate((el) => el.closest('[inert]') === null)).toBe(true)
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Shop' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main' })
+    .getByRole('button', { name: 'Map', exact: true })
+    .click()
 
   const stored = (await storedOnboarding(page)) as { state: { record: Record<string, unknown> } }
   const record = stored.state.record

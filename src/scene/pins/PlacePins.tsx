@@ -13,13 +13,14 @@
  * Every camera step goes through the controls, so the rig's extent clamp and on-demand
  * rendering apply as they do to a gesture.
  */
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import { currentPlaceId, onOpenPlaceChange, onPlacePicked, openPlace } from '@/state/placeSheet'
 import { openPlacesChooser } from '@/state/placesPanel'
 import { easeInOut, focusPose, mixPose, type CameraPose } from '../camera/focus'
+import { beginContinuous, endContinuous } from '../quality/continuity'
 import type { PinObjects } from './buildPins'
 import { pickPin } from './pick'
 import { attachTapDetector } from './tap'
@@ -48,6 +49,11 @@ export function PlacePins({ pins, config, groundY }: PlacePinsProps) {
   const get = useThree((state) => state.get)
   const tween = useRef<Tween | null>(null)
   const applyRef = useRef<((pose: CameraPose) => void) | null>(null)
+  // A flight keeps the scene animating: the runtime step-down measures FPS only then.
+  const stopTween = useCallback(() => {
+    tween.current = null
+    endContinuous('flight')
+  }, [])
 
   useEffect(() => {
     const canvas = gl.domElement
@@ -98,19 +104,18 @@ export function PlacePins({ pins, config, groundY }: PlacePinsProps) {
         config.focus.maxDistanceM,
       )
       if (config.focus.tweenMs === 0 || prefersReducedMotion()) {
-        tween.current = null
+        stopTween()
         apply(to)
         return
       }
       tween.current = { from, to, elapsedMs: 0, started: false }
+      beginContinuous('flight')
       invalidate()
     }
     // The player's own input (a drag, pinch, wheel or tap: MapControls' `start`) ends a flight
     // still under way, so the flight never drags the camera back from where they took it.
     // `apply` only fires `change`, so the flight cannot cancel itself.
-    const interrupt = () => {
-      tween.current = null
-    }
+    const interrupt = stopTween
     rig.addEventListener('start', interrupt)
     applyRef.current = apply
     select(currentPlaceId())
@@ -122,10 +127,10 @@ export function PlacePins({ pins, config, groundY }: PlacePinsProps) {
       rig.removeEventListener('start', interrupt)
       offChange()
       offPicked()
-      tween.current = null
+      stopTween()
       applyRef.current = null
     }
-  }, [controls, get, groundY, invalidate, pins, config.focus])
+  }, [controls, get, groundY, invalidate, pins, config.focus, stopTween])
 
   // Steps the focus tween once per rendered frame and requests the next one until it ends.
   useFrame((_, deltaS) => {
@@ -137,7 +142,7 @@ export function PlacePins({ pins, config, groundY }: PlacePinsProps) {
     current.started = true
     const t = Math.min(1, current.elapsedMs / config.focus.tweenMs)
     apply(mixPose(current.from, current.to, easeInOut(t)))
-    if (t >= 1) tween.current = null
+    if (t >= 1) stopTween()
     else invalidate()
   })
 

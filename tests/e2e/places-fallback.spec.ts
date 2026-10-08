@@ -9,6 +9,10 @@ import {
 import { SCENE_READY_TIMEOUT_MS, waitForMapSettled } from './helpers/scene'
 import { openFromHud } from './helpers/hud'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 // S04c: when WebGL is unavailable or its context is lost, the static fallback map shows, the
 // Places panel opens by itself (without taking focus) and the game stays playable; a restored
 // context brings the 3D map back in place, without remounting the canvas.

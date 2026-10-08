@@ -19,6 +19,14 @@
  *   the Icon moment), `grants` (the grant log) and `prestige` (count, badges, history), and
  *   `prestigeKept` on wearables kept through prestige. An older save's goals are derived from
  *   what it holds at load (`syncGoals`).
+ * - v9 (S16): adds `player.inventory.decor` (owned decor, its colour variant, `prestigeKept`)
+ *   and `player.apartment` (decor placed in the current home's slots, and the move log). An
+ *   older save starts with no decor, nothing placed and an empty move log.
+ * - v10 (S08): adds `player.location` (at home, or at a place by id) and `player.transit` (the
+ *   delay roll's generator state). An older save starts at home with a fresh generator.
+ * - v11 (S18c): adds `actions`, the taps that changed the game this run (DEC-19): the server's
+ *   save plausibility bounds how far the clock and the earnings can move per tap. An older save
+ *   starts counting at 0.
  */
 import * as z from 'zod/mini'
 import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
@@ -33,19 +41,31 @@ import {
   legacyCloutState,
   playerLevel,
   type CloutEntry,
+  type CloutPlayer,
   type CloutState,
 } from './clout'
-import { isHomeId, type EngineConfig } from './config'
+import { isHomeId, type EngineConfig, type HomeId } from './config'
 import { initialEventsState, type EventsState, type PendingEffect } from './events'
 import {
   initialFlexState,
   initialSnapshot,
+  HOME_LOCATION,
+  initialTransitState,
   type ClubNights,
   type FlexState,
   type GameSnapshot,
+  type PlayerLocation,
+  type TransitState,
   type Visited,
 } from './game'
 import { initialGoalsState, syncGoals, victoryGoal, type GoalsState } from './goals'
+import {
+  initialApartment,
+  slotsFor,
+  type ApartmentState,
+  type MoveRecord,
+  type Placements,
+} from './home'
 import {
   goalGrantKey,
   initialGrantsState,
@@ -57,16 +77,19 @@ import {
   ITEM_SLOTS,
   emptyInventory,
   findItem,
+  isDecor,
   isGift,
   isWearable,
+  type DecorDef,
   type GiftStack,
   type Inventory,
+  type OwnedDecor,
   type OwnedWearable,
 } from './items'
 import { initialPrestigeState, type PrestigeRun, type PrestigeState } from './prestige'
 import { initialRent } from './rent'
 
-export const SAVE_VERSION = 8
+export const SAVE_VERSION = 11
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
@@ -78,6 +101,16 @@ export interface SaveState extends GameSnapshot {
   readonly grants: GrantsState
   /** Prestige runs and badges (src/engine/prestige.ts). */
   readonly prestige: PrestigeState
+  /**
+   * Taps that changed the game this run (an action, shift, buy, sale, event choice or claim;
+   * `countAction`). Starts at 0 and again at each prestige. Only ever counts up within a run.
+   */
+  readonly actions: number
+}
+
+/** The save after one more counted tap (see `SaveState.actions`). */
+export function countAction<S extends Pick<SaveState, 'actions'>>(save: S): S {
+  return { ...save, actions: save.actions + 1 }
 }
 
 const CashSchema = z.int().check(z.gte(0))
@@ -240,6 +273,14 @@ const knownGift = (config: EngineConfig) => (id: string) => {
   const item = findItem(id, config)
   return item !== undefined && isGift(item)
 }
+function decorItem(id: string, config: EngineConfig): DecorDef | undefined {
+  const item = findItem(id, config)
+  return item !== undefined && isDecor(item) ? item : undefined
+}
+const knownDecor = (config: EngineConfig) => (id: string) => decorItem(id, config) !== undefined
+
+/** What a player's level and goal clout add up from, besides the ledger. */
+type Holdings = Omit<CloutPlayer, 'clout'>
 
 /** The structure of `player.inventory`; cross-field rules are in `inventoryIssue`. */
 function inventorySchema(config: EngineConfig) {
@@ -265,15 +306,32 @@ function inventorySchema(config: EngineConfig) {
         z.ZodMiniOptional<z.ZodMiniString>
       >,
     ),
+    decor: z.array(
+      z.strictObject({
+        itemId: z.string().check(z.refine(knownDecor(config), 'Unknown decor')),
+        acquiredMinute: z.int().check(z.gte(0)),
+        variant: z.string(),
+        // Kept through prestige: a look only.
+        prestigeKept: z.optional(z.literal(true)),
+      }),
+    ),
   })
 }
 
 /**
- * Why a structurally valid inventory is inconsistent, or null: a duplicate wearable or gift,
- * a wearable bought after `nowMinute`, or an outfit slot holding something not owned or not
- * for that slot.
+ * Why a structurally valid inventory is inconsistent, or null: a duplicate wearable, gift or
+ * decor item, a wearable or decor bought after `nowMinute`, decor showing a colour it does not
+ * come in, or an outfit slot holding something not owned or not for that slot.
  */
 function inventoryIssue(inventory: Inventory, nowMinute: number, config: EngineConfig) {
+  const decorIds = inventory.decor.map((owned) => owned.itemId)
+  if (new Set(decorIds).size !== decorIds.length) return 'duplicate decor'
+  if (inventory.decor.some((owned) => owned.acquiredMinute > nowMinute)) {
+    return 'decor bought in the future'
+  }
+  const variantKnown = (owned: OwnedDecor) =>
+    decorItem(owned.itemId, config)?.decor.variants.some((v) => v.id === owned.variant) === true
+  if (!inventory.decor.every(variantKnown)) return 'unknown decor variant'
   const wearableIds = inventory.wearables.map((owned) => owned.itemId)
   if (new Set(wearableIds).size !== wearableIds.length) return 'duplicate wearable'
   const giftIds = inventory.gifts.map((stack) => stack.itemId)
@@ -292,6 +350,89 @@ function inventoryIssue(inventory: Inventory, nowMinute: number, config: EngineC
   }
   return null
 }
+
+const homeIdSchema = (config: EngineConfig) =>
+  z.string().check(z.refine((home) => isHomeId(home, config), 'Unknown home'))
+
+function moveRecordSchema(config: EngineConfig) {
+  return z.strictObject({
+    from: homeIdSchema(config),
+    to: homeIdSchema(config),
+    at: WholeSchema,
+    cost: WholeSchema,
+  })
+}
+
+/** The structure of `player.apartment`; cross-field rules are in `apartmentIssue`. */
+function apartmentSchema(config: EngineConfig) {
+  return z.strictObject({
+    placed: z.record(z.string(), z.string()),
+    moveLog: z.array(moveRecordSchema(config)).check(z.maxLength(config.home.moveLogMax)),
+  })
+}
+
+/** Why one placement does not fit `home` and `inventory`, or null. */
+function placementIssue(
+  slotId: string,
+  itemId: string,
+  home: HomeId,
+  inventory: Inventory,
+  config: EngineConfig,
+) {
+  const slot = slotsFor(home, config).find((entry) => entry.id === slotId)
+  if (slot === undefined) return 'decor in a slot this home does not have'
+  const item = decorItem(itemId, config)
+  if (item === undefined || !inventory.decor.some((owned) => owned.itemId === itemId)) {
+    return 'placed decor not owned'
+  }
+  if (item.decor.fits !== slot.kind) return 'decor in the wrong kind of slot'
+  return null
+}
+
+/** Why one move log entry cannot follow `previous` or happened after `nowMinute`, or null. */
+function moveIssue(move: MoveRecord, previous: MoveRecord | undefined, nowMinute: number) {
+  if (move.at > nowMinute) return 'move in the future'
+  if (move.from === move.to) return 'move to the same home'
+  if (previous !== undefined && move.at < previous.at) return 'move log out of order'
+  return null
+}
+
+/**
+ * Why a structurally valid apartment is inconsistent, or null: a placement that does not fit the
+ * home or the inventory (see `placementIssue`), one item in two slots, or a bad move log entry.
+ */
+function apartmentIssue(
+  apartment: ApartmentState,
+  home: HomeId,
+  inventory: Inventory,
+  nowMinute: number,
+  config: EngineConfig,
+) {
+  const placedIds = Object.values(apartment.placed)
+  if (new Set(placedIds).size !== placedIds.length) return 'decor placed twice'
+  for (const [slotId, itemId] of Object.entries(apartment.placed)) {
+    const issue = placementIssue(slotId, itemId, home, inventory, config)
+    if (issue !== null) return issue
+  }
+  for (const [i, move] of apartment.moveLog.entries()) {
+    const issue = moveIssue(move, apartment.moveLog[i - 1], nowMinute)
+    if (issue !== null) return issue
+  }
+  return null
+}
+
+/** Home, or a place the config knows (any venue or landmark, memorials included). */
+function locationSchema(config: EngineConfig) {
+  return z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('home') }),
+    z.strictObject({
+      kind: z.literal('place'),
+      placeId: z.string().check(z.refine((id) => config.places.has(id), 'Unknown place')),
+    }),
+  ])
+}
+
+const TransitStateSchema = z.strictObject({ rngState: Uint32Schema })
 
 /** Landmarks the config knows (memorials have no Visit), each first visited at a whole minute. */
 function isVisitablePlace(id: string, config: EngineConfig): boolean {
@@ -335,7 +476,7 @@ const GrantRecordSchema = z
     issuedAtMs: WholeSchema,
     issuedBy: z.literal('system'),
     campaignId: z.null(),
-    sync: z.literal('local'),
+    sync: z.enum(['local', 'synced']),
   })
   .check(
     z.refine(
@@ -464,17 +605,32 @@ export function createSaveSchema(config: EngineConfig) {
       inventory: inventorySchema(config),
       clubNights: clubNightsSchema(config),
       visited: visitedSchema(config),
+      apartment: apartmentSchema(config),
+      location: locationSchema(config),
+      transit: TransitStateSchema,
     }),
     speed: z.number().check(z.refine((speed) => isSpeed(speed, config), 'Unsupported speed')),
     events: eventsStateSchema(config),
     goals: goalsStateSchema(config),
     grants: grantsStateSchema(config),
     prestige: prestigeStateSchema(config),
+    actions: WholeSchema,
   })
   return save.check(
     z.refine(
       (value) => inventoryIssue(value.player.inventory, value.clock.minute, config) === null,
       { message: 'Inconsistent inventory', path: ['player', 'inventory'] },
+    ),
+    z.refine(
+      (value) =>
+        apartmentIssue(
+          value.player.apartment as ApartmentState,
+          value.player.home as HomeId,
+          value.player.inventory as Inventory,
+          value.clock.minute,
+          config,
+        ) === null,
+      { message: 'Inconsistent apartment', path: ['player', 'apartment'] },
     ),
     z.refine(
       (value) =>
@@ -487,7 +643,11 @@ export function createSaveSchema(config: EngineConfig) {
       (value) =>
         !peakAboveEarned(
           value.player.clout as CloutState,
-          value.player.inventory as Inventory,
+          {
+            inventory: value.player.inventory as Inventory,
+            home: value.player.home as HomeId,
+            apartment: value.player.apartment as ApartmentState,
+          },
           config,
         ),
       { message: 'Peak level above earned clout', path: ['player', 'clout', 'peakLevel'] },
@@ -550,7 +710,7 @@ function recordOf(value: unknown): Record<string, unknown> {
 function repairClout(
   raw: unknown,
   nowMinute: number,
-  inventory: Inventory,
+  holdings: Holdings,
   config: EngineConfig,
 ): { readonly clout: CloutState; readonly repaired: boolean } {
   const parsed = cloutStateSchema(config).safeParse(raw)
@@ -563,7 +723,10 @@ function repairClout(
   for (const value of Array.isArray(source.ledger) ? source.ledger : []) {
     const entry = CloutEntrySchema.safeParse(value)
     if (!entry.success || entry.data.at > nowMinute) continue
-    if (entry.data.seq <= (kept.at(-1)?.seq ?? 0)) continue
+    // T-1: a sequence number at the safe-integer limit leaves no room for the next one.
+    if (entry.data.seq <= (kept.at(-1)?.seq ?? 0) || entry.data.seq >= Number.MAX_SAFE_INTEGER) {
+      continue
+    }
     kept.push(entry.data as CloutEntry)
   }
   const overflow = Math.max(0, kept.length - config.clout.ledger.maxEntries)
@@ -588,7 +751,10 @@ function repairClout(
   const lastSeq = kept.at(-1)?.seq ?? 0
   const rawNext = source.nextSeq
   const nextSeq =
-    typeof rawNext === 'number' && Number.isSafeInteger(rawNext) && rawNext > lastSeq
+    typeof rawNext === 'number' &&
+    Number.isSafeInteger(rawNext) &&
+    rawNext > lastSeq &&
+    rawNext < Number.MAX_SAFE_INTEGER
       ? rawNext
       : lastSeq + 1
 
@@ -624,25 +790,25 @@ function repairClout(
   const peakLevel =
     typeof rawPeak === 'number' && Number.isFinite(rawPeak)
       ? Math.min(top, Math.max(0, Math.round(rawPeak)))
-      : currentLevelIndex(clout, inventory, config)
+      : currentLevelIndex(clout, holdings, config)
   return { clout: { ...clout, peakLevel }, repaired: true }
 }
 
-/** The level a clout state and inventory add up to (premium capped, Icon earned only). */
-function currentLevelIndex(clout: CloutState, inventory: Inventory, config: EngineConfig) {
-  return playerLevel({ clout, inventory }, config).index
+/** The level a clout state, inventory and home add up to (premium capped, Icon earned only). */
+function currentLevelIndex(clout: CloutState, holdings: Holdings, config: EngineConfig) {
+  return playerLevel({ ...holdings, clout }, config).index
 }
 
 /**
  * True when `peakLevel` claims the earned-only level (Icon) that goal clout has never held:
  * a save from before "Icon is earned" (S15 fix cycle 1), or a tampered one.
  */
-function peakAboveEarned(clout: CloutState, inventory: Inventory, config: EngineConfig) {
+function peakAboveEarned(clout: CloutState, holdings: Holdings, config: EngineConfig) {
   const earnedOnly = earnedOnlyLevel(config)
   return (
     earnedOnly !== null &&
     clout.peakLevel >= earnedOnly.index &&
-    goalClout({ clout, inventory }, config) < earnedOnly.minClout
+    goalClout({ ...holdings, clout }, config) < earnedOnly.minClout
   )
 }
 
@@ -650,9 +816,9 @@ function peakAboveEarned(clout: CloutState, inventory: Inventory, config: Engine
  * Lowers a peak level that claims Icon without the earned clout for it to the level below, so
  * no level-up replays below it and Icon still lands (with the Icon moment) once it is earned.
  */
-function capPeakToEarned(clout: CloutState, inventory: Inventory, config: EngineConfig) {
+function capPeakToEarned(clout: CloutState, holdings: Holdings, config: EngineConfig) {
   const earnedOnly = earnedOnlyLevel(config)
-  if (earnedOnly === null || !peakAboveEarned(clout, inventory, config)) return clout
+  if (earnedOnly === null || !peakAboveEarned(clout, holdings, config)) return clout
   return { ...clout, peakLevel: earnedOnly.index - 1 }
 }
 
@@ -717,8 +883,9 @@ function repairClubNights(
  * 0..`nowMinute` is clamped (a non-number becomes `nowMinute`), a non-boolean `worn` becomes
  * true (so stat effects never land twice), any `prestigeKept` mark becomes `true` (a kept look
  * never regains value), gift counts are rounded and clamped to
- * 1..maxGiftStack (0 drops the stack), and outfit slots that do not hold an owned item for that
- * slot are emptied. `repaired` is false when the inventory was already valid.
+ * 1..maxGiftStack (0 drops the stack), outfit slots that do not hold an owned item for that
+ * slot are emptied, and decor showing a colour it does not come in shows its first one.
+ * `repaired` is false when the inventory was already valid.
  */
 function repairInventory(
   raw: unknown,
@@ -737,15 +904,17 @@ function repairInventory(
   const list = (value: unknown): readonly unknown[] => (Array.isArray(value) ? value : [])
   const source = record(raw)
 
+  const purchaseMinute = (acquiredMinute: unknown) =>
+    typeof acquiredMinute === 'number' && Number.isFinite(acquiredMinute)
+      ? Math.min(nowMinute, Math.max(0, Math.round(acquiredMinute)))
+      : nowMinute
+
   const wearables: OwnedWearable[] = []
   for (const entry of list(source.wearables).map(record)) {
     const { itemId, acquiredMinute, worn, prestigeKept } = entry
     if (typeof itemId !== 'string' || !knownWearable(config)(itemId)) continue
     if (wearables.some((owned) => owned.itemId === itemId)) continue
-    const minute =
-      typeof acquiredMinute === 'number' && Number.isFinite(acquiredMinute)
-        ? Math.min(nowMinute, Math.max(0, Math.round(acquiredMinute)))
-        : nowMinute
+    const minute = purchaseMinute(acquiredMinute)
     wearables.push({
       itemId,
       acquiredMinute: minute,
@@ -774,7 +943,91 @@ function repairInventory(
     const owned = wearables.some((entry) => entry.itemId === itemId)
     if (owned && item !== undefined && isWearable(item) && item.slot === slot) outfit[slot] = itemId
   }
-  return { inventory: { wearables, gifts, outfit }, repaired: true }
+
+  const decor: OwnedDecor[] = []
+  for (const entry of list(source.decor).map(record)) {
+    const { itemId, acquiredMinute, variant, prestigeKept } = entry
+    const item = typeof itemId === 'string' ? decorItem(itemId, config) : undefined
+    if (item === undefined || decor.some((owned) => owned.itemId === item.id)) continue
+    const known = item.decor.variants.some((option) => option.id === variant)
+    decor.push({
+      itemId: item.id,
+      acquiredMinute: purchaseMinute(acquiredMinute),
+      variant: known ? (variant as string) : (item.decor.variants[0]?.id ?? ''),
+      // Any mark at all keeps it a look only: a damaged mark never turns value back on.
+      ...(prestigeKept === undefined ? {} : { prestigeKept: true as const }),
+    })
+  }
+  return { inventory: { wearables, gifts, outfit, decor }, repaired: true }
+}
+
+/**
+ * The apartment from an untrusted save, keeping everything usable: placements in a slot the
+ * home does not have, of decor not owned or not of the slot's kind, or of an item already placed
+ * are dropped (the item goes back to storage); move log entries that are malformed, in the
+ * future, to the same home or out of order are dropped, and the newest `home.moveLogMax` kept.
+ * `repaired` is false when the apartment was already valid.
+ */
+function repairApartment(
+  raw: unknown,
+  home: HomeId,
+  inventory: Inventory,
+  nowMinute: number,
+  config: EngineConfig,
+): { readonly apartment: ApartmentState; readonly repaired: boolean } {
+  const parsed = apartmentSchema(config).safeParse(raw)
+  if (
+    parsed.success &&
+    apartmentIssue(parsed.data as ApartmentState, home, inventory, nowMinute, config) === null
+  ) {
+    return { apartment: parsed.data as ApartmentState, repaired: false }
+  }
+  const source = recordOf(raw)
+  const kept: [string, string][] = []
+  for (const [slotId, itemId] of Object.entries(recordOf(source.placed))) {
+    if (typeof itemId !== 'string' || kept.some(([, keptId]) => keptId === itemId)) continue
+    if (placementIssue(slotId, itemId, home, inventory, config) === null) {
+      kept.push([slotId, itemId])
+    }
+  }
+  const placed: Placements = Object.fromEntries(kept)
+  const entrySchema = moveRecordSchema(config)
+  const moveLog: MoveRecord[] = []
+  for (const value of Array.isArray(source.moveLog) ? source.moveLog : []) {
+    const move = entrySchema.safeParse(value)
+    if (!move.success) continue
+    const entry = move.data as MoveRecord
+    if (moveIssue(entry, moveLog.at(-1), nowMinute) === null) moveLog.push(entry)
+  }
+  return {
+    apartment: { placed, moveLog: moveLog.slice(-config.home.moveLogMax) },
+    repaired: true,
+  }
+}
+
+/**
+ * The player's location from an untrusted save: anything that is not home or a place the config
+ * knows (a place removed between builds, a tampered id) puts the player at home.
+ */
+function repairLocation(
+  raw: unknown,
+  config: EngineConfig,
+): { readonly location: PlayerLocation; readonly repaired: boolean } {
+  const parsed = locationSchema(config).safeParse(raw)
+  return parsed.success
+    ? { location: parsed.data, repaired: false }
+    : { location: HOME_LOCATION, repaired: true }
+}
+
+/** Transit state from an untrusted save: a generator state that is not a uint32 starts over. */
+function repairTransit(raw: unknown): {
+  readonly transit: TransitState
+  readonly repaired: boolean
+} {
+  const parsed = TransitStateSchema.safeParse(raw)
+  if (parsed.success) return { transit: parsed.data, repaired: false }
+  const rngState = Uint32Schema.safeParse(recordOf(raw).rngState)
+  return { transit: { rngState: rngState.success ? rngState.data : 0 }, repaired: true }
 }
 
 /** First visits from an untrusted save: unknown places, memorials and bad minutes are dropped. */
@@ -818,7 +1071,10 @@ function repairGrants(
   for (const value of Array.isArray(source.log) ? source.log : []) {
     const record = GrantRecordSchema.safeParse(value)
     if (!record.success || record.data.at > nowMinute || keys.has(record.data.key)) continue
-    if (record.data.seq <= (kept.at(-1)?.seq ?? 0)) continue
+    // T-1: a sequence number at the safe-integer limit leaves no room for the next one.
+    if (record.data.seq <= (kept.at(-1)?.seq ?? 0) || record.data.seq >= Number.MAX_SAFE_INTEGER) {
+      continue
+    }
     keys.add(record.data.key)
     kept.push(record.data as GrantRecord)
   }
@@ -826,7 +1082,10 @@ function repairGrants(
   const lastSeq = kept.at(-1)?.seq ?? 0
   const rawNext = source.nextSeq
   const nextSeq =
-    typeof rawNext === 'number' && Number.isSafeInteger(rawNext) && rawNext > lastSeq
+    typeof rawNext === 'number' &&
+    Number.isSafeInteger(rawNext) &&
+    rawNext > lastSeq &&
+    rawNext < Number.MAX_SAFE_INTEGER
       ? rawNext
       : lastSeq + 1
   return { grants: { log, nextSeq }, repaired: true }
@@ -940,6 +1199,12 @@ const LoadableSaveSchema = z.strictObject({
     clubNights: z.optional(z.unknown()),
     // Repairable: unusable entries are dropped (`repairVisited`); a v7 save has none.
     visited: z.optional(z.unknown()),
+    // Repairable: unusable placements and moves are dropped (`repairApartment`); a v8 save has none.
+    apartment: z.optional(z.unknown()),
+    // Repairable: an unknown place means home (`repairLocation`); a v9 save has none.
+    location: z.optional(z.unknown()),
+    // Repairable: a generator state that is not a uint32 starts over; a v9 save has none.
+    transit: z.optional(z.unknown()),
   }),
   speed: z.unknown(),
   // Repairable: a missing or unusable event state starts over (`repairEvents`).
@@ -948,6 +1213,8 @@ const LoadableSaveSchema = z.strictObject({
   goals: z.optional(z.unknown()),
   grants: z.optional(z.unknown()),
   prestige: z.optional(z.unknown()),
+  // Repairable: a v10 or older save has none (0); anything but a whole number becomes 0.
+  actions: z.optional(z.unknown()),
 })
 
 /** A v6 save's structure (S09): clout is one number, no flex state yet. */
@@ -1038,16 +1305,20 @@ export type LoadResult =
  * - a missed-rent count that is not a whole number in 0..evictAfterMissed-1 is clamped
  *   (a non-number becomes 0);
  * - an inconsistent or malformed inventory keeps what is usable (see `repairInventory`);
+ * - an inconsistent apartment keeps what is usable (see `repairApartment`);
  * - unusable event state starts over (see `repairEvents`);
  * - unusable club-night entries are dropped (see `repairClubNights`);
  * - an inconsistent clout ledger keeps what is usable (see `repairClout`), and a peak level at
  *   Icon without the earned clout for it drops to the level below (`capPeakToEarned`);
  * - unusable flexes are dropped (see `repairFlex`);
  * - unusable first visits are dropped (see `repairVisited`);
+ * - a location that is not home or a known place becomes home (see `repairLocation`), and a
+ *   transit generator state that is not a uint32 starts over (see `repairTransit`);
  * - an inconsistent grant log, goals or prestige keep what is usable (see `repairGrants`,
  *   `repairGoals`, `repairPrestige`). Which rewards were claimed is never stored on its own:
  *   it is the grant log's keys plus the clout ledger's grant references, so no repair can
- *   unclaim one.
+ *   unclaim one;
+ * - an action count that is not a whole number becomes 0.
  * Only a structurally unusable save (missing objects, unknown keys, cash or minute of the wrong
  * type or range) fails, and the caller starts fresh.
  */
@@ -1058,7 +1329,7 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   }
   const { clock, player, speed, events } = parsed.data
   const repaired: string[] = []
-  // Fields a v7 save does not have yet are filled in, not reported as repairs.
+  // Fields a v7 to v9 save does not have yet are filled in, not reported as repairs.
   const present = (value: unknown) => value !== undefined
   const orFresh = (value: unknown, fresh: unknown) => (value === undefined ? fresh : value)
 
@@ -1094,11 +1365,21 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   if (missed !== rawMissed) repaired.push('player.rent.missed')
 
   const { inventory, repaired: inventoryRepaired } = repairInventory(
-    player.inventory,
+    withDecorList(player.inventory),
     clock.minute,
     config,
   )
   if (inventoryRepaired) repaired.push('player.inventory')
+
+  const { apartment, repaired: apartmentRepaired } = repairApartment(
+    orFresh(player.apartment, initialApartment),
+    home,
+    inventory,
+    clock.minute,
+    config,
+  )
+  if (apartmentRepaired && present(player.apartment)) repaired.push('player.apartment')
+  const holdings: Holdings = { inventory, home, apartment }
 
   const { clubNights, repaired: nightsRepaired } = repairClubNights(
     player.clubNights,
@@ -1110,11 +1391,11 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   const { clout: repairedClout, repaired: cloutRepaired } = repairClout(
     player.clout,
     clock.minute,
-    inventory,
+    holdings,
     config,
   )
   if (cloutRepaired) repaired.push('player.clout')
-  const clout = capPeakToEarned(repairedClout, inventory, config)
+  const clout = capPeakToEarned(repairedClout, holdings, config)
   if (clout !== repairedClout) repaired.push('player.clout.peakLevel')
 
   const { flex, repaired: flexRepaired } = repairFlex(player.flex, clock.minute, config)
@@ -1126,6 +1407,17 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
     config,
   )
   if (visitedRepaired && present(player.visited)) repaired.push('player.visited')
+
+  const { location, repaired: locationRepaired } = repairLocation(
+    orFresh(player.location, HOME_LOCATION),
+    config,
+  )
+  if (locationRepaired && present(player.location)) repaired.push('player.location')
+
+  const { transit, repaired: transitRepaired } = repairTransit(
+    orFresh(player.transit, initialTransitState),
+  )
+  if (transitRepaired && present(player.transit)) repaired.push('player.transit')
 
   const raw = parsed.data
   const { grants, repaired: grantsRepaired } = repairGrants(
@@ -1151,6 +1443,10 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   )
   if (prestigeRepaired && present(raw.prestige)) repaired.push('prestige')
 
+  const actions = orFresh(raw.actions, 0)
+  const validActions = typeof actions === 'number' && Number.isSafeInteger(actions) && actions >= 0
+  if (!validActions) repaired.push('actions')
+
   return {
     ok: true,
     save: {
@@ -1165,15 +1461,28 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
         inventory,
         clubNights,
         visited,
+        apartment,
+        location,
+        transit,
       },
       speed: validSpeed,
       events: repairEvents(events, config, repaired),
       goals,
       grants,
       prestige,
+      actions: validActions ? actions : 0,
     },
     repaired,
   }
+}
+
+/**
+ * An inventory from before decor (v4 to v8) with an empty decor list, so the missing list is
+ * filled in rather than reported as a repair. Anything else is passed on for `repairInventory`.
+ */
+function withDecorList(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return raw
+  return Object.hasOwn(raw, 'decor') ? raw : { ...raw, decor: [] }
 }
 
 /**
@@ -1208,6 +1517,7 @@ export function initialSave(config: EngineConfig): SaveState {
     goals: initialGoalsState,
     grants: initialGrantsState,
     prestige: initialPrestigeState,
+    actions: 0,
   }
 }
 
@@ -1237,7 +1547,9 @@ export interface Migration {
  */
 function upgradeV6(v6: LoadableSaveV6, config: EngineConfig) {
   const { clock, player } = v6
-  const { inventory } = repairInventory(player.inventory, clock.minute, config)
+  const { inventory } = repairInventory(withDecorList(player.inventory), clock.minute, config)
+  const home = isHomeId(player.home, config) ? player.home : config.startHome
+  const holdings: Holdings = { inventory, home, apartment: initialApartment }
   let clout = legacyCloutState(player.clout, 0)
   let events: unknown = v6.events
   const parsedEvents = eventsStateV6Schema(config).safeParse(v6.events)
@@ -1254,7 +1566,7 @@ function upgradeV6(v6: LoadableSaveV6, config: EngineConfig) {
     }
     events = { ...parsedEvents.data, pending: items }
   }
-  clout = { ...clout, peakLevel: currentLevelIndex(clout, inventory, config) }
+  clout = { ...clout, peakLevel: currentLevelIndex(clout, holdings, config) }
   return { ...v6, player: { ...player, clout, flex: initialFlexState, inventory }, events }
 }
 
@@ -1272,7 +1584,9 @@ function loadV6(raw: unknown, config: EngineConfig): LoadResult | null {
  * everything and starts with fresh event state. A v5 save keeps everything and starts with no
  * club nights. A v6 save keeps everything, its clout carried into the ledger (`upgradeV6`).
  * Every step goes through the v6 form, so v2 to v5 saves get the v6 upgrade too. A v7 save keeps
- * everything and starts with no recorded visits, no grants and no prestige. Every older save
+ * everything and starts with no recorded visits, no grants and no prestige. A v7 or v8 save
+ * starts with no decor, nothing placed and an empty move log. A v7 to v9 save starts at home
+ * with a fresh transit generator. A v7 to v10 save starts counting actions at 0. Every older save
  * then gets its goals derived from what it holds, at its current minute (`syncGoals`): a save
  * already at Icon starts with an unacknowledged Icon moment. Anything older or malformed
  * starts fresh. A save from a newer build throws `NewerSaveError`: it is
@@ -1343,8 +1657,9 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
     }
   }
   if (version === 6) loaded = loadV6(persisted, config)
-  // A v7 save is the current structure without the S15 fields, which `loadSave` fills in.
-  if (version === 7) loaded = loadSave(persisted, config)
+  // A v7 to v10 save is the current structure without the S15 (v7), S16 (v8), S08 (v9) or
+  // S18c (v10) fields, which `loadSave` fills in.
+  if (version >= 7 && version <= 10) loaded = loadSave(persisted, config)
   if (loaded?.ok === true) {
     return { save: syncGoals(loaded.save, config).save, outcome: 'carried' }
   }

@@ -62,9 +62,9 @@ async function expectSceneErrorWithUsableShell(page: Page, copyKey: string): Pro
   await expect(page.locator('canvas')).toHaveCount(0)
 
   // The shell still works: tabs switch, the attribution stays visible.
-  const shop = page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Shop' })
-  await shop.click()
-  await expect(shop).toHaveAttribute('aria-current', 'page')
+  const me = page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Me' })
+  await me.click()
+  await expect(me).toHaveAttribute('aria-current', 'page')
   await expect(page.locator('[data-map-attribution]')).toBeVisible()
 }
 

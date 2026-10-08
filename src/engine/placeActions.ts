@@ -13,9 +13,10 @@
  * can say why (and put it in the accessible name). A club pays out clout at most once per
  * game night (`clubNightKey`); later entries the same night still cost the cover and time.
  * Reasons are checked in this order: the borough is locked, the place is closed on the
- * personal clock, the club door refuses, the job is locked, today's flexes are used up, then
+ * personal clock, the club door refuses, the job is locked, today's flexes are used up, the
+ * player is somewhere else (DEC-22: they travel there first, src/engine/transit/trip.ts), then
  * funds and energy. `performPlaceAction` re-checks all of them, so a stale UI cannot run
- * something the rules refuse. Every clout gate reads the player's level clout
+ * something the rules refuse; the shop (`shopBlock`, `buyAtShop`) needs the player there too. Every clout gate reads the player's level clout
  * (src/engine/clout.ts `levelClout`: the total, item clout included, with Icon earned only).
  */
 import type { Hours, Venue } from '@/lib/data/schemas/content'
@@ -40,7 +41,7 @@ import {
   performFlex,
   viralChance,
 } from './flex'
-import type { GameSnapshot } from './game'
+import { isAtPlace, type GameSnapshot } from './game'
 import { buyItem, type ItemResult } from './items'
 import { isJobId, jobLock, shiftAction, shiftWage, workShift, type JobLock } from './jobs'
 import { isOpenAt, minuteOf, placeAllows, type Place } from './places'
@@ -67,6 +68,8 @@ export type PlaceActionBlock =
   | { readonly code: 'flexed-here-today' }
   /** Already flexed `max` times today. */
   | { readonly code: 'flex-daily-limit'; readonly max: number }
+  /** The player is somewhere else: they travel here first (DEC-22). */
+  | { readonly code: 'away' }
   | { readonly code: 'funds'; readonly required: number; readonly available: number }
   | { readonly code: 'energy'; readonly required: number; readonly available: number }
 
@@ -126,8 +129,19 @@ export type PlaceView =
       readonly kind: 'actions'
       readonly access: BoroughAccess
       readonly hours: PlaceHoursNow
+      /**
+       * A club's door rule, shown before the player travels there: the level it lets in and
+       * whether the player holds it now. Null at every other place.
+       */
+      readonly door: ClubDoor | null
       readonly actions: readonly PlaceAction[]
     }
+
+/** A club door: the lowest clout level it lets in, and whether the player is at it. */
+export interface ClubDoor {
+  readonly requiredLevel: string
+  readonly met: boolean
+}
 
 function isVenue(place: Place): place is Venue {
   return 'type' in place
@@ -196,6 +210,15 @@ function doorBlock(
     currentLevel: current.id,
     refusalKey: rule.refusalKey,
   }
+}
+
+/** The door rule of the club at `place`, or null when it is not a club. */
+function clubDoor(place: Place, snapshot: GameSnapshot, config: EngineConfig): ClubDoor | null {
+  if (!isVenue(place) || place.type !== 'club') return null
+  const block = doorBlock(place.id, snapshot, config)
+  return block?.code === 'door'
+    ? { requiredLevel: block.requiredLevel, met: false }
+    : { requiredLevel: clubRule(place.id, config).minCloutLevel, met: true }
 }
 
 type Unblocked<T> = T extends PlaceAction ? Omit<T, 'block'> : never
@@ -316,6 +339,7 @@ function blockFor(
     const limit = flexLimit(place.id, snapshot, config)
     if (limit !== null) return limit
   }
+  if (!isAtPlace(snapshot.player, place.id)) return { code: 'away' }
   const { cash, stats } = snapshot.player
   if (cash < action.def.cashCost) {
     return { code: 'funds', required: action.def.cashCost, available: cash }
@@ -345,7 +369,7 @@ export function placeActions(
         block: blockFor(action, place, access, hours, snapshot, config),
       }) as PlaceAction,
   )
-  return { kind: 'actions', access, hours, actions }
+  return { kind: 'actions', access, hours, door: clubDoor(place, snapshot, config), actions }
 }
 
 export { flexMultiplier } from './flex'
@@ -456,7 +480,7 @@ export function performPlaceAction(
       cloutGained: 0,
       flex: null,
       levelUp: null,
-      statEffects: action.def.statEffects,
+      statEffects: result.applied,
     }
   }
   const { player } = result.snapshot
@@ -484,7 +508,55 @@ export function performPlaceAction(
     cloutGained: record.entry?.amount ?? 0,
     flex: null,
     levelUp: record.levelUp,
-    statEffects: action.def.statEffects,
+    statEffects: result.applied,
+  }
+}
+
+/**
+ * What the player can do at home (B1): sleep, a nap and a home-cooked meal (`place.homeActions`,
+ * in that order), each with why it cannot be done right now. Only at home (DEC-22): away, every
+ * one is blocked `away` and the home card offers the trip back. Then funds and energy, as at a
+ * place. Home has no hours and no borough gate: wherever the player lives is open to them.
+ */
+export function homeActions(snapshot: GameSnapshot, config: EngineConfig): readonly PlaceAction[] {
+  const { location, cash, stats } = snapshot.player
+  return config.place.homeActions.map((id): PlaceAction => {
+    const def = placeActionDef(id, config)
+    const block: PlaceActionBlock | null =
+      location.kind !== 'home'
+        ? { code: 'away' }
+        : cash < def.cashCost
+          ? { code: 'funds', required: def.cashCost, available: cash }
+          : stats.energy < def.energyCost
+            ? { code: 'energy', required: def.energyCost, available: stats.energy }
+            : null
+    return { kind: 'consume', id, def, block }
+  })
+}
+
+/** Does home action `actionId`, after re-checking every rule `homeActions` reports. */
+export function performHomeAction(
+  snapshot: GameSnapshot,
+  actionId: string,
+  config: EngineConfig,
+): PlaceActionResult {
+  const action = homeActions(snapshot, config).find((candidate) => candidate.id === actionId)
+  if (action === undefined) return { ok: false, error: { code: 'UNKNOWN_PLACE_ACTION', actionId } }
+  if (action.block !== null) return { ok: false, error: { code: 'BLOCKED', block: action.block } }
+  const result = applyAction(snapshot, action.def, config)
+  if (!result.ok) return { ok: false, error: { code: 'ACTION_FAILED', cause: result.error } }
+  return {
+    ok: true,
+    snapshot: result.snapshot,
+    action,
+    durationMin: result.durationMin,
+    rollovers: result.rollovers,
+    rent: result.rent,
+    wage: 0,
+    cloutGained: 0,
+    flex: null,
+    levelUp: null,
+    statEffects: result.applied,
   }
 }
 
@@ -510,8 +582,9 @@ export function hasShop(place: Place): place is Venue {
 }
 
 /**
- * Why the shop at `place` cannot sell right now (its borough is locked or it is closed on the
- * personal clock), or null when it can. Same reasons and order as the place's actions.
+ * Why the shop at `place` cannot sell right now (its borough is locked, it is closed on the
+ * personal clock, or the player is somewhere else), or null when it can. Same reasons and order
+ * as the place's actions.
  */
 export function shopBlock(
   place: Place,
@@ -522,6 +595,7 @@ export function shopBlock(
   if (access.status !== 'open') return { code: 'borough-locked', access }
   const hours = placeHoursNow(place, snapshot, config)
   if (hours.status === 'closed') return { code: 'closed', opensAt: hours.opensAt }
+  if (!isAtPlace(snapshot.player, place.id)) return { code: 'away' }
   return null
 }
 

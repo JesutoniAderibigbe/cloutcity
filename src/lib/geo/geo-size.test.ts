@@ -22,6 +22,7 @@ const LAYER_CAPS_KB: Readonly<Record<string, number>> = {
   'geo/parks.derived.json': 20,
   'geo/subway.derived.json': 60,
   'geo/water.derived.json': 1,
+  'landmarks/frames.derived.json': 3,
 }
 const S04_TOTAL_CAP_KB = 250
 

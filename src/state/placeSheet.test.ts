@@ -17,6 +17,18 @@ import {
 } from './placeSheet'
 import { createSafeJsonStorage } from './storage'
 import { createGameStore, type PersistedState } from './store'
+import type { Place } from '@/engine/places'
+import type { GameStore } from './store'
+
+/** The store's state after the player walks into `place` (DEC-22: its actions need them there). */
+function standingAt(game: GameStore, place: Place) {
+  const { player } = game.getState()
+  const { location } = player
+  if (location.kind !== 'place' || location.placeId !== place.id) {
+    game.setState({ player: { ...player, location: { kind: 'place', placeId: place.id } } })
+  }
+  return game.getState()
+}
 
 afterEach(() => closePlace())
 
@@ -90,16 +102,24 @@ describe('game store performPlaceAction', () => {
 
   it('applies an allowed action to the clock and player', () => {
     const game = store()
+    standingAt(game, place('flushing-meadows'))
     const before = game.getState()
-    const result = game.getState().performPlaceAction(place('flushing-meadows'), 'visit')
+    const result = standingAt(game, place('flushing-meadows')).performPlaceAction(
+      place('flushing-meadows'),
+      'visit',
+    )
     expect(result.ok).toBe(true)
     expect(game.getState().clock.minute).toBeGreaterThan(before.clock.minute)
   })
 
   it('leaves state alone when the engine refuses (the club is closed by day)', () => {
     const game = store()
+    standingAt(game, place('glowmatic'))
     const before = game.getState()
-    const result = game.getState().performPlaceAction(place('glowmatic'), 'club-night')
+    const result = standingAt(game, place('glowmatic')).performPlaceAction(
+      place('glowmatic'),
+      'club-night',
+    )
     expect(result).toMatchObject({ ok: false, error: { code: 'BLOCKED' } })
     expect(game.getState().clock).toBe(before.clock)
     expect(game.getState().player).toBe(before.player)
@@ -157,9 +177,9 @@ describe('game store performPlaceAction: repeated activation', () => {
       clock: { ...clock, minute: night > clock.minute ? night : night + perDay },
       player: { ...playerWithClout(player, 100, engineConfig), cash: rule.coverCharge },
     })
-    const first = game.getState().performPlaceAction(glowmatic, 'club-night')
+    const first = standingAt(game, glowmatic).performPlaceAction(glowmatic, 'club-night')
     const afterFirst = game.getState()
-    const second = game.getState().performPlaceAction(glowmatic, 'club-night')
+    const second = standingAt(game, glowmatic).performPlaceAction(glowmatic, 'club-night')
     expect(first.ok).toBe(true)
     expect(second).toMatchObject({
       ok: false,

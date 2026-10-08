@@ -2,35 +2,15 @@
  * Every material of the base city, created once per scene and disposed with it. All toon
  * materials share one gradient ramp texture (the sticker look), so tones step identically on
  * every layer. "Expanding soon" boroughs (S04c) get dimmed land and park colours: the palette
- * colour mixed towards the background.
+ * colour mixed towards the fixed haze (not the sky, which changes with the time of day).
  */
-import {
-  Color,
-  DataTexture,
-  MeshBasicMaterial,
-  MeshToonMaterial,
-  NearestFilter,
-  RedFormat,
-} from 'three'
-import type { Texture } from 'three'
+import { Color, MeshBasicMaterial, MeshToonMaterial } from 'three'
+import type { DataTexture, Texture } from 'three'
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import { BOROUGH_IDS, type BoroughId } from './geo/schema'
+import { createToonRamp } from './toonRamp'
 import type { ScenePalette } from './types'
-
-/**
- * The toon gradient: one texel per brightness step. MeshToonMaterial samples its red channel
- * and needs nearest filtering (no mipmaps) for hard steps.
- */
-export function createToonRamp(steps: readonly number[]): DataTexture {
-  const data = new Uint8Array(steps.map((step) => Math.round(step * 255)))
-  const texture = new DataTexture(data, steps.length, 1, RedFormat)
-  texture.minFilter = NearestFilter
-  texture.magFilter = NearestFilter
-  texture.generateMipmaps = false
-  texture.needsUpdate = true
-  return texture
-}
 
 /** `hex` mixed a fraction `t` of the way towards `towards` (both sRGB hex). */
 export function dimmedColor(hex: string, towards: string, t: number): Color {
@@ -61,7 +41,7 @@ export function createCityMaterials(
 ): CityMaterials {
   const gradientMap = createToonRamp(palette.toonRamp)
   const toon = (color: string | Color) => new MeshToonMaterial({ color, gradientMap })
-  const dim = (hex: string) => dimmedColor(hex, palette.background, config.dimmed.towardBackground)
+  const dim = (hex: string) => dimmedColor(hex, palette.haze, config.dimmed.towardBackground)
   // Parks lie just above the land top: the offset wins the depth test without a visible gap.
   const ground = (color: string | Color) =>
     new MeshToonMaterial({
