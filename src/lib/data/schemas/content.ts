@@ -454,6 +454,43 @@ export const EventLocationCategorySchema = z.union([
 /** Every place category the engine can be told the player is at, memorials included. */
 export type LocationCategory = Landmark['category'] | Venue['type']
 
+/**
+ * data/places/icons.json (S04k): each place category's icon group, drawn on its map pin and
+ * beside it in the Places list. Every venue type and landmark category maps to a group; `home`
+ * is the player's home row. The icon is decorative (emoji, aria-hidden); the group's label is a
+ * copy key, checked in src/lib/data/data.test.ts.
+ */
+export const PLACE_ICON_GROUPS = [
+  'job',
+  'food',
+  'coffee',
+  'nightlife',
+  'shop',
+  'gym',
+  'park',
+  'transit',
+  'landmark',
+  'skyline',
+  'bridge',
+  'stadium',
+  'neighborhood',
+  'memorial',
+  'home',
+] as const
+export type PlaceIconGroup = (typeof PLACE_ICON_GROUPS)[number]
+
+export const PlaceIconsConfigSchema = z.strictObject({
+  groups: z.record(
+    z.enum(PLACE_ICON_GROUPS),
+    z.strictObject({ icon: z.string().min(1).max(16), labelKey: z.string().min(1) }),
+  ),
+  categories: z.record(
+    z.union([z.enum(VENUE_TYPES), z.enum(LANDMARK_CATEGORIES)]),
+    z.enum(PLACE_ICON_GROUPS),
+  ),
+})
+export type PlaceIconsConfig = z.infer<typeof PlaceIconsConfigSchema>
+
 const statPoints = z.int().nonnegative()
 
 /** An inclusive range; at least one bound, and min <= max. */

@@ -18,7 +18,7 @@
  * browser restores the context, so the canvas is never remounted; this only reports the loss
  * and, after the first frame drawn again, the recovery.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { addAfterEffect, Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
@@ -48,6 +48,9 @@ import { useDayNightLighting } from './lighting/useDayNightLighting'
 import { TestHooks } from './testHooks'
 import { TravelAnimator } from './travel/TravelAnimator'
 import type { SceneProps } from './types'
+
+// Pin icons and labels (S04k): their own chunk, after the city is playable.
+const PinMarks = lazy(() => import('./pins/PinMarks'))
 
 perfMark('cc:3d:chunk')
 
@@ -347,6 +350,12 @@ function CityScene3D({
               pinLifts={pinLifts}
               handleRef={landmarksRef}
             />
+            {cityReady ? (
+              // No fallback: the pins draw as before until the marks arrive.
+              <Suspense>
+                <PinMarks pins={built.pins} palette={palette} />
+              </Suspense>
+            ) : null}
             <PlayerAvatar
               at={rest}
               groupRef={avatarRef}

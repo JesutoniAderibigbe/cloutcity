@@ -16,6 +16,9 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'apartment-decor-models', marker: 'apartment decor models: ' },
   // The /mod console (S18b): moderators only; /mod itself is never precached.
   { id: 'mod-console', marker: 'data-mod-error' },
+  // Pin icons and labels (S04k, src/scene/pins/PinMarks.tsx): after the map is playable; the
+  // pins draw without them until the chunk arrives.
+  { id: 'pin-marks', marker: 'cc-feature:pin-marks' },
   // supabase-js (S18): it only works online (sign-in, cloud saves, profiles, safety), so an
   // offline player gains nothing from having it installed; offline, the session stays local.
   { id: 'supabase-client', marker: 'GoTrueClient' },

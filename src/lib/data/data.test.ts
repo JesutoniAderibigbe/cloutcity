@@ -37,6 +37,7 @@ import {
   ItemsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
+  PlaceIconsConfigSchema,
   PremiumFileSchema,
   VenuesFileSchema,
 } from './schemas/content'
@@ -44,7 +45,7 @@ import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './sche
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
 import { BlenderLockSchema, LandmarkMeasurementsSchema } from './schemas/landmarkBlender'
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
-import { SceneConfigSchema } from './schemas/scene'
+import { PinMarksConfigSchema, SceneConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
@@ -110,6 +111,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/offline.json': OfflineConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
+  'config/pinMarks.json': PinMarksConfigSchema,
+  'places/icons.json': PlaceIconsConfigSchema,
   'config/profile.json': ProfileConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/realtime.json': RealtimeConfigSchema,
@@ -1005,6 +1008,9 @@ describe('cross-file references', () => {
     club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
     colors: items.flatMap((entry) => entry.decor?.variants.map((variant) => variant.nameKey) ?? []),
     housing: Object.values(homeInteriors).flatMap((home) => home.slots.map((slot) => slot.nameKey)),
+    categories: Object.values(
+      PlaceIconsConfigSchema.parse(readJson('places/icons.json')).groups,
+    ).map((group) => group.labelKey),
   }
 
   it('every copy key named by content exists in data/copy', () => {

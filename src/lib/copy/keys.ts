@@ -8,6 +8,7 @@ export type CopyKey =
   | keyof (typeof import('@data/copy/app/base.json'))['strings']
   | keyof (typeof import('@data/copy/audio/base.json'))['strings']
   | keyof (typeof import('@data/copy/boroughs/base.json'))['strings']
+  | keyof (typeof import('@data/copy/categories/base.json'))['strings']
   | keyof (typeof import('@data/copy/clout/base.json'))['strings']
   | keyof (typeof import('@data/copy/club/base.json'))['strings']
   | keyof (typeof import('@data/copy/colors/base.json'))['strings']

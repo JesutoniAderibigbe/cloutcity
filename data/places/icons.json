@@ -1,0 +1,84 @@
+{
+  "groups": {
+    "job": {
+      "icon": "💼",
+      "labelKey": "categories.job"
+    },
+    "food": {
+      "icon": "🥪",
+      "labelKey": "categories.food"
+    },
+    "coffee": {
+      "icon": "☕",
+      "labelKey": "categories.coffee"
+    },
+    "nightlife": {
+      "icon": "🎶",
+      "labelKey": "categories.nightlife"
+    },
+    "shop": {
+      "icon": "🛍️",
+      "labelKey": "categories.shop"
+    },
+    "gym": {
+      "icon": "💪",
+      "labelKey": "categories.gym"
+    },
+    "park": {
+      "icon": "🌳",
+      "labelKey": "categories.park"
+    },
+    "transit": {
+      "icon": "🚉",
+      "labelKey": "categories.transit"
+    },
+    "landmark": {
+      "icon": "🏛️",
+      "labelKey": "categories.landmark"
+    },
+    "skyline": {
+      "icon": "🏙️",
+      "labelKey": "categories.skyline"
+    },
+    "bridge": {
+      "icon": "🌉",
+      "labelKey": "categories.bridge"
+    },
+    "stadium": {
+      "icon": "🏟️",
+      "labelKey": "categories.stadium"
+    },
+    "neighborhood": {
+      "icon": "📍",
+      "labelKey": "categories.neighborhood"
+    },
+    "memorial": {
+      "icon": "🕊️",
+      "labelKey": "categories.memorial"
+    },
+    "home": {
+      "icon": "🏠",
+      "labelKey": "categories.home"
+    }
+  },
+  "categories": {
+    "job-site": "job",
+    "bodega": "food",
+    "food-spot": "food",
+    "coffee-shop": "coffee",
+    "club": "nightlife",
+    "boutique": "shop",
+    "thrift": "shop",
+    "gym": "gym",
+    "park": "park",
+    "subway-station": "transit",
+    "station": "transit",
+    "bridge": "bridge",
+    "building": "skyline",
+    "monument": "landmark",
+    "government": "landmark",
+    "stadium": "stadium",
+    "neighborhood": "neighborhood",
+    "memorial": "memorial"
+  }
+}
