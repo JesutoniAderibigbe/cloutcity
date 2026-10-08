@@ -309,6 +309,19 @@ body {
   }
 }
 
+/* The apartment's backdrop (src/scene/apartment/ApartmentCanvas.tsx, S04k): the room stands on
+   a soft pool of light in the UI's own colours, a warm cream by day and deep glass by night, not
+   a black void. The canvas is transparent above it. */
+.apartment-backdrop {
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 42%,
+      color-mix(in srgb, var(--color-taxi) 14%, var(--color-surface)) 0%,
+      transparent 72%
+    ),
+    var(--color-canvas);
+}
+
 /* A shop purchase's result, in the bought item's row (src/components/places/ShopSection.tsx,
    S04k): a quick pop where the tap was. Under reduced motion it simply appears. */
 @media (prefers-reduced-motion: no-preference) {

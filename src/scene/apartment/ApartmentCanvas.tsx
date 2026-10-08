@@ -8,17 +8,16 @@
  * - Picking reuses the map's tap rule and screen-space pick (src/scene/pins/tap.ts, pick.ts): a
  *   tap within `hitRadiusPx` (a target at least 44 px across) of a slot picks it; a tap close to
  *   several opens a chooser in the Home panel. Every 3D action has the panel's DOM path too.
- * - The camera keeps the home's data angle and backs off until the room fits the free scene row,
- *   which FreeRowFraming centres it in (the same framing as the map).
+ * - The camera keeps the home's data angle; RoomCamera frames the room large and centred between
+ *   the HUD and the Home panel (S04k), on a theme-following backdrop instead of a black void.
  * - Tiers (perf.json): low draws no shadows, mid draws blob shadows, high one directional
  *   PCFShadowMap (the object form: R3F's `shadows` boolean means PCFSoft, deprecated in r182).
  */
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { PCFShadowMap, PerspectiveCamera } from 'three'
+import { PCFShadowMap, PerspectiveCamera, Vector3 } from 'three'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import { log } from '@/lib/log'
-import { FreeRowFraming } from '../camera/FreeRowFraming'
 import { pickPin } from '../pins/pick'
 import { attachTapDetector } from '../pins/tap'
 import { FREE_SCENE_ROW_SELECTOR } from '../types'
@@ -37,7 +36,14 @@ import {
   toonRamp,
   type RoomInterior,
 } from './data'
-import { boundingSphere, cameraPosition, fitDistance, type Sphere } from './fit'
+import {
+  boundingSphere,
+  boxCorners,
+  cameraPosition,
+  fitDistance,
+  tightDistance,
+  type Sphere,
+} from './fit'
 import { lightingAt } from './lighting'
 import type { DecorModels } from './decorModels'
 import { useReducedMotion } from '@/lib/useReducedMotion'
@@ -46,7 +52,9 @@ import type { ApartmentViewProps, SlotTap } from './types'
 
 const GL = {
   antialias: true,
-  alpha: false,
+  // Transparent: the room stands on the page's own backdrop (globals.css `.apartment-backdrop`),
+  // which follows the UI theme, instead of a flat black clear colour.
+  alpha: true,
   stencil: false,
   powerPreference: 'high-performance',
 } as const
@@ -59,7 +67,18 @@ function roomSphere(interior: RoomInterior): Sphere {
   return boundingSphere(bounds.min, bounds.max)
 }
 
-/** Fits the camera to the room in the free scene row, again on every resize. */
+/** The toast zone of the overlay (src/components/overlay/OverlayLayout.tsx). */
+const TOAST_ZONE_SELECTOR = '[data-overlay-zone="toast"]'
+
+/**
+ * Frames the room large and centred (S04k): in the screen area between the HUD and the Home
+ * panel (the free scene row plus the toast zone, which is empty nearly always and only ever
+ * holds a short toast over the room's top), the room's projected corners fill the area as the
+ * aspect allows, less `fitMargin`, and the view slides so they sit in the area's centre. A
+ * bounding-sphere fit alone left the room a small box in a dark void on desktop. Again on every
+ * resize. The player's avatar (S16a, RoomAvatar) stands inside the room's bounds, so the framing
+ * holds it without change.
+ */
 function RoomCamera({ interior }: { readonly interior: RoomInterior }) {
   // Only a dependency: the camera is mutated through the store's own reference (three's model).
   const camera = useThree((state) => state.camera)
@@ -72,18 +91,13 @@ function RoomCamera({ interior }: { readonly interior: RoomInterior }) {
     if (!(camera instanceof PerspectiveCamera)) return
     const canvas = gl.domElement
     const row = document.querySelector<HTMLElement>(FREE_SCENE_ROW_SELECTOR)
+    const toast = document.querySelector<HTMLElement>(TOAST_ZONE_SELECTOR)
     const sphere = roomSphere(interior)
-    const apply = () => {
-      const rect = canvas.getBoundingClientRect()
-      if (rect.width === 0 || rect.height === 0) return
-      const distance = fitDistance(sphere, {
-        fovDeg: interior.camera.fovDeg,
-        width: rect.width,
-        height: rect.height,
-        rowHeight: row?.getBoundingClientRect().height ?? rect.height,
-        margin: apartmentConfig.fitMargin,
-      })
-      camera.fov = interior.camera.fovDeg
+    const bounds = roomBounds(interior, apartmentConfig)
+    const corners = boxCorners(bounds.min, bounds.max).map((c) => new Vector3(...c))
+    const projected = new Vector3()
+
+    const place = (distance: number) => {
       camera.near = NEAR_M
       camera.far = distance + sphere.radius * 2
       camera.position.set(
@@ -95,14 +109,73 @@ function RoomCamera({ interior }: { readonly interior: RoomInterior }) {
         ),
       )
       camera.lookAt(...sphere.center)
+      camera.updateMatrixWorld()
       camera.updateProjectionMatrix()
+    }
+    const measure = (width: number, height: number) => (distance: number) => {
+      place(distance)
+      let left = Infinity
+      let top = Infinity
+      let right = -Infinity
+      let bottom = -Infinity
+      for (const corner of corners) {
+        projected.copy(corner).project(camera)
+        const x = ((projected.x + 1) / 2) * width
+        const y = ((1 - projected.y) / 2) * height
+        left = Math.min(left, x)
+        right = Math.max(right, x)
+        top = Math.min(top, y)
+        bottom = Math.max(bottom, y)
+      }
+      return { left, top, right, bottom }
+    }
+
+    const apply = () => {
+      const rect = canvas.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) return
+      const free = row?.getBoundingClientRect()
+      const areaTop = (free?.top ?? rect.top) - rect.top
+      const areaBottom =
+        (toast?.getBoundingClientRect().bottom ?? free?.bottom ?? rect.bottom) - rect.top
+      const area = { width: rect.width, height: Math.max(1, areaBottom - areaTop) }
+      camera.fov = interior.camera.fovDeg
+      camera.clearViewOffset()
+      const start = fitDistance(sphere, {
+        fovDeg: interior.camera.fovDeg,
+        width: rect.width,
+        height: rect.height,
+        rowHeight: area.height,
+        margin: apartmentConfig.fitMargin,
+      })
+      const distance = tightDistance(
+        start,
+        measure(rect.width, rect.height),
+        area,
+        apartmentConfig.fitMargin,
+      )
+      const box = measure(rect.width, rect.height)(distance)
+      // Slide the view window so the room's projected centre lands on the area's centre.
+      const dx = rect.width / 2 - (box.left + box.right) / 2
+      const dy = areaTop + area.height / 2 - (box.top + box.bottom) / 2
+      camera.setViewOffset(
+        rect.width,
+        rect.height,
+        Math.round(-dx),
+        Math.round(-dy),
+        rect.width,
+        rect.height,
+      )
       invalidate()
     }
     apply()
     const observer = new ResizeObserver(apply)
     observer.observe(canvas)
     if (row !== null) observer.observe(row)
-    return () => observer.disconnect()
+    if (toast !== null) observer.observe(toast)
+    return () => {
+      observer.disconnect()
+      camera.clearViewOffset()
+    }
   }, [camera, gl, get, interior, invalidate])
 
   return null
@@ -311,7 +384,7 @@ export default function ApartmentCanvas({
       aria-label={label}
       data-cc-feature="cc-feature:apartment-scene"
       data-apartment-home={home}
-      className="absolute inset-0"
+      className="apartment-backdrop absolute inset-0"
     >
       <Canvas
         frameloop="demand"
@@ -323,10 +396,8 @@ export default function ApartmentCanvas({
         gl={GL}
         camera={{ fov: interior.camera.fovDeg, near: NEAR_M, far: 100 }}
       >
-        <color attach="background" args={[roomPalette.background]} />
         <RoomLights interior={interior} minute={minute} tier={tier} />
         <RoomCamera interior={interior} />
-        <FreeRowFraming />
         <Room
           interior={interior}
           placed={placed}

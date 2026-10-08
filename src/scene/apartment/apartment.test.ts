@@ -16,7 +16,7 @@ import {
   tokenHex,
   toonRamp,
 } from './data'
-import { boundingSphere, cameraPosition, fitDistance } from './fit'
+import { boundingSphere, boxCorners, cameraPosition, fitDistance, tightDistance } from './fit'
 import { lightingAt as cityLightingAt, mixHexLinear } from '@/lib/dayNight/lightingAt'
 import { lightingAt } from './lighting'
 import { triangleCount } from './parts'
@@ -209,5 +209,37 @@ describe('apartment scene graph', () => {
       expect(slot.x).toBeLessThan(390)
     }
     apartment.dispose()
+  })
+})
+
+describe('tight camera fit (S04k)', () => {
+  it('lists the eight corners of a box', () => {
+    const corners = boxCorners([0, 0, 0], [1, 2, 3])
+    expect(corners).toHaveLength(8)
+    expect(new Set(corners.map((c) => c.join(','))).size).toBe(8)
+  })
+
+  // A pinhole projection: size on screen is size / distance * focal.
+  const measure = (size: { w: number; h: number }) => (distance: number) => {
+    const focal = 1000
+    const w = (size.w / distance) * focal
+    const h = (size.h / distance) * focal
+    return { left: 400 - w / 2, right: 400 + w / 2, top: 300 - h / 2, bottom: 300 + h / 2 }
+  }
+
+  it('fills the limiting side of the area, less the margin', () => {
+    const area = { width: 800, height: 300 }
+    const d = tightDistance(10, measure({ w: 4, h: 3 }), area, 1.1)
+    const box = measure({ w: 4, h: 3 })(d)
+    expect((box.bottom - box.top) * 1.1).toBeCloseTo(300, 3)
+    expect(box.right - box.left).toBeLessThan(800)
+  })
+
+  it('brings the camera closer than the bounding-sphere fit', () => {
+    const sphere = boundingSphere([-1, 0, -1], [1, 2, 1])
+    const view = { fovDeg: 40, width: 800, height: 600, rowHeight: 600, margin: 1.06 }
+    const start = fitDistance(sphere, view)
+    const d = tightDistance(start, measure({ w: 2, h: 2 }), { width: 800, height: 600 }, 1.06)
+    expect(d).toBeLessThan(start)
   })
 })
