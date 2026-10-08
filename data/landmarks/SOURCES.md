@@ -291,6 +291,49 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L2: 594 triangles, 11748 bytes (`public/landmarks/deco-spire/lod2.glb`)
 - L3: 290 triangles, 7184 bytes (`public/landmarks/deco-spire/lod3.glb`)
 
+### high-line
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q843869 (High Line), CC0-1.0, <https://www.wikidata.org/wiki/Q843869>
+
+Dimensions:
+
+- `lengthM`: 2330 m (wikidata): length (P2043, 2.33 km): the route below runs about this long
+- `heightM`: 15 m (derived): the tallest tree's top above the street: the deck's elevation plus the tallest tree
+- `elevationM`: 9 m (estimate): the deck top above the street (about 30 ft)
+- `treeHighM`: 6 m (estimate): the tallest small trees in the beds
+- `treeLowM`: 3.5 m (estimate): the lower small trees
+- `deckWidthM`: 10 m (estimate): the viaduct's width (it widens and narrows; one width drawn)
+- `deckThicknessM`: 1.2 m (estimate): the deck slab
+- `girderM`: 1.4 m (estimate): the edge girders' depth below the slab
+- `walkWidthM`: 3.5 m (estimate): the paved walk down the middle
+- `columnSpacingM`: 20 m (estimate): between column pairs along the line
+- `columnWidthM`: 0.9 m (estimate): each steel column's side
+- `treeSpacingM`: 30 m (estimate): small trees along the beds at the finest level
+- `shrubSpacingM`: 14 m (estimate): shrubs along the beds at the finest level
+- `cornerRadiusM`: 45 m (estimate): how round the line turns its corners
+- `route0`: 40.73975, -74.0082 (estimate): route point 0: the south end at Gansevoort Street (by eye from the street grid; no PD/CC0 alignment found)
+- `route1`: 40.7416, -74.0079 (estimate): route point 1: along Washington Street near 14th Street (by eye from the street grid; no PD/CC0 alignment found)
+- `route2`: 40.74335, -74.00695 (estimate): route point 2: 16th Street, turning onto the avenue grid (by eye from the street grid; no PD/CC0 alignment found)
+- `route3`: 40.7458, -74.00515 (estimate): route point 3: 20th Street (by eye from the street grid; no PD/CC0 alignment found)
+- `route4`: 40.7478, -74.0037 (estimate): route point 4: 23rd Street (by eye from the street grid; no PD/CC0 alignment found)
+- `route5`: 40.7526, -74.0002 (estimate): route point 5: 30th Street, where the line turns west (by eye from the street grid; no PD/CC0 alignment found)
+- `route6`: 40.7544, -74.0045 (estimate): route point 6: 30th Street at 12th Avenue, turning north (by eye from the street grid; no PD/CC0 alignment found)
+- `route7`: 40.7565, -74.003 (estimate): route point 7: 34th Street, turning east (by eye from the street grid; no PD/CC0 alignment found)
+- `route8`: 40.7556, -74.0008 (estimate): route point 8: the north end on 34th Street (by eye from the street grid; no PD/CC0 alignment found)
+
+Readability scale (drawn width ÷ true width): deck ×2, columns ×3.
+
+Game scale: heights ×1.8, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 (the deck stands 16 m over the street); the route keeps its real length; widths take the readability scale.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6680 triangles, 133940 bytes (`public/landmarks/high-line/lod0.glb`)
+- L1: 3232 triangles, 63584 bytes (`public/landmarks/high-line/lod1.glb`)
+- L2: 1191 triangles, 24920 bytes (`public/landmarks/high-line/lod2.glb`)
+- L3: 589 triangles, 13688 bytes (`public/landmarks/high-line/lod3.glb`)
+
 ### manhattan-bridge
 
 Retrieved 2026-10-08. Sources:

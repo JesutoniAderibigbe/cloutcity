@@ -70,14 +70,10 @@ def decode_ring(deltas):
     return out
 
 
-def map_frame(data):
-    """(polygons around the landmark's location, a function lat/lng -> local x, y) from the
-    measurements' `park` area (scripts/blender/inputs.ts puts both files in the lock digest)."""
+def local_frame(data):
+    """A function lat/lng -> local (x, y) metres around the landmark's landmarks.json location
+    (scripts/blender/inputs.ts puts the projection and the location in the lock digest)."""
     geo = inputs.read_json("data", "geo", "parks.derived.json")
-    park_id = data["measurements"]["park"]
-    area = next((p for p in geo["parks"] if p["id"] == park_id), None)
-    if area is None:
-        raise ValueError("no park %s in data/geo/parks.derived.json" % park_id)
     places = inputs.read_json("data", "landmarks", "landmarks.json")["landmarks"]
     place = next(p for p in places if p["id"] == data["id"])
     ox, oy = project(place["location"]["lat"], place["location"]["lng"], geo["projection"])
@@ -86,8 +82,25 @@ def map_frame(data):
         x, y = project(lat, lng, geo["projection"])
         return x - ox, y - oy
 
-    polygons = [[[(x - ox, y - oy) for x, y in decode_ring(ring)] for ring in polygon] for polygon in area["polygons"]]
+    return local
+
+
+def map_frame(data):
+    """(the measurements' `park` area as polygons around the landmark's location, local_frame)."""
+    geo = inputs.read_json("data", "geo", "parks.derived.json")
+    park_id = data["measurements"]["park"]
+    area = next((p for p in geo["parks"] if p["id"] == park_id), None)
+    if area is None:
+        raise ValueError("no park %s in data/geo/parks.derived.json" % park_id)
+    local = local_frame(data)
+    ox, oy = local(*_inverse_origin(geo["projection"]))
+    polygons = [[[(x + ox, y + oy) for x, y in decode_ring(ring)] for ring in polygon] for polygon in area["polygons"]]
     return polygons, local
+
+
+def _inverse_origin(projection):
+    """The projection origin as lat/lng: local_frame of it is minus the landmark's offset."""
+    return projection["originLat"], projection["originLng"]
 
 
 def oriented_box(points, heading_deg):
