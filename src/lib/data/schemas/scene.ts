@@ -239,7 +239,20 @@ const TownsfolkConfigSchema = z.strictObject({
   minRingOfHeight: z.number().positive(),
   /** One hangout-then-walk cycle. */
   epochS: z.number().positive(),
-  walkSpeedMps: metres,
+  /** Walking pace in the local's own heights a second (a real person: about 0.75). */
+  walkHeightsPerS: z.number().positive().max(2),
+  /** Seconds a walk eases in and out over (no instant starts or stops). */
+  easeS: z.number().nonnegative(),
+  /** Seconds a local turns on the spot before setting off and after arriving. */
+  turnS: z.number().positive(),
+  /** Heading look-ahead round corners, in local heights (larger: wider, smoother turns). */
+  turnLookOfHeight: z.number().positive(),
+  /** Locals keep to the sidewalk this far (in their heights) beyond the street's kerb. */
+  sidewalkOfHeight: z.number().nonnegative(),
+  /** A street route longer than this × the straight line is walked straight instead. */
+  maxDetour: z.number().min(1),
+  /** The street node a place's walkers step onto is at most this far from its ring. */
+  accessM: metres,
   /** Walking takes at most this share of a cycle: farther places are never visited. */
   maxWalkShare: z.number().gt(0).lt(1),
   /** How many of the nearest places a local visits. */
@@ -257,11 +270,20 @@ const TownsfolkConfigSchema = z.strictObject({
   poseShare: z
     .strictObject({ talk: chance, wave: chance })
     .refine((share) => share.talk + share.wave <= 1, { error: 'pose shares exceed 1' }),
-  /** Where in its clip each standing pose is taken, as a share of the clip. */
-  poseTime: z.strictObject({ idle: unit, talk: unit, wave: unit }),
+  /**
+   * Animation frames baked from each pose's rig clip (src/scene/ambient/pedestrianKits.ts):
+   * the walk cycle, and each standing pose's (idle, talk, wave) loop.
+   */
+  frames: z.strictObject({
+    walk: ambientTier(z.int().min(2).max(32)),
+    stand: ambientTier(z.int().min(1).max(32)),
+  }),
+  /**
+   * Walkers are split into this many groups stepping out of phase with each other (each group
+   * one more set of draw calls per body), so a crowd never marches in step.
+   */
+  phaseGroups: ambientTier(z.int().min(1).max(4)),
   faceJitterRad: z.number().nonnegative(),
-  bobOfHeight: z.number().nonnegative(),
-  bobHz: z.number().positive(),
   /** Hair (and shoe) colours: the kits' `accent` bucket. */
   hair: z.array(HEX).min(1),
   names: z.strictObject({

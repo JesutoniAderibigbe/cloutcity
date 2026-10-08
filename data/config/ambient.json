@@ -101,7 +101,7 @@
       "perDistance": 0.004,
       "max": 5
     },
-    "bobM": 0.06,
+    "bobM": 0,
     "bobHz": 1.8,
     "lookOnlyMarginM": 120,
     "palette": {
@@ -185,7 +185,13 @@
     "spacingOfHeight": 0.6,
     "minRingOfHeight": 0.45,
     "epochS": 120,
-    "walkSpeedMps": 26,
+    "walkHeightsPerS": 0.7,
+    "easeS": 0.9,
+    "turnS": 0.6,
+    "turnLookOfHeight": 0.8,
+    "sidewalkOfHeight": 0.35,
+    "maxDetour": 1.9,
+    "accessM": 220,
     "maxWalkShare": 0.6,
     "neighbours": 3,
     "homeShare": 0.6,
@@ -198,14 +204,24 @@
       "talk": 0.5,
       "wave": 0.15
     },
-    "poseTime": {
-      "idle": 0.25,
-      "talk": 0.4,
-      "wave": 0.3
+    "frames": {
+      "walk": {
+        "low": 8,
+        "mid": 12,
+        "high": 16
+      },
+      "stand": {
+        "low": 6,
+        "mid": 8,
+        "high": 10
+      }
+    },
+    "phaseGroups": {
+      "low": 1,
+      "mid": 1,
+      "high": 2
     },
     "faceJitterRad": 0.5,
-    "bobOfHeight": 0.025,
-    "bobHz": 1.6,
     "hair": [
       "#1c1714",
       "#2b1d14",

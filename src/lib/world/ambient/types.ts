@@ -226,16 +226,21 @@ export interface TownsfolkConfig {
   readonly spacingOfHeight: number
   readonly minRingOfHeight: number
   readonly epochS: number
-  readonly walkSpeedMps: number
+  readonly walkHeightsPerS: number
+  readonly easeS: number
+  readonly turnS: number
+  readonly turnLookOfHeight: number
+  readonly sidewalkOfHeight: number
+  readonly maxDetour: number
+  readonly accessM: number
   readonly maxWalkShare: number
   readonly neighbours: number
   readonly homeShare: number
   readonly poses: PerAmbientTier<readonly TownsfolkPose[]>
   readonly poseShare: { readonly talk: number; readonly wave: number }
-  readonly poseTime: { readonly idle: number; readonly talk: number; readonly wave: number }
+  readonly frames: { readonly walk: PerAmbientTier<number>; readonly stand: PerAmbientTier<number> }
+  readonly phaseGroups: PerAmbientTier<number>
   readonly faceJitterRad: number
-  readonly bobOfHeight: number
-  readonly bobHz: number
   readonly hair: readonly string[]
   readonly names: {
     readonly woman: readonly string[]

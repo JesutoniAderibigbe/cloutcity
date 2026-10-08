@@ -102,19 +102,19 @@ describe('ambient pedestrians', () => {
     }
   })
 
-  it('bobs as it walks and fades in and out of its epoch', () => {
+  it('walks without hopping (S04q: bobM 0), swaying, and fades in and out of its epoch', () => {
     const sim = make()
-    const lifts = new Set<number>()
+    const yaws = new Set<number>()
     let faded = 0
     for (let t = T0; t < T0 + 240; t += 0.1) {
       const n = sim.collect(100, 100, 900, t, 1)
       for (const ped of sim.samples.slice(0, n)) {
-        lifts.add(Math.round(ped.pose.lift * 1000))
+        yaws.add(Math.round(ped.pose.yaw * 1000))
         if (ped.pose.scale < 1) faded++
-        expect(ped.pose.lift).toBeLessThanOrEqual(ambientConfig.pedestrians.bobM + 1e-9)
+        expect(ped.pose.lift).toBe(0)
       }
     }
-    expect(lifts.size).toBeGreaterThan(5)
+    expect(yaws.size).toBeGreaterThan(5)
     expect(faded).toBeGreaterThan(0)
   })
 

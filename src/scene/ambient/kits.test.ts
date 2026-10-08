@@ -8,6 +8,8 @@ import { BufferGeometry, SkinnedMesh, Vector3 } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { modelManifest, modelRef } from '@/lib/data/models'
 import { scene } from '@/lib/data/config'
+import ambientJson from '@data/config/ambient.json'
+import type { AmbientConfig } from '@/lib/world/ambient/types'
 import { VehicleKitConfigSchema, type VehicleKitConfig } from '@/lib/data/schemas/ambientKit'
 import { PEDESTRIAN_BUCKETS, VEHICLE_BUCKETS } from '@/lib/world/ambient/types'
 import { gltfLoader, prepareGltf, type SkinnedPartModel } from '../models/prepare'
@@ -15,6 +17,7 @@ import { partsBounds } from './buckets'
 import {
   PEDESTRIANS,
   PEDESTRIAN_KIT_SOURCES,
+  bakeTownsfolkKits,
   pedestrianModelIds,
   s16bPedestrians,
   pedestrianBucket,
@@ -259,4 +262,55 @@ describe('s16b pedestrian kits', () => {
       (await loader(ids)).filter((entry) => entry.model.kind !== 'rig')
     await expect(s16bPedestrians('low', noRig)).rejects.toThrow(/is not a rig/)
   })
+})
+
+describe('townsfolk kits (S04q: real motion, no GPU skinning)', () => {
+  const tf = (ambientJson as unknown as AmbientConfig).townsfolk
+
+  it('bakes every body and pose of a tier as a loop of grounded frames', async () => {
+    const kits = await bakeTownsfolkKits('mid', tf, fileLoader('high'))
+    expect(kits.map((kit) => kit.pose)).toEqual([...tf.poses.mid, ...tf.poses.mid])
+    for (const kit of kits) {
+      const count = kit.pose === 'walk' ? tf.frames.walk.mid : tf.frames.stand.mid
+      expect(kit.frames).toHaveLength(count)
+      expect(kit.durationS).toBeGreaterThan(0)
+      let lowest = Infinity
+      for (const frame of kit.frames) {
+        expect(frame.map((array) => array.length)).toEqual(
+          kit.parts.map((part) => part.geometry.getAttribute('position').array.length),
+        )
+        for (const array of frame) {
+          for (let i = 1; i < array.length; i += 3) lowest = Math.min(lowest, array[i] ?? 0)
+        }
+      }
+      // One shared ground: the loop's lowest point on y = 0, so nobody hops.
+      expect(lowest).toBeCloseTo(0, 4)
+      // It moves: the frames are not all the same.
+      const first = kit.frames[0]?.[0]
+      const later = kit.frames[Math.floor(kit.frames.length / 2)]?.[0]
+      expect(Array.from(later ?? [])).not.toEqual(Array.from(first ?? []))
+      if (kit.pose === 'walk') {
+        // A real stride: a loop covers about one to two body heights.
+        expect(kit.cycleHeights).toBeGreaterThan(0.4)
+        expect(kit.cycleHeights).toBeLessThan(2.5)
+        // In place: the body's centre stays over its spot through the loop.
+        const centreZ = (frame: readonly Float32Array[]) => {
+          let sum = 0
+          let n = 0
+          for (const array of frame) {
+            for (let i = 2; i < array.length; i += 3) {
+              sum += array[i] ?? 0
+              n++
+            }
+          }
+          return sum / Math.max(1, n)
+        }
+        const zs = kit.frames.map(centreZ)
+        expect(Math.max(...zs) - Math.min(...zs)).toBeLessThan(kit.heightM * 0.15)
+      } else {
+        expect(kit.cycleHeights).toBe(0)
+      }
+    }
+    for (const kit of kits) kit.dispose()
+  }, 60_000)
 })

@@ -41,6 +41,7 @@ import {
   type AmbientTier,
   type Circle,
   type PedestrianAnchor,
+  type StreetGraph,
   type TrainLine,
   type TrainStation,
 } from '@/lib/world/ambient/types'
@@ -131,6 +132,8 @@ export interface AmbientLayer {
   readonly group: Group
   /** The material every ambient mesh draws with. */
   readonly material: Material
+  /** The street graph the cars and pedestrians use, once built (null if the streets failed). */
+  readonly graph: Promise<StreetGraph | null>
   update(input: AmbientUpdate): AmbientView
   view(): AmbientView
   meshes(): readonly InstancedMesh[]
@@ -237,6 +240,10 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
   let pedestrianKits: readonly ScenePedestrianKit[] = []
   let vehicleMeshes: KitMeshes[] = []
   let pedestrianMeshes: KitMeshes[] = []
+  let resolveGraph: (graph: StreetGraph | null) => void = () => {}
+  const graphReady = new Promise<StreetGraph | null>((resolve) => {
+    resolveGraph = resolve
+  })
   const paint = config.vehicles.paint.map((hex) => new Color(hex))
   const palette = config.pedestrians.palette
   const skins = palette.skin.map((hex) => new Color(hex))
@@ -280,6 +287,7 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
         vehicleAvoid: [...data.clear, ...options.memorials],
         pedestrianAvoid,
       })
+      resolveGraph(graph)
       // The draw-call cap: trains first, then vehicle kits, then pedestrian kits, each kit
       // taking one call per bucket while they still fit.
       let calls = trainMesh.meshes.length
@@ -352,6 +360,9 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
     } catch (error) {
       status = 'failed'
       options.onFailure?.(error instanceof Error ? error.message : String(error))
+    } finally {
+      // Already resolved with the graph when it was built; else nothing walks the streets.
+      resolveGraph(null)
     }
   }
   void load()
@@ -620,6 +631,7 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
   return {
     group,
     material,
+    graph: graphReady,
     update,
     view: () => ({ ...last, status, updates }),
     meshes: () => [trainMesh, ...vehicleMeshes, ...pedestrianMeshes].flatMap((kit) => kit.meshes),

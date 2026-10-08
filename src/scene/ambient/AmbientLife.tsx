@@ -56,7 +56,7 @@ import {
   type AmbientMode,
   type AmbientPauseReason,
 } from './registry'
-import type { ScenePedestrianKit } from './pedestrianKits'
+import type { AnimatedKit, ScenePedestrianKit } from './pedestrianKits'
 import { createTownsfolkLayer, type TownsfolkLayer, type TownsfolkView } from './townsfolk'
 import { catalogVehicleKits, type AmbientModelLoader } from './vehicleKits'
 
@@ -246,7 +246,7 @@ export default function AmbientLife({
     // The bakers (skeleton cloning, posing) load only when a tier draws characters.
     const characterKits = (async (): Promise<{
       pedestrians: ScenePedestrianKit[]
-      townsfolk: ScenePedestrianKit[]
+      townsfolk: AnimatedKit[]
     }> => {
       if (assets.pedestrians.length === 0) return { pedestrians: [], townsfolk: [] }
       const { PEDESTRIAN_KIT_SOURCES, bakeTownsfolkKits } = await import('./pedestrianKits')
@@ -327,6 +327,8 @@ export default function AmbientLife({
             Math.max(avatar.minHeightM, distance * avatar.heightPerDistance),
           ) * avatar.playerScale,
         ),
+      playerMaxHeight: characterMaxM,
+      graph: () => created.graph,
       kits: async () => (await characterKits).townsfolk,
       onChange: () => invalidate(),
       onFailure: (reason) => log.info('ambient life: not loaded', { reason }),
