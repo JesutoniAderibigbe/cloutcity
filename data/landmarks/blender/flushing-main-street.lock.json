@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "flushing-main-street",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "6e3a7002a451692b89cce62aeb4520faa97916317434328206160e3b3d5daf1d",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/flushing-main-street/lod0.glb",
+      "sha256": "7cd94ab2800cec6f37638c45fff14a3a6347c67c4e7b81bb4bcd09699fc56246",
+      "bytes": 73556,
+      "triangles": 6984,
+      "uncompressedBytes": 657768
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/flushing-main-street/lod1.glb",
+      "sha256": "b3dca0ff07de0c22a7dbaaa5ced9a171ba9b5aae944de7dbfa2139676f7862d4",
+      "bytes": 41400,
+      "triangles": 3264,
+      "uncompressedBytes": 308076
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/flushing-main-street/lod2.glb",
+      "sha256": "574df954d9b32e32568d1ddddad11980df705144bbe4615f42546d9481c08480",
+      "bytes": 17420,
+      "triangles": 1088,
+      "uncompressedBytes": 103512
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/flushing-main-street/lod3.glb",
+      "sha256": "0d34576c1f19ff48281b6739765243baad0b54f9f554f5c9fe8e7671fe3a24ec",
+      "bytes": 10992,
+      "triangles": 540,
+      "uncompressedBytes": 52004
+    }
+  ]
+}

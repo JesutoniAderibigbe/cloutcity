@@ -259,6 +259,31 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1200 triangles, 16808 bytes (`public/landmarks/dumbo/lod2.glb`)
 - L3: 576 triangles, 9956 bytes (`public/landmarks/dumbo/lod3.glb`)
 
+### flushing-main-street
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q6736067 (Flushing Main Street), CC0-1.0, <https://www.wikidata.org/wiki/Q6736067>
+
+Dimensions:
+
+- `heightM`: 90 m (estimate): the tallest of the newer towers behind Main Street: the model's top
+- `streetLengthM`: 360 m (estimate): the stretch of Main Street modelled, about four blocks
+- `streetWidthM`: 24 m (estimate): Main Street between the building lines, with its sidewalks
+- `frontageM`: 28 × 10 m (estimate): the shopfront blocks' tallest (widthM) and lowest (depthM) heights
+- `towerLowM`: 55 m (estimate): the lower of the towers behind the street
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.2, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.2; plan real, so the blocks match the district around them.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6984 triangles, 73556 bytes (`public/landmarks/flushing-main-street/lod0.glb`)
+- L1: 3264 triangles, 41400 bytes (`public/landmarks/flushing-main-street/lod1.glb`)
+- L2: 1088 triangles, 17420 bytes (`public/landmarks/flushing-main-street/lod2.glb`)
+- L3: 540 triangles, 10992 bytes (`public/landmarks/flushing-main-street/lod3.glb`)
+
 ### jamaica-station
 
 Retrieved 2026-10-08. Sources:
