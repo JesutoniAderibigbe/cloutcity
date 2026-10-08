@@ -127,6 +127,46 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1200 triangles, 22852 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
 - L3: 584 triangles, 13288 bytes (`public/landmarks/brooklyn-bridge/lod3.glb`)
 
+### city-hall
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q1065206 (New York City Hall), CC0-1.0, <https://www.wikidata.org/wiki/Q1065206>
+- `nps-survey-1959`: National Park Service, National Survey of Historic Sites and Buildings: New York City Hall (1959; NRHP 66000539), public-domain, <https://npgallery.nps.gov/NRHP/GetAsset/NHLS/66000539_text>
+
+Dimensions:
+
+- `lengthM`: 65.76 m (wikidata): length (P2043, 215.75 ft): the front from wing end to wing end
+- `storeys`: 2 (wikidata): number of floors above ground (P1101): two storeys over a raised basement
+- `heightM`: 42 m (estimate): the cupola's tip above the street, proportioned by eye (no PD/CC0 figure found); a plain needle stands in for the statue (LEGAL-1: no figures)
+- `wallM`: 16 m (estimate): the main cornice above the street: a raised basement and two tall storeys
+- `basementM`: 3.5 m (estimate): the raised basement storey, drawn as a darker rusticated band
+- `atticM`: 1.6 m (estimate): the balustrade over the cornice
+- `roofM`: 3 m (estimate): the low hipped roof behind the balustrade
+- `centreBlock`: 37.76 × 32 m (derived): the front length less the two wings; the depth is an estimate
+- `wing`: 14 × 5 m (estimate): each end wing's width (two bays) and how far it projects ahead of the centre block (the C-shaped plan the NPS survey's engravings show)
+- `portico`: 22 × 5 m (estimate): the central columned portico at the main storey, with a balustrade over it
+- `porticoM`: 9 m (estimate): the portico's top above the street
+- `porticoColumns`: 6 (estimate): columns across the portico front
+- `stepsM`: 6 m (estimate): how far the broad front steps run out ahead of the portico
+- `cupolaBaseWidthM`: 9 m (estimate): the cupola's square lower stage across (the clock stage, drawn plain: no dial or text)
+- `cupolaBaseM`: 6 m (estimate): the square lower stage's height
+- `cupolaDrumDiameterM`: 7.6 m (estimate): the colonnaded drum across
+- `cupolaDrumM`: 7 m (estimate): the colonnaded drum's height
+- `cupolaDomeM`: 4.5 m (estimate): the dome's rise over the drum
+- `lanternM`: 2.5 m (estimate): the small lantern on the dome
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.8, widths ×1.25. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 so the hall and its cupola read at the 3,000-4,500 m game camera; the plan x1.25, the most that fits the frame's exclusion (86 x 60 m).
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 3350 triangles, 50116 bytes (`public/landmarks/city-hall/lod0.glb`)
+- L1: 1186 triangles, 20048 bytes (`public/landmarks/city-hall/lod1.glb`)
+- L2: 386 triangles, 9740 bytes (`public/landmarks/city-hall/lod2.glb`)
+- L3: 168 triangles, 5940 bytes (`public/landmarks/city-hall/lod3.glb`)
+
 ### deco-spire
 
 Retrieved 2026-10-08. Sources:
