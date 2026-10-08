@@ -424,6 +424,12 @@ export const AmbientConfigSchema = z.strictObject({
     /** Cars draw only while the camera is at most this far from its target. */
     showBelowDistanceM: ambientTier(metres),
     scale: distanceScale,
+    /**
+     * However far out, a car is never drawn longer than this share of the map style's tallest
+     * person (scene.json `characterMaxM`, S04q): zoomed out, cars never outgrow the people or
+     * the houses beside them.
+     */
+    maxLengthOfCharacter: z.number().positive().max(4),
     paint: z.array(HEX).min(1),
   }),
   pedestrians: z.strictObject({

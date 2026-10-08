@@ -103,6 +103,12 @@ export interface AmbientLayerOptions {
   /** The shared night-glow uniform: the vehicles' lamps glow with it (absent: they never glow). */
   readonly nightGlow?: IUniform<number>
   readonly groundY: number
+  /**
+   * The longest a car is ever drawn, metres (the map style's tallest person × `vehicles.
+   * maxLengthOfCharacter`): its distance scale stops there, so far out cars shrink on screen with
+   * the buildings and people instead of outgrowing them.
+   */
+  readonly vehicleMaxLengthM: number
   /** Height trains run at (the subway ribbons'). */
   readonly trainY: number
   /** Train car size at a camera distance (the trip train's scaling, never below real size). */
@@ -552,6 +558,7 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
       )
       const grow = Math.min(
         config.vehicles.scale.max,
+        Math.max(1, options.vehicleMaxLengthM / config.vehicles.lengthM),
         Math.max(1, distance * config.vehicles.scale.perDistance),
       )
       const vl = vehicleList

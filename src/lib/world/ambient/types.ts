@@ -156,6 +156,7 @@ export interface VehiclesConfig {
   readonly lengthM: number
   readonly showBelowDistanceM: PerAmbientTier<number>
   readonly scale: DistanceScale
+  readonly maxLengthOfCharacter: number
   /** theme-free paint colours (sRGB hex) drawn per instance; taxis keep their own paint. */
   readonly paint: readonly string[]
 }

@@ -4,6 +4,7 @@ import { scene } from '@/lib/data/config'
 import { PLAYER_AVATAR_NAME, avatarSize, buildAvatar, mapCharacterHeight } from './buildAvatar'
 import { farFade } from '../ambient/townsfolk'
 import plotsJson from '@data/config/plots.json'
+import ambientJson from '@data/config/ambient.json'
 import manifest from '@data/assets/manifest.json'
 
 const { avatar, camera } = scene
@@ -122,6 +123,17 @@ describe('mapCharacterHeight (S04q: people never outgrow the houses)', () => {
     })
     expect(heights.length).toBeGreaterThan(0)
     expect(scene.mapStyles.game.characterMaxM).toBeLessThan(Math.min(...heights))
+  })
+
+  it('never draws a car bigger than the people when zoomed out', () => {
+    const vehicles = ambientJson.vehicles
+    for (const style of styles) {
+      const cap = scene.mapStyles[style].characterMaxM
+      const longest = Math.max(vehicles.lengthM, cap * vehicles.maxLengthOfCharacter)
+      // A car stands about a third as tall as it is long: never taller than a person.
+      expect(longest / 3).toBeLessThan(cap)
+      expect(longest).toBeLessThanOrEqual(cap * 1.05)
+    }
   })
 
   it('shrinks the locals away over the far band instead of popping', () => {

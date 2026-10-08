@@ -285,6 +285,7 @@ export default function AmbientLife({
       createMaterial: () => materialRef.current(),
       nightGlow,
       groundY,
+      vehicleMaxLengthM: characterMaxM * config.vehicles.maxLengthOfCharacter,
       trainY: groundY + scene.subway.liftM,
       trainCarSize: (distance, out) => {
         // The trip train's size (src/scene/avatar/buildAvatar.ts avatarSize × travel ratios).

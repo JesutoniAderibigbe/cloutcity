@@ -64,6 +64,7 @@
       "perDistance": 0.004,
       "max": 8
     },
+    "maxLengthOfCharacter": 1,
     "paint": [
       "#f2f2ef",
       "#1f2226",
