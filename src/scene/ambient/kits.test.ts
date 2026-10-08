@@ -4,8 +4,9 @@
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { BufferGeometry, SkinnedMesh, Vector3 } from 'three'
+import { BufferAttribute, BufferGeometry, Color, SkinnedMesh, Vector3 } from 'three'
 import { describe, expect, it, vi } from 'vitest'
+import ambientJson from '@data/config/ambient.json'
 import { modelManifest, modelRef } from '@/lib/data/models'
 import { scene } from '@/lib/data/config'
 import { VehicleKitConfigSchema, type VehicleKitConfig } from '@/lib/data/schemas/ambientKit'
@@ -23,6 +24,7 @@ import {
   catalogVehicleKits,
   vehicleClassifier,
   vehicleKind,
+  withNightLamps,
   type AmbientLoadedModel,
   type AmbientModelLoader,
 } from './vehicleKits'
@@ -33,7 +35,10 @@ const AMBIENT_CARS = ['taxi-ambient', 'sedan-ambient', 'hatchback-ambient'] as c
 /** The `vehicleKit` block proposed for data/config/ambient.json (lane C merges it there). */
 const VEHICLE_KIT: VehicleKitConfig = {
   light: { warmMinRed: 0.5, warmMaxBlueShare: 0.6, tailMinRed: 0.3, tailMaxGreenShare: 0.25 },
+  lamps: ambientJson.vehicleKit.lamps,
 }
+/** Four lamp boxes of 12 triangles each (S04p). */
+const LAMP_TRIANGLES = 48
 const vehicleKits = catalogVehicleKits(VEHICLE_KIT)
 
 /** The loader the runtime builds on acquireModels, here straight from public/models. */
@@ -91,6 +96,40 @@ describe('vehicle kits', () => {
     expect(classify({ r: 0.02, g: 0.02, b: 0.02, slot: 0 })).toBe('glass')
   })
 
+  it('adds two warm head lamps on the nose and two red tail lamps on the tail; only they glow', () => {
+    const glass = new BufferGeometry()
+    glass.setAttribute('position', new BufferAttribute(new Float32Array(9), 3))
+    glass.setAttribute('normal', new BufferAttribute(new Float32Array(9), 3))
+    const bounds = { min: { x: -0.9, y: 0, z: -2 }, max: { x: 0.9, y: 1.4, z: 2 } }
+    const lit = withNightLamps(glass, bounds, VEHICLE_KIT.lamps)
+    const position = lit.getAttribute('position')
+    const glow = lit.getAttribute('_emissive')
+    expect(position.count).toBe(3 + LAMP_TRIANGLES * 3)
+    for (let i = 0; i < 3; i++)
+      expect([glow.getX(i), glow.getY(i), glow.getZ(i)]).toEqual([0, 0, 0])
+    const head = new Color(VEHICLE_KIT.lamps.head).multiplyScalar(VEHICLE_KIT.lamps.nightGlow)
+    const tail = new Color(VEHICLE_KIT.lamps.tail).multiplyScalar(VEHICLE_KIT.lamps.nightGlow)
+    const sides = { head: new Set<number>(), tail: new Set<number>() }
+    for (let i = 3; i < position.count; i++) {
+      const front = position.getZ(i) > 0
+      const want = front ? head : tail
+      expect(glow.getX(i)).toBeCloseTo(want.r, 5)
+      expect(glow.getY(i)).toBeCloseTo(want.g, 5)
+      expect(glow.getZ(i)).toBeCloseTo(want.b, 5)
+      // On the car's ends (just proud of the bounds), at lamp height, inside its width.
+      expect(Math.abs(position.getZ(i))).toBeGreaterThan(1.8)
+      expect(Math.abs(position.getZ(i))).toBeLessThan(2.1)
+      expect(position.getY(i)).toBeGreaterThan(0.3)
+      expect(position.getY(i)).toBeLessThan(1)
+      expect(Math.abs(position.getX(i))).toBeLessThan(0.9)
+      sides[front ? 'head' : 'tail'].add(Math.sign(position.getX(i)))
+    }
+    expect([...sides.head].sort()).toEqual([-1, 1])
+    expect([...sides.tail].sort()).toEqual([-1, 1])
+    expect(head.r).toBeGreaterThan(head.b)
+    expect(tail.r).toBeGreaterThan(tail.g * 3)
+  })
+
   it('names kinds from catalog ids', () => {
     expect(['taxi-ambient', 'sedan-ambient', 'bus-ambient'].map(vehicleKind)).toEqual([
       'taxi',
@@ -110,10 +149,12 @@ describe('vehicle kits', () => {
       const buckets = kit.parts.map((part) => part.bucket)
       expect(VEHICLE_BUCKETS.filter((bucket) => buckets.includes(bucket))).toEqual(buckets)
       expect(buckets.slice(0, 2)).toEqual(['paint', 'glass'])
-      // Every triangle lands in exactly one bucket.
-      expect(kit.triangles).toBe(entry.tiers.mid.triangles)
+      // Every triangle lands in exactly one bucket; the glass adds the night lamps (S04p).
+      expect(kit.triangles).toBe(entry.tiers.mid.triangles + LAMP_TRIANGLES)
       for (const part of kit.parts) {
-        expect(Object.keys(part.geometry.attributes).sort(), kit.id).toEqual(['normal', 'position'])
+        expect(Object.keys(part.geometry.attributes).sort(), kit.id).toEqual(
+          part.bucket === 'glass' ? ['_emissive', 'normal', 'position'] : ['normal', 'position'],
+        )
         expect(part.color).toMatch(/^#[0-9a-f]{6}$/)
       }
       const { min, max } = partsBounds(kit.parts)
@@ -148,7 +189,7 @@ describe('vehicle kits', () => {
     if (bus === undefined) throw new Error('no bus')
     expect(bus.kind).toBe('bus')
     expect(bus.parts.map((part) => part.bucket)).toEqual([...VEHICLE_BUCKETS])
-    expect(bus.triangles).toBe(entry.tiers.high.triangles)
+    expect(bus.triangles).toBe(entry.tiers.high.triangles + LAMP_TRIANGLES)
     expect(bus.triangles).toBeLessThanOrEqual(400)
     expect(bus.lengthM).toBeGreaterThan(11)
     expect(bus.lengthM).toBeLessThan(13)
@@ -169,8 +210,9 @@ describe('vehicle kits', () => {
     await expect(vehicleKits('low', ['taxi-ambient', 'sedan-ambient'], wrapped)).rejects.toThrow(
       /no "body" slot/,
     )
-    // The taxi baked first: its three parts are freed.
-    expect(dispose).toHaveBeenCalledTimes(VEHICLE_BUCKETS.length)
+    // The taxi baked first: its three parts are freed (after its lamp baking freed its scratch
+    // box, the box's unindexed copy and the unlit glass).
+    expect(dispose).toHaveBeenCalledTimes(VEHICLE_BUCKETS.length + 3)
     dispose.mockRestore()
   })
 })

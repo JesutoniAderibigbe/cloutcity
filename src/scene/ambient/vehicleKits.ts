@@ -6,12 +6,16 @@
  *
  * - `paint`: the body (`_SLOT` "body"); recoloured per instance, a taxi keeps its own paint.
  * - `light`: warm head lamps and red tail lamps (bright warm or strongly red, outside the body).
- * - `glass`: everything else (windows, tyres, trim, bumpers), drawn in its own dark colour.
+ * - `glass`: everything else (windows, tyres, trim, bumpers), drawn in its own dark colour, plus
+ *   four small lamp boxes (S04p, ambient.json `vehicleKit.lamps`): two head lamps on the nose and
+ *   two tail lamps on the tail. Only those carry a non-zero night-glow `_emissive` attribute, so
+ *   they glow warm and red after dark; layer.ts draws the part on the map pins' attribute-glow
+ *   program, so the lamps add no shader program and no draw call, on every tier.
  *
  * A kit copies what it needs into its own geometry, so the models it was baked from may be
  * released as soon as the source resolves.
  */
-import type { BufferGeometry } from 'three'
+import { BoxGeometry, BufferAttribute, BufferGeometry, Color } from 'three'
 import {
   VEHICLE_BUCKETS,
   type VehicleBucket,
@@ -21,6 +25,7 @@ import {
 } from '@/lib/world/ambient/types'
 import type { VehicleKitConfig } from '@/lib/data/schemas/ambientKit'
 import type { LoadedModel } from '../models/prepare'
+import { NIGHT_GLOW_ATTRIBUTE } from '../lighting/nightGlow'
 import type { ModelRef } from '../models/types'
 import { groundParts, partsBounds, splitIntoBuckets, type BucketTriangle } from './buckets'
 
@@ -63,6 +68,66 @@ export function vehicleKind(id: string): VehicleKind {
   return 'car'
 }
 
+/**
+ * `glass` (non-indexed position + normal, grounded, nose towards +z) with the four lamp boxes
+ * appended and the `_emissive` attribute: zero on the glass, the lamp colour times `nightGlow`
+ * on the lamps. Returns the new geometry; the caller disposes the old one.
+ */
+export function withNightLamps(
+  glass: BufferGeometry,
+  bounds: {
+    readonly min: { x: number; y: number; z: number }
+    readonly max: { x: number; y: number; z: number }
+  },
+  lamps: VehicleKitConfig['lamps'],
+): BufferGeometry {
+  const width = bounds.max.x - bounds.min.x
+  const height = bounds.max.y - bounds.min.y
+  const box = new BoxGeometry(width * lamps.widthShare, height * lamps.heightShare, lamps.depthM)
+  const unit = box.toNonIndexed()
+  box.dispose()
+  const lampPositions = unit.getAttribute('position')
+  const lampNormals = unit.getAttribute('normal')
+  const glassPositions = glass.getAttribute('position')
+  const glassNormals = glass.getAttribute('normal')
+  const perLamp = lampPositions.count
+  const total = glassPositions.count + perLamp * 4
+  const position = new Float32Array(total * 3)
+  const normal = new Float32Array(total * 3)
+  const emissive = new Float32Array(total * 3)
+  position.set(glassPositions.array as Float32Array)
+  normal.set(glassNormals.array as Float32Array)
+  const y = bounds.min.y + height * lamps.yShare
+  const half = lamps.depthM / 2 - lamps.insetM
+  const glow = (hex: string) => new Color(hex).multiplyScalar(lamps.nightGlow)
+  const ends = [
+    { z: bounds.max.z + half, color: glow(lamps.head) },
+    { z: bounds.min.z - half, color: glow(lamps.tail) },
+  ]
+  let at = glassPositions.count
+  for (const end of ends) {
+    for (const side of [-1, 1]) {
+      const x = side * width * lamps.xShare
+      for (let i = 0; i < perLamp; i++, at++) {
+        position.set(
+          [lampPositions.getX(i) + x, lampPositions.getY(i) + y, lampPositions.getZ(i) + end.z],
+          at * 3,
+        )
+        normal.set([lampNormals.getX(i), lampNormals.getY(i), lampNormals.getZ(i)], at * 3)
+        end.color.toArray(emissive, at * 3)
+      }
+    }
+  }
+  unit.dispose()
+  const out = new BufferGeometry()
+  out.setAttribute('position', new BufferAttribute(position, 3))
+  out.setAttribute('normal', new BufferAttribute(normal, 3))
+  out.setAttribute(NIGHT_GLOW_ATTRIBUTE, new BufferAttribute(emissive, 3))
+  out.computeBoundingBox()
+  out.computeBoundingSphere()
+  return out
+}
+
 /** Bakes one ambient vehicle kit from a loaded static model. */
 export function vehicleKitFromModel(
   loaded: AmbientLoadedModel,
@@ -72,15 +137,21 @@ export function vehicleKitFromModel(
   if (model.kind !== 'static') throw new Error(`Ambient vehicle "${ref.id}" is not a static model`)
   const paintSlot = ref.slots.indexOf('body') + 1
   if (paintSlot === 0) throw new Error(`Ambient vehicle "${ref.id}" has no "body" slot`)
-  const parts = splitIntoBuckets(model.geometry, vehicleClassifier(paintSlot, config), {
+  const split = splitIntoBuckets(model.geometry, vehicleClassifier(paintSlot, config), {
     order: VEHICLE_BUCKETS,
     matrix: model.matrix,
   })
-  if (!parts.some((part) => part.bucket === 'paint')) {
+  if (!split.some((part) => part.bucket === 'paint')) {
     throw new Error(`Ambient vehicle "${ref.id}" has no body triangles`)
   }
-  groundParts(parts)
-  const { min, max } = partsBounds(parts)
+  groundParts(split)
+  const { min, max } = partsBounds(split)
+  const parts = split.map((part) => {
+    if (part.bucket !== 'glass') return part
+    const geometry = withNightLamps(part.geometry, { min, max }, config.lamps)
+    part.geometry.dispose()
+    return { ...part, geometry, triangles: geometry.getAttribute('position').count / 3 }
+  })
   return {
     id: ref.id,
     kind: vehicleKind(ref.id),

@@ -156,6 +156,17 @@
       "warmMaxBlueShare": 0.6,
       "tailMinRed": 0.3,
       "tailMaxGreenShare": 0.25
+    },
+    "lamps": {
+      "widthShare": 0.24,
+      "heightShare": 0.12,
+      "depthM": 0.1,
+      "insetM": 0.04,
+      "xShare": 0.3,
+      "yShare": 0.42,
+      "head": "#fff1c9",
+      "tail": "#ff2a1a",
+      "nightGlow": 1.6
     }
   },
   "townsfolk": {

@@ -263,6 +263,18 @@ export interface AmbientConfig {
       readonly tailMinRed: number
       readonly tailMaxGreenShare: number
     }
+    /** Night lamps (schemas/ambientKit.ts `lamps`, S04p). */
+    readonly lamps: {
+      readonly widthShare: number
+      readonly heightShare: number
+      readonly depthM: number
+      readonly insetM: number
+      readonly xShare: number
+      readonly yShare: number
+      readonly head: string
+      readonly tail: string
+      readonly nightGlow: number
+    }
   }
   readonly townsfolk: TownsfolkConfig
 }

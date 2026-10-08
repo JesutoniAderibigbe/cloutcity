@@ -41,6 +41,7 @@ import type {
 } from '@/lib/world/ambient/types'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { AvatarConfig } from '../avatar/buildAvatar'
+import { useNightGlow } from '../lighting/nightGlow'
 import { acquireModels } from '../models/runtime'
 import { ambientSteps } from '../quality/ambientSteps'
 import { beginContinuous, endContinuous } from '../quality/continuity'
@@ -144,6 +145,8 @@ export default function AmbientLife({
   const sceneRoot = useThree((state) => state.scene)
   const invalidate = useThree((state) => state.invalidate)
   const get = useThree((state) => state.get)
+  // The rig's shared uniform object: the vehicles' lamps glow with it (S04p).
+  const nightGlow = useNightGlow()
   const reducedMotion = useReducedMotion()
   const [test] = useState(testClock)
   // Under reduced motion the city stays as it was when it mounted.
@@ -264,6 +267,7 @@ export default function AmbientLife({
       config,
       caps: ambientCaps(tier),
       createMaterial: () => materialRef.current(),
+      nightGlow,
       groundY,
       trainY: groundY + scene.subway.liftM,
       trainCarSize: (distance, out) => {
@@ -350,6 +354,7 @@ export default function AmbientLife({
     venues,
     groundY,
     scene,
+    nightGlow,
     get,
     gl,
     sceneRoot,
@@ -543,6 +548,7 @@ export default function AmbientLife({
           triangles: 0,
           drawCalls: 0,
           sameProgramAsBlocks: false,
+          lampsSameProgramAsPins: false,
           raycastOff: true,
           inMemorialClearance: 0,
           positionsHash: '0',
@@ -559,7 +565,13 @@ export default function AmbientLife({
         drawn: view.drawn,
         triangles: view.triangles,
         drawCalls: view.drawCalls,
-        sameProgramAsBlocks: sameProgram(gl, sceneRoot, layer.material, meshes),
+        sameProgramAsBlocks: sameProgram(
+          gl,
+          sceneRoot,
+          layer.material,
+          meshes.filter((mesh) => mesh.material !== layer.lampMaterial),
+        ),
+        lampsSameProgramAsPins: lampsShareProgram(gl, sceneRoot, layer.lampMaterial),
         raycastOff: meshes.every((mesh) => mesh.raycast !== Mesh.prototype.raycast),
         inMemorialClearance: view.inMemorialClearance,
         positionsHash: view.positionsHash,
@@ -597,6 +609,22 @@ const drawnTotal = (view: AmbientView, townsfolk: TownsfolkView | null) =>
   (townsfolk?.drawn ?? 0)
 
 /** Whether the ambient material compiled to the very program the blocks draw with. */
+/** The lamps' material (S04p) compiled to the map pins' night-glow program. */
+function lampsShareProgram(gl: WebGLRenderer, root: Object3D, lamp: Material | null): boolean {
+  if (lamp === null) return false
+  let pins: Material | null = null
+  root.traverse((object) => {
+    if (pins === null && object instanceof InstancedMesh && object.name === 'pins-venue') {
+      pins = Array.isArray(object.material) ? (object.material[0] ?? null) : object.material
+    }
+  })
+  if (pins === null) return false
+  const programOf = (m: Material) =>
+    (gl.properties.get(m) as { currentProgram?: unknown }).currentProgram
+  const ours = programOf(lamp)
+  return ours !== undefined && ours === programOf(pins)
+}
+
 function sameProgram(
   gl: WebGLRenderer,
   root: Object3D,

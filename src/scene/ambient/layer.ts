@@ -9,6 +9,10 @@
  * (`createBuildingMaterial({ gradientMap, colors: 'instance' })`, passed in: instanced toon with
  * instanceColor, no vertex colours, no patch), so three reuses the program the blocks already
  * compiled on every tier. All bucket meshes of one kit share one instanceMatrix attribute.
+ * The vehicles' `glass` parts, which carry their night lamps (S04p, vehicleKits.ts), draw with a
+ * second material of the same recipe that glows at night from the `_emissive` attribute: exactly
+ * the map pins' material (instanced toon, instance colours, `patchNightGlow(…, 'attribute')`), so
+ * three reuses the pins' program and the lamps add no draw call.
  * Nothing here is pickable, casts a shadow, or is ever counted as a player (UX-3).
  */
 import {
@@ -25,6 +29,7 @@ import {
   Vector3,
   type BufferGeometry,
   type Camera,
+  type IUniform,
   type Material,
   type Object3D,
 } from 'three'
@@ -45,6 +50,7 @@ import {
   type TrainStation,
 } from '@/lib/world/ambient/types'
 import { createVehicleSim, type VehicleSim } from '@/lib/world/ambient/vehicles'
+import { patchNightGlow } from '../lighting/nightGlow'
 import type { StreetsMini } from '../props/schema'
 import type { ScenePedestrianKit } from './pedestrianKits'
 import type { SceneVehicleKit } from './vehicleKits'
@@ -93,6 +99,8 @@ export interface AmbientLayerOptions {
    * chunk never imports the buildings' modules).
    */
   readonly createMaterial: () => Material
+  /** The shared night-glow uniform: the vehicles' lamps glow with it (absent: they never glow). */
+  readonly nightGlow?: IUniform<number>
   readonly groundY: number
   /** Height trains run at (the subway ribbons'). */
   readonly trainY: number
@@ -129,8 +137,10 @@ export interface AmbientUpdate {
 
 export interface AmbientLayer {
   readonly group: Group
-  /** The material every ambient mesh draws with. */
+  /** The material every ambient mesh draws with, but the vehicles' glass and lamps. */
   readonly material: Material
+  /** The vehicles' glass-and-lamps material (the pins' night-glow program); null without `nightGlow`. */
+  readonly lampMaterial: Material | null
   update(input: AmbientUpdate): AmbientView
   view(): AmbientView
   meshes(): readonly InstancedMesh[]
@@ -162,6 +172,8 @@ export function kitMeshes(
   material: Material,
   recoloured: ReadonlySet<string>,
   triangles: number,
+  /** Per-bucket material overrides (the vehicles' glass, which carries the night lamps). */
+  materials: Readonly<Record<string, Material>> = {},
 ): KitMeshes {
   const matrices = new InstancedBufferAttribute(new Float32Array(Math.max(1, capacity) * 16), 16)
   matrices.setUsage(DynamicDrawUsage)
@@ -169,7 +181,11 @@ export function kitMeshes(
   const meshes: InstancedMesh[] = []
   const recolour: { mesh: InstancedMesh; bucket: string }[] = []
   for (const part of parts) {
-    const mesh = new InstancedMesh(part.geometry, material, Math.max(1, capacity))
+    const mesh = new InstancedMesh(
+      part.geometry,
+      materials[part.bucket] ?? material,
+      Math.max(1, capacity),
+    )
     mesh.name = `ambient-${name}-${part.bucket}`
     mesh.instanceMatrix = matrices
     const colors = new Float32Array(Math.max(1, capacity) * 3)
@@ -198,6 +214,13 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
   const group = new Group()
   group.name = 'ambient-life'
   const material = options.createMaterial()
+  let lampMaterial: Material | null = null
+  if (options.nightGlow !== undefined) {
+    lampMaterial = options.createMaterial()
+    patchNightGlow(lampMaterial, 'attribute', { uniform: options.nightGlow })
+  }
+  const lampOverride: Record<string, Material> =
+    lampMaterial === null ? {} : { glass: lampMaterial }
   let disposed = false
   let status: AmbientStatus = 'loading'
   let updates = 0
@@ -312,6 +335,7 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
           material,
           new Set(kit.kind === 'taxi' ? [] : ['paint']),
           kit.triangles,
+          lampOverride,
         ),
       )
       pedestrianMeshes = keptPedestrians.map((kit) =>
@@ -620,6 +644,7 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
   return {
     group,
     material,
+    lampMaterial,
     update,
     view: () => ({ ...last, status, updates }),
     meshes: () => [trainMesh, ...vehicleMeshes, ...pedestrianMeshes].flatMap((kit) => kit.meshes),
@@ -632,6 +657,7 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
       box.dispose()
       for (const kit of [...vehicleKits, ...pedestrianKits]) kit.dispose()
       material.dispose()
+      lampMaterial?.dispose()
     },
   }
 }

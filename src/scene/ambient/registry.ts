@@ -24,8 +24,10 @@ export interface AmbientHookState {
   }
   readonly triangles: number
   readonly drawCalls: number
-  /** Every ambient mesh draws with the blocks' shader program. */
+  /** Every ambient mesh but the vehicles' glass (and lamps) draws with the blocks' program. */
   readonly sameProgramAsBlocks: boolean
+  /** The vehicles' glass and lamps (S04p) draw with the map pins' night-glow program. */
+  readonly lampsSameProgramAsPins: boolean
   /** No ambient mesh uses three's raycast. */
   readonly raycastOff: boolean
   readonly inMemorialClearance: number
