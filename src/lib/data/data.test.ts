@@ -66,6 +66,7 @@ import {
   StreetPropsConfigSchema,
 } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
+import { InteractionsFileSchema, RoomSimConfigSchema } from './schemas/roomSim'
 import {
   AudioManifestSchema,
   BlocksFileSchema,
@@ -160,6 +161,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/props.json': StreetPropsConfigSchema,
   'config/realtime.json': RealtimeConfigSchema,
+  'config/roomSim.json': RoomSimConfigSchema,
   'config/scene.json': SceneConfigSchema,
   'config/sync.json': SyncConfigSchema,
   'config/theme.json': ThemeConfigSchema,
@@ -176,6 +178,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
   'homes/interiors.json': HomeInteriorsFileSchema,
+  'homes/interactions.json': InteractionsFileSchema,
   'homes/finishes.json': FinishesFileSchema,
   'homes/engine.derived.json': HomeEngineTablesSchema,
   'homes/neighborhoods.json': NeighborhoodsFileSchema,

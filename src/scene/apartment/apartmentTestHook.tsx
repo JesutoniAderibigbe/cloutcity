@@ -66,7 +66,16 @@ export interface ApartmentTestHook {
    * The player's avatar in the room (S16a): whether its model is drawn, its meshes (the head and
    * body, then any `-attachment`) and its triangles; null when no avatar group is in the room.
    */
-  avatar(): { drawn: boolean; meshes: string[]; triangles: number } | null
+  avatar(): {
+    drawn: boolean
+    meshes: string[]
+    triangles: number
+    /** S40c: where the Sim stands (room metres), the clip it plays, its prop and bubble key. */
+    position: [number, number, number]
+    clip: string | null
+    prop: string | null
+    bubble: string | null
+  } | null
 }
 
 declare global {
@@ -164,7 +173,17 @@ export function ApartmentTestHook({
           const geometry = object.geometry as BufferGeometry
           triangles += (geometry.index?.count ?? geometry.getAttribute('position').count) / 3
         })
-        return { drawn: meshes.length > 0, meshes, triangles }
+        const sim = group.userData.sim as
+          { clip: string; prop: string | null; bubble: string | null } | undefined
+        return {
+          drawn: meshes.length > 0,
+          meshes,
+          triangles,
+          position: [group.position.x, group.position.y, group.position.z],
+          clip: sim?.clip ?? null,
+          prop: sim?.prop ?? null,
+          bubble: sim?.bubble ?? null,
+        }
       },
     }
     window.__cloutcityTest = { ...window.__cloutcityTest, apartment: hook }

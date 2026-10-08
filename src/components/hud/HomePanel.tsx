@@ -36,6 +36,7 @@ import { useActionGuard } from '@/components/overlay/useActionGuard'
 import { setApartmentView } from '@/state/apartmentView'
 import { closeHudPanel } from '@/state/hudPanel'
 import { openPlace } from '@/state/placeSheet'
+import { playRoomActivity } from '@/state/roomActivity'
 import { gameStore, useGameStore } from '@/state/store'
 import { HOME_SPOT_ID } from '@/state/trip'
 import { finishesView, placedView } from './homeView'
@@ -51,7 +52,12 @@ const SECTION_HEADING = 'text-xs font-bold text-muted uppercase'
 /** Which part of the Home panel shows: the room and its things, or buy mode's catalogue (S40). */
 export type HomeMode = 'room' | 'buy'
 
-const performHomeAction = (actionId: string) => gameStore.getState().performHomeAction(actionId)
+/** Does the action, then has the room's Sim act it out (S40c: visual only, after the fact). */
+const performHomeAction = (actionId: string) => {
+  const outcome = gameStore.getState().performHomeAction(actionId)
+  if (outcome.ok) playRoomActivity(actionId)
+  return outcome
+}
 
 /**
  * Quality tiers arrive with S04b; until then every device gets the mid tier, as the map does
