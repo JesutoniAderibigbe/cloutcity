@@ -1,6 +1,7 @@
 'use client'
 
 import { useModalOpen } from '@/components/overlay/modalState'
+import { CloudSaveStatus } from '@/components/sync/CloudSaveStatus'
 import { copy, type CopyKey } from '@/lib/copy'
 import { closeHudPanel, openHudPanel, useHudPanel, type HudPanel } from '@/state/hudPanel'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -22,16 +23,17 @@ const BUTTONS = [
 ] as const satisfies readonly { panel: HudPanel; labelKey: CopyKey; icon: string }[]
 
 const BUTTON =
-  'min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
+  'min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 const toggle = (panel: HudPanel, open: HudPanel | null) =>
   open === panel ? closeHudPanel() : openHudPanel(panel)
 
 /**
- * The HUD's panel buttons in the actions cell (S10a; S05 layout; Home, S16). On wide screens,
- * Inventory, Rent and Home (icons with their labels as accessible names below `lg`, labels from
- * `lg`). At every width, the More button that opens a
- * panel holding Inventory, Rent, Home, the sound settings (Q3) and Help (S06). Toggle buttons: tapping the open
+ * The HUD's panel buttons in the actions cell (S10a; S05 layout; Home, S16; cloud save, S18c).
+ * On wide screens, Inventory, Rent and Home (icons with their labels as accessible names below
+ * `lg`, labels from `lg`), and from 704 px the cloud save chip. At every width, the More button
+ * that opens a panel holding Inventory, Rent, Home, the cloud save status, the sound settings
+ * (Q3) and Help (S06). Toggle buttons: tapping the open
  * panel's button closes it. Hidden while a modal (the welcome card) is open, since everything
  * behind it is inert anyway.
  */
@@ -39,8 +41,7 @@ export function HudPanelButtons() {
   const open = useHudPanel()
   const modalOpen = useModalOpen()
   if (modalOpen) return null
-  const shade = (panel: HudPanel) =>
-    open === panel ? 'bg-pink-400 text-night-950' : 'bg-night-800 text-ink-50'
+  const shade = (panel: HudPanel) => (open === panel ? 'bg-taxi text-on-taxi' : 'bg-raised text-fg')
   return (
     <div data-cc-feature="cc-feature:hud-panel-buttons" className="flex shrink-0 gap-1">
       {BUTTONS.map(({ panel, labelKey, icon }) => (
@@ -67,6 +68,14 @@ export function HudPanelButtons() {
           <span className="sr-only lg:not-sr-only">{copy(labelKey)}</span>
         </button>
       ))}
+      <CloudSaveStatus
+        open={open}
+        onToggle={() => toggle('cloud', open)}
+        // Only where the actions cell has room for it beside Inventory and Rent (704 px); on
+        // narrower screens the status is a row in More, and between 640 and 703 px only the
+        // panel announcements carry it (see CloudSaveStatus).
+        className={`${BUTTON} hidden min-[704px]:flex hud-short:hidden`}
+      />
       <button
         type="button"
         data-hud-panel="more"

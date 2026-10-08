@@ -4,13 +4,17 @@
  * is caught.
  */
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { OPTIONAL_CHUNK_MARKERS } from '../src/lib/pwa/lazyChunks.ts'
 import { BOOT_ISLAND_FEATURES, SCENE_FEATURE } from './budget'
 
 const SCRIPT = join(import.meta.dirname, 'budget.ts')
+const REPO = join(import.meta.dirname, '..')
+/** The model lines read the real manifest and the player's avatar parts. */
+const repoFile = (path: string) => readFileSync(join(REPO, path), 'utf8')
 const dirs: string[] = []
 
 afterEach(() => {
@@ -34,6 +38,7 @@ const DEFAULT_PERF = {
   apartmentChunkJsGzKB: 40,
   serviceWorkerGzKB: 15,
   precacheGzKB: 1000,
+  totalBytesToPlayableGzKB: { low: 1200, mid: 1600, high: 2000 },
 }
 
 const THREE = '"REVISION",0,"182"'
@@ -102,6 +107,8 @@ function fakeProject(perf: Record<string, unknown> = {}, files: Record<string, s
   ]
   const build: Record<string, string> = {
     'data/config/perf.json': JSON.stringify({ ...DEFAULT_PERF, ...perf }),
+    'data/config/scene.json': repoFile('data/config/scene.json'),
+    'data/assets/manifest.json': repoFile('data/assets/manifest.json'),
     '.next/server/app/index.html':
       '<html><body><script src="/_next/static/chunks/main.js" async=""></script><script>self.__next_f=[]</script></body></html>',
     '.next/server/app/page/react-loadable-manifest.json': JSON.stringify({
@@ -115,6 +122,13 @@ function fakeProject(perf: Record<string, unknown> = {}, files: Record<string, s
     [`.next/${chunk('shared')}`]: noisyChunk(3),
     [`.next/${chunk('room')}`]: noisyChunk(13, 'var f="cc-feature:apartment-scene";'),
     [`.next/${chunk('sheet')}`]: 'x="cc-feature:event-sheet"',
+    // PERF-7: one chunk per optional marker, none of them precached.
+    ...Object.fromEntries(
+      OPTIONAL_CHUNK_MARKERS.map(({ id, marker }) => [
+        `.next/${chunk(id)}`,
+        `x=${JSON.stringify(marker)}`,
+      ]),
+    ),
   }
   for (const island of islands) {
     build[`.next/${chunk(island.name)}`] =
@@ -391,5 +405,49 @@ describe('budget CLI', () => {
       expect(result.stderr).toMatch(/no mid district bodies/)
       expect(result.status).toBe(1)
     })
+  })
+
+  it('prints the model lines and fails when the glTF loader reaches the shell', () => {
+    const clean = runBudget(fakeProject())
+    expect(clean.stdout).toMatch(/^PASS Models on the playable path \(low\)/m)
+    expect(clean.stdout).toMatch(/^PASS Model loader stays out of the shell JS/m)
+
+    const leaky = runBudget(
+      fakeProject(
+        {},
+        {
+          '.next/server/app/index.html':
+            '<html><body><script src="/_next/static/chunks/main.js" async=""></script><script>x="EXT_meshopt_compression"</script></body></html>',
+        },
+      ),
+    )
+    expect(leaky.stdout).toMatch(/^FAIL Model loader reached the shell JS/m)
+    expect(leaky.status).toBe(1)
+  })
+
+  it('passes when the optional chunks exist and are not precached (PERF-7)', () => {
+    const result = runBudget(fakeProject())
+    expect(result.stdout).toMatch(/^PASS Optional chunks left out of the precache \(PERF-7\)/m)
+  })
+
+  it('fails when an optional chunk is precached, or when a marker is in no chunk (PERF-7)', () => {
+    const precached = runBudget(
+      fakeProject(
+        {},
+        {
+          '.next/server/app/serwist/sw.js.body': workerBody([...PLAYABLE_CHUNKS, 'model-runtime']),
+        },
+      ),
+    )
+    expect(precached.stdout).toMatch(
+      /^FAIL Optional chunks \(PERF-7\): precaches static\/chunks\/model-runtime\.js/m,
+    )
+    expect(precached.status).toBe(1)
+
+    const missing = runBudget(fakeProject({}, { [`.next/${chunk('mod-console')}`]: 'x=1' }))
+    expect(missing.stdout).toMatch(
+      /^FAIL Optional chunks \(PERF-7\): no built chunk carries the mod-console marker/m,
+    )
+    expect(missing.status).toBe(1)
   })
 })

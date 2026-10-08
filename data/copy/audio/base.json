@@ -21,15 +21,6 @@
     "audio.settings.ambience": "City sounds",
     "audio.settings.voice": "Voice",
     "audio.settings.close": "Close settings",
-    "audio.settings.graphics.title": "Graphics",
-    "audio.settings.graphics.auto": "Auto",
-    "audio.settings.graphics.autoDetected": "Auto (detected: {tier})",
-    "audio.settings.graphics.low": "Low",
-    "audio.settings.graphics.mid": "Mid",
-    "audio.settings.graphics.high": "High",
-    "audio.settings.graphics.nextTime": "Some changes apply next time you open the game.",
-    "audio.settings.graphics.dataSaver": "Data saver is on, so graphics stay on Low.",
-    "audio.settings.graphics.lockedDataSaver": "{tier}, off while data saver is on",
     "audio.track.lofiLoop": "Lofi Hip Hop Loop by omfgdude",
     "audio.track.lofiAgain": "Lofi Again by Omfgdude"
   }

@@ -13,7 +13,7 @@ import { waitForMapSettled } from './helpers/scene'
 
 const ROOT = join(import.meta.dirname, '../..')
 const perf = JSON.parse(readFileSync(join(ROOT, 'data/config/perf.json'), 'utf8')) as {
-  fpsStepDown: { belowFps: number; sustainMs: number; sampleMs: number }
+  fpsStepDown: { belowFps: number; sustainMs: number; sampleMs: number; cooldownMs: number }
   dprCap: { mid: number }
 }
 /** Any real frame rate under the floor times this reads as under the floor. */
@@ -119,4 +119,44 @@ test('a tier chosen in settings is never stepped down', async ({ page }) => {
   await setClockScale(page, CLOCK_SCALE)
   await pan(page, PAN_MS)
   expect(await quality(page)).toMatchObject({ override: 'high', active: 'high', steps: 0 })
+})
+
+const programsMax = (
+  JSON.parse(readFileSync(join(ROOT, 'data/config/perf.json'), 'utf8')) as {
+    programsMax: { low: number; mid: number; high: number }
+  }
+).programsMax
+
+const settledPrograms = async (page: Page) => {
+  await page.waitForFunction(() => window.__cloutcityTest?.scene?.pendingFrames() === 0, null, {
+    polling: 'raf',
+    timeout: 60_000,
+  })
+  return page.evaluate(() => window.__cloutcityTest?.scene?.programs() ?? Number.NaN)
+}
+
+// 3D-3: a shadow change used to leave every lit material's old programs compiled next to the new
+// ones (mid reached 21 against programsMax 11). Each step-down now releases them.
+test('programs stay within the new tier budget after high -> mid -> low step-downs', async ({
+  page,
+}) => {
+  test.setTimeout(240_000)
+  await page.goto('/')
+  await waitForMapSettled(page)
+  expect(await quality(page)).toMatchObject({ active: 'high' })
+  expect(await settledPrograms(page)).toBeLessThanOrEqual(programsMax.high)
+
+  await setClockScale(page, CLOCK_SCALE)
+  await pan(page, STEP_PAN_MAX_MS, async () => (await quality(page)).steps > 0)
+  await setClockScale(page, 1)
+  expect(await quality(page)).toMatchObject({ active: 'mid', steps: 1 })
+  expect(await settledPrograms(page)).toBeLessThanOrEqual(programsMax.mid)
+
+  // The next step waits out the cooldown.
+  await page.waitForTimeout(perf.fpsStepDown.cooldownMs + 500)
+  await setClockScale(page, CLOCK_SCALE)
+  await pan(page, STEP_PAN_MAX_MS * 2, async () => (await quality(page)).steps > 1)
+  await setClockScale(page, 1)
+  expect(await quality(page)).toMatchObject({ active: 'low', steps: 2 })
+  expect(await settledPrograms(page)).toBeLessThanOrEqual(programsMax.low)
 })

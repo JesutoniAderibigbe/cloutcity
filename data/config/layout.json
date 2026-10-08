@@ -5,6 +5,7 @@
     "hudCompactHeightPx": 56,
     "hudWideMinWidthPx": 640,
     "hudCompactMaxHeightPx": 479,
+    "hudTinyMaxWidthPx": 341,
     "toastHeightPx": 72,
     "sheetMaxHeightVh": 40,
     "sheetMaxWidthPx": 560,

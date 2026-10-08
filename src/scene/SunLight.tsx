@@ -3,11 +3,13 @@
 /**
  * The sun: one directional light. On the high tier it casts the scene's only real-time shadow
  * (perf.json `shadows: pcf-directional`, a PCFShadowMap set on the canvas, never PCFSoft). The
- * light follows the camera target at a fixed direction, so the lighting never changes, and its
- * shadow camera scales with the camera distance so the shadow map always covers the view.
+ * light follows the camera target from the day/night cycle's sun direction (S04f), and its
+ * shadow camera scales with the camera distance so the shadow map always covers the view. At
+ * night the same light is a cool moon.
  *
  * Turning the shadow off (a lower tier, a runtime step-down) clears `castShadow`, which changes
- * the lights' state and so recompiles the lit materials without a shadow.
+ * the lights' state and so recompiles the lit materials without a shadow. The time of day never
+ * does that: night fades the shadow with `shadow.intensity`, a uniform.
  */
 import { useEffect, useRef } from 'react'
 import { useThree } from '@react-three/fiber'
@@ -20,17 +22,31 @@ export const SUN_LIGHT_NAME = 'sun'
 
 interface SunLightProps {
   readonly color: string
+  readonly intensity: number
+  /** Towards the sun, in scene axes (x east, y up, z south); need not be normalised. */
+  readonly direction: { readonly x: number; readonly y: number; readonly z: number }
+  /** LightShadow.intensity, 0–1. */
+  readonly shadowIntensity: number
   readonly lights: SceneConfig['lights']
   /** The tier's shadow map size; 0 for no shadow. */
   readonly shadowMapSizePx: number
 }
 
-export function SunLight({ color, lights, shadowMapSizePx }: SunLightProps) {
+export function SunLight({
+  color,
+  intensity,
+  direction,
+  shadowIntensity,
+  lights,
+  shadowMapSizePx,
+}: SunLightProps) {
   const controls = useThree((state) => state.controls)
   const invalidate = useThree((state) => state.invalidate)
   const ref = useRef<DirectionalLight>(null)
-  const { sunDirection, sunIntensity, shadow } = lights
+  const { shadow } = lights
   const castShadow = shadowMapSizePx > 0
+  // Primitives, so placement re-runs only when the direction really changes.
+  const { x: dx, y: dy, z: dz } = direction
 
   useEffect(() => {
     const light = ref.current
@@ -44,7 +60,7 @@ export function SunLight({ color, lights, shadowMapSizePx }: SunLightProps) {
   useEffect(() => {
     const light = ref.current
     if (light === null) return
-    const towardsSun = new Vector3(sunDirection.x, sunDirection.y, sunDirection.z).normalize()
+    const towardsSun = new Vector3(dx, dy, dz).normalize()
     const place = () => {
       if (controls instanceof MapControls) {
         const distance = controls.getDistance()
@@ -73,15 +89,16 @@ export function SunLight({ color, lights, shadowMapSizePx }: SunLightProps) {
     if (!(controls instanceof MapControls)) return
     controls.addEventListener('change', place)
     return () => controls.removeEventListener('change', place)
-  }, [controls, sunDirection, shadow, invalidate])
+  }, [controls, dx, dy, dz, shadow, invalidate])
 
   return (
     <directionalLight
       ref={ref}
       name={SUN_LIGHT_NAME}
       color={color}
-      intensity={sunIntensity}
+      intensity={intensity}
       castShadow={castShadow}
+      shadow-intensity={shadowIntensity}
       shadow-mapSize={[shadowMapSizePx, shadowMapSizePx]}
       shadow-bias={shadow.bias}
       shadow-normalBias={shadow.normalBias}

@@ -29,6 +29,10 @@ test('loads, goes offline, reloads and buys a deli breakfast', async ({
 }) => {
   const warm = warmUrlsFromWorker(await (await request.get(SERVICE_WORKER_PATH)).text())
   expect(warm.low.length).toBeGreaterThan(1)
+  // The place hook (and with it `location: 'follow'`) installs only for e2e pages.
+  await page.addInitScript(() => {
+    window.__CLOUTCITY_E2E__ = true
+  })
   await page.goto('/')
   await waitForWelcomeGate(page)
   await waitForActiveWorker(page)
@@ -66,6 +70,8 @@ test('loads, goes offline, reloads and buys a deli breakfast', async ({
   await expect(money).toBeVisible()
   const cashBefore = await money.textContent()
 
+  // `location: 'follow'` puts the player at the place they pick, once the hook is in (TRV-7).
+  await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
   await page.locator('[data-places-button]').click()
   const panel = page.getByRole('dialog', { name: copyText('places.panel.title'), exact: true })
   await panel.locator(`[data-place-button="${DELI}"]`).click()

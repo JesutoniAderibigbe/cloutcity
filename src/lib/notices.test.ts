@@ -16,6 +16,15 @@ const NOTICE = /data-cc-notice="([^"]*)"/g
 const NOT_NOTICES: Readonly<Record<string, string>> = {
   // The 18+ welcome card is the gate in front of the game, shown once before play.
   'src/components/welcome/WelcomeGate.tsx': 'the welcome card',
+  // A moderator's message about the player's account (S18b): it exists only after a moderation
+  // action against a signed-in account, so a new player never sees it.
+  'src/components/safety/AccountNotices.tsx': 'a moderator message about the account',
+}
+
+/** Toast-zone mounts that are not notices, and why. */
+const NOT_NOTICE_TOASTS: Readonly<Record<string, string>> = {
+  // Confirms the player's own block, mute or report (S18b): feedback, not an interruption.
+  SafetyToastMount: 'feedback on a safety action the player just took',
 }
 
 const components = sourceFiles(SRC).filter((file) => file.endsWith('.tsx'))
@@ -46,15 +55,22 @@ describe('first-session notices (GR-9)', () => {
 
   it('the toast zone holds only tagged notices', () => {
     const page = code.get('src/app/page.tsx') ?? ''
-    const toast = /toast:\s*<(\w+)/.exec(page)?.[1]
-    expect(toast, 'page.tsx fills the toast zone').toBeDefined()
-    // The mount names its island's module: `import('./LevelUpToast')`.
-    const mount = [...code.entries()].find(([, source]) =>
-      source.includes(`export function ${toast ?? ''}`),
-    )
-    const island = /import\('\.\/(\w+)'\)/.exec(mount?.[1] ?? '')?.[1]
-    const source = [...code.entries()].find(([file]) => file.endsWith(`/${island ?? ''}.tsx`))
-    expect(kindsIn(source?.[1] ?? '')).toEqual(['level-up'])
+    const zone = /toast:\s*\(?\s*(<>[\s\S]*?<\/>|<\w+[^>]*\/>)/.exec(page)?.[1]
+    expect(zone, 'page.tsx fills the toast zone').toBeDefined()
+    const mounts = [...(zone ?? '').matchAll(/<(\w+)/g)].map((match) => match[1] ?? '')
+    const kinds = mounts.flatMap((toast) => {
+      if (toast in NOT_NOTICE_TOASTS) return []
+      // The mount names its island's module: `import('./LevelUpToast')`.
+      const mount = [...code.entries()].find(([, source]) =>
+        source.includes(`export function ${toast}`),
+      )
+      const island = /import\('\.\/(\w+)'\)/.exec(mount?.[1] ?? '')?.[1]
+      const source = [...code.entries()].find(([file]) => file.endsWith(`/${island ?? ''}.tsx`))
+      const tagged = kindsIn(source?.[1] ?? '')
+      expect(tagged, `${toast} is a tagged notice or a named exception`).not.toEqual([])
+      return tagged
+    })
+    expect(kinds).toEqual(['level-up'])
   })
 
   it('the limit leaves room for the tour and two more', () => {

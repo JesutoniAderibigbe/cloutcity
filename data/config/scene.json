@@ -69,13 +69,6 @@
     "textMaxWidth": 0.78
   },
   "lights": {
-    "ambientIntensity": 0.55,
-    "sunIntensity": 0.9,
-    "sunDirection": {
-      "x": -0.4,
-      "y": 1,
-      "z": 0.6
-    },
     "shadow": {
       "extentPerDistance": 0.9,
       "lightPerDistance": 2,
@@ -83,6 +76,112 @@
       "bias": -0.0005,
       "normalBias": 0.02
     }
+  },
+  "dayNight": {
+    "quantizeMinutes": 5,
+    "minSunElevationDeg": 25,
+    "unknownMinute": 480,
+    "fog": {
+      "nearPerDistance": 2.5,
+      "farPerDistance": 8
+    },
+    "room": {
+      "sunScale": 0.552,
+      "ambientScale": 0.821,
+      "lampMix": 0.6
+    },
+    "keyframes": [
+      {
+        "id": "dawn",
+        "atMinute": 345,
+        "holdMinutes": 0,
+        "ui": "day",
+        "sun": {
+          "azimuthDeg": 75,
+          "elevationDeg": 4
+        },
+        "sunIntensity": 1.0,
+        "shadowIntensity": 0.5,
+        "ambientIntensity": 1.1,
+        "hemisphereIntensity": 1.0,
+        "nightGlow": 0.4
+      },
+      {
+        "id": "morning",
+        "atMinute": 420,
+        "holdMinutes": 60,
+        "ui": "day",
+        "sun": {
+          "azimuthDeg": 110,
+          "elevationDeg": 30
+        },
+        "sunIntensity": 1.4,
+        "shadowIntensity": 0.8,
+        "ambientIntensity": 0.8,
+        "hemisphereIntensity": 0.75,
+        "nightGlow": 0
+      },
+      {
+        "id": "day",
+        "atMinute": 600,
+        "holdMinutes": 330,
+        "ui": "day",
+        "sun": {
+          "azimuthDeg": 180,
+          "elevationDeg": 62
+        },
+        "sunIntensity": 1.55,
+        "shadowIntensity": 0.9,
+        "ambientIntensity": 0.85,
+        "hemisphereIntensity": 0.8,
+        "nightGlow": 0
+      },
+      {
+        "id": "golden",
+        "atMinute": 1050,
+        "holdMinutes": 30,
+        "ui": "day",
+        "sun": {
+          "azimuthDeg": 250,
+          "elevationDeg": 14
+        },
+        "sunIntensity": 1.5,
+        "shadowIntensity": 0.8,
+        "ambientIntensity": 0.8,
+        "hemisphereIntensity": 0.75,
+        "nightGlow": 0.1
+      },
+      {
+        "id": "dusk",
+        "atMinute": 1140,
+        "holdMinutes": 0,
+        "ui": "night",
+        "sun": {
+          "azimuthDeg": 285,
+          "elevationDeg": 3
+        },
+        "sunIntensity": 0.45,
+        "shadowIntensity": 0.5,
+        "ambientIntensity": 0.95,
+        "hemisphereIntensity": 0.85,
+        "nightGlow": 0.7
+      },
+      {
+        "id": "night",
+        "atMinute": 1230,
+        "holdMinutes": 435,
+        "ui": "night",
+        "sun": {
+          "azimuthDeg": 330,
+          "elevationDeg": 35
+        },
+        "sunIntensity": 0.35,
+        "shadowIntensity": 0.35,
+        "ambientIntensity": 0.4,
+        "hemisphereIntensity": 0.45,
+        "nightGlow": 1
+      }
+    ]
   },
   "startup": {
     "idleTimeoutMs": 300
@@ -102,7 +201,8 @@
     "tapSlopPx": 8,
     "tapMaxMs": 400,
     "ringRadius": 0.55,
-    "ringSegments": 24
+    "ringSegments": 24,
+    "nightGlow": 0.35
   },
   "focus": {
     "tweenMs": 350,
@@ -143,7 +243,28 @@
       "dayIntensity": 0,
       "nightIntensity": 1.2
     },
-    "cacheMaxEntries": 48
+    "cacheMaxEntries": 48,
+    "player": {
+      "head": "head-female-c",
+      "body": "body-female-c",
+      "clip": "idle",
+      "minDeviceMemoryGB": 2,
+      "capsuleTiers": ["low"]
+    },
+    "decor": {
+      "thrift-flatweave-rug": {
+        "model": "rug",
+        "slot": "pattern"
+      },
+      "cloud-lounge-chair": {
+        "model": "armchair",
+        "slot": "upholstery"
+      },
+      "windowsill-monstera": {
+        "model": "plant",
+        "slot": "pot"
+      }
+    }
   },
   "fallback": {
     "metresPerUnit": 20,
@@ -172,8 +293,6 @@
     "ambiguityPx": 6,
     "fitMargin": 1.06,
     "lights": {
-      "ambientIntensity": 0.7,
-      "sunIntensity": 0.85,
       "sunDirection": {
         "x": -0.6,
         "y": 1,

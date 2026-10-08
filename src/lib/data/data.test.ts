@@ -22,8 +22,10 @@ import {
   OnboardingConfigSchema,
   PerfConfigSchema,
   type PerfConfig,
+  ProfileConfigSchema,
   ProgressionConfigSchema,
   RealtimeConfigSchema,
+  SyncConfigSchema,
   ThemeConfigSchema,
   TourConfigSchema,
   createProgressionConfigSchema,
@@ -59,11 +61,21 @@ import {
   ZoneShapesFileSchema,
   ZonesFileSchema,
 } from './schemas/world'
-import { ModelManifestSchema } from './schemas/assets'
+import { ModelManifestSchema, ShowcaseSchema } from './schemas/assets'
 import { AvatarEngineTablesSchema, AvatarOptionsSchema, TraitsFileSchema } from './schemas/avatar'
 import { CreatorConfigSchema } from './schemas/creator'
 import { CatalogSchema } from '../../../scripts/assets/schema'
-import { audio, balance, layout, onboarding, perf, progression, realtime, theme } from './config'
+import {
+  audio,
+  balance,
+  layout,
+  onboarding,
+  perf,
+  progression,
+  realtime,
+  sync,
+  theme,
+} from './config'
 import {
   audioManifest,
   events,
@@ -86,6 +98,7 @@ const DATA = join(import.meta.dirname, '../../../data')
 const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'assets/catalog.json': CatalogSchema,
   'assets/manifest.json': ModelManifestSchema,
+  'assets/showcase.json': ShowcaseSchema,
   'audio/manifest.json': AudioManifestSchema,
   'avatar/engine.derived.json': AvatarEngineTablesSchema,
   'avatar/options.json': AvatarOptionsSchema,
@@ -102,9 +115,11 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/offline.json': OfflineConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
+  'config/profile.json': ProfileConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/realtime.json': RealtimeConfigSchema,
   'config/scene.json': SceneConfigSchema,
+  'config/sync.json': SyncConfigSchema,
   'config/theme.json': ThemeConfigSchema,
   'config/tour.json': TourConfigSchema,
   'copy/handleWords.json': HandleWordsSchema,
@@ -251,6 +266,9 @@ describe('config/perf.json', () => {
       playableWarmMs: 2500,
       drawCallsMax: { low: 60, mid: 120, high: 200 },
       trianglesMax: { low: 150_000, mid: 400_000, high: 800_000 },
+      // S04f (Q9): measured shader programs at the default view after the models load (low 9,
+      // mid 10, high 13, day and night alike) + 10%, rounded up. A new cap, not a raised one.
+      programsMax: { low: 10, mid: 11, high: 15 },
       // S16 apartment caps (TUNE-8 placeholders), with room kept for S16a's avatar.
       apartment: {
         drawCallsMax: { low: 24, mid: 32, high: 56 },
@@ -438,6 +456,53 @@ describe('config/realtime.json and moderation', () => {
   })
 })
 
+describe('config/sync.json (S18c)', () => {
+  const valid = () => structuredClone(readJson('config/sync.json')) as Record<string, unknown>
+
+  it('holds the S18c defaults (TUNE-10 placeholders)', () => {
+    expect(sync).toMatchObject({
+      debounceMs: 10_000,
+      maxWaitMs: 60_000,
+      maxSaveBytes: 262_144,
+      keepaliveMaxBytes: 61_440,
+      plausibility: { margin: 1.5, maxActionsPerRealMinute: 40, burstRealMinutes: 5 },
+    })
+  })
+
+  it("matches the saves table's own size check", () => {
+    const migrations = join(DATA, '../supabase/migrations')
+    const sql = readdirSync(migrations)
+      .filter((file) => file.endsWith('.sql'))
+      .map((file) => readFileSync(join(migrations, file), 'utf8'))
+      .join('\n')
+    const limit = /octet_length\(data::text\) <= (\d+)/.exec(sql)?.[1]
+    expect(Number(limit)).toBe(sync.maxSaveBytes)
+  })
+
+  it.each<[string, (file: Record<string, unknown>) => void]>([
+    ['a debounce longer than the max wait', (file) => void (file.debounceMs = 120_000)],
+    ['a retry base above its max', (file) => void (file.retry = { baseMs: 10, maxMs: 5 })],
+    ['a keepalive body over 64 KiB', (file) => void (file.keepaliveMaxBytes = 65_537)],
+    ['a keepalive body over the save limit', (file) => void (file.maxSaveBytes = 1000)],
+    ['more uploads than fit a minute', (file) => void (file.maxUploadsPerMinute = 13)],
+    [
+      'a margin below 1',
+      (file) =>
+        void (file.plausibility = {
+          margin: 0.9,
+          maxActionsPerRealMinute: 40,
+          burstRealMinutes: 5,
+        }),
+    ],
+    ['an unknown key', (file) => void (file.extra = 1)],
+  ])('rejects %s', (_label, mutate) => {
+    const file = valid()
+    expect(SyncConfigSchema.safeParse(file).success).toBe(true)
+    mutate(file)
+    expect(SyncConfigSchema.safeParse(file).success).toBe(false)
+  })
+})
+
 describe('config/onboarding.json', () => {
   it('holds the CLAUDE.md age rule: 18+, a 24 h lock on that device', () => {
     expect(onboarding).toMatchObject({ minimumAge: 18, underAgeLockHours: 24 })
@@ -563,21 +628,39 @@ describe('data/audio/manifest.json and public/audio', () => {
 })
 
 describe('config/theme.json', () => {
-  it('has the night palette: deep indigo, hot pink, taxi yellow and neutrals', () => {
-    expect(Object.keys(theme.colors)).toEqual(
-      expect.arrayContaining(['night-950', 'pink-400', 'taxi-400', 'ink-50']),
-    )
+  it('has the real-world interface (DEC-26): one taxi yellow, no indigo or hot pink in the UI', () => {
+    expect(theme.colors['taxi-400']).toBe('#f5b800')
+    expect(theme.models['taxi-400']).toBe('#f5b800')
+    for (const ui of [theme.ui.day, theme.ui.night]) {
+      expect(ui.taxi).toBe('taxi-400')
+      for (const token of Object.values(ui))
+        expect(token).not.toMatch(/^(night|pink|indigo|violet)-/)
+    }
+    expect(
+      Object.keys(theme.colors).filter((token) => /^(night|indigo|violet)-/.test(token)),
+    ).toEqual([])
   })
 
-  it('rejects a bad hex and a themeColor that names no token', () => {
-    expect(
-      ThemeConfigSchema.safeParse({ colors: { 'pink-400': 'pink' }, themeColor: 'pink-400' })
-        .success,
-    ).toBe(false)
-    expect(
-      ThemeConfigSchema.safeParse({ colors: { 'pink-400': '#ff4fa3' }, themeColor: 'nope-1' })
-        .success,
-    ).toBe(false)
+  it('rejects a bad hex, a themeColor that names no token and a ui colour that names none', () => {
+    const valid = () =>
+      structuredClone(readJson('config/theme.json')) as {
+        colors: Record<string, string>
+        themeColor: { day: string; night: string }
+        ui: { day: Record<string, string> }
+      }
+    expect(ThemeConfigSchema.safeParse(valid()).success).toBe(true)
+    const badHex = valid()
+    badHex.colors['taxi-400'] = 'yellow'
+    expect(ThemeConfigSchema.safeParse(badHex).success).toBe(false)
+    const badThemeColor = valid()
+    badThemeColor.themeColor.night = 'nope-1'
+    expect(ThemeConfigSchema.safeParse(badThemeColor).success).toBe(false)
+    const badUi = valid()
+    badUi.ui.day.fg = 'nope-100'
+    expect(ThemeConfigSchema.safeParse(badUi).success).toBe(false)
+    const missingToken = valid()
+    delete missingToken.ui.day.meter
+    expect(ThemeConfigSchema.safeParse(missingToken).success).toBe(false)
   })
 })
 

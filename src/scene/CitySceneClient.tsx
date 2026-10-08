@@ -208,16 +208,14 @@ export function CitySceneClient(props: SceneProps) {
 
   return (
     <div data-scene-root="" data-scene-status={status} className="absolute inset-0">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-gradient-to-b from-night-800 via-night-900 to-night-950"
-      />
+      <div aria-hidden="true" className="absolute inset-0 bg-canvas" />
       {state.status === 'starting' || (state.status === 'loading' && state.preload) ? (
         <SceneErrorBoundary onError={onError}>
           <CityCanvas
             geo={state.status === 'starting' ? { body: state.body } : null}
             onInvalidGeo={onInvalidGeo}
             palette={props.palette}
+            skyColors={props.skyColors}
             config={props.config}
             homesLocal={props.homesLocal}
             startHome={props.startHome}
@@ -225,6 +223,7 @@ export function CitySceneClient(props: SceneProps) {
             quality={props.quality}
             buildings={props.buildings}
             travelAnimation={props.travelAnimation}
+            playerModel={props.playerModel}
             label={copy.label}
             expandingSoon={copy.expandingSoon}
             landmarkNames={copy.landmarkNames}
@@ -240,7 +239,7 @@ export function CitySceneClient(props: SceneProps) {
           role="img"
           aria-label={copy.fallback}
           data-scene-fallback=""
-          className="absolute inset-0 bg-night-950 bg-cover bg-center"
+          className="absolute inset-0 bg-canvas bg-cover bg-center"
           style={{ backgroundImage: `url(${JSON.stringify(props.fallbackUrl)})` }}
         />
       ) : null}
@@ -252,7 +251,7 @@ export function CitySceneClient(props: SceneProps) {
           role="status"
           // The camera frames its target at this row's centre (camera/FreeRowFraming.tsx).
           data-free-scene-row=""
-          className="flex min-h-0 items-center justify-center px-4 text-center text-sm font-semibold text-ink-300"
+          className="flex min-h-0 items-center justify-center px-4 text-center text-sm font-semibold text-muted"
           style={{ gridRow: freeRow }}
         >
           {message}

@@ -17,6 +17,7 @@ import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap, PerspectiveCamera } from 'three'
 import type { QualityTier } from '@/lib/data/schemas/config'
+import { log } from '@/lib/log'
 import { FreeRowFraming } from '../camera/FreeRowFraming'
 import { pickPin } from '../pins/pick'
 import { attachTapDetector } from '../pins/tap'
@@ -26,6 +27,8 @@ import { buildApartment, type ApartmentObjects, type SlotFill } from './buildApa
 import { roomBounds } from './buildRoom'
 import {
   apartmentConfig,
+  dayNightConfig,
+  dayNightModel,
   roomInterior,
   roomPalette,
   tapOptions,
@@ -36,6 +39,8 @@ import {
 } from './data'
 import { boundingSphere, cameraPosition, fitDistance, type Sphere } from './fit'
 import { lightingAt } from './lighting'
+import type { DecorModels } from './decorModels'
+import { useReducedMotion } from '@/lib/useReducedMotion'
 import { createPlaceholderVisuals } from './visuals'
 import type { ApartmentViewProps, SlotTap } from './types'
 
@@ -112,7 +117,14 @@ function RoomLights({
   readonly minute: number
   readonly tier: QualityTier
 }) {
-  const lighting = lightingAt(minute, apartmentConfig.lights, roomPalette)
+  const step = useReducedMotion()
+  const lighting = lightingAt(minute, {
+    model: dayNightModel,
+    room: dayNightConfig.room,
+    lights: apartmentConfig.lights,
+    palette: roomPalette,
+    step,
+  })
   const sphere = roomSphere(interior)
   const { direction } = lighting.sun
   const length = Math.hypot(direction.x, direction.y, direction.z)
@@ -149,6 +161,41 @@ interface RoomProps extends Pick<
   readonly readyRef: RefObject<boolean>
 }
 
+/**
+ * The decor models at `tier`, loaded in their own lazy chunk (decorModels.ts) after the room is
+ * up; null until then, and for good if they fail (the stand-ins stay: an expected condition, e.g.
+ * offline, so it logs at info).
+ */
+function useDecorModels(tier: QualityTier): DecorModels | null {
+  const [decor, setDecor] = useState<{ tier: QualityTier; models: DecorModels } | null>(null)
+  useEffect(() => {
+    let active = true
+    let loaded: DecorModels | null = null
+    import('./decorModels')
+      .then((module) => module.loadDecorModels(tier))
+      .then(
+        (models) => {
+          if (!active) {
+            models.dispose()
+            return
+          }
+          loaded = models
+          setDecor({ tier, models })
+        },
+        (error: unknown) => {
+          log.info('apartment decor models failed to load', {
+            error: error instanceof Error ? error.message : String(error),
+          })
+        },
+      )
+    return () => {
+      active = false
+      loaded?.dispose()
+    }
+  }, [tier])
+  return decor !== null && decor.tier === tier ? decor.models : null
+}
+
 function Room({
   interior,
   placed,
@@ -162,9 +209,12 @@ function Room({
   const gl = useThree((state) => state.gl)
   const get = useThree((state) => state.get)
   const invalidate = useThree((state) => state.invalidate)
+  const decor = useDecorModels(tier)
   const built = useMemo(() => {
-    // The placeholder art (DEC-24): the S16 visuals pass swaps in CC0 models here.
-    const visuals = createPlaceholderVisuals(apartmentConfig, roomPalette, toonRamp)
+    // The code-built stand-ins draw at once; the hand-made decor models (S04h) take over the
+    // items scene.json `models.decor` maps once they have loaded.
+    const placeholder = createPlaceholderVisuals(apartmentConfig, roomPalette, toonRamp)
+    const visuals = decor === null ? placeholder : decor.visuals(placeholder)
     const objects = buildApartment(interior, apartmentConfig, roomPalette, visuals)
     return {
       ...objects,
@@ -173,7 +223,7 @@ function Room({
         visuals.dispose()
       },
     }
-  }, [interior])
+  }, [interior, decor])
   const onTap = useRef(onSlotTap)
 
   useEffect(() => {

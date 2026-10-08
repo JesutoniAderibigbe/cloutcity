@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "2f59d8d46a436cef",
+  "assetVersion": "158ef5de7b6552b2",
   "models": [
     {
       "id": "taxi",
@@ -15,24 +15,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/taxi.low.752dce5e.glb",
-          "sha256": "752dce5e8b5572c336eb2920f45712ae3da472e280bc04ac99b8cce61a0e27cf",
-          "bytes": 28144,
-          "gzBytes": 18652,
+          "file": "/models/taxi.low.88ea255d.glb",
+          "sha256": "88ea255d8c6b16e0c9d7f68fc33e15fce033a216cf7d71eddf9378035d96d10f",
+          "bytes": 27860,
+          "gzBytes": 18344,
           "triangles": 1058
         },
         "mid": {
-          "file": "/models/taxi.high.46a80e6f.glb",
-          "sha256": "46a80e6f5493985cbe9bde1029c4c38d1317a1e6a71d39c080f4bb0c84fdb23a",
-          "bytes": 32600,
-          "gzBytes": 20217,
+          "file": "/models/taxi.high.f6e1872d.glb",
+          "sha256": "f6e1872d038eb11a28c5d938f705e628fd70122002437953d565af183e6c1303",
+          "bytes": 32184,
+          "gzBytes": 20953,
           "triangles": 1256
         },
         "high": {
-          "file": "/models/taxi.high.46a80e6f.glb",
-          "sha256": "46a80e6f5493985cbe9bde1029c4c38d1317a1e6a71d39c080f4bb0c84fdb23a",
-          "bytes": 32600,
-          "gzBytes": 20217,
+          "file": "/models/taxi.high.f6e1872d.glb",
+          "sha256": "f6e1872d038eb11a28c5d938f705e628fd70122002437953d565af183e6c1303",
+          "bytes": 32184,
+          "gzBytes": 20953,
           "triangles": 1256
         }
       }
@@ -711,28 +711,28 @@
       "nameKey": "models.name.buildingA",
       "bounds": { "min": [-5.3015, 0, -5.64], "max": [5.3015, 15.516, 5.64] },
       "slots": ["facade"],
-      "emissive": true,
+      "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-a.low.3bc64f10.glb",
-          "sha256": "3bc64f10e4cd27d71ed5ba55afeafd881e795e213fec2b3c2c5bc007487a3f7e",
-          "bytes": 20244,
-          "gzBytes": 10872,
+          "file": "/models/building-a.low.a9812087.glb",
+          "sha256": "a9812087a60ca59de74045fb38aa7b7c217fd11bdbf65bf6f6ef90568717b0a8",
+          "bytes": 19712,
+          "gzBytes": 10797,
           "triangles": 877
         },
         "mid": {
-          "file": "/models/building-a.mid.5a0b0913.glb",
-          "sha256": "5a0b09131f50ac2d60f63aabb4e9648f18a771ffed09ff1ae12b33e2e350b59b",
-          "bytes": 21344,
-          "gzBytes": 12152,
+          "file": "/models/building-a.mid.e619c04c.glb",
+          "sha256": "e619c04cd5767eb87a3bebc05676d44b445bfcc4296df86e1c057bb7af20be3b",
+          "bytes": 20808,
+          "gzBytes": 12076,
           "triangles": 938
         },
         "high": {
-          "file": "/models/building-a.high.85656684.glb",
-          "sha256": "85656684058fbb17bbdd511d61215fe02510269a190f47483034e39c1d69d641",
-          "bytes": 25152,
-          "gzBytes": 13756,
+          "file": "/models/building-a.high.f01b65f0.glb",
+          "sha256": "f01b65f09ae11901e341907feeeab18c4ac33c06f1a191626b6da9dd52162d70",
+          "bytes": 24588,
+          "gzBytes": 13681,
           "triangles": 1252
         }
       }
@@ -746,28 +746,28 @@
       "nameKey": "models.name.buildingB",
       "bounds": { "min": [-5.82, 0, -5.64], "max": [5.82, 15.516, 5.64] },
       "slots": ["facade"],
-      "emissive": true,
+      "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-b.low.f05ffb51.glb",
-          "sha256": "f05ffb51395f92a7eddb2871683c37d273a9b0224c297fe5c135363e2e3cba3b",
-          "bytes": 23516,
-          "gzBytes": 13117,
+          "file": "/models/building-b.low.2567ba3b.glb",
+          "sha256": "2567ba3b42be81d9e6bb6f3f0294f4ea1e23e15785231312eb980fa1d75244d2",
+          "bytes": 22940,
+          "gzBytes": 13039,
           "triangles": 991
         },
         "mid": {
-          "file": "/models/building-b.mid.8367ab5c.glb",
-          "sha256": "8367ab5c4779b13642e79b4850f54451119b502c53026acf5667e15776b275ab",
-          "bytes": 23540,
-          "gzBytes": 13172,
+          "file": "/models/building-b.mid.3d58ca6e.glb",
+          "sha256": "3d58ca6e2557fdcb125e4526b8f587230693ae632e9449ce2cc3979fc307c288",
+          "bytes": 22964,
+          "gzBytes": 13086,
           "triangles": 991
         },
         "high": {
-          "file": "/models/building-b.high.fdd1317d.glb",
-          "sha256": "fdd1317d451aca908bf9f52572485d45938d501542fe60774546759b2757787d",
-          "bytes": 26744,
-          "gzBytes": 14149,
+          "file": "/models/building-b.high.fb24e69d.glb",
+          "sha256": "fb24e69d74c93ae73d15b9a92f16b048f2bb9a00f5aa8d985b2852ac07f0f5a2",
+          "bytes": 26148,
+          "gzBytes": 14067,
           "triangles": 1276
         }
       }
@@ -781,28 +781,28 @@
       "nameKey": "models.name.buildingC",
       "bounds": { "min": [-5.3015, 0, -6.54], "max": [5.3015, 10.716, 6.54] },
       "slots": ["facade"],
-      "emissive": true,
+      "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-c.low.5589572c.glb",
-          "sha256": "5589572c4784b711ac68cedc8009d5cddd7fe3e0523a663194c725b504979cb8",
-          "bytes": 19268,
-          "gzBytes": 11212,
+          "file": "/models/building-c.low.55053605.glb",
+          "sha256": "55053605014d5fe980beaa258a6c9d699ec39b594583781879f9d14ead032134",
+          "bytes": 18676,
+          "gzBytes": 11097,
           "triangles": 786
         },
         "mid": {
-          "file": "/models/building-c.mid.94ff7980.glb",
-          "sha256": "94ff79803d23e81e5199416c48378e2dd52e0d3a2c44066f34b40d2cb2f65dd2",
-          "bytes": 21104,
-          "gzBytes": 12657,
+          "file": "/models/building-c.mid.a47c8db5.glb",
+          "sha256": "a47c8db54fb7268d6307262ee4f66747beb3b7f165246cf6cdc9276dd128420b",
+          "bytes": 20516,
+          "gzBytes": 12547,
           "triangles": 896
         },
         "high": {
-          "file": "/models/building-c.high.ce2d2f35.glb",
-          "sha256": "ce2d2f356b5ea5583d1db85dbea21056d2358ae58c9691eeec7af235e5065a14",
-          "bytes": 24816,
-          "gzBytes": 14196,
+          "file": "/models/building-c.high.ddc043f4.glb",
+          "sha256": "ddc043f466dc1a6da1214862bbdf38a17397d4b54d056d7d310650f469148405",
+          "bytes": 24200,
+          "gzBytes": 14094,
           "triangles": 1195
         }
       }
@@ -816,28 +816,28 @@
       "nameKey": "models.name.buildingD",
       "bounds": { "min": [-5.04, 0, -5.4], "max": [5.04, 15.516, 5.4] },
       "slots": ["facade"],
-      "emissive": true,
+      "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-d.low.f086f3fa.glb",
-          "sha256": "f086f3fa34b352efa784b58297d3edaf3f9eec343d8319ea0a576b7ba2b3e2bc",
-          "bytes": 18080,
-          "gzBytes": 11199,
+          "file": "/models/building-d.low.f6aadfdd.glb",
+          "sha256": "f6aadfdd8528b046f42c03bb2c5e0eb8dbdd165126677eb74628f268bcbc765a",
+          "bytes": 17508,
+          "gzBytes": 11098,
           "triangles": 786
         },
         "mid": {
-          "file": "/models/building-d.mid.9c54bd09.glb",
-          "sha256": "9c54bd09033eadcff402f197e92961238825c8bc95e237745294f23736b68f4f",
-          "bytes": 18988,
-          "gzBytes": 11729,
+          "file": "/models/building-d.mid.257213d3.glb",
+          "sha256": "257213d39caccb281b0dd4f8e523edfa6b0fb035ff0e5cda1c094e67b7bc3b47",
+          "bytes": 18408,
+          "gzBytes": 11626,
           "triangles": 824
         },
         "high": {
-          "file": "/models/building-d.high.87efb6f7.glb",
-          "sha256": "87efb6f7f21d3670f3bf9b8a9f2330d8a2eb01eb6db730a907be7f97e42837dc",
-          "bytes": 22808,
-          "gzBytes": 13534,
+          "file": "/models/building-d.high.ad7a0b8e.glb",
+          "sha256": "ad7a0b8e8bce6a1684781939fd3690389f651ab7f2c0fb7a3db5a3686371e139",
+          "bytes": 22212,
+          "gzBytes": 13428,
           "triangles": 1100
         }
       }
@@ -1270,29 +1270,29 @@
       "instanced": false,
       "nameKey": "models.name.plant",
       "bounds": { "min": [-0.1459, 0, -0.1661], "max": [0.1459, 0.9, 0.1661] },
-      "slots": [],
+      "slots": ["pot"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/plant.high.0d245c51.glb",
-          "sha256": "0d245c5181822c547f7e834574074e55f63fceadabbf5d3efbec9b424d83fe13",
-          "bytes": 3296,
-          "gzBytes": 1708,
+          "file": "/models/plant.high.0ea475ce.glb",
+          "sha256": "0ea475ce197c994bd050b7900600f4b05d9562293e47e250e50d8fc750fb0a69",
+          "bytes": 3664,
+          "gzBytes": 1748,
           "triangles": 60
         },
         "mid": {
-          "file": "/models/plant.high.0d245c51.glb",
-          "sha256": "0d245c5181822c547f7e834574074e55f63fceadabbf5d3efbec9b424d83fe13",
-          "bytes": 3296,
-          "gzBytes": 1708,
+          "file": "/models/plant.high.0ea475ce.glb",
+          "sha256": "0ea475ce197c994bd050b7900600f4b05d9562293e47e250e50d8fc750fb0a69",
+          "bytes": 3664,
+          "gzBytes": 1748,
           "triangles": 60
         },
         "high": {
-          "file": "/models/plant.high.0d245c51.glb",
-          "sha256": "0d245c5181822c547f7e834574074e55f63fceadabbf5d3efbec9b424d83fe13",
-          "bytes": 3296,
-          "gzBytes": 1708,
+          "file": "/models/plant.high.0ea475ce.glb",
+          "sha256": "0ea475ce197c994bd050b7900600f4b05d9562293e47e250e50d8fc750fb0a69",
+          "bytes": 3664,
+          "gzBytes": 1748,
           "triangles": 60
         }
       }
@@ -1635,24 +1635,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-a.low.407652ac.glb",
-          "sha256": "407652aca672a7b66a399da04d0d64f10c4fc2f8f79d6b368797bace7510f95f",
-          "bytes": 9120,
-          "gzBytes": 5366,
+          "file": "/models/head-female-a.low.3206d5e9.glb",
+          "sha256": "3206d5e992074114d8c1effb99d7dabde70c70dcf5e6d6f61a5432f85f301f27",
+          "bytes": 9104,
+          "gzBytes": 5368,
           "triangles": 256
         },
         "mid": {
-          "file": "/models/head-female-a.high.ff89bf17.glb",
-          "sha256": "ff89bf1700e8a6d52acd29bfd23a6fcdda999cd412de35d7e5ec94b103b141ba",
-          "bytes": 9576,
-          "gzBytes": 5761,
+          "file": "/models/head-female-a.high.e7c06f36.glb",
+          "sha256": "e7c06f36f257b55ddc049476d777ba7a1dba88c4a8ff7a8148e676ab808168a9",
+          "bytes": 9556,
+          "gzBytes": 5769,
           "triangles": 298
         },
         "high": {
-          "file": "/models/head-female-a.high.ff89bf17.glb",
-          "sha256": "ff89bf1700e8a6d52acd29bfd23a6fcdda999cd412de35d7e5ec94b103b141ba",
-          "bytes": 9576,
-          "gzBytes": 5761,
+          "file": "/models/head-female-a.high.e7c06f36.glb",
+          "sha256": "e7c06f36f257b55ddc049476d777ba7a1dba88c4a8ff7a8148e676ab808168a9",
+          "bytes": 9556,
+          "gzBytes": 5769,
           "triangles": 298
         }
       }
@@ -1985,24 +1985,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-f.low.d7d452bc.glb",
-          "sha256": "d7d452bc6d4b4ec704db86508c253a09795042129c2b6d802a6cf0c37187e947",
-          "bytes": 9968,
-          "gzBytes": 6063,
+          "file": "/models/head-female-f.low.c86b62df.glb",
+          "sha256": "c86b62df96e89cd2058b8b79a4769e47e064e66b09dc1d697bca1185c4b6d4ad",
+          "bytes": 9924,
+          "gzBytes": 6032,
           "triangles": 223
         },
         "mid": {
-          "file": "/models/head-female-f.high.808d9620.glb",
-          "sha256": "808d96204353bcd51c174f7e22aa484d662bd23a61e674fe9bd6bfd0d81b64f4",
-          "bytes": 10912,
-          "gzBytes": 6716,
+          "file": "/models/head-female-f.high.df3a6c04.glb",
+          "sha256": "df3a6c04de6f3f1f18f591ed9c60a0b18b43fecccae0a4e25a4cba5c35407bda",
+          "bytes": 10876,
+          "gzBytes": 6687,
           "triangles": 288
         },
         "high": {
-          "file": "/models/head-female-f.high.808d9620.glb",
-          "sha256": "808d96204353bcd51c174f7e22aa484d662bd23a61e674fe9bd6bfd0d81b64f4",
-          "bytes": 10912,
-          "gzBytes": 6716,
+          "file": "/models/head-female-f.high.df3a6c04.glb",
+          "sha256": "df3a6c04de6f3f1f18f591ed9c60a0b18b43fecccae0a4e25a4cba5c35407bda",
+          "bytes": 10876,
+          "gzBytes": 6687,
           "triangles": 288
         }
       }
@@ -2055,24 +2055,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-a.low.ff53c2be.glb",
-          "sha256": "ff53c2be9c1c1a2d64db6c3bf43e32b2bcbf881116cd9c1617b7c8dae68c1ec2",
-          "bytes": 9152,
-          "gzBytes": 5200,
+          "file": "/models/head-male-a.low.4e68a11c.glb",
+          "sha256": "4e68a11ce15cbc4747645066a9005735229bd31a37f79295325472df41c15d70",
+          "bytes": 9124,
+          "gzBytes": 5196,
           "triangles": 232
         },
         "mid": {
-          "file": "/models/head-male-a.high.33d8b116.glb",
-          "sha256": "33d8b116ac15ac9914233b5e2a269ad934568a859dc23e4eec2950ea2991b260",
-          "bytes": 9648,
-          "gzBytes": 5627,
+          "file": "/models/head-male-a.high.4bb7b1ba.glb",
+          "sha256": "4bb7b1ba951a3a93538280d1c06a5772718baf39d9b39e451c078ea4b99041f5",
+          "bytes": 9644,
+          "gzBytes": 5636,
           "triangles": 273
         },
         "high": {
-          "file": "/models/head-male-a.high.33d8b116.glb",
-          "sha256": "33d8b116ac15ac9914233b5e2a269ad934568a859dc23e4eec2950ea2991b260",
-          "bytes": 9648,
-          "gzBytes": 5627,
+          "file": "/models/head-male-a.high.4bb7b1ba.glb",
+          "sha256": "4bb7b1ba951a3a93538280d1c06a5772718baf39d9b39e451c078ea4b99041f5",
+          "bytes": 9644,
+          "gzBytes": 5636,
           "triangles": 273
         }
       }
@@ -2125,24 +2125,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-b.low.2ad64b0e.glb",
-          "sha256": "2ad64b0eac04be741ef602091d39740fee9b9a6ed78dc73e1769ba6c4b0bfefa",
+          "file": "/models/head-male-b.low.77a1b9af.glb",
+          "sha256": "77a1b9afd56c7a06f27609a14b27007049234fb09c9321f821561ba15168cb5b",
           "bytes": 10616,
-          "gzBytes": 6301,
+          "gzBytes": 6297,
           "triangles": 245
         },
         "mid": {
-          "file": "/models/head-male-b.high.ffabbb3c.glb",
-          "sha256": "ffabbb3c7333ca215e2387be53e3841cc27549a11e8c206ce7cafb696d2ebb72",
-          "bytes": 11000,
-          "gzBytes": 6483,
+          "file": "/models/head-male-b.high.17faa50d.glb",
+          "sha256": "17faa50d91a0cac4ac218d947a738e573d59351274c75f83c9837d1722ab27c0",
+          "bytes": 10996,
+          "gzBytes": 6479,
           "triangles": 288
         },
         "high": {
-          "file": "/models/head-male-b.high.ffabbb3c.glb",
-          "sha256": "ffabbb3c7333ca215e2387be53e3841cc27549a11e8c206ce7cafb696d2ebb72",
-          "bytes": 11000,
-          "gzBytes": 6483,
+          "file": "/models/head-male-b.high.17faa50d.glb",
+          "sha256": "17faa50d91a0cac4ac218d947a738e573d59351274c75f83c9837d1722ab27c0",
+          "bytes": 10996,
+          "gzBytes": 6479,
           "triangles": 288
         }
       }
@@ -2335,24 +2335,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-e.low.0aaad289.glb",
-          "sha256": "0aaad289710cdf0e97a773c7ab9042c590e8e85d05bbff45ed304f3fdbb3e1f7",
-          "bytes": 9948,
-          "gzBytes": 5802,
+          "file": "/models/head-male-e.low.0c394814.glb",
+          "sha256": "0c39481418918cb85ced7c3e9e3e55fa49c53c63312329ffcadbe5adada5a12a",
+          "bytes": 10020,
+          "gzBytes": 5860,
           "triangles": 237
         },
         "mid": {
-          "file": "/models/head-male-e.high.f3510273.glb",
-          "sha256": "f3510273b34a3fc18a7e43f26463807a44bf0aa0cf53a0e2c6f6bb9039d33e57",
-          "bytes": 10592,
-          "gzBytes": 6354,
+          "file": "/models/head-male-e.high.02bbcfe3.glb",
+          "sha256": "02bbcfe3e701d7638d083d69cd242ea97a72148fa72a7132f8bd9caea24a28a7",
+          "bytes": 10724,
+          "gzBytes": 6466,
           "triangles": 288
         },
         "high": {
-          "file": "/models/head-male-e.high.f3510273.glb",
-          "sha256": "f3510273b34a3fc18a7e43f26463807a44bf0aa0cf53a0e2c6f6bb9039d33e57",
-          "bytes": 10592,
-          "gzBytes": 6354,
+          "file": "/models/head-male-e.high.02bbcfe3.glb",
+          "sha256": "02bbcfe3e701d7638d083d69cd242ea97a72148fa72a7132f8bd9caea24a28a7",
+          "bytes": 10724,
+          "gzBytes": 6466,
           "triangles": 288
         }
       }

@@ -20,6 +20,7 @@
     "e2e": "playwright test",
     "e2e:supabase": "playwright test --config playwright.supabase.config.ts",
     "e2e:perf": "playwright test --config playwright.perf.config.ts",
+    "e2e:dpl": "playwright test --config playwright.dpl.config.ts",
     "budget": "node scripts/budget.ts && node scripts/shell-guard.ts",
     "handles:sql": "node scripts/moderation/blocklist-sql.ts",
     "db:types": "supabase gen types --local --schema public > src/lib/supabase/database.types.ts",
@@ -38,6 +39,7 @@
     "next": "16.3.8",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "server-only": "0.0.1",
     "three": "0.182.0",
     "zod": "4.6.5",
     "zustand": "5.0.15"

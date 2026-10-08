@@ -90,10 +90,24 @@ export function setTravelAnimator(ready: boolean): void {
   if (tripStore.getState().animator !== ready) tripStore.setState({ animator: ready })
 }
 
-/** The tour (S06) keeps arrivals free of random events while it runs. */
-export function setArrivalEventsSuppressed(suppressed: boolean): void {
-  if (tripStore.getState().arrivalEventsSuppressed !== suppressed) {
-    tripStore.setState({ arrivalEventsSuppressed: suppressed })
+/** Who keeps arrivals free of random events: the first-run tour (S06), or an e2e test hook. */
+export type ArrivalEventsSuppressor = 'tour' | 'test'
+
+const suppressors = new Set<ArrivalEventsSuppressor>()
+
+/**
+ * Turns `source`'s suppression of arrival events on or off; arrivals roll no event while any
+ * source has it on, so the tour ending never re-enables events a test turned off.
+ */
+export function setArrivalEventsSuppressed(
+  suppressed: boolean,
+  source: ArrivalEventsSuppressor = 'tour',
+): void {
+  if (suppressed) suppressors.add(source)
+  else suppressors.delete(source)
+  const next = suppressors.size > 0
+  if (tripStore.getState().arrivalEventsSuppressed !== next) {
+    tripStore.setState({ arrivalEventsSuppressed: next })
   }
 }
 

@@ -9,7 +9,8 @@
  *   `$ZodType` (zod belongs in the boot islands, not the shell) or `signInAnonymously`
  *   (supabase-js belongs in its own lazy chunk, S05);
  * - any static chunk contains an e2e test-hook marker (hooks ship only in the `.next-e2e` test
- *   build; next.config.ts `NEXT_PUBLIC_TEST_HOOKS`);
+ *   build; next.config.ts `NEXT_PUBLIC_TEST_HOOKS`) or a server-only name (MODERATOR_EMAILS,
+ *   SUPABASE_SERVICE_ROLE_KEY);
  * - the shell is over `shellJsGzKB - shellHeadroomGzKB` (data/config/perf.json).
  *
  * Positive controls keep the scan honest: a boot copy key must be found in the shell, and every
@@ -26,6 +27,12 @@ import { extractScripts, gzipBytes, hasMarker, staticFilePath } from './budget.t
  * src/scene/testHooks.tsx, src/lib/audio/testHook.ts).
  */
 export const TEST_HOOK_MARKERS = ['__cloutcityTest', '__cloutcityPlaces'] as const
+
+/**
+ * Server-only names (S18b part 2, RISK-5): the moderator allowlist and the service-role key are
+ * read by src/server on the Node runtime only, so no static chunk of the build may name them.
+ */
+export const SERVER_ONLY_MARKERS = ['MODERATOR_EMAILS', 'SUPABASE_SERVICE_ROLE_KEY'] as const
 
 const MARKER = /cc-feature:[a-z0-9]+(?:-[a-z0-9]+)*/g
 const ZOD_MARKER = '$ZodType'
@@ -83,6 +90,9 @@ export function shellGuardFailures(input: GuardInput): string[] {
   for (const chunk of [...input.shell, ...input.others]) {
     for (const hook of TEST_HOOK_MARKERS) {
       if (chunk.text.includes(hook)) failures.push(`${chunk.name}: test hook ${hook}`)
+    }
+    for (const name of SERVER_ONLY_MARKERS) {
+      if (chunk.text.includes(name)) failures.push(`${chunk.name}: server-only name ${name}`)
     }
   }
   if (!input.shell.some((chunk) => input.bootKeys.some((key) => hasKeyLiteral(chunk.text, key)))) {

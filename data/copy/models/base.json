@@ -139,6 +139,22 @@
     "models.color.mustard400": "Golden yellow",
     "models.color.teal600": "Teal",
     "models.color.blush300": "Blush",
-    "models.color.white50": "White"
+    "models.color.white50": "White",
+    "models.showcase.title": "Model showcase",
+    "models.showcase.views": "Scene",
+    "models.showcase.times": "Time of day",
+    "models.showcase.tiers": "Quality",
+    "models.showcase.view.avatars": "Avatars",
+    "models.showcase.view.street": "Street",
+    "models.showcase.view.room": "Apartment",
+    "models.showcase.view.catalog": "Catalog",
+    "models.showcase.time.day": "Day",
+    "models.showcase.time.golden": "Golden hour",
+    "models.showcase.time.night": "Night",
+    "models.showcase.tier.low": "Low",
+    "models.showcase.tier.mid": "Mid",
+    "models.showcase.tier.high": "High",
+    "models.showcase.loading": "Loading models",
+    "models.showcase.error": "A model failed to load"
   }
 }

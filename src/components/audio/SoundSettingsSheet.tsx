@@ -28,6 +28,7 @@ import { onboardingStore } from '@/state/onboarding'
 import { qualityStore, useQualityState } from '@/state/quality'
 import { SOUND_SETTINGS_SHEET_ID, closeSoundSheet } from './soundSheet'
 import '@/lib/copy/ns/audio'
+import '@/lib/copy/ns/settings'
 
 const LABEL: Readonly<Record<MixerChannel, CopyKey>> = {
   master: 'audio.settings.master',
@@ -38,9 +39,9 @@ const LABEL: Readonly<Record<MixerChannel, CopyKey>> = {
 }
 
 const TIER_LABEL: Readonly<Record<QualityTier, CopyKey>> = {
-  low: 'audio.settings.graphics.low',
-  mid: 'audio.settings.graphics.mid',
-  high: 'audio.settings.graphics.high',
+  low: 'settings.graphics.low',
+  mid: 'settings.graphics.mid',
+  high: 'settings.graphics.high',
 }
 
 const TITLE_ID = 'sound-settings-title'
@@ -63,8 +64,8 @@ function unlockIfLocked(): void {
   }
 }
 
-const RADIO_CLASS = 'h-6 w-6 shrink-0 accent-[var(--color-taxi-400)]'
-const OPTION_CLASS = 'flex min-h-11 items-center gap-3 text-base text-ink-50'
+const RADIO_CLASS = 'h-6 w-6 shrink-0 accent-taxi-ink'
+const OPTION_CLASS = 'flex min-h-11 items-center gap-3 text-base text-fg'
 
 /** The quality tier choice: Auto plus one radio per tier. */
 function GraphicsSettings() {
@@ -72,14 +73,14 @@ function GraphicsSettings() {
   const choose = (choice: QualityTier | null) => qualityStore.getState().setOverride(choice)
   const autoLabel =
     quality.auto === null
-      ? copy('audio.settings.graphics.auto')
-      : copy('audio.settings.graphics.autoDetected', { tier: copy(TIER_LABEL[quality.auto]) })
+      ? copy('settings.graphics.auto')
+      : copy('settings.graphics.autoDetected', { tier: copy(TIER_LABEL[quality.auto]) })
   const describedBy = quality.dataSaver ? `${GRAPHICS_NOTE_ID} ${DATA_SAVER_ID}` : GRAPHICS_NOTE_ID
 
   return (
     <fieldset aria-describedby={describedBy} className="flex flex-col">
-      <legend className="text-base font-extrabold text-ink-50">
-        {copy('audio.settings.graphics.title')}
+      <legend className="text-base font-extrabold text-fg">
+        {copy('settings.graphics.title')}
       </legend>
       <label className={`${OPTION_CLASS} cursor-pointer`}>
         <input
@@ -99,7 +100,7 @@ function GraphicsSettings() {
         return (
           <label
             key={tier}
-            className={`${OPTION_CLASS} ${locked ? 'cursor-not-allowed text-ink-300' : 'cursor-pointer'}`}
+            className={`${OPTION_CLASS} ${locked ? 'cursor-not-allowed text-muted' : 'cursor-pointer'}`}
           >
             <input
               type="radio"
@@ -108,9 +109,7 @@ function GraphicsSettings() {
               checked={quality.override === tier}
               disabled={locked}
               aria-label={
-                locked
-                  ? copy('audio.settings.graphics.lockedDataSaver', { tier: label })
-                  : undefined
+                locked ? copy('settings.graphics.lockedDataSaver', { tier: label }) : undefined
               }
               onChange={() => choose(tier)}
               className={RADIO_CLASS}
@@ -119,12 +118,12 @@ function GraphicsSettings() {
           </label>
         )
       })}
-      <p id={GRAPHICS_NOTE_ID} className="text-sm text-ink-300">
-        {copy('audio.settings.graphics.nextTime')}
+      <p id={GRAPHICS_NOTE_ID} className="text-sm text-muted">
+        {copy('settings.graphics.nextTime')}
       </p>
       {quality.dataSaver ? (
-        <p id={DATA_SAVER_ID} className="text-sm text-ink-300">
-          {copy('audio.settings.graphics.dataSaver')}
+        <p id={DATA_SAVER_ID} className="text-sm text-muted">
+          {copy('settings.graphics.dataSaver')}
         </p>
       ) : null}
     </fieldset>
@@ -156,14 +155,14 @@ export function SoundSettingsSheet() {
       id={SOUND_SETTINGS_SHEET_ID}
       aria-labelledby={TITLE_ID}
       data-cc-feature="cc-feature:sound-settings"
-      className="flex min-h-full flex-col gap-3 rounded-t-3xl border border-night-700 bg-night-900 p-4"
+      className="flex min-h-full flex-col gap-3 rounded-t-3xl border border-line glass p-4"
     >
       <header className="flex items-center justify-between gap-2">
         <h2
           ref={title}
           id={TITLE_ID}
           tabIndex={-1}
-          className="text-lg font-extrabold text-pink-400 focus:outline-none"
+          className="text-lg font-extrabold text-fg focus:outline-none"
         >
           {copy('audio.settings.title')}
         </h2>
@@ -171,17 +170,17 @@ export function SoundSettingsSheet() {
           type="button"
           onClick={closeSoundSheet}
           aria-label={copy('audio.settings.close')}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-ink-50 focus-visible:outline-2 focus-visible:outline-taxi-400"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-xl text-fg focus-visible:outline-2 focus-visible:outline-focus"
         >
           <span aria-hidden="true">×</span>
         </button>
       </header>
 
-      <h3 id={SOUND_ID} className="text-base font-extrabold text-ink-50">
+      <h3 id={SOUND_ID} className="text-base font-extrabold text-fg">
         {copy('audio.settings.sound')}
       </h3>
       <div>
-        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-base text-ink-50">
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-base text-fg">
           <input
             type="checkbox"
             checked={ownMusic}
@@ -190,11 +189,11 @@ export function SoundSettingsSheet() {
               unlockIfLocked()
               setOwnMusic(event.target.checked)
             }}
-            className="h-6 w-6 shrink-0 accent-[var(--color-taxi-400)]"
+            className="h-6 w-6 shrink-0 accent-taxi-ink"
           />
           {copy('audio.settings.ownMusic')}
         </label>
-        <p id={HINT_ID} className="text-sm text-ink-300">
+        <p id={HINT_ID} className="text-sm text-muted">
           {copy('audio.settings.ownMusicHint')}
         </p>
       </div>
@@ -203,11 +202,11 @@ export function SoundSettingsSheet() {
         const id = `sound-volume-${channel}`
         return (
           <div key={channel} className="flex flex-col gap-1">
-            <div className="flex items-center justify-between text-sm text-ink-50">
+            <div className="flex items-center justify-between text-sm text-fg">
               <label htmlFor={id} className="font-semibold">
                 {copy(LABEL[channel])}
               </label>
-              <output htmlFor={id} className="tabular-nums text-ink-300">
+              <output htmlFor={id} className="tabular-nums text-muted">
                 {formatPercent(volumes[channel])}
               </output>
             </div>
@@ -224,7 +223,7 @@ export function SoundSettingsSheet() {
                   .getState()
                   .setVolume(channel, Number(event.target.value), Date.now())
               }}
-              className="min-h-11 w-full accent-[var(--color-taxi-400)]"
+              className="min-h-11 w-full accent-taxi-ink"
             />
           </div>
         )

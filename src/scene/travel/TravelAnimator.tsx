@@ -17,7 +17,7 @@
  */
 import { useEffect, useMemo, type RefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import type { Group } from 'three'
+import type { Group, Texture } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import { setTravelAnimator, tripStore, type ActiveTrip } from '@/state/trip'
@@ -31,6 +31,8 @@ interface TravelAnimatorProps {
   readonly avatarRef: RefObject<Group | null>
   readonly groundY: number
   readonly palette: ScenePalette['travel']
+  /** The city's toon ramp: the vehicles reuse a shader program the map already has. */
+  readonly gradientMap: Texture
   readonly config: SceneConfig['travel']
   readonly avatar: AvatarConfig
   /** balance.json `transit.animation`, resolved on the server (src/scene/CityScene.tsx). */
@@ -45,6 +47,7 @@ export function TravelAnimator({
   avatarRef,
   groundY,
   palette,
+  gradientMap,
   config,
   avatar,
   animation,
@@ -57,8 +60,8 @@ export function TravelAnimator({
   const controls = useThree((state) => state.controls)
 
   const runner = useMemo(
-    () => createTravelRunner({ palette, config, avatar, animation, groundY }),
-    [palette, config, avatar, animation, groundY],
+    () => createTravelRunner({ palette, gradientMap, config, avatar, animation, groundY }),
+    [palette, gradientMap, config, avatar, animation, groundY],
   )
 
   useEffect(() => {

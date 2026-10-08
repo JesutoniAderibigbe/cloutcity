@@ -46,10 +46,12 @@ export function massTriangles(rings: readonly (readonly LocalPoint[])[]): number
 }
 
 export interface DistrictColors {
-  readonly wall: string
+  /**
+   * Facade colours, one picked per mass, so a district reads as a mix of brick, brownstone,
+   * limestone, concrete and glass rather than one colour. Repeat a colour to weight it.
+   */
+  readonly walls: readonly string[]
   readonly roof: string
-  /** Mixed into some facades, so a district reads as brick, brownstone and concrete. */
-  readonly accent: string
   /** Facade brightness spread (scene.json buildings.wallJitter). */
   readonly jitter: number
   /**
@@ -59,12 +61,28 @@ export interface DistrictColors {
   readonly windowTile: { readonly u: number; readonly v: number }
 }
 
+/** The entry a 0..1 `noise` value lands on (`items` must not be empty). */
+export function pick<T>(items: readonly T[], noise: number): T {
+  const item = items[Math.min(items.length - 1, Math.floor(noise * items.length))]
+  if (item === undefined) throw new Error('pick needs at least one item')
+  return item
+}
+
 /** A deterministic 0..1 value per mass index (no Math.random: a rebuild looks the same). */
 export function massNoise(index: number): number {
   let x = (index + 1) * 0x9e3779b1
   x = Math.imul(x ^ (x >>> 16), 0x85ebca6b)
   x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35)
   return ((x ^ (x >>> 16)) >>> 0) / 0x100000000
+}
+
+/**
+ * A linear channel (0..1, but a jittered facade can exceed 1) as a normalised byte. Writing
+ * straight into a Uint8Array would wrap 1.06 × 255 round to a near-black 15 (3D-5), so it
+ * clamps, and rounds rather than truncating.
+ */
+export function toByte(channel: number): number {
+  return Math.min(255, Math.max(0, Math.round(channel * 255)))
 }
 
 export interface DistrictGeometry {
@@ -117,8 +135,7 @@ export async function buildDistrictGeometry(
   const indexEnds = new Uint32Array(masses.length)
   const triangleEnds = new Uint32Array(masses.length)
 
-  const wall = new Color(colors.wall)
-  const accent = new Color(colors.accent)
+  const walls = colors.walls.map((hex) => new Color(hex))
   const roof = new Color(colors.roof)
   const facade = new Color()
   let v = 0
@@ -144,19 +161,16 @@ export async function buildDistrictGeometry(
     normals[o] = nx
     normals[o + 1] = ny
     normals[o + 2] = nz
-    vertexColors[o] = c.r * 255
-    vertexColors[o + 1] = c.g * 255
-    vertexColors[o + 2] = c.b * 255
+    vertexColors[o] = toByte(c.r)
+    vertexColors[o + 1] = toByte(c.g)
+    vertexColors[o + 2] = toByte(c.b)
     return v++
   }
 
   for (const [m, mass] of masses.entries()) {
     const noise = massNoise(m)
     const shade = 1 + colors.jitter * (2 * massNoise(m + 7919) - 1)
-    facade
-      .copy(wall)
-      .lerp(accent, noise < 0.35 ? noise : 0)
-      .multiplyScalar(shade)
+    facade.copy(pick(walls, noise)).multiplyScalar(shade)
     const top = groundY + mass.h
 
     // Walls: one quad per edge, outward for the outer ring and into each courtyard for holes.

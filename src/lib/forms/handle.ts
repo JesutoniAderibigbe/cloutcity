@@ -11,7 +11,10 @@ import handlesJson from '@data/config/handles.json'
 import * as z from 'zod/mini'
 import type { CopyKey } from '@/lib/copy'
 import type { HandlesConfig } from '@/lib/data/schemas/config'
+import { formatDate } from '@/lib/format'
 import { handlePattern, type HandleRules } from '@/lib/handles/normalise'
+import { rpcErrorKey } from '@/lib/safety/errorCopy'
+import type { ApiErrorCode } from '@/lib/supabase/rpc'
 // The error keys below are rendered by fieldErrors, which needs their namespace loaded.
 import '@/lib/copy/ns/profile'
 
@@ -88,3 +91,59 @@ export const MyProfileSchema = z.object({
   next_handle_change_at: z.nullable(z.string()),
 })
 export type MyProfile = z.infer<typeof MyProfileSchema>
+
+/** A handle error the server (or the live check) reported, shown under the field. */
+export interface HandleServerError {
+  readonly key: CopyKey
+  readonly vars?: Readonly<Record<string, string>>
+}
+
+/**
+ * What a refused `set_handle` (or a `check_handle` answer) means for the field. `nextChangeAt`
+ * is when the player may change again, from their profile, for the rate-limit message.
+ * Anything without a field meaning (no network, a sanction) gets its general RPC text.
+ */
+export function handleServerError(
+  code: ApiErrorCode | 'current',
+  nextChangeAt: string | null,
+): HandleServerError {
+  switch (code) {
+    case 'handle_taken':
+      return { key: 'profile.handle.error.taken' }
+    case 'handle_not_allowed':
+      return { key: 'profile.handle.error.notAllowed' }
+    case 'handle_invalid':
+      return { key: 'profile.handle.error.characters' }
+    case 'handle_change_limited':
+      return nextChangeAt === null || Number.isNaN(Date.parse(nextChangeAt))
+        ? { key: 'profile.handle.error.changeLimitedSoon' }
+        : { key: 'profile.handle.error.changeLimited', vars: { date: formatDate(nextChangeAt) } }
+    case 'rate_limited':
+      return { key: 'profile.handle.error.rateLimited' }
+    case 'current':
+      return { key: 'profile.handle.error.sameAsCurrent' }
+    case 'unknown':
+      return { key: 'profile.handle.error.failed' }
+    default:
+      return { key: rpcErrorKey(code) }
+  }
+}
+
+/** The field error a live `check_handle` answer implies, or null when the handle is usable. */
+export function handleCheckError(
+  status: HandleCheckStatus,
+  nextChangeAt: string | null,
+): HandleServerError | null {
+  switch (status) {
+    case 'available':
+      return null
+    case 'current':
+      return handleServerError('current', nextChangeAt)
+    case 'taken':
+      return handleServerError('handle_taken', nextChangeAt)
+    case 'not_allowed':
+      return handleServerError('handle_not_allowed', nextChangeAt)
+    case 'invalid':
+      return handleServerError('handle_invalid', nextChangeAt)
+  }
+}

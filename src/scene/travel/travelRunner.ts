@@ -4,7 +4,7 @@
  * avatar along a trip's timeline (src/engine/transit/timeline.ts), shows the vehicle it rides,
  * extends the trail and, while following, slides the camera with it. three only, no React.
  */
-import { BoxGeometry, Group, Mesh, MeshLambertMaterial, Vector3, type Camera } from 'three'
+import { BoxGeometry, Group, Mesh, Vector3, type Camera, type Texture } from 'three'
 import type { MapControls } from 'three/addons/controls/MapControls.js'
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
@@ -14,10 +14,13 @@ import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { ActiveTrip } from '@/state/trip'
 import { avatarSize, type AvatarConfig } from '../avatar/buildAvatar'
 import { toScene } from '../geo/coords'
+import { createSurfaceMaterial } from '../shading'
 import type { ScenePalette, TravelAnimation } from '../types'
 
 export interface TravelRunnerOptions {
   readonly palette: ScenePalette['travel']
+  /** The city's shared toon ramp. */
+  readonly gradientMap: Texture
   readonly config: SceneConfig['travel']
   readonly avatar: AvatarConfig
   readonly animation: TravelAnimation
@@ -45,17 +48,20 @@ export interface TravelRunner {
   stopFollowing(): void
   /** Moves everything one frame on; returns false once the trip has landed (or none runs). */
   step(input: StepInput): boolean
-  /** Ends the animation: vehicles and trail hidden, the avatar shown. */
+  /** Ends the animation: vehicles and trail hidden, the avatar shown at the destination. */
   stop(avatar: Group | null): void
   dispose(): void
 }
 
 export function createTravelRunner(options: TravelRunnerOptions): TravelRunner {
-  const { palette, config, avatar, animation, groundY } = options
+  const { palette, gradientMap, config, avatar, animation, groundY } = options
   const box = new BoxGeometry(1, 1, 1)
   box.translate(0, 0.5, 0)
-  const taxiMaterial = new MeshLambertMaterial({ color: palette.taxi })
-  const trainMaterial = new MeshLambertMaterial({ color: palette.train })
+  // The city's own toon surface (plain colour, no vertex colours, like the water): the vehicles
+  // reuse a shader program the map already compiled, so a trip never raises the program count
+  // past perf.json `programsMax` (3D-2). The trail's line material matches the subway casing's.
+  const taxiMaterial = createSurfaceMaterial({ gradientMap, color: palette.taxi })
+  const trainMaterial = createSurfaceMaterial({ gradientMap, color: palette.train })
   const taxi = new Mesh(box, taxiMaterial)
   taxi.name = 'travel-taxi'
   const train = new Mesh(box, trainMaterial)
@@ -162,6 +168,11 @@ export function createTravelRunner(options: TravelRunnerOptions): TravelRunner {
       return !frame.done
     },
     stop(body) {
+      // The trip is already in the save: however the animation ends (it finished, Skip, a hidden
+      // tab, the apartment taking the screen), the avatar stands at the destination (TRV-2).
+      if (timeline !== null && body !== null) {
+        toScene(timeline.frameAt(Number.POSITIVE_INFINITY).point, groundY, body.position)
+      }
       trip = null
       timeline = null
       following = false

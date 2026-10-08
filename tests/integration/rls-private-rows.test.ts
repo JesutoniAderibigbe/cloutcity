@@ -21,6 +21,8 @@ interface PrivateTable {
   readonly parties: 'owner' | 'both'
   /** A column a client might try to change. */
   readonly update: Record<string, unknown>
+  /** The columns a client may select (default every column; saves hides its flags, S18c). */
+  readonly columns?: string
   /** A row a client might try to insert for themselves. */
   insert(owner: Guest, partner: Guest): Record<string, unknown>
 }
@@ -52,6 +54,7 @@ const CASES: readonly PrivateTable[] = [
     }),
     update: { data: { cash: 1_000_000 } },
     insert: (owner) => ({ user_id: owner.id, save_version: 6, data: {} }),
+    columns: 'user_id, save_version, revision, data',
   },
   {
     table: 'friendships',
@@ -136,7 +139,10 @@ describe.each(CASES)('$table: private rows', (spec) => {
   })
 
   const read = (client: Client) =>
-    loose(client).from(spec.table).select('*').eq(key.column, key.value)
+    loose(client)
+      .from(spec.table)
+      .select(spec.columns ?? '*')
+      .eq(key.column, key.value)
 
   it('the owner reads it', async () => {
     const { data, error } = await read(owner.client)
@@ -152,9 +158,11 @@ describe.each(CASES)('$table: private rows', (spec) => {
 
   it('a stranger reads nothing, even listing the whole table', async () => {
     expect((await read(stranger.client)).data).toEqual([])
-    const all = await loose(stranger.client).from(spec.table).select('*')
+    const all = await loose(stranger.client)
+      .from(spec.table)
+      .select(spec.columns ?? '*')
     expect(all.error).toBeNull()
-    for (const row of (all.data ?? []) as Record<string, unknown>[]) {
+    for (const row of (all.data ?? []) as unknown as Record<string, unknown>[]) {
       expect(Object.values(row)).not.toContain(owner.id)
     }
   })

@@ -11,6 +11,7 @@ import {
   scenePins,
   type HookPin,
 } from './helpers/places'
+import { waitForCityModels } from './helpers/cityModels'
 import { waitForMapSettled } from './helpers/scene'
 import { touchGesture } from './helpers/touch'
 
@@ -381,6 +382,9 @@ test.describe('place pins with reduced motion', () => {
 
   test('the camera cuts to a place picked in the panel instead of flying', async ({ page }) => {
     await boot(page)
+    // District buildings and landmark models stream in after the map settles (S04d, S07a), each
+    // with a frame of its own: only the cut's frames are counted.
+    await waitForCityModels(page)
     const target = 'statue-of-liberty'
     const before = await page.evaluate(() => window.__cloutcityTest?.scene?.frames() ?? 0)
     await page.locator('[data-places-button]').click()

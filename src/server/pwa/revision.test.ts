@@ -4,12 +4,13 @@ import modelManifestJson from '@data/assets/manifest.json'
 import { districtAssetUrls } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
 import { QUALITY_TIERS } from '@/lib/data/schemas/config'
-import { isVersionedGeo, warmTierUrls } from '@/sw/policy'
+import { geoVersionsOf, isVersionedGeo, warmTierUrls } from '@/sw/policy'
 import {
   PRECACHED_PAGES,
   additionalPrecacheEntries,
   audioVersionOf,
   buildRevision,
+  dropOptionalChunks,
   precacheGlobs,
   serviceWorkerConfig,
 } from './revision'
@@ -68,9 +69,13 @@ describe('serviceWorkerConfig', () => {
   it('names the versioned caches after the current geo, audio and models', () => {
     const config = serviceWorkerConfig()
     expect(config.geoCache).toBe(`cc-geo-${geoVersion}`)
+    // The geo route caches the base geo at exactly this version (F4).
+    expect(config.geoVersion).toBe(geoVersion)
+    expect(geoVersionsOf(config).has(geoVersion)).toBe(true)
     expect(config.audioCache).toBe(`cc-audio-${audioVersionOf(audioManifestJson)}`)
     expect(config.modelsCache).toBe(`cc-models-${modelManifestJson.assetVersion}`)
     expect(config.revision).toMatch(/^[0-9a-f]{16}$/)
+    expect(config.chunksCache).toBe(`cc-chunks-${config.revision}`)
   })
 
   it("bakes in each tier's district URLs exactly as the scene loads them", () => {
@@ -84,7 +89,9 @@ describe('serviceWorkerConfig', () => {
       expect(warmTierUrls(config, tier, origin)).toEqual(urls)
       for (const url of urls) {
         const facts = { url: new URL(url, origin), method: 'GET', mode: 'cors' as const }
-        expect(isVersionedGeo({ ...facts, sameOrigin: true }), url).toBe(true)
+        expect(isVersionedGeo({ ...facts, sameOrigin: true }, geoVersionsOf(config)), url).toBe(
+          true,
+        )
         expect(url, url).toMatch(new RegExp(`^/geo/(?:districts|blocks)/${tier}\\b`))
       }
     }
@@ -101,5 +108,39 @@ describe('precacheGlobs', () => {
     for (const glob of precacheGlobs()) {
       expect(glob).not.toMatch(/models|audio|glb|public\/\*\*/)
     }
+  })
+})
+
+describe('dropOptionalChunks (PERF-7)', () => {
+  const files: Record<string, string> = {
+    '.next/static/chunks/boot.js': 'console.log("shell")',
+    '.next/static/chunks/loader.js': 'x="EXT_meshopt_compression"',
+    '.next/static/chunks/showcase.js': 'data-cc-feature="cc-feature:model-showcase"',
+    '.next/static/chunks/decor.js': 'Error(`apartment decor models: ${w}`)',
+    '.next/static/chunks/mod.js': '"data-mod-error":""',
+    '.next/static/chunks/supabase.js': 'class GoTrueClient{}',
+    '.next/static/css/a.css': 'EXT_meshopt_compression',
+    'public/icons/icon.svg': '<svg/>',
+  }
+  const entries = Object.keys(files).map((url) => ({ url, revision: null, size: 1 }))
+
+  it('drops chunks carrying an optional marker and keeps everything else', async () => {
+    const read = (path: string) => files[path] ?? ''
+    const { manifest, warnings } = await dropOptionalChunks(read)(entries)
+    expect(manifest.map((entry) => entry.url)).toEqual([
+      '.next/static/chunks/boot.js',
+      '.next/static/css/a.css',
+      'public/icons/icon.svg',
+    ])
+    expect(warnings).toEqual([])
+  })
+
+  it('reads only JS chunks', async () => {
+    const read: string[] = []
+    await dropOptionalChunks((path) => {
+      read.push(path)
+      return files[path] ?? ''
+    })(entries)
+    expect(read.every((path) => path.endsWith('.js'))).toBe(true)
   })
 })

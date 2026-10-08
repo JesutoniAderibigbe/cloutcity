@@ -24,14 +24,25 @@ const HomePanel = lazyIsland(() => import('./HomePanel').then((module) => module
   zone: 'sheet',
   labelKey: 'loading.home',
 })
+const CloudSavePanel = lazyIsland(
+  () => import('@/components/sync/CloudSavePanel').then((module) => module.CloudSavePanel),
+  { zone: 'sheet', labelKey: 'loading.cloudSave' },
+)
 const GoalsPanel = lazyIsland(() => import('./GoalsPanel').then((module) => module.GoalsPanel), {
   zone: 'sheet',
   labelKey: 'loading.goals',
 })
+// S18a: the Me panel (opened by the Me tab) with the profile and safety copy and, once the
+// player is online, the lazily loaded Supabase client.
+const MePanel = lazyIsland(
+  () => import('@/components/profile/MePanel').then((module) => module.MePanel),
+  { zone: 'sheet', labelKey: 'loading.me' },
+)
 
 /**
- * The sheet zone's HUD-panel slot (S10a; goals S15; more S05; home S16): nothing until a HUD
- * button opens a panel. A place opening closes the panel, so only one sheet shows at a time. In builds with test hooks the
+ * The sheet zone's HUD-panel slot (S10a; goals S15; more S05; home S16; me S18a; cloud save
+ * S18c): nothing until a HUD button (or the Me tab) opens a panel. A place opening closes the
+ * panel, so only one sheet shows at a time. In builds with test hooks the
  * e2e hook is installed from its own chunk, so no test code ships in the shell (or at all in
  * production).
  */
@@ -50,5 +61,7 @@ export function HudPanelMount() {
   if (panel === 'goals') return <GoalsPanel />
   if (panel === 'more') return <MorePanel />
   if (panel === 'home') return <HomePanel />
+  if (panel === 'me') return <MePanel />
+  if (panel === 'cloud') return <CloudSavePanel />
   return panel === 'inventory' ? <InventoryPanel /> : <RentPanel />
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { SoundControlMount } from '@/components/audio/SoundControlMount'
 import { copy } from '@/lib/copy'
+import { uiThemeClock } from '@/lib/theme'
 import { HudLiveMount } from './HudLiveMount'
 import { HudPanelButtonsMount } from './HudPanelButtonsMount'
 import { HUD_CELL, HUD_GRID } from './hudLayout'
@@ -24,7 +25,7 @@ export function HudFrame({ places }: HudFrameProps) {
   return (
     <header data-hud="" className={HUD_GRID}>
       <h1 className="sr-only">{copy('app.name')}</h1>
-      <HudLiveMount />
+      <HudLiveMount themeClock={uiThemeClock()} />
       <div data-hud-cell="actions" className={HUD_CELL.actions}>
         <div data-hud-slot="sound" className="flex shrink-0">
           <SoundControlMount />

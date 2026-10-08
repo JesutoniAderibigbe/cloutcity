@@ -4,14 +4,16 @@
  * (src/app/serwist/[path]/route.ts). Server-only: it reads git, the build directory and the
  * classic-zod geo data, and runs only while the worker route is prerendered.
  */
+import 'server-only'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { readdirSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import audioManifestJson from '@data/audio/manifest.json'
 import modelManifestJson from '@data/assets/manifest.json'
 import { districtAssetUrls } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
+import { isChunkPath, optionalChunkMarkers } from '@/lib/pwa/lazyChunks'
 import { runtimeCacheName, type ServiceWorkerConfig } from '@/sw/policy'
 
 export interface RevisionInputs {
@@ -80,18 +82,23 @@ function staticFiles(dir: string): string[] {
 /** The worker's build-time configuration, baked into sw.js by the route handler. */
 export function serviceWorkerConfig(): ServiceWorkerConfig {
   const audioVersion = audioVersionOf(audioManifestJson)
+  const revision = buildRevision({
+    commit: currentCommit(),
+    staticFiles: staticFiles(distDir()),
+    geoVersion,
+    audioVersion,
+  })
   return {
-    revision: buildRevision({
-      commit: currentCommit(),
-      staticFiles: staticFiles(distDir()),
-      geoVersion,
-      audioVersion,
-    }),
+    revision,
+    geoVersion,
     geoCache: runtimeCacheName('geo', geoVersion),
     audioCache: runtimeCacheName('audio', audioVersion),
     // The model manifest's own content hash (S04h): a rebuilt model set gets a new cache, and the
     // old one is deleted when the worker that knows the new set takes over.
     modelsCache: runtimeCacheName('models', modelManifestJson.assetVersion),
+    // PERF-7: chunks left out of the precache, one cache per build; older builds' are deleted
+    // when the next worker takes over (their chunk names are gone with the build).
+    chunksCache: runtimeCacheName('chunks', revision),
     districtUrls: {
       low: districtAssetUrls('low'),
       mid: districtAssetUrls('mid'),
@@ -108,6 +115,38 @@ export function serviceWorkerConfig(): ServiceWorkerConfig {
  */
 export function precacheGlobs(dir: string = distDir()): string[] {
   return [`${dir}/static/**/*.{js,css,svg,woff2}`, 'public/icons/**/*']
+}
+
+/** A precache entry as Serwist's manifest transforms see it (url relative to the project root). */
+export interface ManifestFileEntry {
+  url: string
+  revision?: string | null
+  size: number
+}
+
+/**
+ * PERF-7: drops the large optional chunks (src/lib/pwa/lazyChunks.ts) from the install
+ * precache, matching each built chunk's content, so the precache stays within `precacheGzKB`
+ * without raising it. The worker caches them at runtime when they first load (`cc-chunks-`).
+ * Runs before Serwist rewrites the URLs, so an entry's URL is its path under the project root.
+ */
+export function dropOptionalChunks(
+  // turbopackIgnore: a path built from process.cwd() makes Turbopack trace the whole project into
+  // the worker route's server bundle (F3); these are build outputs read at prerender time only.
+  read: (path: string) => string = (path) =>
+    readFileSync(
+      /* turbopackIgnore: true */ join(/* turbopackIgnore: true */ process.cwd(), path),
+      'utf8',
+    ),
+) {
+  return async <E extends ManifestFileEntry>(
+    entries: E[],
+  ): Promise<{ manifest: E[]; warnings: string[] }> => ({
+    manifest: entries.filter(
+      (entry) => !isChunkPath(entry.url) || optionalChunkMarkers(read(entry.url)).length === 0,
+    ),
+    warnings: [],
+  })
 }
 
 /** Pages precached as they were built, refreshed whenever the build revision changes. */

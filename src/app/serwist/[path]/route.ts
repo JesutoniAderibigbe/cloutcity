@@ -5,12 +5,13 @@
  *
  * The precache is the build's static JS, CSS, SVG and fonts, the icons, and
  * {@link additionalPrecacheEntries} (pages, manifest, versioned geo), as {@link precacheGlobs}
- * lists. Audio and the 3D models are never precached: they load later (audio after the player's
+ * lists, less the optional chunks {@link dropOptionalChunks} filters out. Audio and the 3D models are never precached: they load later (audio after the player's
  * audio choice, models on demand per tier), and the worker caches them then.
  */
 import { createSerwistRoute } from '@serwist/turbopack'
 import {
   additionalPrecacheEntries,
+  dropOptionalChunks,
   precacheGlobs,
   serviceWorkerConfig,
 } from '@/server/pwa/revision'
@@ -22,6 +23,9 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
     swSrc: 'src/sw/sw.ts',
     useNativeEsbuild: true,
     globPatterns: precacheGlobs(),
+    // PERF-7: large optional chunks (the model runtime, the model showcase, the apartment's decor
+    // models, the /mod console, supabase-js) are cached at runtime instead (src/lib/pwa/lazyChunks.ts).
+    manifestTransforms: [dropOptionalChunks()],
     additionalPrecacheEntries: additionalPrecacheEntries(config.revision),
     esbuildOptions: {
       // A classic script: registered without `type: 'module'`, so every browser that supports

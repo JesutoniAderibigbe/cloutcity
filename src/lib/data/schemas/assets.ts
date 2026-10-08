@@ -77,3 +77,92 @@ export const ModelManifestSchema = z
     error: 'model ids must be unique',
   })
 export type ModelManifest = z.infer<typeof ModelManifestSchema>
+
+/**
+ * data/assets/showcase.json: the /dev/models review scenes (test builds only, S04h). Colours
+ * are theme.json `models` token names; lighting presets stand in for the day/night keyframes
+ * until the S04f lighting reaches this route.
+ */
+const hex = z.string().regex(/^#[0-9a-f]{6}$/)
+const token = z.string().regex(/^[a-z]+-[0-9]+$/)
+const ShowcaseCameraSchema = z.strictObject({
+  position: vec3,
+  target: vec3,
+  fovDeg: z.number().min(10).max(90),
+})
+const ShowcaseLightSchema = z.strictObject({
+  sky: hex,
+  ambient: z.strictObject({ color: hex, intensity: z.number().nonnegative() }),
+  hemisphere: z.strictObject({ sky: hex, ground: hex, intensity: z.number().nonnegative() }),
+  sun: z.strictObject({ color: hex, intensity: z.number().nonnegative(), position: vec3 }),
+  /** Which scene.json `models.emissive` intensity the night-glow vertices use. */
+  glow: z.enum(['day', 'night']),
+  /** The sun's shadow on the high tier (one directional PCFShadowMap, perf.json `shadows`). */
+  shadow: z.strictObject({
+    extentM: z.number().positive(),
+    mapSizePx: z.union([z.literal(1024), z.literal(2048)]),
+    bias: z.number().max(0),
+    normalBias: z.number().nonnegative(),
+  }),
+})
+const SlotTokensSchema = z.record(id, token)
+const ShowcaseViewSchema = z.strictObject({
+  camera: z.strictObject({ landscape: ShowcaseCameraSchema, portrait: ShowcaseCameraSchema }),
+  grounds: z.array(
+    z.strictObject({
+      color: token,
+      center: vec3,
+      size: z.tuple([z.number().positive(), z.number().positive()]),
+    }),
+  ),
+  placements: z.array(
+    z.strictObject({
+      model: id,
+      position: vec3,
+      rotationDeg: z.number().optional(),
+      scale: z.number().positive().optional(),
+      colors: SlotTokensSchema.optional(),
+    }),
+  ),
+  lineup: z
+    .strictObject({
+      columns: z.strictObject({ landscape: z.int().positive(), portrait: z.int().positive() }),
+      spacingM: z.number().positive(),
+      rowDepthM: z.number().positive(),
+      clip: z.string().min(1),
+      avatars: z.array(
+        z.strictObject({
+          head: id,
+          body: id,
+          colors: z.strictObject({ head: SlotTokensSchema, body: SlotTokensSchema }),
+        }),
+      ),
+    })
+    .optional(),
+  /** Every catalog model in a grid, each scaled to fit one cell. */
+  grid: z
+    .strictObject({
+      cellM: z.number().positive(),
+      columns: z.strictObject({ landscape: z.int().positive(), portrait: z.int().positive() }),
+    })
+    .optional(),
+})
+export const SHOWCASE_VIEWS = ['avatars', 'street', 'room', 'catalog'] as const
+export const SHOWCASE_TIMES = ['day', 'golden', 'night'] as const
+export const ShowcaseSchema = z.strictObject({
+  version: z.literal(1),
+  lighting: z.strictObject({
+    day: ShowcaseLightSchema,
+    golden: ShowcaseLightSchema,
+    night: ShowcaseLightSchema,
+  }),
+  views: z.strictObject({
+    avatars: ShowcaseViewSchema,
+    street: ShowcaseViewSchema,
+    room: ShowcaseViewSchema,
+    catalog: ShowcaseViewSchema,
+  }),
+})
+export type Showcase = z.infer<typeof ShowcaseSchema>
+export type ShowcaseView = Showcase['views']['street']
+export type ShowcaseLight = Showcase['lighting']['day']

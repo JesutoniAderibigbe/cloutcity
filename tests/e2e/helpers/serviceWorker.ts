@@ -1,4 +1,5 @@
-import type { Page } from '@playwright/test'
+import type { BrowserContext, Page } from '@playwright/test'
+import { expect } from '../fixtures/test'
 
 // S04e helpers for specs that opt in with `test.use({ serviceWorkers: 'allow' })`.
 
@@ -89,4 +90,38 @@ export function waitForLog(page: Page, msg: string) {
       return value?.msg === msg
     },
   })
+}
+
+/**
+ * Makes the worker the page installs first an "older build": the served script plus a trailing
+ * comment, so the real script differs from it byte for byte. Call before the first page load;
+ * the returned function stops the rewrite, after which the browser's next update check
+ * (`registration.update()`) finds the real script as a new build.
+ *
+ * It cannot work the other way round (route the update check to a changed script): with a route
+ * on the worker script in place, the update check of an installed worker never reaches the route
+ * or the network (Playwright 1.63, Chromium; seen with the request log), so no new worker
+ * installs and the update notice never shows.
+ */
+export async function installOlderBuild(context: BrowserContext): Promise<() => Promise<void>> {
+  const pattern = `**${SERVICE_WORKER_PATH}`
+  await context.route(pattern, async (route) => {
+    const response = await route.fetch()
+    await route.fulfill({ response, body: `${await response.text()}\n// older build\n` })
+  })
+  return () => context.unroute(pattern)
+}
+
+/** Asks the browser to check for a new worker and waits until one is installed and waiting. */
+export async function updateToWaitingWorker(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await (await navigator.serviceWorker.getRegistration())?.update()
+  })
+  await expect
+    .poll(() =>
+      page.evaluate(
+        async () => ((await navigator.serviceWorker.getRegistration())?.waiting ?? null) !== null,
+      ),
+    )
+    .toBe(true)
 }

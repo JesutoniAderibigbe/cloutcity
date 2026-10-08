@@ -8,6 +8,8 @@ import { buildRoomGeometry, roomBounds } from './buildRoom'
 import {
   apartmentConfig,
   avatarReserve,
+  dayNightConfig,
+  dayNightModel,
   roomInterior,
   roomPalette,
   tierBudget,
@@ -15,6 +17,7 @@ import {
   toonRamp,
 } from './data'
 import { boundingSphere, cameraPosition, fitDistance } from './fit'
+import { lightingAt as cityLightingAt, mixHexLinear } from '@/lib/dayNight/lightingAt'
 import { lightingAt } from './lighting'
 import { triangleCount } from './parts'
 import { createPlaceholderVisuals } from './visuals'
@@ -105,11 +108,41 @@ describe('camera fit', () => {
   })
 })
 
-describe('lighting seam', () => {
-  it('is static until S04f drives it from the clock', () => {
-    expect(lightingAt(0, apartmentConfig.lights, roomPalette)).toEqual(
-      lightingAt(720, apartmentConfig.lights, roomPalette),
+describe('lighting seam (S04f)', () => {
+  const input = {
+    model: dayNightModel,
+    room: dayNightConfig.room,
+    lights: apartmentConfig.lights,
+    palette: roomPalette,
+  }
+  const city = (minute: number) => cityLightingAt(minute, dayNightModel)
+
+  it('follows the city keyframe by minute of day, scaled for the room', () => {
+    const noon = lightingAt(720, input)
+    expect(noon.sun.color).toBe(city(720).colors.sun)
+    expect(noon.sun.intensity).toBeCloseTo(city(720).sunIntensity * input.room.sunScale)
+    expect(noon.ambient.intensity).toBeCloseTo(city(720).ambientIntensity * input.room.ambientScale)
+    // The save's clock is absolute: day 3 at noon lights like day 1 at noon.
+    expect(lightingAt(720 + 2 * 1440, input)).toEqual(noon)
+    // The sun keeps coming through the window.
+    expect(noon.sun.direction).toEqual(apartmentConfig.lights.sunDirection)
+  })
+
+  it('is lamp-lit at night and darker than by day', () => {
+    const noon = lightingAt(720, input)
+    const night = lightingAt(23 * 60, input)
+    expect(city(23 * 60).nightGlow).toBe(1)
+    expect(night.sun.intensity).toBeLessThan(noon.sun.intensity)
+    expect(night.ambient.color).not.toBe(city(23 * 60).colors.ambient)
+    expect(night.ambient.color).toBe(
+      mixHexLinear(city(23 * 60).colors.ambient, roomPalette.lamp, input.room.lampMix),
     )
+    expect(noon.ambient.color).toBe(city(720).colors.ambient)
+  })
+
+  it('steps between keyframes under reduced motion', () => {
+    // 06:30 blends dawn into morning; step mode shows dawn as is.
+    expect(lightingAt(390, { ...input, step: true })).toEqual(lightingAt(345, input))
   })
 })
 

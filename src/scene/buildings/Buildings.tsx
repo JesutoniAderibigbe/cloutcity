@@ -15,7 +15,7 @@ import { Group, type Texture } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { DistrictAssets } from '@/lib/data/districts'
 import type { QualityTier } from '@/lib/data/schemas/config'
-import type { SceneConfig } from '@/lib/data/schemas/scene'
+import type { CitySceneConfig } from '@/lib/data/schemas/scene'
 import { log } from '@/lib/log'
 import type { BoroughId } from '../geo/schema'
 import { dimmedColor } from '../materials'
@@ -39,7 +39,7 @@ export interface BuildingsHandle {
 interface BuildingsProps {
   readonly assets: Readonly<Record<QualityTier, DistrictAssets>>
   readonly palette: ScenePalette
-  readonly config: SceneConfig
+  readonly config: CitySceneConfig
   readonly groundY: number
   /** The city's shared toon ramp. */
   readonly gradientMap: Texture
@@ -74,6 +74,7 @@ export function Buildings({
   const layerRef = useRef<BuildingsLayer | null>(null)
 
   const tierAssets = assets[settings.tier]
+  const shadowKey = `${settings.shadows}:${settings.shadowMapSizePx}`
   const windows = config.buildings.windows[settings.tier]
   const materials = useMemo(() => {
     const mask = windows ? createWindowMask(config.buildings) : null
@@ -89,7 +90,10 @@ export function Buildings({
       blocks: createBuildingMaterial({ gradientMap, colors: 'instance' }),
       blocksDimmed: createBuildingMaterial({ gradientMap, colors: 'instance' }),
     }
-  }, [gradientMap, palette.buildings.window, config.buildings, windows, glow])
+    // A shadow change (tier step) rebuilds the set: the old materials, out of the scene while
+    // the new tier's layer loads, would otherwise keep their old programs compiled (3D-3).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gradientMap, palette.buildings.window, config.buildings, windows, glow, shadowKey])
   useEffect(
     () => () => {
       materials.district.dispose()
@@ -117,15 +121,14 @@ export function Buildings({
       groundY,
       config: config.buildings,
       districtColors: {
-        wall: palette.buildings.wall,
+        walls: palette.buildings.walls,
         roof: palette.buildings.roof,
-        accent: palette.buildings.block,
         jitter: config.buildings.wallJitter,
         windowTile: windowTile(config.buildings),
       },
       blockColors: {
-        block: palette.buildings.block,
-        dimmed: `#${dimmedColor(palette.buildings.block, palette.background, config.dimmed.towardBackground).getHexString()}`,
+        blocks: palette.buildings.blocks,
+        dimmed: `#${dimmedColor(palette.buildings.dimmedBlock, palette.haze, config.dimmed.towardBackground).getHexString()}`,
         jitter: config.buildings.wallJitter,
       },
       dimmedBoroughs,

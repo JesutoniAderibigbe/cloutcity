@@ -69,7 +69,7 @@ export function tourHighlightSelector(
  */
 export function tourHighlightCss(selector: string): string {
   return [
-    `${selector}{box-shadow:inset 0 0 0 3px var(--color-pink-400)}`,
+    `${selector}{box-shadow:inset 0 0 0 3px var(--color-focus)}`,
     '@keyframes cc-tour-pulse{50%{box-shadow:inset 0 0 0 3px transparent}}',
     `@media (prefers-reduced-motion:no-preference){${selector}{animation:cc-tour-pulse 1.4s ease-in-out infinite}}`,
   ].join('\n')

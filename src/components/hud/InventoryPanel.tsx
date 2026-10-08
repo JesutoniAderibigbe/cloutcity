@@ -37,7 +37,7 @@ import { PANEL_BUTTON, PanelDialog, PanelStatus } from './PanelDialog'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/inventory'
 
-const ACTION = `${PANEL_BUTTON} bg-night-800 text-center text-sm text-ink-50 enabled:hover:bg-night-700`
+const ACTION = `${PANEL_BUTTON} bg-raised text-center text-sm text-fg enabled:hover:bg-pressed`
 
 /**
  * The inventory panel (S10a), opened from the HUD: owned wearables with Wear / Take off and
@@ -110,10 +110,10 @@ export function InventoryPanel() {
       // Clothes, gifts and decor (S16) can outgrow the sheet zone: the list scrolls under the title.
       scrollBody
     >
-      {empty ? <p className="text-sm text-ink-300">{copy('inventory.empty')}</p> : null}
+      {empty ? <p className="text-sm text-muted">{copy('inventory.empty')}</p> : null}
       {wearables.length === 0 ? null : (
         <section aria-label={copy('inventory.wearables.heading')} className="flex flex-col gap-1.5">
-          <h3 className="text-xs font-bold text-ink-300 uppercase">
+          <h3 className="text-xs font-bold text-muted uppercase">
             {copy('inventory.wearables.heading')}
           </h3>
           <ul aria-busy={coolingDown} className="flex flex-col gap-1.5">
@@ -127,19 +127,19 @@ export function InventoryPanel() {
                   key={def.id}
                   data-inventory-item={def.id}
                   data-prestige-kept={kept ? '' : undefined}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-night-950/60 p-2"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-canvas/60 p-2"
                 >
                   <div className="min-w-0">
-                    <p className="font-semibold text-ink-50">
+                    <p className="font-semibold text-fg">
                       {itemName(def.id)}{' '}
                       {worn ? (
-                        <span className="ml-1 text-xs font-bold text-taxi-400">
+                        <span className="ml-1 text-xs font-bold text-taxi-ink">
                           {copy('inventory.wearing')}
                         </span>
                       ) : null}
                     </p>
-                    <p className="text-xs text-ink-300">{inventoryItemDetails(def.id)}</p>
-                    <p className="text-xs text-ink-300">
+                    <p className="text-xs text-muted">{inventoryItemDetails(def.id)}</p>
+                    <p className="text-xs text-muted">
                       {kept ? copy('inventory.kept') : resaleLine(resale)}
                     </p>
                   </div>
@@ -188,7 +188,7 @@ export function InventoryPanel() {
                       onClick={(event) => {
                         if (!kept) act(event, def.id, () => sell(def.id))
                       }}
-                      className={`${ACTION} ${kept ? 'cursor-not-allowed text-ink-300' : ''}`}
+                      className={`${ACTION} ${kept ? 'cursor-not-allowed text-muted' : ''}`}
                     >
                       {copy('inventory.sell.button')}
                     </button>
@@ -201,7 +201,7 @@ export function InventoryPanel() {
       )}
       {gifts.length === 0 ? null : (
         <section aria-label={copy('inventory.gifts.heading')} className="flex flex-col gap-1.5">
-          <h3 className="text-xs font-bold text-ink-300 uppercase">
+          <h3 className="text-xs font-bold text-muted uppercase">
             {copy('inventory.gifts.heading')}
           </h3>
           <ul aria-busy={coolingDown} className="flex flex-col gap-1.5">
@@ -211,14 +211,12 @@ export function InventoryPanel() {
                 <li
                   key={def.id}
                   data-inventory-item={def.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-night-950/60 p-2"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-canvas/60 p-2"
                 >
                   <div className="min-w-0">
-                    <p className="font-semibold text-ink-50">
-                      {giftCountLine(def.id, stack.count)}
-                    </p>
-                    <p className="text-xs text-ink-300">{inventoryItemDetails(def.id)}</p>
-                    <p className="text-xs text-ink-300">{resaleLine(resale)}</p>
+                    <p className="font-semibold text-fg">{giftCountLine(def.id, stack.count)}</p>
+                    <p className="text-xs text-muted">{inventoryItemDetails(def.id)}</p>
+                    <p className="text-xs text-muted">{resaleLine(resale)}</p>
                   </div>
                   <div className="flex gap-1.5">
                     <button
@@ -256,7 +254,7 @@ export function InventoryPanel() {
       )}
       {decor.length === 0 ? null : (
         <section aria-label={copy('inventory.decor.heading')} className="flex flex-col gap-1.5">
-          <h3 className="text-xs font-bold text-ink-300 uppercase">
+          <h3 className="text-xs font-bold text-muted uppercase">
             {copy('inventory.decor.heading')}
           </h3>
           <ul aria-busy={coolingDown} className="flex flex-col gap-1.5">
@@ -269,16 +267,16 @@ export function InventoryPanel() {
                   key={def.id}
                   data-inventory-item={def.id}
                   data-prestige-kept={kept ? '' : undefined}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-night-950/60 p-2"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-canvas/60 p-2"
                 >
                   <div className="min-w-0">
-                    <p className="font-semibold text-ink-50">{itemName(def.id)}</p>
-                    <p className="text-xs text-ink-300">
+                    <p className="font-semibold text-fg">{itemName(def.id)}</p>
+                    <p className="text-xs text-muted">
                       {slotId === undefined
                         ? copy('inventory.decor.stored')
                         : copy('inventory.decor.placed', { slot: slotName(home, slotId) })}
                     </p>
-                    <p className="text-xs text-ink-300">
+                    <p className="text-xs text-muted">
                       {kept ? copy('inventory.kept') : resaleLine(resale)}
                     </p>
                   </div>
@@ -292,7 +290,7 @@ export function InventoryPanel() {
                       onClick={(event) => {
                         if (!kept) act(event, def.id, () => sell(def.id))
                       }}
-                      className={`${ACTION} ${kept ? 'cursor-not-allowed text-ink-300' : ''}`}
+                      className={`${ACTION} ${kept ? 'cursor-not-allowed text-muted' : ''}`}
                     >
                       {copy('inventory.sell.button')}
                     </button>

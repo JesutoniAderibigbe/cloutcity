@@ -2,7 +2,7 @@ import type { PlayerLocation } from '@/engine/game'
 import type { TravelMode } from '@/engine/transit/plan'
 import { tripEnd } from '@/lib/world/tripEnds'
 import { gameStore } from './store'
-import { HOME_SPOT_ID, tripStore } from './trip'
+import { HOME_SPOT_ID, setArrivalEventsSuppressed, tripStore } from './trip'
 import { seekTrip, skipTrip, tripOptionsFor } from './tripDriver'
 import { transitWorldStore, type TransitWorldStatus } from './transitWorld'
 
@@ -35,6 +35,11 @@ export interface TravelTestHook {
   seek(fraction: number): void
   /** Lands the trip now (the Skip button's path). */
   skip(): void
+  /**
+   * Keeps arrivals free of random events (TRV-4): a spec about travel must not meet a modal
+   * event it did not ask for. Specs about events leave it off.
+   */
+  suppressArrivalEvents(suppressed: boolean): void
   /** The "Get there" rows' data from where the player stands to `destinationId` (`home` too). */
   options(destinationId: string): readonly {
     readonly mode: TravelMode
@@ -89,6 +94,7 @@ export function installTravelTestHook(): void {
     },
     seek: seekTrip,
     skip: skipTrip,
+    suppressArrivalEvents: (suppressed) => setArrivalEventsSuppressed(suppressed, 'test'),
     options: (destinationId) => {
       const { player } = gameStore.getState()
       const from = tripEnd(player.location, player.home)

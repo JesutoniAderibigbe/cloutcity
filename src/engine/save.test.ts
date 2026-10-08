@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { V11_FRESH_PLAYER, V11_FRESH_SAVE, V11_PLAYER_KEYS } from './test-support'
+import { V12_FRESH_PLAYER, V12_FRESH_SAVE, V12_PLAYER_KEYS } from './test-support'
 import { initialCloutState, legacyCloutState } from './clout'
 import { engineConfig as config } from './config'
 import { emptyInventory } from './items'
@@ -28,7 +28,7 @@ function legacyPlayer(): Record<string, unknown> {
   delete player.apartment
   delete player.location
   delete player.transit
-  for (const key of V11_PLAYER_KEYS) delete player[key]
+  for (const key of V12_PLAYER_KEYS) delete player[key]
   return player
 }
 
@@ -42,7 +42,7 @@ function legacyV7Player(): Record<string, unknown> {
   delete player.apartment
   delete player.location
   delete player.transit
-  for (const key of V11_PLAYER_KEYS) delete player[key]
+  for (const key of V12_PLAYER_KEYS) delete player[key]
   return player
 }
 
@@ -52,21 +52,26 @@ function legacyBase(): Record<string, unknown> {
   delete save.goals
   delete save.grants
   delete save.prestige
+  delete save.actions
   delete save.creator
   delete save.rolls
   return save
 }
 
-/** What a migration adds for S15 (v8): no visits, fresh grants and prestige, goals as given. */
+/**
+ * What a migration adds for S15 (v8): no visits, fresh grants and prestige, goals as given; and
+ * for S18c (v11): no actions counted.
+ */
 const S15_FIELDS = {
   goals: initialGoalsState,
   grants: initialGrantsState,
   prestige: initialPrestigeState,
+  actions: 0,
 } as const
 
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(11)
+    expect(SAVE_VERSION).toBe(12)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -249,11 +254,11 @@ describe('save v3: clout, home and rent', () => {
           apartment: initialApartment,
           location: { kind: 'home' },
           transit: { rngState: 0 },
-          ...V11_FRESH_PLAYER,
+          ...V12_FRESH_PLAYER,
         },
         events: initialEventsState(),
         ...S15_FIELDS,
-        ...V11_FRESH_SAVE,
+        ...V12_FRESH_SAVE,
       },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)
@@ -342,7 +347,7 @@ describe('save v3: tampered and edge saves', () => {
         apartment: initialApartment,
         location: { kind: 'home' },
         transit: { rngState: 0 },
-        ...V11_FRESH_PLAYER,
+        ...V12_FRESH_PLAYER,
       })
       expect(schema.safeParse(result.save).success).toBe(true)
     },
@@ -404,12 +409,12 @@ describe('save v3: tampered and edge saves', () => {
         apartment: initialApartment,
         location: { kind: 'home' },
         transit: { rngState: 0 },
-        ...V11_FRESH_PLAYER,
+        ...V12_FRESH_PLAYER,
       },
       speed: 1,
       events: initialEventsState(),
       ...S15_FIELDS,
-      ...V11_FRESH_SAVE,
+      ...V12_FRESH_SAVE,
     })
   })
 
@@ -452,11 +457,11 @@ describe('event state in the save (v5)', () => {
           apartment: initialApartment,
           location: { kind: 'home' },
           transit: { rngState: 0 },
-          ...V11_FRESH_PLAYER,
+          ...V12_FRESH_PLAYER,
         },
         events: initialEventsState(),
         ...S15_FIELDS,
-        ...V11_FRESH_SAVE,
+        ...V12_FRESH_SAVE,
       },
       outcome: 'carried',
     })
@@ -480,7 +485,7 @@ describe('event state in the save (v5)', () => {
     expect(migrateSave({ player: { cash: 1 } }, 4, config).outcome).toBe('fresh')
   })
 
-  it('a save of every version so far (v1 to v8) loads, carrying its progress', () => {
+  it('a save of every version so far (v1 to v10) loads, carrying its progress', () => {
     const player = v4Player
     const saves: Record<number, unknown> = {
       1: { player: { cash: 501 } },
@@ -494,6 +499,32 @@ describe('event state in the save (v5)', () => {
       5: { ...legacyBase(), player: { ...player, cash: 505 } },
       6: { ...legacyBase(), player: { ...legacyPlayer(), cash: 506 } },
       7: { ...legacyBase(), player: { ...legacyV7Player(), cash: 507 } },
+      // v8 (S15): no decor, apartment (S16), location or transit (S08), or action count (S18c).
+      8: (() => {
+        const v8: Record<string, unknown> = { ...initialSave(config) }
+        delete v8.actions
+        const p: Record<string, unknown> = { ...initialSave(config).player, cash: 508 }
+        p.inventory = legacyInventory
+        delete p.apartment
+        delete p.location
+        delete p.transit
+        return { ...v8, player: p }
+      })(),
+      // v9 (S16): no location or transit (S08), or action count (S18c).
+      9: (() => {
+        const v9: Record<string, unknown> = { ...initialSave(config) }
+        delete v9.actions
+        const p: Record<string, unknown> = { ...initialSave(config).player, cash: 509 }
+        delete p.location
+        delete p.transit
+        return { ...v9, player: p }
+      })(),
+      // v10 (S08): no action count (S18c).
+      10: (() => {
+        const v10: Record<string, unknown> = { ...initialSave(config) }
+        delete v10.actions
+        return { ...v10, player: { ...initialSave(config).player, cash: 510 } }
+      })(),
     }
     for (const [version, persisted] of Object.entries(saves)) {
       const migrated = migrateSave(persisted, Number(version), config)
@@ -635,11 +666,11 @@ describe('club nights in the save (v6)', () => {
           apartment: initialApartment,
           location: { kind: 'home' },
           transit: { rngState: 0 },
-          ...V11_FRESH_PLAYER,
+          ...V12_FRESH_PLAYER,
         },
         // 120 earned clout holds Local: the migration derives that goal at the save's minute.
         ...S15_FIELDS,
-        ...V11_FRESH_SAVE,
+        ...V12_FRESH_SAVE,
         goals: { ...initialGoalsState, achieved: { 'reach-local': 9000 } },
       },
       outcome: 'carried',
@@ -688,5 +719,26 @@ describe('club nights in the save (v6)', () => {
     const result = loadSave(persisted, config)
     expect(result.ok && result.save.player.clubNights).toEqual({})
     expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+  })
+})
+
+describe('the action count (v11, S18c)', () => {
+  it('a v10 save starts counting at 0', () => {
+    const v10: Record<string, unknown> = { ...initialSave(config) }
+    delete v10.actions
+    const migrated = migrateSave(v10, 10, config)
+    expect(migrated.outcome).toBe('carried')
+    expect(migrated.save.actions).toBe(0)
+  })
+
+  it('a count that is not a whole number is repaired to 0', () => {
+    for (const actions of [-1, 1.5, '3', null, Number.MAX_SAFE_INTEGER + 2]) {
+      const result = loadSave({ ...initialSave(config), actions }, config)
+      if (!result.ok) throw new Error('not loaded')
+      expect(result.save.actions, String(actions)).toBe(0)
+      expect(result.repaired).toContain('actions')
+    }
+    const kept = loadSave({ ...initialSave(config), actions: 42 }, config)
+    expect(kept.ok && kept.save.actions).toBe(42)
   })
 })

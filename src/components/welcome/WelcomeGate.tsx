@@ -60,7 +60,7 @@ export function WelcomeGate() {
       data-welcome-dialog={status}
       data-welcome-gate={status}
       data-cc-feature="cc-feature:welcome"
-      className="pointer-events-auto max-h-full w-full max-w-[var(--overlay-sheet-max-w)] self-center overflow-y-auto overscroll-contain rounded-3xl border border-night-700 bg-night-900 p-5 shadow-2xl"
+      className="pointer-events-auto max-h-full w-full max-w-[var(--overlay-sheet-max-w)] self-center overflow-y-auto overscroll-contain rounded-3xl border border-line glass p-5 shadow-2xl"
     >
       {status === 'welcome' ? (
         <WelcomeCard titleId={ids.title} introId={ids.description} />

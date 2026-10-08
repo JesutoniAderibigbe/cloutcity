@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import type { ReactNode } from 'react'
 import { copy } from '@/lib/copy'
-import { paletteStyle, themeColorHex } from '@/lib/theme'
+import { themeColorHex, uiStyle } from '@/lib/theme'
 import './globals.css'
 
 const APP_NAME = copy('app.name')
@@ -35,13 +35,17 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: 'cover',
   interactiveWidget: 'resizes-content',
-  themeColor: themeColorHex(),
-  colorScheme: 'dark',
+  // Day until the game clock is known (S04g): the HUD island switches the root's data-theme and
+  // this meta tag with the clock.
+  themeColor: themeColorHex('day'),
+  colorScheme: 'light',
 }
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" style={paletteStyle()}>
+    // data-theme: the interface palette (S04g), day until the HUD island knows the game clock.
+    // data-glass: frosted glass, switched on by that island where the device can afford it.
+    <html lang="en" data-theme="day" data-glass="solid" style={uiStyle()}>
       <body className="antialiased">{children}</body>
     </html>
   )

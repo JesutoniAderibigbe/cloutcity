@@ -11,14 +11,15 @@ import {
   massNoise,
   massTriangles,
   massesFor,
+  pick,
+  toByte,
 } from './buildDistrict'
 import { DistrictBuildingsMiniSchema, type DistrictBuildings } from './schema'
 
 const noYield = async () => undefined
 const COLORS = {
-  wall: '#7b5a4a',
+  walls: ['#7b5a4a', '#9a9286'],
   roof: '#5b5d61',
-  accent: '#9a9286',
   jitter: 0.1,
   windowTile: { u: 16, v: 13.2 },
 }
@@ -158,6 +159,16 @@ describe('buildDistrictGeometry', () => {
     expect(massNoise(5)).toBeLessThan(1)
   })
 
+  it('picks each facade from the walls by the mass noise, so a district mixes them', () => {
+    expect(pick(['a', 'b', 'c'], 0)).toBe('a')
+    expect(pick(['a', 'b', 'c'], 0.5)).toBe('b')
+    expect(pick(['a', 'b', 'c'], 0.999)).toBe('c')
+    expect(pick(['a', 'b', 'c'], 1)).toBe('c')
+    expect(() => pick([], 0.5)).toThrow()
+    const walls = Array.from({ length: 64 }, (_, m) => pick(['a', 'b', 'c', 'd'], massNoise(m)))
+    expect(new Set(walls).size).toBe(4)
+  })
+
   it('builds a real committed district within its build-time triangle count', async () => {
     const json = JSON.parse(
       readFileSync(
@@ -171,5 +182,22 @@ describe('buildDistrictGeometry', () => {
     // geo:build counted 3815 triangles for jamaica.low (earcut can only drop degenerate ones).
     expect(built.triangleEnds[built.masses - 1]).toBeLessThanOrEqual(3815)
     expect(built.triangleEnds[built.masses - 1]).toBeGreaterThan(3815 * 0.95)
+  })
+})
+
+describe('facade colour bytes (3D-5)', () => {
+  it('clamps and rounds a channel instead of wrapping', () => {
+    expect(toByte(1.06)).toBe(255)
+    expect(toByte(-0.2)).toBe(0)
+    expect(toByte(0.5)).toBe(128)
+  })
+
+  it('keeps a white wall bright whatever its jitter, never wrapping to dark', async () => {
+    const white = { ...COLORS, walls: ['#ffffff'], roof: '#ffffff', jitter: 0.5 }
+    const built = await buildDistrictGeometry(districtMasses(file()), 0, white, noYield)
+    const colors = built.geometry.getAttribute('color') as BufferAttribute
+    const array = colors.array as Uint8Array
+    // Shade spans 0.5..1.5: unclamped, a brightened channel would wrap to a dark byte.
+    for (const value of array) expect(value).toBeGreaterThanOrEqual(127)
   })
 })

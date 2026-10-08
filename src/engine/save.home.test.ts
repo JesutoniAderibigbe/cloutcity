@@ -1,6 +1,6 @@
 /** Save v9 (S16): owned decor and the apartment; migration from v8 and every older version; repairs. */
 import { describe, expect, it } from 'vitest'
-import { V11_PLAYER_KEYS } from './test-support'
+import { V12_PLAYER_KEYS } from './test-support'
 import { engineConfig as config } from './config'
 import { initialApartment, type ApartmentState } from './home'
 import { emptyInventory, type Inventory } from './items'
@@ -55,8 +55,13 @@ function preV9(save: SaveState = base): Record<string, unknown> & {
   delete player.apartment
   delete player.location
   delete player.transit
-  for (const key of V11_PLAYER_KEYS) delete player[key]
-  return { ...save, player }
+  for (const key of V12_PLAYER_KEYS) delete player[key]
+  // Nor the S18c (v11) action count.
+  const out: Record<string, unknown> = { ...save, player }
+  delete out.actions
+  delete out.creator
+  delete out.rolls
+  return out as Record<string, unknown> & { player: Record<string, unknown> }
 }
 
 function load(save: unknown) {
@@ -71,8 +76,8 @@ const withPlayer = (patch: Record<string, unknown>) => ({
 })
 
 describe('save v9', () => {
-  it('is version 11; a fresh save owns no decor, places nothing and has moved nowhere', () => {
-    expect(SAVE_VERSION).toBe(11)
+  it('is version 12; a fresh save owns no decor, places nothing and has moved nowhere', () => {
+    expect(SAVE_VERSION).toBe(12)
     const fresh = initialSave(config)
     expect(fresh.player.inventory.decor).toEqual([])
     expect(fresh.player.apartment).toEqual(initialApartment)

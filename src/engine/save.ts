@@ -24,12 +24,14 @@
  *   older save starts with no decor, nothing placed and an empty move log.
  * - v10 (S08): adds `player.location` (at home, or at a place by id) and `player.transit` (the
  *   delay roll's generator state). An older save starts at home with a fresh generator.
- * - v11 (S16a): adds `player.look` (option ids), `player.traits` and `traitsChangedAt`,
+ * - v11 (S18c): adds `actions`, the taps that changed the game this run (DEC-19): the server's
+ *   save plausibility bounds how far the clock and the earnings can move per tap. An older save
+ *   starts counting at 0.
+ * - v12 (S16a): adds `player.look` (option ids), `player.traits` and `traitsChangedAt`,
  *   `player.careerPath` and `careerChangedAt`, `player.neighborhood`, `creator` (the offer and
  *   steps) and `rolls` (committed creator rolls). An older save gets a look seeded from an FNV
  *   hash of what it already holds (the same save always gets the same look), no traits, no
- *   career, no neighborhood, a fresh creator and no rolls. (INT-12/13: S18c also claims v11 on
- *   its lane; whichever merges second renumbers to v12 and chains its migration.)
+ *   career, no neighborhood, a fresh creator and no rolls.
  */
 import * as z from 'zod/mini'
 import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
@@ -104,7 +106,7 @@ import { initialPrestigeState, type PrestigeRun, type PrestigeState } from './pr
 import { initialRent } from './rent'
 import { isTraitId, traitPickCount } from './traits'
 
-export const SAVE_VERSION = 11
+export const SAVE_VERSION = 12
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
@@ -116,10 +118,20 @@ export interface SaveState extends GameSnapshot {
   readonly grants: GrantsState
   /** Prestige runs and badges (src/engine/prestige.ts). */
   readonly prestige: PrestigeState
+  /**
+   * Taps that changed the game this run (an action, shift, buy, sale, event choice or claim;
+   * `countAction`). Starts at 0 and again at each prestige. Only ever counts up within a run.
+   */
+  readonly actions: number
   /** The creator's offer and progress (S16a, src/engine/creator.ts). */
   readonly creator: CreatorState
   /** Committed creator rolls (S16a): drawn once, written before the reveal. */
   readonly rolls: Rolls
+}
+
+/** The save after one more counted tap (see `SaveState.actions`). */
+export function countAction<S extends Pick<SaveState, 'actions'>>(save: S): S {
+  return { ...save, actions: save.actions + 1 }
 }
 
 const CashSchema = z.int().check(z.gte(0))
@@ -485,7 +497,7 @@ const GrantRecordSchema = z
     issuedAtMs: WholeSchema,
     issuedBy: z.literal('system'),
     campaignId: z.null(),
-    sync: z.literal('local'),
+    sync: z.enum(['local', 'synced']),
   })
   .check(
     z.refine(
@@ -742,6 +754,7 @@ export function createSaveSchema(config: EngineConfig) {
     goals: goalsStateSchema(config),
     grants: grantsStateSchema(config),
     prestige: prestigeStateSchema(config),
+    actions: WholeSchema,
     creator: CreatorStateSchema,
     rolls: RollsSchema,
   })
@@ -866,7 +879,10 @@ function repairClout(
   for (const value of Array.isArray(source.ledger) ? source.ledger : []) {
     const entry = CloutEntrySchema.safeParse(value)
     if (!entry.success || entry.data.at > nowMinute) continue
-    if (entry.data.seq <= (kept.at(-1)?.seq ?? 0)) continue
+    // T-1: a sequence number at the safe-integer limit leaves no room for the next one.
+    if (entry.data.seq <= (kept.at(-1)?.seq ?? 0) || entry.data.seq >= Number.MAX_SAFE_INTEGER) {
+      continue
+    }
     kept.push(entry.data as CloutEntry)
   }
   const overflow = Math.max(0, kept.length - config.clout.ledger.maxEntries)
@@ -891,7 +907,10 @@ function repairClout(
   const lastSeq = kept.at(-1)?.seq ?? 0
   const rawNext = source.nextSeq
   const nextSeq =
-    typeof rawNext === 'number' && Number.isSafeInteger(rawNext) && rawNext > lastSeq
+    typeof rawNext === 'number' &&
+    Number.isSafeInteger(rawNext) &&
+    rawNext > lastSeq &&
+    rawNext < Number.MAX_SAFE_INTEGER
       ? rawNext
       : lastSeq + 1
 
@@ -1208,7 +1227,10 @@ function repairGrants(
   for (const value of Array.isArray(source.log) ? source.log : []) {
     const record = GrantRecordSchema.safeParse(value)
     if (!record.success || record.data.at > nowMinute || keys.has(record.data.key)) continue
-    if (record.data.seq <= (kept.at(-1)?.seq ?? 0)) continue
+    // T-1: a sequence number at the safe-integer limit leaves no room for the next one.
+    if (record.data.seq <= (kept.at(-1)?.seq ?? 0) || record.data.seq >= Number.MAX_SAFE_INTEGER) {
+      continue
+    }
     keys.add(record.data.key)
     kept.push(record.data as GrantRecord)
   }
@@ -1216,7 +1238,10 @@ function repairGrants(
   const lastSeq = kept.at(-1)?.seq ?? 0
   const rawNext = source.nextSeq
   const nextSeq =
-    typeof rawNext === 'number' && Number.isSafeInteger(rawNext) && rawNext > lastSeq
+    typeof rawNext === 'number' &&
+    Number.isSafeInteger(rawNext) &&
+    rawNext > lastSeq &&
+    rawNext < Number.MAX_SAFE_INTEGER
       ? rawNext
       : lastSeq + 1
   return { grants: { log, nextSeq }, repaired: true }
@@ -1448,7 +1473,7 @@ const LoadableSaveSchema = z.strictObject({
     location: z.optional(z.unknown()),
     // Repairable: a generator state that is not a uint32 starts over; a v9 save has none.
     transit: z.optional(z.unknown()),
-    // Repairable (`repairLook`, `repairIdentity`); a v10 save has none (its look is seeded).
+    // Repairable (`repairLook`, `repairIdentity`); a v11 or older save has none (its look is seeded).
     look: z.optional(z.unknown()),
     traits: z.optional(z.unknown()),
     traitsChangedAt: z.optional(z.unknown()),
@@ -1463,7 +1488,9 @@ const LoadableSaveSchema = z.strictObject({
   goals: z.optional(z.unknown()),
   grants: z.optional(z.unknown()),
   prestige: z.optional(z.unknown()),
-  // Repairable (`repairCreator`, `repairRolls`); a v10 save has none.
+  // Repairable: a v10 or older save has none (0); anything but a whole number becomes 0.
+  actions: z.optional(z.unknown()),
+  // Repairable (`repairCreator`, `repairRolls`); a v11 or older save has none.
   creator: z.optional(z.unknown()),
   rolls: z.optional(z.unknown()),
 })
@@ -1569,8 +1596,9 @@ export type LoadResult =
  *   `repairGoals`, `repairPrestige`). Which rewards were claimed is never stored on its own:
  *   it is the grant log's keys plus the clout ledger's grant references, so no repair can
  *   unclaim one;
+ * - an action count that is not a whole number becomes 0;
  * - a look option the options no longer have becomes the default (`repairLook`); a save with no
- *   look (v10 and older) gets one seeded from what it holds (`lookSeedFromFacts`), so the same
+ *   look (v11 and older) gets one seeded from what it holds (`lookSeedFromFacts`), so the same
  *   save always gets the same look;
  * - unusable traits, career, neighborhood, creator state or rolls keep what is usable (see
  *   `repairIdentity`, `repairCreator`, `repairRolls`).
@@ -1701,6 +1729,10 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
   )
   if (prestigeRepaired && present(raw.prestige)) repaired.push('prestige')
 
+  const actions = orFresh(raw.actions, 0)
+  const validActions = typeof actions === 'number' && Number.isSafeInteger(actions) && actions >= 0
+  if (!validActions) repaired.push('actions')
+
   const { rolls, repaired: rollsRepaired } = repairRolls(
     orFresh(raw.rolls, initialRolls),
     clock.minute,
@@ -1769,6 +1801,7 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
       goals,
       grants,
       prestige,
+      actions: validActions ? actions : 0,
       creator,
       rolls,
     },
@@ -1777,7 +1810,7 @@ export function loadSave(persisted: unknown, config: EngineConfig): LoadResult {
 }
 
 /**
- * The look an older save (v10 and before, which had none) starts with: random, seeded from what
+ * The look an older save (v11 and before, which had none) starts with: random, seeded from what
  * the save holds (D14), so loading the same old save again gives the same look.
  */
 function seededLook(
@@ -1847,6 +1880,7 @@ export function initialSave(config: EngineConfig, options: { readonly lookSeed?:
     goals: initialGoalsState,
     grants: initialGrantsState,
     prestige: initialPrestigeState,
+    actions: 0,
     creator: initialCreatorState,
     rolls: initialRolls,
   }
@@ -1918,8 +1952,9 @@ function loadV6(raw: unknown, config: EngineConfig): LoadResult | null {
  * Every step goes through the v6 form, so v2 to v5 saves get the v6 upgrade too. A v7 save keeps
  * everything and starts with no recorded visits, no grants and no prestige. A v7 or v8 save
  * starts with no decor, nothing placed and an empty move log. A v7 to v9 save starts at home
- * with a fresh transit generator. A v10 or older save gets a look seeded from what it holds, no
- * traits, career or neighborhood, a fresh creator and no rolls. Every older save
+ * with a fresh transit generator. A v7 to v10 save starts counting actions at 0. A v11 or older
+ * save gets a look seeded from what it holds, no traits, career or neighborhood, a fresh
+ * creator and no rolls. Every older save
  * then gets its goals derived from what it holds, at its current minute (`syncGoals`): a save
  * already at Icon starts with an unacknowledged Icon moment. Anything older or malformed
  * starts fresh. A save from a newer build throws `NewerSaveError`: it is
@@ -1989,9 +2024,9 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
     }
   }
   if (version === 6) loaded = loadV6(persisted, config)
-  // A v7 to v10 save is the current structure without the S15 (v7), S16 (v8), S08 (v9) or
-  // S16a (v10) fields, which `loadSave` fills in.
-  if (version >= 7 && version <= 10) loaded = loadSave(persisted, config)
+  // A v7 to v11 save is the current structure without the S15 (v7), S16 (v8), S08 (v9), S18c
+  // (v10) or S16a (v11) fields, which `loadSave` fills in.
+  if (version >= 7 && version <= 11) loaded = loadSave(persisted, config)
   if (loaded?.ok === true) {
     return { save: syncGoals(loaded.save, config).save, outcome: 'carried' }
   }

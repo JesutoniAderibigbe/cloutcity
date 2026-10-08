@@ -50,7 +50,7 @@ function secondLine(view: NowPlaying, ownMusic: boolean, titleKey: string | null
 }
 
 const BUTTON =
-  'flex min-h-11 min-w-11 items-center rounded-full border border-night-700 bg-night-800 text-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400 disabled:opacity-60'
+  'flex min-h-11 min-w-11 items-center rounded-full border border-line bg-raised text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60'
 
 export function SoundControl() {
   const ownMusic = useSyncExternalStore(onboardingStore.subscribe, ownMusicNow, never)
@@ -115,14 +115,30 @@ export function SoundControl() {
         type="button"
         onClick={onMain}
         data-sound-main=""
-        className={`${BUTTON} max-w-44 min-w-[110px] flex-col items-start justify-center px-3 text-left aria-pressed:border-taxi-400 ${view.kind === 'locked' ? 'border-taxi-400' : ''}`}
+        className={`${BUTTON} max-w-44 min-w-[110px] flex-col items-start justify-center px-3 text-left aria-pressed:border-taxi-ink hud-tiny:min-w-11 hud-tiny:items-center hud-tiny:px-0 ${view.kind === 'locked' ? 'border-taxi' : ''}`}
         {...main}
       >
-        {/* Two visible lines at every width (S05 restored them on phones, UX-7): what a tap
-            does, and what is playing. */}
-        <span className="block max-w-full truncate text-xs font-bold">{line1}</span>
+        {/* A speaker icon only on the narrowest phones (hud-tiny, UI-1), where the two lines
+            would push the HUD past the screen edge; the lines stay as the name and description. */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          className="hidden h-5 w-5 fill-none stroke-current stroke-2 hud-tiny:block"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 9h4l5-4v14l-5-4H4V9Zm12 0a4 4 0 0 1 0 6m2.5-9a8 8 0 0 1 0 12" />
+        </svg>
+        {/* Two visible lines at every other width (S05 restored them on phones, UX-7): what a
+            tap does, and what is playing. */}
+        <span className="block max-w-full truncate text-xs font-bold hud-tiny:sr-only">
+          {line1}
+        </span>
         {line2 === '' ? null : (
-          <span id={LINE_2_ID} className="block max-w-full truncate text-[0.6875rem] text-ink-300">
+          <span
+            id={LINE_2_ID}
+            className="block max-w-full truncate text-[0.6875rem] text-muted hud-tiny:sr-only"
+          >
             {line2}
           </span>
         )}

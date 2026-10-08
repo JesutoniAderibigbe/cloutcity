@@ -1,6 +1,6 @@
 /** Save v7 (S13): the clout ledger and flex state, the v6 upgrade and repairs on load. */
 import { describe, expect, it } from 'vitest'
-import { V11_PLAYER_KEYS } from './test-support'
+import { V12_PLAYER_KEYS } from './test-support'
 import {
   cloutSums,
   initialCloutState,
@@ -31,12 +31,13 @@ function v6Save(clout: number, extra: { inventory?: unknown; events?: unknown } 
   delete player.apartment
   delete player.location
   delete player.transit
-  for (const key of V11_PLAYER_KEYS) delete player[key]
+  for (const key of V12_PLAYER_KEYS) delete player[key]
   if (extra.inventory !== undefined) player.inventory = extra.inventory
   const v6: Record<string, unknown> = { ...base, player, events: extra.events ?? base.events }
   delete v6.goals
   delete v6.grants
   delete v6.prestige
+  delete v6.actions
   delete v6.creator
   delete v6.rolls
   return v6
@@ -46,8 +47,8 @@ const level = (id: string) => config.clout.levels.findIndex((entry) => entry.id 
 const minOf = (id: string) => config.clout.levels[level(id)]?.minClout ?? Number.NaN
 
 describe('save v7', () => {
-  it('is version 11 (S16a after S08) and a fresh save has an empty ledger and no flexes', () => {
-    expect(SAVE_VERSION).toBe(11)
+  it('is version 12 (S16a after S18c) and a fresh save has an empty ledger and no flexes', () => {
+    expect(SAVE_VERSION).toBe(12)
     expect(initialSave(config).player.clout).toEqual(initialCloutState)
     expect(initialSave(config).player.flex).toEqual(initialFlexState)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)

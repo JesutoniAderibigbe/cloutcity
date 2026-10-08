@@ -259,7 +259,11 @@
       "clips": [],
       "loadPhase": "after-playable",
       "instanced": true,
-      "nameKey": "models.name.taxi"
+      "nameKey": "models.name.taxi",
+      "remap": {
+        "#f1c55e": "taxi-400"
+      },
+      "remapMaxDeltaE": 1
     },
     {
       "id": "sedan",
@@ -1138,10 +1142,7 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": ["glass-600"],
-      "glow": {
-        "glass-600": "window-200"
-      },
+      "emissive": [],
       "slots": [
         {
           "name": "facade",
@@ -1188,10 +1189,7 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": ["glass-600"],
-      "glow": {
-        "glass-600": "window-200"
-      },
+      "emissive": [],
       "slots": [
         {
           "name": "facade",
@@ -1238,10 +1236,7 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": ["glass-600"],
-      "glow": {
-        "glass-600": "window-200"
-      },
+      "emissive": [],
       "slots": [
         {
           "name": "facade",
@@ -1288,10 +1283,7 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": ["glass-600"],
-      "glow": {
-        "glass-600": "window-200"
-      },
+      "emissive": [],
       "slots": [
         {
           "name": "facade",
@@ -1863,7 +1855,12 @@
       },
       "maxDeltaE": 40,
       "emissive": [],
-      "slots": [],
+      "slots": [
+        {
+          "name": "pot",
+          "tokens": ["terracotta-500"]
+        }
+      ],
       "clips": [],
       "loadPhase": "apartment",
       "instanced": false,
@@ -2309,7 +2306,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -2331,7 +2327,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -2486,7 +2482,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -2508,7 +2503,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -2663,7 +2658,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -2685,7 +2679,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -2840,7 +2834,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -2862,7 +2855,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -3017,7 +3010,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -3039,7 +3031,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -3194,7 +3186,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -3216,7 +3207,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -3371,7 +3362,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -3393,7 +3383,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -3548,7 +3538,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -3570,7 +3559,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -3725,7 +3714,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -3747,7 +3735,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -3902,7 +3890,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -3924,7 +3911,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -4079,7 +4066,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -4101,7 +4087,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],
@@ -4256,7 +4242,6 @@
         "hair-100",
         "hair-200",
         "hair-300",
-        "hair-500",
         "hair-700",
         "hair-900"
       ],
@@ -4278,7 +4263,7 @@
         },
         {
           "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-500", "hair-700", "hair-900"]
+          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"]
         }
       ],
       "clips": [],

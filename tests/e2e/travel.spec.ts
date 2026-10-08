@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test, waitForWelcomeGate, type ExpectedConsoleMessage } from './fixtures/test'
 import { NO_WEBGL_WARNING, placesPanel } from './helpers/fallback'
+import { seedTier, waitForCityModels } from './helpers/cityModels'
 import { copyText, placeName, readJson } from './helpers/places'
 import { waitForMapSettled } from './helpers/scene'
 
@@ -14,6 +15,12 @@ const DELI = 'late-lantern-deli'
 const transit = readJson<{ transit: { animation: { maxMs: number } } }>(
   'data/config/balance.json',
 ).transit
+const perf = readJson<{ programsMax: Record<'low' | 'mid' | 'high', number> }>(
+  'data/config/perf.json',
+)
+
+/** About 2.6 km on foot from the Queens home: a full-length animation. */
+const FAR = 'glowmatic'
 
 async function boot(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -23,6 +30,34 @@ async function boot(page: Page): Promise<void> {
   await waitForWelcomeGate(page)
   await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
   await waitForMapSettled(page)
+  // These specs are about travel: a random arrival event (a modal) must not land on the place
+  // sheet they click in next (TRV-4). Events have their own specs.
+  await page.waitForFunction(() => window.__cloutcityTest?.travel !== undefined)
+  await page.evaluate(() => window.__cloutcityTest?.travel?.suppressArrivalEvents(true))
+}
+
+/** The avatar's position on the map, in local metres. */
+const avatarAt = (page: Page) =>
+  page.evaluate(() => window.__cloutcityTest?.scene?.player()?.local ?? null)
+const apart = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+  Math.hypot(a.x - b.x, a.y - b.y)
+
+/** Where the avatar rests at `id`: stand there, reload, read it. Leaves the player at home. */
+async function restPointAt(page: Page, id: string) {
+  await page.evaluate((placeId) => window.__cloutcityPlaces?.setLocation(placeId), id)
+  await page.reload()
+  await waitForWelcomeGate(page)
+  await waitForMapSettled(page)
+  const rest = await avatarAt(page)
+  await page.evaluate(() => window.__cloutcityPlaces?.setLocation('home'))
+  await page.reload()
+  await waitForWelcomeGate(page)
+  await page.waitForFunction(() => window.__cloutcityPlaces !== undefined)
+  await waitForMapSettled(page)
+  await page.waitForFunction(() => window.__cloutcityTest?.travel !== undefined)
+  await page.evaluate(() => window.__cloutcityTest?.travel?.suppressArrivalEvents(true))
+  if (rest === null) throw new Error('no avatar')
+  return rest
 }
 
 const sheet = (page: Page, id = DELI): Locator => page.locator(`[data-place-sheet="${id}"]`)
@@ -294,5 +329,166 @@ test.describe('travel when the routes cannot load', () => {
     await mode(page, 'taxi').click()
     await page.evaluate(() => window.__cloutcityTest?.travel?.skip())
     await expect(sheet(page)).toHaveAttribute('data-player-here', '')
+  })
+})
+
+test.describe('travel: the avatar and focus when a trip ends early', () => {
+  test('Skip mid-trip stands the avatar at the destination, not mid-route (TRV-2)', async ({
+    page,
+  }) => {
+    await boot(page)
+    const rest = await restPointAt(page, FAR)
+    await open(page, FAR)
+    await routesReady(page)
+    await mode(page, 'walk', FAR).click()
+    test.skip((await travelState(page)).active === null, 'this run cut straight to the arrival')
+    await page.evaluate(() => window.__cloutcityTest?.travel?.seek(0.3))
+    await page.evaluate(() => window.__cloutcityTest?.travel?.skip())
+    await waitForMapSettled(page)
+    const after = await avatarAt(page)
+    if (after === null) throw new Error('no avatar')
+    expect(apart(after, rest)).toBeLessThan(5)
+  })
+
+  test('a trip left to finish ends on the destination rest point', async ({ page }) => {
+    await boot(page)
+    const rest = await restPointAt(page, FAR)
+    await open(page, FAR)
+    await routesReady(page)
+    await mode(page, 'walk', FAR).click()
+    test.skip((await travelState(page)).active === null, 'this run cut straight to the arrival')
+    await expect(progress(page)).toHaveCount(0, { timeout: transit.animation.maxMs + 5000 })
+    await waitForMapSettled(page)
+    const after = await avatarAt(page)
+    if (after === null) throw new Error('no avatar')
+    expect(apart(after, rest)).toBeLessThan(5)
+  })
+
+  test('a held Enter starts the trip once and does not also press Skip (TRV-6)', async ({
+    page,
+  }) => {
+    await boot(page)
+    await open(page, FAR)
+    await routesReady(page)
+    await mode(page, 'walk', FAR).focus()
+    await page.keyboard.down('Enter')
+    test.skip((await travelState(page)).active === null, 'this run cut straight to the arrival')
+    await expect(page.locator('[data-trip-skip]')).toBeFocused()
+    await page.keyboard.down('Enter') // the auto-repeat
+    await page.keyboard.up('Enter')
+    expect((await travelState(page)).active).not.toBeNull()
+    await page.evaluate(() => window.__cloutcityTest?.travel?.skip())
+  })
+})
+
+test.describe('travel: focus after a cut arrival', () => {
+  test.use({ contextOptions: { reducedMotion: 'reduce' } })
+
+  test('reduced motion: focus moves to the arrival, never to the page (TRV-3)', async ({
+    page,
+  }) => {
+    await boot(page)
+    await open(page, FAR)
+    await routesReady(page)
+    await mode(page, 'walk', FAR).focus()
+    await page.keyboard.press('Enter')
+    await expect(sheet(page, FAR)).toHaveAttribute('data-player-here', '')
+    const dismiss = sheet(page, FAR)
+      .locator('[data-trip-arrival]')
+      .getByRole('button', { name: copyText('place.result.dismiss') })
+    await expect(dismiss).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(sheet(page, FAR).getByRole('heading', { level: 2 })).toBeFocused()
+  })
+})
+
+test.describe('travel: shader programs during a trip (3D-2)', () => {
+  for (const tier of ['low', 'mid'] as const) {
+    test(`${tier}: a taxi trip compiles no program past programsMax`, async ({ page }) => {
+      if (tier !== 'low') await seedTier(page, tier)
+      await boot(page)
+      await waitForCityModels(page)
+      const programs = () =>
+        page.evaluate(() => window.__cloutcityTest?.scene?.programs() ?? Number.NaN)
+      expect(await page.evaluate(() => window.__cloutcityTest?.scene?.quality().active)).toBe(tier)
+      await open(page)
+      await routesReady(page)
+      const taxi = mode(page, 'taxi')
+      await expect(taxi).toBeEnabled()
+      await taxi.click()
+      test.skip((await travelState(page)).active === null, 'this run cut straight to the arrival')
+      await page.evaluate(() => window.__cloutcityTest?.travel?.seek(0.5))
+      await expect.poll(programs).toBeGreaterThan(0)
+      expect(await programs()).toBeLessThanOrEqual(perf.programsMax[tier])
+      await page.evaluate(() => window.__cloutcityTest?.travel?.skip())
+      await waitForMapSettled(page)
+      expect(await programs()).toBeLessThanOrEqual(perf.programsMax[tier])
+    })
+  }
+})
+
+test.describe('travel when the routes come back', () => {
+  test.use({ expectedConsole: [[GEO_500_WARNING, FAILED_RESOURCE_500], { scope: 'test' }] })
+
+  test('Retry rebuilds the routes once /geo/base answers again (TRV-1)', async ({ page }) => {
+    let fail = true
+    let requests = 0
+    await page.route('**/geo/base*', async (route) => {
+      requests++
+      if (fail) await route.fulfill({ status: 500, contentType: 'text/plain', body: 'boom' })
+      else await route.continue()
+    })
+    await boot(page)
+    await open(page)
+    await page.waitForFunction(() => window.__cloutcityTest?.travel?.state().world === 'failed')
+    fail = false
+    const before = requests
+    await sheet(page).locator('[data-travel-retry]').click()
+    await routesReady(page)
+    expect(requests).toBeGreaterThan(before)
+    await expect(sheet(page).locator('[data-travel-retry]')).toHaveCount(0)
+    await expect(mode(page, 'walk')).toBeEnabled()
+  })
+})
+
+test.describe('travel: the map after a reload at a place', () => {
+  test('the camera starts over the avatar standing at the place, not over home', async ({
+    page,
+  }) => {
+    await boot(page)
+    await page.evaluate((id) => window.__cloutcityPlaces?.setLocation(id), FAR)
+    await page.reload()
+    await waitForWelcomeGate(page)
+    await waitForMapSettled(page)
+    const avatar = await avatarAt(page)
+    const target = await page.evaluate(() => {
+      const camera = window.__cloutcityTest?.scene?.camera()
+      return camera === null || camera === undefined
+        ? null
+        : { x: camera.target.x, y: -camera.target.z }
+    })
+    if (avatar === null || target === null) throw new Error('no scene')
+    // FreeRowFraming offsets the view, not the target: the target sits at the avatar.
+    expect(apart(avatar, target)).toBeLessThan(50)
+  })
+})
+
+test.describe('travel: "Get there" on a short landscape phone', () => {
+  test.use({ viewport: { width: 844, height: 390 } })
+
+  test('every row scrolls into the sheet zone', async ({ page }) => {
+    await boot(page)
+    await open(page, FAR)
+    await routesReady(page)
+    const zone = await page.locator('[data-overlay-zone="sheet"]').boundingBox()
+    if (zone === null) throw new Error('no sheet zone')
+    for (const travel of ['walk', 'subway', 'taxi']) {
+      const row = mode(page, travel, FAR)
+      await row.scrollIntoViewIfNeeded()
+      const box = await row.boundingBox()
+      if (box === null) throw new Error(`no ${travel} row`)
+      expect(box.y, travel).toBeGreaterThanOrEqual(zone.y - 1)
+      expect(box.y + box.height, travel).toBeLessThanOrEqual(zone.y + zone.height + 1)
+    }
   })
 })

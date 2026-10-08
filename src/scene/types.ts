@@ -3,17 +3,20 @@
  * only, so the client never imports a config loader.
  */
 import type { DistrictAssets } from '@/lib/data/districts'
+import type { SkyColors } from '@/lib/dayNight/types'
 import type { HomeIdLiteral } from '@/lib/data/homes'
 import type { FpsStepDown, PerfConfig, QualityTier, TierPicker } from '@/lib/data/schemas/config'
-import type { SceneConfig } from '@/lib/data/schemas/scene'
+import type { CitySceneConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
+import type { PlayerModel } from './avatar/PlayerAvatar'
 import type { LocalBounds } from './camera/limits'
 import type { BoroughId } from './geo/schema'
 import type { LandmarkPalette } from './landmarks/types'
 
 /** Scene colours as hex, resolved from theme.json tokens on the server (src/lib/theme.ts). */
 export interface ScenePalette {
-  readonly background: string
+  /** The fixed neutral "expanding soon" land dims towards (the sky changes with the time). */
+  readonly haze: string
   readonly water: string
   readonly land: Readonly<Record<BoroughId, string>>
   readonly park: string
@@ -24,8 +27,6 @@ export interface ScenePalette {
   /** The player's avatar placeholder and its ring (S05). */
   readonly player: string
   readonly labelInk: string
-  readonly ambientLight: string
-  readonly sunLight: string
   readonly pins: {
     readonly venue: string
     readonly landmark: string
@@ -40,11 +41,15 @@ export interface ScenePalette {
   readonly toonRamp: readonly number[]
   /** District buildings and procedural blocks (S04d). */
   readonly buildings: {
-    readonly wall: string
+    /** District facades, one picked per mass. */
+    readonly walls: readonly string[]
     readonly roof: string
     /** The warm light of a lit window at night. */
     readonly window: string
-    readonly block: string
+    /** Low blocks outside the districts, one picked per block. */
+    readonly blocks: readonly string[]
+    /** The one colour blocks on "expanding soon" land are dimmed from. */
+    readonly dimmedBlock: string
   }
   /** The landmark kit's role colours (S07a). */
   readonly landmarks: LandmarkPalette
@@ -105,7 +110,9 @@ export interface SceneProps {
   /** /geo/fallback?v=<geoVersion>: the static stylised map for when the 3D map is unavailable. */
   readonly fallbackUrl: string
   readonly palette: ScenePalette
-  readonly config: SceneConfig
+  /** Each day/night keyframe's colours, resolved (S04f, src/lib/theme.ts `skyColors`). */
+  readonly skyColors: SkyColors
+  readonly config: CitySceneConfig
   /** Every home (data/homes/homes.json) projected to local metres. */
   readonly homesLocal: Readonly<Record<HomeIdLiteral, LocalPoint>>
   /**
@@ -119,6 +126,8 @@ export interface SceneProps {
   /** District building and block files per tier (S04d, src/lib/data/districts.ts). */
   readonly buildings: Readonly<Record<QualityTier, DistrictAssets>>
   readonly travelAnimation: TravelAnimation
+  /** The player's hand-made avatar (S04h/S05), shown once loaded over the capsule placeholder. */
+  readonly playerModel: PlayerModel
   /** The overlay grid rows (src/components/overlay/layers.ts), for the scene's own status row. */
   readonly overlayRows: string
   /** The free scene row of that grid (no overlay zone covers it). */

@@ -79,6 +79,16 @@ export function homeScorePct(player: Pick<PlayerState, 'careerPath'>, config: En
   return bonus.kind === 'home-clout-pct' ? 100 + bonus.pct : 100
 }
 
+/** The most resale points any path gives (the save plausibility bound, src/engine/plausibility.ts). */
+export function topResaleBonusPts(config: EngineConfig): number {
+  return Math.max(
+    0,
+    ...Object.values(config.career.paths).map((path) =>
+      path.bonus.kind === 'resale-pts' ? path.bonus.pts : 0,
+    ),
+  )
+}
+
 /** Extra percentage points of the price every resale pays this player (0 without the bonus). */
 export function resaleBonusPts(player: Pick<PlayerState, 'careerPath'>, config: EngineConfig) {
   if (player.careerPath === null) return 0

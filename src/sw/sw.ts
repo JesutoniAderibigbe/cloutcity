@@ -6,7 +6,8 @@
  * - Precache: the build's static assets, the pages and the versioned geo, served cache-first;
  *   entries a new build dropped are deleted when it activates.
  * - Runtime: versioned geo, our own audio and the content-named 3D models, cache-first, each in
- *   a versioned `cc-` cache (models are never precached: they load on demand, per tier);
+ *   a versioned `cc-` cache (models are never precached: they load on demand, per tier); the
+ *   build chunks the precache leaves out (PERF-7), cache-first in `cc-chunks-<revision>`;
  *   page navigations network-only with `/offline` when the network fails. Nothing else is
  *   handled, so `/api`, `/mod`, other origins and non-GET requests never touch a cache.
  * - Tier warm: once the map is playable a page sends CC_WARM_TIER with its quality tier, and the
@@ -21,14 +22,18 @@
 import { CacheFirst, NetworkOnly, Serwist, type PrecacheEntry, type SerwistPlugin } from 'serwist'
 import {
   WARM_TIER_DONE,
+  isBuildChunk,
   isOwnAudio,
   isPageNavigation,
   isVersionedGeo,
   isVersionedModel,
+  PRECACHE_IGNORED_PARAMS,
+  geoVersionsOf,
   parseWarmTierMessage,
   refuseSensitive,
   staleCacheNames,
   warmTierUrls,
+  withoutDeploymentId,
   type RequestFacts,
   type ServiceWorkerConfig,
   type WarmTier,
@@ -47,6 +52,13 @@ const neverCacheSensitive: SerwistPlugin = {
   cacheWillUpdate: ({ request, response }) => refuseSensitive({ request, response }),
 }
 
+/** Build assets are cached under their URL without Skew Protection's `?dpl=` (F1). */
+const dropDeploymentId: SerwistPlugin = {
+  cacheKeyWillBeUsed: ({ request }) => withoutDeploymentId(request.url),
+}
+
+const geoVersions = geoVersionsOf(config)
+
 function facts({
   request,
   url,
@@ -61,13 +73,17 @@ function facts({
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
-  precacheOptions: { cleanupOutdatedCaches: true },
+  precacheOptions: {
+    cleanupOutdatedCaches: true,
+    // Serwist's defaults plus `dpl` (F1): with NEXT_DEPLOYMENT_ID every asset URL carries it.
+    ignoreURLParametersMatching: [...PRECACHE_IGNORED_PARAMS],
+  },
   skipWaiting: false,
   clientsClaim: false,
   navigationPreload: false,
   runtimeCaching: [
     {
-      matcher: (options) => isVersionedGeo(facts(options)),
+      matcher: (options) => isVersionedGeo(facts(options), geoVersions),
       handler: new CacheFirst({ cacheName: config.geoCache, plugins: [neverCacheSensitive] }),
     },
     {
@@ -77,6 +93,14 @@ const serwist = new Serwist({
     {
       matcher: (options) => isVersionedModel(facts(options)),
       handler: new CacheFirst({ cacheName: config.modelsCache, plugins: [neverCacheSensitive] }),
+    },
+    {
+      // PERF-7: chunks the precache leaves out (src/lib/pwa/lazyChunks.ts), once they load.
+      matcher: (options) => isBuildChunk(facts(options)),
+      handler: new CacheFirst({
+        cacheName: config.chunksCache,
+        plugins: [neverCacheSensitive, dropDeploymentId],
+      }),
     },
     {
       matcher: (options) => isPageNavigation(facts(options)),
@@ -94,7 +118,7 @@ self.addEventListener('fetch', serwist.handleFetch)
 
 // Versioned runtime caches from older builds are deleted once this worker takes over.
 self.addEventListener('activate', (event) => {
-  const current = [config.geoCache, config.audioCache, config.modelsCache]
+  const current = [config.geoCache, config.audioCache, config.modelsCache, config.chunksCache]
   event.waitUntil(
     caches
       .keys()

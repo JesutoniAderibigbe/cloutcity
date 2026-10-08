@@ -87,7 +87,8 @@ test('a new player is led from the welcome card to a first purchase', async ({
   await checkA11y()
   await walkToTarget(page)
   await expectRinged(targetAction(page))
-  await expectNotRinged(targetWalk(page))
+  // Once here the sheet shows "You're here" instead of the travel rows, so no ring is left behind.
+  await expect(targetWalk(page)).toHaveCount(0)
   // Walking is free, and no random event greets an arrival during the tour.
   await expect(money(page)).toHaveText('$150')
   await expect(page.locator('[data-cc-feature="cc-feature:event-sheet"]')).toHaveCount(0)

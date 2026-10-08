@@ -24,11 +24,11 @@ export function AgeLockNotice({ titleId, bodyId }: AgeLockNoticeProps) {
         ref={title}
         id={titleId}
         tabIndex={-1}
-        className="text-2xl font-extrabold tracking-tight text-pink-400 focus:outline-none"
+        className="text-2xl font-extrabold tracking-tight text-fg focus:outline-none"
       >
         {copy('ageGate.title')}
       </h2>
-      <p id={bodyId} className="text-ink-50">
+      <p id={bodyId} className="text-fg">
         {copy('ageGate.body')}
       </p>
     </div>

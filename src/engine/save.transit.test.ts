@@ -1,6 +1,6 @@
 /** Save v10 (S08): the player's location and the transit generator; migration from v9 and every older version; repairs. */
 import { describe, expect, it } from 'vitest'
-import { V11_PLAYER_KEYS } from './test-support'
+import { V12_PLAYER_KEYS } from './test-support'
 import { engineConfig as config } from './config'
 import { HOME_LOCATION, initialTransitState } from './game'
 import {
@@ -42,8 +42,13 @@ function v9Of(save: SaveState = base): Record<string, unknown> & {
   const player: Record<string, unknown> = { ...save.player }
   delete player.location
   delete player.transit
-  for (const key of V11_PLAYER_KEYS) delete player[key]
-  return { ...save, player }
+  for (const key of V12_PLAYER_KEYS) delete player[key]
+  // Nor the S18c (v11) action count.
+  const out: Record<string, unknown> = { ...save, player }
+  delete out.actions
+  delete out.creator
+  delete out.rolls
+  return out as Record<string, unknown> & { player: Record<string, unknown> }
 }
 
 const withPlayer = (patch: Record<string, unknown>) => ({
@@ -52,8 +57,8 @@ const withPlayer = (patch: Record<string, unknown>) => ({
 })
 
 describe('save v10', () => {
-  it('is version 11 and a fresh save starts at home with a fresh generator', () => {
-    expect(SAVE_VERSION).toBe(11)
+  it('is version 12 (S16a after S18c) and a fresh save starts at home with a fresh generator', () => {
+    expect(SAVE_VERSION).toBe(12)
     const fresh = initialSave(config)
     expect(fresh.player.location).toEqual(HOME_LOCATION)
     expect(fresh.player.transit).toEqual(initialTransitState)
@@ -85,7 +90,7 @@ describe('v9 -> v10', () => {
     expect(load(v9).repaired).toEqual([])
   })
 
-  it('every version v1 to v10 loads, carrying its progress (INT-12/13)', () => {
+  it('every version v1 to v11 loads, carrying its progress (INT-12/13)', () => {
     const player = v9Of().player
     const legacy = (version: number): Record<string, unknown> => {
       const save: Record<string, unknown> = { ...v9Of() }
@@ -123,18 +128,28 @@ describe('v9 -> v10', () => {
       7: legacy(7),
       8: legacy(8),
       9: legacy(9),
+      // v10 (S08): everything but the S18c action count.
+      10: (() => {
+        const v10: Record<string, unknown> = { ...out, player: { ...out.player, cash: 510 } }
+        delete v10.actions
+        return v10
+      })(),
     }
     for (const [version, persisted] of Object.entries(saves)) {
       const migrated = migrateSave(roundTrip(persisted), Number(version), config)
       expect(migrated.outcome, `v${version}`).toBe('carried')
       expect(migrated.save.player.cash, `v${version}`).toBe(500 + Number(version))
-      expect(migrated.save.player.location, `v${version}`).toEqual(HOME_LOCATION)
+      if (version !== '10') {
+        expect(migrated.save.player.location, `v${version}`).toEqual(HOME_LOCATION)
+      }
+      expect(migrated.save.actions, `v${version}`).toBe(0)
       expect(schema.safeParse(migrated.save).success, `v${version}`).toBe(true)
     }
-    const v10 = load({ ...out, player: { ...out.player, cash: 510 } })
-    expect(v10.save.player.cash).toBe(510)
-    expect(v10.save.player.location).toEqual(out.player.location)
-    expect(v10.repaired).toEqual([])
+    const v11 = load({ ...out, actions: 7, player: { ...out.player, cash: 511 } })
+    expect(v11.save.player.cash).toBe(511)
+    expect(v11.save.player.location).toEqual(out.player.location)
+    expect(v11.save.actions).toBe(7)
+    expect(v11.repaired).toEqual([])
   })
 })
 

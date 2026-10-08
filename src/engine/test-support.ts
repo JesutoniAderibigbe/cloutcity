@@ -77,10 +77,10 @@ export function buyAtShopHere(
 }
 
 /**
- * The player fields save v11 (S16a) added. Tests that build an older save from a current one
+ * The player fields save v12 (S16a) added. Tests that build an older save from a current one
  * delete them (and the top-level `creator` and `rolls`), as an older build never wrote them.
  */
-export const V11_PLAYER_KEYS = [
+export const V12_PLAYER_KEYS = [
   'look',
   'traits',
   'traitsChangedAt',
@@ -90,10 +90,10 @@ export const V11_PLAYER_KEYS = [
 ] as const
 
 /**
- * What a migration to v11 gives an older save's player, for `toEqual`: a look (seeded from the
- * save; src/engine/save.v11.test.ts checks which), and no traits, career or neighborhood.
+ * What a migration to v12 gives an older save's player, for `toEqual`: a look (seeded from the
+ * save; src/engine/save.v12.test.ts checks which), and no traits, career or neighborhood.
  */
-export const V11_FRESH_PLAYER = {
+export const V12_FRESH_PLAYER = {
   look: expect.any(Object) as unknown,
   traits: [],
   traitsChangedAt: null,
@@ -102,5 +102,5 @@ export const V11_FRESH_PLAYER = {
   neighborhood: null,
 } as const
 
-/** What a migration to v11 adds at the top of an older save: a fresh creator and no rolls. */
-export const V11_FRESH_SAVE = { creator: initialCreatorState, rolls: initialRolls } as const
+/** What a migration to v12 adds at the top of an older save: a fresh creator and no rolls. */
+export const V12_FRESH_SAVE = { creator: initialCreatorState, rolls: initialRolls } as const

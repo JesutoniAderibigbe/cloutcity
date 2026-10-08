@@ -55,7 +55,7 @@ export function OverlayBackground({
       data-overlay-background=""
       inert={modalOpen}
       style={{ '--overlay-scrim-z': scrimZIndex } as CSSProperties}
-      className="absolute inset-0 isolate after:pointer-events-none after:absolute after:inset-0 after:z-(--overlay-scrim-z) after:bg-night-950/60 after:opacity-0 inert:after:opacity-100 motion-safe:after:transition-opacity"
+      className="absolute inset-0 isolate after:pointer-events-none after:absolute after:inset-0 after:z-(--overlay-scrim-z) after:bg-canvas/60 after:opacity-0 inert:after:opacity-100 motion-safe:after:transition-opacity"
     >
       {children}
     </div>

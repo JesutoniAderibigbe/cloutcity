@@ -73,3 +73,16 @@ describe('toServerGrantRow against the real grants table', () => {
     expect(other.error).toBeNull()
   })
 })
+
+describe('SEC-8: the clout cap column', () => {
+  it('refuses clout above its own cap', async () => {
+    const guest = await newAttestedGuest()
+    const [first] = localRecords()
+    if (first === undefined) throw new Error('no record')
+    const row = toServerGrantRow(first, guest.id)
+    const { error } = await serviceClient()
+      .from('grants')
+      .insert({ ...row, clout_amount: row.clout_cap + 1 })
+    expect(error?.code).toBe('23514')
+  })
+})

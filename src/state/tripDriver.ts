@@ -109,7 +109,9 @@ function animatedRoute(route: Route, plan: TripPlan): Route {
     if (last) points.push(plan.to.rest)
     return { ...leg, polyline: points }
   })
-  return { ...route, legs }
+  // The animation ends (and a cut or Skip lands the avatar) where it rests, not on the route's
+  // end point (a landmark's approach).
+  return { ...route, from: plan.from.rest, to: plan.to.rest, legs }
 }
 
 let tripCount = 0
@@ -256,7 +258,15 @@ export function startTrip(plan: TripPlan, mode: TravelMode): StartTripResult {
 
 // Inlined at build time (next.config.ts): production builds drop the hook entirely.
 if (process.env.NEXT_PUBLIC_TEST_HOOKS === '1' && typeof window !== 'undefined') {
-  void import('./travelTestHook').then((module) => module.installTravelTestHook())
+  // This module can load just as a spec cuts the network for scripts (audio-recovery.spec), so
+  // a hook chunk that cannot arrive is noted, not left as an uncaught rejection.
+  void import('./travelTestHook')
+    .then((module) => module.installTravelTestHook())
+    .catch((error: unknown) => {
+      log.info('The travel test hook did not load', {
+        error: error instanceof Error ? error.name : typeof error,
+      })
+    })
 }
 
 export { ensureTransitWorld, retryTransitWorld, transitWorldStore } from './transitWorld'

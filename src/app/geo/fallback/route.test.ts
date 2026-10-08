@@ -47,7 +47,7 @@ describe('GET /geo/fallback', () => {
     )
   })
 
-  it('fills each borough by its render state, like the 3D land (dimmed toward the background)', async () => {
+  it('fills each borough by its render state, like the 3D land (dimmed toward the haze)', async () => {
     const text = await svg()
     const palette = scenePalette()
     const fills = [...text.matchAll(/<path fill="(#[0-9a-f]{6})"/g)].map((match) => match[1])
@@ -55,7 +55,7 @@ describe('GET /geo/fallback', () => {
     const expected = land.boroughs.map((borough) => {
       const render = placesLayer.boroughs.find((b) => b.id === borough.id)?.render
       return render === 'dimmed'
-        ? mixHex(palette.land[borough.id], palette.background, scene.dimmed.towardBackground)
+        ? mixHex(palette.land[borough.id], palette.haze, scene.dimmed.towardBackground)
         : palette.land[borough.id]
     })
     expect(fills.slice(0, land.boroughs.length)).toEqual(expected)

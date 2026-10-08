@@ -168,6 +168,12 @@ export const PerfConfigSchema = z
     drawCallsMax: perTier(positiveInt),
     trianglesMax: perTier(positiveInt),
     /**
+     * Shader programs the city's renderer holds once its models have loaded
+     * (`renderer.info.programs`, S04f): the day/night cycle changes uniforms only, so the count
+     * is the same at every time of day. Set from a measurement + 10% (Q9).
+     */
+    programsMax: perTier(positiveInt),
+    /**
      * The apartment interior (S16), per tier: `renderer.info.render` draw calls and triangles of
      * the room with every slot filled. `avatarReserve` is kept free inside both caps for the 3D
      * avatar standing in the room (S16a), so the room alone must stay within the cap minus it.
@@ -284,15 +290,21 @@ const HEX_COLOR = /^#[0-9a-f]{6}$/i
 const TOKEN_NAME = /^[a-z]+-\d{2,3}$/
 
 const tokenRef = z.string().regex(TOKEN_NAME)
-/** A palette token name (`pink-400`), never a hex value; theme.json must define it. */
+/** A palette token name (`taxi-400`), never a hex value; theme.json must define it. */
 export const PaletteTokenRefSchema = tokenRef
 
 /**
- * The 3D city's colours, as palette token names (never hex), so the scene and the DOM share one
- * palette. Land keys are the borough ids (BOROUGHS in content.ts; this file imports only zod).
+ * The 3D city's colours, as token names (never hex) of the world palette (theme.json `world`
+ * and `models`, DEC-26 real-world colours). Land keys are the borough ids (BOROUGHS in
+ * content.ts; this file imports only zod).
  */
 export const ScenePaletteRefsSchema = z.strictObject({
-  background: tokenRef,
+  /**
+   * The neutral haze "expanding soon" land is dimmed towards (S04c). Fixed: the sky colour
+   * changes with the time of day, the dimmed land must not.
+   */
+  haze: tokenRef,
+  /** The harbour's daytime colour (the day/night cycle tints it per keyframe, `sky.*.water`). */
   water: tokenRef,
   land: z.strictObject({
     manhattan: tokenRef,
@@ -311,8 +323,6 @@ export const ScenePaletteRefsSchema = z.strictObject({
   player: tokenRef,
   /** Letter colour on the line chips (the chip itself takes its line's colour). */
   labelInk: tokenRef,
-  ambientLight: tokenRef,
-  sunLight: tokenRef,
   /**
    * Place pins (S04c): by kind, teaser pins on "expanding soon" land, a muted colour for memorial
    * pins (the key avoids the word, which no config file may name), the selection ring.
@@ -330,8 +340,9 @@ export const ScenePaletteRefsSchema = z.strictObject({
   travel: z.strictObject({ taxi: tokenRef, train: tokenRef, trail: tokenRef }),
   /**
    * The apartment interior (S16): room surfaces, decor second colours, the window pane, slot
-   * markers (idle, a slot the held item fits, the selected slot), blob shadows and the static
-   * lights. Decor main colours come from each item's variants (data/items/items.json).
+   * markers (idle, a slot the held item fits, the selected slot), blob shadows, and the warm
+   * lamp light mixed into the room's ambient at night (S04f). Decor main colours come from each
+   * item's variants (data/items/items.json, `colors`).
    */
   apartment: z.strictObject({
     background: tokenRef,
@@ -347,25 +358,32 @@ export const ScenePaletteRefsSchema = z.strictObject({
     markerActive: tokenRef,
     markerSelected: tokenRef,
     blob: tokenRef,
-    ambientLight: tokenRef,
-    sunLight: tokenRef,
+    lamp: tokenRef,
   }),
   /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
   toonRamp: z.array(z.number().gt(0).max(1)).min(2),
   /** The landmark kit's role palette (S07a). */
   landmarks: LandmarkPaletteRefsSchema,
   /**
-   * District buildings and procedural blocks (S04d): facades, roofs, the warm light of lit
-   * windows at night, and the low blocks outside the districts.
+   * District buildings and procedural blocks (S04d): facades (one picked per mass: brick,
+   * brownstone, limestone, concrete, glass; repeat a token to weight it), roofs, the warm light
+   * of lit windows at night, the low blocks outside the districts (one picked per block), and
+   * the single colour blocks on "expanding soon" land are dimmed from.
    */
-  buildings: z.strictObject({ wall: tokenRef, roof: tokenRef, window: tokenRef, block: tokenRef }),
+  buildings: z.strictObject({
+    walls: z.array(tokenRef).min(1),
+    roof: tokenRef,
+    window: tokenRef,
+    blocks: z.array(tokenRef).min(1),
+    dimmedBlock: tokenRef,
+  }),
 })
 export type ScenePaletteRefs = z.infer<typeof ScenePaletteRefsSchema>
 
 /** Every token name a scene palette references. */
 export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
   return [
-    scene.background,
+    scene.haze,
     scene.water,
     ...Object.values(scene.land),
     scene.park,
@@ -375,23 +393,116 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     scene.station,
     scene.player,
     scene.labelInk,
-    scene.ambientLight,
-    scene.sunLight,
     ...Object.values(scene.pins),
     ...Object.values(scene.chip),
     ...Object.values(scene.travel),
     ...Object.values(scene.apartment),
     ...Object.values(scene.landmarks),
-    ...Object.values(scene.buildings),
+    ...scene.buildings.walls,
+    scene.buildings.roof,
+    scene.buildings.window,
+    ...scene.buildings.blocks,
+    scene.buildings.dimmedBlock,
   ]
 }
 
-/** Palette tokens. Each becomes the Tailwind colour `--color-<token>` (see globals.css). */
+const KEYFRAME_COLOR_SLOTS = [
+  'sky',
+  'fog',
+  'sun',
+  'ambient',
+  'hemisphereSky',
+  'hemisphereGround',
+  'unlitTint',
+  'water',
+] as const
+
+/** One day/night keyframe's colour slots (src/lib/dayNight/types.ts `KeyframeColors`). */
+const SkyKeyframeSchema = z.strictObject(
+  Object.fromEntries(KEYFRAME_COLOR_SLOTS.map((slot) => [slot, tokenRef])) as Record<
+    (typeof KEYFRAME_COLOR_SLOTS)[number],
+    typeof tokenRef
+  >,
+)
+
+const palette = z.record(z.string().regex(TOKEN_NAME), z.string().regex(HEX_COLOR))
+
+/** Tokens of both palettes with the same name must be the same colour (one taxi yellow). */
+function clashingTokens(a: Record<string, string>, b: Record<string, string>): string[] {
+  return Object.keys(a).filter(
+    (token) => token in b && a[token]?.toLowerCase() !== b[token]?.toLowerCase(),
+  )
+}
+
+/**
+ * The interface's semantic colours (S04g), the only Tailwind colours (`bg-surface`, `text-fg`,
+ * ...): each theme of `ui` maps every one to a `colors` token, and globals.css switches them with
+ * the root's `data-theme`.
+ */
+export const UI_TOKENS = [
+  'canvas',
+  'glass',
+  'surface',
+  'raised',
+  'pressed',
+  'track',
+  'scrim',
+  'line',
+  'line-strong',
+  'fg',
+  'muted',
+  'taxi',
+  'on-taxi',
+  'taxi-ink',
+  'danger',
+  'success',
+  'focus',
+  'meter',
+] as const
+export type UiToken = (typeof UI_TOKENS)[number]
+
+const UiPaletteSchema = z.strictObject(
+  Object.fromEntries(UI_TOKENS.map((token) => [token, tokenRef])) as Record<
+    UiToken,
+    typeof tokenRef
+  >,
+)
+const dayNight = <T extends z.ZodType>(value: T) => z.strictObject({ day: value, night: value })
+
+/**
+ * The palettes (DEC-26 real-world colours):
+ * - `colors`: the DOM palette: interface colours (S04g) and item swatch colours (product
+ *   colours, data/items/items.json variants; the root layout writes those as `--palette-<token>`).
+ * - `ui`: the light day and dark-glass night interface (S04g), as `colors` tokens, with the
+ *   cross-fade and the frosted glass settings.
+ * - `world`: 3D-only raw colours (land, haze, subway ribbons, room surfaces, the keyframe skies).
+ * - `sky`: per day/night keyframe (scene.json `dayNight`), its colour slots as world tokens.
+ * - `scene`: the city's colour roles as world or models tokens.
+ * - `models`: the hand-made models' real-material colours (S04h).
+ */
 export const ThemeConfigSchema = z
   .strictObject({
-    colors: z.record(z.string().regex(TOKEN_NAME), z.string().regex(HEX_COLOR)),
-    /** Token used for the browser/PWA theme colour and the page background. */
-    themeColor: z.string(),
+    colors: palette,
+    ui: z.strictObject({
+      day: UiPaletteSchema,
+      night: UiPaletteSchema,
+      /** How long a theme switch cross-fades (instant under reduced motion). */
+      crossFadeMs: z.int().nonnegative().max(2000),
+      /** Glass opacity over the map where the backdrop blurs (mid and high tiers). */
+      glassAlpha: dayNight(z.number().gt(0).max(1)),
+      glassBlurPx: z.number().nonnegative().max(40),
+    }),
+    /** Tokens for the browser/PWA theme colour per interface theme (the manifest takes day). */
+    themeColor: dayNight(z.string()),
+    world: palette,
+    sky: z.strictObject({
+      dawn: SkyKeyframeSchema,
+      morning: SkyKeyframeSchema,
+      day: SkyKeyframeSchema,
+      golden: SkyKeyframeSchema,
+      dusk: SkyKeyframeSchema,
+      night: SkyKeyframeSchema,
+    }),
     scene: ScenePaletteRefsSchema,
     /**
      * Real-world colours for the hand-made 3D models (S04h, DEC-26): `npm run assets:build`
@@ -400,16 +511,43 @@ export const ThemeConfigSchema = z
      * `models.color.taxi400`). Separate from `colors`: these never
      * become Tailwind classes.
      */
-    models: z.record(z.string().regex(TOKEN_NAME), z.string().regex(HEX_COLOR)),
+    models: palette,
   })
-  .refine((theme) => theme.themeColor in theme.colors, {
-    error: 'themeColor must name a token in colors',
+  .refine((theme) => Object.values(theme.themeColor).every((token) => token in theme.colors), {
+    error: 'themeColor must name tokens in colors',
     path: ['themeColor'],
   })
-  .refine((theme) => scenePaletteTokens(theme.scene).every((token) => token in theme.colors), {
-    error: 'every scene colour must name a token in colors',
-    path: ['scene'],
+  .refine(
+    (theme) =>
+      [theme.ui.day, theme.ui.night].every((ui) =>
+        Object.values(ui).every((token) => token in theme.colors),
+      ),
+    { error: 'every ui colour must name a token in colors', path: ['ui'] },
+  )
+  .refine((theme) => Object.keys(theme.world).every((token) => !(token in theme.models)), {
+    error: 'world and models must not share a token name',
+    path: ['world'],
   })
+  .refine(
+    (theme) =>
+      clashingTokens(theme.colors, theme.models).length === 0 &&
+      clashingTokens(theme.colors, theme.world).length === 0,
+    { error: 'a token in colors and in world or models must be the same colour', path: ['colors'] },
+  )
+  .refine(
+    (theme) =>
+      scenePaletteTokens(theme.scene).every(
+        (token) => token in theme.world || token in theme.models,
+      ),
+    { error: 'every scene colour must name a token in world or models', path: ['scene'] },
+  )
+  .refine(
+    (theme) =>
+      Object.values(theme.sky).every((slots) =>
+        Object.values(slots).every((token) => token in theme.world || token in theme.models),
+      ),
+    { error: 'every sky colour must name a token in world or models', path: ['sky'] },
+  )
   .refine(
     (theme) => theme.scene.toonRamp.every((step, i, ramp) => i === 0 || step > (ramp[i - 1] ?? 0)),
     { error: 'toonRamp must increase', path: ['scene', 'toonRamp'] },
@@ -463,11 +601,27 @@ export const ModerationConfigSchema = z
       .refine((retention) => retention.evidenceDays <= retention.reportRowDays, {
         error: 'evidenceDays must not exceed reportRowDays',
       }),
+    /**
+     * The /mod console's server routes (S18b part 2), not mirrored in the database: sign-in
+     * links one IP may ask for per window, and how many cases one queue read returns.
+     */
+    console: z.strictObject({
+      signInMaxPerWindow: positiveInt,
+      signInWindowMs: positiveInt,
+      queueLimit: z.int().min(1).max(200),
+    }),
   })
   .refine((config) => config.noteMaxChars <= 1000 && config.appealMaxChars <= 2000, {
     error: 'note and appeal limits must stay within the database column checks',
   })
 export type ModerationConfig = z.infer<typeof ModerationConfigSchema>
+
+/** data/config/profile.json (S18a part 2): the Me panel's client-side timing. */
+export const ProfileConfigSchema = z.strictObject({
+  /** How long the handle form waits after typing stops before it asks whether a handle is free. */
+  handleCheckDebounceMs: z.int().min(0).max(5000),
+})
+export type ProfileConfig = z.infer<typeof ProfileConfigSchema>
 
 /**
  * data/config/handles.json (S18a). The database enforces these: the migration's generated seed
@@ -517,6 +671,76 @@ export const HandlesConfigSchema = z
     error: 'fallbackDigits must be more than digits',
   })
 export type HandlesConfig = z.infer<typeof HandlesConfigSchema>
+
+/**
+ * The browser's fetch keepalive budget: a request body sent with `keepalive` (the hidden-tab and
+ * pagehide flush, S18c) is refused above 64 KiB.
+ */
+const KEEPALIVE_LIMIT_BYTES = 65_536
+
+/** Cloud save sync timings and server save plausibility (S18c; placeholders, TUNE-10). */
+export const SyncConfigSchema = z
+  .strictObject({
+    /** Quiet time after the last meaningful change before an upload. */
+    debounceMs: positiveInt,
+    /** The longest a change waits for an upload while play keeps changing the save. */
+    maxWaitMs: positiveInt,
+    /** Exponential backoff after a failed upload: first wait, and the most it grows to. */
+    retry: z.strictObject({ baseMs: positiveInt, maxMs: positiveInt }),
+    /** Wait before uploading again after the server rejected a save (paused sync). */
+    rejectedRetryMs: positiveInt,
+    /** Server rate limit: least time between two accepted uploads, and most per minute. */
+    minUploadIntervalMs: positiveInt,
+    maxUploadsPerMinute: positiveInt,
+    /** Largest save body the server stores (the saves table's own check matches it). */
+    maxSaveBytes: positiveInt,
+    /** Largest body the hidden-tab / pagehide keepalive upload may send. */
+    keepaliveMaxBytes: positiveInt.max(KEEPALIVE_LIMIT_BYTES),
+    /** Accepted saves the server keeps per player, and quarantined (rejected) ones. */
+    historyKeep: positiveInt,
+    /**
+     * Revisions per player the revision ledger keeps (when each was accepted, and its credits:
+     * a few numbers a row), oldest pruned. "Keep this device" from a trimmed revision uses it.
+     */
+    revisionLedgerKeep: positiveInt,
+    quarantineKeep: positiveInt,
+    plausibility: z.strictObject({
+      /** The economy fixture's maxima are multiplied by this before they act as ceilings. */
+      margin: z.number().min(1),
+      /** Taps a person can make in one real minute (each writes at most one clout entry). */
+      maxActionsPerRealMinute: positiveInt,
+      /**
+       * The most real minutes of slack a window can carry (a token bucket the server keeps per
+       * player, DEC-19): uploads lag the play they carry.
+       */
+      burstRealMinutes: positive,
+      /**
+       * Clout other players may see an account gain per real minute of its age (the public
+       * level cap, DEC-19). Kept apart from the upload pace: a public level behind the save's is
+       * a display delay, never a refusal. (Icon − every wearable's clout) ÷ this ≥ 60 minutes.
+       */
+      publicCloutPerRealMinute: positive,
+      /** "Keep this device" uploads a player may make in an hour (H2 overrides; 429 beyond). */
+      overrideMaxPerHour: positiveInt,
+    }),
+  })
+  .refine((sync) => sync.debounceMs <= sync.maxWaitMs, {
+    error: 'debounceMs must not exceed maxWaitMs',
+    path: ['debounceMs'],
+  })
+  .refine((sync) => sync.retry.baseMs <= sync.retry.maxMs, {
+    error: 'retry.baseMs must not exceed retry.maxMs',
+    path: ['retry'],
+  })
+  .refine((sync) => sync.keepaliveMaxBytes <= sync.maxSaveBytes, {
+    error: 'keepaliveMaxBytes must not exceed maxSaveBytes',
+    path: ['keepaliveMaxBytes'],
+  })
+  .refine((sync) => sync.minUploadIntervalMs * sync.maxUploadsPerMinute <= 60_000, {
+    error: 'maxUploadsPerMinute must fit in a minute at minUploadIntervalMs',
+    path: ['maxUploadsPerMinute'],
+  })
+export type SyncConfig = z.infer<typeof SyncConfigSchema>
 
 const dollars = z.int().nonnegative()
 /** Whole percent, 0..99: resale is always worth less than the price. */
@@ -627,6 +851,12 @@ export const TransitConfigSchema = z.strictObject({
     perKm: z.number().nonnegative(),
     /** A drive leaving land for longer than this in one stretch must use a crossing instead. */
     maxWaterM: z.number().nonnegative(),
+    /**
+     * The straight-line taxi estimate (used only when the geo layers cannot load) multiplies the
+     * straight distance by this, so it is never cheaper or quicker than the routed taxi via the
+     * crossings (TRV-5; checked against every place pair in src/engine/transit/trip.test.ts).
+     */
+    estimateDetourFactor: z.number().min(1),
   }),
   /**
    * Bridges and vehicle tunnels the taxi may use across water: one point on land at each end.
@@ -1193,6 +1423,13 @@ export const LayoutConfigSchema = z.strictObject({
       hudCompactHeightPx: z.number().min(44),
       hudWideMinWidthPx: positiveInt,
       hudCompactMaxHeightPx: positiveInt,
+      /**
+       * At or below this width (a 320 px phone) the two-row phone HUD cannot hold the sound
+       * control's two text lines beside Places and More: the sound control turns icon-only and
+       * the clout column may shrink to fit, so the HUD never overflows the viewport (UI-1).
+       * globals.css repeats it as the `hud-tiny` variant.
+       */
+      hudTinyMaxWidthPx: positiveInt,
       toastHeightPx: positive,
       /** How long a toast (the level-up message) shows before it closes itself. */
       toastMs: positiveInt,

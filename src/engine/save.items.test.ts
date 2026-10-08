@@ -1,6 +1,6 @@
 /** Save v4 (S10): `player.inventory`, its migration from v3 and its repair on load. */
 import { describe, expect, it } from 'vitest'
-import { V11_FRESH_PLAYER, V11_FRESH_SAVE } from './test-support'
+import { V12_FRESH_PLAYER, V12_FRESH_SAVE } from './test-support'
 import { legacyCloutState } from './clout'
 import { engineConfig as config } from './config'
 import { initialEventsState } from './events'
@@ -30,8 +30,8 @@ const valid: Inventory = {
 }
 
 describe('save v4 schema', () => {
-  it('is version 11 (v4 inventory, v5 events, v6 club nights, v7 clout ledger, v8 goals, v9 apartment, v10 location, v11 look) and a fresh save has an empty inventory', () => {
-    expect(SAVE_VERSION).toBe(11)
+  it('is version 12 (v4 inventory, v5 events, v6 club nights, v7 clout ledger, v8 goals, v9 apartment, v10 location, v11 actions, v12 look) and a fresh save has an empty inventory', () => {
+    expect(SAVE_VERSION).toBe(12)
     expect(initialSave(config).player.inventory).toEqual(emptyInventory)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
@@ -111,13 +111,14 @@ describe('save v3 -> v4', () => {
           apartment: initialApartment,
           location: { kind: 'home' },
           transit: { rngState: 0 },
-          ...V11_FRESH_PLAYER,
+          ...V12_FRESH_PLAYER,
         },
         events: initialEventsState(),
         goals: initialGoalsState,
         grants: initialGrantsState,
         prestige: initialPrestigeState,
-        ...V11_FRESH_SAVE,
+        actions: 0,
+        ...V12_FRESH_SAVE,
       },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)

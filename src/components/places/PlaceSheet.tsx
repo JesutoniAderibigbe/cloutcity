@@ -136,15 +136,28 @@ function useTitleFocus(ref: React.RefObject<HTMLDivElement | null>) {
 
 /** The arrival line with its Dismiss button, in the card's status. */
 function ArrivalNote({ arrival }: { readonly arrival: TripArrival }) {
+  const dismissButton = useRef<HTMLButtonElement>(null)
+  // A trip ends with focus here (TRV-3): the button the player pressed went with the trip, and
+  // when the trip cut straight to the arrival (reduced motion, no 3D map) the sheet never closed,
+  // so nothing else would take it. A sheet that mounts on arrival then focuses its title.
+  useEffect(() => {
+    dismissButton.current?.focus()
+  }, [arrival.id])
+  const dismiss = () => {
+    // The button goes with the note: focus moves to the sheet's title, not the page.
+    dismissButton.current?.closest('[role="dialog"]')?.querySelector<HTMLElement>('h2')?.focus()
+    dismissArrival(arrival.id)
+  }
   return (
     <div className="flex items-center justify-between gap-2" data-trip-arrival="">
-      <p role="status" className="text-sm font-semibold text-taxi-400">
+      <p role="status" className="text-sm font-semibold text-taxi-ink">
         {arrivalText(arrival)}
       </p>
       <button
+        ref={dismissButton}
         type="button"
-        onClick={() => dismissArrival(arrival.id)}
-        className={`${BUTTON} min-w-11 shrink-0 bg-night-800 text-center text-ink-50`}
+        onClick={dismiss}
+        className={`${BUTTON} min-w-11 shrink-0 bg-raised text-center text-fg`}
       >
         {copy('place.result.dismiss')}
       </button>
@@ -176,13 +189,13 @@ function HomeCard() {
       data-place-sheet={HOME_SPOT_ID}
       data-player-here={atHome ? '' : undefined}
       data-cc-feature="cc-feature:place-sheet"
-      className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg"
+      className="m-2 flex flex-col gap-2 rounded-2xl border border-line glass p-3 shadow-lg"
     >
       <div className="flex items-start justify-between gap-2">
         <h2
           id={titleId}
           tabIndex={-1}
-          className="text-base leading-tight font-extrabold text-taxi-400 focus:outline-none"
+          className="text-base leading-tight font-extrabold text-taxi-ink focus:outline-none"
         >
           {name}
         </h2>
@@ -190,14 +203,14 @@ function HomeCard() {
           type="button"
           onClick={closePlace}
           aria-label={copy('place.sheet.closeLabel', { place: name })}
-          className={`${BUTTON} min-w-11 shrink-0 bg-night-800 text-center text-ink-50`}
+          className={`${BUTTON} min-w-11 shrink-0 bg-raised text-center text-fg`}
         >
           {copy('place.sheet.close')}
         </button>
       </div>
-      <p className="text-sm text-ink-50">{homeBlurb(home)}</p>
+      <p className="text-sm text-fg">{homeBlurb(home)}</p>
       {atHome ? (
-        <p className="text-sm font-semibold text-ink-300">{copy('travel.hereHome')}</p>
+        <p className="text-sm font-semibold text-muted">{copy('travel.hereHome')}</p>
       ) : (
         <TravelSection
           destination={{ kind: 'home' }}
@@ -211,7 +224,7 @@ function HomeCard() {
 }
 
 const BUTTON =
-  'min-h-11 rounded-xl px-3 py-2 text-left font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
+  'min-h-11 rounded-xl px-3 py-2 text-left font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 function PlaceCard({ place }: { readonly place: Place }) {
   const clock = useGameStore((state) => state.clock)
@@ -309,7 +322,7 @@ function PlaceCard({ place }: { readonly place: Place }) {
       data-look-only={lookOnly ? '' : undefined}
       data-player-here={here ? '' : undefined}
       className={`m-2 flex flex-col gap-2 rounded-2xl border p-3 shadow-lg ${
-        lookOnly ? 'border-night-700 bg-night-950' : 'border-night-700 bg-night-900/95'
+        lookOnly ? 'border-line bg-canvas' : 'border-line glass'
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -318,12 +331,12 @@ function PlaceCard({ place }: { readonly place: Place }) {
             id={titleId}
             tabIndex={-1}
             className={`text-base leading-tight font-extrabold focus:outline-none ${
-              lookOnly ? 'text-ink-50' : 'text-pink-400'
+              lookOnly ? 'text-fg' : 'text-fg'
             }`}
           >
             {name}
           </h2>
-          <p className="text-xs text-ink-300">
+          <p className="text-xs text-muted">
             {view.kind === 'look-only' ? copy('place.memorial.label') : placeHoursLine(view.hours)}
           </p>
         </div>
@@ -331,14 +344,14 @@ function PlaceCard({ place }: { readonly place: Place }) {
           type="button"
           onClick={closePlace}
           aria-label={copy('place.sheet.closeLabel', { place: name })}
-          className={`${BUTTON} min-w-11 shrink-0 bg-night-800 text-center text-ink-50`}
+          className={`${BUTTON} min-w-11 shrink-0 bg-raised text-center text-fg`}
         >
           {copy('place.sheet.close')}
         </button>
       </div>
-      <p className="text-sm text-ink-50">{copy(infoKeyOf(info))}</p>
+      <p className="text-sm text-fg">{copy(infoKeyOf(info))}</p>
       {here ? (
-        <p data-here-note="" className="text-sm font-semibold text-ink-300">
+        <p data-here-note="" className="text-sm font-semibold text-muted">
           {copy('travel.here')}
         </p>
       ) : (
@@ -350,14 +363,14 @@ function PlaceCard({ place }: { readonly place: Place }) {
       )}
       {arrival === null || result !== null ? null : <ArrivalNote arrival={arrival} />}
       {view.kind === 'look-only' ? (
-        <p className="text-sm text-ink-300">{copy('place.memorial.note')}</p>
+        <p className="text-sm text-muted">{copy('place.memorial.note')}</p>
       ) : (
         <section aria-labelledby={`${titleId}-actions`} className="flex flex-col gap-1.5">
-          <h3 id={`${titleId}-actions`} className="text-xs font-bold text-ink-300 uppercase">
+          <h3 id={`${titleId}-actions`} className="text-xs font-bold text-muted uppercase">
             {copy('place.actions.heading')}
           </h3>
           {view.actions.length === 0 ? (
-            <p className="text-sm text-ink-300">{copy('place.actions.none')}</p>
+            <p className="text-sm text-muted">{copy('place.actions.none')}</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {view.actions.map((action) => {
@@ -376,20 +389,25 @@ function PlaceCard({ place }: { readonly place: Place }) {
                             })
                           : placeActionAccessibleName(action, place, snapshot)
                       }
-                      onClick={() => run(action)}
-                      className={`${BUTTON} flex w-full flex-col bg-night-800 text-ink-50 enabled:hover:bg-night-700 disabled:opacity-70`}
+                      onClick={(event) => {
+                        // The second click of a mouse double click: the sheet grows with the
+                        // result, so it can land on the next action, which must not run.
+                        if (event.detail > 1) return
+                        run(action)
+                      }}
+                      className={`${BUTTON} flex w-full flex-col bg-raised text-fg enabled:hover:bg-pressed disabled:opacity-70`}
                     >
                       <span>{placeActionName(action)}</span>
-                      <span className="text-xs font-normal text-ink-300">
+                      <span className="text-xs font-normal text-muted">
                         {placeActionDetails(action, snapshot)}
                       </span>
                       {action.block === null ? null : (
-                        <span className="text-xs font-normal text-taxi-400">
+                        <span className="text-xs font-normal text-taxi-ink">
                           {placeBlockReason(action.block, place)}
                         </span>
                       )}
                       {resultShowing ? (
-                        <span className="text-xs font-normal text-taxi-400">
+                        <span className="text-xs font-normal text-taxi-ink">
                           {copy('place.busy.reason')}
                         </span>
                       ) : null}
@@ -400,7 +418,7 @@ function PlaceCard({ place }: { readonly place: Place }) {
             </ul>
           )}
           <div className="flex items-center justify-between gap-2">
-            <p role="status" className="text-sm font-semibold text-taxi-400">
+            <p role="status" className="text-sm font-semibold text-taxi-ink">
               {result?.text}
             </p>
             {result === null ? null : (
@@ -408,7 +426,7 @@ function PlaceCard({ place }: { readonly place: Place }) {
                 ref={dismissButton}
                 type="button"
                 onClick={dismiss}
-                className={`${BUTTON} min-w-11 shrink-0 bg-night-800 text-center text-ink-50`}
+                className={`${BUTTON} min-w-11 shrink-0 bg-raised text-center text-fg`}
               >
                 {copy('place.result.dismiss')}
               </button>

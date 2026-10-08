@@ -30,10 +30,12 @@ export const SUPABASE_BLANK_ENV = {
 }
 
 export const SUPABASE_SPECS = '**/*.supabase.spec.ts'
+/** Specs that only make sense in the NEXT_DEPLOYMENT_ID build (playwright.dpl.config.ts). */
+export const DPL_SPECS = '**/*.dpl.spec.ts'
 
 export default defineConfig({
   testDir: 'tests/e2e',
-  testIgnore: SUPABASE_SPECS,
+  testIgnore: [SUPABASE_SPECS, DPL_SPECS],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
