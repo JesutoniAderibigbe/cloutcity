@@ -365,6 +365,9 @@ isOneToOne: true
               "saved_at": string,"saved_revision": number
             }[]
                            },
+"consume_login_attempt":
+{ Args: { "p_bucket": string,"p_key_hash": string,"p_max": number,"p_window_ms": number }; Returns: undefined
+                           },
 "consume_save_override":
 { Args: { "p_max": number,"p_user_id": string }; Returns: undefined
                            },
@@ -397,6 +400,9 @@ isOneToOne: true
 { Args: Record<PropertyKey, never>; Returns: {
               "created_at": string,"kind": string,"reason": string,"report_id": string,"status": string,"target_handle": string
             }[]
+                           },
+"login_email_for_handle":
+{ Args: { "p_handle": string }; Returns: string
                            },
 "mod_ban":
 { Args: { "p_case": string,"p_correlation_id": string,"p_idempotency_key": string,"p_moderator_id": string,"p_note"?: string,"p_reason": string }; Returns: Json

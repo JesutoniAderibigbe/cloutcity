@@ -1,6 +1,9 @@
 /**
- * data/config/account.json `emailCheck` is enforced by public.check_account_email (S19): the
- * migration's rate limit must say the same.
+ * data/config/account.json must agree with what the server enforces: `emailCheck` with
+ * public.check_account_email's rate limit (S19), and `password.minLength` (the rule the sign-up
+ * form shows) with supabase/config.toml's `minimum_password_length` (DEC-61), so the form never
+ * promises a password the server then refuses. The hosted project's dashboard setting is a
+ * deploy checklist item (README).
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
@@ -8,6 +11,7 @@ import { describe, expect, it } from 'vitest'
 import accountJson from '@data/config/account.json'
 
 const MIGRATIONS = join(import.meta.dirname, '../../../supabase/migrations')
+const SUPABASE_CONFIG = join(import.meta.dirname, '../../../supabase/config.toml')
 
 function newestDefinition(fn: string): string {
   const files = readdirSync(MIGRATIONS)
@@ -36,5 +40,19 @@ describe('account config parity (S19)', () => {
     expect(newestDefinition('check_account_email')).toContain(
       `length(p_email) > ${accountJson.emailMaxLength}`,
     )
+  })
+
+  it('the password rule shown matches the server minimum, and is at least 8', () => {
+    const toml = readFileSync(SUPABASE_CONFIG, 'utf8')
+    const match = /^minimum_password_length = (\d+)$/m.exec(toml)
+    expect(match, 'minimum_password_length in config.toml').not.toBeNull()
+    expect(Number(match?.[1])).toBe(accountJson.password.minLength)
+    expect(accountJson.password.minLength).toBeGreaterThanOrEqual(8)
+  })
+
+  it('sign-ups need no confirmation email (DEC-61)', () => {
+    const toml = readFileSync(SUPABASE_CONFIG, 'utf8')
+    const email = toml.slice(toml.indexOf('[auth.email]'))
+    expect(/^enable_confirmations = false$/m.exec(email)).not.toBeNull()
   })
 })

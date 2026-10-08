@@ -65,6 +65,7 @@ const PRIVATE_TABLES = [
   'handle_settings',
   'handle_terms',
   'handle_words',
+  'login_attempts',
   'moderation_audit',
   'moderation_settings',
   'rate_limits',

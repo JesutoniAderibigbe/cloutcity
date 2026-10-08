@@ -161,16 +161,13 @@ site_url = "http://127.0.0.1:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-# S19: account links (magic link, email change, Google) land on /auth/callback and /mod sign-in
-# links on /mod, on the dev server and every lane's e2e port (3100-3119). Hosted projects list
-# <SITE_URL>/auth/callback and <SITE_URL>/mod instead (README "Deploy checklist").
+# The /mod console's sign-in link lands on /mod, on the dev server and every lane's e2e port
+# (3100-3119). Players log in with a password and get no links (DEC-61). Hosted projects list
+# <SITE_URL>/mod instead (README "Deploy checklist").
 additional_redirect_urls = [
   "https://127.0.0.1:3000",
-  "http://localhost:3000/auth/callback",
   "http://localhost:3000/mod",
-  "http://localhost:31[01][0-9]/auth/callback",
   "http://localhost:31[01][0-9]/mod",
-  "http://127.0.0.1:31[01][0-9]/auth/callback",
   "http://127.0.0.1:31[01][0-9]/mod",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
@@ -190,10 +187,9 @@ enable_signup = true
 # The guest session after the welcome card is an anonymous sign-in (S05/S18).
 enable_anonymous_sign_ins = true
 # Allow/disallow testing manual linking of accounts
-# S19: a guest saves their progress by linking Google to the same (anonymous) user.
-enable_manual_linking = true
+enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -239,9 +235,11 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-# S19: on, as in hosted projects: with it off GoTrue applies an email change (a guest saving their
-# progress) at once, without the confirmation link the upgrade depends on.
-enable_confirmations = true
+# DEC-61: off, as in the hosted project. Accounts are username + email + password with no
+# email service: a guest who creates an account gets the email and password at once (the same
+# user id), and nobody confirms an address. An unconfirmed address cannot log anyone into
+# someone else's account without their password (README "Accounts").
+enable_confirmations = false
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
@@ -261,17 +259,13 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# S19: the log-in email carries a link to our own /auth/callback (token_hash, finished by a tap,
-# so a mail scanner opening the link uses nothing up) and the 6-digit code. Hosted projects paste
-# the same files in the dashboard (README "Deploy checklist").
+# The /mod console's sign-in email (moderators only; players log in with a password, DEC-61): a
+# token-hash link to /mod, finished by a tap. Hosted projects paste it in the dashboard (README
+# "Deploy checklist").
 [auth.email.template.magic_link]
 subject = "Your Clout City log-in link"
 content_path = "./supabase/templates/magic_link.html"
 
-# S19: saving a guest's progress with an email confirms the address through /auth/callback.
-[auth.email.template.email_change]
-subject = "Confirm your email for Clout City"
-content_path = "./supabase/templates/email_change.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
@@ -340,18 +334,6 @@ max_frequency = "5s"
 # [auth.mfa.web_authn]
 # enroll_enabled = true
 # verify_enabled = true
-
-# S19: Google, for saving progress (linkIdentity) and logging in. Off locally: e2e checks the
-# request the app makes, and the real round trip is a manual check on a staging project with a
-# real OAuth client (README "Deploy checklist").
-[auth.external.google]
-enabled = false
-client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
-secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
-redirect_uri = ""
-url = ""
-skip_nonce_check = false
-email_optional = false
 
 # Use an external OAuth provider. The full list of providers are: `apple`, `azure`, `bitbucket`,
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
