@@ -250,24 +250,28 @@ Models: none yet.
 
 | Output                  | Bytes | sha256                                                             | Script                                        |
 | ----------------------- | ----: | ------------------------------------------------------------------ | --------------------------------------------- |
-| `hair-afro.glb`         | 14180 | `e4f909e91b82767d7144d1d1be4937b6ebeed83a5850b35b24761617d348382e` | `scripts/blender/avatar/hair-afro.py`         |
-| `hair-locs.glb`         | 14788 | `dca6433f8b721e9017bdbaa39292dc6603aa45eceb89ea3dc81d0092f6b70442` | `scripts/blender/avatar/hair-locs.py`         |
-| `hair-box-braids.glb`   | 13884 | `b9ae6ba808450eec39ca395e7a9804c22306286f820143b0d5615095d887524c` | `scripts/blender/avatar/hair-box-braids.py`   |
-| `hair-cornrows.glb`     | 17312 | `c492654cb713311dae1fe47e443716d3cfd8ae6a2dc9385d505f8beb3a93ae9a` | `scripts/blender/avatar/hair-cornrows.py`     |
-| `hair-buzz.glb`         |  7924 | `dc9c9b4f4f1c14daf0ab43a1acfe9fc2b37b6a2329c8c1c5b96c6242059333d2` | `scripts/blender/avatar/hair-buzz.py`         |
-| `headwear-hijab.glb`    | 18248 | `2252cac89e7d0f7c4eb27ea6f5902c06bcd6965eb43717c21301f0ea860951aa` | `scripts/blender/avatar/headwear-hijab.py`    |
-| `headwear-turban.glb`   | 12320 | `8ed63945ec7c3603baaa74b7871863aad60ffc9e9f6c1572ce14c7ba6fbfaf57` | `scripts/blender/avatar/headwear-turban.py`   |
-| `headwear-durag.glb`    | 10760 | `1357ccaf38aa757898a9d6bce351a0186032e88483e9603228b02539ab2516a4` | `scripts/blender/avatar/headwear-durag.py`    |
-| `headwear-beanie.glb`   | 14196 | `5cd685830a7f56adf867c20bc0e469f27e3876b5281e21f2b4e07763d7157cc5` | `scripts/blender/avatar/headwear-beanie.py`   |
-| `headwear-ballcap.glb`  |  8892 | `7d35745781483fe219c907887ccb6ec5c6552f72cfa2363a42c44f958e699362` | `scripts/blender/avatar/headwear-ballcap.py`  |
-| `facial-stubble.glb`    |  3892 | `f835d297dc773ad8bb974505134d1cf45e30e96cd0350cf3a9a22155ef81c44f` | `scripts/blender/avatar/facial-stubble.py`    |
-| `facial-moustache.glb`  |  3900 | `47b460b78e0d94053fa37aa0073e5f9715353750cef6c66bbf13deb66de3477f` | `scripts/blender/avatar/facial-moustache.py`  |
-| `facial-goatee.glb`     |  4828 | `57ada8c39088c1893d23aa2b9ab20ab4760edd1c7dbf8e09f58fb6687a51a231` | `scripts/blender/avatar/facial-goatee.py`     |
-| `facial-full-beard.glb` |  6716 | `0bfb923b559bb9cee770ce3aa9c091cadfc548a436e97c61bd838992f999dca8` | `scripts/blender/avatar/facial-full-beard.py` |
-| `acc-gold-hoops.glb`    |  8572 | `a33256fdcdf6298dcd619f6d209289377a4f9146d6d47b07ad35eff87232bb8e` | `scripts/blender/avatar/acc-gold-hoops.py`    |
-| `acc-subway-tote.glb`   |  8384 | `1e46d77559fe7f2a74fa96244dfb8c033f656c0f1afb35b6a40a598f7eee873c` | `scripts/blender/avatar/acc-subway-tote.py`   |
+| `hair-afro.glb`         | 19800 | `a1940d00cf831edfc85ffe83c68599ab0381c5d4f3f3575aece9898ec9e6246f` | `scripts/blender/avatar/hair-afro.py`         |
+| `hair-locs.glb`         | 19800 | `36e3738f734fe9b164ac70c5d01506cc998df353e4ddb57c956d93fc648547e8` | `scripts/blender/avatar/hair-locs.py`         |
+| `hair-box-braids.glb`   | 20832 | `9e9caf841cf0116413aac7edb784274f8be7b7e809fa0f553767c809e19441dd` | `scripts/blender/avatar/hair-box-braids.py`   |
+| `hair-cornrows.glb`     | 20744 | `f5fa6704acb038ab21dd443539ad3e70b89cefbf5b2bcc08e9ebbf9c027f47a4` | `scripts/blender/avatar/hair-cornrows.py`     |
+| `hair-buzz.glb`         | 14808 | `fdf1df6d8abd6eb7d6395406d3570cb2a6cbd788885525e36643173ad8739ff5` | `scripts/blender/avatar/hair-buzz.py`         |
+| `headwear-hijab.glb`    | 19808 | `0c6a2e3c9c7d47729ce56f73b46e401c9a40a4afda71b3460728875f0ae9441e` | `scripts/blender/avatar/headwear-hijab.py`    |
+| `headwear-turban.glb`   | 19812 | `e07ef77b23f7740a34f8f4d394acea687c6f48fafcfb6d1b2c5aaec094600d2c` | `scripts/blender/avatar/headwear-turban.py`   |
+| `headwear-durag.glb`    | 19184 | `d948391a86159de5a52d18dbc25f20068120fbf6befcd1afc4c73c54547af895` | `scripts/blender/avatar/headwear-durag.py`    |
+| `headwear-beanie.glb`   | 17940 | `170bb62aab74310daec348136645f9690dce42a6dd1a5c0308fcd63f23eaaecc` | `scripts/blender/avatar/headwear-beanie.py`   |
+| `headwear-ballcap.glb`  | 17008 | `c2543f3f8cfc8957be93d70dfb35a5998e906bdab118b8ccbe0f37f0b08566d8` | `scripts/blender/avatar/headwear-ballcap.py`  |
+| `facial-stubble.glb`    |  5768 | `e01bc0eb78f4af024ff8b042eb23650db5958054d1191cf2ac727674b14caa2b` | `scripts/blender/avatar/facial-stubble.py`    |
+| `facial-moustache.glb`  |  4840 | `f08bdb6f24da9feef6691a1db86f4755d2a7732ca58562e9b51d2b37f5ff229b` | `scripts/blender/avatar/facial-moustache.py`  |
+| `facial-goatee.glb`     |  7016 | `4773bc8ed626a10fd1b5122ab0ca2b84af521c171f0d8b136264554fafaa394d` | `scripts/blender/avatar/facial-goatee.py`     |
+| `facial-full-beard.glb` |  8588 | `2c180c3e10c11f8318f4ed99fd2c67502c9bd87700a518e3eb39edef1be91ce9` | `scripts/blender/avatar/facial-full-beard.py` |
+| `acc-gold-hoops.glb`    |  8572 | `fb56ae287f18d669a4f9b8787bdc1d1510ae26bd4e263c44e4cf26cdd7a4ac88` | `scripts/blender/avatar/acc-gold-hoops.py`    |
+| `acc-subway-tote.glb`   |  8176 | `215771a4e98f3ba3e8beb63dd74b4554bb7752433448ea2e758c14e300b32622` | `scripts/blender/avatar/acc-subway-tote.py`   |
+| `glasses.glb`           |  7804 | `ece88e956a205d90e2d7dcd2cea670d55eef60fde5e3926f948c881dd81882ad` | `scripts/blender/avatar/glasses.py`           |
+| `sunglasses.glb`        |  7004 | `511c2f4aa0832fdd78ff78a9a3c73770a20f548d968a566ababdc053eb499cad` | `scripts/blender/avatar/sunglasses.py`        |
+| `hearing-aid.glb`       |  7516 | `19e029befc3bdedb7db043c4c511457db9f9126e766ee62968ecb441da72ebb8` | `scripts/blender/avatar/hearing-aid.py`       |
+| `scalp-cap-f.glb`       |  5440 | `08341d0ee424da3fdb12171b91aa2dd03e19cc2fccdd5995ae4088a604b1963a` | `scripts/blender/avatar/scalp-cap-f.py`       |
 
-Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`, `hair-afro`, `hair-locs`, `hair-box-braids`, `hair-cornrows`, `hair-buzz`, `headwear-hijab`, `headwear-turban`, `headwear-durag`, `headwear-beanie`, `headwear-ballcap`.
+Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`, `hair-afro`, `hair-locs`, `hair-box-braids`, `hair-cornrows`, `hair-buzz`, `headwear-hijab`, `headwear-turban`, `headwear-durag`, `headwear-beanie`, `headwear-ballcap`, `glasses`, `sunglasses`, `hearing-aid`, `scalp-cap-f`.
 
 ## Models
 
@@ -334,6 +338,10 @@ Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-bear
 | `headwear-durag`    | `clout-city-blender`         | `headwear-durag.glb`           | avatar-hair      |
 | `headwear-beanie`   | `clout-city-blender`         | `headwear-beanie.glb`          | avatar-hair      |
 | `headwear-ballcap`  | `clout-city-blender`         | `headwear-ballcap.glb`         | avatar-hair      |
+| `glasses`           | `clout-city-blender`         | `glasses.glb`                  | avatar-accessory |
+| `sunglasses`        | `clout-city-blender`         | `sunglasses.glb`               | avatar-accessory |
+| `hearing-aid`       | `clout-city-blender`         | `hearing-aid.glb`              | avatar-accessory |
+| `scalp-cap-f`       | `clout-city-blender`         | `scalp-cap-f.glb`              | avatar-accessory |
 | `outfit-w-casual`   | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-body      |
 | `outfit-w-suit`     | `quaternius-modular-women`   | `glTF/Suit.gltf`               | avatar-body      |
 | `outfit-w-worker`   | `quaternius-modular-women`   | `glTF/Worker.gltf`             | avatar-body      |
