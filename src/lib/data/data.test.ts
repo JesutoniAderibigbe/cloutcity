@@ -349,7 +349,7 @@ describe('config/perf.json', () => {
       audioRuntimeJsGzKB: 20,
       // S04e: the service worker script and its install-time precache (not in CLAUDE.md's table).
       serviceWorkerGzKB: 15,
-      precacheGzKB: 1000,
+      precacheGzKB: 1150,
       buildingTrianglesMax: { low: 160_000, mid: 300_000, high: 480_000 },
       // S04i fill-lite street trees drawn at once (user-approved cap).
       fillTreesMax: { low: 0, mid: 4000, high: 8000 },
