@@ -337,7 +337,7 @@ test.describe('the level-up toast', () => {
     }
   })
 
-  test('pops only when motion is welcome', async ({ page }) => {
+  test('pops and celebrates only when motion is welcome', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await boot(page)
     await openPlace(page, 'queens-ballpark', NOON, 98)
@@ -348,8 +348,17 @@ test.describe('the level-up toast', () => {
     const toast = page.locator('[data-overlay-zone="toast"] [data-level-up]')
     await expect(toast).toBeVisible()
     expect(await toast.evaluate((el) => getComputedStyle(el).animationName)).toBe('none')
+    // S04k: the celebration's sparkles and sweep sit still too (static, faint).
+    const pseudo = (which: '::before' | '::after') =>
+      toast.evaluate((el, at) => getComputedStyle(el, at).animationName, which)
+    expect(await pseudo('::before')).toBe('none')
+    expect(await pseudo('::after')).toBe('none')
     await page.emulateMedia({ reducedMotion: 'no-preference' })
-    expect(await toast.evaluate((el) => getComputedStyle(el).animationName)).toBe('level-up-pop')
+    expect(await toast.evaluate((el) => getComputedStyle(el).animationName)).toBe(
+      'level-up-pop, level-up-glow',
+    )
+    expect(await pseudo('::before')).toBe('level-up-sparkle')
+    expect(await pseudo('::after')).toBe('level-up-sweep')
   })
 })
 

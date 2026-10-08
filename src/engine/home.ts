@@ -26,6 +26,7 @@
 import { HOME_BOROUGHS } from '@/lib/data/homes'
 import type { Borough } from '@/lib/data/schemas/content'
 import { boroughAccess, type BoroughAccess } from './boroughs'
+import { homeScorePct } from './career'
 import { levelClout, settleLevel, type LevelUp } from './clout'
 import { isHomeId, type EngineConfig, type HomeId, type SlotDef } from './config'
 import type { GameSnapshot, PlayerState } from './game'
@@ -54,8 +55,8 @@ export interface ApartmentState {
 
 export const initialApartment: ApartmentState = { placed: {}, moveLog: [] }
 
-/** What the home score reads. */
-export type HomePlayer = Pick<PlayerState, 'home' | 'inventory' | 'apartment'>
+/** What home clout reads: the home, its decor and the career path (an artist/DJ's home bonus). */
+export type HomePlayer = Pick<PlayerState, 'home' | 'inventory' | 'apartment' | 'careerPath'>
 
 /** Why a home is locked to the player right now. */
 export type HomeLock =
@@ -130,7 +131,8 @@ export function homeScore(player: HomePlayer, config: EngineConfig): number {
 
 /** The clout the home adds: its score, capped at `home.maxClout`. */
 export function homeClout(player: HomePlayer, config: EngineConfig): number {
-  return Math.min(config.home.maxClout, homeScore(player, config))
+  const score = Math.floor((homeScore(player, config) * homeScorePct(player, config)) / 100)
+  return Math.min(config.home.maxClout, score)
 }
 
 function withApartment(

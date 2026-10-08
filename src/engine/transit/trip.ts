@@ -21,6 +21,7 @@ import { levelClout } from '../clout'
 import type { EngineConfig } from '../config'
 import { sameLocation, type GameSnapshot, type PlayerLocation } from '../game'
 import { createRng, mixSeed } from '../rng'
+import { traitAdjustedTrip } from '../traits'
 import type { Borough } from '@/lib/data/schemas/content'
 import { distanceM, type LocalPoint } from '@/lib/geo/projection'
 import type { TransitConfig } from './config'
@@ -240,7 +241,11 @@ export function tripOptions(
       return { mode, route: null, durationMin: 0, block: block ?? (planned.error as PlanError) }
     }
     const { route } = planned
-    const def = travelActionDef(route, false, engine, transit)
+    const def = traitAdjustedTrip(
+      travelActionDef(route, false, engine, transit),
+      snapshot.player,
+      engine,
+    )
     const durationMin = effectiveDuration(def, snapshot, engine)
     const tooLong = tripTooLong(def, snapshot, engine)
     const cash = snapshot.player.cash

@@ -1,0 +1,16 @@
+{
+  "strings": {
+    "career.influencer.name": "Influencer",
+    "career.influencer.goal": "Make it in New York as an influencer",
+    "career.influencer.bonus": "Flex clout +{pct}%",
+    "career.streamer.name": "Streamer",
+    "career.streamer.goal": "Make it in New York as a streamer",
+    "career.streamer.bonus": "Event clout +{pct}% (not nightlife)",
+    "career.artistDj.name": "Artist / DJ",
+    "career.artistDj.goal": "Make it in New York as an artist or DJ",
+    "career.artistDj.bonus": "Home clout +{pct}%",
+    "career.founderHustler.name": "Founder / hustler",
+    "career.founderHustler.goal": "Make it in New York as a founder",
+    "career.founderHustler.bonus": "Resale value +{pts} points"
+  }
+}

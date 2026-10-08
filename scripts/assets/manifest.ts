@@ -64,6 +64,7 @@ export function buildManifest(models: readonly BuiltModel[]): ManifestOutput {
       nameKey: model.nameKey,
       ...(built.bounds === undefined ? {} : { bounds: built.bounds }),
       slots: model.slots.map((slot) => slot.name),
+      ...(model.attach === undefined ? {} : { attach: model.attach }),
       emissive: built.emissive,
       clips: model.clips,
       tiers: Object.fromEntries(MODEL_TIERS.map((tier) => [tier, tierFiles[tier]])) as Record<

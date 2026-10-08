@@ -23,6 +23,7 @@ import {
   PerfConfigSchema,
   type PerfConfig,
   ProfileConfigSchema,
+  AccountConfigSchema,
   ProgressionConfigSchema,
   RealtimeConfigSchema,
   SyncConfigSchema,
@@ -34,9 +35,13 @@ import {
   EventsFileSchema,
   HomesFileSchema,
   HomeInteriorsFileSchema,
+  ItemLooksFileSchema,
+  NeighborhoodsFileSchema,
   ItemsFileSchema,
+  ItemThumbsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
+  PlaceIconsConfigSchema,
   PremiumFileSchema,
   VenuesFileSchema,
 } from './schemas/content'
@@ -48,7 +53,7 @@ import {
   LandmarkMeasurementsSchema,
 } from './schemas/landmarkBlender'
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
-import { SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
+import { PinMarksConfigSchema, SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
@@ -67,6 +72,14 @@ import {
   ZonesFileSchema,
 } from './schemas/world'
 import { ModelManifestSchema, ShowcaseSchema } from './schemas/assets'
+import {
+  AvatarEngineTablesSchema,
+  AvatarOptionsSchema,
+  AvatarSceneFileSchema,
+  AvatarSwatchesFileSchema,
+  TraitsFileSchema,
+} from './schemas/avatar'
+import { CreatorConfigSchema } from './schemas/creator'
 import { CatalogSchema } from '../../../scripts/assets/schema'
 import {
   audio,
@@ -104,10 +117,17 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'assets/manifest.json': ModelManifestSchema,
   'assets/showcase.json': ShowcaseSchema,
   'audio/manifest.json': AudioManifestSchema,
+  'avatar/engine.derived.json': AvatarEngineTablesSchema,
+  'avatar/options.json': AvatarOptionsSchema,
+  'avatar/scene.derived.json': AvatarSceneFileSchema,
+  'avatar/swatches.derived.json': AvatarSwatchesFileSchema,
+  'avatar/traits.json': TraitsFileSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
+  'config/account.json': AccountConfigSchema,
   'config/audio.json': AudioConfigSchema,
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,
+  'config/creator.json': CreatorConfigSchema,
   'config/geo.json': GeoConfigSchema,
   'config/handles.json': HandlesConfigSchema,
   'config/layout.json': LayoutConfigSchema,
@@ -115,6 +135,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/offline.json': OfflineConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
+  'config/pinMarks.json': PinMarksConfigSchema,
+  'places/icons.json': PlaceIconsConfigSchema,
   'config/profile.json': ProfileConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/props.json': StreetPropsConfigSchema,
@@ -135,7 +157,10 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
   'homes/interiors.json': HomeInteriorsFileSchema,
+  'homes/neighborhoods.json': NeighborhoodsFileSchema,
   'items/items.json': ItemsFileSchema,
+  'items/looks.json': ItemLooksFileSchema,
+  'items/thumbs.derived.json': ItemThumbsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/frames.derived.json': LandmarkFramesFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
@@ -205,6 +230,7 @@ describe('/data files', () => {
     'zones',
     'audio',
     'assets',
+    'avatar',
     'boroughs',
     'homes',
     'config',
@@ -371,7 +397,10 @@ describe('config/perf.json', () => {
         'avatar-head': { trianglesMax: { low: 350, mid: 400, high: 400 }, gzKBMax: 11 },
         'avatar-body': { trianglesMax: { low: 400, mid: 650, high: 650 }, gzKBMax: 15 },
         'avatar-accessory': { trianglesMax: { low: 100, mid: 100, high: 100 }, gzKBMax: 4 },
+        // S16a A0.3: approved by the user (the measured hijab is 220 triangles, 2.3 KB gz).
+        'avatar-hair': { trianglesMax: { low: 240, mid: 300, high: 300 }, gzKBMax: 4 },
       },
+      avatar: { trianglesMax: { low: 1300, mid: 1700, high: 1700 } },
     })
   })
 
@@ -926,6 +955,7 @@ describe('content schemas', () => {
     cloutValue: 1,
     styleValue: 1,
     statEffects: { mood: 2 },
+    look: { part: 'outfit', outfit: 'outfit-01', top: 'teal' },
   }
 
   it('rejects an item that sells for more than it costs, or an unknown stat', () => {
@@ -1036,6 +1066,9 @@ describe('cross-file references', () => {
     club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
     colors: items.flatMap((entry) => entry.decor?.variants.map((variant) => variant.nameKey) ?? []),
     housing: Object.values(homeInteriors).flatMap((home) => home.slots.map((slot) => slot.nameKey)),
+    categories: Object.values(
+      PlaceIconsConfigSchema.parse(readJson('places/icons.json')).groups,
+    ).map((group) => group.labelKey),
   }
 
   it('every copy key named by content exists in data/copy', () => {
@@ -1082,5 +1115,23 @@ describe('economy baseline (S12, read by S18c)', () => {
     const cash = { maxGainPerAction: -1, maxGainPerGameDay: 0, maxGainPerGameHour: 0 }
     expect(EconomyBaselineSchema.safeParse({ ...file, cash }).success).toBe(false)
     expect(EconomyBaselineSchema.safeParse({ ...file, extra: 1 }).success).toBe(false)
+  })
+})
+
+describe('shop thumbnails and looks (S04k)', () => {
+  const looks = ItemLooksFileSchema.parse(readJson('items/looks.json'))
+  const thumbs = ItemThumbsFileSchema.parse(readJson('items/thumbs.derived.json'))
+  const ids = items.map((item) => item.id).sort()
+
+  it('gives every item an icon, and names no unknown item', () => {
+    expect(Object.keys(looks.icons).sort()).toEqual(ids)
+  })
+
+  it('renders a thumbnail for every decor item with a model, each file present', () => {
+    const decor = (readJson('config/scene.json') as { models: { decor: object } }).models.decor
+    expect(Object.keys(thumbs).sort()).toEqual(Object.keys(decor).sort())
+    for (const url of Object.values(thumbs)) {
+      expect(statSync(join(DATA, '../public', url)).size).toBeGreaterThan(200)
+    }
   })
 })

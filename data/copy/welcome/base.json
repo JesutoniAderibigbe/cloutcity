@@ -14,6 +14,10 @@
     "welcome.audio.ours": "Play our music",
     "welcome.audio.own": "I'll bring my own",
     "welcome.audio.error": "Choose a sound option: Play our music or I'll bring my own.",
-    "welcome.submit": "Start playing"
+    "welcome.submit": "Start playing",
+    "welcome.footer.create": "Create account",
+    "welcome.footer.login": "Have an account? Log in",
+    "welcome.audioOnly": "You're logged in. Last thing: how do you want the sound?",
+    "welcome.consentAgain": "Our Terms or Privacy Policy changed since you last agreed."
   }
 }

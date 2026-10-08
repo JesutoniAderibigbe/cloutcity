@@ -7,6 +7,9 @@ import { z } from 'zod'
 import { STREET_PROP_MODELS } from './config'
 import { LandmarkSceneConfigSchema } from './landmarkModels'
 
+const HEX = z.string().regex(/^#[0-9a-f]{6}$/i)
+const VEC3 = z.tuple([z.number(), z.number(), z.number()])
+
 const metres = z.number().positive()
 const ratio = z.number().positive()
 
@@ -519,6 +522,11 @@ export const SceneConfigSchema = z.strictObject({
      * vary within the tile.
      */
     windowTileCells: z.int().min(1).max(16),
+    /**
+     * Mip bias of the window mask (TUNE-16): above 0, a wall reads the mask's averaged mips
+     * sooner, so distant facades glow evenly instead of showing one-pixel dotted windows.
+     */
+    windowMipBias: z.number().min(0).max(4),
     /** The window pattern costs fragment work: off where the tier has no headroom. */
     windows: z.strictObject({ low: z.boolean(), mid: z.boolean(), high: z.boolean() }),
     /** Per-building spread of the facade's brightness (0.12 = plus or minus 12%). */
@@ -583,19 +591,79 @@ export const SceneConfigSchema = z.strictObject({
     cornerRadius: z.number().min(0).max(0.5),
     alphaTest: z.number().gt(0).lt(1),
   }),
+  /** The look runtime (S16a): accessory placement and the creator preview's studio light. */
+  avatarLook: z.strictObject({
+    /**
+     * Where each Kenney accessory sits on the avatar (S16a): the rig joint it follows and its
+     * offset in metres in the character's bind pose (the pipeline grounds static models at
+     * y = 0). Blender attachments (part A0) carry their own frame and need no entry.
+     */
+    attachments: z.record(
+      z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+      z.strictObject({ joint: z.string().min(1), offset: VEC3 }),
+    ),
+    /**
+     * The creator preview's fixed studio light (S16a, D11): the day keyframe's look, so swatches
+     * always read true; it never follows the day/night clock.
+     */
+    preview: z.strictObject({
+      background: HEX,
+      ambient: z.strictObject({ color: HEX, intensity: z.number().min(0) }),
+      hemisphere: z.strictObject({ sky: HEX, ground: HEX, intensity: z.number().min(0) }),
+      sun: z.strictObject({ color: HEX, intensity: z.number().min(0), position: VEC3 }),
+      camera: z.strictObject({
+        fovDeg: z.number().min(5).max(90),
+        position: VEC3,
+        target: VEC3,
+      }),
+      clip: z.string().min(1),
+    }),
+  }),
 })
 export type SceneConfig = z.infer<typeof SceneConfigSchema>
 
 /**
+ * data/config/pinMarks.json. Pin marks (S04k, src/scene/pins/buildPinMarks.ts): a category icon on every playable pin's head
+ * (`iconPx` CSS pixels across, whatever the zoom) and a short name label over the nearest
+ * venues and unmodelled landmarks (at most `maxLabels`, within `labelRadiusM` of the camera
+ * target, while the camera is within `labelMaxDistanceM`). A label never covers an icon, a
+ * landmark name chip or another label. All quads in one mesh and one runtime atlas, drawn with
+ * the name chips' unlit material settings, so they add no shader program.
+ */
+export const PinMarksConfigSchema = z.strictObject({
+  iconPx: metres,
+  labelPx: metres,
+  labelGapPx: z.number().nonnegative(),
+  iconCellPx: z.int().min(16).max(256),
+  labelCellWidthPx: z.int().min(32).max(1024),
+  labelCellHeightPx: z.int().min(16).max(256),
+  atlasColumns: z.int().min(1).max(16),
+  labelMaxChars: z.int().min(4).max(40),
+  labelMaxDistanceM: metres,
+  labelRadiusM: metres,
+  maxLabels: z.int().min(0).max(32),
+  /** How far, in pin heights, the icon sits in front of the pin's head (toward the camera). */
+  pullToCamera: z.number().min(0).max(2),
+  iconFontScale: ratio.max(1),
+  labelFontScale: ratio.max(1),
+  ringWidth: ratio.max(0.3),
+  alphaTest: z.number().gt(0).lt(1),
+})
+export type PinMarksConfig = z.infer<typeof PinMarksConfigSchema>
+
+/**
  * What the city's 3D chunk reads: the scene config without the blocks other code reads itself
- * (the apartment chunk imports its own; the fallback map is drawn on the server), so they never
+ * (the apartment chunk imports its own, the look runtime its derived file; the fallback map is
+ * drawn on the server), so they never
  * travel with the page.
  */
-export type CitySceneConfig = Omit<SceneConfig, 'apartment' | 'fallback'>
+export type CitySceneConfig = Omit<SceneConfig, 'apartment' | 'fallback' | 'avatarLook'>
 
 export function citySceneConfig(scene: SceneConfig): CitySceneConfig {
   const city: Partial<SceneConfig> = { ...scene }
   delete city.apartment
   delete city.fallback
+  // The look runtime reads its block from data/avatar/scene.derived.json, in its lazy chunk.
+  delete city.avatarLook
   return city as CitySceneConfig
 }

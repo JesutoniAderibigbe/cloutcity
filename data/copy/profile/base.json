@@ -44,6 +44,7 @@
     "profile.offline.offline": "You're offline. Your handle and safety tools come back when you reconnect.",
     "profile.offline.connecting": "Connecting you to the city. Your handle shows up here in a moment.",
     "profile.offline.rateLimited": "Too many sign-ins from this network right now. Keep playing; try again later.",
+    "profile.offline.signedOut": "You signed out on this device, so you're playing solo.",
     "profile.offline.other": "We couldn't connect you to the city. Keep playing solo; your progress stays on this device.",
     "profile.offline.refused": "You need to finish the welcome card before you can go online.",
     "profile.load.failed": "Your profile didn't load. Check your connection and try again.",

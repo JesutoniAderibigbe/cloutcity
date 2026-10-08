@@ -19,6 +19,7 @@ import type { EngineConfig } from './config'
 import type { GameSnapshot, PlayerState } from './game'
 import { placeAllows, type Place } from './places'
 import { createRng, mixSeed } from './rng'
+import { traitAdjustedAction } from './traits'
 
 function isVenue(place: Place): place is Extract<Place, { readonly type: string }> {
   return 'type' in place
@@ -131,7 +132,11 @@ export function performFlex(
   const started = snapshot.clock.minute
   const score = styleScore(snapshot.player, config)
   const chance = viralChance(score, placeMultiplier, config)
-  const result = applyAction(snapshot, flexAction(config), config)
+  const result = applyAction(
+    snapshot,
+    traitAdjustedAction(flexAction(config), snapshot.player, config),
+    config,
+  )
   if (!result.ok) return result
 
   const rng = createRng(mixSeed(snapshot.player.flex.rngState, started))

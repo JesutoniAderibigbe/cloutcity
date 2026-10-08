@@ -41,6 +41,11 @@ export interface LandmarkLayerEntry {
   }
   /** Its placement, without the exclusions only the geo build reads (the client never does). */
   readonly frame: LandmarkFrame
+  /**
+   * Metres the name chip moves north (+) or south (-) from its default spot so it clears a
+   * neighbour's chip (UX-14, {@link chipShifts}). Omitted when 0.
+   */
+  readonly chipShiftM?: number
 }
 
 export interface LandmarksLayer {
@@ -105,7 +110,72 @@ export function buildLandmarksLayer(): LandmarksLayer {
       },
     ]
   })
-  return { models: entries.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)) }
+  const sorted = entries.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+  const lifts = landmarkPinLifts({ models: sorted })
+  const shifts = chipShifts(
+    sorted.map((entry) => ({
+      id: entry.id,
+      x: entry.frame.anchor.x,
+      y: entry.frame.anchor.y,
+      liftM: lifts.get(entry.id) ?? 0,
+    })),
+    scene.landmarkChips,
+    scene.camera.polarDeg.default,
+  )
+  return {
+    models: sorted.map((entry) => {
+      const shift = shifts.get(entry.id) ?? 0
+      return shift === 0 ? entry : { ...entry, chipShiftM: shift }
+    }),
+  }
+}
+
+/**
+ * Name chips that never overlap (UX-14): two landmarks a block apart (the Deco spire and the
+ * 42nd St terminal) put their flat chips on top of each other. A chip floats `liftM` over its
+ * model, and from the default camera (`polarDeg` from straight down) a raised chip shows as far
+ * north as one lying `liftM * tan(polar)` further north on the ground, so the layout works on
+ * that apparent position. Chips are laid out from the apparent north down; one that overlaps a
+ * chip already placed moves south, below it, by whole metres, until it overlaps none.
+ * Deterministic: the same anchors give the same shifts, whatever their order.
+ */
+export function chipShifts(
+  anchors: readonly {
+    readonly id: string
+    readonly x: number
+    readonly y: number
+    readonly liftM: number
+  }[],
+  chips: Pick<typeof scene.landmarkChips, 'widthM' | 'heightM' | 'offsetM'>,
+  polarDeg: number,
+): ReadonlyMap<string, number> {
+  const gap = chips.heightM * 0.15
+  const rise = Math.tan((polarDeg * Math.PI) / 180)
+  const apparent = (anchor: (typeof anchors)[number]) =>
+    anchor.y - chips.offsetM + anchor.liftM * rise
+  const placed: { x: number; y: number }[] = []
+  const shifts = new Map<string, number>()
+  const order = [...anchors].sort(
+    (a, b) => apparent(b) - apparent(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  )
+  for (const anchor of order) {
+    const start = apparent(anchor)
+    let y = start
+    for (let moved = true; moved;) {
+      moved = false
+      for (const other of placed) {
+        const clearX = Math.abs(other.x - anchor.x) >= chips.widthM + gap
+        const clearY = Math.abs(other.y - y) >= chips.heightM + gap
+        if (clearX || clearY) continue
+        y = Math.floor(other.y - chips.heightM - gap)
+        moved = true
+      }
+    }
+    placed.push({ x: anchor.x, y })
+    const shift = Math.round(y - start)
+    if (shift !== 0) shifts.set(anchor.id, shift)
+  }
+  return shifts
 }
 
 /** The layer GET /geo/base serves (built once per server process). */

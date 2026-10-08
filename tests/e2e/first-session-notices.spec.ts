@@ -16,7 +16,8 @@ import {
 // tagged `data-cc-notice` that ever appears (src/lib/notices.test.ts makes sure every notice
 // surface carries the tag), through the welcome card, the tour and its purchase.
 
-test.use({ onboarding: 'fresh', tour: 'fresh' })
+// The creator offer (S16a) comes after the first action and the tour: a meaningful notice too.
+test.use({ onboarding: 'fresh', tour: 'fresh', creatorOffer: 'on' })
 
 declare global {
   interface Window {
@@ -75,6 +76,10 @@ test('a new player sees at most three notices, each meaningful', async ({ page }
   const seen = await notices(page)
   expect(seen.length).toBeLessThanOrEqual(tourConfig.newPlayerNoticeMax)
   for (const kind of seen) expect(tourConfig.meaningfulNotices).toContain(kind)
-  // Nothing on screen asks for attention once the tour is done: no badge, toast or dialog.
-  await expect(page.locator('[data-cc-notice]')).toHaveCount(0)
+  // Once the tour is done, only the creator offer asks for attention (S16a: it waits for the
+  // first action and the tour's end); no badge, other toast or dialog.
+  await expect(page.locator('[data-cc-notice]:not([data-cc-notice="creator-offer"])')).toHaveCount(
+    0,
+  )
+  await expect(page.locator('[data-cc-notice="creator-offer"]')).toHaveCount(1)
 })

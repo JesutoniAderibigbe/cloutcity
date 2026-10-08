@@ -117,9 +117,18 @@ describe('data/assets/catalog.json', () => {
 
   it('shares one rig scale across every avatar part, so heads, bodies and accessories line up', () => {
     const avatar = catalog.models.filter((model) => model.category.startsWith('avatar-'))
-    const scales = new Set(avatar.map((model) => ('scale' in model.fit ? model.fit.scale : NaN)))
+    // Kenney parts share the fitted rig scale; Blender attachments are modelled in that fitted
+    // frame (scripts/blender/avatar/), so they keep scale 1 and name the joint they follow.
+    const kenney = avatar.filter((model) => model.source !== 'clout-city-blender')
+    const blender = avatar.filter((model) => model.source === 'clout-city-blender')
+    const scales = new Set(kenney.map((model) => ('scale' in model.fit ? model.fit.scale : NaN)))
     expect(scales.size).toBe(1)
-    expect(avatar.filter((model) => model.category === 'avatar-head')).toHaveLength(12)
+    for (const model of blender) {
+      expect(model.fit, model.id).toEqual({ scale: 1 })
+      expect(model.pivot, model.id).toBe('source')
+      expect(model.kind === 'static' && model.attach !== undefined, model.id).toBe(true)
+    }
+    expect(avatar.filter((model) => model.category === 'avatar-head')).toHaveLength(13)
     expect(avatar.filter((model) => model.category === 'avatar-body')).toHaveLength(12)
   })
 })

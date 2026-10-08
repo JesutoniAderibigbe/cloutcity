@@ -11,6 +11,7 @@
  * (once per player, recorded in the clout ledger as a `paycheck` entry).
  */
 import { applyAction, type ActionDef, type ActionError, type ActionResult } from './actions'
+import { traitAdjustedAction } from './traits'
 import { findCloutLevel, playerLevel, recordClout, type LevelUp } from './clout'
 import type { EngineConfig, JobId } from './config'
 import type { GameSnapshot, PlayerState } from './game'
@@ -86,7 +87,8 @@ export function workShift(
   const lock = jobLock(snapshot.player, jobId, config)
   if (lock !== null) return { ok: false, error: { code: 'JOB_LOCKED', ...lock } }
 
-  const result = applyAction(snapshot, shiftAction(jobId, config), config)
+  const def = traitAdjustedAction(shiftAction(jobId, config), snapshot.player, config)
+  const result = applyAction(snapshot, def, config)
   if (!result.ok) return result
   const wage = shiftWage(jobId, config)
   const { player } = result.snapshot

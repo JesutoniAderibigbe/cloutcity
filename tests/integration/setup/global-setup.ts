@@ -17,6 +17,8 @@ declare module 'vitest' {
     anonKey: string
     serviceRoleKey: string
     dbUrl: string
+    /** The local mail catcher (S19: account links and codes). */
+    mailpitUrl: string
   }
 }
 
@@ -27,6 +29,7 @@ interface StackInfo {
   anonKey: string
   serviceRoleKey: string
   dbUrl: string
+  mailpitUrl: string
 }
 
 async function readStatus(): Promise<Record<string, unknown>> {
@@ -51,6 +54,7 @@ async function stackInfo(): Promise<StackInfo> {
     anonKey: process.env.SUPABASE_ANON_KEY,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     dbUrl: process.env.SUPABASE_DB_URL,
+    mailpitUrl: process.env.SUPABASE_MAILPIT_URL,
   }
   const status = Object.values(env).every(Boolean) ? {} : await readStatus()
   const pick = (override: string | undefined, key: string): string => {
@@ -65,6 +69,10 @@ async function stackInfo(): Promise<StackInfo> {
     anonKey: pick(env.anonKey, 'ANON_KEY'),
     serviceRoleKey: pick(env.serviceRoleKey, 'SERVICE_ROLE_KEY'),
     dbUrl: pick(env.dbUrl, 'DB_URL'),
+    mailpitUrl: pick(
+      env.mailpitUrl,
+      status.MAILPIT_URL === undefined ? 'INBUCKET_URL' : 'MAILPIT_URL',
+    ),
   }
 }
 
@@ -97,4 +105,5 @@ export default async function setup(project: TestProject): Promise<void> {
   project.provide('anonKey', info.anonKey)
   project.provide('serviceRoleKey', info.serviceRoleKey)
   project.provide('dbUrl', info.dbUrl)
+  project.provide('mailpitUrl', info.mailpitUrl)
 }

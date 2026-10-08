@@ -27,6 +27,8 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `SUPABASE_SERVICE_ROLE_KEY`                                 | Server only (`src/server/supabase/service.ts`): the `/api/mod/*` routes and cloud saves (POST `/api/save`); never `NEXT_PUBLIC_` | unset: `/mod` and `/api/save` answer 503, saves stay on the device |
 | `SUPABASE_URL`                                              | The project URL for the cloud-save server code, if it differs from `NEXT_PUBLIC_SUPABASE_URL`                                    | `NEXT_PUBLIC_SUPABASE_URL`                                         |
 | `MODERATOR_EMAILS`                                          | Server only: comma-separated emails allowed into `/mod` (`src/server/moderation/auth.ts`)                                        | unset or empty: nobody                                             |
+| `SITE_URL`                                                  | Server only: this site's origin; `/mod` sign-in links land on `<SITE_URL>/mod`                                                   | unset: `/mod` sign-in is off                                       |
+| `NEXT_PUBLIC_SITE_URL`                                      | Account links (S19) land on `<NEXT_PUBLIC_SITE_URL>/auth/callback`; must equal `SITE_URL` (the build fails otherwise)            | unset: accounts are off (fail closed)                              |
 
 ## Scripts
 
@@ -48,6 +50,7 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                                      |
 | `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                                       |
 | `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender                                                                                                    |
+| `npm run thumbs`                  | Renders the shop's item thumbnails from the decor models into `public/thumbs` (see 3D models); `-- --check` verifies                                                                                                         |
 | `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                                       |
 
 Gate order used by the build loop:
@@ -228,6 +231,13 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
   (`--background --factory-startup --python-exit-code 1`, `PYTHONHASHSEED=0`; override the
   executable with `BLENDER_BIN`) and commits the GLBs to `scripts/blender/out/`; the asset build
   reads them as a `local` source and checks their hashes, so CI never needs Blender.
+- **Shop thumbnails** (S04k). `npm run thumbs` renders each decor item with a model
+  (`scene.json models.decor`) offline in headless Chromium with the pinned three, recoloured to
+  its first variant, into content-named `public/thumbs/<item>.<sha8>.webp` and
+  `data/items/thumbs.derived.json` (`-- --check` verifies the item list). Re-run it after a
+  decor model or variant changes. Items without a model show their icon from
+  `data/items/looks.json`. Thumbnails are never precached; they are served immutable and load
+  lazily in the shop.
 - **To add a model:** add it to the catalog (and its `models.name.*` copy key in
   `data/copy/models/base.json`), run `npm run assets:build -- --update` once, then
   `npm run assets:build`, and check the printed colour report and cap pressure.
@@ -427,7 +437,9 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   `floor(price * resalePct[rarity] / 100)`), less `depreciationPctPerGameDay` per game day
   owned for wearables and decor, never below `minResalePct` (`balance.json` `items`). Decor is
   owned once and sells back out of its slot; selling a wearable or decor kept through prestige
-  is refused (`PRESTIGE_KEPT`).
+  is refused (`PRESTIGE_KEPT`). Every wearable has a `look` (S16a): a top sets the outfit (a
+  body option) and top colour, a bottom or shoes their colour, an accessory an attachment model,
+  makeup `{ "part": "none" }`; the ids come from `data/avatar/options.json`.
 - **Apartment** (`home.ts`, slots in `data/homes/interiors.json`, numbers in `balance.json`
   `home`): decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface,
   `homeScore`, and at least two colour `variants`, each a palette token and a `colors.*` copy
@@ -480,6 +492,37 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   listed in `prestige.resets`. To add a goal: add it to `progression.json` (a fact from
   `src/lib/data/goalFacts.ts`), add `goals.goal.<camelId>.name` and `.hint` to
   `data/copy/goals/base.json`, and run `npm test`.
+- **Look, traits, career and the creator** (S16a). A look is option ids only
+  (`data/avatar/options.json`, each mapping to S04h catalog models and `theme.json` `models`
+  tokens). Traits (`data/avatar/traits.json`, pick 2) carry `effects[]` of ±10% on energy cost,
+  mood gains, shop prices and trip length; career paths (`balance.json` `career`) give a flex,
+  event (not nightlife), home-clout or resale bonus, never club, grant, premium or item clout;
+  both changes wait `changeCooldownGameDays` (`data/config/creator.json`, which also holds the
+  offer rule, the step registry with the disabled `origin` seam, and roll scopes). Copy keys
+  follow the ids (`career.<camelId>.name|goal|bonus`, `neighborhoods.<camelId>.name`).
+  - On the playable path the engine reads only the compact `data/avatar/engine.derived.json`
+    (ids, defaults, random chances, trait modifiers, offer and roll rules; PERF-6): `appearance.ts`
+    (`randomLook` for a guest's start, seeded from `crypto` by `src/state/randomSeed.ts`;
+    `repairLook`; `publicAvatar`), `traits.ts` and `career.ts` (the modifiers every action
+    applies) and `creator.ts` (the offer, counted by the store on every committed action). After
+    editing any S16a source file, run `npm run avatar:update` and commit the derived file.
+  - The creator and avatar chunks read the full files through `creatorConfig.ts`:
+    `creatorFlow.ts` (steps, `chooseLook`/`chooseTraits`/`chooseCareer`, `commitRoll`, which
+    writes the neighborhood roll before the reveal, and `moveIntoNeighborhood`), `avatarLook.ts`
+    (`effectiveLook`: worn items over the look, attachments capped) and `neighborhoods.ts`
+    (`homePoint`). `src/state/creatorActions.ts` applies the flow to the store, and the HUD
+    publishes the look and worn items for the 3D chunks (`src/state/playerLook.ts`).
+  - Drawing it (S16a A2, `src/scene/avatar/`): `resolveLook` turns the drawn look into ModelRefs
+    and slot colours from `data/avatar/scene.derived.json` (the avatar models, look colours,
+    accessory placement from scene.json `avatarLook`, the preview's studio light), skipping parts
+    A0 has not built yet; `LookAvatar` draws it on the map (mid/high; the low tier's capsule wears
+    the look's top colour), in the apartment (at `avatarAnchor`, inside `avatarReserve`) and in
+    `AvatarPreviewCanvas` (its own chunk: studio light, idle clip only while shown, the city paused
+    through `sceneFocus` `creator`, context lost on close, a DOM fallback without WebGL2;
+    `/dev/look` shows it in test builds). These chunks are left out of the precache (PERF-7).
+  - To add a look option: add it to `options.json` with a `nameKey` in `data/copy/avatar/`
+    (colours in `data/copy/colors/`), run `npm run avatar:update`, then `npm test`
+    (`src/lib/data/avatar-data.test.ts` resolves every model and token).
 - **Saves** (`save.ts`): bump `SAVE_VERSION` and add a step to `migrateSave`, with a test, on any
   breaking change to the saved shape.
 - **Save plausibility** (`plausibility.ts`, S18c): `checkUpload(prev, next, context, ceilings)`
@@ -556,6 +599,11 @@ checks that the measured pace stays below the config-derived per-tap bound) and 
 it. After
 tuning `balance.json` on purpose, run `npm run econ:update`, check the target tests still pass,
 and log the change in the progress.md Tuning log.
+
+`src/engine/sim/economy.matrix.test.ts` (S16a) plays every career path with the best and the
+worst trait pair (found by playing all 28 pairs) against the same bands
+(`src/engine/sim/targets.ts`), on every entry job and as the flex bot. Its runs are not part of
+the baseline.
 
 ## Logging
 
@@ -722,7 +770,8 @@ camera starts over it).
   beside it in two more instanced meshes (fill-lite, S04i: `scene.json` `buildings.fill`,
   `perf.json` `fillTreesMax`), all on the blocks' materials. `onDistrictReady(id, masses)` tells
   listeners (street props) when a district is built. District walls carry a window mask that glows with the shared night-glow
-  uniform (`src/scene/lighting/nightGlow.ts`).
+  uniform (`src/scene/lighting/nightGlow.ts`), read with a mip bias
+  (`scene.json buildings.windowMipBias`) so far facades glow evenly (TUNE-16).
 - **Street props (S04i).** On mid and high only, once the camera comes within
   `data/config/props.json` `prefetchBelowDistanceM` of its target, Buildings.tsx imports the lazy
   `src/scene/props/layer.ts`, which fetches `/geo/streets?v=<hash>` and the prop models, places
@@ -739,7 +788,13 @@ camera starts over it).
   tier's levels and distances (`scene.json` `landmarks.lod`); teaser landmarks on "expanding
   soon" land use the dimmed material; name chips show copy names only. `landmarkSource(id)`
   (`src/scene/landmarks/source.ts`) is where Blender models (DEC-25) take over per landmark.
-  Modelled landmarks' pins are badges lifted over the model (`liftM`).
+  Modelled landmarks' pins are badges lifted over the model (`liftM`). Name chips draw over the
+  buildings and are laid out on the server so none overlaps another (`chipShiftM`, UX-14).
+- **Pin marks (S04k).** `src/scene/pins/PinMarks.tsx` (a lazy chunk after the map is playable)
+  puts each pin's category icon (`data/places/icons.json`) on its head and short name labels on
+  the nearest few (`data/config/pinMarks.json`), keeping labels off icons, name chips and the HUD;
+  one mesh and atlas with the chips' material settings, so no new shader program. The Places
+  list shows the same icons and category labels (`categories` copy namespace).
 - **Config.** Camera start, zoom/tilt/turn limits, layer heights, line widths, marker and chip
   sizes, the shadow and the day/night keyframes live in `data/config/scene.json`; scene colours
   are world tokens in the `scene` block of `data/config/theme.json` (resolved to hex on the
@@ -749,9 +804,10 @@ camera starts over it).
   pans, pinch or wheel zooms towards the pointer, two fingers or right drag rotate and tilt; the
   target stays inside `data/geo/bounds.json`. Rendering is on demand (`frameloop="demand"`), so an
   idle map draws zero frames.
-- **Attribution.** `src/scene/MapAttribution.tsx` shows the NYC Open Data and MTA lines in the free
-  scene row of the overlay grid (a one-line form when the row is short, via a container query in
-  `globals.css`); `/credits` has the full text.
+- **Attribution.** `src/scene/MapAttribution.tsx` is a small "Map data" chip in the screen's
+  bottom-end corner above the tab bar, moving up to the free scene row's corner while a sheet is
+  open (UX-15, CSS only); a tap shows the NYC Open Data and MTA lines (a one-line form when the
+  row is short, via a container query in `globals.css`); `/credits` has the full text.
 - **Failures.** Before the canvas mounts, the shell checks for WebGL2 and downloads the geo body
   (`src/scene/geo/load.ts`, which never rejects); the 3D chunk validates it without throwing. No
   WebGL, a failed download, a non-JSON body or a schema failure each show the error status
@@ -779,7 +835,9 @@ precached. Runtime caches, all cache-first, same-origin GET only, versioned by c
 deleted when a newer worker takes over: `cc-geo-*` (`/geo/...` fetches whose only query is `?v=` at
 a version this build serves), `cc-audio-*` (after the audio choice), `cc-models-*`
 (`/models/<id>.<tier>.<sha8>.glb`, as the scene loads them) and `cc-chunks-*` (the optional
-chunks the precache leaves out). Under Vercel Skew Protection (`NEXT_DEPLOYMENT_ID`) asset URLs
+chunks the precache leaves out, `src/lib/pwa/lazyChunks.ts`: the model runtime and showcase,
+the apartment's decor models, the /mod console, supabase-js and the account UI). The worker
+never handles `/api`, `/auth`, `/mod`, `/serwist`, `/geo` or `/og` navigations. Under Vercel Skew Protection (`NEXT_DEPLOYMENT_ID`) asset URLs
 carry `?dpl=`: the precache ignores it and the chunk cache stores the URL without it
 (`npm run e2e:dpl` covers it).
 After registration the page sends `CC_WARM_TIER` with its quality tier, and the worker fetches
@@ -809,8 +867,8 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   migrations with `migration up`; never `db reset`, which wipes it for all of them.
   `supabase stop && supabase start` is needed after editing `config.toml`.
 - **Integration tests** read the URLs and keys from `npx supabase status -o json` (no env file
-  needed; `SUPABASE_API_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and
-  `SUPABASE_DB_URL` override them). They fail fast if the stack is down or the newest local
+  needed; `SUPABASE_API_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `SUPABASE_DB_URL` and `SUPABASE_MAILPIT_URL` override them, all five together). They fail fast if the stack is down or the newest local
   migration is not applied. They never reset the database: each test signs in fresh guests.
   `tests/integration/types.test.ts` fails when `database.types.ts` is stale.
 - **Privileges are explicit.** The first migration revokes Supabase's default grants: a new
@@ -868,9 +926,10 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   from an emailed link (`amr` `otp`, so a password or guest account that set the address is
   refused), and answers 401/403 otherwise. Every response is `no-store` and `noindex` and carries `X-Correlation-Id`, which is
   also the audit row's correlation id. `/mod?case=<player id>` opens one case directly. Locally the
-  magic link lands on `site_url` (`supabase/config.toml`); add the `/mod` URL of your dev server
-  to `additional_redirect_urls` to land on the console, and set the hosted project's redirect
-  URLs the same way. `src/server/**` starts with `import 'server-only'`
+  link lands on `/mod` (allowlisted for the dev server and the lane ports in
+  `supabase/config.toml`): a first sign-in's confirmation link carries the session in the
+  fragment, a returning moderator's log-in link a `token_hash` finished by a tap on "Finish
+  signing in". Set the hosted project's redirect URLs the same way. `src/server/**` starts with `import 'server-only'`
   (`src/lib/server-boundary.test.ts`; `npm run budget` also fails if a chunk names
   `MODERATOR_EMAILS` or `SUPABASE_SERVICE_ROLE_KEY`).
 - **Player safety UI** (S18a/S18b part 2). The Me tab opens the Me panel
@@ -895,6 +954,58 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   session (default `sb-<ref>-auth-token` key) and records the attestation. A rate limit or no
   network keeps local play (info; no network retries once when back online); sign-ins switched
   off or any other refusal warn. `npm run e2e:supabase` checks it against the local stack.
+- **Accounts (S19).** A guest saves their progress on the _same_ user (so the profile with its
+  attestation and consent, the handle and the cloud save all stay): `updateUser({ email })` sends
+  a confirmation link, `linkIdentity` adds Google (manual linking). Logging in is
+  `signInWithOtp({ shouldCreateUser: false })` (the email has a link and a 6-digit code) or
+  `signInWithOAuth`. No passwords. The templates
+  (`supabase/templates/{magic_link,email_change}.html`) always link to `<site_url>/auth/callback`
+  (or `<site_url>/mod` for the console's own sign-in), never to a redirect the request named, with
+  the one-time token in the URL fragment so it never reaches a server, CDN or router log.
+  `/auth/callback` (`src/app/auth/callback`, a static page, `no-store`, `Referrer-Policy:
+no-referrer`, never handled by the service worker) wipes the token from the URL at once, names
+  the address (masked) and finishes only on a tap of Finish (mail scanners open links on their
+  own). A save confirmation link is used only on the device that asked: an anonymous session with a
+  waiting upgrade for that very address (`cloutcity:account` keeps a hash of it, never the address);
+  anywhere else the token is left unused and the page says to finish on that device, where the
+  6-digit code from the same email also works (verified on a throwaway client; only this browser's
+  own guest is refreshed). A log-in link is always verified on a throwaway client and taken at once
+  only when its account has the address this browser asked a link for
+  (`cloutcity:login-requested`: a time and an address hash, set once the link was sent); any other
+  asks "Log in as <the server's address, masked>?" first. A played game last synced to any other
+  account always gets the conflict sheet. Google's PKCE code is exchanged at once. `public.check_account_email` answers `ok` or
+  `not_allowed` before a link is sent (rate limited, `data/config/account.json` `emailCheck`), and
+  triggers on `auth.users` and `auth.identities` (insert and email updates) refuse a banned email
+  however GoTrue is called. Banned emails are hashed canonically (`private.canonical_email`: lower
+  case, trimmed, `+tag` dropped unless nothing would be left, Gmail dots and googlemail.com
+  folded), with bans recorded before
+  that still matched by their legacy hash. `private.require_permanent()` is the gate for features
+  that need a saved account. On the client, `src/lib/supabase/accountAuth.ts` (lazy, with supabase-js) does
+  the calls, `src/lib/supabase/accountSession.ts` follows the account (an upgrade confirmed on another
+  device is picked up by polling; a log-in to another account restarts cloud sync, whose restore
+  table or conflict sheet decides; sign-out stops it and never creates a new guest on the next
+  boot) and `src/state/account.ts` keeps the device's flags (no email). Locally, the links go to the stack's `site_url` (e2e and
+  integration tests open the same path on the server under test), and the stack has
+  `enable_confirmations = true` (so an email change is confirmed by its link, as in production),
+  manual linking on, the lane ports' `/auth/callback` and `/mod` allowlisted, and Google off;
+  Mailpit catches every email (`npx supabase status` prints its URL).
+- **Deploy checklist (S19).**
+  - **USER ACTION: Google OAuth client.** In Google Cloud Console set up the OAuth consent screen
+    (app name, Terms and Privacy URLs, scopes `email` and `profile`) and create a Web client with
+    the redirect URI `https://<project-ref>.supabase.co/auth/v1/callback`; enter its client id and
+    secret under Auth > Providers > Google. The round trip is a manual check on staging.
+  - **USER ACTION: custom SMTP** (Resend, Postmark, SES or similar) with SPF and DKIM on the
+    sending domain, then raise the hosted email rate limit: the built-in mailer only reaches the
+    project's team at 2 emails an hour.
+  - In the dashboard: enable **manual linking**; keep **email confirmations** and **secure email
+    change** on; paste both templates (Auth > Email Templates: Magic Link, Change Email Address);
+    Site URL = the production origin; redirect URLs `<SITE_URL>/auth/callback` and
+    `<SITE_URL>/mod`.
+  - Vercel env: `NEXT_PUBLIC_SITE_URL` equal to `SITE_URL`.
+  - With Turnstile on, the log-in requests need the captcha token wired in
+    (`setCaptchaProvider` in `accountAuth.ts`) before launch.
+  - The Privacy page (S27) states that we keep the account's email and Google identity (email,
+    provider id), and why.
 - **Production** (set in the Supabase dashboard, not `config.toml`): enable anonymous sign-ins,
   set the anonymous sign-in rate limit per IP (locally raised to 1000/h for tests) and turn on
   Turnstile under Auth > Bot and Abuse Protection (CAPTCHA). The local stack has no CAPTCHA.

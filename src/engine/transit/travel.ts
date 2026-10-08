@@ -17,6 +17,7 @@
  * returned in `rent`, so the caller can show it (the BUG-1 pattern: an advance never drops its
  * rent events).
  */
+import { traitAdjustedTrip } from '../traits'
 import { applyAction, effectiveDuration, type ActionDef, type ActionError } from '../actions'
 import { calendar, type Rollovers } from '../clock'
 import type { EngineConfig } from '../config'
@@ -166,14 +167,22 @@ export function travelPlanned(
 
   // Checked before the delay roll too, so a refused trip draws nothing.
   const plannedTooLong = tripTooLong(
-    travelActionDef(planned.route, false, engine, transit),
+    traitAdjustedTrip(
+      travelActionDef(planned.route, false, engine, transit),
+      snapshot.player,
+      engine,
+    ),
     snapshot,
     engine,
   )
   if (plannedTooLong !== undefined) return { ok: false, error: plannedTooLong }
 
   const { route, event } = rollSubwayDelay(planned.route, rng, transit)
-  const def = travelActionDef(route, event !== undefined, engine, transit)
+  const def = traitAdjustedTrip(
+    travelActionDef(route, event !== undefined, engine, transit),
+    snapshot.player,
+    engine,
+  )
   const delayedTooLong = tripTooLong(def, snapshot, engine)
   if (delayedTooLong !== undefined) return { ok: false, error: delayedTooLong }
   const result = applyAction(snapshot, def, engine)

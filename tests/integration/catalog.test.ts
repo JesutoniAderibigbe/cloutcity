@@ -41,6 +41,7 @@ const STANDING_EXEMPT = [
   'acknowledge_notice',
   'assert_attested',
   'attest_and_consent',
+  'check_account_email',
   'check_handle',
   'get_my_profile',
   'get_public_profile',

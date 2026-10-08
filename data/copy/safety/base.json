@@ -135,6 +135,7 @@
     "safety.rpc.caseNotFound": "That case is gone.",
     "safety.rpc.revisionConflict": "Your save changed somewhere else. Reload to get the latest one.",
     "safety.rpc.versionRegressed": "Your account has a save from a newer version of the game. Reload to update.",
+    "safety.rpc.accountRequired": "Save your progress first: this needs an account, not a guest game.",
     "safety.rpc.unknown": "That didn't go through. Check your connection and try again."
   }
 }

@@ -4,12 +4,15 @@ import { IconMomentMount } from '@/components/goals/IconMomentMount'
 import { HudFrame } from '@/components/hud/HudFrame'
 import { HudPanelMount } from '@/components/hud/HudPanelMount'
 import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
+import { CreatorMount } from '@/components/creator/CreatorMount'
+import { CreatorOfferMount } from '@/components/creator/CreatorOfferMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { OfflineSupportMount } from '@/components/offline/OfflineSupportMount'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
 import { PlacesButton } from '@/components/places/PlacesButton'
 import { PlacesPanelMount } from '@/components/places/PlacesPanelMount'
+import { SaveProgressMount } from '@/components/account/SaveProgressMount'
 import { AccountNoticesMount } from '@/components/safety/AccountNoticesMount'
 import { SafetyToastMount } from '@/components/safety/SafetyToastMount'
 import { TourMount } from '@/components/tour/TourMount'
@@ -33,6 +36,7 @@ export default function HomePage() {
             <WelcomeMount />
             <IconMomentMount />
             <AccountNoticesMount />
+            <CreatorMount />
           </>
         }
         slots={{
@@ -40,12 +44,14 @@ export default function HomePage() {
             <>
               <TourMount />
               <OfflineSupportMount />
+              <SaveProgressMount />
             </>
           ),
           hud: <HudFrame places={<PlacesButton />} />,
           toast: (
             <>
               <LevelUpToastMount />
+              <CreatorOfferMount />
               <SafetyToastMount />
             </>
           ),

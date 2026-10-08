@@ -21,12 +21,16 @@ import type { Place } from '../places'
 import { homeIds, rentFor } from '../rent'
 import { runEconomyBot, type BotReport } from './economyBot'
 import { maxCloutPlaces } from './maxCloutPlaces'
+import {
+  ANY_WEEKLY_SAVINGS,
+  BEST_FINAL_CASH,
+  BEST_WEEKLY_SAVINGS,
+  SIM_DAYS,
+  bestOf,
+  targetViolations as violations,
+} from './targets'
 
-const DAYS = 30
-/** Whole dollars: the target's band for the best job, and a sanity envelope for every job. */
-const BEST_FINAL_CASH = { min: 800, max: 1250 }
-const BEST_WEEKLY_SAVINGS = { min: 115, max: 185 }
-const ANY_WEEKLY_SAVINGS = { min: 80, max: 230 }
+const DAYS = SIM_DAYS
 const BASELINE = '../../../data/sim/economy-baseline.derived.json'
 const DRIFT_HINT =
   'The economy changed. Re-run `npm run econ:update`, check the target block still passes, ' +
@@ -56,8 +60,8 @@ function firstUpgrade(): HomeId {
 const upgradeTo = firstUpgrade()
 const runAll = (engine: EngineConfig) =>
   entryJobs.map((jobId) => runEconomyBot({ jobId, days: DAYS, upgradeTo }, engine))
-const bestOf = (all: readonly BotReport[]) =>
-  all.reduce((a, b) => (b.finalCash > a.finalCash ? b : a))
+/** Every target and envelope check above, as labels of the ones a set of runs breaks. */
+const targetViolations = (all: readonly BotReport[]) => violations(all, target)
 const reports = runAll(config)
 const best = bestOf(reports)
 const byJob = reports.map((report) => [report.jobId, report] as const)
@@ -220,29 +224,6 @@ describe('economy simulation: 30 game days solo', () => {
     await expect(json).toMatchFileSnapshot(BASELINE, DRIFT_HINT)
   })
 })
-
-/** Every target and envelope check above, as labels of the ones a set of runs breaks. */
-function targetViolations(all: readonly BotReport[]): string[] {
-  const broken = new Set<string>()
-  const within = (n: number, band: { min: number; max: number }) => n >= band.min && n <= band.max
-  for (const report of all) {
-    if (report.minCash < 0) broken.add('went broke')
-    if (report.missedOrEvicted > 0) broken.add('missed rent')
-    if (report.shiftsMissed > 0 || report.shiftsWorked !== DAYS * target.shiftsPerDay) {
-      broken.add('missed a shift')
-    }
-    const sane = report.weeklySavings.every((saved) => within(saved, ANY_WEEKLY_SAVINGS))
-    if (report.weeklySavings.length !== 3 || !sane) broken.add('envelope')
-  }
-  const top = bestOf(all)
-  if (!within(top.finalCash, BEST_FINAL_CASH)) broken.add('final cash')
-  if (!top.weeklySavings.every((saved) => within(saved, BEST_WEEKLY_SAVINGS))) {
-    broken.add('weekly savings')
-  }
-  const day = top.firstAffordableDay
-  if (day === null || !within(day, target.firstUpgradeGameDay)) broken.add('upgrade day')
-  return [...broken]
-}
 
 const withCatalog = (actionId: string, patch: object): EngineConfig => {
   const def = config.actions.catalog[actionId]

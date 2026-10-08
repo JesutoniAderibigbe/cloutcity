@@ -19,6 +19,7 @@ import { performAction, type ActionResult } from '@/engine/actions'
 import { isSpeed, type ClockState } from '@/engine/clock'
 import type { LevelUp } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
+import { noteCreatorAction } from '@/engine/creator'
 import {
   chooseEventOption,
   openEvent,
@@ -64,6 +65,7 @@ import {
   type SaveState,
 } from '@/engine/save'
 import { log, type Logger } from '@/lib/log'
+import { randomSeed } from './randomSeed'
 import { browserLocalStorage, createSafeJsonStorage } from './storage'
 
 export const STORE_KEY = 'cloutcity:game'
@@ -177,6 +179,12 @@ export interface GameActions {
    */
   discardNewerSaveAndStartFresh(): void
   /**
+   * The player's explicit choice to start this device over with a fresh game (S19: a new guest
+   * game after signing out, or "start fresh" on an account that has no save). Never called
+   * without a tap.
+   */
+  startNewGame(): void
+  /**
    * Cloud sync (S18c): replaces the game with the account's save (restored on load, or the
    * player chose the cloud copy in a conflict). `save` (written as save format `version`) is
    * untrusted and validated like a local save, an older format upgraded; an unusable one, or one
@@ -211,8 +219,9 @@ export interface GameStatus {
 }
 export type GameState = PersistedState & GameActions & GameStatus
 
+/** A new game with a random starting look (S16a: guests start random, from a fresh seed). */
 export function initialPersistedState(): PersistedState {
-  return initialSave(engineConfig)
+  return initialSave(engineConfig, { lookSeed: randomSeed() })
 }
 
 /**
@@ -232,7 +241,8 @@ export function migrateGameState(
       : 'Starting fresh: saved game predates the current format',
     { version, persisted: typeof persisted },
   )
-  return save
+  // A fresh start is a new game: a random look, like any guest's (S16a).
+  return outcome === 'carried' ? save : initialPersistedState()
 }
 
 /**
@@ -260,8 +270,9 @@ export function mergeGameState(
 /**
  * What makes a save worth writing: the version, clock minute, the player (cash, stats, clout
  * ledger, flex state, home, rent, inventory with decor, club nights, visits, the apartment's
- * placements and move log, location and transit state), speed, event state, goals,
- * the grant log, prestige and the action count. The sub-minute remainder alone is not, so a visible tab does not
+ * placements and move log, location and transit state, look, traits, career and neighborhood),
+ * speed, event state, goals, the grant log, prestige, the action count, the creator state and
+ * the rolls. The sub-minute remainder alone is not, so a visible tab does not
  * write on every tick (a reload loses at most one game minute's worth of carried real time).
  */
 function saveSignature(value: StorageValue<unknown> | null): string | undefined {
@@ -275,6 +286,8 @@ function saveSignature(value: StorageValue<unknown> | null): string | undefined 
     grants?: unknown
     prestige?: unknown
     actions?: unknown
+    creator?: unknown
+    rolls?: unknown
   }
   return JSON.stringify([
     value.version,
@@ -286,6 +299,8 @@ function saveSignature(value: StorageValue<unknown> | null): string | undefined 
     state.grants,
     state.prestige,
     state.actions,
+    state.creator,
+    state.rolls,
   ])
 }
 
@@ -342,7 +357,7 @@ const ICON_LEVEL = victoryGoal(engineConfig).level
  * victory level while the Icon moment is about to show adds no toast: the moment is the
  * celebration.
  */
-function levelUpPatch(levelUp: LevelUp | null, goals: GoalsState): Partial<GameStatus> {
+export function levelUpPatch(levelUp: LevelUp | null, goals: GoalsState): Partial<GameStatus> {
   if (levelUp === null) return {}
   const iconMoment = goals.icon.reachedAt !== null && !goals.icon.acknowledged
   return levelUp.to === ICON_LEVEL && iconMoment ? {} : { lastLevelUp: levelUp }
@@ -351,7 +366,19 @@ function levelUpPatch(levelUp: LevelUp | null, goals: GoalsState): Partial<GameS
 /** The persisted part of the state: what a save holds. */
 export function persistedOf(state: PersistedState): PersistedState {
   const { clock, player, speed, events, goals, grants, prestige: prestigeState, actions } = state
-  return { clock, player, speed, events, goals, grants, prestige: prestigeState, actions }
+  const { creator, rolls } = state
+  return {
+    clock,
+    player,
+    speed,
+    events,
+    goals,
+    grants,
+    prestige: prestigeState,
+    actions,
+    creator,
+    rolls,
+  }
 }
 
 export function createGameStore(storage: PersistStorage<PersistedState>, logger: Logger = log) {
@@ -378,15 +405,18 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
         /**
          * Applies a state-changing action's result, counts the tap (`SaveState.actions`, which
          * the server's save plausibility reads), then records any goal it reached
-         * (src/engine/goals.ts `syncGoals`). Never on the passive tick: time alone reaches no
-         * goal and is no tap.
+         * (src/engine/goals.ts `syncGoals`) and counts the action toward the creator offer (S16a:
+         * offered after the first action, never before). Never on the passive tick: time alone
+         * reaches no goal and is no tap.
          */
         const commit = (patch: Partial<GameState>, levelUp: LevelUp | null = null) => {
           const { save } = syncGoals(countAction({ ...get(), ...patch }), engineConfig)
+          const creator = noteCreatorAction(save.creator, save.clock.minute, engineConfig)
           set({
             ...patch,
             actions: save.actions,
             goals: save.goals,
+            creator,
             ...levelUpPatch(levelUp, save.goals),
           })
           keepCarry()
@@ -623,6 +653,17 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
             set({
               ...initialPersistedState(),
               newerSavePresent: false,
+              eventOutcome: null,
+              lastRentEvent: null,
+              lastLevelUp: null,
+            })
+          },
+          startNewGame: () => {
+            if (get().newerSavePresent) return
+            logger.info("Starting a fresh game at the player's request")
+            carry = null
+            set({
+              ...initialPersistedState(),
               eventOutcome: null,
               lastRentEvent: null,
               lastLevelUp: null,

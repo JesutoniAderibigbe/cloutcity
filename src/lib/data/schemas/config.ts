@@ -5,6 +5,7 @@
  * built-in type stripping.
  */
 import { z } from 'zod'
+import { CAREER_PATHS, type CareerPathId } from '../avatarIds.ts'
 import { STYLED_SOURCES } from '../cloutSources.ts'
 import {
   GOAL_FACTS,
@@ -326,6 +327,12 @@ export const PerfConfigSchema = z
         }>
       >,
     ),
+    /**
+     * The 3D avatar as drawn (S16a): triangles per tier of the worst look the options allow (the
+     * largest head and body plus the largest attachment of each kind, up to the attachment cap).
+     * src/lib/data/avatar-data.test.ts holds every look to it.
+     */
+    avatar: z.strictObject({ trianglesMax: perTier(positiveInt) }),
   })
   .refine(
     (perf) =>
@@ -402,7 +409,6 @@ export const ScenePaletteRefsSchema = z.strictObject({
    * item's variants (data/items/items.json, `colors`).
    */
   apartment: z.strictObject({
-    background: tokenRef,
     floor: tokenRef,
     wall: tokenRef,
     trim: tokenRef,
@@ -685,6 +691,31 @@ export const ProfileConfigSchema = z.strictObject({
   handleCheckDebounceMs: z.int().min(0).max(5000),
 })
 export type ProfileConfig = z.infer<typeof ProfileConfigSchema>
+
+/**
+ * data/config/account.json (S19): saving progress and logging in. `emailCheck` is mirrored in
+ * public.check_account_email (supabase/migrations/*_s19_accounts.sql; src/lib/account/parity.test.ts).
+ */
+export const AccountConfigSchema = z.strictObject({
+  /** How long the sheet waits before it offers to send another link (GoTrue limits sends too). */
+  resendCooldownMs: z.int().min(1000).max(600_000),
+  /**
+   * While an email upgrade waits for its confirmation link, how often (and on focus) this device
+   * asks the server whether it was confirmed, perhaps on another device.
+   */
+  upgradePollMs: z.int().min(5000).max(600_000),
+  /** A waiting upgrade older than this is forgotten (the link runs out in an hour). */
+  pendingUpgradeMaxAgeMs: positiveInt,
+  /** Signing out waits this long for unsent progress to reach the account before asking. */
+  signOutFlushTimeoutMs: z.int().min(500).max(30_000),
+  /** The server's limit on email pre-checks per player. */
+  emailCheck: z.strictObject({ max: positiveInt, windowMs: positiveInt }),
+  /** The longest email the form accepts (RFC 5321's path limit is 256; 320 covers local+domain). */
+  emailMaxLength: z.int().min(64).max(320),
+  /** Digits in the emailed log-in code (supabase/config.toml `otp_length`). */
+  codeLength: z.int().min(6).max(10),
+})
+export type AccountConfig = z.infer<typeof AccountConfigSchema>
 
 /**
  * data/config/handles.json (S18a). The database enforces these: the migration's generated seed
@@ -1122,6 +1153,48 @@ export const CloutConfigSchema = z
 export type CloutConfig = z.infer<typeof CloutConfigSchema>
 
 /** CLAUDE.md "Balance anchors". Money is whole in-game dollars. */
+/**
+ * A career path's bonus (S16a, TUNE-11 placeholders). Clout bonuses multiply gains from `flex`
+ * or `event` only: never club (nightlife is flavour, DEC-12), grant, premium or item clout.
+ * `exceptEventTags` leaves events with any of those tags out. `home-clout-pct` raises the home
+ * score before the home clout cap; `resale-pts` adds points of the price to every resale.
+ */
+export { CAREER_PATHS, type CareerPathId }
+
+const CareerBonusSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('clout-pct'),
+    source: z.enum(['flex', 'event']),
+    pct: z.int().min(1).max(50),
+    exceptEventTags: z.array(z.string().regex(/^[a-z]+$/)).optional(),
+  }),
+  z.strictObject({ kind: z.literal('home-clout-pct'), pct: z.int().min(1).max(50) }),
+  z.strictObject({ kind: z.literal('resale-pts'), pts: z.int().min(1).max(20) }),
+])
+
+const CareerPathSchema = z
+  .strictObject({
+    // Name, goal line and bonus line: `career.<camelId>.name|goal|bonus` (src/lib/creatorCopy.ts).
+    bonus: CareerBonusSchema,
+  })
+  .refine(
+    (path) =>
+      path.bonus.kind !== 'clout-pct' ||
+      path.bonus.exceptEventTags === undefined ||
+      path.bonus.source === 'event',
+    { error: 'only an event bonus can leave event tags out', path: ['bonus'] },
+  )
+
+export const CareerConfigSchema = z.strictObject({
+  paths: z.strictObject(
+    Object.fromEntries(CAREER_PATHS.map((id) => [id, CareerPathSchema])) as Record<
+      CareerPathId,
+      typeof CareerPathSchema
+    >,
+  ),
+})
+export type CareerConfig = z.infer<typeof CareerConfigSchema>
+
 export const BalanceConfigSchema = z
   .strictObject({
     time: z.strictObject({
@@ -1249,6 +1322,8 @@ export const BalanceConfigSchema = z
     }),
     /** Place actions, club doors, landmark visits and flex multipliers (S09). */
     place: PlaceConfigSchema,
+    /** Career paths and their bonuses (S16a, src/engine/career.ts). */
+    career: CareerConfigSchema,
   })
   .refine((balance) => new Set(balance.rarityTiers).size === RARITY_TIERS.length, {
     error: 'rarityTiers must list each tier once',
@@ -1411,6 +1486,21 @@ export const BalanceConfigSchema = z
       path: ['place', 'clubs'],
     },
   )
+  .refine(
+    ({ items, career }) =>
+      Object.values(career.paths).every(
+        (path) =>
+          path.bonus.kind !== 'resale-pts' ||
+          Math.max(items.resalePct.common, items.resalePct.medium, items.resalePct.rare) +
+            path.bonus.pts <
+            90,
+      ),
+    {
+      // A resale bonus must never let a buy/sell loop (even at a 10% trait discount) make cash.
+      error: 'career resale points plus the top resale percent must stay below 90',
+      path: ['career'],
+    },
+  )
 export type BalanceConfig = z.infer<typeof BalanceConfigSchema>
 
 /**
@@ -1527,6 +1617,9 @@ export const NOTICE_KINDS = [
   'icon',
   'update',
   'rent',
+  'save-progress',
+  // S16a: the creator offer, after the first action and the tour.
+  'creator-offer',
 ] as const
 
 /**

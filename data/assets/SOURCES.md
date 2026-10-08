@@ -135,7 +135,7 @@ Models: `fridge`, `stove`, `crate`.
 | ---------------------------- | ------: | ------------------------------------------------------------------ |
 | `kenney_mini-characters.zip` | 2403059 | `9e1d48e6d7b8479ebbe84df71eb5bd8e1b3f0da546dea641890dccc8a02d0999` |
 
-Models: `avatar-rig`, `head-female-a`, `body-female-a`, `head-female-b`, `body-female-b`, `head-female-c`, `body-female-c`, `head-female-d`, `body-female-d`, `head-female-e`, `body-female-e`, `head-female-f`, `body-female-f`, `head-male-a`, `body-male-a`, `head-male-b`, `body-male-b`, `head-male-c`, `body-male-c`, `head-male-d`, `body-male-d`, `head-male-e`, `body-male-e`, `head-male-f`, `body-male-f`, `glasses`, `sunglasses`, `hearing-aid`.
+Models: `avatar-rig`, `head-female-a`, `body-female-a`, `head-female-b`, `body-female-b`, `head-female-c`, `body-female-c`, `head-female-d`, `body-female-d`, `head-female-e`, `body-female-e`, `head-female-f`, `body-female-f`, `head-male-a`, `body-male-a`, `head-male-b`, `body-male-b`, `head-male-c`, `body-male-c`, `head-male-d`, `body-male-d`, `head-male-e`, `body-male-e`, `head-male-f`, `head-base`, `body-male-f`, `glasses`, `sunglasses`, `hearing-aid`.
 
 ### Kenney Furniture Kit 2.0
 
@@ -198,85 +198,121 @@ Models: `tree-oak`, `tree-round`, `tree-tall`.
 - Built by `npm run blender:build` into `scripts/blender/out/` (Blender pinned in scripts/blender/lock.json)
 - Colour grade (OKLCH): lightness × 1, chroma × 1
 
-Models: none yet.
+| Output                  | Bytes | sha256                                                             | Script                                        |
+| ----------------------- | ----: | ------------------------------------------------------------------ | --------------------------------------------- |
+| `hair-afro.glb`         | 14180 | `e4f909e91b82767d7144d1d1be4937b6ebeed83a5850b35b24761617d348382e` | `scripts/blender/avatar/hair-afro.py`         |
+| `hair-locs.glb`         | 14788 | `dca6433f8b721e9017bdbaa39292dc6603aa45eceb89ea3dc81d0092f6b70442` | `scripts/blender/avatar/hair-locs.py`         |
+| `hair-box-braids.glb`   | 13884 | `b9ae6ba808450eec39ca395e7a9804c22306286f820143b0d5615095d887524c` | `scripts/blender/avatar/hair-box-braids.py`   |
+| `hair-cornrows.glb`     | 17312 | `c492654cb713311dae1fe47e443716d3cfd8ae6a2dc9385d505f8beb3a93ae9a` | `scripts/blender/avatar/hair-cornrows.py`     |
+| `hair-buzz.glb`         |  7924 | `dc9c9b4f4f1c14daf0ab43a1acfe9fc2b37b6a2329c8c1c5b96c6242059333d2` | `scripts/blender/avatar/hair-buzz.py`         |
+| `headwear-hijab.glb`    | 18248 | `2252cac89e7d0f7c4eb27ea6f5902c06bcd6965eb43717c21301f0ea860951aa` | `scripts/blender/avatar/headwear-hijab.py`    |
+| `headwear-turban.glb`   | 12320 | `8ed63945ec7c3603baaa74b7871863aad60ffc9e9f6c1572ce14c7ba6fbfaf57` | `scripts/blender/avatar/headwear-turban.py`   |
+| `headwear-durag.glb`    | 10760 | `1357ccaf38aa757898a9d6bce351a0186032e88483e9603228b02539ab2516a4` | `scripts/blender/avatar/headwear-durag.py`    |
+| `headwear-beanie.glb`   | 14196 | `5cd685830a7f56adf867c20bc0e469f27e3876b5281e21f2b4e07763d7157cc5` | `scripts/blender/avatar/headwear-beanie.py`   |
+| `headwear-ballcap.glb`  |  8892 | `7d35745781483fe219c907887ccb6ec5c6552f72cfa2363a42c44f958e699362` | `scripts/blender/avatar/headwear-ballcap.py`  |
+| `facial-stubble.glb`    |  3892 | `f835d297dc773ad8bb974505134d1cf45e30e96cd0350cf3a9a22155ef81c44f` | `scripts/blender/avatar/facial-stubble.py`    |
+| `facial-moustache.glb`  |  3900 | `47b460b78e0d94053fa37aa0073e5f9715353750cef6c66bbf13deb66de3477f` | `scripts/blender/avatar/facial-moustache.py`  |
+| `facial-goatee.glb`     |  4828 | `57ada8c39088c1893d23aa2b9ab20ab4760edd1c7dbf8e09f58fb6687a51a231` | `scripts/blender/avatar/facial-goatee.py`     |
+| `facial-full-beard.glb` |  6716 | `0bfb923b559bb9cee770ce3aa9c091cadfc548a436e97c61bd838992f999dca8` | `scripts/blender/avatar/facial-full-beard.py` |
+| `acc-gold-hoops.glb`    |  8572 | `a33256fdcdf6298dcd619f6d209289377a4f9146d6d47b07ad35eff87232bb8e` | `scripts/blender/avatar/acc-gold-hoops.py`    |
+| `acc-subway-tote.glb`   |  8384 | `1e46d77559fe7f2a74fa96244dfb8c033f656c0f1afb35b6a40a598f7eee873c` | `scripts/blender/avatar/acc-subway-tote.py`   |
+
+Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`, `hair-afro`, `hair-locs`, `hair-box-braids`, `hair-cornrows`, `hair-buzz`, `headwear-hijab`, `headwear-turban`, `headwear-durag`, `headwear-beanie`, `headwear-ballcap`.
 
 ## Models
 
-| Model           | Pack                         | Files                          | Category         |
-| --------------- | ---------------------------- | ------------------------------ | ---------------- |
-| `taxi`          | `kaykit-city-builder-bits`   | `car_taxi.gltf`                | vehicle          |
-| `sedan`         | `kaykit-city-builder-bits`   | `car_sedan.gltf`               | vehicle          |
-| `hatchback`     | `kaykit-city-builder-bits`   | `car_hatchback.gltf`           | vehicle          |
-| `streetlight`   | `kaykit-city-builder-bits`   | `streetlight.gltf`             | street-prop      |
-| `hydrant`       | `kaykit-city-builder-bits`   | `firehydrant.gltf`             | street-prop      |
-| `bench`         | `kaykit-city-builder-bits`   | `bench.gltf`                   | street-prop      |
-| `bush`          | `kaykit-city-builder-bits`   | `bush.gltf`                    | street-prop      |
-| `traffic-light` | `kaykit-city-builder-bits`   | `trafficlight_A.gltf`          | street-prop      |
-| `trash-bags`    | `kaykit-city-builder-bits`   | `trash_A.gltf`                 | street-prop      |
-| `dumpster`      | `kaykit-city-builder-bits`   | `dumpster.gltf`                | street-prop      |
-| `water-tower`   | `kaykit-city-builder-bits`   | `watertower.gltf`              | street-prop      |
-| `tree-oak`      | `kenney-nature-kit`          | `tree_oak.glb`                 | tree             |
-| `tree-round`    | `kenney-nature-kit`          | `tree_default.glb`             | tree             |
-| `tree-tall`     | `kenney-nature-kit`          | `tree_detailed.glb`            | tree             |
-| `block-a`       | `kenney-city-kit-commercial` | `low-detail-building-a.glb`    | building         |
-| `block-b`       | `kenney-city-kit-commercial` | `low-detail-building-b.glb`    | building         |
-| `block-c`       | `kenney-city-kit-commercial` | `low-detail-building-c.glb`    | building         |
-| `block-d`       | `kenney-city-kit-commercial` | `low-detail-building-d.glb`    | building         |
-| `block-e`       | `kenney-city-kit-commercial` | `low-detail-building-e.glb`    | building         |
-| `block-f`       | `kenney-city-kit-commercial` | `low-detail-building-f.glb`    | building         |
-| `building-a`    | `kenney-city-kit-commercial` | `building-a.glb`               | building         |
-| `building-b`    | `kenney-city-kit-commercial` | `building-b.glb`               | building         |
-| `building-c`    | `kenney-city-kit-commercial` | `building-c.glb`               | building         |
-| `building-d`    | `kenney-city-kit-commercial` | `building-d.glb`               | building         |
-| `awning`        | `kenney-city-kit-commercial` | `detail-awning.glb`            | building-detail  |
-| `awning-wide`   | `kenney-city-kit-commercial` | `detail-awning-wide.glb`       | building-detail  |
-| `bed`           | `kaykit-furniture-bits`      | `bed_double_A.gltf`            | furniture        |
-| `couch`         | `kaykit-furniture-bits`      | `couch.gltf`                   | furniture        |
-| `armchair`      | `kaykit-furniture-bits`      | `armchair.gltf`                | furniture        |
-| `floor-lamp`    | `kaykit-furniture-bits`      | `lamp_standing.gltf`           | furniture        |
-| `table-lamp`    | `kaykit-furniture-bits`      | `lamp_table.gltf`              | furniture        |
-| `rug`           | `kaykit-furniture-bits`      | `rug_rectangle_stripes_A.gltf` | furniture        |
-| `shelf`         | `kaykit-furniture-bits`      | `shelf_B_large_decorated.gltf` | furniture        |
-| `fridge`        | `kaykit-restaurant-bits`     | `fridge_A.gltf`                | furniture        |
-| `stove`         | `kaykit-restaurant-bits`     | `stove_single.gltf`            | furniture        |
-| `crate`         | `kaykit-restaurant-bits`     | `crate.gltf`                   | furniture        |
-| `plant`         | `kenney-furniture-kit`       | `pottedPlant.glb`              | furniture        |
-| `desk`          | `kenney-furniture-kit`       | `desk.glb`                     | furniture        |
-| `tv`            | `kenney-furniture-kit`       | `televisionModern.glb`         | furniture        |
-| `speaker`       | `kenney-furniture-kit`       | `speaker.glb`                  | furniture        |
-| `radio`         | `kenney-furniture-kit`       | `radio.glb`                    | furniture        |
-| `wall`          | `kenney-furniture-kit`       | `wall.glb`                     | room-shell       |
-| `wall-window`   | `kenney-furniture-kit`       | `wallWindow.glb`               | room-shell       |
-| `wall-doorway`  | `kenney-furniture-kit`       | `wallDoorway.glb`              | room-shell       |
-| `floor`         | `kenney-furniture-kit`       | `floorFull.glb`                | room-shell       |
-| `avatar-rig`    | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-rig       |
-| `head-female-a` | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-head      |
-| `body-female-a` | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-body      |
-| `head-female-b` | `kenney-mini-characters`     | `character-female-b.glb`       | avatar-head      |
-| `body-female-b` | `kenney-mini-characters`     | `character-female-b.glb`       | avatar-body      |
-| `head-female-c` | `kenney-mini-characters`     | `character-female-c.glb`       | avatar-head      |
-| `body-female-c` | `kenney-mini-characters`     | `character-female-c.glb`       | avatar-body      |
-| `head-female-d` | `kenney-mini-characters`     | `character-female-d.glb`       | avatar-head      |
-| `body-female-d` | `kenney-mini-characters`     | `character-female-d.glb`       | avatar-body      |
-| `head-female-e` | `kenney-mini-characters`     | `character-female-e.glb`       | avatar-head      |
-| `body-female-e` | `kenney-mini-characters`     | `character-female-e.glb`       | avatar-body      |
-| `head-female-f` | `kenney-mini-characters`     | `character-female-f.glb`       | avatar-head      |
-| `body-female-f` | `kenney-mini-characters`     | `character-female-f.glb`       | avatar-body      |
-| `head-male-a`   | `kenney-mini-characters`     | `character-male-a.glb`         | avatar-head      |
-| `body-male-a`   | `kenney-mini-characters`     | `character-male-a.glb`         | avatar-body      |
-| `head-male-b`   | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-head      |
-| `body-male-b`   | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-body      |
-| `head-male-c`   | `kenney-mini-characters`     | `character-male-c.glb`         | avatar-head      |
-| `body-male-c`   | `kenney-mini-characters`     | `character-male-c.glb`         | avatar-body      |
-| `head-male-d`   | `kenney-mini-characters`     | `character-male-d.glb`         | avatar-head      |
-| `body-male-d`   | `kenney-mini-characters`     | `character-male-d.glb`         | avatar-body      |
-| `head-male-e`   | `kenney-mini-characters`     | `character-male-e.glb`         | avatar-head      |
-| `body-male-e`   | `kenney-mini-characters`     | `character-male-e.glb`         | avatar-body      |
-| `head-male-f`   | `kenney-mini-characters`     | `character-male-f.glb`         | avatar-head      |
-| `body-male-f`   | `kenney-mini-characters`     | `character-male-f.glb`         | avatar-body      |
-| `glasses`       | `kenney-mini-characters`     | `aid-glasses.glb`              | avatar-accessory |
-| `sunglasses`    | `kenney-mini-characters`     | `aid-sunglasses.glb`           | avatar-accessory |
-| `hearing-aid`   | `kenney-mini-characters`     | `aid_hearing.glb`              | avatar-accessory |
+| Model               | Pack                         | Files                          | Category         |
+| ------------------- | ---------------------------- | ------------------------------ | ---------------- |
+| `taxi`              | `kaykit-city-builder-bits`   | `car_taxi.gltf`                | vehicle          |
+| `sedan`             | `kaykit-city-builder-bits`   | `car_sedan.gltf`               | vehicle          |
+| `hatchback`         | `kaykit-city-builder-bits`   | `car_hatchback.gltf`           | vehicle          |
+| `streetlight`       | `kaykit-city-builder-bits`   | `streetlight.gltf`             | street-prop      |
+| `hydrant`           | `kaykit-city-builder-bits`   | `firehydrant.gltf`             | street-prop      |
+| `bench`             | `kaykit-city-builder-bits`   | `bench.gltf`                   | street-prop      |
+| `bush`              | `kaykit-city-builder-bits`   | `bush.gltf`                    | street-prop      |
+| `traffic-light`     | `kaykit-city-builder-bits`   | `trafficlight_A.gltf`          | street-prop      |
+| `trash-bags`        | `kaykit-city-builder-bits`   | `trash_A.gltf`                 | street-prop      |
+| `dumpster`          | `kaykit-city-builder-bits`   | `dumpster.gltf`                | street-prop      |
+| `water-tower`       | `kaykit-city-builder-bits`   | `watertower.gltf`              | street-prop      |
+| `tree-oak`          | `kenney-nature-kit`          | `tree_oak.glb`                 | tree             |
+| `tree-round`        | `kenney-nature-kit`          | `tree_default.glb`             | tree             |
+| `tree-tall`         | `kenney-nature-kit`          | `tree_detailed.glb`            | tree             |
+| `block-a`           | `kenney-city-kit-commercial` | `low-detail-building-a.glb`    | building         |
+| `block-b`           | `kenney-city-kit-commercial` | `low-detail-building-b.glb`    | building         |
+| `block-c`           | `kenney-city-kit-commercial` | `low-detail-building-c.glb`    | building         |
+| `block-d`           | `kenney-city-kit-commercial` | `low-detail-building-d.glb`    | building         |
+| `block-e`           | `kenney-city-kit-commercial` | `low-detail-building-e.glb`    | building         |
+| `block-f`           | `kenney-city-kit-commercial` | `low-detail-building-f.glb`    | building         |
+| `building-a`        | `kenney-city-kit-commercial` | `building-a.glb`               | building         |
+| `building-b`        | `kenney-city-kit-commercial` | `building-b.glb`               | building         |
+| `building-c`        | `kenney-city-kit-commercial` | `building-c.glb`               | building         |
+| `building-d`        | `kenney-city-kit-commercial` | `building-d.glb`               | building         |
+| `awning`            | `kenney-city-kit-commercial` | `detail-awning.glb`            | building-detail  |
+| `awning-wide`       | `kenney-city-kit-commercial` | `detail-awning-wide.glb`       | building-detail  |
+| `bed`               | `kaykit-furniture-bits`      | `bed_double_A.gltf`            | furniture        |
+| `couch`             | `kaykit-furniture-bits`      | `couch.gltf`                   | furniture        |
+| `armchair`          | `kaykit-furniture-bits`      | `armchair.gltf`                | furniture        |
+| `floor-lamp`        | `kaykit-furniture-bits`      | `lamp_standing.gltf`           | furniture        |
+| `table-lamp`        | `kaykit-furniture-bits`      | `lamp_table.gltf`              | furniture        |
+| `rug`               | `kaykit-furniture-bits`      | `rug_rectangle_stripes_A.gltf` | furniture        |
+| `shelf`             | `kaykit-furniture-bits`      | `shelf_B_large_decorated.gltf` | furniture        |
+| `fridge`            | `kaykit-restaurant-bits`     | `fridge_A.gltf`                | furniture        |
+| `stove`             | `kaykit-restaurant-bits`     | `stove_single.gltf`            | furniture        |
+| `crate`             | `kaykit-restaurant-bits`     | `crate.gltf`                   | furniture        |
+| `plant`             | `kenney-furniture-kit`       | `pottedPlant.glb`              | furniture        |
+| `desk`              | `kenney-furniture-kit`       | `desk.glb`                     | furniture        |
+| `tv`                | `kenney-furniture-kit`       | `televisionModern.glb`         | furniture        |
+| `speaker`           | `kenney-furniture-kit`       | `speaker.glb`                  | furniture        |
+| `radio`             | `kenney-furniture-kit`       | `radio.glb`                    | furniture        |
+| `wall`              | `kenney-furniture-kit`       | `wall.glb`                     | room-shell       |
+| `wall-window`       | `kenney-furniture-kit`       | `wallWindow.glb`               | room-shell       |
+| `wall-doorway`      | `kenney-furniture-kit`       | `wallDoorway.glb`              | room-shell       |
+| `floor`             | `kenney-furniture-kit`       | `floorFull.glb`                | room-shell       |
+| `avatar-rig`        | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-rig       |
+| `head-female-a`     | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-head      |
+| `body-female-a`     | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-body      |
+| `head-female-b`     | `kenney-mini-characters`     | `character-female-b.glb`       | avatar-head      |
+| `body-female-b`     | `kenney-mini-characters`     | `character-female-b.glb`       | avatar-body      |
+| `head-female-c`     | `kenney-mini-characters`     | `character-female-c.glb`       | avatar-head      |
+| `body-female-c`     | `kenney-mini-characters`     | `character-female-c.glb`       | avatar-body      |
+| `head-female-d`     | `kenney-mini-characters`     | `character-female-d.glb`       | avatar-head      |
+| `body-female-d`     | `kenney-mini-characters`     | `character-female-d.glb`       | avatar-body      |
+| `head-female-e`     | `kenney-mini-characters`     | `character-female-e.glb`       | avatar-head      |
+| `body-female-e`     | `kenney-mini-characters`     | `character-female-e.glb`       | avatar-body      |
+| `head-female-f`     | `kenney-mini-characters`     | `character-female-f.glb`       | avatar-head      |
+| `body-female-f`     | `kenney-mini-characters`     | `character-female-f.glb`       | avatar-body      |
+| `head-male-a`       | `kenney-mini-characters`     | `character-male-a.glb`         | avatar-head      |
+| `body-male-a`       | `kenney-mini-characters`     | `character-male-a.glb`         | avatar-body      |
+| `head-male-b`       | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-head      |
+| `body-male-b`       | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-body      |
+| `head-male-c`       | `kenney-mini-characters`     | `character-male-c.glb`         | avatar-head      |
+| `body-male-c`       | `kenney-mini-characters`     | `character-male-c.glb`         | avatar-body      |
+| `head-male-d`       | `kenney-mini-characters`     | `character-male-d.glb`         | avatar-head      |
+| `body-male-d`       | `kenney-mini-characters`     | `character-male-d.glb`         | avatar-body      |
+| `head-male-e`       | `kenney-mini-characters`     | `character-male-e.glb`         | avatar-head      |
+| `body-male-e`       | `kenney-mini-characters`     | `character-male-e.glb`         | avatar-body      |
+| `head-male-f`       | `kenney-mini-characters`     | `character-male-f.glb`         | avatar-head      |
+| `head-base`         | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-head      |
+| `body-male-f`       | `kenney-mini-characters`     | `character-male-f.glb`         | avatar-body      |
+| `glasses`           | `kenney-mini-characters`     | `aid-glasses.glb`              | avatar-accessory |
+| `sunglasses`        | `kenney-mini-characters`     | `aid-sunglasses.glb`           | avatar-accessory |
+| `hearing-aid`       | `kenney-mini-characters`     | `aid_hearing.glb`              | avatar-accessory |
+| `facial-stubble`    | `clout-city-blender`         | `facial-stubble.glb`           | avatar-accessory |
+| `facial-moustache`  | `clout-city-blender`         | `facial-moustache.glb`         | avatar-accessory |
+| `facial-goatee`     | `clout-city-blender`         | `facial-goatee.glb`            | avatar-accessory |
+| `facial-full-beard` | `clout-city-blender`         | `facial-full-beard.glb`        | avatar-accessory |
+| `acc-gold-hoops`    | `clout-city-blender`         | `acc-gold-hoops.glb`           | avatar-accessory |
+| `acc-subway-tote`   | `clout-city-blender`         | `acc-subway-tote.glb`          | avatar-accessory |
+| `hair-afro`         | `clout-city-blender`         | `hair-afro.glb`                | avatar-hair      |
+| `hair-locs`         | `clout-city-blender`         | `hair-locs.glb`                | avatar-hair      |
+| `hair-box-braids`   | `clout-city-blender`         | `hair-box-braids.glb`          | avatar-hair      |
+| `hair-cornrows`     | `clout-city-blender`         | `hair-cornrows.glb`            | avatar-hair      |
+| `hair-buzz`         | `clout-city-blender`         | `hair-buzz.glb`                | avatar-hair      |
+| `headwear-hijab`    | `clout-city-blender`         | `headwear-hijab.glb`           | avatar-hair      |
+| `headwear-turban`   | `clout-city-blender`         | `headwear-turban.glb`          | avatar-hair      |
+| `headwear-durag`    | `clout-city-blender`         | `headwear-durag.glb`           | avatar-hair      |
+| `headwear-beanie`   | `clout-city-blender`         | `headwear-beanie.glb`          | avatar-hair      |
+| `headwear-ballcap`  | `clout-city-blender`         | `headwear-ballcap.glb`         | avatar-hair      |
 
 ## Left out
 

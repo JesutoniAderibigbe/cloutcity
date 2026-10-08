@@ -108,6 +108,10 @@ export interface PinObjects {
   readonly pins: readonly GeoPin[]
   /** Rescales the pins (and the ring) for a camera distance. */
   applyDistance(distance: number): void
+  /** The pins' current height in metres (0 until the first `applyDistance`). */
+  height(): number
+  /** Scene height of a pin's head at the current scale (pin icons sit on it, S04k). */
+  headY(pin: GeoPin): number
   /** Shows the selection ring under a pin, or hides it (null or an unknown id). */
   setSelected(id: string | null): void
   selectedId(): string | null
@@ -252,6 +256,8 @@ export function buildPins(
       placeRing()
     },
     selectedId: () => selected,
+    height: () => height,
+    headY: (pin) => baseY(pin) + PIN_HEAD[pinLook(pin)] * height,
     groundOf(id) {
       const pin = byId.get(id)
       return pin === undefined ? null : new Vector3(pin.x, groundY, -pin.y)

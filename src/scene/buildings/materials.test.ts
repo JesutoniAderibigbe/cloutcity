@@ -1,7 +1,7 @@
 import { DataTexture, MeshToonMaterial, NoColorSpace, RepeatWrapping } from 'three'
 import { describe, expect, it } from 'vitest'
 import { scene } from '@/lib/data/config'
-import { nightGlowSource } from '../lighting/nightGlow'
+import { glslFloat, nightGlowSource } from '../lighting/nightGlow'
 import { createBuildingMaterial, createWindowMask, windowTile } from './materials'
 
 const ramp = new DataTexture(new Uint8Array([90, 170, 255]), 3, 1)
@@ -37,12 +37,15 @@ describe('createBuildingMaterial', () => {
     const walls = createBuildingMaterial({
       gradientMap: ramp,
       colors: 'vertex',
-      windows: { uniform, mask, color: '#ffd98a' },
+      windows: { uniform, mask, color: '#ffd98a', mipBias: scene.buildings.windowMipBias },
     })
     expect(walls).toBeInstanceOf(MeshToonMaterial)
     expect(walls.vertexColors).toBe(true)
     expect(walls.gradientMap).toBe(ramp)
     expect(nightGlowSource(walls)).toBe('mask')
+    // TUNE-16: the mip bias is a define, the same for every district material (one program).
+    expect(walls.defines?.NIGHT_GLOW_MASK_BIAS).toBe(glslFloat(scene.buildings.windowMipBias))
+    expect(walls.defines?.TOON).toBe('')
     const blocks = createBuildingMaterial({ gradientMap: ramp, colors: 'instance' })
     expect(blocks.vertexColors).toBe(false)
     expect(nightGlowSource(blocks)).toBeUndefined()

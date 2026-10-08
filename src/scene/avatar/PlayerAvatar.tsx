@@ -8,16 +8,23 @@
  * tiers in scene.json `models.player.capsuleTiers`. Both rescale with the camera distance on
  * every controls change, then request one frame: the map renders on demand, so the avatar never
  * adds idle frames.
+ *
+ * S16a: the avatar follows the player's look (src/state/playerLook.ts, written by the HUD), and
+ * the capsule body takes the colour of the top they wear (`lookTint`), so the look still shows
+ * on the low tier and while the model loads. The look's models resolve in the lazy model chunk.
  */
 import { lazy, Suspense, useCallback, useEffect, useMemo, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
 import type { Group } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { LocalPoint } from '@/lib/geo/projection'
+import { usePlayerLook } from '@/state/playerLook'
 import { toScene } from '../geo/coords'
 import type { AvatarParts, AvatarStatus } from '../models/AvatarModel'
 import type { ModelsConfig, ModelTier } from '../models/types'
 import { avatarSize, buildAvatar, type AvatarConfig } from './buildAvatar'
+import { lookTint, type LookTintTable } from './lookTint'
+import type { ResolvedLook } from './resolveLook'
 
 const PlayerAvatarModel = lazy(() => import('./PlayerAvatarModel'))
 
@@ -26,6 +33,8 @@ export interface PlayerModel {
   readonly parts: AvatarParts
   /** The assembled avatar's height in metres (its head's top), to fit the capsule's height. */
   readonly heightM: number
+  /** The capsule colour of each top (S16a `lookTint`). */
+  readonly tint: LookTintTable
 }
 
 interface PlayerAvatarProps {
@@ -78,6 +87,8 @@ export function PlayerAvatar({
   groupRef,
 }: PlayerAvatarProps) {
   const built = useMemo(() => buildAvatar(color, toonRamp, avatar), [color, toonRamp, avatar])
+  const look = usePlayerLook()
+  const tint = look === null ? null : lookTint(look, model.tint)
   const controls = useThree((state) => state.controls)
   const invalidate = useThree((state) => state.invalidate)
   // Follows the active tier: a runtime step-down to a capsule tier swaps the capsule back in.
@@ -87,6 +98,26 @@ export function PlayerAvatar({
   )
 
   useEffect(() => () => built.dispose(), [built])
+
+  useEffect(() => {
+    built.setBodyColor(tint ?? color)
+    invalidate()
+  }, [built, tint, color, invalidate])
+
+  const onResolved = useCallback(
+    (resolved: ResolvedLook) => {
+      // The scene test hook reads what the look resolved to from the avatar's group.
+      built.setLookInfo({
+        head: resolved.parts.head.id,
+        body: resolved.parts.body.id,
+        attachments: (resolved.parts.attachments ?? []).map((part) => part.ref.id),
+        colors: resolved.colors,
+        scale: resolved.scale,
+        missing: resolved.missing,
+      })
+    },
+    [built],
+  )
 
   useEffect(() => {
     if (groupRef === undefined) return
@@ -135,6 +166,8 @@ export function PlayerAvatar({
       {drawModel && (
         <Suspense fallback={null}>
           <PlayerAvatarModel
+            look={look}
+            onResolved={onResolved}
             parts={model.parts}
             heightM={model.heightM}
             models={models}

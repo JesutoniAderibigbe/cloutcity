@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "avatar": {
+    "look": {
+      "skin": [
+        "tone-01",
+        "tone-02",
+        "tone-03",
+        "tone-04",
+        "tone-05",
+        "tone-06",
+        "tone-07",
+        "tone-08",
+        "tone-09",
+        "tone-10",
+        "tone-11",
+        "tone-12"
+      ],
+      "hairStyle": [
+        "style-01",
+        "style-02",
+        "style-03",
+        "style-04",
+        "style-05",
+        "style-06",
+        "style-07",
+        "style-10",
+        "style-11",
+        "style-12",
+        "afro",
+        "locs",
+        "box-braids",
+        "cornrows",
+        "buzz"
+      ],
+      "hairColor": [
+        "black",
+        "dark-brown",
+        "auburn",
+        "light-brown",
+        "blonde",
+        "grey",
+        "silver",
+        "copper",
+        "pink",
+        "blue"
+      ],
+      "facialHair": [
+        "none",
+        "stubble",
+        "moustache",
+        "goatee",
+        "full-beard"
+      ],
+      "headwear": [
+        "none",
+        "hijab",
+        "turban",
+        "durag",
+        "beanie",
+        "ballcap"
+      ],
+      "eyewear": [
+        "none",
+        "glasses",
+        "sunglasses"
+      ],
+      "ears": [
+        "none",
+        "hearing-aid"
+      ],
+      "outfit": [
+        "outfit-01",
+        "outfit-02",
+        "outfit-03",
+        "outfit-04",
+        "outfit-05",
+        "outfit-06",
+        "outfit-07",
+        "outfit-08",
+        "outfit-09",
+        "outfit-10",
+        "outfit-11",
+        "outfit-12"
+      ],
+      "top": [
+        "denim",
+        "navy",
+        "moss",
+        "rust",
+        "ivory",
+        "charcoal",
+        "red",
+        "gold",
+        "teal",
+        "blush",
+        "white"
+      ],
+      "bottom": [
+        "denim",
+        "navy",
+        "moss",
+        "rust",
+        "ivory",
+        "charcoal",
+        "red",
+        "gold",
+        "teal",
+        "blush",
+        "white"
+      ],
+      "shoes": [
+        "white",
+        "charcoal",
+        "red",
+        "gold"
+      ],
+      "height": [
+        "short",
+        "average",
+        "tall"
+      ]
+    },
+    "hairColorLimits": {},
+    "defaults": {
+      "skin": "tone-05",
+      "hairStyle": "style-01",
+      "hairColor": "black",
+      "facialHair": "none",
+      "headwear": "none",
+      "eyewear": "none",
+      "ears": "none",
+      "outfit": "outfit-01",
+      "top": "teal",
+      "bottom": "denim",
+      "shoes": "white",
+      "height": "average"
+    },
+    "random": {
+      "facialHair": 0.25,
+      "eyewear": 0.2,
+      "headwear": 0.08,
+      "hearingAid": 0.05
+    }
+  },
+  "traits": {
+    "maxModifierPct": 10,
+    "pick": 2,
+    "effects": {
+      "early-bird": {
+        "energy-cost": -10,
+        "mood-gain": -5
+      },
+      "easygoing": {
+        "mood-gain": 10
+      },
+      "thrifty": {
+        "shop-price": -10
+      },
+      "speed-walker": {
+        "travel-time": -10
+      },
+      "homebody": {
+        "mood-gain": 10,
+        "travel-time": 5
+      },
+      "hustler": {
+        "energy-cost": -5,
+        "travel-time": -5
+      },
+      "main-character": {
+        "mood-gain": 10,
+        "shop-price": 5
+      },
+      "wanderer": {
+        "travel-time": -10,
+        "mood-gain": -5
+      }
+    }
+  },
+  "creator": {
+    "offerAfterActions": 1,
+    "waitForTour": true,
+    "changeCooldownGameDays": 7,
+    "rolls": {
+      "neighborhood": "save"
+    }
+  },
+  "neighborhoods": [
+    "astoria",
+    "sunnyside",
+    "jackson-heights",
+    "elmhurst",
+    "ridgewood",
+    "flushing"
+  ]
+}

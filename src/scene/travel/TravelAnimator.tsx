@@ -12,8 +12,9 @@
  * while the trip animates (one frame requested per frame, then none: idle stays at zero frames),
  * and the runtime step-down measures FPS over it (`beginContinuous('travel')`).
  *
- * It tells the trip store whether it can animate at all: not before the city has drawn, and not
- * while the apartment has the screen; the travel chunk cuts straight to the arrival then.
+ * It tells the trip store whether it can animate at all: not before the city has drawn (it is
+ * loaded lazily once the city is playable, S04k), and not while the apartment has the screen;
+ * the travel chunk cuts straight to the arrival then.
  */
 import { useEffect, useMemo, type RefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'

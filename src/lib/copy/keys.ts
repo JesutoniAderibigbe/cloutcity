@@ -3,14 +3,20 @@
  * erased, so this costs no bundle bytes; the strings load with their namespace module.
  */
 export type CopyKey =
+  | keyof (typeof import('@data/copy/account/base.json'))['strings']
   | keyof (typeof import('@data/copy/actions/base.json'))['strings']
   | keyof (typeof import('@data/copy/ageGate/base.json'))['strings']
   | keyof (typeof import('@data/copy/app/base.json'))['strings']
   | keyof (typeof import('@data/copy/audio/base.json'))['strings']
+  | keyof (typeof import('@data/copy/avatar/base.json'))['strings']
   | keyof (typeof import('@data/copy/boroughs/base.json'))['strings']
+  | keyof (typeof import('@data/copy/career/base.json'))['strings']
+  | keyof (typeof import('@data/copy/categories/base.json'))['strings']
   | keyof (typeof import('@data/copy/clout/base.json'))['strings']
   | keyof (typeof import('@data/copy/club/base.json'))['strings']
   | keyof (typeof import('@data/copy/colors/base.json'))['strings']
+  | keyof (typeof import('@data/copy/creator/base.json'))['strings']
+  | keyof (typeof import('@data/copy/creatorOffer/base.json'))['strings']
   | keyof (typeof import('@data/copy/credits/base.json'))['strings']
   | keyof (typeof import('@data/copy/events/base.json'))['strings']
   | keyof (typeof import('@data/copy/goals/base.json'))['strings']
@@ -27,6 +33,7 @@ export type CopyKey =
   | keyof (typeof import('@data/copy/mod/base.json'))['strings']
   | keyof (typeof import('@data/copy/models/base.json'))['strings']
   | keyof (typeof import('@data/copy/nav/base.json'))['strings']
+  | keyof (typeof import('@data/copy/neighborhoods/base.json'))['strings']
   | keyof (typeof import('@data/copy/offline/base.json'))['strings']
   | keyof (typeof import('@data/copy/place/base.json'))['strings']
   | keyof (typeof import('@data/copy/places/base.json'))['strings']

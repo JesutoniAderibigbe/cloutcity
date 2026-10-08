@@ -14,6 +14,7 @@ const SHADE: Readonly<Record<SyncStatus, string>> = {
   conflict: 'text-taxi-ink',
   update: 'text-taxi-ink',
   behind: 'text-taxi-ink',
+  signedOut: 'text-muted',
 }
 
 /**
@@ -33,16 +34,16 @@ export function CloudSaveStatus({
   readonly onToggle: () => void
   readonly className: string
 }) {
-  const { status } = useSyncStatus()
+  const { status, identity } = useSyncStatus()
   const previous = useRef(status)
   const [announcement, setAnnouncement] = useState('')
 
   useEffect(() => {
-    if (announces(previous.current, status)) setAnnouncement(syncStatusText(status))
+    if (announces(previous.current, status)) setAnnouncement(syncStatusText(status, identity))
     previous.current = status
-  }, [status])
+  }, [status, identity])
 
-  const label = syncLabel(status)
+  const label = syncLabel(status, identity)
   return (
     <>
       <button

@@ -1,0 +1,1315 @@
+{
+  "version": 1,
+  "rig": {
+    "id": "avatar-rig",
+    "kind": "rig",
+    "category": "avatar-rig",
+    "slots": [],
+    "emissive": false,
+    "clips": [
+      "idle",
+      "walk",
+      "sprint",
+      "sit",
+      "drive",
+      "pick-up",
+      "interact-right",
+      "emote-yes",
+      "emote-no",
+      "holding-right"
+    ],
+    "files": {
+      "low": "/models/avatar-rig.high.dbf1201c.glb",
+      "mid": "/models/avatar-rig.high.dbf1201c.glb",
+      "high": "/models/avatar-rig.high.dbf1201c.glb"
+    }
+  },
+  "models": {
+    "acc-gold-hoops": {
+      "id": "acc-gold-hoops",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.5313,
+          0.757,
+          -0.083
+        ],
+        "max": [
+          0.5313,
+          0.923,
+          0.083
+        ]
+      },
+      "files": {
+        "low": "/models/acc-gold-hoops.high.df9a4071.glb",
+        "mid": "/models/acc-gold-hoops.high.df9a4071.glb",
+        "high": "/models/acc-gold-hoops.high.df9a4071.glb"
+      }
+    },
+    "acc-subway-tote": {
+      "id": "acc-subway-tote",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "torso",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          0.0301,
+          0.24,
+          -0.505
+        ],
+        "max": [
+          0.405,
+          0.8758,
+          0.359
+        ]
+      },
+      "files": {
+        "low": "/models/acc-subway-tote.high.0720672c.glb",
+        "mid": "/models/acc-subway-tote.high.0720672c.glb",
+        "high": "/models/acc-subway-tote.high.0720672c.glb"
+      }
+    },
+    "body-female-a": {
+      "id": "body-female-a",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -1.2087,
+          0,
+          -0.3583
+        ],
+        "max": [
+          1.2087,
+          0.858,
+          0.3023
+        ]
+      },
+      "files": {
+        "low": "/models/body-female-a.low.74dccb6b.glb",
+        "mid": "/models/body-female-a.high.a553bb09.glb",
+        "high": "/models/body-female-a.high.a553bb09.glb"
+      }
+    },
+    "body-female-b": {
+      "id": "body-female-b",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.3376
+        ],
+        "max": [
+          0.8439,
+          0.8102,
+          0.2354
+        ]
+      },
+      "files": {
+        "low": "/models/body-female-b.low.710f2f4b.glb",
+        "mid": "/models/body-female-b.high.9f4419b5.glb",
+        "high": "/models/body-female-b.high.9f4419b5.glb"
+      }
+    },
+    "body-female-c": {
+      "id": "body-female-c",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.3952
+        ],
+        "max": [
+          0.8439,
+          0.8279,
+          0.2687
+        ]
+      },
+      "files": {
+        "low": "/models/body-female-c.low.27539eb9.glb",
+        "mid": "/models/body-female-c.high.a7d3b13d.glb",
+        "high": "/models/body-female-c.high.a7d3b13d.glb"
+      }
+    },
+    "body-female-d": {
+      "id": "body-female-d",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.389
+        ],
+        "max": [
+          0.8439,
+          0.8102,
+          0.2625
+        ]
+      },
+      "files": {
+        "low": "/models/body-female-d.low.b5a34fe3.glb",
+        "mid": "/models/body-female-d.high.a367a93d.glb",
+        "high": "/models/body-female-d.high.a367a93d.glb"
+      }
+    },
+    "body-female-e": {
+      "id": "body-female-e",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.3033
+        ],
+        "max": [
+          0.8439,
+          0.8102,
+          0.2455
+        ]
+      },
+      "files": {
+        "low": "/models/body-female-e.low.af59290c.glb",
+        "mid": "/models/body-female-e.high.08db60df.glb",
+        "high": "/models/body-female-e.high.08db60df.glb"
+      }
+    },
+    "body-female-f": {
+      "id": "body-female-f",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.5136
+        ],
+        "max": [
+          0.8439,
+          0.8463,
+          0.2428
+        ]
+      },
+      "files": {
+        "low": "/models/body-female-f.low.e92bd9bc.glb",
+        "mid": "/models/body-female-f.high.a0ebc18a.glb",
+        "high": "/models/body-female-f.high.a0ebc18a.glb"
+      }
+    },
+    "body-male-a": {
+      "id": "body-male-a",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.3583
+        ],
+        "max": [
+          0.8439,
+          0.8102,
+          0.2354
+        ]
+      },
+      "files": {
+        "low": "/models/body-male-a.low.271e9e8e.glb",
+        "mid": "/models/body-male-a.high.6acf5a98.glb",
+        "high": "/models/body-male-a.high.6acf5a98.glb"
+      }
+    },
+    "body-male-b": {
+      "id": "body-male-b",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.3583
+        ],
+        "max": [
+          0.8439,
+          0.8102,
+          0.2354
+        ]
+      },
+      "files": {
+        "low": "/models/body-male-b.low.66aa142e.glb",
+        "mid": "/models/body-male-b.high.832559d1.glb",
+        "high": "/models/body-male-b.high.832559d1.glb"
+      }
+    },
+    "body-male-c": {
+      "id": "body-male-c",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.3583
+        ],
+        "max": [
+          0.8439,
+          0.8279,
+          0.2538
+        ]
+      },
+      "files": {
+        "low": "/models/body-male-c.low.712d2d6f.glb",
+        "mid": "/models/body-male-c.high.25576441.glb",
+        "high": "/models/body-male-c.high.25576441.glb"
+      }
+    },
+    "body-male-d": {
+      "id": "body-male-d",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.3347
+        ],
+        "max": [
+          0.8439,
+          0.8102,
+          0.2354
+        ]
+      },
+      "files": {
+        "low": "/models/body-male-d.low.a42e4230.glb",
+        "mid": "/models/body-male-d.high.e82216ab.glb",
+        "high": "/models/body-male-d.high.e82216ab.glb"
+      }
+    },
+    "body-male-e": {
+      "id": "body-male-e",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.3583
+        ],
+        "max": [
+          0.8439,
+          0.8102,
+          0.2354
+        ]
+      },
+      "files": {
+        "low": "/models/body-male-e.low.5fe7b592.glb",
+        "mid": "/models/body-male-e.high.d49e21f2.glb",
+        "high": "/models/body-male-e.high.d49e21f2.glb"
+      }
+    },
+    "body-male-f": {
+      "id": "body-male-f",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "slots": [
+        "shoes",
+        "skin",
+        "top",
+        "bottom"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.8439,
+          0,
+          -0.3583
+        ],
+        "max": [
+          0.8439,
+          0.8102,
+          0.2758
+        ]
+      },
+      "files": {
+        "low": "/models/body-male-f.low.574b7ce2.glb",
+        "mid": "/models/body-male-f.high.9dbacd6a.glb",
+        "high": "/models/body-male-f.high.9dbacd6a.glb"
+      }
+    },
+    "facial-full-beard": {
+      "id": "facial-full-beard",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.485,
+          0.68,
+          -0.06
+        ],
+        "max": [
+          0.485,
+          1.02,
+          0.42
+        ]
+      },
+      "files": {
+        "low": "/models/facial-full-beard.high.d7983720.glb",
+        "mid": "/models/facial-full-beard.high.d7983720.glb",
+        "high": "/models/facial-full-beard.high.d7983720.glb"
+      }
+    },
+    "facial-goatee": {
+      "id": "facial-goatee",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.16,
+          0.74,
+          0.348
+        ],
+        "max": [
+          0.16,
+          0.975,
+          0.41
+        ]
+      },
+      "files": {
+        "low": "/models/facial-goatee.high.5b6450c7.glb",
+        "mid": "/models/facial-goatee.high.5b6450c7.glb",
+        "high": "/models/facial-goatee.high.5b6450c7.glb"
+      }
+    },
+    "facial-moustache": {
+      "id": "facial-moustache",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.19,
+          0.87,
+          0.348
+        ],
+        "max": [
+          0.19,
+          0.98,
+          0.39
+        ]
+      },
+      "files": {
+        "low": "/models/facial-moustache.high.cc8b4279.glb",
+        "mid": "/models/facial-moustache.high.cc8b4279.glb",
+        "high": "/models/facial-moustache.high.cc8b4279.glb"
+      }
+    },
+    "facial-stubble": {
+      "id": "facial-stubble",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.44,
+          0.755,
+          0.348
+        ],
+        "max": [
+          0.44,
+          0.97,
+          0.362
+        ]
+      },
+      "files": {
+        "low": "/models/facial-stubble.high.cbb9d3a9.glb",
+        "mid": "/models/facial-stubble.high.cbb9d3a9.glb",
+        "high": "/models/facial-stubble.high.cbb9d3a9.glb"
+      }
+    },
+    "glasses": {
+      "id": "glasses",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.363,
+          0,
+          -0.202
+        ],
+        "max": [
+          0.363,
+          0.2108,
+          0.202
+        ]
+      },
+      "files": {
+        "low": "/models/glasses.high.7efd38b7.glb",
+        "mid": "/models/glasses.high.7efd38b7.glb",
+        "high": "/models/glasses.high.7efd38b7.glb"
+      }
+    },
+    "hair-afro": {
+      "id": "hair-afro",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.68,
+          1.05,
+          -0.66
+        ],
+        "max": [
+          0.68,
+          1.95,
+          0.54
+        ]
+      },
+      "files": {
+        "low": "/models/hair-afro.high.24f6a7d1.glb",
+        "mid": "/models/hair-afro.high.24f6a7d1.glb",
+        "high": "/models/hair-afro.high.24f6a7d1.glb"
+      }
+    },
+    "hair-box-braids": {
+      "id": "hair-box-braids",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.545,
+          0.36,
+          -0.4403
+        ],
+        "max": [
+          0.5275,
+          1.49,
+          0.37
+        ]
+      },
+      "files": {
+        "low": "/models/hair-box-braids.high.4ab52683.glb",
+        "mid": "/models/hair-box-braids.high.4ab52683.glb",
+        "high": "/models/hair-box-braids.high.4ab52683.glb"
+      }
+    },
+    "hair-buzz": {
+      "id": "hair-buzz",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.475,
+          0.86,
+          -0.375
+        ],
+        "max": [
+          0.475,
+          1.475,
+          0.365
+        ]
+      },
+      "files": {
+        "low": "/models/hair-buzz.high.d6985142.glb",
+        "mid": "/models/hair-buzz.high.d6985142.glb",
+        "high": "/models/hair-buzz.high.d6985142.glb"
+      }
+    },
+    "hair-cornrows": {
+      "id": "hair-cornrows",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.475,
+          0.86,
+          -0.405
+        ],
+        "max": [
+          0.475,
+          1.505,
+          0.365
+        ]
+      },
+      "files": {
+        "low": "/models/hair-cornrows.high.c6d05f43.glb",
+        "mid": "/models/hair-cornrows.high.c6d05f43.glb",
+        "high": "/models/hair-cornrows.high.c6d05f43.glb"
+      }
+    },
+    "hair-locs": {
+      "id": "hair-locs",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.5354,
+          0.5,
+          -0.4354
+        ],
+        "max": [
+          0.5354,
+          1.49,
+          0.37
+        ]
+      },
+      "files": {
+        "low": "/models/hair-locs.high.5c5c4e07.glb",
+        "mid": "/models/hair-locs.high.5c5c4e07.glb",
+        "high": "/models/hair-locs.high.5c5c4e07.glb"
+      }
+    },
+    "head-base": {
+      "id": "head-base",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.7551,
+          -0.3572
+        ],
+        "max": [
+          0.4989,
+          1.4549,
+          0.4139
+        ]
+      },
+      "files": {
+        "low": "/models/head-base.low.0e62d98b.glb",
+        "mid": "/models/head-base.high.43a68a71.glb",
+        "high": "/models/head-base.high.43a68a71.glb"
+      }
+    },
+    "head-female-a": {
+      "id": "head-female-a",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.7551,
+          -0.6422
+        ],
+        "max": [
+          0.4989,
+          1.7062,
+          0.4568
+        ]
+      },
+      "files": {
+        "low": "/models/head-female-a.low.af2fd2fa.glb",
+        "mid": "/models/head-female-a.high.59a96e52.glb",
+        "high": "/models/head-female-a.high.59a96e52.glb"
+      }
+    },
+    "head-female-b": {
+      "id": "head-female-b",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.5225,
+          0.7551,
+          -0.4639
+        ],
+        "max": [
+          0.5225,
+          1.5914,
+          0.4568
+        ]
+      },
+      "files": {
+        "low": "/models/head-female-b.low.0873a80f.glb",
+        "mid": "/models/head-female-b.high.a299bf74.glb",
+        "high": "/models/head-female-b.high.a299bf74.glb"
+      }
+    },
+    "head-female-c": {
+      "id": "head-female-c",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.7551,
+          -0.6422
+        ],
+        "max": [
+          0.4989,
+          1.7062,
+          0.4568
+        ]
+      },
+      "files": {
+        "low": "/models/head-female-c.low.c74f4bb8.glb",
+        "mid": "/models/head-female-c.high.b57a1179.glb",
+        "high": "/models/head-female-c.high.b57a1179.glb"
+      }
+    },
+    "head-female-d": {
+      "id": "head-female-d",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.7551,
+          -0.6422
+        ],
+        "max": [
+          0.4989,
+          1.7062,
+          0.4568
+        ]
+      },
+      "files": {
+        "low": "/models/head-female-d.low.bf522b70.glb",
+        "mid": "/models/head-female-d.high.553dad2c.glb",
+        "high": "/models/head-female-d.high.553dad2c.glb"
+      }
+    },
+    "head-female-e": {
+      "id": "head-female-e",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.6452,
+          -0.7027
+        ],
+        "max": [
+          0.4989,
+          1.5762,
+          0.4568
+        ]
+      },
+      "files": {
+        "low": "/models/head-female-e.low.3110d78c.glb",
+        "mid": "/models/head-female-e.high.d675dafb.glb",
+        "high": "/models/head-female-e.high.d675dafb.glb"
+      }
+    },
+    "head-female-f": {
+      "id": "head-female-f",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.649,
+          0.7551,
+          -0.3792
+        ],
+        "max": [
+          0.649,
+          1.4769,
+          0.4568
+        ]
+      },
+      "files": {
+        "low": "/models/head-female-f.low.879c6c45.glb",
+        "mid": "/models/head-female-f.high.15ff2f3f.glb",
+        "high": "/models/head-female-f.high.15ff2f3f.glb"
+      }
+    },
+    "head-male-a": {
+      "id": "head-male-a",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.7551,
+          -0.3792
+        ],
+        "max": [
+          0.4989,
+          1.4769,
+          0.3688
+        ]
+      },
+      "files": {
+        "low": "/models/head-male-a.low.28b8c004.glb",
+        "mid": "/models/head-male-a.high.e5cfcc8d.glb",
+        "high": "/models/head-male-a.high.e5cfcc8d.glb"
+      }
+    },
+    "head-male-d": {
+      "id": "head-male-d",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.7551,
+          -0.3792
+        ],
+        "max": [
+          0.4989,
+          1.5879,
+          0.3688
+        ]
+      },
+      "files": {
+        "low": "/models/head-male-d.low.944f9008.glb",
+        "mid": "/models/head-male-d.high.190544c9.glb",
+        "high": "/models/head-male-d.high.190544c9.glb"
+      }
+    },
+    "head-male-e": {
+      "id": "head-male-e",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.7551,
+          -0.3792
+        ],
+        "max": [
+          0.4989,
+          1.4871,
+          0.3731
+        ]
+      },
+      "files": {
+        "low": "/models/head-male-e.low.25460f8a.glb",
+        "mid": "/models/head-male-e.high.827f8d51.glb",
+        "high": "/models/head-male-e.high.827f8d51.glb"
+      }
+    },
+    "head-male-f": {
+      "id": "head-male-f",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin",
+        "hair"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.7551,
+          -0.3792
+        ],
+        "max": [
+          0.4989,
+          1.4769,
+          0.3688
+        ]
+      },
+      "files": {
+        "low": "/models/head-male-f.low.e6537e60.glb",
+        "mid": "/models/head-male-f.high.5c3ad492.glb",
+        "high": "/models/head-male-f.high.5c3ad492.glb"
+      }
+    },
+    "headwear-ballcap": {
+      "id": "headwear-ballcap",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.485,
+          1.2,
+          -0.38
+        ],
+        "max": [
+          0.485,
+          1.57,
+          0.68
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-ballcap.high.0ce5aa3e.glb",
+        "mid": "/models/headwear-ballcap.high.0ce5aa3e.glb",
+        "high": "/models/headwear-ballcap.high.0ce5aa3e.glb"
+      }
+    },
+    "headwear-beanie": {
+      "id": "headwear-beanie",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.505,
+          1.15,
+          -0.395
+        ],
+        "max": [
+          0.505,
+          1.71,
+          0.39
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-beanie.high.9be19fbd.glb",
+        "mid": "/models/headwear-beanie.high.9be19fbd.glb",
+        "high": "/models/headwear-beanie.high.9be19fbd.glb"
+      }
+    },
+    "headwear-durag": {
+      "id": "headwear-durag",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.49,
+          0.46,
+          -0.41
+        ],
+        "max": [
+          0.49,
+          1.48,
+          0.38
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-durag.high.346b43cf.glb",
+        "mid": "/models/headwear-durag.high.346b43cf.glb",
+        "high": "/models/headwear-durag.high.346b43cf.glb"
+      }
+    },
+    "headwear-hijab": {
+      "id": "headwear-hijab",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.56,
+          0.52,
+          -0.43
+        ],
+        "max": [
+          0.56,
+          1.53,
+          0.4
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-hijab.high.8b6b7a33.glb",
+        "mid": "/models/headwear-hijab.high.8b6b7a33.glb",
+        "high": "/models/headwear-hijab.high.8b6b7a33.glb"
+      }
+    },
+    "headwear-turban": {
+      "id": "headwear-turban",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.505,
+          1.15,
+          -0.4
+        ],
+        "max": [
+          0.505,
+          1.64,
+          0.4233
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-turban.high.c8d92360.glb",
+        "mid": "/models/headwear-turban.high.c8d92360.glb",
+        "high": "/models/headwear-turban.high.c8d92360.glb"
+      }
+    },
+    "hearing-aid": {
+      "id": "hearing-aid",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "shell"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.055,
+          0,
+          -0.1724
+        ],
+        "max": [
+          0.055,
+          0.2718,
+          0.1724
+        ]
+      },
+      "files": {
+        "low": "/models/hearing-aid.high.133e6460.glb",
+        "mid": "/models/hearing-aid.high.133e6460.glb",
+        "high": "/models/hearing-aid.high.133e6460.glb"
+      }
+    },
+    "sunglasses": {
+      "id": "sunglasses",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.363,
+          0,
+          -0.202
+        ],
+        "max": [
+          0.363,
+          0.2108,
+          0.202
+        ]
+      },
+      "files": {
+        "low": "/models/sunglasses.high.ccdc6a07.glb",
+        "mid": "/models/sunglasses.high.ccdc6a07.glb",
+        "high": "/models/sunglasses.high.ccdc6a07.glb"
+      }
+    }
+  },
+  "colors": {
+    "blush-300": "#e3a9a2",
+    "charcoal-800": "#2f3133",
+    "cobalt-500": "#3f63c9",
+    "cream-100": "#efe6d2",
+    "denim-600": "#3c5a7d",
+    "hair-050": "#d9d9dc",
+    "hair-100": "#e8d3a2",
+    "hair-200": "#b9b6b2",
+    "hair-300": "#c08f4f",
+    "hair-400": "#b0603a",
+    "hair-500": "#8a4b2a",
+    "hair-700": "#4a2e1f",
+    "hair-900": "#1d1714",
+    "mustard-400": "#d4a137",
+    "navy-800": "#222d45",
+    "olive-600": "#59613a",
+    "red-600": "#a8322d",
+    "rose-400": "#e07aa3",
+    "rust-500": "#a24f2c",
+    "skin-050": "#fbe8dc",
+    "skin-100": "#f6dccb",
+    "skin-200": "#eac3a3",
+    "skin-300": "#d9a77f",
+    "skin-400": "#c18a5f",
+    "skin-450": "#b27b52",
+    "skin-500": "#a26b45",
+    "skin-600": "#84532f",
+    "skin-700": "#643c22",
+    "skin-750": "#55321e",
+    "skin-800": "#47291a",
+    "skin-900": "#2f1b12",
+    "teal-600": "#2d6e6b",
+    "white-50": "#f7f6f2"
+  },
+  "attachments": {
+    "glasses": {
+      "joint": "head",
+      "offset": [
+        0,
+        0.98,
+        0.33
+      ]
+    },
+    "sunglasses": {
+      "joint": "head",
+      "offset": [
+        0,
+        0.98,
+        0.33
+      ]
+    },
+    "hearing-aid": {
+      "joint": "head",
+      "offset": [
+        0.5,
+        0.86,
+        -0.08
+      ]
+    }
+  },
+  "preview": {
+    "background": "#dfe7ee",
+    "ambient": {
+      "color": "#ffffff",
+      "intensity": 0.45
+    },
+    "hemisphere": {
+      "sky": "#e4eef7",
+      "ground": "#9c8f7e",
+      "intensity": 0.9
+    },
+    "sun": {
+      "color": "#fff6e6",
+      "intensity": 2,
+      "position": [
+        2,
+        4,
+        3
+      ]
+    },
+    "camera": {
+      "fovDeg": 28,
+      "position": [
+        0,
+        1.05,
+        4.6
+      ],
+      "target": [
+        0,
+        0.85,
+        0
+      ]
+    },
+    "clip": "idle"
+  }
+}

@@ -21,7 +21,9 @@
  * Every clout change goes through `recordClout`, which writes one typed entry (source, amount,
  * currency, and a reference to what earned it) so later systems (premium items in S25, grants
  * in S15, save plausibility in S18c) plug in without engine changes. The outfit's style score
- * multiplies positive gains from the sources in `clout.style.appliesTo`.
+ * multiplies positive gains from the sources in `clout.style.appliesTo`, and the career path's
+ * bonus (S16a, src/engine/career.ts) multiplies positive flex or event gains; club, grant,
+ * premium and item clout never get a career bonus.
  *
  * Levels can drop (selling an item, a bad event); `peakLevel` remembers the highest level
  * reached, and a level-up is reported only when a change lifts the player above it, so
@@ -29,6 +31,7 @@
  */
 import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
 import type { Borough } from '@/lib/data/schemas/content'
+import { careerPct, topCareerPct, type CloutGainContext } from './career'
 import type { EngineConfig, JobId } from './config'
 import type { GameSnapshot, PlayerState } from './game'
 import { homeClout } from './home'
@@ -226,7 +229,10 @@ export function styleMultiplierPct(score: number, config: EngineConfig): number 
 }
 
 /** What the level and goal measures read: the ledger, the inventory and the home. */
-export type CloutPlayer = Pick<PlayerState, 'clout' | 'inventory' | 'home' | 'apartment'>
+export type CloutPlayer = Pick<
+  PlayerState,
+  'clout' | 'inventory' | 'home' | 'apartment' | 'careerPath'
+>
 
 export interface CloutBreakdown {
   readonly earned: number
@@ -409,10 +415,12 @@ function placeMultiplierOf(change: CloutChange): number {
 }
 
 /**
- * The gain a positive `base` turns into: max(1, floor(base x place multiplier x style
- * percent / 100)), the style percent applying only to sources in `clout.style.appliesTo`.
- * Integer maths on whole percentages, so the floor is exact. Shared by `recordClout` and the
- * place sheet's preview (GR-11: what the sheet promises is what lands).
+ * The gain a positive `base` turns into: max(1, floor(base x place multiplier x style percent x
+ * career percent / 1,000,000)), the style percent applying only to sources in
+ * `clout.style.appliesTo` and the career percent only to the path's bonus source
+ * (src/engine/career.ts `careerPct`; `eventId` says which event an event gain is from). Integer
+ * maths on whole percentages, so the floor is exact. Shared by `recordClout` and the place
+ * sheet's preview (GR-11: what the sheet promises is what lands).
  */
 export function scaledGain(
   base: number,
@@ -420,11 +428,17 @@ export function scaledGain(
   placeMultiplier: number,
   player: PlayerState,
   config: EngineConfig,
+  eventId?: string,
 ): number {
   if (base <= 0) return base
   const styled = (config.clout.style.appliesTo as readonly string[]).includes(source)
   const stylePct = styled ? styleMultiplierPct(styleScore(player, config), config) : 100
-  return Math.max(1, Math.floor((base * multiplierPct(placeMultiplier) * stylePct) / 10_000))
+  const gain: CloutGainContext = eventId === undefined ? { source } : { source, eventId }
+  const career = careerPct(player, gain, config)
+  return Math.max(
+    1,
+    Math.floor((base * multiplierPct(placeMultiplier) * stylePct * career) / 1_000_000),
+  )
 }
 
 export interface CloutRecord {
@@ -492,7 +506,15 @@ export function recordClout(
     throw new RangeError(`A clout change must be a whole number: ${change.amount}`)
   }
   const { player } = snapshot
-  const amount = scaledGain(change.amount, change.source, placeMultiplierOf(change), player, config)
+  const eventId = change.source === 'event' ? change.ref.eventId : undefined
+  const amount = scaledGain(
+    change.amount,
+    change.source,
+    placeMultiplierOf(change),
+    player,
+    config,
+    eventId,
+  )
   const appended = appendClout(
     player.clout,
     { ...change, amount } as CloutChange,
@@ -571,8 +593,8 @@ export function eventFiresPerGameDay(
 
 /**
  * The most clout each source can give in one action and in one game day, from config alone
- * (top style, the highest place multiplier, a viral flex, every club, every event at its
- * cooldown). S18c's save plausibility uses max(fixture x margin, these ceilings): the economy
+ * (top style, the best career bonus for the source, the highest place multiplier, a viral flex,
+ * every club, every event at its cooldown). S18c's save plausibility uses max(fixture x margin, these ceilings): the economy
  * bot's fixture (data/sim) shows what a normal run reaches, these bound what any run can.
  */
 export function cloutCeilings(config: EngineConfig): CloutCeilings {
@@ -583,7 +605,13 @@ export function cloutCeilings(config: EngineConfig): CloutCeilings {
   const scale = (base: number, source: CloutSourceId, multiplier = 1) =>
     base <= 0
       ? 0
-      : Math.max(1, Math.floor((base * multiplierPct(multiplier) * styled(source)) / 10_000))
+      : Math.max(
+          1,
+          Math.floor(
+            (base * multiplierPct(multiplier) * styled(source) * topCareerPct(source, config)) /
+              1_000_000,
+          ),
+        )
 
   const paycheck = scale(clout.sources.firstPaycheck, 'paycheck')
   const topPlace = Math.max(

@@ -272,3 +272,48 @@ describe('guest session hook', () => {
     expect(JSON.stringify(records)).not.toMatch(/birth/i)
   })
 })
+
+describe('onboarding from a logged-in account (S19)', () => {
+  it("keeps the account's own attestation and consent, with the sound chosen now", () => {
+    const { store } = setup()
+    const onboarding = store()
+    expect(
+      onboarding
+        .getState()
+        .completeFromAccount(
+          { attestedAt: T0 - DAY, consent: { version: '2026-01-01', at: T0 - DAY } },
+          { consentVersion: onboardingJson.consentVersion, audioChoice: 'own' },
+          T0,
+        ),
+    ).toBe(true)
+    expect(onboarding.getState().record).toEqual({
+      status: 'complete',
+      attested: true,
+      attestedAt: T0 - DAY,
+      consentVersion: '2026-01-01',
+      consentedAt: T0 - DAY,
+      audioChoice: 'own',
+    })
+  })
+
+  it('records a consent given on the card now when the account had an older one', () => {
+    const { store } = setup()
+    const onboarding = store()
+    onboarding.getState().completeFromAccount({ attestedAt: T0 - DAY, consent: null }, adult, T0)
+    expect(onboarding.getState().record).toMatchObject({
+      attestedAt: T0 - DAY,
+      consentVersion: onboardingJson.consentVersion,
+      consentedAt: T0,
+    })
+  })
+
+  it('never weakens an under-age lock', () => {
+    const { store } = setup()
+    const onboarding = store()
+    onboarding.getState().refuseUnderAge(T0)
+    expect(
+      onboarding.getState().completeFromAccount({ attestedAt: T0 - DAY, consent: null }, adult, T0),
+    ).toBe(false)
+    expect(onboarding.getState().record?.status).toBe('locked')
+  })
+})

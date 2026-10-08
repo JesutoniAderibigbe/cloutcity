@@ -3,17 +3,32 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { PANEL_BUTTON, PanelDialog } from '@/components/hud/PanelDialog'
+import { lazyIsland } from '@/components/overlay/lazyIsland'
 import { BlockedMutedList } from '@/components/safety/BlockedMutedList'
 import { copy, copyParts, type CopyKey } from '@/lib/copy'
 import type { MyProfile } from '@/lib/forms/handle'
 import { connectedProfileApi, type ProfileApi } from '@/lib/supabase/profileApi'
+import { authCallbackUrl, supabaseEnv } from '@/lib/supabase/env'
 import { safetyApi } from '@/lib/supabase/safetyApi'
-import { guestSessionStore, type GuestSessionState } from '@/state/guestSession'
+import { guestSessionStore, isOnlineSession, type GuestSessionState } from '@/state/guestSession'
 import { closeHudPanel } from '@/state/hudPanel'
 import { HandleForm } from './HandleForm'
 import { PublicCard } from './PublicCard'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/profile'
+
+// S19: the account section (Create account, Log in, Sign out) loads with the account chunk,
+// only for a player with an account to show (it needs the network, like everything about one).
+const AccountSection = lazyIsland(
+  () => import('@/components/account/AccountSection').then((module) => module.AccountSection),
+  { zone: 'sheet', labelKey: 'loading.account', quiet: true },
+)
+
+/** Whether the account section has anything to show for this session. */
+function showsAccount(session: GuestSessionState): boolean {
+  if (supabaseEnv() === null || authCallbackUrl() === null) return false
+  return isOnlineSession(session) || session.reason === 'signed-out'
+}
 
 const sessionState = () => guestSessionStore.getState()
 
@@ -34,6 +49,8 @@ function offlineReasonKey(session: GuestSessionState): CopyKey {
       return 'profile.offline.offline'
     case 'rate-limited':
       return 'profile.offline.rateLimited'
+    case 'signed-out':
+      return 'profile.offline.signedOut'
     default:
       return 'profile.offline.other'
   }
@@ -144,9 +161,11 @@ function ConductLink() {
 }
 
 /**
- * The Me panel (S18a, S18b), opened by the Me tab: how other players see you, your handle, and
- * the players you blocked or muted. It needs the guest's server session; without one it says
- * why. supabase-js loads only once the player is online and the panel opens.
+ * The Me panel (S18a, S18b, S19), opened by the Me tab: the account (a guest's "Create account"
+ * with the warning that clearing browser data wipes a guest game, or who is signed in), how
+ * other players see you, your handle, and the players you blocked or muted. The profile needs a
+ * server session; without one it says why. supabase-js loads only once the player is online and
+ * the panel opens.
  */
 export function MePanel() {
   const session = useGuestSession()
@@ -158,7 +177,8 @@ export function MePanel() {
       onClose={closeHudPanel}
       scrollBody
     >
-      {session.status === 'anonymous' ? <OnlineProfile /> : <NotConnected session={session} />}
+      {showsAccount(session) ? <AccountSection session={session} /> : null}
+      {isOnlineSession(session) ? <OnlineProfile /> : <NotConnected session={session} />}
       <ConductLink />
     </PanelDialog>
   )

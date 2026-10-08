@@ -82,6 +82,31 @@ export const DecorSchema = z.strictObject({
 })
 
 /**
+ * What a wearable does to the avatar's look (S16a, D12): ids from data/avatar/options.json and
+ * catalog model ids, checked in src/lib/data/avatar-data.test.ts. A top changes the outfit (the
+ * body model) and its top colour; a bottom or shoes their colour; an accessory adds a model
+ * attachment. Makeup has no visual yet (`none`, Q6). A worn item overrides the creator's choice
+ * (src/engine/appearance.ts `effectiveLook`).
+ */
+export const ItemLookSchema = z.discriminatedUnion('part', [
+  z.strictObject({ part: z.literal('outfit'), outfit: IdSchema, top: IdSchema }),
+  z.strictObject({ part: z.literal('bottom'), color: IdSchema }),
+  z.strictObject({ part: z.literal('shoes'), color: IdSchema }),
+  z.strictObject({ part: z.literal('attachment'), model: IdSchema }),
+  z.strictObject({ part: z.literal('none') }),
+])
+export type ItemLook = z.infer<typeof ItemLookSchema>
+
+/** The look part each outfit slot's items use. */
+export const SLOT_LOOK_PARTS = {
+  top: 'outfit',
+  bottom: 'bottom',
+  shoes: 'shoes',
+  accessory: 'attachment',
+  face: 'none',
+} as const satisfies Readonly<Record<ItemSlot, ItemLook['part']>>
+
+/**
  * An in-game cash item (CLAUDE.md "Two kinds of purchases"). `sellValue` is what the item sells
  * back for on the day it is bought; worn items lose more value per game day owned
  * (balance.json `items`, applied in src/engine/items.ts). It is always below `price`, so a
@@ -106,6 +131,8 @@ export const ItemSchema = z
     statEffects: z.partialRecord(StatSchema, z.int()),
     /** Decor only (S16): the slot kind, home score and colour variants. */
     decor: DecorSchema.optional(),
+    /** Wearables only (S16a): what wearing it does to the avatar's look. */
+    look: ItemLookSchema.optional(),
   })
   .refine((item) => item.category !== 'gift' || item.styleValue === 0, {
     error: 'a gift is never worn, so its styleValue must be 0',
@@ -125,6 +152,16 @@ export const ItemSchema = z
     {
       error: 'clothing needs a clothing slot, makeup the face slot, others no slot',
       path: ['slot'],
+    },
+  )
+  .refine(
+    (item) =>
+      item.slot === undefined
+        ? item.look === undefined
+        : item.look !== undefined && item.look.part === SLOT_LOOK_PARTS[item.slot],
+    {
+      error: 'every wearable needs a look for its slot, and only wearables have one',
+      path: ['look'],
     },
   )
   .refine((item) => (item.category === 'decor') === (item.decor !== undefined), {
@@ -227,6 +264,50 @@ export const HomeSchema = z.strictObject({
 })
 export const HomesFileSchema = z.strictObject({ homes: z.record(z.enum(HOME_IDS), HomeSchema) })
 export type HomesFile = z.infer<typeof HomesFileSchema>
+
+/**
+ * A start neighborhood (S16a, data/homes/neighborhoods.json): where its startable homes sit on
+ * the map and the subway station they are near. The creator's roll picks one per save; the
+ * player's home point then comes from it (src/engine/neighborhoods.ts `homePoint`). Geo rules
+ * (zone, land, station distance, trip fairness) are checked in
+ * src/lib/world/neighborhoods-content.test.ts.
+ */
+export const NeighborhoodSchema = z.strictObject({
+  id: IdSchema,
+  nameKey: CopyKeyRefSchema.refine((key) => key.startsWith('neighborhoods.')),
+  blurbKey: CopyKeyRefSchema.refine((key) => key.startsWith('neighborhoods.')),
+  zoneId: IdSchema,
+  /** Where the neighborhood's homes stand. */
+  home: LatLngSchema,
+  /** The nearest subway station's id in data/geo/subway.derived.json. */
+  stationId: z.string().min(1),
+  /** Startable homes in this neighborhood (S44 adds more). */
+  homes: z.array(z.enum(HOME_IDS)).min(1),
+})
+
+export const NeighborhoodsFileSchema = z.strictObject({
+  version: z.literal(1),
+  borough: BoroughSchema,
+  /** Every home stands within this walk of its station. */
+  maxStationM: z.number().positive(),
+  /**
+   * Trip fairness: each neighborhood's mean trip by `mode` to the places in `to` is within
+   * `tolerancePct` of the mean over all neighborhoods, so no roll is a handicap.
+   */
+  fairness: z.strictObject({
+    tolerancePct: z.int().min(1).max(100),
+    mode: z.enum(['walk', 'subway', 'taxi']),
+    to: z.array(IdSchema).min(1),
+  }),
+  neighborhoods: z
+    .array(NeighborhoodSchema)
+    .min(2)
+    .refine((list) => new Set(list.map((n) => n.id)).size === list.length, {
+      error: 'neighborhood ids must be unique',
+    }),
+})
+export type NeighborhoodsFile = z.infer<typeof NeighborhoodsFileSchema>
+export type Neighborhood = z.infer<typeof NeighborhoodSchema>
 
 /** A point in an apartment, in metres: x right, y up, z toward the camera; 0,0,0 is the floor's centre. */
 const RoomPointSchema = z.tuple([z.number(), z.number(), z.number()])
@@ -453,6 +534,59 @@ export const EventLocationCategorySchema = z.union([
 ])
 /** Every place category the engine can be told the player is at, memorials included. */
 export type LocationCategory = Landmark['category'] | Venue['type']
+
+/**
+ * data/places/icons.json (S04k): each place category's icon group, drawn on its map pin and
+ * beside it in the Places list. Every venue type and landmark category maps to a group; `home`
+ * is the player's home row. The icon is decorative (emoji, aria-hidden); the group's label is a
+ * copy key, checked in src/lib/data/data.test.ts.
+ */
+export const PLACE_ICON_GROUPS = [
+  'job',
+  'food',
+  'coffee',
+  'nightlife',
+  'shop',
+  'gym',
+  'park',
+  'transit',
+  'landmark',
+  'skyline',
+  'bridge',
+  'stadium',
+  'neighborhood',
+  'memorial',
+  'home',
+] as const
+export type PlaceIconGroup = (typeof PLACE_ICON_GROUPS)[number]
+
+/**
+ * data/items/looks.json (S04k): the shop's thumbnail size for the offline renders (npm run
+ * thumbs) and each item's icon, shown when it has no rendered thumbnail. Every item has one
+ * (checked in src/lib/data/data.test.ts).
+ */
+export const ItemLooksFileSchema = z.strictObject({
+  thumbs: z.strictObject({ sizePx: z.int().min(32).max(512) }),
+  icons: z.record(IdSchema, z.string().min(1).max(16)),
+})
+
+/** data/items/thumbs.derived.json (npm run thumbs): item id → content-named thumbnail URL. */
+export const ItemThumbsFileSchema = z.record(
+  IdSchema,
+  z.string().regex(/^\/thumbs\/[a-z0-9-]+\.[0-9a-f]{8}\.webp$/),
+)
+
+export const PlaceIconsConfigSchema = z.strictObject({
+  groups: z.record(
+    z.enum(PLACE_ICON_GROUPS),
+    z.strictObject({ icon: z.string().min(1).max(16), labelKey: z.string().min(1) }),
+  ),
+  categories: z.record(
+    z.union([z.enum(VENUE_TYPES), z.enum(LANDMARK_CATEGORIES)]),
+    z.enum(PLACE_ICON_GROUPS),
+  ),
+})
+export type PlaceIconsConfig = z.infer<typeof PlaceIconsConfigSchema>
 
 const statPoints = z.int().nonnegative()
 

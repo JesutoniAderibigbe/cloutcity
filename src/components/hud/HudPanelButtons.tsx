@@ -3,6 +3,7 @@
 import { useModalOpen } from '@/components/overlay/modalState'
 import { CloudSaveStatus } from '@/components/sync/CloudSaveStatus'
 import { copy, type CopyKey } from '@/lib/copy'
+import { openCreator } from '@/state/creatorOpen'
 import { closeHudPanel, openHudPanel, useHudPanel, type HudPanel } from '@/state/hudPanel'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/hud'
@@ -29,7 +30,8 @@ const toggle = (panel: HudPanel, open: HudPanel | null) =>
   open === panel ? closeHudPanel() : openHudPanel(panel)
 
 /**
- * The HUD's panel buttons in the actions cell (S10a; S05 layout; Home, S16; cloud save, S18c).
+ * The HUD's panel buttons in the actions cell (S10a; S05 layout; Home, S16; cloud save, S18c;
+ * Your look, S16a, from `lg`).
  * On wide screens, Inventory, Rent and Home (icons with their labels as accessible names below
  * `lg`, labels from `lg`), and from 704 px the cloud save chip. At every width, the More button
  * that opens a panel holding Inventory, Rent, Home, the cloud save status, the sound settings
@@ -68,6 +70,16 @@ export function HudPanelButtons() {
           <span className="sr-only lg:not-sr-only">{copy(labelKey)}</span>
         </button>
       ))}
+      {/* S16a: the creator, reachable at any time. Only from `lg`, where the HUD has room for a
+          label; narrower screens reach it from More. */}
+      <button
+        type="button"
+        data-hud-creator=""
+        onClick={openCreator}
+        className={`${BUTTON} hidden px-3 lg:flex hud-short:hidden bg-raised text-fg`}
+      >
+        {copy('hud.yourLook')}
+      </button>
       <CloudSaveStatus
         open={open}
         onToggle={() => toggle('cloud', open)}

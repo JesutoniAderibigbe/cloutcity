@@ -59,3 +59,48 @@ export function cameraPosition(
     center[2] + (dir[2] / length) * distance,
   ]
 }
+
+/** The eight corners of an axis-aligned box. */
+export function boxCorners(min: Point3, max: Point3): Point3[] {
+  const out: Point3[] = []
+  for (const x of [min[0], max[0]]) {
+    for (const y of [min[1], max[1]]) {
+      for (const z of [min[2], max[2]]) out.push([x, y, z])
+    }
+  }
+  return out
+}
+
+/** A projected extent in CSS pixels. */
+export interface PixelBox {
+  readonly left: number
+  readonly top: number
+  readonly right: number
+  readonly bottom: number
+}
+
+/**
+ * The camera distance at which the room's projected corners fill `area` (CSS pixels, less the
+ * margin) as fully as the aspect allows (S04k): the sphere fit leaves the room small, since a
+ * box seen from a corner is much smaller on screen than its bounding sphere. `measure` projects
+ * the corners from a distance; its size scales close to 1/distance, so a few rescales converge.
+ */
+export function tightDistance(
+  start: number,
+  measure: (distance: number) => PixelBox,
+  area: { readonly width: number; readonly height: number },
+  margin: number,
+  rounds = 5,
+): number {
+  let distance = start
+  for (let i = 0; i < rounds; i++) {
+    const box = measure(distance)
+    const ratio = Math.max(
+      ((box.right - box.left) * margin) / area.width,
+      ((box.bottom - box.top) * margin) / area.height,
+    )
+    if (!Number.isFinite(ratio) || ratio <= 0) return distance
+    distance *= ratio
+  }
+  return distance
+}

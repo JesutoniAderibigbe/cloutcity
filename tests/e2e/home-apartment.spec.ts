@@ -125,6 +125,8 @@ const room = <T>(page: Page, read: string, arg?: unknown): Promise<T> =>
           return hook.frames() as T
         case 'info':
           return { ...hook.renderInfo(), ...hook.budget() } as T
+        case 'avatar':
+          return hook.avatar() as T
         default:
           throw new Error(`unknown read ${what}`)
       }
@@ -320,7 +322,7 @@ test.describe('home and apartment', () => {
     await expect(dialog.locator('[data-panel-status]')).toContainText('Brooklyn 1BR')
   })
 
-  test('the room stays within every tier budget with the avatar reserve kept free, and idles', async ({
+  test('the room and the player avatar stay within every tier budget (the avatar inside its reserve), and idle', async ({
     page,
   }) => {
     // The biggest room, every slot it can fill.
@@ -360,12 +362,36 @@ test.describe('home and apartment', () => {
       await page.evaluate((t) => window.__cloutcityTest?.apartment?.setTier(t), tier)
       await expect.poll(() => room<string>(page, 'tier')).toBe(tier)
       await waitForRoom(page)
+      // S16a: the player's avatar stands in the room; it loads in its own chunk after the room.
+      await expect
+        .poll(
+          async () => (await room<ReturnType<ApartmentTestHook['avatar']>>(page, 'avatar'))?.drawn,
+          {
+            timeout: 30_000,
+          },
+        )
+        .toBe(true)
+      await waitForRoom(page)
       const info = await room<
         ReturnType<ApartmentTestHook['renderInfo']> & ReturnType<ApartmentTestHook['budget']>
       >(page, 'info')
-      // The main pass plus, on the high tier, the shadow pass three leaves out of its counters.
-      const calls = info.calls + info.shadowCalls
-      const triangles = info.triangles + info.shadowTriangles
+      const avatar = await room<NonNullable<ReturnType<ApartmentTestHook['avatar']>>>(
+        page,
+        'avatar',
+      )
+      // One draw per avatar mesh in the main pass, and again in the high tier's shadow pass.
+      const passes = tier === 'high' ? 2 : 1
+      const avatarCalls = avatar.meshes.length
+      expect(avatarCalls, `${tier} avatar draw calls`).toBeLessThanOrEqual(
+        info.avatarReserve.drawCalls,
+      )
+      expect(avatar.triangles, `${tier} avatar triangles`).toBeLessThanOrEqual(
+        info.avatarReserve.triangles,
+      )
+      // The main pass plus, on the high tier, the shadow pass three leaves out of its counters,
+      // less the avatar (its reserve stands in for it below).
+      const calls = info.calls + info.shadowCalls - avatarCalls * passes
+      const triangles = info.triangles + info.shadowTriangles - avatar.triangles * passes
       test.info().annotations.push({
         type: `room-${tier}`,
         description: `${calls} draw calls (${info.shadowCalls} shadow), ${triangles} triangles (caps ${info.drawCallsMax} / ${info.trianglesMax}, reserve ${info.avatarReserve.drawCalls} / ${info.avatarReserve.triangles})`,

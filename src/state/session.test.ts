@@ -21,7 +21,7 @@ const USER_ID = '6f1c2a7e-0000-4000-8000-000000000001'
 /** Lets every pending promise callback run. */
 const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-function setup(options: { env?: SupabaseEnv | null; online?: boolean } = {}) {
+function setup(options: { env?: SupabaseEnv | null; online?: boolean; signedOut?: boolean } = {}) {
   const records: LogRecord[] = []
   const logger = createLogger({ level: 'debug', sink: (record) => records.push(record) })
   const onboarding = createOnboardingStore(
@@ -34,8 +34,12 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean } = {}) {
   const playable = new Promise<void>((resolve) => (markPlayable = resolve))
   const results: ConnectResult[] = []
   const connectAnonymous = vi.fn<
-    (env: SupabaseEnv, args: AttestationArgs) => Promise<ConnectResult>
-  >(async () => results.shift() ?? { ok: true, reused: false })
+    (
+      env: SupabaseEnv,
+      args: AttestationArgs,
+      connectOptions: { readonly signedOut: boolean },
+    ) => Promise<ConnectResult>
+  >(async () => results.shift() ?? { ok: true, reused: false, permanent: false })
   const loadAuth = vi.fn(async () => ({ connectAnonymous }))
   const startSync = vi.fn(async () => {})
   let online = options.online ?? true
@@ -52,6 +56,8 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean } = {}) {
     },
     status,
     onConnected: vi.fn(),
+    signedOut: async () => options.signedOut ?? false,
+    onSignedOut: vi.fn(),
   }
   const start = createGuestSessionStarter(onboarding, logger, deps)
   return {
@@ -64,6 +70,7 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean } = {}) {
     startSync,
     loadAuth,
     onConnected: deps.onConnected,
+    onSignedOut: deps.onSignedOut,
     markPlayable,
     complete: () =>
       onboarding
@@ -136,7 +143,7 @@ describe('guest session (S05)', () => {
 
   it('reports a reused session', async () => {
     const s = setup()
-    s.results.push({ ok: true, reused: true })
+    s.results.push({ ok: true, reused: true, permanent: false })
     s.complete()
     s.start()
     s.markPlayable()
@@ -144,6 +151,7 @@ describe('guest session (S05)', () => {
     expect(s.status.getState()).toEqual({ status: 'anonymous', reason: null, reused: true })
     expect(s.records.find((r) => r.msg === 'Guest session connected')?.context).toEqual({
       reused: true,
+      account: false,
     })
   })
 
@@ -359,5 +367,41 @@ describe('guest session: after connecting (S18b)', () => {
     failed.markPlayable()
     await flush()
     expect(failed.onConnected).not.toHaveBeenCalled()
+  })
+})
+
+describe('guest session: accounts (S19)', () => {
+  it("a saved account's session on this device connects as permanent", async () => {
+    const s = setup()
+    s.results.push({ ok: true, reused: true, permanent: true })
+    s.complete()
+    s.start()
+    s.markPlayable()
+    await flush()
+    expect(s.status.getState()).toEqual({ status: 'permanent', reason: null, reused: true })
+    expect(s.startSync).toHaveBeenCalledTimes(1)
+  })
+
+  it('after a sign-out, asks for no new guest and stays local with the reason', async () => {
+    const s = setup({ signedOut: true })
+    s.results.push({ ok: false, stage: 'signed-out' })
+    s.complete()
+    s.start()
+    s.markPlayable()
+    await flush()
+    expect(s.connectAnonymous).toHaveBeenCalledWith(ENV, expect.anything(), { signedOut: true })
+    expect(s.status.getState()).toEqual({ status: 'local', reason: 'signed-out', reused: false })
+    expect(s.onSignedOut).toHaveBeenCalledTimes(1)
+    expect(s.startSync).not.toHaveBeenCalled()
+    expect(s.onConnected).not.toHaveBeenCalled()
+  })
+
+  it('passes signedOut false for a device that never signed out', async () => {
+    const s = setup()
+    s.complete()
+    s.start()
+    s.markPlayable()
+    await flush()
+    expect(s.connectAnonymous).toHaveBeenCalledWith(ENV, expect.anything(), { signedOut: false })
   })
 })

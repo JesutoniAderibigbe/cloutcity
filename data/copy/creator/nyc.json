@@ -1,0 +1,6 @@
+{
+  "id": "nyc",
+  "strings": {
+    "creator.roll.reveal": "The city picked {neighborhood}. Make it work."
+  }
+}

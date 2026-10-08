@@ -101,8 +101,12 @@ describe('the transit engine loads with the travel chunk only (import-graph guar
     expect(closureOf(file).filter(transit)).toEqual([])
   })
 
-  it('the 3D chunk reaches only the pure timeline (no graph, land or geo data)', () => {
-    const reached = closureOf('scene/CityCanvas.tsx').filter(transit)
+  it('the 3D chunk reaches no transit code: the travel animation loads lazily (S04k)', () => {
+    expect(closureOf('scene/CityCanvas.tsx').filter(transit)).toEqual([])
+  })
+
+  it('the lazy travel animation reaches only the pure timeline (no graph, land or geo data)', () => {
+    const reached = closureOf('scene/travel/TravelAnimator.tsx').filter(transit)
     expect(reached.sort()).toEqual([
       'src/engine/transit/polyline.ts',
       'src/engine/transit/timeline.ts',

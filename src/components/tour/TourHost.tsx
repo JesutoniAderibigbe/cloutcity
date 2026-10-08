@@ -13,6 +13,7 @@ import { usePlacesPanelShown } from '@/state/placesPanel'
 import { isAtPlace } from '@/engine/game'
 import { gameStore } from '@/state/store'
 import { setArrivalEventsSuppressed } from '@/state/trip'
+import { setTourActive } from '@/state/tourActive'
 import { TOUR_STEPS, isFreshStart, tourStore, type ActiveTour, type TourUi } from '@/state/tour'
 import { TOUR_TARGET, tourConfig, tourHighlightCss, tourHighlightSelector } from './tourControl'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -47,7 +48,12 @@ export function TourHost() {
   const touring = record?.status === 'active'
   useEffect(() => {
     setArrivalEventsSuppressed(touring)
-    return () => setArrivalEventsSuppressed(false)
+    // The creator offer (S16a) waits for the tour to end.
+    setTourActive(touring)
+    return () => {
+      setArrivalEventsSuppressed(false)
+      setTourActive(false)
+    }
   }, [touring])
 
   useEffect(

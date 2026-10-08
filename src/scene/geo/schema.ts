@@ -135,6 +135,7 @@ export const PlacesMiniSchema = z.strictObject({
       kind: z.enum(PIN_KINDS),
       category: id,
       borough,
+      name: z.string(),
       x: metre,
       y: metre,
       style: z.enum(PIN_STYLES),
@@ -198,6 +199,7 @@ export const LandmarksMiniSchema = z.strictObject({
           spanM: z.optional(z.number().check(z.gt(0))),
           pinLiftM: z.number().check(z.gt(0)),
         }),
+        chipShiftM: z.optional(z.number()),
       })
       .check(
         z.refine(
@@ -223,6 +225,8 @@ export interface GeoLandmark {
   /** The Blender model (S07c): src/scene/models/landmarkLevels.ts. */
   readonly glb?: GeoLandmarkGlb
   readonly frame: LandmarkFrame
+  /** Name chip shift north (+) or south (-) that clears a neighbour's chip (UX-14). */
+  readonly chipShiftM?: number
 }
 
 export interface GeoLandmarkGlb {

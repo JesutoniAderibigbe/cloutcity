@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { V12_FRESH_PLAYER, V12_FRESH_SAVE, V12_PLAYER_KEYS } from './test-support'
 import { initialCloutState, legacyCloutState } from './clout'
 import { engineConfig as config } from './config'
 import { emptyInventory } from './items'
@@ -27,6 +28,7 @@ function legacyPlayer(): Record<string, unknown> {
   delete player.apartment
   delete player.location
   delete player.transit
+  for (const key of V12_PLAYER_KEYS) delete player[key]
   return player
 }
 
@@ -40,6 +42,7 @@ function legacyV7Player(): Record<string, unknown> {
   delete player.apartment
   delete player.location
   delete player.transit
+  for (const key of V12_PLAYER_KEYS) delete player[key]
   return player
 }
 
@@ -50,6 +53,8 @@ function legacyBase(): Record<string, unknown> {
   delete save.grants
   delete save.prestige
   delete save.actions
+  delete save.creator
+  delete save.rolls
   return save
 }
 
@@ -66,7 +71,7 @@ const S15_FIELDS = {
 
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(11)
+    expect(SAVE_VERSION).toBe(12)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -95,8 +100,10 @@ describe('save migration', () => {
     expect(migrated.outcome).toBe('carried')
     expect(migrated.save).toEqual({
       ...initialSave(config),
-      player: { ...initialSave(config).player, cash: 420 },
+      player: { ...initialSave(config).player, cash: 420, look: expect.any(Object) },
     })
+    // Seeded from the save, so the same old save always gets the same look.
+    expect(migrateSave({ player: { cash: 420 } }, 1, config).save).toEqual(migrated.save)
     expect(schema.safeParse(migrated.save).success).toBe(true)
   })
 
@@ -247,9 +254,11 @@ describe('save v3: clout, home and rent', () => {
           apartment: initialApartment,
           location: { kind: 'home' },
           transit: { rngState: 0 },
+          ...V12_FRESH_PLAYER,
         },
         events: initialEventsState(),
         ...S15_FIELDS,
+        ...V12_FRESH_SAVE,
       },
     })
     expect(schema.safeParse(migrated.save).success).toBe(true)
@@ -338,6 +347,7 @@ describe('save v3: tampered and edge saves', () => {
         apartment: initialApartment,
         location: { kind: 'home' },
         transit: { rngState: 0 },
+        ...V12_FRESH_PLAYER,
       })
       expect(schema.safeParse(result.save).success).toBe(true)
     },
@@ -399,10 +409,12 @@ describe('save v3: tampered and edge saves', () => {
         apartment: initialApartment,
         location: { kind: 'home' },
         transit: { rngState: 0 },
+        ...V12_FRESH_PLAYER,
       },
       speed: 1,
       events: initialEventsState(),
       ...S15_FIELDS,
+      ...V12_FRESH_SAVE,
     })
   })
 
@@ -445,9 +457,11 @@ describe('event state in the save (v5)', () => {
           apartment: initialApartment,
           location: { kind: 'home' },
           transit: { rngState: 0 },
+          ...V12_FRESH_PLAYER,
         },
         events: initialEventsState(),
         ...S15_FIELDS,
+        ...V12_FRESH_SAVE,
       },
       outcome: 'carried',
     })
@@ -652,9 +666,11 @@ describe('club nights in the save (v6)', () => {
           apartment: initialApartment,
           location: { kind: 'home' },
           transit: { rngState: 0 },
+          ...V12_FRESH_PLAYER,
         },
         // 120 earned clout holds Local: the migration derives that goal at the save's minute.
         ...S15_FIELDS,
+        ...V12_FRESH_SAVE,
         goals: { ...initialGoalsState, achieved: { 'reach-local': 9000 } },
       },
       outcome: 'carried',

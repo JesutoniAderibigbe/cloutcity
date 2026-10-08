@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { resaleBonusPts } from '@/engine/career'
 import { engineConfig } from '@/engine/config'
 import {
   findItem,
@@ -41,7 +42,7 @@ const ACTION = `${PANEL_BUTTON} bg-raised text-center text-sm text-fg enabled:ho
 
 /**
  * The inventory panel (S10a), opened from the HUD: owned wearables with Wear / Take off and
- * Sell (at the engine's current resale value), gifts with Use on yourself and Sell, and decor
+ * Sell (at the engine's current resale value, career points included), gifts with Use on yourself and Sell, and decor
  * (S16) with where it is and Sell (placed decor comes out of its slot first; the Home panel
  * places it). Every
  * action goes through the store to the engine; the result, or the engine's refusal, shows in
@@ -52,6 +53,8 @@ export function InventoryPanel() {
   const home = useGameStore((state) => state.player.home)
   const placed = useGameStore((state) => state.player.apartment.placed)
   const minute = useGameStore((state) => state.clock.minute)
+  // The resale the engine pays (GR-11): with a founder/hustler's career points, as sellItem.
+  const bonusPts = useGameStore((state) => resaleBonusPts(state.player, engineConfig))
   // The nonce re-runs the focus check for every action, even when two results read the same.
   const [result, setResult] = useState<{ readonly text: string; readonly nonce: number } | null>(
     null,
@@ -121,7 +124,7 @@ export function InventoryPanel() {
               const worn = inventory.outfit[def.slot] === def.id
               // Kept through prestige (Q-8): a look only, with no resale value.
               const kept = isPrestigeKept(owned)
-              const resale = resaleValue(def, owned.acquiredMinute, minute, engineConfig)
+              const resale = resaleValue(def, owned.acquiredMinute, minute, engineConfig, bonusPts)
               return (
                 <li
                   key={def.id}
@@ -206,7 +209,7 @@ export function InventoryPanel() {
           </h3>
           <ul aria-busy={coolingDown} className="flex flex-col gap-1.5">
             {gifts.map(({ stack, def }) => {
-              const resale = resaleValue(def, minute, minute, engineConfig)
+              const resale = resaleValue(def, minute, minute, engineConfig, bonusPts)
               return (
                 <li
                   key={def.id}
@@ -260,7 +263,7 @@ export function InventoryPanel() {
           <ul aria-busy={coolingDown} className="flex flex-col gap-1.5">
             {decor.map(({ owned, def }) => {
               const kept = isPrestigeKept(owned)
-              const resale = resaleValue(def, owned.acquiredMinute, minute, engineConfig)
+              const resale = resaleValue(def, owned.acquiredMinute, minute, engineConfig, bonusPts)
               const slotId = slotOf.get(def.id)
               return (
                 <li

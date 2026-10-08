@@ -9,14 +9,21 @@
  */
 import { useEffect, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
-import { DirectionalLight, Mesh, PCFShadowMap, Vector3, type Object3D } from 'three'
+import {
+  DirectionalLight,
+  Mesh,
+  MeshToonMaterial,
+  PCFShadowMap,
+  Vector3,
+  type Object3D,
+} from 'three'
 import { lightingKey } from '@/lib/dayNight/lightingKey'
 import type { KeyframeId, Lighting, UiTheme } from '@/lib/dayNight/types'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { TierReason } from '@/lib/quality/tier'
 import { qualityStore, selectActiveTier } from '@/state/quality'
 import { MapControls } from 'three/addons/controls/MapControls.js'
-import { PLAYER_AVATAR_NAME } from './avatar/buildAvatar'
+import { PLAYER_AVATAR_NAME, type AvatarLookInfo } from './avatar/buildAvatar'
 import { radToDeg } from './camera/limits'
 import type { BuildingsHandle, BuildingsState } from './buildings/Buildings'
 import type { BoroughView, CityObjects } from './City'
@@ -56,6 +63,10 @@ export interface ScenePlayerState {
   readonly screen: { readonly x: number; readonly y: number }
   /** True once the hand-made avatar (S04h) has replaced the capsule placeholder. */
   readonly model: boolean
+  /** What the player's look resolved to (S16a), or null before the model chunk has drawn it. */
+  readonly look: AvatarLookInfo | null
+  /** The capsule body's colour, sRGB hex (S16a: the look's top). */
+  readonly capsuleColor: string
 }
 
 /** A pin as the test sees it: where to tap, in client (viewport) CSS pixels. */
@@ -252,8 +263,14 @@ export function TestHooks({
         const ndc = feet.clone().project(camera)
         const rect = gl.domElement.getBoundingClientRect()
         const capsule = avatar.getObjectByName(`${PLAYER_AVATAR_NAME}-body`)
+        const material =
+          capsule instanceof Mesh && capsule.material instanceof MeshToonMaterial
+            ? capsule.material
+            : null
         return {
           model: capsule !== undefined && !capsule.visible,
+          look: (avatar.userData.look as AvatarLookInfo | undefined) ?? null,
+          capsuleColor: material === null ? '' : `#${material.color.getHexString()}`,
           local: { x: feet.x, y: -feet.z },
           groundY: feet.y,
           sizeM: avatar.scale.y,

@@ -1,0 +1,16 @@
+{
+  "strings": {
+    "neighborhoods.astoria.name": "Astoria",
+    "neighborhoods.astoria.blurb": "Ditmars mornings, waterfront sunsets, the N and W at your door.",
+    "neighborhoods.sunnyside.name": "Sunnyside",
+    "neighborhoods.sunnyside.blurb": "Quiet streets, garden courts and the elevated train one block over.",
+    "neighborhoods.jacksonHeights.name": "Jackson Heights",
+    "neighborhoods.jacksonHeights.blurb": "Every cuisine on one avenue, and the trains close by.",
+    "neighborhoods.elmhurst.name": "Elmhurst",
+    "neighborhoods.elmhurst.blurb": "Busy, bright and right on the Queens Boulevard lines.",
+    "neighborhoods.ridgewood.name": "Ridgewood",
+    "neighborhoods.ridgewood.blurb": "Brick rows, cafés and the M train to everywhere.",
+    "neighborhoods.flushing.name": "Flushing",
+    "neighborhoods.flushing.blurb": "Main Street energy at the end of the line."
+  }
+}

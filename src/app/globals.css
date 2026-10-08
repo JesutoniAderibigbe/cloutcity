@@ -145,12 +145,24 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Map attribution (src/scene/MapAttribution.tsx): the free scene row is a size container, and
+/* Map attribution (src/scene/MapAttribution.tsx): the chip's row is a size container, and
    when it is too short for the two-line attribution (landscape phones) the one-line form shows
    instead, so the chip never spills over the HUD or other zones. 5.5rem fits the two-line form
    with its padding at 11 px text; the row's minimum (layout.json) fits the one-line form. */
 .map-attribution-row {
   container-type: size;
+  /* Rows from src/components/overlay/layers.ts (FREE_SCENE_GRID_ROW to ZONE_GRID_ROW.tabs),
+     kept equal by layers.test.ts; plain CSS keeps them out of the page's inline scripts. */
+  grid-row: 4 / 7;
+}
+
+/* UX-15: in the bottom-end corner above the tab bar while the sheet zone is empty; back in the
+   free scene row's corner while a sheet (or the Places panel) fills it, so the chip never sits
+   under a sheet. A sheet is open when the zone's content wrapper (OverlayLayout.tsx) holds a
+   child other than a passive sr-only status. (`:has()` cannot nest, hence the child test.) */
+.cc-overlay:has([data-overlay-zone='sheet'] > * > :not([data-overlay-passive]))
+  .map-attribution-row {
+  grid-row: 4;
 }
 
 .map-attribution-compact {
@@ -207,6 +219,121 @@ body {
 @media (prefers-reduced-motion: no-preference) {
   .level-up-pop {
     animation: level-up-pop 320ms ease-out 1;
+  }
+}
+
+/* The level-up moment (S04k): a burst of taxi-yellow sparkles inside the toast, a light sweep
+   across it and one glow ring, once, about a second and a half in all. CSS only, on the toast's own
+   attribute, so the boot island gains no byte; decorative (pseudo-elements, never announced);
+   no sound (GR-13). It stays inside the toast, so the toast zone holds it (UX-1). Under reduced
+   motion the sparkles sit still and faint and nothing moves. */
+[data-level-up] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+[data-level-up]::before,
+[data-level-up]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+[data-level-up]::before {
+  background:
+    radial-gradient(circle at 6% 28%, var(--color-taxi) 0 3px, transparent 4px),
+    radial-gradient(circle at 14% 80%, var(--color-taxi) 0 2px, transparent 3px),
+    radial-gradient(circle at 24% 14%, var(--color-taxi-ink) 0 2px, transparent 3px),
+    radial-gradient(circle at 33% 62%, var(--color-taxi) 0 3.5px, transparent 4.5px),
+    radial-gradient(circle at 42% 20%, var(--color-taxi) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 51% 86%, var(--color-taxi-ink) 0 2px, transparent 3px),
+    radial-gradient(circle at 60% 30%, var(--color-taxi) 0 3px, transparent 4px),
+    radial-gradient(circle at 68% 74%, var(--color-taxi) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 77% 16%, var(--color-taxi-ink) 0 2px, transparent 3px),
+    radial-gradient(circle at 86% 58%, var(--color-taxi) 0 3.5px, transparent 4.5px),
+    radial-gradient(circle at 95% 22%, var(--color-taxi) 0 2.5px, transparent 3.5px);
+  opacity: 0.35;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-level-up] {
+    animation:
+      level-up-pop 320ms ease-out 1,
+      level-up-glow 1100ms ease-out 100ms 1;
+  }
+
+  [data-level-up]::before {
+    opacity: 0;
+    animation: level-up-sparkle 1500ms ease-out 60ms 1;
+  }
+
+  [data-level-up]::after {
+    background: linear-gradient(
+      105deg,
+      transparent 30%,
+      color-mix(in srgb, var(--color-taxi) 60%, transparent) 50%,
+      transparent 70%
+    );
+    transform: translateX(-110%);
+    animation: level-up-sweep 900ms ease-in-out 150ms 1;
+  }
+}
+
+@keyframes level-up-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  25% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
+
+@keyframes level-up-sweep {
+  to {
+    transform: translateX(110%);
+  }
+}
+
+@keyframes level-up-glow {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-taxi) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
+/* The apartment's backdrop (src/scene/apartment/ApartmentCanvas.tsx, S04k): the room stands on
+   a soft pool of light in the UI's own colours, a warm cream by day and deep glass by night, not
+   a black void. The canvas is transparent above it. */
+.apartment-backdrop {
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 42%,
+      color-mix(in srgb, var(--color-taxi) 14%, var(--color-surface)) 0%,
+      transparent 72%
+    ),
+    var(--color-canvas);
+}
+
+/* A shop purchase's result, in the bought item's row (src/components/places/ShopSection.tsx,
+   S04k): a quick pop where the tap was. Under reduced motion it simply appears. */
+@media (prefers-reduced-motion: no-preference) {
+  .shop-feedback {
+    animation: level-up-pop 220ms ease-out 1;
+    transform-origin: left center;
   }
 }
 

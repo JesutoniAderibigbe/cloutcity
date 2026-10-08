@@ -3,7 +3,9 @@
 /**
  * A hand-made avatar (S04h, S05): one body and one head (Kenney Mini Characters, recoloured
  * through their `_SLOT` regions) bound to a single skeleton and posed by the shared rig's
- * clips. Animation holds a continuous frame lease only while `animate` is true; otherwise the
+ * clips, plus up to `avatar.attachments.max` static attachments (S16a: glasses, a hearing aid,
+ * later the Blender hair pieces and coverings), each a child of a rig joint so it follows the
+ * pose with no extra skinning. Animation holds a continuous frame lease only while `animate` is true; otherwise the
  * avatar is posed once on the clip's first frame and requests a single frame, so an idle scene
  * still renders zero frames (frameloop="demand").
  */
@@ -11,6 +13,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import {
   AnimationMixer,
+  Matrix4,
+  Mesh,
   Skeleton,
   SkinnedMesh,
   type AnimationClip,
@@ -20,7 +24,8 @@ import {
 } from 'three'
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import { log } from '@/lib/log'
-import { triangleCount, type RigModel, type SkinnedPartModel } from './prepare'
+import type { AvatarAttachment } from '../avatar/resolveLook'
+import { triangleCount, type RigModel, type SkinnedPartModel, type StaticModel } from './prepare'
 import { useModels, useModelsContext } from './runtime'
 import { disposeRecolored, recolorGeometry, slotColorsKey, type SlotColors } from './slots'
 import type { ModelRef } from './types'
@@ -29,6 +34,14 @@ export interface AvatarParts {
   readonly rig: ModelRef
   readonly head: ModelRef
   readonly body: ModelRef
+  /** Static models fixed to rig joints (src/scene/avatar/resolveLook.ts). */
+  readonly attachments?: readonly AvatarAttachment[]
+}
+
+/** An attachment with its loaded model. */
+interface LoadedAttachment {
+  readonly part: AvatarAttachment
+  readonly model: StaticModel
 }
 
 export interface AvatarColors {
@@ -65,6 +78,7 @@ export function assembleAvatar(
   parts: AvatarParts,
   material: Material,
   colors: AvatarColors,
+  attachments: readonly LoadedAttachment[] = [],
 ): AssembledAvatar {
   const root = cloneSkinned(body.scene)
   const bodyMesh = skinnedMeshOf(root)
@@ -94,6 +108,27 @@ export function assembleAvatar(
   parent.add(headMesh)
   headMesh.bind(new Skeleton(headBones, headSource.skeleton.boneInverses), headSource.bindMatrix)
 
+  // Each attachment hangs off its joint, placed where the bind pose puts it: its offset in the
+  // character's space, carried into the joint's frame by the joint's bind-pose world matrix.
+  root.updateMatrixWorld(true)
+  const extras: { readonly geometry: typeof bodyGeometry; readonly source: typeof bodyGeometry }[] =
+    []
+  for (const { part, model } of attachments) {
+    const joint = bones.get(part.joint)
+    if (joint === undefined) throw new Error(`attachment joint "${part.joint}" missing`)
+    const geometry = recolorGeometry(model.geometry, part.ref.slots, part.colors)
+    const mesh = new Mesh(geometry, material)
+    mesh.name = `${part.ref.id}-attachment`
+    mesh.matrixAutoUpdate = false
+    mesh.matrix
+      .copy(joint.matrixWorld)
+      .invert()
+      .multiply(new Matrix4().makeTranslation(...part.offset))
+      .multiply(model.matrix)
+    joint.add(mesh)
+    extras.push({ geometry, source: model.geometry })
+  }
+
   root.traverse((object) => {
     object.raycast = noRaycast
     // Bind-pose bounds do not follow animated limbs; one small avatar is cheaper to always draw
@@ -105,8 +140,12 @@ export function assembleAvatar(
   return {
     root,
     mixer,
-    triangles: triangleCount(bodyGeometry) + triangleCount(headGeometry),
+    triangles:
+      triangleCount(bodyGeometry) +
+      triangleCount(headGeometry) +
+      extras.reduce((sum, extra) => sum + triangleCount(extra.geometry), 0),
     dispose() {
+      for (const extra of extras) disposeRecolored(extra.source, extra.geometry)
       mixer.stopAllAction()
       mixer.uncacheRoot(root)
       disposeRecolored(bodySource.geometry, bodyGeometry)
@@ -131,6 +170,7 @@ export function AvatarModel({
   clip,
   animate,
   name,
+  scale = 1,
   shadows = false,
   onStatus,
   onAssembled,
@@ -142,6 +182,8 @@ export function AvatarModel({
   /** Plays the clip with a continuous frame lease; false poses its first frame once. */
   readonly animate: boolean
   readonly name?: string
+  /** Root scale (S16a: the height option). */
+  readonly scale?: number
   /** Casts the sun's shadow (the high tier's one directional shadow map). */
   readonly shadows?: boolean
   readonly onStatus?: (status: AvatarStatus) => void
@@ -150,21 +192,34 @@ export function AvatarModel({
 }) {
   const { material } = useModelsContext()
   const invalidate = useThree((state) => state.invalidate)
-  const state = useModels([parts.rig, parts.body, parts.head])
-  const colorsKey = `${slotColorsKey(colors?.head)}|${slotColorsKey(colors?.body)}`
+  const attachments = parts.attachments ?? []
+  const state = useModels([parts.rig, parts.body, parts.head, ...attachments.map((a) => a.ref)])
+  const colorsKey = [
+    slotColorsKey(colors?.head),
+    slotColorsKey(colors?.body),
+    ...attachments.map(
+      (a) => `${a.ref.id}:${a.joint}:${a.offset.join(',')}:${slotColorsKey(a.colors)}`,
+    ),
+  ].join('|')
 
   // Bad part data is an expected failure here (a stale deploy, a mismatched rig): it logs once
   // and reports `error`, so the caller keeps its placeholder instead of the canvas crashing.
   const avatar = useMemo(() => {
     if (state.status !== 'ready') return null
-    const [rig, body, head] = state.models
+    const [rig, body, head, ...extra] = state.models
     try {
       if (rig?.kind !== 'rig' || body?.kind !== 'skinned' || head?.kind !== 'skinned') {
         throw new Error('avatar parts must be a rig, a skinned body and a skinned head')
       }
+      const loaded = attachments.map((part, i): LoadedAttachment => {
+        const model = extra[i]
+        if (model?.kind !== 'static') throw new Error(`attachment ${part.ref.id} is not static`)
+        return { part, model }
+      })
       // Fails here, not later in an effect, when the rig lacks the clip.
       clipNamed(rig, clip)
-      const assembled = assembleAvatar(body, head, parts, material, colors ?? {})
+      const assembled = assembleAvatar(body, head, parts, material, colors ?? {}, loaded)
+      assembled.root.scale.setScalar(scale)
       if (name !== undefined) assembled.root.name = name
       assembled.root.traverse((object) => {
         object.castShadow = shadows
@@ -178,7 +233,7 @@ export function AvatarModel({
       return 'failed' as const
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, material, colorsKey, name, shadows, clip])
+  }, [state, material, colorsKey, name, shadows, clip, scale])
 
   const onStatusRef = useRef(onStatus)
   const onAssembledRef = useRef(onAssembled)

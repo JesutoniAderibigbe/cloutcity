@@ -68,6 +68,8 @@
     "mod.action.notFound": "That case is gone.",
     "mod.action.failed": "That action didn't go through: {code}.",
     "mod.action.reasonRequired": "Pick a reason.",
-    "mod.action.daysInvalid": "Days must be a whole number from 1 to 365."
+    "mod.action.daysInvalid": "Days must be a whole number from 1 to 365.",
+    "mod.signIn.finish": "Finish signing in",
+    "mod.signIn.linkFailed": "That sign-in link expired or was already used. Send a new one."
   }
 }
