@@ -185,6 +185,115 @@ export const StreetPropsConfigSchema = z
   )
 export type StreetPropsConfig = z.infer<typeof StreetPropsConfigSchema>
 
+/** Ambient vehicle models (S04l): reduced LODs of the street-prop cars, plus a CC0 bus. */
+export const AMBIENT_VEHICLE_MODELS = [
+  'sedan-ambient',
+  'taxi-ambient',
+  'hatchback-ambient',
+  'bus-ambient',
+] as const
+
+const ambientTier = <T extends z.ZodType>(value: T) =>
+  z.strictObject({ low: value, mid: value, high: value })
+const speedRange = z
+  .strictObject({ min: metres, max: metres })
+  .refine((range) => range.min <= range.max, { error: 'min must not exceed max' })
+const distanceScale = z.strictObject({
+  /** Size multiplier per metre of camera distance (never below real size). */
+  perDistance: z.number().nonnegative(),
+  max: z.number().min(1),
+})
+
+/**
+ * data/config/ambient.json, the living city (S04l, DEC-52): ambient traffic, pedestrians and
+ * subway trains, deterministic from `seed` and the city clock (src/lib/world/ambient/). Counts
+ * here are per-slot densities; what may be drawn at once is capped by perf.json `ambient`.
+ * Distances are metres, times seconds. Its own file (read by the lazy ambient chunk only).
+ */
+export const AmbientConfigSchema = z.strictObject({
+  seed: z.int().nonnegative(),
+  /** Vehicle slots belong to squares of this side. */
+  cellM: metres,
+  /** The ambient ticker requests at most this many frames per second. */
+  fpsCap: ambientTier(z.int().min(1).max(120)),
+  /** Vehicle cells and pedestrian anchors within this of the camera target are simulated. */
+  focusRadiusM: ambientTier(metres),
+  density: z.strictObject({
+    /** Active slot share at each FPS step-down level, level 0 first, descending. */
+    steps: z
+      .array(z.number().gt(0).max(1))
+      .min(1)
+      .refine((steps) => steps.every((s, i) => i === 0 || s < (steps[i - 1] ?? 1)), {
+        error: 'density steps must descend',
+      }),
+    /** Multiplier on the share at night (personal game clock). */
+    night: z.number().gt(0).max(1),
+  }),
+  /** While ambient is the only continuous source, the step-down's FPS floor. */
+  stepDown: z.strictObject({ belowFps: ambientTier(z.number().positive()) }),
+  lights: z.strictObject({
+    cycleS: z.number().positive(),
+    greenShare: z.number().gt(0).max(0.5),
+    stopGapM: z.number().nonnegative(),
+    queueGapM: z.number().nonnegative(),
+    axisCos: z.number().gt(0).lt(1),
+    minEnds: z.int().min(3),
+  }),
+  vehicles: z.strictObject({
+    models: ambientTier(z.array(z.enum(AMBIENT_VEHICLE_MODELS)).min(1)),
+    taxiShare: chance,
+    busShare: chance,
+    busWideOnly: z.boolean(),
+    perCell: ambientTier(z.int().min(0).max(7)),
+    speedMps: speedRange,
+    laneOffsetRatio: z.number().positive().max(1),
+    minLaneOffsetM: metres,
+    epochS: z.number().positive(),
+    cohorts: z.int().min(1),
+    fadeS: z.number().positive(),
+    brakeS: z.number().positive(),
+    lengthM: metres,
+    /** Cars draw only while the camera is at most this far from its target. */
+    showBelowDistanceM: ambientTier(metres),
+    scale: distanceScale,
+    paint: z.array(HEX).min(1),
+  }),
+  pedestrians: z.strictObject({
+    /** The S16b seam: the temporary Kenney bake, or S16b's own ambient LOD. */
+    source: z.enum(['kenney-temp', 's16b']),
+    anchors: z.array(z.enum(['place', 'home', 'landmark'])).min(1),
+    anchorRadiusM: metres,
+    perAnchor: ambientTier(z.int().min(0).max(7)),
+    speedMps: speedRange,
+    sidewalkOffsetM: metres.max(5),
+    sidewalkJitterM: z.number().nonnegative(),
+    epochS: z.number().positive(),
+    fadeS: z.number().positive(),
+    showBelowDistanceM: ambientTier(metres),
+    scale: distanceScale,
+    bobM: z.number().nonnegative(),
+    bobHz: z.number().positive(),
+    memorialMarginM: z.number().nonnegative(),
+    palette: z.strictObject({
+      skin: z.array(HEX).min(1),
+      tops: z.array(HEX).min(1),
+      bottoms: z.array(HEX).min(1),
+    }),
+  }),
+  trains: z.strictObject({
+    speedMps: z.number().positive(),
+    dwellS: z.number().nonnegative(),
+    headwayS: z.number().positive(),
+    cars: ambientTier(z.int().min(1).max(8)),
+    gapRatio: z.number().nonnegative(),
+    stationSnapM: metres,
+    minStopGapM: z.number().nonnegative(),
+    memorialMarginM: z.number().nonnegative(),
+    memorialFadeM: z.number().nonnegative(),
+  }),
+})
+export type AmbientConfigFile = z.infer<typeof AmbientConfigSchema>
+
 export const SceneConfigSchema = z.strictObject({
   /** The camera starts over the player's home (data/homes/homes.json), not a fixed point. */
   camera: z

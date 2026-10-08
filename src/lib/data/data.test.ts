@@ -49,7 +49,12 @@ import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './sche
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
 import { BlenderLockSchema, LandmarkMeasurementsSchema } from './schemas/landmarkBlender'
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
-import { PinMarksConfigSchema, SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
+import {
+  AmbientConfigSchema,
+  PinMarksConfigSchema,
+  SceneConfigSchema,
+  StreetPropsConfigSchema,
+} from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
@@ -120,6 +125,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'avatar/traits.json': TraitsFileSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
   'config/account.json': AccountConfigSchema,
+  'config/ambient.json': AmbientConfigSchema,
   'config/audio.json': AudioConfigSchema,
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,

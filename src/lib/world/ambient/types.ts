@@ -103,8 +103,8 @@ export interface StreetEdge {
 export interface StreetGraph {
   readonly nodes: readonly StreetNode[]
   readonly edges: readonly StreetEdge[]
-  /** `cellM` squares (key `${cx},${cy}`) to the edges whose midpoint lies inside. */
-  readonly cells: ReadonlyMap<string, readonly number[]>
+  /** `cellM` squares (key `cellKey(cx, cy)`, graph.ts) to the edges whose midpoint lies inside. */
+  readonly cells: ReadonlyMap<number, readonly number[]>
   readonly cellM: number
 }
 
@@ -139,6 +139,10 @@ export interface VehiclesConfig {
   readonly busShare: number
   readonly busWideOnly: boolean
   readonly perCell: PerAmbientTier<number>
+  /**
+   * Speed belongs to the street (so no car drives through another on its lane): `min` on
+   * ordinary streets, `max` on wide ones.
+   */
   readonly speedMps: { readonly min: number; readonly max: number }
   /** Lane centre = max(minLaneOffsetM, halfWidth × laneOffsetRatio) right of the centreline. */
   readonly laneOffsetRatio: number
@@ -148,8 +152,6 @@ export interface VehiclesConfig {
   readonly fadeS: number
   /** Seconds a car takes to brake to a stop line (and to pull away again). */
   readonly brakeS: number
-  /** Turn corners are cut this far before and after the junction point. */
-  readonly cornerM: number
   /** Nose-to-nose spacing a queued car keeps (its length plus `lights.queueGapM`). */
   readonly lengthM: number
   readonly showBelowDistanceM: PerAmbientTier<number>
