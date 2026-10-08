@@ -233,6 +233,32 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L2: 594 triangles, 11748 bytes (`public/landmarks/deco-spire/lod2.glb`)
 - L3: 290 triangles, 7184 bytes (`public/landmarks/deco-spire/lod3.glb`)
 
+### dumbo
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q1264951 (DUMBO) and Q16996543 (Jane's Carousel), CC0-1.0, <https://www.wikidata.org/wiki/Q1264951>
+
+Dimensions:
+
+- `heightM`: 80 m (estimate): the waterfront clock-tower warehouse's tower top (generic: no clock face)
+- `towerBlockM`: 55 m (estimate): that warehouse's main block, about 16 storeys
+- `warehouseM`: 45 × 25 m (estimate): the other warehouses' tallest (widthM) and lowest (depthM) heights
+- `blockPlan`: 50 × 40 m (estimate): a warehouse block's plan
+- `parkStrip`: 260 × 40 m (estimate): the waterfront park lawn's length and width
+- `carousel`: 22 × 9 m (estimate): the carousel's glass pavilion: side (widthM) and height (depthM)
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.2, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.2; plan real, so the blocks match the district around them.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6840 triangles, 68356 bytes (`public/landmarks/dumbo/lod0.glb`)
+- L1: 3120 triangles, 36020 bytes (`public/landmarks/dumbo/lod1.glb`)
+- L2: 1200 triangles, 16808 bytes (`public/landmarks/dumbo/lod2.glb`)
+- L3: 576 triangles, 9956 bytes (`public/landmarks/dumbo/lod3.glb`)
+
 ### jamaica-station
 
 Retrieved 2026-10-08. Sources:
@@ -500,7 +526,7 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L0: 3712 triangles, 49404 bytes (`public/landmarks/times-square/lod0.glb`)
 - L1: 1840 triangles, 29720 bytes (`public/landmarks/times-square/lod1.glb`)
 - L2: 900 triangles, 18016 bytes (`public/landmarks/times-square/lod2.glb`)
-- L3: 290 triangles, 8056 bytes (`public/landmarks/times-square/lod3.glb`)
+- L3: 434 triangles, 10632 bytes (`public/landmarks/times-square/lod3.glb`)
 
 ### washington-square-arch
 

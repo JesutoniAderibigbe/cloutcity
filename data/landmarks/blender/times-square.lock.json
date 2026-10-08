@@ -5,7 +5,7 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "5aa48d996cdaca0a51ded3c458969d4dfa20fb9a012acc60a9161a08ec77957c",
+  "inputsSha": "358ca3fd40423f3c96ea1f8af0947d7741444111eb569fe08df35f218b83ae4d",
   "caps": {
     "low": 1200,
     "mid": 3500,
@@ -39,10 +39,10 @@
     {
       "level": 3,
       "file": "public/landmarks/times-square/lod3.glb",
-      "sha256": "3f016e07ca7155d310e51e9d5d8f5a4bfdc23d69281a6aff8a9a43b22e838a86",
-      "bytes": 8056,
-      "triangles": 290,
-      "uncompressedBytes": 28488
+      "sha256": "08e40ab3ac8cb4f074e69ea16fbe924a88976180a42efa400a19ddfbcd542f25",
+      "bytes": 10632,
+      "triangles": 434,
+      "uncompressedBytes": 42024
     }
   ]
 }

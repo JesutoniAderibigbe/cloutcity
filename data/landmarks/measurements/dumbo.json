@@ -1,0 +1,57 @@
+{
+  "id": "dumbo",
+  "base": "land",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q1264951 (DUMBO) and Q16996543 (Jane's Carousel)",
+      "url": "https://www.wikidata.org/wiki/Q1264951",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 80,
+      "source": "estimate",
+      "note": "the waterfront clock-tower warehouse's tower top (generic: no clock face)"
+    },
+    "towerBlockM": {
+      "valueM": 55,
+      "source": "estimate",
+      "note": "that warehouse's main block, about 16 storeys"
+    },
+    "warehouseM": {
+      "widthM": 45,
+      "depthM": 25,
+      "source": "estimate",
+      "note": "the other warehouses' tallest (widthM) and lowest (depthM) heights"
+    },
+    "blockPlan": {
+      "widthM": 50,
+      "depthM": 40,
+      "source": "estimate",
+      "note": "a warehouse block's plan"
+    },
+    "parkStrip": {
+      "widthM": 260,
+      "depthM": 40,
+      "source": "estimate",
+      "note": "the waterfront park lawn's length and width"
+    },
+    "carousel": {
+      "widthM": 22,
+      "depthM": 9,
+      "source": "estimate",
+      "note": "the carousel's glass pavilion: side (widthM) and height (depthM)"
+    }
+  },
+  "readabilityScale": {
+    "note": "A composed, generic district: brick warehouses with punched windows, a cobbled street, the waterfront lawn and a glass carousel pavilion. No signage, no clock faces."
+  },
+  "gameScale": {
+    "height": 1.2,
+    "plan": 1.0,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.2; plan real, so the blocks match the district around them."
+  }
+}

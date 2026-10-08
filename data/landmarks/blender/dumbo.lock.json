@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "dumbo",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "a71bfcad0e6eb3bf2b814a1c3ab0bcd5ecd9c94b5fdc8a8bc987d1f95846d797",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/dumbo/lod0.glb",
+      "sha256": "7c724b3c349a384c69cc33879ce86c65d47f32c8c89922ad72cfe531c8cbfc0e",
+      "bytes": 68356,
+      "triangles": 6840,
+      "uncompressedBytes": 644156
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/dumbo/lod1.glb",
+      "sha256": "8908fd01cb0552a162b1bd0c9dbfcb4c919646227426812fb66b847eba76952a",
+      "bytes": 36020,
+      "triangles": 3120,
+      "uncompressedBytes": 294468
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/dumbo/lod2.glb",
+      "sha256": "fd17dc15dadeb7ee595167dfe4a9370c6d1e4cfd32858a274c3f9d41bb2f6589",
+      "bytes": 16808,
+      "triangles": 1200,
+      "uncompressedBytes": 113984
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/dumbo/lod3.glb",
+      "sha256": "e3d1c9a96048cb0e64abe3719c3004e89c10512373a446c64251b973e3483907",
+      "bytes": 9956,
+      "triangles": 576,
+      "uncompressedBytes": 55368
+    }
+  ]
+}
