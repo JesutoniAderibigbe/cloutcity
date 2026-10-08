@@ -30,6 +30,8 @@
   --color-success: var(--ui-success);
   --color-focus: var(--ui-focus);
   --color-meter: var(--ui-meter);
+  --color-wall-top: var(--ui-wall-top);
+  --color-wall-bottom: var(--ui-wall-bottom);
 }
 
 :root {
@@ -52,6 +54,8 @@
   --ui-success: var(--ui-day-success);
   --ui-focus: var(--ui-day-focus);
   --ui-meter: var(--ui-day-meter);
+  --ui-wall-top: var(--ui-day-wall-top);
+  --ui-wall-bottom: var(--ui-day-wall-bottom);
   --ui-glass-alpha: var(--ui-day-glass-alpha);
 }
 
@@ -75,6 +79,8 @@
   --ui-success: var(--ui-night-success);
   --ui-focus: var(--ui-night-focus);
   --ui-meter: var(--ui-night-meter);
+  --ui-wall-top: var(--ui-night-wall-top);
+  --ui-wall-bottom: var(--ui-night-wall-bottom);
   --ui-glass-alpha: var(--ui-night-glass-alpha);
 }
 
@@ -125,6 +131,24 @@
    layers.ts BANNER_MIN_VAR). Set on the root so every grid repeating the rows inherits it. */
 .cc-overlay:has([data-overlay-zone='banner'] [data-cc-notice]) {
   --overlay-banner-min: var(--overlay-banner-h);
+}
+
+/* A tall sheet (S58: the phone, the store directory) raises the sheet row's ceiling, so it takes
+   the free scene area down to its minimum (src/components/overlay/layers.ts SHEET_MAX_VAR). */
+.cc-overlay:has([data-overlay-zone='sheet'] [data-sheet-tall]) {
+  --overlay-sheet-max-h: 100dvh;
+}
+
+/* Clean screen (S58, Settings & Help): the HUD, banner and toasts step aside for the city, and
+   the HUD row shows only the way back (src/components/nav/CleanScreenExit.tsx). Session-only. */
+:root[data-clean-screen] [data-hud],
+:root[data-clean-screen] [data-overlay-zone='banner'] > *,
+:root[data-clean-screen] [data-overlay-zone='toast'] > * {
+  display: none;
+}
+
+:root[data-clean-screen] [data-clean-screen-exit] {
+  display: flex;
 }
 
 /* Lock the app shell to the visual viewport: no page scroll, rubber-band bounce or double-tap

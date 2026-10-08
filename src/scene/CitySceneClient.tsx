@@ -226,7 +226,6 @@ export function CitySceneClient(props: SceneProps) {
             playerModel={props.playerModel}
             label={copy.label}
             expandingSoon={copy.expandingSoon}
-            landmarkNames={copy.landmarkNames}
             onReady={onReady}
             onContextLost={onContextLost}
             onContextRestored={onContextRestored}

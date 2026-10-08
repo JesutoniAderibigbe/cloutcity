@@ -1,0 +1,114 @@
+{
+  "id": "brooklyn-borough-hall",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q929403 (Brooklyn Borough Hall)",
+      "url": "https://www.wikidata.org/wiki/Q929403",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 44,
+      "source": "estimate",
+      "note": "the cupola's tip above the street, proportioned by eye (Wikidata Q929403 lists no height; no PD/CC0 figure found)"
+    },
+    "block": {
+      "widthM": 40,
+      "depthM": 26,
+      "source": "estimate",
+      "note": "the main block's plan (the S07a kit's stylised footprint)"
+    },
+    "wallM": {
+      "valueM": 17,
+      "source": "estimate",
+      "note": "the main cornice above the street: a tall raised basement and two storeys"
+    },
+    "basementM": {
+      "valueM": 4.5,
+      "source": "estimate",
+      "note": "the raised basement, drawn as a darker rusticated band; the portico floor stands at its top"
+    },
+    "atticM": {
+      "valueM": 1.2,
+      "source": "estimate",
+      "note": "the parapet over the cornice"
+    },
+    "roofM": {
+      "valueM": 2.5,
+      "source": "estimate",
+      "note": "the low hipped roof"
+    },
+    "storeys": {
+      "count": 2,
+      "source": "estimate",
+      "note": "window storeys over the raised basement"
+    },
+    "portico": {
+      "widthM": 22,
+      "depthM": 6,
+      "source": "estimate",
+      "note": "the Greek Revival front portico (the S07a kit's stylised plan)"
+    },
+    "porticoM": {
+      "valueM": 15,
+      "source": "estimate",
+      "note": "the portico's entablature top above the street"
+    },
+    "pedimentM": {
+      "valueM": 5,
+      "source": "estimate",
+      "note": "the pediment's rise over the entablature"
+    },
+    "porticoColumns": {
+      "count": 6,
+      "source": "estimate",
+      "note": "columns across the portico front (hexastyle)"
+    },
+    "stepsM": {
+      "valueM": 8,
+      "source": "estimate",
+      "note": "how far the tall flight of front steps runs out ahead of the portico"
+    },
+    "cupolaBaseWidthM": {
+      "valueM": 10,
+      "source": "estimate",
+      "note": "the cupola's square lower stage across (drawn plain: no dial or text)"
+    },
+    "cupolaBaseM": {
+      "valueM": 5,
+      "source": "estimate",
+      "note": "the square lower stage's height"
+    },
+    "cupolaDrumDiameterM": {
+      "valueM": 8,
+      "source": "estimate",
+      "note": "the colonnaded drum across"
+    },
+    "cupolaDrumM": {
+      "valueM": 8,
+      "source": "estimate",
+      "note": "the colonnaded drum's height"
+    },
+    "cupolaDomeM": {
+      "valueM": 4.5,
+      "source": "estimate",
+      "note": "the dome's rise over the drum"
+    },
+    "lanternM": {
+      "valueM": 3,
+      "source": "estimate",
+      "note": "the lantern on the dome"
+    }
+  },
+  "readabilityScale": {
+    "note": "No thin members: columns are drawn at their real proportion to the bay, windows as punched glass quads."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.35,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 so the hall and its cupola read at the 3,000-4,500 m game camera; the plan x1.35, the most that fits the frame's exclusion (60 x 58 m) with the portico and steps."
+  }
+}

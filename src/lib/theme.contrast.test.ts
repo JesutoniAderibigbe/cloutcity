@@ -60,6 +60,9 @@ function backgrounds(ui: UiTheme): Record<string, Rgb> {
     'glass over white': over(p.glass, alpha, WHITE),
     // Inset rows (`bg-canvas/60`) on a glass panel.
     'row on surface': over(p.canvas, 0.6, p.surface),
+    // The phone's wallpaper (S58): app labels sit on both ends of its gradient.
+    'wallpaper top': p['wall-top'],
+    'wallpaper bottom': p['wall-bottom'],
   }
 }
 

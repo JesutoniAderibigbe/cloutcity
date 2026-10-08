@@ -10,6 +10,7 @@
 import { useEffect, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
 import {
+  DataTexture,
   DirectionalLight,
   Mesh,
   MeshToonMaterial,
@@ -31,7 +32,7 @@ import type { LandmarksHandle, LandmarksState } from './landmarks/Landmarks'
 import type { PinKind, PinStyle } from './geo/schema'
 import type { StreetPropsView } from './props/layer'
 import { ambientHook, type AmbientHookState } from './ambient/registry'
-import { nightGlowSource } from './lighting/nightGlow'
+import { maskLitVertices, nightGlowMask, nightGlowSource } from './lighting/nightGlow'
 import { continuousSince } from './quality/continuity'
 import { SUN_LIGHT_NAME } from './SunLight'
 import type { SceneQuality } from './types'
@@ -184,11 +185,17 @@ export interface SceneTestHook {
   /** Each held program's name and cache key, sorted: what a new program is when the count moves. */
   programKeys(): string[]
   /**
-   * Names of the meshes whose material carries the night glow (S04f), or of their nearest named
-   * group, sorted. A memorial never appears; memorial pins share the pin meshes but their
-   * per-instance glow is zero.
+   * Names of the meshes that can glow at night (S04f), or of their nearest named group, sorted:
+   * their material carries the night glow, and for a window-mask material at least one vertex
+   * samples a lit window (a mesh whose every uv reads a wall texel draws no light). A memorial
+   * never appears; memorial pins share the pin meshes but their per-instance glow is zero.
    */
   glowingMeshes(): string[]
+  /**
+   * For each mesh (or nearest named group) on a window-mask material: how many of its vertices
+   * sample a lit window. A memorial drawn on the district material must count 0 (S07c).
+   */
+  maskLitVertices(): Record<string, number>
 }
 
 declare global {
@@ -204,6 +211,13 @@ declare global {
 const vec = (v: Vec3): Vec3 => ({ x: v.x, y: v.y, z: v.z })
 
 /** The district buildings' material: the one every `district-<id>` mesh draws with. */
+/** Kit-built landmark parts are unnamed: the nearest named ancestor (its id) names them. */
+function namedAncestor(object: Object3D): string {
+  let named: Object3D | null = object
+  while (named !== null && named.name === '') named = named.parent
+  return named?.name ?? ''
+}
+
 function districtMaterial(scene: Object3D): unknown {
   let found: unknown = null
   scene.traverse((object) => {
@@ -389,13 +403,31 @@ export function TestHooks({
         scene.traverse((object) => {
           if (!(object instanceof Mesh)) return
           const materials = Array.isArray(object.material) ? object.material : [object.material]
-          if (!materials.some((material) => nightGlowSource(material) !== undefined)) return
-          // Kit-built landmark parts are unnamed: report the nearest named group (its id).
-          let named: Object3D | null = object
-          while (named !== null && named.name === '') named = named.parent
-          names.add(named?.name ?? '')
+          const glows = materials.some((material) => {
+            const source = nightGlowSource(material)
+            if (source !== 'mask') return source !== undefined
+            const mask = nightGlowMask(material)
+            const uv = object.geometry.getAttribute('uv')
+            return mask instanceof DataTexture && maskLitVertices(uv, mask, 1) > 0
+          })
+          if (glows) names.add(namedAncestor(object))
         })
         return [...names].sort()
+      },
+      maskLitVertices: () => {
+        const counts: Record<string, number> = {}
+        scene.traverse((object) => {
+          if (!(object instanceof Mesh)) return
+          const materials = Array.isArray(object.material) ? object.material : [object.material]
+          for (const material of materials) {
+            const mask = nightGlowMask(material)
+            if (!(mask instanceof DataTexture)) continue
+            const name = namedAncestor(object)
+            const lit = maskLitVertices(object.geometry.getAttribute('uv'), mask)
+            counts[name] = (counts[name] ?? 0) + lit
+          }
+        })
+        return counts
       },
     }
     window.__cloutcityTest = { ...window.__cloutcityTest, scene: hook }

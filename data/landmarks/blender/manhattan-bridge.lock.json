@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "id": "manhattan-bridge",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "3984b54949e644545346272c36ce4bfde08a230c0bc53a20cc1e397ef78b81ae",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "placement": {
+    "topM": 183.6,
+    "exclusions": [
+      {
+        "x": 0,
+        "y": 0,
+        "halfLengthM": 41.7,
+        "halfWidthM": 977.2,
+        "angleDeg": 0
+      }
+    ]
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/manhattan-bridge/lod0.glb",
+      "sha256": "103e17b51d48daa5ee5aa64a5cfeb0e872a8755a85677749f8d4db4bba9cf19d",
+      "bytes": 104540,
+      "triangles": 6640,
+      "uncompressedBytes": 685556
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/manhattan-bridge/lod1.glb",
+      "sha256": "d7d1e3851ec4af6dcc395b46fa81243afd7112964afd22fcefb423ed747e9221",
+      "bytes": 53584,
+      "triangles": 3232,
+      "uncompressedBytes": 328320
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/manhattan-bridge/lod2.glb",
+      "sha256": "679fce8e342486bcfdd2025a66974ca3896aec3b66028e7621e5b9003cd7bc85",
+      "bytes": 24160,
+      "triangles": 1192,
+      "uncompressedBytes": 127228
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/manhattan-bridge/lod3.glb",
+      "sha256": "2fc0c80015a908eb827578e54e687487ac36d77bcb02ce5fd2bac5072d94e9ad",
+      "bytes": 13456,
+      "triangles": 584,
+      "uncompressedBytes": 59868
+    }
+  ]
+}

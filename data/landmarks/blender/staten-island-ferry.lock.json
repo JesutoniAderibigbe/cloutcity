@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "id": "staten-island-ferry",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "f1ccdfbff3aa1a6af50084703f590b2fee774fa92237151d0ce153c6841aa50d",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "placement": {
+    "topM": 28,
+    "exclusions": [
+      {
+        "x": 0,
+        "y": -15.6,
+        "halfLengthM": 58.5,
+        "halfWidthM": 48.1,
+        "angleDeg": 0
+      }
+    ]
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/staten-island-ferry/lod0.glb",
+      "sha256": "97ae2e582f34b0c5e87319a581b6c17c3c547bd7a06c7bf630c0532bbcf56836",
+      "bytes": 23064,
+      "triangles": 1666,
+      "uncompressedBytes": 159284
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/staten-island-ferry/lod1.glb",
+      "sha256": "160e1eddc150cb6f0f9f60cc09098e00fb13a679c96398b078e53be041b60dcc",
+      "bytes": 12396,
+      "triangles": 710,
+      "uncompressedBytes": 68008
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/staten-island-ferry/lod2.glb",
+      "sha256": "89ca824914d6d0ac793c1924e4a5506d73aade43fb8a76937e4cf6f2e903634c",
+      "bytes": 7436,
+      "triangles": 334,
+      "uncompressedBytes": 32656
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/staten-island-ferry/lod3.glb",
+      "sha256": "9aa035ef6d168d91d80ffc86463991ef6649afac3a6bb2ba2c3b9461eb1c0659",
+      "bytes": 4448,
+      "triangles": 102,
+      "uncompressedBytes": 10800
+    }
+  ]
+}

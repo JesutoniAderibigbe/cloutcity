@@ -95,7 +95,8 @@ refused requests from the build machine):
   quality tier).
 - Transformations: a footprint is kept when its centroid lies inside the district circle and
   outside every landmark exclusion rectangle in `landmarks/frames.derived.json` (derived in
-  the same build); `HEIGHT_ROOF` feet × 0.3048, rounded to whole metres (missing or zero: 9 m);
+  the same build: a Blender model's `grounds` from its lock's game-scale footprint, S07c, or
+  else the kit model's `exclusion`); `HEIGHT_ROOF` feet × 0.3048, rounded to whole metres (missing or zero: 9 m);
   snapped to 1 m; then per tier:
   - low: Douglas-Peucker 4 m, footprints under 150 m² dropped, lower than 8 m dropped, heights in 6 m bins, touching footprints of one bin merged (holes kept; the area filter applies to the merged mass)
   - mid: Douglas-Peucker 2 m, footprints under 60 m² dropped, heights in 3 m bins, touching footprints of one bin merged (holes kept; the area filter applies to the merged mass)

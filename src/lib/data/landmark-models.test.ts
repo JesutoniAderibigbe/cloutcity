@@ -232,7 +232,7 @@ describe('config/perf.json landmark budgets', () => {
     const extra = clone(perfJson) as Record<string, unknown> & {
       landmarkTrianglesMax: Record<string, unknown>
     }
-    extra.landmarkTrianglesMax.monument = { low: 1, mid: 1, high: 1 }
+    extra.landmarkTrianglesMax.memorial = { low: 1, mid: 1, high: 1 }
     expect(PerfConfigSchema.safeParse(extra).success).toBe(false)
     const override = { ...clone(perfJson), landmarkTrianglesOverride: { 'city-hall': { low: 1 } } }
     expect(PerfConfigSchema.safeParse(override).success).toBe(false)

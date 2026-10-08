@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "id": "astoria-park",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "b8bfc2acb80ad37ccd0b4133dd94cc7765be7e8d05f4d08e738d7acf078189f3",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "placement": {
+    "topM": 32,
+    "exclusions": []
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/astoria-park/lod0.glb",
+      "sha256": "94989e734fe34356a860f9fd9ab2fb8876a08bc4d94eaaf44ae13853710d45fc",
+      "bytes": 104540,
+      "triangles": 3814,
+      "uncompressedBytes": 514304
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/astoria-park/lod1.glb",
+      "sha256": "ae2198b520f430e5a386dbb43bc0feaacdfe4388c544cd2fea1cf0a3efc42f9c",
+      "bytes": 45920,
+      "triangles": 1676,
+      "uncompressedBytes": 220308
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/astoria-park/lod2.glb",
+      "sha256": "bf5bb618a3067e239095aea63362afbc0da2eb72230658a34b92be8d92a18391",
+      "bytes": 14096,
+      "triangles": 443,
+      "uncompressedBytes": 55960
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/astoria-park/lod3.glb",
+      "sha256": "7ecd8af1db875e36bec90f233af9afe1dcd7995003be830192bae5b81130401f",
+      "bytes": 6496,
+      "triangles": 177,
+      "uncompressedBytes": 20652
+    }
+  ]
+}

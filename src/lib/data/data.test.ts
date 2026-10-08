@@ -22,6 +22,7 @@ import {
   OnboardingConfigSchema,
   PerfConfigSchema,
   type PerfConfig,
+  PhoneConfigSchema,
   ProfileConfigSchema,
   AccountConfigSchema,
   ProgressionConfigSchema,
@@ -47,7 +48,11 @@ import {
 } from './schemas/content'
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
-import { BlenderLockSchema, LandmarkMeasurementsSchema } from './schemas/landmarkBlender'
+import {
+  BlenderLockSchema,
+  BlenderModelsFileSchema,
+  LandmarkMeasurementsSchema,
+} from './schemas/landmarkBlender'
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
 import {
   AmbientConfigSchema,
@@ -137,6 +142,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/offline.json': OfflineConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
+  'config/phone.json': PhoneConfigSchema,
   'config/pinMarks.json': PinMarksConfigSchema,
   'places/icons.json': PlaceIconsConfigSchema,
   'config/profile.json': ProfileConfigSchema,
@@ -178,6 +184,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
 function schemaFor(file: string): z.ZodType | undefined {
   if (/^landmarks\/measurements\/[a-z0-9-]+\.json$/.test(file)) return LandmarkMeasurementsSchema
   if (/^landmarks\/blender\/[a-z0-9-]+\.lock\.json$/.test(file)) return BlenderLockSchema
+  if (file === 'landmarks/blender.derived.json') return BlenderModelsFileSchema
   if (/^geo\/districts\/[a-z0-9-]+\.[a-z]+\.derived\.json$/.test(file)) return BuildingsFileSchema
   if (/^geo\/blocks\.[a-z]+\.derived\.json$/.test(file)) return BlocksFileSchema
   if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
@@ -351,7 +358,7 @@ describe('config/perf.json', () => {
       audioRuntimeJsGzKB: 20,
       // S04e: the service worker script and its install-time precache (not in CLAUDE.md's table).
       serviceWorkerGzKB: 15,
-      precacheGzKB: 1000,
+      precacheGzKB: 1150,
       buildingTrianglesMax: { low: 160_000, mid: 300_000, high: 480_000 },
       // S04i fill-lite street trees drawn at once (user-approved cap).
       fillTreesMax: { low: 0, mid: 4000, high: 8000 },
@@ -392,6 +399,10 @@ describe('config/perf.json', () => {
         building: { low: 600, mid: 1800, high: 3500 },
         station: { low: 600, mid: 1800, high: 3500 },
         government: { low: 600, mid: 1800, high: 3500 },
+        stadium: { low: 600, mid: 1800, high: 3500 },
+        monument: { low: 600, mid: 1800, high: 3500 },
+        park: { low: 1200, mid: 3500, high: 7000 },
+        neighborhood: { low: 1200, mid: 3500, high: 7000 },
       },
       landmarkTrianglesOverride: {},
       landmarkLodRatioMax: 0.5,

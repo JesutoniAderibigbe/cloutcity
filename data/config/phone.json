@@ -1,0 +1,19 @@
+{
+  "apps": [
+    { "id": "bank", "icon": "🏦" },
+    { "id": "updates", "icon": "🔔" },
+    { "id": "jobs", "icon": "💼" },
+    { "id": "places", "icon": "📍" },
+    { "id": "goals", "icon": "🏆" },
+    { "id": "closet", "icon": "👟" },
+    { "id": "home", "icon": "🏠" },
+    { "id": "profile", "icon": "🙂" },
+    { "id": "messages", "icon": "💬" },
+    { "id": "settings", "icon": "⚙️" }
+  ],
+  "updates": { "badgeCap": 9, "maxEvents": 5 },
+  "help": {
+    "faq": ["goal", "money", "rent", "travel", "clout", "offline", "save", "friends"],
+    "shortcuts": ["help", "escape", "tab", "enter", "arrows"]
+  }
+}

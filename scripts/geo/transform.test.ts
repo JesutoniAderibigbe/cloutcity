@@ -17,7 +17,7 @@ import { FIXTURE_BOROUGHS, FIXTURE_NTAS, FIXTURE_PARAMS, fixtureInputs } from '.
 import { OUTPUT_FILES, buildGeoOutputs, tieredOutputPaths, type GeoBuildResult } from './transform'
 
 /** sha256 over every output (path, newline, text) in path order. Update only on purpose. */
-const FIXTURE_GOLDEN = '6d90f7dfcf9094c5eecb61921d055666add5c36acc1a3287c3411704985f8b07'
+const FIXTURE_GOLDEN = '01e218c5c4f58e1c2d8890e4a1dd474a9b687b6949d4250cffdc535e52e73e8a'
 
 function digest(result: GeoBuildResult): string {
   const hash = createHash('sha256')

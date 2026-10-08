@@ -27,11 +27,33 @@ export interface FramePlace {
   readonly spans?: readonly string[]
 }
 
+/**
+ * A Blender model's placement (S07c), from its lock (data/landmarks/blender/<id>.lock.json) and
+ * measurements: its game-scale top above its base, the ground it covers in its own frame (x
+ * east, y north at heading 0; angle counter-clockwise from east), and, for a landmark without a
+ * LION frame, its base and the heading its measurements give.
+ */
+export interface BlenderPlacement {
+  readonly id: string
+  readonly base: 'land' | 'water'
+  readonly headingDeg: number
+  readonly topM: number
+  readonly exclusions: readonly {
+    readonly x: number
+    readonly y: number
+    readonly halfLengthM: number
+    readonly halfWidthM: number
+    readonly angleDeg: number
+  }[]
+}
+
 export interface LandmarkFrameInputs {
   /** Parsed LION GeoJSON per source id. */
   readonly lion: ReadonlyMap<LionSourceId, unknown>
   readonly models: readonly LandmarkModel[]
   readonly places: readonly FramePlace[]
+  /** Every Blender-built landmark's placement (S07c); empty before any lands. */
+  readonly placements?: readonly BlenderPlacement[]
 }
 
 const Position = z.tuple([z.number(), z.number()]).rest(z.number())
@@ -285,5 +307,57 @@ export function buildLandmarkFrames(
       }
     })
   const sources = [...segmentsBySource.keys()].sort()
-  return { frames, sources }
+  const placements = new Map((inputs.placements ?? []).map((p) => [p.id, p]))
+  const framed = frames.map((frame): LandmarkFrame => {
+    const placement = placements.get(frame.id)
+    if (placement === undefined) return frame
+    return {
+      ...frame,
+      grounds: groundsOf(placement, frame.anchor, frame.headingDeg, config),
+      pinLiftM: Math.max(frame.pinLiftM, Math.round(placement.topM * 10) / 10),
+    }
+  })
+  // Landmarks with a Blender model but no S07a model stand at their location (S07c).
+  const placed = [...placements.values()]
+    .filter((placement) => !frames.some((frame) => frame.id === placement.id))
+    .map((placement): LandmarkFrame => {
+      const place = places.get(placement.id)
+      if (place === undefined) throw new Error(`${placement.id}: not in landmarks.json`)
+      const anchor = roundPoint(project(place.location))
+      const headingDeg = roundHeading(placement.headingDeg)
+      return {
+        id: placement.id,
+        base: placement.base,
+        anchor,
+        headingDeg,
+        grounds: groundsOf(placement, anchor, headingDeg, config),
+        pinLiftM: Math.round(placement.topM * 10) / 10,
+      }
+    })
+  const all = [...framed, ...placed].sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+  return { frames: all, sources }
+}
+
+/**
+ * A Blender model's ground rectangles in local metres: each of its own-frame rectangles turned
+ * by the heading (clockwise from north) about the anchor, grown by the exclusion margin.
+ */
+export function groundsOf(
+  placement: BlenderPlacement,
+  anchor: LocalPoint,
+  headingDeg: number,
+  config: GeoConfig,
+): NonNullable<LandmarkFrame['exclusion']>[] {
+  const turn = (headingDeg * Math.PI) / 180
+  const cos = Math.cos(turn)
+  const sin = Math.sin(turn)
+  const margin = config.landmarkExclusionMarginM
+  const tenth = (value: number) => Math.ceil(value * 10) / 10
+  return placement.exclusions.map((rect) => ({
+    x: Math.round(anchor.x + rect.x * cos + rect.y * sin),
+    y: Math.round(anchor.y - rect.x * sin + rect.y * cos),
+    halfLengthM: tenth(rect.halfLengthM + margin),
+    halfWidthM: tenth(rect.halfWidthM + margin),
+    angleDeg: roundHeading((((rect.angleDeg - headingDeg) % 360) + 360) % 360),
+  }))
 }

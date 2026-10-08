@@ -6,7 +6,7 @@
  */
 import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
-import { closeHudPanel } from './hudPanel'
+import { dismissHudPanel } from './hudPanel'
 import { closePlace } from './placeSheet'
 
 interface CreatorOpenState {
@@ -17,7 +17,7 @@ export const creatorOpenStore = createStore<CreatorOpenState>()(() => ({ open: f
 
 /** Opens the creator over the game; any HUD panel or place sheet closes first. */
 export function openCreator(): void {
-  closeHudPanel()
+  dismissHudPanel()
   closePlace()
   if (!creatorOpenStore.getState().open) creatorOpenStore.setState({ open: true })
 }
