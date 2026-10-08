@@ -4,6 +4,9 @@
  * here: they are palette tokens in data/config/theme.json (`scene`).
  */
 import { z } from 'zod'
+
+const HEX = z.string().regex(/^#[0-9a-f]{6}$/i)
+const VEC3 = z.tuple([z.number(), z.number(), z.number()])
 import { LandmarkSceneConfigSchema } from './landmarkModels'
 
 const metres = z.number().positive()
@@ -454,19 +457,50 @@ export const SceneConfigSchema = z.strictObject({
     cornerRadius: z.number().min(0).max(0.5),
     alphaTest: z.number().gt(0).lt(1),
   }),
+  /** The look runtime (S16a): accessory placement and the creator preview's studio light. */
+  avatarLook: z.strictObject({
+    /**
+     * Where each Kenney accessory sits on the avatar (S16a): the rig joint it follows and its
+     * offset in metres in the character's bind pose (the pipeline grounds static models at
+     * y = 0). Blender attachments (part A0) carry their own frame and need no entry.
+     */
+    attachments: z.record(
+      z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+      z.strictObject({ joint: z.string().min(1), offset: VEC3 }),
+    ),
+    /**
+     * The creator preview's fixed studio light (S16a, D11): the day keyframe's look, so swatches
+     * always read true; it never follows the day/night clock.
+     */
+    preview: z.strictObject({
+      background: HEX,
+      ambient: z.strictObject({ color: HEX, intensity: z.number().min(0) }),
+      hemisphere: z.strictObject({ sky: HEX, ground: HEX, intensity: z.number().min(0) }),
+      sun: z.strictObject({ color: HEX, intensity: z.number().min(0), position: VEC3 }),
+      camera: z.strictObject({
+        fovDeg: z.number().min(5).max(90),
+        position: VEC3,
+        target: VEC3,
+      }),
+      clip: z.string().min(1),
+    }),
+  }),
 })
 export type SceneConfig = z.infer<typeof SceneConfigSchema>
 
 /**
  * What the city's 3D chunk reads: the scene config without the blocks other code reads itself
- * (the apartment chunk imports its own; the fallback map is drawn on the server), so they never
+ * (the apartment chunk imports its own, the look runtime its derived file; the fallback map is
+ * drawn on the server), so they never
  * travel with the page.
  */
-export type CitySceneConfig = Omit<SceneConfig, 'apartment' | 'fallback'>
+export type CitySceneConfig = Omit<SceneConfig, 'apartment' | 'fallback' | 'avatarLook'>
 
 export function citySceneConfig(scene: SceneConfig): CitySceneConfig {
   const city: Partial<SceneConfig> = { ...scene }
   delete city.apartment
   delete city.fallback
+  // The look runtime reads its block from data/avatar/scene.derived.json, in its lazy chunk.
+  delete city.avatarLook
   return city as CitySceneConfig
 }

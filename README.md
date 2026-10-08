@@ -500,6 +500,14 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
     (`effectiveLook`: worn items over the look, attachments capped) and `neighborhoods.ts`
     (`homePoint`). `src/state/creatorActions.ts` applies the flow to the store, and the HUD
     publishes the look and worn items for the 3D chunks (`src/state/playerLook.ts`).
+  - Drawing it (S16a A2, `src/scene/avatar/`): `resolveLook` turns the drawn look into ModelRefs
+    and slot colours from `data/avatar/scene.derived.json` (the avatar models, look colours,
+    accessory placement from scene.json `avatarLook`, the preview's studio light), skipping parts
+    A0 has not built yet; `LookAvatar` draws it on the map (mid/high; the low tier's capsule wears
+    the look's top colour), in the apartment (at `avatarAnchor`, inside `avatarReserve`) and in
+    `AvatarPreviewCanvas` (its own chunk: studio light, idle clip only while shown, the city paused
+    through `sceneFocus` `creator`, context lost on close, a DOM fallback without WebGL2;
+    `/dev/look` shows it in test builds). These chunks are left out of the precache (PERF-7).
   - To add a look option: add it to `options.json` with a `nameKey` in `data/copy/avatar/`
     (colours in `data/copy/colors/`), run `npm run avatar:update`, then `npm test`
     (`src/lib/data/avatar-data.test.ts` resolves every model and token).

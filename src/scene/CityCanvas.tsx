@@ -195,8 +195,9 @@ function CityScene3D({
 }: CityScene3DProps) {
   perfMark('cc:3d:mount')
   const readyRef = useRef(false)
-  // While the apartment has the screen (S16) the map draws nothing and is hidden.
-  const hidden = useSceneFocus() === 'room'
+  // While the apartment (S16) or the creator preview (S16a) has the screen, the map draws
+  // nothing and is hidden.
+  const hidden = useSceneFocus() !== 'city'
   const placedRef = useRef(false)
   // The camera starts over the player's home and the avatar stands there (S05); after a trip
   // (S08) the avatar stands at the place's pin.

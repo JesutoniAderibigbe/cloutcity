@@ -166,3 +166,17 @@ export const ShowcaseSchema = z.strictObject({
 export type Showcase = z.infer<typeof ShowcaseSchema>
 export type ShowcaseView = Showcase['views']['street']
 export type ShowcaseLight = Showcase['lighting']['day']
+
+const servedFile = z.string().regex(/^\/models\/[a-z0-9-]+\.(?:low|mid|high)\.[0-9a-f]{8}\.glb$/)
+
+/** A manifest entry as the browser sees it (src/scene/models/types.ts `ModelRef`). */
+export const ModelRefSchema = z.strictObject({
+  id,
+  kind: z.enum(['static', 'skinned', 'rig']),
+  category: z.enum(MODEL_CATEGORIES),
+  slots: z.array(id),
+  emissive: z.boolean(),
+  clips: z.array(z.string().min(1)),
+  bounds: z.strictObject({ min: vec3, max: vec3 }).optional(),
+  files: z.strictObject({ low: servedFile, mid: servedFile, high: servedFile }),
+})

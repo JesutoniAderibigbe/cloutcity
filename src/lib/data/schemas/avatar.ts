@@ -17,7 +17,9 @@ import {
   lookIssue,
 } from '../avatarIds'
 import { deriveAvatarIds } from '../avatarDerive'
+import { ModelRefSchema } from './assets'
 import { CopyKeyRefSchema, IdSchema } from './content'
+import { SceneConfigSchema } from './scene'
 
 export { ATTACHMENT_KINDS, LOOK_FIELDS, TRAIT_EFFECT_KINDS, lookIssue }
 
@@ -240,4 +242,17 @@ export const AvatarEngineTablesSchema = z.strictObject({
     rolls: z.partialRecord(z.enum(ROLL_KINDS), z.enum(ROLL_SCOPES)),
   }),
   neighborhoods: idList.min(1),
+})
+
+/**
+ * data/avatar/scene.derived.json (src/scene/avatar/types.ts `AvatarSceneRefs`): what the look
+ * runtime reads in its lazy chunk, derived by src/lib/data/avatarScene.ts.
+ */
+export const AvatarSceneFileSchema = z.strictObject({
+  version: z.literal(1),
+  rig: ModelRefSchema,
+  models: z.record(IdSchema, ModelRefSchema),
+  colors: z.record(AvatarTokenSchema, z.string().regex(/^#[0-9a-f]{6}$/i)),
+  attachments: SceneConfigSchema.shape.avatarLook.shape.attachments,
+  preview: SceneConfigSchema.shape.avatarLook.shape.preview,
 })

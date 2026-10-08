@@ -30,12 +30,26 @@ export function avatarSize(distance: number, avatar: AvatarConfig): number {
   )
 }
 
+/** What the drawn look resolved to (model ids and slot colours), as the test hook reports it. */
+export interface AvatarLookInfo {
+  readonly head: string
+  readonly body: string
+  readonly attachments: readonly string[]
+  readonly colors: unknown
+  readonly scale: number
+  readonly missing: readonly string[]
+}
+
 export interface AvatarObjects {
   readonly group: Group
   /** Shows or hides the capsule placeholder (hidden while the hand-made avatar stands in). */
   setCapsuleVisible(visible: boolean): void
   /** Sets the avatar's height in metres. */
   setHeight(heightM: number): void
+  /** Sets the capsule body's colour (S16a: the look's top); the ring keeps the player colour. */
+  setBodyColor(color: string): void
+  /** Records what the look resolved to, on the group, for the scene test hook (S16a). */
+  setLookInfo(info: AvatarLookInfo): void
   dispose(): void
 }
 
@@ -90,6 +104,12 @@ export function buildAvatar(
     },
     setHeight(heightM) {
       group.scale.setScalar(heightM)
+    },
+    setBodyColor(next) {
+      bodyMaterial.color.set(next)
+    },
+    setLookInfo(info) {
+      group.userData.look = info
     },
     dispose() {
       body.dispose()

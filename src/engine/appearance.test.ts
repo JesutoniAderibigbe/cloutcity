@@ -120,7 +120,7 @@ describe('effectiveLook', () => {
   const look: Look = { ...base, hairStyle: 'afro', headwear: 'none', facialHair: 'stubble' }
 
   it('draws the creator look with no items worn', () => {
-    const drawn = effectiveLook(wearing(look, []), config, creatorConfig)
+    const drawn = effectiveLook(publicAvatar(wearing(look, [])), config, creatorConfig)
     expect(drawn.look).toEqual(look)
     expect(drawn.head).toBe('head-base')
     expect(drawn.body).toBe(options.outfits.find((o) => o.id === look.outfit)?.body)
@@ -131,7 +131,9 @@ describe('effectiveLook', () => {
 
   it('a worn item wins over the creator choice: top, bottom, shoes and an accessory', () => {
     const drawn = effectiveLook(
-      wearing(look, ['bodega-graphic-tee', 'cargo-pants', 'canvas-sneakers', 'subway-tote']),
+      publicAvatar(
+        wearing(look, ['bodega-graphic-tee', 'cargo-pants', 'canvas-sneakers', 'subway-tote']),
+      ),
       config,
       creatorConfig,
     )
@@ -148,22 +150,26 @@ describe('effectiveLook', () => {
   })
 
   it('makeup has no visual (Q6)', () => {
-    expect(effectiveLook(wearing(look, ['tinted-lip-balm']), config, creatorConfig)).toEqual(
-      effectiveLook(wearing(look, []), config, creatorConfig),
-    )
+    expect(
+      effectiveLook(publicAvatar(wearing(look, ['tinted-lip-balm'])), config, creatorConfig),
+    ).toEqual(effectiveLook(publicAvatar(wearing(look, [])), config, creatorConfig))
   })
 
   it('a covering that hides hair puts the base head on and hides the hair piece, keeping the style', () => {
     const covered: Look = { ...base, hairStyle: 'locs', headwear: 'hijab' }
-    const drawn = effectiveLook(wearing(covered, []), config, creatorConfig)
+    const drawn = effectiveLook(publicAvatar(wearing(covered, [])), config, creatorConfig)
     expect(drawn.hairHidden).toBe(true)
     expect(drawn.head).toBe('head-base')
     expect(drawn.attachments).toEqual(['headwear-hijab'])
     expect(drawn.look.hairStyle).toBe('locs')
     const kenney: Look = { ...base, hairStyle: 'style-04', headwear: 'beanie' }
-    expect(effectiveLook(wearing(kenney, []), config, creatorConfig).head).toBe('head-base')
+    expect(effectiveLook(publicAvatar(wearing(kenney, [])), config, creatorConfig).head).toBe(
+      'head-base',
+    )
     const cap: Look = { ...kenney, headwear: 'ballcap' }
-    expect(effectiveLook(wearing(cap, []), config, creatorConfig).head).toBe('head-female-d')
+    expect(effectiveLook(publicAvatar(wearing(cap, [])), config, creatorConfig).head).toBe(
+      'head-female-d',
+    )
   })
 
   it('keeps at most four attachments, in priority order: items go first', () => {
@@ -175,17 +181,19 @@ describe('effectiveLook', () => {
       eyewear: 'glasses',
       ears: 'hearing-aid',
     }
-    const drawn = effectiveLook(wearing(full, ['gold-hoops']), config, creatorConfig)
+    const drawn = effectiveLook(publicAvatar(wearing(full, ['gold-hoops'])), config, creatorConfig)
     expect(options.attachments.max).toBe(4)
     expect(drawn.attachments).toEqual(['headwear-ballcap', 'hair-afro', 'facial-goatee', 'glasses'])
   })
 
   it('the height option sets the root scale', () => {
     expect(
-      effectiveLook(wearing({ ...base, height: 'tall' }, []), config, creatorConfig).scale,
+      effectiveLook(publicAvatar(wearing({ ...base, height: 'tall' }, [])), config, creatorConfig)
+        .scale,
     ).toBe(1.04)
     expect(
-      effectiveLook(wearing({ ...base, height: 'short' }, []), config, creatorConfig).scale,
+      effectiveLook(publicAvatar(wearing({ ...base, height: 'short' }, [])), config, creatorConfig)
+        .scale,
     ).toBe(0.96)
   })
 })

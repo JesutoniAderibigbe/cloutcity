@@ -12,10 +12,11 @@ import { copy } from '@/lib/copy'
 // The map copy renders here on the server and reaches the client as props, so the map
 // namespace never ships in the shell (DEC-11).
 import '@/lib/copy/ns/map'
-import { balance, perf, scene } from '@/lib/data/config'
+import { creatorConfig } from '@/engine/creatorConfig'
+import { balance, perf, scene, theme } from '@/lib/data/config'
 import { QUALITY_TIERS, type QualityTier } from '@/lib/data/schemas/config'
 import { citySceneConfig } from '@/lib/data/schemas/scene'
-import { geoBounds, homes } from '@/lib/data/content'
+import { geoBounds, homes, items } from '@/lib/data/content'
 import { districtAssets } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
 import { HOME_IDS } from '@/lib/data/homes'
@@ -70,7 +71,23 @@ function playerModel(): SceneProps['playerModel'] {
   return {
     parts: { rig: modelRef('avatar-rig'), head, body: modelRef(scene.models.player.body) },
     heightM: head.bounds.max[1],
+    tint: lookTintTable(),
   }
+}
+
+/**
+ * The capsule's colour per top (S16a `lookTint`): every garment colour's hex and the colour each
+ * top item wears, so the 3D chunk tints the capsule without the look options.
+ */
+function lookTintTable(): SceneProps['playerModel']['tint'] {
+  const garment: Record<string, string> = {}
+  for (const color of creatorConfig.options.garmentColors) {
+    const hex = theme.models[color.token]
+    if (hex !== undefined) garment[color.id] = hex
+  }
+  const topByItem: Record<string, string> = {}
+  for (const item of items) if (item.look?.part === 'outfit') topByItem[item.id] = item.look.top
+  return { garment, topByItem }
 }
 
 export function CityScene() {

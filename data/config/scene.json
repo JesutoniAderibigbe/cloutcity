@@ -368,5 +368,20 @@
     "textMaxWidth": 0.9,
     "cornerRadius": 0.3,
     "alphaTest": 0.5
+  },
+  "avatarLook": {
+    "attachments": {
+      "glasses": { "joint": "head", "offset": [0, 0.98, 0.33] },
+      "sunglasses": { "joint": "head", "offset": [0, 0.98, 0.33] },
+      "hearing-aid": { "joint": "head", "offset": [0.5, 0.86, -0.08] }
+    },
+    "preview": {
+      "background": "#dfe7ee",
+      "ambient": { "color": "#ffffff", "intensity": 0.45 },
+      "hemisphere": { "sky": "#e4eef7", "ground": "#9c8f7e", "intensity": 0.9 },
+      "sun": { "color": "#fff6e6", "intensity": 2, "position": [2, 4, 3] },
+      "camera": { "fovDeg": 28, "position": [0, 1.05, 4.6], "target": [0, 0.85, 0] },
+      "clip": "idle"
+    }
   }
 }

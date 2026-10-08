@@ -14,6 +14,11 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'model-showcase', marker: 'cc-feature:model-showcase' },
   // The apartment's decor models (src/scene/apartment/decorModels.ts), once the room is up.
   { id: 'apartment-decor-models', marker: 'apartment decor models: ' },
+  // The look runtime (S16a): the full look options and derived avatar refs (resolveLook.ts), with
+  // the map avatar's model chunk, the room avatar and the creator preview.
+  { id: 'avatar-look', marker: 'resolveLook: unknown option' },
+  // The creator's avatar preview canvas (S16a, AvatarPreviewCanvas.tsx).
+  { id: 'avatar-preview', marker: 'preview-avatar' },
   // The /mod console (S18b): moderators only; /mod itself is never precached.
   { id: 'mod-console', marker: 'data-mod-error' },
   // supabase-js (S18): it only works online (sign-in, cloud saves, profiles, safety), so an

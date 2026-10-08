@@ -62,7 +62,12 @@ import {
   ZonesFileSchema,
 } from './schemas/world'
 import { ModelManifestSchema, ShowcaseSchema } from './schemas/assets'
-import { AvatarEngineTablesSchema, AvatarOptionsSchema, TraitsFileSchema } from './schemas/avatar'
+import {
+  AvatarEngineTablesSchema,
+  AvatarOptionsSchema,
+  AvatarSceneFileSchema,
+  TraitsFileSchema,
+} from './schemas/avatar'
 import { CreatorConfigSchema } from './schemas/creator'
 import { CatalogSchema } from '../../../scripts/assets/schema'
 import {
@@ -102,6 +107,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'audio/manifest.json': AudioManifestSchema,
   'avatar/engine.derived.json': AvatarEngineTablesSchema,
   'avatar/options.json': AvatarOptionsSchema,
+  'avatar/scene.derived.json': AvatarSceneFileSchema,
   'avatar/traits.json': TraitsFileSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
   'config/audio.json': AudioConfigSchema,

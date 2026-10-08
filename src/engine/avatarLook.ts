@@ -1,14 +1,14 @@
 /**
  * What the avatar draws (S16a, D8/D12): the creator's look with worn items over it (a worn item
  * always wins), the head swapped to the bald base under a covering that hides hair, and the
- * attachments in priority order, capped. It reads the full look options (models), so it runs in
+ * attachments in priority order, capped. It takes the public avatar (the look ids and the worn
+ * item ids, src/engine/appearance.ts `publicAvatar`), so other players (S31) draw the same way. It reads the full look options (models), so it runs in
  * the avatar and creator chunks, never on the playable path (PERF-6).
  */
 import type { ItemLook } from '@/lib/data/schemas/content'
-import type { Look } from './appearance'
+import type { Look, PublicAvatar } from './appearance'
 import type { EngineConfig } from './config'
 import type { CreatorEngineConfig } from './creatorConfig'
-import type { PlayerState } from './game'
 import { findItem, ITEM_SLOTS } from './items'
 
 /** What the avatar shows: models and the attachments, by catalog model id (A2 resolves colours). */
@@ -34,15 +34,14 @@ function optionOf<T extends { readonly id: string }>(list: readonly T[], id: str
 }
 
 /** The `look` of every worn wearable, in outfit slot order. */
-function wornLooks(player: Pick<PlayerState, 'inventory'>, config: EngineConfig): ItemLook[] {
-  const looks: ItemLook[] = []
-  for (const slot of ITEM_SLOTS) {
-    const itemId = player.inventory.outfit[slot]
-    if (itemId === undefined) continue
+function wornLooks(worn: readonly string[], config: EngineConfig): ItemLook[] {
+  const items = worn.flatMap((itemId) => {
     const item = findItem(itemId, config)
-    if (item !== undefined && 'look' in item && item.look !== undefined) looks.push(item.look)
-  }
-  return looks
+    return item !== undefined && 'look' in item && item.look !== undefined ? [item] : []
+  })
+  return ITEM_SLOTS.flatMap((slot) =>
+    items.filter((item) => item.slot === slot).map((item) => item.look),
+  )
 }
 
 /**
@@ -52,14 +51,14 @@ function wornLooks(player: Pick<PlayerState, 'inventory'>, config: EngineConfig)
  * in `attachments.priority` order up to `attachments.max`.
  */
 export function effectiveLook(
-  player: Pick<PlayerState, 'look' | 'inventory'>,
+  avatar: PublicAvatar,
   config: EngineConfig,
   creator: CreatorEngineConfig,
 ): EffectiveLook {
   const options = creator.options
-  let look: Look = player.look
+  let look: Look = avatar.look
   const items: string[] = []
-  for (const worn of wornLooks(player, config)) {
+  for (const worn of wornLooks(avatar.worn, config)) {
     if (worn.part === 'outfit') look = { ...look, outfit: worn.outfit, top: worn.top }
     else if (worn.part === 'bottom') look = { ...look, bottom: worn.color }
     else if (worn.part === 'shoes') look = { ...look, shoes: worn.color }

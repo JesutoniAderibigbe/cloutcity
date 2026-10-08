@@ -44,6 +44,8 @@ export interface RoomInterior {
   readonly door: RoomOpening
   readonly camera: { readonly position: Vec3; readonly target: Vec3; readonly fovDeg: number }
   readonly slots: readonly RoomSlot[]
+  /** Where the player's avatar stands (S16a), on the floor, turned about the vertical axis. */
+  readonly avatarAnchor: { readonly position: Vec3; readonly rotationDeg: number }
 }
 
 /** The room's colours as hex, resolved from theme.json `scene.apartment` world tokens. */
@@ -92,6 +94,10 @@ function interior(home: HomeIdLiteral): RoomInterior {
       position: vec3(raw.camera.position, `${home}.camera.position`),
       target: vec3(raw.camera.target, `${home}.camera.target`),
       fovDeg: raw.camera.fovDeg,
+    },
+    avatarAnchor: {
+      position: vec3(raw.avatarAnchor.position, `${home}.avatarAnchor.position`),
+      rotationDeg: raw.avatarAnchor.rotationDeg,
     },
     slots: raw.slots.map((slot) => {
       if (!KINDS.includes(slot.kind)) fail(`${home}.${slot.id}.kind`)
