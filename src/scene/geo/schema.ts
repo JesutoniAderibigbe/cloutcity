@@ -170,12 +170,25 @@ export const LandmarksMiniSchema = z.strictObject({
         borough,
         category: id,
         style: z.enum(['normal', 'teaser']),
-        model: z.looseObject({
-          id,
-          archetype: z.enum(LANDMARK_ARCHETYPES),
-          depiction: z.enum(['massing', 'stylised']),
-          params: z.looseObject({ roles: z.record(z.string(), z.string()) }),
-        }),
+        model: z.optional(
+          z.looseObject({
+            id,
+            archetype: z.enum(LANDMARK_ARCHETYPES),
+            depiction: z.enum(['massing', 'stylised']),
+            params: z.looseObject({ roles: z.record(z.string(), z.string()) }),
+          }),
+        ),
+        /** The Blender model (S07c): the kit fallback's scale (the level loader has the files). */
+        glb: z.optional(
+          z.strictObject({
+            gameScale: z.optional(
+              z.strictObject({
+                height: z.number().check(z.gt(0)),
+                plan: z.number().check(z.gt(0)),
+              }),
+            ),
+          }),
+        ),
         frame: z.looseObject({
           id,
           base: z.enum(['land', 'water']),
@@ -183,20 +196,17 @@ export const LandmarksMiniSchema = z.strictObject({
           headingDeg: z.number().check(z.gte(0), z.lt(360)),
           ends: z.optional(z.tuple([point, point])),
           spanM: z.optional(z.number().check(z.gt(0))),
-          exclusion: z.looseObject({
-            x: z.number(),
-            y: z.number(),
-            halfLengthM: z.number().check(z.gt(0)),
-            halfWidthM: z.number().check(z.gt(0)),
-          }),
           pinLiftM: z.number().check(z.gt(0)),
         }),
         chipShiftM: z.optional(z.number()),
       })
       .check(
         z.refine(
-          (entry) => entry.model.id === entry.id && entry.frame.id === entry.id,
-          'model and frame must carry the entry id',
+          (entry) =>
+            (entry.model === undefined || entry.model.id === entry.id) &&
+            entry.frame.id === entry.id &&
+            (entry.model !== undefined || entry.glb !== undefined),
+          'model and frame must carry the entry id, and a landmark needs a kit or a Blender model',
         ),
       ),
   ),
@@ -209,10 +219,18 @@ export interface GeoLandmark {
   /** landmarks.json category: decides whether the night glow may touch it. */
   readonly category: string
   readonly style: 'normal' | 'teaser'
-  readonly model: LandmarkModel
+  /** The code-built kit model (S07a): drawn until (or instead of) the Blender model. */
+  readonly model?: LandmarkModel
+  /** The Blender model (S07c): src/scene/models/landmarkLevels.ts. */
+  readonly glb?: GeoLandmarkGlb
   readonly frame: LandmarkFrame
   /** Name chip shift north (+) or south (-) that clears a neighbour's chip (UX-14). */
   readonly chipShiftM?: number
+}
+
+export interface GeoLandmarkGlb {
+  /** The kit fallback is drawn at this scale while the Blender model loads (absent: 1). */
+  readonly gameScale?: { readonly height: number; readonly plan: number }
 }
 
 /** The body of GET /geo/base (src/app/geo/base/route.ts). */

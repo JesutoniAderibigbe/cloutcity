@@ -23,7 +23,7 @@ import {
 import { landmarkModelsFileSchemaFor } from '../../src/lib/data/schemas/landmarkModels.ts'
 import { LION_SOURCE_IDS } from '../../src/lib/geo/sources.ts'
 import { STREET_SOURCE_IDS } from '../../src/lib/geo/streetSources.ts'
-import type { FramePlace } from './landmarks.ts'
+import type { BlenderPlacement, FramePlace } from './landmarks.ts'
 import {
   LockSchema,
   PartialLockSchema,
@@ -121,8 +121,56 @@ export async function readBuildParams(): Promise<{
   return {
     config: GeoConfigSchema.parse(await readJson(join(DATA, 'config/geo.json'))),
     bounds: BoundsSchema.parse(await readJson(join(DATA, 'geo/bounds.json'))),
-    landmarks: { models: models.data.models, places },
+    landmarks: { models: models.data.models, places, placements: await readPlacements() },
   }
+}
+
+// Only the fields the placements need; the locks and measurements are fully validated by
+// src/lib/data/data.test.ts.
+const RectSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  halfLengthM: z.number().positive(),
+  halfWidthM: z.number().positive(),
+  angleDeg: z.number(),
+})
+const PlacementLockSchema = z.object({
+  id: z.string(),
+  placement: z.object({ topM: z.number().positive(), exclusions: z.array(RectSchema) }),
+})
+const PlacementMeasurementsSchema = z.object({
+  base: z.enum(['land', 'water']).optional(),
+  placement: z.object({ headingDeg: z.number() }).optional(),
+})
+
+/**
+ * Every Blender-built landmark's placement (S07c): its lock's game-scale top and footprint, and
+ * its measurements' base and heading (for a landmark without a LION frame). Sorted by id.
+ */
+async function readPlacements(): Promise<BlenderPlacement[]> {
+  const dir = join(DATA, 'landmarks/blender')
+  let names: string[]
+  try {
+    names = (await readdir(dir)).filter((name) => name.endsWith('.lock.json')).sort()
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw error
+  }
+  const placements: BlenderPlacement[] = []
+  for (const name of names) {
+    const lock = PlacementLockSchema.parse(await readJson(join(dir, name)))
+    const measurements = PlacementMeasurementsSchema.parse(
+      await readJson(join(DATA, 'landmarks/measurements', `${lock.id}.json`)),
+    )
+    placements.push({
+      id: lock.id,
+      base: measurements.base ?? 'land',
+      headingDeg: measurements.placement?.headingDeg ?? 0,
+      topM: lock.placement.topM,
+      exclusions: lock.placement.exclusions,
+    })
+  }
+  return placements
 }
 
 export interface CachedSources {

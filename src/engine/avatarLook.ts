@@ -1,7 +1,7 @@
 /**
- * What the avatar draws (S16a, D8/D12): the creator's look with worn items over it (a worn item
- * always wins), the head swapped to the bald base under a covering that hides hair, and the
- * attachments in priority order, capped. It takes the public avatar (the look ids and the worn
+ * What the avatar draws (S16a, D8/D12; S16b frames): the creator's look with worn items over it
+ * (a worn item always wins), the body frame's bald face, rig and outfit variant, the hair piece
+ * hidden under a covering that hides hair, and the attachments in priority order, capped. It takes the public avatar (the look ids and the worn
  * item ids, src/engine/appearance.ts `publicAvatar`), so other players (S31) draw the same way. It reads the full look options (models), so it runs in
  * the avatar and creator chunks, never on the playable path (PERF-6).
  */
@@ -15,10 +15,12 @@ import { findItem, ITEM_SLOTS } from './items'
 export interface EffectiveLook {
   /** The creator's look with worn items over it (outfit, top, bottom and shoes). */
   readonly look: Look
-  /** Head model: the hairstyle's head, or the bald base when the style or a covering needs it. */
+  /** Head model: the body frame's bald face (S16b). */
   readonly head: string
-  /** Body model: the outfit's body. */
+  /** Body model: the outfit's variant for the body frame. */
   readonly body: string
+  /** Rig model: the body frame's rig, whose clips pose it (S16b). */
+  readonly rig: string
   /** Attachment model ids, in priority order, at most `attachments.max`. */
   readonly attachments: readonly string[]
   /** True when a head covering hides the hair (the hairstyle is kept for when it comes off). */
@@ -47,7 +49,7 @@ function wornLooks(worn: readonly string[], config: EngineConfig): ItemLook[] {
 /**
  * The look as drawn: worn items override the creator's base choice (a top sets the outfit and
  * its top colour, bottoms and shoes their colour, an accessory adds an attachment); a covering
- * marked `hidesHair` puts the bald base head on and hides the hair piece; attachments are kept
+ * marked `hidesHair` hides the hair piece; attachments are kept
  * in `attachments.priority` order up to `attachments.max`.
  */
 export function effectiveLook(
@@ -59,29 +61,50 @@ export function effectiveLook(
   let look: Look = avatar.look
   const items: string[] = []
   for (const worn of wornLooks(avatar.worn, config)) {
-    if (worn.part === 'outfit') look = { ...look, outfit: worn.outfit, top: worn.top }
-    else if (worn.part === 'bottom') look = { ...look, bottom: worn.color }
+    if (worn.part === 'outfit') {
+      // A worn outfit the body frame has no variant of keeps the creator's outfit (S16b).
+      const fits = options.outfits.some(
+        (outfit) => outfit.id === worn.outfit && outfit.variants[look.body] !== undefined,
+      )
+      look = fits ? { ...look, outfit: worn.outfit, top: worn.top } : { ...look, top: worn.top }
+    } else if (worn.part === 'bottom') look = { ...look, bottom: worn.color }
     else if (worn.part === 'shoes') look = { ...look, shoes: worn.color }
     else if (worn.part === 'attachment') items.push(worn.model)
   }
+  const frame = optionOf(options.bodies, look.body)
   const style = optionOf(options.hairStyles, look.hairStyle)
   const headwear = optionOf(options.headwear, look.headwear)
   const hairHidden = headwear.hidesHair === true
   const byKind: Record<string, readonly string[]> = {
     headwear: headwear.model === undefined ? [] : [headwear.model],
     hairPiece: hairHidden || style.piece === undefined ? [] : [style.piece],
+    // S16b: a frame whose bald head is open on top wears its scalp cap whenever no hair covers it.
+    scalpCap:
+      frame.scalpCap !== undefined && (hairHidden || style.piece === undefined)
+        ? [frame.scalpCap]
+        : [],
     facialHair: modelOf(options.facialHair, look.facialHair),
     eyewear: modelOf(options.eyewear, look.eyewear),
     ears: modelOf(options.ears, look.ears),
     item: items,
   }
-  const attachments = options.attachments.priority
-    .flatMap((kind) => byKind[kind] ?? [])
-    .slice(0, options.attachments.max)
+  // The scalp cap is part of the head, so it never takes an attachment's place.
+  const attachments = [
+    ...(byKind.scalpCap ?? []),
+    ...options.attachments.priority
+      .flatMap((kind) => byKind[kind] ?? [])
+      .slice(0, options.attachments.max),
+  ]
+  const outfit = optionOf(options.outfits, look.outfit)
+  const body = outfit.variants[frame.id]
+  if (body === undefined) {
+    throw new Error(`avatarLook: outfit "${outfit.id}" has no ${frame.id} variant`)
+  }
   return {
     look,
-    head: hairHidden ? baseHead(options) : style.head,
-    body: optionOf(options.outfits, look.outfit).body,
+    head: frame.head,
+    body,
+    rig: frame.rig,
     attachments,
     hairHidden,
     scale: optionOf(options.heights, look.height).scale,
@@ -94,11 +117,4 @@ function modelOf(
 ): readonly string[] {
   const model = optionOf(list, id).model
   return model === undefined ? [] : [model]
-}
-
-/** The bald head the hair pieces sit on: the head of the first hairstyle that has a piece. */
-function baseHead(options: CreatorEngineConfig['options']): string {
-  const withPiece = options.hairStyles.find((style) => style.piece !== undefined)
-  if (withPiece === undefined) throw new Error('avatarLook: no hairstyle uses a base head')
-  return withPiece.head
 }

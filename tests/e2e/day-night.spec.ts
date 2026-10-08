@@ -64,6 +64,14 @@ for (const time of TIMES) {
     for (const memorial of memorials) {
       expect(glowing.some((name) => name.includes(memorial.id))).toBe(false)
     }
+    // What is drawn (S07c): a memorial on the district window-mask material samples a lit
+    // window at no vertex.
+    const lit = await page.evaluate(() => window.__cloutcityTest?.scene?.maskLitVertices() ?? {})
+    for (const memorial of memorials) {
+      const meshes = Object.entries(lit).filter(([name]) => name.includes(memorial.id))
+      expect(meshes.length, memorial.id).toBeGreaterThan(0)
+      for (const [name, count] of meshes) expect(count, name).toBe(0)
+    }
 
     // Idle: the clock is held, so nothing redraws.
     const frames = await page.evaluate(() => window.__cloutcityTest?.scene?.frames() ?? 0)

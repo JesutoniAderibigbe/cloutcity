@@ -60,7 +60,7 @@ describe('data/assets/catalog.json', () => {
     }
   })
 
-  it('pins the planned packs: KayKit commits, Kenney zips, Quaternius Drive files and itch upload', () => {
+  it('pins the planned packs: KayKit commits, three Kenney zips, Quaternius Drive files and itch upload', () => {
     const pins = catalog.sources.map((source) => {
       const { download } = source
       if (download.kind === 'github-raw') return download.commit
@@ -73,7 +73,6 @@ describe('data/assets/catalog.json', () => {
       '63976910ca04d16f0fc531b9c614244be8128713',
       '96d5930a8dbdb363409bbc2d3341718b00e17c9c',
       '153c8a7535b48237854cb54ff6890679f8c574d1',
-      'https://kenney.nl/media/pages/assets/mini-characters/bfc7e272b4-1774770718/kenney_mini-characters.zip',
       'https://kenney.nl/media/pages/assets/furniture-kit/440e0608a4-1677580847/kenney_furniture-kit.zip',
       'https://kenney.nl/media/pages/assets/city-kit-commercial/a742d900eb-1753115042/kenney_city-kit-commercial_2.1.zip',
       'https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip',

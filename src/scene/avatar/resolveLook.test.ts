@@ -1,4 +1,4 @@
-/** resolveLook (S16a): the drawn look as ModelRefs and hex colours. */
+/** resolveLook (S16a, S16b frames): the drawn look as ModelRefs and hex colours. */
 import { describe, expect, it } from 'vitest'
 import { publicAvatar, type Look } from '@/engine/appearance'
 import { effectiveLook } from '@/engine/avatarLook'
@@ -14,92 +14,67 @@ const hexOf = (list: readonly { id: string; token: string }[], id: string) =>
 const resolve = (look: Look, worn: readonly string[] = []) => resolveAvatar({ look, worn })
 
 describe('resolveLook', () => {
-  it('maps the default look to its head and body, colouring only slots each model has', () => {
+  it('maps the default look to its frame’s rig, face and outfit, colouring only slots each has', () => {
     const resolved = resolve(base)
-    expect(hexOf(options.skinTones, base.skin)).toMatch(/^#[0-9a-f]{6}$/)
-    const style = options.hairStyles.find((s) => s.id === base.hairStyle)
+    const frame = options.bodies.find((body) => body.id === base.body)
     const outfit = options.outfits.find((o) => o.id === base.outfit)
-    expect(resolved.parts.head.id).toBe(style?.head)
-    expect(resolved.parts.body.id).toBe(outfit?.body)
-    expect(resolved.parts.rig.id).toBe('avatar-rig')
-    expect(resolved.parts.attachments).toEqual([])
+    expect(resolved.parts.rig.id).toBe(frame?.rig)
+    expect(resolved.parts.head.id).toBe(frame?.head)
+    expect(resolved.parts.body.id).toBe(outfit?.variants[base.body])
+    expect(resolved.parts.attachments?.map((a) => a.ref.id)).toEqual(['hair-bob'])
     expect(resolved.colors.head).toEqual({
       skin: hexOf(options.skinTones, base.skin),
       hair: hexOf(options.hairColors, base.hairColor),
     })
     expect(resolved.colors.body).toEqual({
-      shoes: hexOf(options.garmentColors, base.shoes),
       skin: hexOf(options.skinTones, base.skin),
       top: hexOf(options.garmentColors, base.top),
       bottom: hexOf(options.garmentColors, base.bottom),
+      shoes: hexOf(options.garmentColors, base.shoes),
+    })
+    expect(resolved.parts.attachments?.[0]).toMatchObject({
+      joint: 'head',
+      offset: [0, 0, 0],
+      colors: { hair: hexOf(options.hairColors, base.hairColor) },
     })
     expect(resolved.tint.top).toBe(hexOf(options.garmentColors, base.top))
     expect(resolved.heightM).toBe(resolved.parts.head.bounds?.max[1])
     expect(resolved.missing).toEqual([])
   })
 
-  it('places the Kenney accessories at their scene.json joints, the hearing aid in the skin tone', () => {
-    const resolved = resolve({ ...base, eyewear: 'glasses', ears: 'hearing-aid' })
-    expect(resolved.parts.attachments?.map((a) => [a.ref.id, a.joint, a.offset])).toEqual([
-      ['glasses', 'head', avatarRefs.attachments.glasses?.offset],
-      ['hearing-aid', 'head', avatarRefs.attachments['hearing-aid']?.offset],
-    ])
-    expect(resolved.parts.attachments?.[1]?.colors).toEqual({
-      shell: hexOf(options.skinTones, base.skin),
-    })
+  it('the man frame takes its own rig, face and outfit variant', () => {
+    const resolved = resolve({ ...base, body: 'man', outfit: 'suit', hairStyle: 'parted' })
+    expect(resolved.parts.rig.id).toBe('avatar-rig-m')
+    expect(resolved.parts.head.id).toBe('head-m')
+    expect(resolved.parts.body.id).toBe('outfit-m-suit')
   })
 
-  it('a Blender piece on the bald head: the piece and facial hair take the hair colour', () => {
-    const resolved = resolve({
-      ...base,
-      hairStyle: 'afro',
-      hairColor: 'pink',
-      facialHair: 'stubble',
-      eyewear: 'sunglasses',
-    })
-    expect(resolved.parts.head.id).toBe('head-base')
-    expect(resolved.colors.head).toEqual({ skin: hexOf(options.skinTones, base.skin) })
-    const stubble = resolved.parts.attachments?.find((a) => a.ref.id === 'facial-stubble')
-    expect(stubble).toMatchObject({ joint: 'head', offset: [0, 0, 0] })
-    expect(stubble?.colors).toEqual({ hair: hexOf(options.hairColors, 'pink') })
-    const afro = resolved.parts.attachments?.find((a) => a.ref.id === 'hair-afro')
-    expect(afro).toMatchObject({ joint: 'head', offset: [0, 0, 0] })
-    expect(afro?.colors).toEqual({ hair: hexOf(options.hairColors, 'pink') })
-    expect(resolved.missing).toEqual([])
+  it('skips a model pending its refit and lists it as missing, so the look still draws', () => {
+    const resolved = resolve({ ...base, hairStyle: 'afro', eyewear: 'glasses' })
+    expect(resolved.parts.attachments).toEqual([])
+    expect([...resolved.missing].sort()).toEqual(['glasses', 'hair-afro'])
+    for (const id of ['hair-afro', 'glasses']) expect(avatarRefs.models[id], id).toBeUndefined()
   })
 
-  it('an item attachment follows its catalog joint: the tote rides the torso', () => {
-    const resolved = resolve({ ...base, top: 'navy' }, ['subway-tote', 'gold-hoops'])
-    const joints = resolved.parts.attachments?.map((a) => [a.ref.id, a.joint])
-    expect(joints).toEqual(
-      expect.arrayContaining([
-        ['acc-subway-tote', 'torso'],
-        ['acc-gold-hoops', 'head'],
-      ]),
+  it('a head covering hides the hair piece', () => {
+    const drawn = effectiveLook(
+      { look: { ...base, headwear: 'hijab' }, worn: [] },
+      config,
+      creatorConfig,
     )
-    const tote = resolved.parts.attachments?.find((a) => a.ref.id === 'acc-subway-tote')
-    expect(tote?.colors).toEqual({ fabric: hexOf(options.garmentColors, 'navy') })
+    expect(drawn.attachments).not.toContain('hair-bob')
   })
 
-  it('a head covering takes the top colour and hides the hair piece', () => {
-    const resolved = resolve({ ...base, hairStyle: 'locs', headwear: 'hijab', top: 'navy' })
-    expect(resolved.parts.head.id).toBe('head-base')
-    expect(resolved.parts.attachments?.map((a) => a.ref.id)).toEqual(['headwear-hijab'])
-    expect(resolved.parts.attachments?.[0]?.colors).toEqual({
-      fabric: hexOf(options.garmentColors, 'navy'),
-    })
-  })
-
-  it('colours every skin tone, the A0 tones included', () => {
+  it('colours every skin tone', () => {
     for (const tone of options.skinTones) {
       const resolved = resolve({ ...base, skin: tone.id })
       expect(resolved.colors.head?.skin, tone.id).toMatch(/^#[0-9a-f]{6}$/)
     }
   })
 
-  it('worn items win: a top sets the body and the capsule tint', () => {
+  it('worn items win: a top sets the outfit and the capsule tint', () => {
     const resolved = resolve(base, ['bodega-graphic-tee', 'cargo-pants'])
-    expect(resolved.parts.body.id).toBe('body-female-c')
+    expect(resolved.parts.body.id).toBe('outfit-w-casual')
     expect(resolved.colors.body?.top).toBe(hexOf(options.garmentColors, 'white'))
     expect(resolved.colors.body?.bottom).toBe(hexOf(options.garmentColors, 'moss'))
     expect(resolved.tint.top).toBe(hexOf(options.garmentColors, 'white'))
@@ -107,7 +82,13 @@ describe('resolveLook', () => {
 
   it('repairs ids it does not know before resolving (an older build, another player)', () => {
     const resolved = resolveAvatar({ look: { ...base, outfit: 'outfit-99' }, worn: ['nope'] })
-    expect(resolved.parts.body.id).toBe(options.outfits.find((o) => o.id === base.outfit)?.body)
+    expect(resolved.parts.body.id).toBe('outfit-w-casual')
+    // A Kenney-era man's look keeps its frame through the legacy aliases.
+    const legacy = { ...base, outfit: 'outfit-11', hairStyle: 'style-12' } as Record<string, string>
+    delete legacy.body
+    const man = resolveAvatar({ look: legacy as unknown as Look, worn: [] })
+    expect([man.parts.rig.id, man.parts.body.id]).toEqual(['avatar-rig-m', 'outfit-m-hoodie'])
+    expect(man.parts.attachments?.map((a) => a.ref.id)).toEqual(['hair-parted'])
   })
 
   it('carries the height option as the root scale', () => {
@@ -128,7 +109,8 @@ describe('resolveLook', () => {
 })
 
 function resolveSeed(seed: number): Partial<Look> {
+  const body = seed % 2 === 0 ? 'woman' : 'man'
+  const hairStyle = options.hairStyles[seed % options.hairStyles.length]?.id ?? 'bob'
   const eyewear = ['none', 'glasses', 'sunglasses'][seed % 3] ?? 'none'
-  const ears = seed % 2 === 0 ? 'none' : 'hearing-aid'
-  return { eyewear, ears }
+  return { body, hairStyle, eyewear }
 }

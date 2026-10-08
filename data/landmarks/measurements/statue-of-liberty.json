@@ -1,0 +1,97 @@
+{
+  "id": "statue-of-liberty",
+  "base": "land",
+  "placement": {
+    "headingDeg": 135,
+    "note": "the figure faces south-east, out to the harbour mouth (by eye)"
+  },
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q9202 (Statue of Liberty)",
+      "url": "https://www.wikidata.org/wiki/Q9202",
+      "licence": "CC0-1.0"
+    },
+    {
+      "id": "nps",
+      "title": "National Park Service, Statue of Liberty National Monument, \"Statue Statistics\"",
+      "url": "https://www.nps.gov/stli/learn/historyculture/statue-statistics.htm",
+      "licence": "public-domain"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 92.99,
+      "source": "nps",
+      "note": "ground to tip of torch, 305 ft 1 in"
+    },
+    "statueM": {
+      "valueM": 46.05,
+      "source": "nps",
+      "note": "top of base to torch, 151 ft 1 in (Wikidata height 46 m)"
+    },
+    "pedestalTopM": {
+      "valueM": 46.94,
+      "source": "nps",
+      "note": "ground to the top of the pedestal, 154 ft (Wikidata gives the pedestal 47 m)"
+    },
+    "pedestalM": {
+      "valueM": 27.13,
+      "source": "estimate",
+      "note": "the granite pedestal alone, the commonly given 89 ft; the fort below takes the rest of the 46.94 m"
+    },
+    "heelToHeadM": {
+      "valueM": 33.86,
+      "source": "nps",
+      "note": "heel to top of head, 111 ft 1 in"
+    },
+    "headM": {
+      "valueM": 5.26,
+      "source": "nps",
+      "note": "chin to cranium, 17 ft 3 in"
+    },
+    "headWidthM": {
+      "valueM": 3.05,
+      "source": "nps",
+      "note": "width of head, 10 ft"
+    },
+    "armM": {
+      "widthM": 3.66,
+      "depthM": 12.8,
+      "source": "nps",
+      "note": "right arm: width 12 ft (widthM), length 42 ft (depthM)"
+    },
+    "waistM": {
+      "valueM": 10.67,
+      "source": "nps",
+      "note": "width of waist, 35 ft"
+    },
+    "tablet": {
+      "widthM": 4.14,
+      "depthM": 7.19,
+      "source": "nps",
+      "note": "tablet 13 ft 7 in wide (widthM) by 23 ft 7 in long (depthM), 2 ft thick"
+    },
+    "pedestalPlan": {
+      "widthM": 28,
+      "depthM": 19,
+      "source": "estimate",
+      "note": "the pedestal's base (widthM) and top (depthM) width, proportioned by eye"
+    },
+    "fort": {
+      "widthM": 100,
+      "depthM": 76,
+      "source": "estimate",
+      "note": "the eleven-point star fort's outer (widthM) and inner (depthM) diameter, proportioned by eye"
+    }
+  },
+  "readabilityScale": {
+    "note": "The figure is drawn as plain volumes (robe, head, crown rays, raised arm, torch, tablet); crown rays are slim spikes."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.8,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights and widths x1.8, so the statue reads from Battery Park at the 3,000-4,500 m game camera (S07b acceptance)."
+  }
+}

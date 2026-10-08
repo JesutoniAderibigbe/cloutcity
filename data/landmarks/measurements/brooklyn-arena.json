@@ -1,0 +1,74 @@
+{
+  "id": "brooklyn-arena",
+  "base": "land",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q807966 (the Brooklyn arena)",
+      "url": "https://www.wikidata.org/wiki/Q807966",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 36,
+      "source": "estimate",
+      "note": "the arena's roof edge above the street, proportioned by eye"
+    },
+    "glazedBaseM": {
+      "valueM": 9,
+      "source": "estimate",
+      "note": "the glazed concourse level under the metal band"
+    },
+    "length": {
+      "widthM": 175,
+      "depthM": 125,
+      "source": "estimate",
+      "note": "the arena body's length and width (a rounded oblong)"
+    },
+    "headingDeg": {
+      "valueM": 105,
+      "source": "estimate",
+      "note": "compass heading of the arena's long axis, along the avenue to its south (by eye)"
+    },
+    "canopyHeadingDeg": {
+      "valueM": 305,
+      "source": "estimate",
+      "note": "compass heading from the arena's middle to the entrance canopy over the corner plaza"
+    },
+    "canopyDistanceM": {
+      "valueM": 100,
+      "source": "estimate",
+      "note": "from the arena's middle to the canopy's middle"
+    },
+    "canopyRadiusM": {
+      "valueM": 42,
+      "source": "estimate",
+      "note": "the canopy's radius"
+    },
+    "canopyOpeningM": {
+      "valueM": 14,
+      "source": "estimate",
+      "note": "the round opening's radius"
+    },
+    "canopyM": {
+      "valueM": 13,
+      "source": "estimate",
+      "note": "the canopy's height above the plaza"
+    },
+    "capacity": {
+      "count": 17732,
+      "source": "wikidata",
+      "note": "maximum capacity (P1083), for scale"
+    }
+  },
+  "readabilityScale": {
+    "note": "A generic arena (LEGAL-1: no logos, sponsor or team names, signage or text; the canopy's ring screen is a plain colour)."
+  },
+  "gameScale": {
+    "height": 1.6,
+    "plan": 1.15,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.6 and plan x1.15 like the ballparks, so the arena reads at the 3,000-4,500 m game camera."
+  }
+}

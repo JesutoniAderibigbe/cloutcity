@@ -136,6 +136,7 @@ const ShowcaseViewSchema = z.strictObject({
       clip: z.string().min(1),
       avatars: z.array(
         z.strictObject({
+          rig: id,
           head: id,
           body: id,
           colors: z.strictObject({ head: SlotTokensSchema, body: SlotTokensSchema }),

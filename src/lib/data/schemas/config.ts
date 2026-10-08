@@ -527,6 +527,9 @@ export const UI_TOKENS = [
   'success',
   'focus',
   'meter',
+  // The phone's wallpaper (S58): a sky gradient its app labels sit on, top to bottom.
+  'wall-top',
+  'wall-bottom',
 ] as const
 export type UiToken = (typeof UI_TOKENS)[number]
 
@@ -1659,6 +1662,48 @@ export const TourConfigSchema = z.strictObject({
     .refine((kinds) => new Set(kinds).size === kinds.length, { error: 'kinds must not repeat' }),
 })
 export type TourConfig = z.infer<typeof TourConfigSchema>
+
+/** The Phone tab's apps (S58), in no particular order: data/config/phone.json orders the grid. */
+export const PHONE_APP_IDS = [
+  'bank',
+  'updates',
+  'jobs',
+  'places',
+  'goals',
+  'closet',
+  'home',
+  'profile',
+  'messages',
+  'settings',
+] as const
+export type PhoneAppId = (typeof PHONE_APP_IDS)[number]
+
+const unique = <T>(list: readonly T[]) => new Set(list).size === list.length
+const copyIdSegment = z.string().regex(/^[a-z][a-zA-Z0-9]*$/)
+
+/**
+ * data/config/phone.json (S58): the phone's home screen and its apps' limits.
+ * - `apps`: the grid, in order, each with its decorative icon (an emoji; the label is copy).
+ * - `updates.badgeCap`: the Updates icon's badge shows at most this number, then "N+" (GR-21).
+ * - `updates.maxEvents`: how many recent city events the Updates inbox lists.
+ * - `help.faq`, `help.shortcuts`: the Help questions and the keyboard shortcuts listed, by copy
+ *   id (`phone.help.faq.<id>.q`/`.a`, `phone.keys.<id>.keys`/`.does`).
+ */
+export const PhoneConfigSchema = z.strictObject({
+  apps: z
+    .array(z.strictObject({ id: z.enum(PHONE_APP_IDS), icon: z.string().min(1) }))
+    .min(1)
+    .refine((apps) => unique(apps.map((app) => app.id)), { error: 'apps must not repeat' }),
+  updates: z.strictObject({ badgeCap: positiveInt, maxEvents: positiveInt }),
+  help: z.strictObject({
+    faq: z.array(copyIdSegment).min(1).refine(unique, { error: 'faq ids must not repeat' }),
+    shortcuts: z
+      .array(copyIdSegment)
+      .min(1)
+      .refine(unique, { error: 'shortcut ids must not repeat' }),
+  }),
+})
+export type PhoneConfig = z.infer<typeof PhoneConfigSchema>
 
 const volume = z.int().min(0).max(100)
 const AudioTierSchema = z.strictObject({

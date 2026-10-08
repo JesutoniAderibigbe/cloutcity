@@ -75,20 +75,20 @@ describe('prepareGltf', () => {
   })
 
   it('returns the rig as clips only', async () => {
-    const rig = asRig(await load('avatar-rig'))
+    const rig = asRig(await load('avatar-rig-f'))
     expect(rig.clips.map((clip) => clip.name).sort()).toEqual(
-      [...modelRef('avatar-rig').clips].sort(),
+      [...modelRef('avatar-rig-f').clips].sort(),
     )
   })
 
   it('refuses a static model that is not one mesh', async () => {
-    const ref = modelRef('avatar-rig')
+    const ref = modelRef('avatar-rig-f')
     const bytes = readFileSync(join(ROOT, 'public', ref.files.high))
     const gltf = await gltfLoader().parseAsync(
       bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
       '',
     )
-    expect(() => prepareGltf(gltf, { id: 'avatar-rig', kind: 'static' })).toThrow(
+    expect(() => prepareGltf(gltf, { id: 'avatar-rig-f', kind: 'static' })).toThrow(
       /exactly one mesh/,
     )
   })
@@ -148,39 +148,81 @@ describe('recolorGeometry', () => {
   })
 })
 
-describe('assembleAvatar', () => {
-  it('binds a head and a body to one skeleton that the rig clips drive', async () => {
-    const [rig, body, head] = await Promise.all([
-      load('avatar-rig'),
-      load('body-male-a'),
-      load('head-female-b'),
+const tris = (id: string) =>
+  modelManifest.models.find((m) => m.id === id)?.tiers.high.triangles ?? NaN
+
+describe('prepareGltf flat shading (S16b)', () => {
+  it('unwelds a pack part shipped without normals and gives each face its normal', async () => {
+    const head = asSkinned(await load('head-f'))
+    let mesh: SkinnedMesh | undefined
+    head.scene.traverse((object) => {
+      if (object instanceof SkinnedMesh) mesh = object
+    })
+    const geometry = mesh?.geometry
+    expect(geometry?.index).toBeNull()
+    const normal = geometry?.getAttribute('normal')
+    expect(normal?.count).toBe(geometry?.getAttribute('position').count ?? 0)
+    // The three corners of a face share its normal.
+    expect([normal?.getX(1), normal?.getY(1), normal?.getZ(1)]).toEqual([
+      normal?.getX(0),
+      normal?.getY(0),
+      normal?.getZ(0),
+    ])
+    expect(head.triangles).toBe(tris('head-f'))
+    disposeModel(head)
+  })
+})
+
+describe('assembleAvatar (S16b: one merged SkinnedMesh)', () => {
+  it('merges body, face and hair into one skinned mesh the rig clips drive, hair on the head', async () => {
+    const [rig, body, head, hair] = await Promise.all([
+      load('avatar-rig-m'),
+      load('outfit-m-casual'),
+      load('head-m'),
+      load('hair-parted'),
     ])
     const parts = {
-      rig: modelRef('avatar-rig'),
-      body: modelRef('body-male-a'),
-      head: modelRef('head-female-b'),
+      rig: modelRef('avatar-rig-m'),
+      body: modelRef('outfit-m-casual'),
+      head: modelRef('head-m'),
     }
     const material = new MeshBasicMaterial()
-    const avatar = assembleAvatar(asSkinned(body), asSkinned(head), parts, material, {
-      head: { skin: '#47291a' },
-    })
+    const avatar = assembleAvatar(
+      asSkinned(body),
+      asSkinned(head),
+      parts,
+      material,
+      { head: { skin: '#47291a' } },
+      [
+        {
+          part: { ref: modelRef('hair-parted'), joint: 'head', offset: [0, 0, 0] },
+          model: asStatic(hair),
+        },
+      ],
+    )
     const meshes: SkinnedMesh[] = []
     avatar.root.traverse((object) => {
       if (object instanceof SkinnedMesh) meshes.push(object)
     })
-    expect(meshes).toHaveLength(2)
-    const [first, second] = meshes
-    if (first === undefined || second === undefined) throw new Error('meshes missing')
-    expect(first.skeleton.bones.map((bone) => bone.uuid)).toEqual(
-      second.skeleton.bones.map((bone) => bone.uuid),
-    )
-    expect(meshes.every((mesh) => mesh.material === material)).toBe(true)
-    expect(avatar.triangles).toBe(
-      (modelManifest.models.find((m) => m.id === 'body-male-a')?.tiers.high.triangles ?? 0) +
-        (modelManifest.models.find((m) => m.id === 'head-female-b')?.tiers.high.triangles ?? 0),
-    )
+    // One draw call, one (skinned) program whatever the avatar wears.
+    expect(meshes).toHaveLength(1)
+    const [mesh] = meshes
+    if (mesh === undefined) throw new Error('mesh missing')
+    expect(mesh.material).toBe(material)
+    expect(avatar.triangles).toBe(tris('outfit-m-casual') + tris('head-m') + tris('hair-parted'))
 
-    const torso = first.skeleton.bones.find((bone) => bone.name === 'torso')
+    // The hair's vertices are the last ones, weighted 1 on the head joint.
+    const headJoint = mesh.skeleton.bones.findIndex((bone) => bone.name === 'head')
+    const skinIndex = mesh.geometry.getAttribute('skinIndex')
+    const skinWeight = mesh.geometry.getAttribute('skinWeight')
+    const last = skinIndex.count - 1
+    expect(skinIndex.getX(last)).toBe(headJoint)
+    expect(skinWeight.getX(last)).toBe(1)
+    // In the bind pose the hair sits over the face: its top is above the head joint.
+    const position = mesh.geometry.getAttribute('position')
+    expect(position.getY(last)).toBeGreaterThan(1.5)
+
+    const torso = mesh.skeleton.bones.find((bone) => bone.name === 'torso')
     if (torso === undefined) throw new Error('torso missing')
     const action = avatar.mixer.clipAction(clipNamed(asRig(rig), 'walk'))
     action.play()
@@ -190,12 +232,11 @@ describe('assembleAvatar', () => {
     expect(torso.quaternion.angleTo(start)).toBeGreaterThan(0)
 
     avatar.dispose()
-    disposeModel(body)
-    disposeModel(head)
+    for (const model of [body, head, hair]) disposeModel(model)
   })
 
   it('throws on a clip the rig does not have', async () => {
-    const rig = asRig(await load('avatar-rig'))
+    const rig = asRig(await load('avatar-rig-f'))
     expect(() => clipNamed(rig, 'moonwalk')).toThrow(/moonwalk/)
   })
 })
@@ -217,7 +258,12 @@ describe('placementMatrix', () => {
 describe('wantsAvatarModel', () => {
   const player = scene.models.player
   it('keeps the capsule on capsule tiers and on low-memory devices', () => {
-    expect(wantsAvatarModel(player, 'low', 8)).toBe(false)
+    // S16b: no capsule tier any more; the low tier draws the low-LOD model on 2 GB or more.
+    expect(player.capsuleTiers).toEqual([])
+    expect(wantsAvatarModel(player, 'low', 8)).toBe(true)
+    expect(wantsAvatarModel(player, 'low', player.minDeviceMemoryGB)).toBe(true)
+    expect(wantsAvatarModel(player, 'low', 1)).toBe(false)
+    expect(wantsAvatarModel({ ...player, capsuleTiers: ['low'] }, 'low', 8)).toBe(false)
     expect(wantsAvatarModel(player, 'mid', player.minDeviceMemoryGB - 0.5)).toBe(false)
     expect(wantsAvatarModel(player, 'mid', player.minDeviceMemoryGB)).toBe(true)
     // Browsers that do not report memory (Safari, Firefox) get the model.

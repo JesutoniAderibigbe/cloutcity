@@ -3,7 +3,8 @@ import { scene } from '@/lib/data/config'
 import { landmarks } from '@/lib/data/content'
 import { landmarksLayer } from '@/lib/world/landmarksLayer'
 import { mapPlaces, placeName } from '@/lib/world/places'
-import { buildNameChipGeometry } from './nameChips'
+import { BufferAttribute } from 'three'
+import { buildNameChipGeometry, chipScale, writeChipPositions } from './nameChips'
 
 describe('landmark name chips', () => {
   it('lies one flat quad per chip at its height, each sampling its own atlas row', () => {
@@ -34,5 +35,28 @@ describe('landmark name chips', () => {
         placeName(place),
       )
     }
+  })
+})
+
+describe('chip size at focus distance (S07c)', () => {
+  const size = { widthM: 1000, heightM: 200, fullSizeDistanceM: 4500, minScale: 0.35 }
+  it('is full size from the full-size distance out and shrinks closer in, never below the floor', () => {
+    expect(chipScale(6000, size)).toBe(1)
+    expect(chipScale(4500, size)).toBe(1)
+    expect(chipScale(2250, size)).toBe(0.5)
+    expect(chipScale(300, size)).toBe(0.35)
+  })
+
+  it('shrinks each chip about its own centre', () => {
+    const chips = [{ x: 100, y: 200, height: 30, text: 'A' }]
+    const geometry = buildNameChipGeometry(chips, size)
+    const positions = geometry.getAttribute('position')
+    if (!(positions instanceof BufferAttribute)) throw new Error('no positions')
+    writeChipPositions(positions, chips, size, 0.5)
+    const xs = [0, 1, 2, 3].map((i) => positions.getX(i))
+    expect(Math.min(...xs)).toBeCloseTo(-150)
+    expect(Math.max(...xs)).toBeCloseTo(350)
+    const ys = [0, 1, 2, 3].map((i) => positions.getY(i))
+    expect(ys.every((y) => Math.abs(y - 30) < 1e-6)).toBe(true)
   })
 })

@@ -5,44 +5,56 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "645173480308ea7599d5b7253770875d2a7510f7098d124e494b0e9e9a5c4a26",
+  "inputsSha": "7855b180bae04978cfc1b13e1408fdd24144dbd866ffb41109f4fdd780ada6bc",
   "caps": {
     "low": 1200,
     "mid": 3500,
     "high": 7000
   },
+  "placement": {
+    "topM": 151.2,
+    "exclusions": [
+      {
+        "x": 0,
+        "y": 0.1,
+        "halfLengthM": 45.2,
+        "halfWidthM": 846.5,
+        "angleDeg": 0
+      }
+    ]
+  },
   "levels": [
     {
       "level": 0,
       "file": "public/landmarks/brooklyn-bridge/lod0.glb",
-      "sha256": "a10a359d024769f13da47f1fc980e17e82296e9dc2cd2ed15b3c12170041e247",
-      "bytes": 110584,
-      "triangles": 6832,
-      "uncompressedBytes": 520488
+      "sha256": "1628e1577d2976894ca7b41e56719985c69171fcce538f23428bd3730d12ad7d",
+      "bytes": 108904,
+      "triangles": 6680,
+      "uncompressedBytes": 686320
     },
     {
       "level": 1,
       "file": "public/landmarks/brooklyn-bridge/lod1.glb",
-      "sha256": "efff1457f78687e0a21bae65b0623e9583e1cac5a3facd41d8abc833a02eaee9",
-      "bytes": 59864,
-      "triangles": 3308,
-      "uncompressedBytes": 254400
+      "sha256": "4846338244135692aa0f9a49ec2fd90f49ff35035f2d7461cac19033a969351c",
+      "bytes": 59808,
+      "triangles": 3320,
+      "uncompressedBytes": 339760
     },
     {
       "level": 2,
       "file": "public/landmarks/brooklyn-bridge/lod2.glb",
-      "sha256": "87964d047932b619cec6b704121e50ddcfbc0ad81b07e483ef723f09d850799a",
-      "bytes": 23660,
+      "sha256": "6b0c23090ea15ee2e080e0c2833e412d05da340fbb2e0bac4f567e03bcc58fb7",
+      "bytes": 22852,
       "triangles": 1200,
-      "uncompressedBytes": 92492
+      "uncompressedBytes": 120236
     },
     {
       "level": 3,
       "file": "public/landmarks/brooklyn-bridge/lod3.glb",
-      "sha256": "853e4f6a832a6550814e28b8280f687c18c0740ca23e356260988ff9443c63e1",
-      "bytes": 12708,
+      "sha256": "7fd04705676e11cb759387d961d84f70baef7bc5bec1a1e3c61ceb32aee3c07b",
+      "bytes": 13288,
       "triangles": 584,
-      "uncompressedBytes": 43224
+      "uncompressedBytes": 57752
     }
   ]
 }

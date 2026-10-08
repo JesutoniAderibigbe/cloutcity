@@ -16,7 +16,10 @@ import { areaAt, prepareAreas } from '@/lib/geo/lookup'
 import { distanceM, project, type LocalPoint } from '@/lib/geo/projection'
 import { modelTopM } from './metrics'
 
-const frames = LandmarkFramesFileSchema.parse(framesJson).landmarks
+const allFrames = LandmarkFramesFileSchema.parse(framesJson).landmarks
+/** The S07a frames, from LION; the rest stand at their location (S07c placed frames). */
+const frames = allFrames.filter((f) => f.lion !== undefined)
+const placed = allFrames.filter((f) => f.lion === undefined)
 const models = LandmarkModelsFileSchema.parse(modelsJson).models
 const boroughs = prepareAreas(land.boroughs)
 const placeOf = (id: string) => {
@@ -38,6 +41,8 @@ const bearing = (from: LocalPoint, to: LocalPoint) =>
 describe('landmark frames', () => {
   it('one frame per model, sorted by id, derived from LION and the borough boundaries', () => {
     expect(frames.map((f) => f.id)).toEqual(models.map((m) => m.id).sort())
+    const ids = allFrames.map((f) => f.id)
+    expect(ids).toEqual([...ids].sort())
     expect(framesJson.derived).toBe(true)
     expect(framesJson.sources).toContain('dcp-borough-boundaries')
     expect(bridges.map((f) => f.id)).toEqual([
@@ -73,7 +78,8 @@ describe('landmark frames', () => {
   it.each(bridges.map((f) => [f.id, f] as const))(
     '%s: anchor within 60 m of the LION axis centre',
     (_id, frame) => {
-      if (!('axisCentre' in frame.lion)) throw new Error('no axis centre')
+      if (frame.lion === undefined || !('axisCentre' in frame.lion))
+        throw new Error('no axis centre')
       expect(distanceM(frame.anchor, frame.lion.axisCentre)).toBeLessThanOrEqual(60)
     },
   )
@@ -108,17 +114,20 @@ describe('landmark frames', () => {
     '%s: anchored on its location (≤ 1 m), fronting street within 80 m',
     (id, frame) => {
       expect(distanceM(frame.anchor, project(placeOf(id).location))).toBeLessThanOrEqual(1)
-      if (!('frontM' in frame.lion)) throw new Error('no front distance')
+      if (frame.lion === undefined || !('frontM' in frame.lion))
+        throw new Error('no front distance')
       expect(frame.lion.frontM).toBeLessThanOrEqual(80)
       expect(frame.base).toBe('land')
     },
   )
 
-  it('every pin lift is its model’s top, and every exclusion sits on the anchor', () => {
+  it('every pin clears its kit model’s top, and every kit exclusion sits on the anchor', () => {
     for (const frame of frames) {
       const model = models.find((m) => m.id === frame.id)
       if (model === undefined) throw new Error(`no model ${frame.id}`)
-      expect(frame.pinLiftM).toBeCloseTo(modelTopM(model), 1)
+      // The Blender model (S07c) may stand taller at game scale: the pin clears both.
+      expect(frame.pinLiftM).toBeGreaterThanOrEqual(Math.round(modelTopM(model) * 10) / 10)
+      if (frame.exclusion === undefined) throw new Error(`${frame.id}: no kit exclusion`)
       expect([frame.exclusion.x, frame.exclusion.y]).toEqual([frame.anchor.x, frame.anchor.y])
       // S04d's angle: counter-clockwise from east; the heading: clockwise from north.
       expect(angleBetween(frame.exclusion.angleDeg, 90 - frame.headingDeg)).toBeLessThan(0.11)
@@ -127,4 +136,13 @@ describe('landmark frames', () => {
       }
     }
   })
+
+  it.each(placed.map((f) => [f.id, f] as const))(
+    '%s (placed, S07c): anchored on its location (≤ 1 m), clear of the kit fields',
+    (id, frame) => {
+      expect(distanceM(frame.anchor, project(placeOf(id).location))).toBeLessThanOrEqual(1)
+      expect(frame.exclusion).toBeUndefined()
+      expect(frame.grounds).toBeDefined()
+    },
+  )
 })

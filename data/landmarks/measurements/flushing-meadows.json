@@ -1,0 +1,289 @@
+{
+  "id": "flushing-meadows",
+  "base": "land",
+  "park": "park-qn8191",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q745296 (Flushing Meadows Corona Park) and the points of its features: Q717956, Q4571746, Q1320229, Q2306200, Q1852081, Q1072882",
+      "url": "https://www.wikidata.org/wiki/Q745296",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 69,
+      "source": "estimate",
+      "note": "the tallest observation deck's top above the park (about 226 ft)"
+    },
+    "treeLowM": {
+      "valueM": 12,
+      "source": "estimate",
+      "note": "the lower canopy height of the tree masses"
+    },
+    "treeHighM": {
+      "valueM": 19,
+      "source": "estimate",
+      "note": "the upper canopy height"
+    },
+    "treeSpacingM": {
+      "valueM": 60,
+      "source": "estimate",
+      "note": "canopy mound spacing at the finest level at density 1"
+    },
+    "parkHeadingDeg": {
+      "valueM": 160,
+      "source": "estimate",
+      "note": "the compass heading of the park's long axis and its lakes"
+    },
+    "fountainPool": {
+      "lat": 40.746389,
+      "lng": -73.845,
+      "source": "wikidata",
+      "note": "the fair's central plaza (the steel globe's point, Q717956 P625): drawn as a generic round fountain pool with plain jets; no globe replica (LEGAL-1)"
+    },
+    "fountainRadiusM": {
+      "valueM": 40,
+      "source": "estimate",
+      "note": "the round pool's radius"
+    },
+    "jetM": {
+      "valueM": 6,
+      "source": "estimate",
+      "note": "the fountain jets' height"
+    },
+    "pavilion": {
+      "lat": 40.744028,
+      "lng": -73.844417,
+      "source": "wikidata",
+      "note": "the 1964 exposition pavilion (Q4571746, P625): generic observation towers beside an open ring of columns"
+    },
+    "ringAxes": {
+      "widthM": 53,
+      "depthM": 38,
+      "source": "estimate",
+      "note": "the open ring pavilion's semi-axes"
+    },
+    "ringM": {
+      "valueM": 30,
+      "source": "estimate",
+      "note": "the ring pavilion's columns' height"
+    },
+    "ringColumns": {
+      "count": 16,
+      "source": "estimate",
+      "note": "columns round the ring"
+    },
+    "towerHighM": {
+      "valueM": 69,
+      "source": "derived",
+      "note": "the tallest tower's deck top: the measured height"
+    },
+    "towerMidM": {
+      "valueM": 46,
+      "source": "estimate",
+      "note": "the middle tower's deck top (about 150 ft)"
+    },
+    "towerLowM": {
+      "valueM": 18,
+      "source": "estimate",
+      "note": "the low tower's deck top (about 60 ft)"
+    },
+    "towerDeckRadiusM": {
+      "valueM": 14,
+      "source": "estimate",
+      "note": "the round decks' radius"
+    },
+    "towerShaftRadiusM": {
+      "valueM": 3.5,
+      "source": "estimate",
+      "note": "each tower shaft's radius"
+    },
+    "museum": {
+      "lat": 40.745833,
+      "lng": -73.846667,
+      "source": "wikidata",
+      "note": "the art museum's building (Q1320229, P625): a generic long low hall"
+    },
+    "museumPlan": {
+      "widthM": 110,
+      "depthM": 60,
+      "source": "estimate",
+      "note": "the museum hall's length and width"
+    },
+    "museumM": {
+      "valueM": 12,
+      "source": "estimate",
+      "note": "the museum hall's height"
+    },
+    "science": {
+      "lat": 40.747445,
+      "lng": -73.851628,
+      "source": "wikidata",
+      "note": "the science museum (Q2306200, P625): a generic hall"
+    },
+    "sciencePlan": {
+      "widthM": 90,
+      "depthM": 55,
+      "source": "estimate",
+      "note": "its length and width"
+    },
+    "scienceM": {
+      "valueM": 24,
+      "source": "estimate",
+      "note": "its height"
+    },
+    "tennis": {
+      "lat": 40.75,
+      "lng": -73.8475,
+      "source": "wikidata",
+      "note": "the tennis centre (Q1852081, P625): paved ground, no trees (its venues are not drawn)"
+    },
+    "tennisAxes": {
+      "widthM": 260,
+      "depthM": 190,
+      "source": "estimate",
+      "note": "the paved tennis grounds' semi-axes"
+    },
+    "ballpark": {
+      "lat": 40.756986,
+      "lng": -73.845783,
+      "source": "wikidata",
+      "note": "the Queens ballpark's point (Q1072882, P625): kept clear for its own model"
+    },
+    "ballparkClearM": {
+      "valueM": 230,
+      "source": "estimate",
+      "note": "the radius kept clear round the ballpark"
+    },
+    "longPool": {
+      "lat": 40.7485,
+      "lng": -73.8436,
+      "source": "estimate",
+      "note": "a long formal pool north of the plaza, by eye"
+    },
+    "longPoolAxes": {
+      "widthM": 170,
+      "depthM": 26,
+      "source": "estimate",
+      "note": "its semi-axes"
+    },
+    "longPoolHeadingDeg": {
+      "valueM": 20,
+      "source": "estimate",
+      "note": "its long axis' compass heading"
+    },
+    "meadowLake": {
+      "lat": 40.7305,
+      "lng": -73.8395,
+      "source": "estimate",
+      "note": "Meadow Lake's middle, by eye"
+    },
+    "meadowLakeAxes": {
+      "widthM": 560,
+      "depthM": 215,
+      "source": "estimate",
+      "note": "its semi-axes (about 94 acres)"
+    },
+    "willowLake": {
+      "lat": 40.7215,
+      "lng": -73.8318,
+      "source": "estimate",
+      "note": "Willow Lake's middle, by eye"
+    },
+    "willowLakeAxes": {
+      "widthM": 380,
+      "depthM": 190,
+      "source": "estimate",
+      "note": "its semi-axes (about 57 acres)"
+    },
+    "fairLawn": {
+      "lat": 40.7415,
+      "lng": -73.8428,
+      "source": "estimate",
+      "note": "the open lawns south of the pavilion, by eye"
+    },
+    "fairLawnAxes": {
+      "widthM": 240,
+      "depthM": 150,
+      "source": "estimate",
+      "note": "their semi-axes"
+    },
+    "pathWidthM": {
+      "valueM": 10,
+      "source": "estimate",
+      "note": "the promenades' width"
+    },
+    "lampSpacingM": {
+      "valueM": 80,
+      "source": "estimate",
+      "note": "lamps along the promenades at the finest level"
+    },
+    "spine0": {
+      "lat": 40.7525,
+      "lng": -73.8445,
+      "source": "estimate",
+      "note": "promenade point 0: the north fairgrounds (by eye)"
+    },
+    "spine1": {
+      "lat": 40.7466,
+      "lng": -73.8452,
+      "source": "estimate",
+      "note": "promenade point 1: west of the plaza (by eye)"
+    },
+    "spine2": {
+      "lat": 40.742,
+      "lng": -73.8446,
+      "source": "estimate",
+      "note": "promenade point 2: past the pavilion (by eye)"
+    },
+    "spine3": {
+      "lat": 40.736,
+      "lng": -73.844,
+      "source": "estimate",
+      "note": "promenade point 3: Meadow Lake's north-west shore (by eye)"
+    },
+    "spine4": {
+      "lat": 40.727,
+      "lng": -73.841,
+      "source": "estimate",
+      "note": "promenade point 4: along Meadow Lake's west shore (by eye)"
+    },
+    "spine5": {
+      "lat": 40.72,
+      "lng": -73.8355,
+      "source": "estimate",
+      "note": "promenade point 5: Willow Lake's north shore (by eye)"
+    },
+    "spine6": {
+      "lat": 40.716,
+      "lng": -73.83,
+      "source": "estimate",
+      "note": "promenade point 6: the south end (by eye)"
+    },
+    "cross0": {
+      "lat": 40.7472,
+      "lng": -73.8505,
+      "source": "estimate",
+      "note": "cross promenade end 0: the science museum (by eye)"
+    },
+    "cross1": {
+      "lat": 40.7458,
+      "lng": -73.8392,
+      "source": "estimate",
+      "note": "cross promenade end 1: the east side (by eye)"
+    }
+  },
+  "readabilityScale": {
+    "structures": 1.6,
+    "paths": 2,
+    "lamp": 3,
+    "note": "Structures are drawn 1.6 times their real plan and the promenades twice their width so they read at game distance; lamps three times a lamp head. No globe replica, no sculptures, signage or text (LEGAL-1)."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.0,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8; the plan stays the map's park outline (x1.0); structures and promenades take the readability scale."
+  }
+}

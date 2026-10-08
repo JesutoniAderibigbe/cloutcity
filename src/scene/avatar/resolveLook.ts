@@ -4,13 +4,13 @@
  * (src/engine/avatarLook.ts `effectiveLook`: option ids and catalog model ids) and turns it into
  * ModelRefs from the derived avatar refs (types.ts) with every slot colour as hex.
  *
- * - Parts not in the manifest (the Blender hair pieces and head coverings until their
- *   `avatar-hair` cap lands) are left out and listed in `missing`; a missing head falls back to
- *   the default hairstyle's head, so every look draws.
+ * - S16b: the body frame picks the rig, the bald face and the outfit's body variant.
+ * - Attachments not in the refs (the Blender pieces pending their refit to the realistic frame,
+ *   options.json `pending`) are left out and listed in `missing`, so every look draws.
  * - A colour applies only to a slot the model has, and only when the palette has the token.
- * - Attachments follow a rig joint: a Kenney accessory sits at its scene.json `avatarLook`
- *   offset; one without an entry (a Blender attachment, built in the character's frame) at its
- *   catalog `attach` joint (the head unless it says the torso), with no offset.
+ * - Attachments follow a rig joint: one with a scene.json `avatarLook` entry sits at its offset;
+ *   the rest (pack hair and Blender pieces, built in the character's bind pose) at their catalog
+ *   `attach` joint (the head unless it says the torso), with no offset.
  */
 import type { EffectiveLook } from '@/engine/avatarLook'
 import type { AvatarOptions } from '@/lib/data/schemas/avatar'
@@ -90,12 +90,13 @@ export function resolveLook(
     return ref
   }
 
-  const fallbackHead = options.hairStyles.find((s) => s.id === options.defaults.hairStyle)?.head
-  const head =
-    model(drawn.head) ?? (fallbackHead === undefined ? undefined : refs.models[fallbackHead])
+  const rig = model(drawn.rig)
+  const head = model(drawn.head)
   const body = model(drawn.body)
-  if (head === undefined || body === undefined) {
-    throw new Error(`resolveLook: no head or body for ${drawn.head} / ${drawn.body}`)
+  if (rig === undefined || head === undefined || body === undefined) {
+    throw new Error(
+      `resolveLook: no rig, head or body for ${drawn.rig} / ${drawn.head} / ${drawn.body}`,
+    )
   }
   const attachments: AvatarAttachment[] = []
   for (const id of drawn.attachments) {
@@ -114,7 +115,7 @@ export function resolveLook(
   const headColors = colorsFor(head)
   const bodyColors = colorsFor(body)
   return {
-    parts: { rig: refs.rig, head, body, attachments },
+    parts: { rig, head, body, attachments },
     colors: {
       ...(headColors === undefined ? {} : { head: headColors }),
       ...(bodyColors === undefined ? {} : { body: bodyColors }),

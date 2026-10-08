@@ -12,7 +12,7 @@
  */
 import { useEffect, useSyncExternalStore } from 'react'
 import { lazyIsland } from '@/components/overlay/lazyIsland'
-import { closeHudPanel, hudPanelStore } from '@/state/hudPanel'
+import { dismissHudPanel, hudPanelStore } from '@/state/hudPanel'
 import { closePlace, onPlaceOpened } from '@/state/placeSheet'
 import { closePlacesPanel, placesPanelStore } from '@/state/placesPanel'
 import { setSoundSheetOpen, soundSheetStore } from './soundSheet'
@@ -40,7 +40,7 @@ export function linkSettingsSheet(): () => void {
   const offPlace = onPlaceOpened(close)
   const offSettings = soundSheetStore.subscribe((state, previous) => {
     if (!state.open || previous.open) return
-    closeHudPanel()
+    dismissHudPanel()
     closePlace()
     if (!placesPanelStore.getState().auto) closePlacesPanel()
   })

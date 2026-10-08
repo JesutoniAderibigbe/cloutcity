@@ -49,7 +49,7 @@ import { buildingsFileText, districtTier, readDistrictFootprints } from './build
 import { douglasPeucker } from './douglas-peucker.ts'
 import { readGtfsSubway } from './gtfs.ts'
 import { readLandmarkExclusions } from './landmark-exclusions.ts'
-import { buildLandmarkFrames, type FramePlace } from './landmarks.ts'
+import { buildLandmarkFrames, type BlenderPlacement, type FramePlace } from './landmarks.ts'
 import { streetZoneCircles, type Lock } from './lock.ts'
 import { renderSourcesMd, type TerminalExtension } from './sources-md.ts'
 import {
@@ -101,6 +101,8 @@ export interface GeoBuildParams {
   readonly landmarks: {
     readonly models: readonly LandmarkModel[]
     readonly places: readonly FramePlace[]
+    /** Blender-built landmarks' placements (S07c locks and measurements). */
+    readonly placements?: readonly BlenderPlacement[]
   }
 }
 

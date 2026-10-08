@@ -1,0 +1,54 @@
+{
+  "id": "penn-station",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q54451 (Pennsylvania Station)",
+      "url": "https://www.wikidata.org/wiki/Q54451",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 13.8,
+      "source": "estimate",
+      "note": "the entrance pavilions' roofs above the street"
+    },
+    "pavilion": {
+      "widthM": 18,
+      "depthM": 14,
+      "source": "estimate",
+      "note": "each entrance pavilion's width and depth"
+    },
+    "pavilionM": {
+      "valueM": 13,
+      "source": "estimate",
+      "note": "the entrance pavilions' height"
+    },
+    "pavilionSpacingM": {
+      "valueM": 140,
+      "source": "estimate",
+      "note": "between the two pavilions' centres"
+    },
+    "canopy": {
+      "widthM": 110,
+      "depthM": 24,
+      "source": "estimate",
+      "note": "the concourse canopy's length (widthM) and width (depthM)"
+    },
+    "canopyM": {
+      "valueM": 10,
+      "source": "estimate",
+      "note": "the canopy's height"
+    }
+  },
+  "readabilityScale": {
+    "note": "Generic and sign-free (LEGAL-1): no signage, no clock, no sculpture."
+  },
+  "gameScale": {
+    "height": 1.4,
+    "plan": 1.1,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.4 and widths x1.1, within the frame's exclusion, so the station reads at the game camera. Wikidata gives no dimensions, so every number is an estimate (the S07a kit's stylised proportions)."
+  }
+}

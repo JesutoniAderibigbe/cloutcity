@@ -1,5 +1,19 @@
 {
   "version": 1,
+  "bodies": [
+    {
+      "id": "woman",
+      "head": "head-f",
+      "rig": "avatar-rig-f",
+      "nameKey": "avatar.body.woman"
+    },
+    {
+      "id": "man",
+      "head": "head-m",
+      "rig": "avatar-rig-m",
+      "nameKey": "avatar.body.man"
+    }
+  ],
   "skinTones": [
     {
       "id": "tone-01",
@@ -116,82 +130,76 @@
   ],
   "hairStyles": [
     {
-      "id": "style-01",
-      "head": "head-female-a",
-      "nameKey": "avatar.hairStyle.style01"
+      "id": "shaved",
+      "nameKey": "avatar.hairStyle.shaved"
     },
     {
-      "id": "style-02",
-      "head": "head-female-b",
-      "nameKey": "avatar.hairStyle.style02"
+      "id": "bob",
+      "piece": "hair-bob",
+      "nameKey": "avatar.hairStyle.bob"
     },
     {
-      "id": "style-03",
-      "head": "head-female-c",
-      "nameKey": "avatar.hairStyle.style03"
+      "id": "pixie",
+      "piece": "hair-pixie",
+      "nameKey": "avatar.hairStyle.pixie"
     },
     {
-      "id": "style-04",
-      "head": "head-female-d",
-      "nameKey": "avatar.hairStyle.style04"
+      "id": "updo",
+      "piece": "hair-updo",
+      "nameKey": "avatar.hairStyle.updo"
     },
     {
-      "id": "style-05",
-      "head": "head-female-e",
-      "nameKey": "avatar.hairStyle.style05"
+      "id": "ponytail",
+      "piece": "hair-ponytail",
+      "nameKey": "avatar.hairStyle.ponytail"
     },
     {
-      "id": "style-06",
-      "head": "head-female-f",
-      "nameKey": "avatar.hairStyle.style06"
+      "id": "parted",
+      "piece": "hair-parted",
+      "nameKey": "avatar.hairStyle.parted"
     },
     {
-      "id": "style-07",
-      "head": "head-male-a",
-      "nameKey": "avatar.hairStyle.style07"
+      "id": "tousled",
+      "piece": "hair-tousled",
+      "nameKey": "avatar.hairStyle.tousled"
     },
     {
-      "id": "style-10",
-      "head": "head-male-d",
-      "nameKey": "avatar.hairStyle.style10"
+      "id": "spiky",
+      "piece": "hair-spiky",
+      "nameKey": "avatar.hairStyle.spiky"
     },
     {
-      "id": "style-11",
-      "head": "head-male-e",
-      "nameKey": "avatar.hairStyle.style11"
+      "id": "swept",
+      "piece": "hair-swept",
+      "nameKey": "avatar.hairStyle.swept"
     },
     {
-      "id": "style-12",
-      "head": "head-male-f",
-      "nameKey": "avatar.hairStyle.style12"
+      "id": "mohawk",
+      "piece": "hair-mohawk",
+      "nameKey": "avatar.hairStyle.mohawk"
     },
     {
       "id": "afro",
-      "head": "head-base",
       "piece": "hair-afro",
       "nameKey": "avatar.hairStyle.afro"
     },
     {
       "id": "locs",
-      "head": "head-base",
       "piece": "hair-locs",
       "nameKey": "avatar.hairStyle.locs"
     },
     {
       "id": "box-braids",
-      "head": "head-base",
       "piece": "hair-box-braids",
       "nameKey": "avatar.hairStyle.boxBraids"
     },
     {
       "id": "cornrows",
-      "head": "head-base",
       "piece": "hair-cornrows",
       "nameKey": "avatar.hairStyle.cornrows"
     },
     {
       "id": "buzz",
-      "head": "head-base",
       "piece": "hair-buzz",
       "nameKey": "avatar.hairStyle.buzz"
     }
@@ -292,64 +300,72 @@
   ],
   "outfits": [
     {
-      "id": "outfit-01",
-      "body": "body-female-a",
-      "nameKey": "avatar.outfit.outfit01"
+      "id": "casual",
+      "variants": {
+        "woman": "outfit-w-casual",
+        "man": "outfit-m-casual"
+      },
+      "nameKey": "avatar.outfit.casual"
     },
     {
-      "id": "outfit-02",
-      "body": "body-female-b",
-      "nameKey": "avatar.outfit.outfit02"
+      "id": "hoodie",
+      "variants": {
+        "man": "outfit-m-hoodie"
+      },
+      "nameKey": "avatar.outfit.hoodie"
     },
     {
-      "id": "outfit-03",
-      "body": "body-female-c",
-      "nameKey": "avatar.outfit.outfit03"
+      "id": "dress",
+      "variants": {
+        "woman": "outfit-w-dress"
+      },
+      "nameKey": "avatar.outfit.dress"
     },
     {
-      "id": "outfit-04",
-      "body": "body-female-d",
-      "nameKey": "avatar.outfit.outfit04"
+      "id": "suit",
+      "variants": {
+        "woman": "outfit-w-suit",
+        "man": "outfit-m-suit"
+      },
+      "nameKey": "avatar.outfit.suit"
     },
     {
-      "id": "outfit-05",
-      "body": "body-female-e",
-      "nameKey": "avatar.outfit.outfit05"
+      "id": "worker",
+      "variants": {
+        "woman": "outfit-w-worker",
+        "man": "outfit-m-worker"
+      },
+      "nameKey": "avatar.outfit.worker"
     },
     {
-      "id": "outfit-06",
-      "body": "body-female-f",
-      "nameKey": "avatar.outfit.outfit06"
+      "id": "punk",
+      "variants": {
+        "woman": "outfit-w-punk",
+        "man": "outfit-m-punk"
+      },
+      "nameKey": "avatar.outfit.punk"
     },
     {
-      "id": "outfit-07",
-      "body": "body-male-a",
-      "nameKey": "avatar.outfit.outfit07"
+      "id": "outdoors",
+      "variants": {
+        "woman": "outfit-w-outdoors",
+        "man": "outfit-m-outdoors"
+      },
+      "nameKey": "avatar.outfit.outdoors"
     },
     {
-      "id": "outfit-08",
-      "body": "body-male-b",
-      "nameKey": "avatar.outfit.outfit08"
+      "id": "beach",
+      "variants": {
+        "man": "outfit-m-beach"
+      },
+      "nameKey": "avatar.outfit.beach"
     },
     {
-      "id": "outfit-09",
-      "body": "body-male-c",
-      "nameKey": "avatar.outfit.outfit09"
-    },
-    {
-      "id": "outfit-10",
-      "body": "body-male-d",
-      "nameKey": "avatar.outfit.outfit10"
-    },
-    {
-      "id": "outfit-11",
-      "body": "body-male-e",
-      "nameKey": "avatar.outfit.outfit11"
-    },
-    {
-      "id": "outfit-12",
-      "body": "body-male-f",
-      "nameKey": "avatar.outfit.outfit12"
+      "id": "overalls",
+      "variants": {
+        "man": "outfit-m-overalls"
+      },
+      "nameKey": "avatar.outfit.overalls"
     }
   ],
   "garmentColors": [
@@ -428,14 +444,15 @@
     }
   ],
   "defaults": {
+    "body": "woman",
     "skin": "tone-05",
-    "hairStyle": "style-01",
+    "hairStyle": "bob",
     "hairColor": "black",
     "facialHair": "none",
     "headwear": "none",
     "eyewear": "none",
     "ears": "none",
-    "outfit": "outfit-01",
+    "outfit": "casual",
     "top": "teal",
     "bottom": "denim",
     "shoes": "white",

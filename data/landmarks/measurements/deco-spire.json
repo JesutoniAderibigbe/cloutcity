@@ -1,0 +1,63 @@
+{
+  "id": "deco-spire",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q11274 (the Lexington Avenue Art Deco tower)",
+      "url": "https://www.wikidata.org/wiki/Q11274",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 318.9,
+      "source": "wikidata",
+      "note": "height (P2048), architectural: the spire's tip above the street"
+    },
+    "roofM": {
+      "valueM": 282,
+      "source": "wikidata",
+      "note": "height (P2048) to the roof: where the tiers end and the generic spire begins"
+    },
+    "footprint": {
+      "widthM": 62,
+      "depthM": 56,
+      "source": "estimate",
+      "note": "the lower block's plan (the S07a kit's stylised footprint)"
+    },
+    "tier1M": {
+      "valueM": 75,
+      "source": "estimate",
+      "note": "the base block's height; tiers proportioned by eye from the S07a kit"
+    },
+    "tier2M": {
+      "valueM": 80,
+      "source": "estimate",
+      "note": "second tier, inset 7 m"
+    },
+    "tier3M": {
+      "valueM": 60,
+      "source": "estimate",
+      "note": "third tier, inset 6 m"
+    },
+    "tier4M": {
+      "valueM": 67,
+      "source": "derived",
+      "note": "the top tier, inset 5 m, up to the Wikidata roof height (282 m less the tiers below)"
+    },
+    "spireBaseM": {
+      "valueM": 12,
+      "source": "estimate",
+      "note": "the generic spire's base width (LEGAL-1: never a copy of the real crown)"
+    }
+  },
+  "readabilityScale": {
+    "note": "No thin members: windows are bands of glass, the spire a plain taper."
+  },
+  "gameScale": {
+    "height": 1.12,
+    "plan": 1.2,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.12 and widths x1.2 against the numbers above (1.2 keeps the footprint inside the frame's exclusion), so the tower stands out from the real-scale district around it without dwarfing it."
+  }
+}

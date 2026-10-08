@@ -73,11 +73,23 @@ function archetypeParts(model: LandmarkModel, level: LodLevel, frame: ArchetypeF
   }
 }
 
-/** Stretches heights about the model's base; a no-op at the default scale of 1. */
-function scaleHeights(parts: readonly Part[], baseY: number, heightScale: number): void {
-  if (heightScale === 1) return
+/**
+ * Stretches heights about the model's base and its plan about the anchor (a bridge's length
+ * along its axis, z, stays: its ends meet the shore); a no-op at the default scale of 1.
+ */
+function scaleParts(
+  parts: readonly Part[],
+  baseY: number,
+  heightScale: number,
+  planScale: number,
+  isBridge: boolean,
+): void {
+  if (heightScale === 1 && planScale === 1) return
   for (const { geometry } of parts) {
-    geometry.translate(0, -baseY, 0).scale(1, heightScale, 1).translate(0, baseY, 0)
+    geometry
+      .translate(0, -baseY, 0)
+      .scale(planScale, heightScale, isBridge ? 1 : planScale)
+      .translate(0, baseY, 0)
     geometry.computeVertexNormals()
   }
 }
@@ -88,6 +100,11 @@ export function buildLandmark(
   tier: QualityTier,
   palette: LandmarkPalette,
   settings: LandmarkBuildSettings,
+  /**
+   * The Blender model's game scale (S07c): the kit is drawn at it while the Blender model
+   * loads, so the fallback matches what replaces it.
+   */
+  scale: { readonly height: number; readonly plan: number } = { height: 1, plan: 1 },
 ): BuiltLandmark {
   if (frame.id !== model.id) throw new Error(`buildLandmark: frame ${frame.id} for ${model.id}`)
   const isBridge = modelBase(model) === 'water'
@@ -107,7 +124,7 @@ export function buildLandmark(
     const parts = archetypeParts(model, level, archetypeFrame).filter(
       (part) => withWindows || part.group !== 'windows',
     )
-    scaleHeights(parts, baseY, settings.heightScale)
+    scaleParts(parts, baseY, settings.heightScale * scale.height, scale.plan, isBridge)
     const outline =
       finest && settings.outline[tier] ? buildOutline(parts, settings.outlineWidthM) : undefined
     const { body, windows } = compose(parts, palette)

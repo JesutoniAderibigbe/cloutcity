@@ -18,6 +18,11 @@
  * - `'uniform'`: the whole material glows.
  *
  * Memorials never glow (CLAUDE.md: no effects at memorials), and neither does a muted material.
+ * The contract is about what the player sees: a memorial may share a `'mask'` material (and its
+ * program) with the district buildings, as the Blender memorial does (S07c), when every one of
+ * its vertices samples the mask at a wall texel (uv 0, 0, where roofs sample it too), so no lit
+ * window is ever drawn on it. `maskLitVertices` counts what a mesh would light; e2e asserts zero
+ * for every memorial.
  */
 import { createContext, useContext } from 'react'
 import {
@@ -152,10 +157,47 @@ export function glslFloat(value: number): string {
 }
 
 const patched = new WeakMap<Material, NightGlowSource>()
+const masks = new WeakMap<Material, Texture>()
 
 /** The source a material was patched with, if any. */
 export function nightGlowSource(material: Material): NightGlowSource | undefined {
   return patched.get(material)
+}
+
+/** The window mask a `'mask'` material samples, if any. */
+export function nightGlowMask(material: Material): Texture | undefined {
+  return masks.get(material)
+}
+
+/**
+ * How many of a geometry's vertices sample a lit texel of the mask (red > 0 at mip 0, the
+ * texture repeating): the windows a `'mask'` material can light on that mesh. Stops counting at
+ * `limit`. A geometry without uv samples (0, 0) everywhere.
+ */
+export function maskLitVertices(
+  uv:
+    | { readonly count: number; getX(index: number): number; getY(index: number): number }
+    | undefined,
+  mask: {
+    readonly image: {
+      readonly data: ArrayLike<number> | null
+      readonly width: number
+      readonly height: number
+    }
+  },
+  limit = Infinity,
+): number {
+  const { data, width, height } = mask.image
+  if (data === null) return 0
+  const at = (u: number, v: number) => {
+    const x = Math.floor((u - Math.floor(u)) * width) % width
+    const y = Math.floor((v - Math.floor(v)) * height) % height
+    return (data[y * width + x] ?? 0) > 0
+  }
+  if (uv === undefined) return at(0, 0) ? limit : 0
+  let lit = 0
+  for (let i = 0; i < uv.count && lit < limit; i++) if (at(uv.getX(i), uv.getY(i))) lit++
+  return lit
 }
 
 /**
@@ -206,5 +248,6 @@ export function patchNightGlow(
   }
   material.needsUpdate = true
   patched.set(material, source)
+  if (mask !== undefined) masks.set(material, mask)
   return true
 }

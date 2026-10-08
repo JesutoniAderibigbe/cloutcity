@@ -87,7 +87,7 @@ function Lineup({
     return (
       <group key={index} position={[x, 0, -row * lineup.rowDepthM]}>
         <AvatarModel
-          parts={{ rig: lineup.rig, head: avatar.head, body: avatar.body }}
+          parts={{ rig: avatar.rig, head: avatar.head, body: avatar.body }}
           colors={avatar.colors}
           clip={lineup.clip}
           animate={false}
@@ -140,8 +140,8 @@ function allRefs(scene: ShowcaseScene): ModelRef[] {
   const refs = new Map<string, ModelRef>()
   for (const group of scene.groups) refs.set(group.model.id, group.model)
   if (scene.lineup) {
-    refs.set(scene.lineup.rig.id, scene.lineup.rig)
     for (const avatar of scene.lineup.avatars) {
+      refs.set(avatar.rig.id, avatar.rig)
       refs.set(avatar.head.id, avatar.head)
       refs.set(avatar.body.id, avatar.body)
     }

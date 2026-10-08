@@ -6,19 +6,20 @@
  * classic zod. The models carry no names or text (LEGAL-1): name chips take their text from
  * the server's copy (src/scene/CityScene.tsx).
  */
+import blenderJson from '@data/landmarks/blender.derived.json'
 import framesJson from '@data/landmarks/frames.derived.json'
 import modelsJson from '@data/landmarks/models.json'
 import { scene } from '@/lib/data/config'
 import { landmarks } from '@/lib/data/content'
 import { parseDataFile } from '@/lib/data/parse'
 import type { Borough, Landmark } from '@/lib/data/schemas/content'
+import { BlenderModelsFileSchema, type BlenderModelsFile } from '@/lib/data/schemas/landmarkBlender'
 import {
   landmarkModelsFileSchemaFor,
   type LandmarkFrame,
   type LandmarkModel,
 } from '@/lib/data/schemas/landmarkModels'
 import { LandmarkFramesFileSchema } from '@/lib/data/schemas/world'
-import { modelBase } from '@/lib/landmarks/metrics'
 import { boroughRenderState } from './places'
 
 export interface LandmarkLayerEntry {
@@ -28,7 +29,17 @@ export interface LandmarkLayerEntry {
   readonly category: Landmark['category']
   /** `teaser`: on "expanding soon" land, drawn with the dimmed material and no windows. */
   readonly style: 'normal' | 'teaser'
-  readonly model: LandmarkModel
+  /** The S07a code-built kit model: the fallback while the Blender model loads (if any). */
+  readonly model?: LandmarkModel
+  /**
+   * The Blender model (S07c). `gameScale` is the kit fallback's scale, sent only for a landmark
+   * with a kit and a scale other than 1. The level files come with the lazy level loader
+   * (src/scene/models/landmarkLevels.ts), not with /geo/base, which is precached.
+   */
+  readonly glb?: {
+    readonly gameScale?: BlenderModelsFile['landmarks'][number]['gameScale']
+  }
+  /** Its placement, without the exclusions only the geo build reads (the client never does). */
   readonly frame: LandmarkFrame
   /**
    * Metres the name chip moves north (+) or south (-) from its default spot so it clears a
@@ -53,22 +64,54 @@ const frames = parseDataFile(
   framesJson,
 ).landmarks
 
+const blender = parseDataFile(
+  'landmarks/blender.derived.json',
+  BlenderModelsFileSchema,
+  blenderJson,
+).landmarks
+
+/** The Blender entry the client gets: the kit's scale only where a kit draws at another scale. */
+function servedGlb(
+  gameScale: BlenderModelsFile['landmarks'][number]['gameScale'],
+  hasKit: boolean,
+): NonNullable<LandmarkLayerEntry['glb']> {
+  return hasKit && (gameScale.height !== 1 || gameScale.plan !== 1) ? { gameScale } : {}
+}
+
+/** The frame the client gets: the INT-7 exclusion and grounds stay with the geo build. */
+function servedFrame(frame: LandmarkFrame): LandmarkFrame {
+  return Object.fromEntries(
+    Object.entries(frame).filter(([key]) => key !== 'exclusion' && key !== 'grounds'),
+  ) as LandmarkFrame
+}
+
 export function buildLandmarksLayer(): LandmarksLayer {
-  const frameOf = new Map(frames.map((frame) => [frame.id, frame]))
-  const entries = models.map((model): LandmarkLayerEntry => {
-    const frame = frameOf.get(model.id)
-    if (frame === undefined) throw new Error(`landmarks layer: no frame for ${model.id}`)
-    const place = landmarks.find((landmark) => landmark.id === model.id)
-    if (place === undefined) throw new Error(`landmarks layer: no landmark ${model.id}`)
-    const dimmed = boroughRenderState(place.borough).state === 'dimmed'
-    return {
-      id: model.id,
-      borough: place.borough,
-      category: place.category,
-      style: dimmed ? 'teaser' : 'normal',
-      model,
-      frame,
+  const modelOf = new Map(models.map((model) => [model.id, model]))
+  const glbOf = new Map(blender.map(({ id, gameScale }) => [id, { gameScale }]))
+  for (const model of models) {
+    if (!frames.some((frame) => frame.id === model.id)) {
+      throw new Error(`landmarks layer: no frame for ${model.id}`)
     }
+  }
+  // Every framed landmark: the S07a kit model, the Blender model (S07c), or both.
+  const entries = frames.flatMap((frame): LandmarkLayerEntry[] => {
+    const model = modelOf.get(frame.id)
+    const glb = glbOf.get(frame.id)
+    if (model === undefined && glb === undefined) return []
+    const place = landmarks.find((landmark) => landmark.id === frame.id)
+    if (place === undefined) throw new Error(`landmarks layer: no landmark ${frame.id}`)
+    const dimmed = boroughRenderState(place.borough).state === 'dimmed'
+    return [
+      {
+        id: frame.id,
+        borough: place.borough,
+        category: place.category,
+        style: dimmed ? 'teaser' : 'normal',
+        ...(model === undefined ? {} : { model }),
+        ...(glb === undefined ? {} : { glb: servedGlb(glb.gameScale, model !== undefined) }),
+        frame: servedFrame(frame),
+      },
+    ]
   })
   const sorted = entries.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
   const lifts = landmarkPinLifts({ models: sorted })
@@ -154,7 +197,7 @@ export function landmarkPinLifts(
   return new Map(
     layer.models.map((entry) => {
       const top = entry.frame.pinLiftM * config.landmarks.heightScale
-      const base = modelBase(entry.model) === 'water' ? 0 : landTop
+      const base = entry.frame.base === 'water' ? 0 : landTop
       return [entry.id, Math.max(0, Math.ceil(base + top - landTop))]
     }),
   )

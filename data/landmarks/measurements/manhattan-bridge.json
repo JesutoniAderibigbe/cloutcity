@@ -1,0 +1,100 @@
+{
+  "id": "manhattan-bridge",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q125050 (Manhattan Bridge)",
+      "url": "https://www.wikidata.org/wiki/Q125050",
+      "licence": "CC0-1.0"
+    },
+    {
+      "id": "chamber-1906",
+      "title": "Chamber of Commerce of the State of New York, Rapid Transit in New York City and in the Other Great Cities (1906), ch. 4 \"Bridges to Brooklyn\"",
+      "url": "https://nycsubway.org/wiki/Chapter_04:_Bridges_to_Brooklyn",
+      "licence": "public-domain"
+    }
+  ],
+  "dimensions": {
+    "towerHeightM": {
+      "valueM": 102,
+      "source": "wikidata",
+      "note": "height (P2048): tower top above the water. (The 1906 text gives the 400 ft of the design then; the towers were built lower.)"
+    },
+    "mainSpanM": {
+      "valueM": 451,
+      "source": "wikidata",
+      "note": "main span (P2787); the 1906 text gives 1,470 ft between tower centres"
+    },
+    "totalLengthM": {
+      "valueM": 2090,
+      "source": "wikidata",
+      "note": "length (P2043). The game fits the bridge to its LION frame (spanM)."
+    },
+    "deckWidthM": {
+      "valueM": 37,
+      "source": "wikidata",
+      "note": "width (P2049); the 1906 text gives the floor as 120 ft wide over all"
+    },
+    "midspanClearanceM": {
+      "valueM": 41,
+      "source": "wikidata",
+      "note": "vertical clearance (P2793): the deck top at mid-span"
+    },
+    "sideSpanM": {
+      "valueM": 220.98,
+      "source": "chamber-1906",
+      "note": "\"each land span will be 725 feet in length\""
+    },
+    "mainCables": {
+      "count": 4,
+      "diameterM": 0.54,
+      "source": "estimate",
+      "note": "four cables (the 1906 text specifies cables and suspenders); diameter estimated"
+    },
+    "trussDepthM": {
+      "valueM": 7.3,
+      "source": "estimate",
+      "note": "the deep stiffening trusses that carry the double deck, proportioned by eye"
+    },
+    "towerLeg": {
+      "widthM": 6,
+      "depthM": 10,
+      "source": "estimate",
+      "note": "each steel tower leg's section, proportioned from the tower height"
+    },
+    "towerPier": {
+      "widthM": 50,
+      "depthM": 18,
+      "source": "estimate",
+      "note": "the masonry pier each tower stands on, wider than the deck"
+    },
+    "pierTopM": {
+      "valueM": 12,
+      "source": "estimate",
+      "note": "the masonry pier's top above the water"
+    },
+    "crownM": {
+      "valueM": 6,
+      "source": "estimate",
+      "note": "the depth of the crown girder and finials at the top of each tower"
+    },
+    "anchorage": {
+      "widthM": 50,
+      "depthM": 60,
+      "source": "estimate",
+      "note": "stylised anchorage blocks sized to take the cables; mostly hidden under the game's land top"
+    }
+  },
+  "readabilityScale": {
+    "mainCable": 4,
+    "suspender": 5,
+    "lamp": 3,
+    "note": "Thin members are drawn this many times their true width so they read at game distance; suspenders are drawn sparser than the real ones."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.6,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 and widths x1.6 against the real numbers above (1.6, not 2, keeps the 59 m deck inside the frame's 64 m exclusion), so the bridge reads at the 3,000-4,500 m game camera. Lengths along the axis stay real."
+  }
+}

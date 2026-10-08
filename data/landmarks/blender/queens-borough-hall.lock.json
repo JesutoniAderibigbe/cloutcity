@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "id": "queens-borough-hall",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "14c4a69a5a5510da405941e8adda1a8d99fcb1cf3f612a4b82278956f910ad75",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "placement": {
+    "topM": 41.4,
+    "exclusions": [
+      {
+        "x": 0,
+        "y": 0,
+        "halfLengthM": 57,
+        "halfWidthM": 25,
+        "angleDeg": 0
+      }
+    ]
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/queens-borough-hall/lod0.glb",
+      "sha256": "679b4919b9c8b87c56b3c23059a5bb087cbb1247a75675163578dff79b4f60e6",
+      "bytes": 28840,
+      "triangles": 1954,
+      "uncompressedBytes": 185340
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/queens-borough-hall/lod1.glb",
+      "sha256": "037928f56c449b8c8beab715f0f9ec1a3ccceea4717be55d8151733cf88713cb",
+      "bytes": 10744,
+      "triangles": 602,
+      "uncompressedBytes": 57896
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/queens-borough-hall/lod2.glb",
+      "sha256": "a3e0666f70eb1e8c945fea970a4b84407db3b32a44cda0c5f9255222ac5c248a",
+      "bytes": 5588,
+      "triangles": 178,
+      "uncompressedBytes": 18028
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/queens-borough-hall/lod3.glb",
+      "sha256": "eafd744066234e9510af5a48d52f4b4b86319067a770f546d9095e54cc15a08b",
+      "bytes": 3720,
+      "triangles": 60,
+      "uncompressedBytes": 6996
+    }
+  ]
+}
