@@ -57,18 +57,15 @@ async function loadSession(): Promise<Session> {
   return { state: 'signed-in', token: () => auth.modAccessToken(env) }
 }
 
-/** A log-in link's token hash in /mod's URL, read once and wiped from the address bar. */
+/**
+ * A log-in link's token hash in /mod's URL fragment (S19 template: never in the query, so it
+ * never reaches a server log), read once and wiped from the address bar.
+ */
 function takeLink(): Extract<Session, { state: 'link' }> | null {
-  const query = new URLSearchParams(window.location.search)
-  if (!query.has('token_hash')) return null
-  const parsed = parseCallback(window.location.search)
+  if (!window.location.hash.includes('token_hash=')) return null
+  const parsed = parseCallback('', window.location.hash)
   // Only the token goes: a linked case (`?case=`) stays for after sign-in.
-  const kept = query.get('case')
-  window.history.replaceState(
-    null,
-    '',
-    kept === null ? '/mod' : `/mod?case=${encodeURIComponent(kept)}`,
-  )
+  window.history.replaceState(null, '', `/mod${window.location.search}`)
   if (parsed.kind !== 'finish' || parsed.params.kind !== 'token') return null
   const { tokenHash, type } = parsed.params
   return type === 'email_change' ? null : { state: 'link', tokenHash, type }

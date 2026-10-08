@@ -874,20 +874,30 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   attestation and consent, the handle and the cloud save all stay): `updateUser({ email })` sends
   a confirmation link, `linkIdentity` adds Google (manual linking). Logging in is
   `signInWithOtp({ shouldCreateUser: false })` (the email has a link and a 6-digit code) or
-  `signInWithOAuth`. No passwords. Every link comes back to `/auth/callback`
-  (`src/app/auth/callback`): an email link finishes only on a tap of Finish (mail scanners open
-  links on their own), Google's PKCE code at once; the page wipes the token from the URL at once,
-  is `no-store` and `Referrer-Policy: no-referrer`, and the service worker never handles `/auth`.
-  The templates are `supabase/templates/{magic_link,email_change}.html` (token-hash links to our
-  pages; `/mod` finishes the same log-in link on a tap). `public.check_account_email` answers
-  `ok` or `not_allowed` before a link is sent (rate limited, `data/config/account.json`
-  `emailCheck`), and triggers on `auth.users` and `auth.identities` refuse a banned email
-  however GoTrue is called; `private.require_permanent()` is the gate for features that need a
-  saved account. On the client, `src/lib/supabase/accountAuth.ts` (lazy, with supabase-js) does
+  `signInWithOAuth`. No passwords. The templates
+  (`supabase/templates/{magic_link,email_change}.html`) always link to `<site_url>/auth/callback`
+  (or `<site_url>/mod` for the console's own sign-in), never to a redirect the request named, with
+  the one-time token in the URL fragment so it never reaches a server, CDN or router log.
+  `/auth/callback` (`src/app/auth/callback`, a static page, `no-store`, `Referrer-Policy:
+no-referrer`, never handled by the service worker) wipes the token from the URL at once, names
+  the address (masked) and finishes only on a tap of Finish (mail scanners open links on their
+  own). A save confirmation is verified on a throwaway client: only this browser's own guest is
+  refreshed, anyone else's account is never taken (another device, or someone who asked to save
+  _their_ game with this address; that device picks it up by polling). A log-in link this browser
+  did not ask for (`cloutcity:login-requested`, a time, never the address) asks "Log in as …?"
+  before switching; and a played game last synced to any other account always gets the conflict
+  sheet. Google's PKCE code is exchanged at once. `public.check_account_email` answers `ok` or
+  `not_allowed` before a link is sent (rate limited, `data/config/account.json` `emailCheck`), and
+  triggers on `auth.users` and `auth.identities` (insert and email updates) refuse a banned email
+  however GoTrue is called. Banned emails are hashed canonically (`private.canonical_email`: lower
+  case, trimmed, `+tag` dropped, Gmail dots and googlemail.com folded), with bans recorded before
+  that still matched by their legacy hash. `private.require_permanent()` is the gate for features
+  that need a saved account. On the client, `src/lib/supabase/accountAuth.ts` (lazy, with supabase-js) does
   the calls, `src/lib/supabase/accountSession.ts` follows the account (an upgrade confirmed on another
   device is picked up by polling; a log-in to another account restarts cloud sync, whose restore
   table or conflict sheet decides; sign-out stops it and never creates a new guest on the next
-  boot) and `src/state/account.ts` keeps the device's flags (no email). Locally, the stack has
+  boot) and `src/state/account.ts` keeps the device's flags (no email). Locally, the links go to the stack's `site_url` (e2e and
+  integration tests open the same path on the server under test), and the stack has
   `enable_confirmations = true` (so an email change is confirmed by its link, as in production),
   manual linking on, the lane ports' `/auth/callback` and `/mod` allowlisted, and Google off;
   Mailpit catches every email (`npx supabase status` prints its URL).

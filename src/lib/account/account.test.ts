@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { parseCallback } from './callback'
+import { markLoginRequested, parseCallback, takeLoginRequested } from './callback'
 import {
   ACCOUNT_HANDOFF_KEY,
   clearAccountHandoff,
@@ -12,25 +12,41 @@ import { maskEmail } from './mask'
 const HASH = 'pkce_0a1b2c3d4e5f60718293a4b5c6d7e8f9'
 
 describe('/auth/callback parameters (S19)', () => {
-  it("reads our templates' token-hash links", () => {
+  it("reads our templates' token-hash links from the fragment, with the address they are for", () => {
     for (const type of ['email', 'magiclink', 'email_change'] as const) {
-      expect(parseCallback(`?token_hash=${HASH}&type=${type}`)).toEqual({
-        kind: 'finish',
-        params: { kind: 'token', tokenHash: HASH, type },
-      })
+      expect(parseCallback('', `#token_hash=${HASH}&type=${type}&email=jo%40example.test`)).toEqual(
+        {
+          kind: 'finish',
+          params: { kind: 'token', tokenHash: HASH, type },
+          email: 'jo@example.test',
+        },
+      )
     }
+    expect(parseCallback('', `#token_hash=${HASH}&type=email&email=not-an-email`)).toMatchObject({
+      email: null,
+    })
+  })
+
+  it('refuses a token hash in the query: ours never put one there (review F5)', () => {
+    expect(parseCallback(`?token_hash=${HASH}&type=email`)).toEqual({
+      kind: 'error',
+      error: 'invalid',
+    })
+    expect(
+      parseCallback(`?token_hash=${HASH}&type=email`, `#token_hash=${HASH}&type=email`),
+    ).toEqual({ kind: 'error', error: 'invalid' })
   })
 
   it('refuses a type it does not finish (signup, recovery, invite) or a malformed hash', () => {
     for (const type of ['signup', 'recovery', 'invite', 'sms', '']) {
-      expect(parseCallback(`?token_hash=${HASH}&type=${type}`)).toEqual({
+      expect(parseCallback('', `#token_hash=${HASH}&type=${type}`)).toEqual({
         kind: 'error',
         error: 'invalid',
       })
     }
-    expect(parseCallback('?token_hash=short&type=email').kind).toBe('error')
-    expect(parseCallback(`?token_hash=${HASH}<script>&type=email`).kind).toBe('error')
-    expect(parseCallback(`?token_hash=${'a'.repeat(600)}&type=email`).kind).toBe('error')
+    expect(parseCallback('', '#token_hash=short&type=email').kind).toBe('error')
+    expect(parseCallback('', `#token_hash=${HASH}<script>&type=email`).kind).toBe('error')
+    expect(parseCallback('', `#token_hash=${'a'.repeat(600)}&type=email`).kind).toBe('error')
     expect(parseCallback('').kind).toBe('error')
   })
 
@@ -38,6 +54,7 @@ describe('/auth/callback parameters (S19)', () => {
     expect(parseCallback('?code=0f9e8d7c-6b5a-4321-9876-0123456789ab')).toEqual({
       kind: 'finish',
       params: { kind: 'code', code: '0f9e8d7c-6b5a-4321-9876-0123456789ab' },
+      email: null,
     })
   })
 
@@ -51,7 +68,7 @@ describe('/auth/callback parameters (S19)', () => {
     })
     expect(parseCallback('?error=access_denied')).toEqual({ kind: 'error', error: 'google' })
     // An error wins over a token in the same URL.
-    expect(parseCallback(`?token_hash=${HASH}&type=email&error=x`).kind).toBe('error')
+    expect(parseCallback('?error=x', `#token_hash=${HASH}&type=email`).kind).toBe('error')
   })
 })
 
@@ -93,5 +110,35 @@ describe('maskEmail (S19)', () => {
     expect(maskEmail('a@b.co')).toBe('a•••@b.co')
     expect(maskEmail('no-at-sign')).toBe('•••')
     expect(maskEmail('@b.co')).toBe('•••')
+  })
+})
+
+describe('the log-in request mark (review F2)', () => {
+  it('without storage (Node) nothing is marked and nothing counts as requested', () => {
+    markLoginRequested(1000)
+    expect(takeLoginRequested(1000, 60_000)).toBe(false)
+  })
+
+  it('counts a recent mark once, and never a stale or future one', () => {
+    const store = new Map<string, string>()
+    const memory = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+      removeItem: (key: string) => void store.delete(key),
+    }
+    const original = (globalThis as { localStorage?: unknown }).localStorage
+    ;(globalThis as { localStorage?: unknown }).localStorage = memory
+    try {
+      markLoginRequested(1000)
+      expect(takeLoginRequested(5000, 60_000)).toBe(true)
+      expect(takeLoginRequested(5000, 60_000)).toBe(false)
+      markLoginRequested(1000)
+      expect(takeLoginRequested(1000 + 60_001, 60_000)).toBe(false)
+      markLoginRequested(9000)
+      expect(takeLoginRequested(5000, 60_000)).toBe(false)
+      expect([...store.values()].join()).not.toContain('@')
+    } finally {
+      ;(globalThis as { localStorage?: unknown }).localStorage = original
+    }
   })
 })

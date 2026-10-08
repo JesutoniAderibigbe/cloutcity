@@ -162,7 +162,14 @@ test('a link confirmed on another device saves this one', async ({ page, browser
   const laptop = await browser.newContext()
   const other = await laptop.newPage()
   await finishLink(other, linkIn(await newestMail(email)), 'Tap to save your progress')
-  await expect(other.getByRole('heading', { name: "You're saved" })).toBeVisible()
+  // The laptop confirms the address but never takes the account (review F1).
+  await expect(other.getByRole('heading', { name: 'Saved', exact: true })).toBeVisible()
+  await expect(other.locator('[data-auth-callback]')).toContainText(
+    'Head back to the device where you asked',
+  )
+  expect(
+    await other.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('sb-'))),
+  ).toEqual([])
   await laptop.close()
 
   await nudgeUpgradeCheck(page)

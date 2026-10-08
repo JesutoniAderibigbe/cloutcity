@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { answerWelcomeCard, YEAR } from '../fixtures/welcome'
 import { holdGameTime } from './hud'
-import { codeIn, clearMail, linkIn, newestMail } from './mail'
+import { codeIn, clearMail, linkFragment, linkIn, newestMail, ourLink } from './mail'
 import { waitForMapSettled } from './scene'
 import type { LocalStack } from './stack'
 
@@ -123,16 +123,18 @@ export async function saveProgressByEmail(
   await finishLink(linkPage, linkIn(await newestMail(email)), 'Tap to save your progress')
 }
 
-/** Opens an emailed link on `page` and taps Finish. */
+/** Opens an emailed link of ours on `page` (the server under test) and taps Finish. */
 export async function finishLink(page: Page, link: string, heading: string): Promise<void> {
-  const response = await page.goto(link)
+  const response = await page.goto(ourLink(link, '/auth/callback'))
   // The page that holds a one-time token is never stored and never sends a Referer.
   const headers = response?.headers() ?? {}
   expect(headers['cache-control']).toContain('no-store')
   expect(headers['referrer-policy']).toBe('no-referrer')
   await expect(page.getByRole('heading', { name: heading })).toBeVisible()
-  // The token is out of the address bar before anything is tapped.
+  // The token is out of the address bar before anything is tapped, and the page names the
+  // address (masked) the link is for.
   expect(page.url()).not.toContain('token_hash')
+  await expect(page.locator('[data-auth-for]')).toContainText('•••@')
   await page.getByRole('button', { name: 'Finish' }).click()
 }
 
@@ -181,7 +183,7 @@ export async function newSavedAccount(
   const email = freshEmail()
   const update = await client.auth.updateUser({ email }, { emailRedirectTo: callback })
   if (update.error !== null) throw update.error
-  const hash = new URL(linkIn(await newestMail(email))).searchParams.get('token_hash') ?? ''
+  const hash = linkFragment(linkIn(await newestMail(email))).get('token_hash') ?? ''
   const verified = await client.auth.verifyOtp({ token_hash: hash, type: 'email_change' })
   if (verified.error !== null) throw verified.error
   await clearMail(email)

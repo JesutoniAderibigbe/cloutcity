@@ -18,9 +18,9 @@
  * never throws. Nothing here logs; callers log the outcome code only, never an email, a code or
  * a token.
  */
-import type { SupabaseClient, User } from '@supabase/supabase-js'
+import { createClient, type Session, type SupabaseClient, type User } from '@supabase/supabase-js'
 import * as z from 'zod/mini'
-import type { CallbackParams } from '@/lib/account/callback'
+import { markLoginRequested, type CallbackParams } from '@/lib/account/callback'
 import { maskEmail } from '@/lib/account/mask'
 import { parseRpcError } from './attestation'
 import type { Database } from './database.types'
@@ -46,7 +46,8 @@ export type AccountCode = (typeof ACCOUNT_CODES)[number]
 export type AccountResult =
   { readonly ok: true } | { readonly ok: false; readonly code: AccountCode }
 
-const fail = (code: AccountCode): AccountResult => ({ ok: false, code })
+type Failed = { readonly ok: false; readonly code: AccountCode }
+const fail = (code: AccountCode): Failed => ({ ok: false, code })
 const OK: AccountResult = { ok: true }
 
 /** Who is signed in on this device: a guest, or a saved account. */
@@ -122,7 +123,7 @@ export function classifyAuthFailure(
 // Only a browser that says it is offline counts as offline (Node's navigator has no onLine).
 const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false
 
-function failed(error: unknown, context: Parameters<typeof classifyAuthFailure>[2]) {
+function failed(error: unknown, context: Parameters<typeof classifyAuthFailure>[2]): Failed {
   return fail(classifyAuthFailure(failureOf(error), isOnline(), context))
 }
 
@@ -203,6 +204,8 @@ export async function sendLoginLink(
 ): Promise<AccountResult> {
   try {
     const captchaToken = await captchaProvider()
+    // The link this sends is this browser's own request (see finishCallback).
+    markLoginRequested(Date.now())
     const { error } = await client(env).auth.signInWithOtp({
       email,
       options: {
@@ -248,30 +251,140 @@ export async function signInWithGoogle(
   }
 }
 
-/** Finishes a link: verifies its token hash, or exchanges Google's PKCE code. */
+/** How a link finished on this device. */
+export type CallbackOutcome =
+  /** This browser's own guest was saved (its session refreshed). */
+  | { readonly ok: true; readonly outcome: 'saved' }
+  /**
+   * An account was saved, but not the one signed in here (the link was opened on another device,
+   * or someone else asked to save *their* game with this address): nothing changes here, and the
+   * device that asked picks it up by itself (review F1).
+   */
+  | { readonly ok: true; readonly outcome: 'saved-elsewhere' }
+  /** This browser is now signed in to the account (a log-in it asked for, or Google). */
+  | { readonly ok: true; readonly outcome: 'login' }
+  /**
+   * A log-in link this browser did not ask for (review F2): verified, but not taken yet. The
+   * page asks "Log in as …?" and calls confirmPendingLogin or declinePendingLogin.
+   */
+  | { readonly ok: true; readonly outcome: 'confirm-login'; readonly maskedEmail: string | null }
+  | Failed
+
+/**
+ * A client that keeps nothing: a link is verified on it, so the session that comes back is
+ * never adopted by this browser's guest client unless it is this browser's own account.
+ */
+function throwawayClient(env: SupabaseEnv): SupabaseClient<Database> {
+  const memory = new Map<string, string>()
+  return createClient<Database>(env.url, env.anonKey, {
+    auth: {
+      // Its own key and memory storage: it never shares (or touches) the guest client's session.
+      storageKey: 'cloutcity-link-check',
+      storage: {
+        getItem: (key) => memory.get(key) ?? null,
+        setItem: (key, value) => void memory.set(key, value),
+        removeItem: (key) => void memory.delete(key),
+      },
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  })
+}
+
+/** A verified log-in waiting for the player's yes (see `confirm-login`); memory only. */
+let pendingLogin: { readonly client: SupabaseClient<Database>; readonly session: Session } | null =
+  null
+
+function linkFailure(error: unknown): Failed {
+  const code = classifyAuthFailure(failureOf(error), isOnline(), 'callback')
+  // A used or expired hash answers 403 with otp_expired; anything else from verify that is not
+  // the network is the same to the player: the link no longer works.
+  return { ok: false, code: code === 'offline' || code === 'not-allowed' ? code : 'code-invalid' }
+}
+
+/**
+ * Finishes a link. Google's PKCE code is exchanged on the guest client (only the browser that
+ * started the round trip holds its verifier). An email confirmation (`email_change`) is verified
+ * on a throwaway client: only when it confirmed the account already signed in here is the guest
+ * client refreshed; anyone else's account is never adopted, so a link someone else requested
+ * cannot move this device into their account (session fixation, review F1). A log-in link is
+ * taken at once when this browser asked for one (`requested`); otherwise it is verified on a
+ * throwaway client and held until the player confirms (login CSRF, review F2).
+ */
 export async function finishCallback(
   env: SupabaseEnv,
   params: CallbackParams,
-): Promise<AccountResult> {
+  requested: boolean,
+): Promise<CallbackOutcome> {
   try {
-    const supabase = client(env)
+    const guest = client(env)
     if (params.kind === 'code') {
-      const { error } = await supabase.auth.exchangeCodeForSession(params.code)
-      return error === null ? OK : failed(error, 'callback')
+      const { error } = await guest.auth.exchangeCodeForSession(params.code)
+      return error === null ? { ok: true, outcome: 'login' } : failed(error, 'callback')
     }
-    const { data, error } = await supabase.auth.verifyOtp({
+    if (params.type !== 'email_change' && requested) {
+      const { data, error } = await guest.auth.verifyOtp({
+        token_hash: params.tokenHash,
+        type: params.type,
+      })
+      if (error !== null) return linkFailure(error)
+      return data.session === null ? fail('code-invalid') : { ok: true, outcome: 'login' }
+    }
+    const throwaway = throwawayClient(env)
+    const { data, error } = await throwaway.auth.verifyOtp({
       token_hash: params.tokenHash,
       type: params.type,
     })
-    if (error !== null) {
-      const code = classifyAuthFailure(failureOf(error), isOnline(), 'callback')
-      // A used or expired hash answers 403 with otp_expired; anything else from verify that is
-      // not the network is the same to the player: the link no longer works.
-      return fail(code === 'offline' || code === 'not-allowed' ? code : 'code-invalid')
+    if (error !== null) return linkFailure(error)
+    const verified = data.user
+    if (verified === null) return fail('code-invalid')
+    if (params.type === 'email_change') {
+      const here = (await guest.auth.getSession()).data.session?.user.id
+      // The session the confirmation handed out is not this device's to keep.
+      if (data.session !== null) await throwaway.auth.signOut({ scope: 'local' })
+      if (here !== verified.id) return { ok: true, outcome: 'saved-elsewhere' }
+      await guest.auth.refreshSession()
+      return { ok: true, outcome: 'saved' }
     }
-    return data.session === null && data.user === null ? fail('code-invalid') : OK
+    if (data.session === null) return fail('code-invalid')
+    pendingLogin = { client: throwaway, session: data.session }
+    return {
+      ok: true,
+      outcome: 'confirm-login',
+      maskedEmail:
+        verified.email === undefined || verified.email === '' ? null : maskEmail(verified.email),
+    }
   } catch (error) {
     return failed(error, 'callback')
+  }
+}
+
+/** The player said yes to a log-in link they did not ask for here: this browser takes it. */
+export async function confirmPendingLogin(env: SupabaseEnv): Promise<AccountResult> {
+  const pending = pendingLogin
+  pendingLogin = null
+  if (pending === null) return fail('code-invalid')
+  try {
+    const { error } = await client(env).auth.setSession({
+      access_token: pending.session.access_token,
+      refresh_token: pending.session.refresh_token,
+    })
+    return error === null ? OK : failed(error, 'callback')
+  } catch (error) {
+    return failed(error, 'callback')
+  }
+}
+
+/** "Not me": the held log-in is signed out (its refresh token revoked) and never used here. */
+export async function declinePendingLogin(): Promise<void> {
+  const pending = pendingLogin
+  pendingLogin = null
+  if (pending === null) return
+  try {
+    await pending.client.auth.signOut({ scope: 'local' })
+  } catch {
+    // Unused anyway: it was never stored on this device.
   }
 }
 

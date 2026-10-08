@@ -5,6 +5,8 @@
  * account; the banned-email pre-check and the triggers that refuse a banned email however
  * GoTrue is called; and private.require_permanent.
  */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { createClient } from '@supabase/supabase-js'
 import { describe, expect, inject, it } from 'vitest'
 import type { Database } from '@/lib/supabase/database.types'
@@ -63,12 +65,19 @@ async function mailTo(email: string): Promise<MailpitMessage> {
   throw new Error('no email arrived')
 }
 
-function linkParams(message: MailpitMessage): URLSearchParams {
+/** supabase/config.toml `site_url`: our templates link there, whatever redirect was asked. */
+const SITE_URL = /^site_url = "([^"]+)"/m.exec(
+  readFileSync(join(import.meta.dirname, '../../supabase/config.toml'), 'utf8'),
+)?.[1]
+
+/** The link's parameters: our templates put the token in the fragment, never the query. */
+function linkParams(message: MailpitMessage, path = '/auth/callback'): URLSearchParams {
   const link = /href="([^"]+)"/.exec(message.HTML)?.[1]?.replaceAll('&amp;', '&')
   if (link === undefined) throw new Error('no link in the email')
   const url = new URL(link)
-  expect(`${url.origin}${url.pathname}`).toBe(CALLBACK)
-  return url.searchParams
+  expect(`${url.origin}${url.pathname}`).toBe(`${SITE_URL ?? ''}${path}`)
+  expect(url.search).toBe('')
+  return new URLSearchParams(url.hash.slice(1))
 }
 
 async function ban(email: string): Promise<void> {
@@ -118,8 +127,13 @@ describe('saving progress with an email (S19)', () => {
     expect((await guest.client.rpc('check_account_email', { p_email: email })).data).toBe('ok')
     const update = await guest.client.auth.updateUser({ email }, { emailRedirectTo: CALLBACK })
     expect(update.error).toBeNull()
-    // Nothing changes until the link is opened.
+    // Nothing changes until the link is opened (F9: a config.toml with email confirmations off
+    // would apply the change at once, and this fails loudly).
     expect(update.data.user?.is_anonymous).toBe(true)
+    const [pending] = await sql<
+      { email: string | null; email_change: string | null; is_anonymous: boolean }[]
+    >`select email, email_change, is_anonymous from auth.users where id = ${guest.id}`
+    expect(pending).toEqual({ email: null, email_change: email, is_anonymous: true })
 
     const params = linkParams(await mailTo(email))
     expect(params.get('type')).toBe('email_change')
@@ -330,5 +344,148 @@ describe('private.require_permanent (S19, for S26)', () => {
       select has_function_privilege('authenticated', 'private.require_permanent()', 'execute') as auth,
         has_function_privilege('anon', 'private.require_permanent()', 'execute') as anon`
     expect(grants).toEqual({ auth: false, anon: false })
+  })
+})
+
+describe('email links (security review F4, F5)', () => {
+  it("always link to the site's own callback, whatever redirect the request named", async () => {
+    for (const target of [
+      'http://127.0.0.1:9999/evil/path',
+      'https://evil.example/auth/callback',
+      `${SITE_URL ?? ''}/mod`,
+      'http://localhost:3102/auth/callback',
+    ]) {
+      const guest = await pkceGuest()
+      const email = freshEmail()
+      const { error } = await guest.client.auth.updateUser({ email }, { emailRedirectTo: target })
+      expect(error).toBeNull()
+      const params = linkParams(await mailTo(email))
+      expect(params.get('type')).toBe('email_change')
+      expect(params.get('email')).toBe(email)
+    }
+  })
+
+  it("a log-in link goes to /mod only for the site's own /mod redirect", async () => {
+    const guest = await pkceGuest()
+    const email = freshEmail()
+    await guest.client.auth.updateUser({ email }, { emailRedirectTo: CALLBACK })
+    await pkceClient().auth.verifyOtp({
+      token_hash: linkParams(await mailTo(email)).get('token_hash') ?? '',
+      type: 'email_change',
+    })
+    for (const [target, path] of [
+      [`${SITE_URL ?? ''}/mod`, '/mod'],
+      ['http://127.0.0.1:9999/mod', '/auth/callback'],
+      ['http://localhost:3102/mod', '/auth/callback'],
+    ] as const) {
+      await fetch(
+        `${inject('mailpitUrl')}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`,
+        { method: 'DELETE' },
+      )
+      await new Promise((resolve) => setTimeout(resolve, 1100))
+      const sent = await pkceClient().auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false, emailRedirectTo: target },
+      })
+      expect(sent.error).toBeNull()
+      const params = linkParams(await mailTo(email), path)
+      expect(params.get('type')).toBe('email')
+      expect(params.get('token_hash')).toMatch(/\S{8,}/)
+    }
+  })
+})
+
+describe('banned emails follow the person, not the spelling (review F3)', () => {
+  it.each([
+    ['plus tags, any domain', (local: string) => `${local}+alt@example.test`],
+    ['case and whitespace', (local: string) => `\t ${local.toUpperCase()}@EXAMPLE.TEST \n`],
+  ])('%s', async (_name, variant) => {
+    const local = `s19ban${crypto.randomUUID().slice(0, 8)}`
+    await ban(`${local}@example.test`)
+    const guest = await newAttestedGuest()
+    expect((await guest.client.rpc('check_account_email', { p_email: variant(local) })).data).toBe(
+      'not_allowed',
+    )
+  })
+
+  it('gmail dots and googlemail.com are the same inbox', async () => {
+    const local = `s19ban${crypto.randomUUID().slice(0, 8)}`
+    await ban(`${local}@gmail.com`)
+    const guest = await newAttestedGuest()
+    for (const variant of [
+      `${local.slice(0, 3)}.${local.slice(3)}@gmail.com`,
+      `${local}+x@googlemail.com`,
+      `${local.slice(0, 2)}.${local.slice(2, 5)}.${local.slice(5)}@GoogleMail.com`,
+    ]) {
+      expect(
+        (await guest.client.rpc('check_account_email', { p_email: variant })).data,
+        variant,
+      ).toBe('not_allowed')
+    }
+    // Dots matter on other domains.
+    expect(
+      (
+        await guest.client.rpc('check_account_email', {
+          p_email: `${local.slice(0, 3)}.${local.slice(3)}@example.test`,
+        })
+      ).data,
+    ).toBe('ok')
+  })
+
+  it('the trigger refuses a variant of a banned email too', async () => {
+    const local = `s19ban${crypto.randomUUID().slice(0, 8)}`
+    await ban(`${local}@example.test`)
+    const guest = await pkceGuest()
+    const { error } = await guest.client.auth.updateUser(
+      { email: `${local}+again@example.test` },
+      { emailRedirectTo: CALLBACK },
+    )
+    expect(error).not.toBeNull()
+  })
+
+  it('a ban recorded with the old hash still holds, and gains the canonical hash', async () => {
+    const local = `s19leg${crypto.randomUUID().slice(0, 8)}`
+    const email = `${local}@example.test`
+    await sql`
+      insert into private.banned_identities (identity_hash, kind, sanction_id)
+      values (private.legacy_identity_hash(${email}), 'email', gen_random_uuid())
+    `
+    const guest = await newAttestedGuest()
+    expect((await guest.client.rpc('check_account_email', { p_email: email })).data).toBe(
+      'not_allowed',
+    )
+    const [canonical] = await sql<{ email: string }[]>`
+      select private.canonical_email(${'  Na.Me+x@GoogleMail.com '}) as email`
+    expect(canonical?.email).toBe('name@gmail.com')
+  })
+
+  it('the identity trigger also runs when a linked identity changes its email (F7)', async () => {
+    const banned = freshEmail()
+    await ban(banned)
+    const email = freshEmail()
+    const { data, error } = await serviceClient().auth.admin.createUser({
+      email,
+      email_confirm: true,
+    })
+    if (error !== null) throw error
+    const refused = await sql.begin((tx) =>
+      errorOf(
+        tx,
+        (sp) => sp`update auth.identities
+          set identity_data = identity_data || jsonb_build_object('email', ${banned}::text)
+          where user_id = ${data.user.id}`,
+      ),
+    )
+    expect(refused?.message).toBe('email_not_allowed')
+  })
+
+  it('40 pre-checks at once answer at most the limit', async () => {
+    const guest = await newAttestedGuest()
+    const results = await Promise.all(
+      Array.from({ length: 40 }, () =>
+        guest.client.rpc('check_account_email', { p_email: freshEmail() }),
+      ),
+    )
+    expect(results.filter((result) => result.error === null).length).toBeLessThanOrEqual(10)
   })
 })

@@ -11,12 +11,12 @@ const SERVICE_WORKER_HEADERS = [
 ]
 
 /**
- * Account pages (S19, /auth/callback): links land here with a one-time token in the query, so
- * the page never sends a Referer (its own chunk requests included) and is never stored. The page
- * is dynamic, so Next.js sends `Cache-Control: no-store` itself (a header set here would be
- * replaced for a page); the service worker never touches /auth either (src/sw/policy.ts).
+ * Account pages (S19, /auth/callback): links land here with a one-time token in the URL
+ * fragment, so the page is never stored and never sends a Referer (its own chunk requests
+ * included); the service worker never touches /auth either (src/sw/policy.ts).
  */
 const AUTH_HEADERS = [
+  { key: 'Cache-Control', value: 'no-store, max-age=0' },
   { key: 'Referrer-Policy', value: 'no-referrer' },
   { key: 'X-Robots-Tag', value: 'noindex' },
 ]

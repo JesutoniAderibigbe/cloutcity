@@ -93,6 +93,17 @@
     "account.welcome.loginTitle": "Log in to Clout City",
     "account.welcome.loginIntro": "Get your saved game on this device. No account yet? Go back and start playing; you can save any time.",
     "account.banner.laterLabel": "Not now: hide this tip",
-    "account.nudge.label": "Save your progress. Bigger name, same risk: clear your browser and a guest game is gone."
+    "account.nudge.label": "Save your progress. Bigger name, same risk: clear your browser and a guest game is gone.",
+    "account.callback.saveFor": "This confirms {email} for the game that asked to save. Only tap if that was you.",
+    "account.callback.loginFor": "Logging in as {email}.",
+    "account.callback.confirmTitle": "Log in as {email}?",
+    "account.callback.confirmTitleNoEmail": "Log in to this account?",
+    "account.callback.confirmBody": "This device switches to that account. If it has a guest game, you'll pick which one to keep. Didn't ask to log in? Tap Not me.",
+    "account.callback.confirmYes": "Log in",
+    "account.callback.confirmNo": "Not me",
+    "account.callback.declinedTitle": "Not logged in",
+    "account.callback.declinedBody": "Nothing changed on this device.",
+    "account.savedElsewhere.title": "Saved",
+    "account.savedElsewhere.body": "Head back to the device where you asked to save your progress. It picks this up by itself."
   }
 }

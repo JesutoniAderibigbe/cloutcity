@@ -18,10 +18,11 @@
  *   An upload "this device sent" is one whose mark (`uploadMark`) the sync record kept when it was
  *   sent: the device id alone also matches another tab of the game, or this device's upload for
  *   another account.
- *   One exception (S19): when this device's game was last synced to a different *saved* account
- *   (someone signed out, and another account logs in), a played game is never uploaded to or
- *   replaced by the new account silently: the player always picks, even when that account has
- *   no save yet (`conflictEmpty`: keep this device's game there, or start fresh).
+ *   One exception (S19): when this device's game was last synced to a different account (a
+ *   guest's or a saved one: someone signed out, logged in from the Me tab, or opened a log-in
+ *   link someone else sent), a played game is never uploaded to or replaced by the new account
+ *   silently: the player always picks, even when that account has no save yet (`conflictEmpty`:
+ *   keep this device's game there, or start fresh).
  * - Accounts (S19): the sync record notes whether its account is a guest's or a saved one
  *   (`ownerKind`); a guest who saves their progress keeps the same account, so nothing restarts.
  *   Logging in to another account restarts sync on the same client (`restartCloudSync`), and
@@ -341,7 +342,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
   let acceptedAt = Number.NEGATIVE_INFINITY
   let blocked: 'conflict' | 'update' | 'behind' | null = null
   let conflict: CloudCopy | null = null
-  /** This device's game was last synced to another saved account (see the header). */
+  /** This device's game was last synced to another account (see the header). */
   let foreign = false
   const cleanups: (() => void)[] = []
 
@@ -363,7 +364,9 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       // A guest who saved their progress keeps the same account, now a saved one.
       return ownerKind === 'permanent' ? { ...stored, ownerKind } : stored
     }
-    foreign = stored !== null && stored.ownerKind === 'permanent'
+    // Any other account, a guest's included (review F2): a log-in link someone else sent must
+    // not carry this device's game into their account without the player choosing it.
+    foreign = stored !== null
     return {
       version: META_VERSION,
       deviceId,

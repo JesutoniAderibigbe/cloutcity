@@ -1,9 +1,13 @@
-<!-- S19: saving a guest's progress with an email. The link goes to /auth/callback, which
-     finishes only when the player taps (mail scanners open links on their own). Paste into the
-     hosted dashboard too (Auth > Email Templates > Change Email Address). -->
+<!-- S19: saving a guest's progress with an email. The link always goes to
+     {{ .SiteURL }}/auth/callback (never a redirect the request named, review F4), with the token
+     in the URL fragment (review F5); the page names the address and finishes only on a tap.
+     Paste into the hosted dashboard too (Auth > Email Templates > Change Email Address). -->
 <h2>Save your Clout City progress</h2>
 <p>Tap the button to confirm {{ .NewEmail }} and keep your game:</p>
 <p>
-  <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email_change">Save my progress</a>
+  <a
+    href="{{ .SiteURL }}/auth/callback#token_hash={{ .TokenHash }}&type=email_change&email={{ .NewEmail }}"
+    >Save my progress</a
+  >
 </p>
 <p>The link works once and runs out in an hour. Didn't ask for this? Ignore this email.</p>

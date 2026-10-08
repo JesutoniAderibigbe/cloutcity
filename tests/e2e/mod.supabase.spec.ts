@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { expect, test } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
 import { database, newGuest, newPermanentUser } from './helpers/seed'
-import { clearMail, linkIn, newestMail } from './helpers/mail'
+import { STACK_SITE_URL, clearMail, linkIn, newestMail, ourLink } from './helpers/mail'
 import { E2E_MODERATOR_EMAIL, localStack } from './helpers/stack'
 
 // S18b part 2, opt-in (`npm run e2e:supabase`): the /mod console against the local stack. The
@@ -95,12 +95,16 @@ test('the sign-in answer is the same for a moderator and anyone else', async ({
   expect(forMod.status).toBe(202)
   expect(forOther.status()).toBe(202)
   expect(forMod.json).toEqual(await forOther.json())
-  // The link lands on SITE_URL's /mod (allowlisted locally, supabase/config.toml), never on the
-  // spoofed host: as our token-hash link, or as GoTrue's verify link's redirect_to.
+  // Never the spoofed host: our token-hash link goes to the stack's own site URL whatever the
+  // request named (review F4); GoTrue's verify link (a first sign-up) to SITE_URL's /mod.
   const link = new URL(linkIn(await newestMail(E2E_MODERATOR_EMAIL)))
-  const landing = link.searchParams.get('redirect_to') ?? `${link.origin}${link.pathname}`
-  expect(landing).not.toContain('attacker.example')
-  expect(landing).toBe(`${baseURL ?? ''}/mod`)
+  expect(link.href).not.toContain('attacker.example')
+  if (link.pathname === '/auth/v1/verify') {
+    expect(link.searchParams.get('redirect_to')).toBe(`${baseURL ?? ''}/mod`)
+  } else {
+    expect(link.origin).toBe(STACK_SITE_URL)
+    expect(link.search).toBe('')
+  }
 })
 
 test("the moderator's address with a password session (no emailed link) is refused", async ({
@@ -182,11 +186,16 @@ test('a moderator signs in by email link, opens a seeded case and suspends; one 
   // redirects with the session in the fragment (locally to the stack's site_url, so the fragment
   // is carried to /mod here).
   const link = linkIn(await newestMail(E2E_MODERATOR_EMAIL))
-  if (new URL(link).pathname === '/mod') {
-    expect(link).toContain('token_hash=')
-    await page.goto(`${link}&case=${target.id}`)
-    // The token never stays in the address bar.
+  if (new URL(link).pathname !== '/auth/v1/verify') {
+    // Locally the stack's site URL is not this server's, so the template sends the link to its
+    // /auth/callback; in production SITE_URL is the site URL and it lands on /mod. The token is
+    // carried to this server's /mod the way it rides there: in the fragment.
+    const { hash } = new URL(link)
+    expect(ourLink(link, '/auth/callback')).toContain('#token_hash=')
+    await page.goto(`/mod?case=${target.id}${hash}`)
+    // The token never stays in the address bar; the linked case does.
     await expect.poll(() => page.url()).not.toContain('token_hash')
+    expect(page.url()).toContain(`case=${target.id}`)
     await page.getByRole('button', { name: 'Finish signing in' }).click()
   } else {
     const verify = await fetch(link, { redirect: 'manual' })

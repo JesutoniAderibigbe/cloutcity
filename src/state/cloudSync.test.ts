@@ -859,14 +859,24 @@ describe('cloud save sync: accounts (S19)', () => {
     sync.stop()
   })
 
-  it("a guest's game logging in to an account with no save uploads to it (a guest is not another account)", async () => {
+  it("a guest's played game logging in to an account with no save asks first (review F2)", async () => {
     const mine = played()
     const s = setup({ local: mine, user: { id: 'user-b', anonymous: false } })
     s.local.setItem(SYNC_META_KEY, meta({ userId: 'guest-1', ownerKind: 'anonymous' }))
     const sync = createCloudSync(s.deps)
     await sync.ready
+    expect(s.uploads).toEqual([])
+    expect(s.status.getState()).toMatchObject({ status: 'conflict', conflictEmpty: true })
+    sync.stop()
+  })
+
+  it("a guest's untouched game logging in to an account with no save just saves there", async () => {
+    const s = setup({ user: { id: 'user-b', anonymous: false } })
+    s.local.setItem(SYNC_META_KEY, meta({ userId: 'guest-1', ownerKind: 'anonymous' }))
+    const sync = createCloudSync(s.deps)
+    await sync.ready
     expect(s.uploads).toHaveLength(1)
-    expect(s.uploads[0]?.body.save).toEqual(mine)
+    expect(s.status.getState().status).toBe('synced')
     sync.stop()
   })
 

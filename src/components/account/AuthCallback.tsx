@@ -1,26 +1,37 @@
 'use client'
 
+import accountJson from '@data/config/account.json'
 import { useEffect, useRef, useState } from 'react'
 import { PANEL_BUTTON } from '@/components/hud/PanelDialog'
 import { writeAccountHandoff } from '@/lib/account/handoff'
-import { GOOGLE_INTENT_KEY, parseCallback, type ParsedCallback } from '@/lib/account/callback'
+import {
+  GOOGLE_INTENT_KEY,
+  parseCallback,
+  takeLoginRequested,
+  type ParsedCallback,
+} from '@/lib/account/callback'
+import { maskEmail } from '@/lib/account/mask'
 import { copy, type CopyKey } from '@/lib/copy'
 import { log } from '@/lib/log'
-import { AUTH_CALLBACK_PATH } from '@/lib/supabase/env'
+import { AUTH_CALLBACK_PATH, type SupabaseEnv } from '@/lib/supabase/env'
 import { accountEnv, loadAccountAuth } from './accountEnv'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/account'
+
+type Finish = Extract<ParsedCallback, { kind: 'finish' }>
+type DoneKind = 'saved' | 'saved-elsewhere' | 'login' | 'declined'
 
 type View =
   | { readonly step: 'reading' }
   | {
       readonly step: 'ready'
-      readonly parsed: Extract<ParsedCallback, { kind: 'finish' }>
+      readonly parsed: Finish
       /** Why the last tap did not finish (offline), shown above the Finish button. */
       readonly notice: CopyKey | null
     }
   | { readonly step: 'working' }
-  | { readonly step: 'done'; readonly kind: 'saved' | 'login' }
+  | { readonly step: 'confirm'; readonly maskedEmail: string | null }
+  | { readonly step: 'done'; readonly kind: DoneKind }
   | { readonly step: 'failed'; readonly key: CopyKey }
 
 const ERROR_KEY = {
@@ -29,6 +40,13 @@ const ERROR_KEY = {
   google: 'account.callback.googleFailed',
   invalid: 'account.callback.invalid',
 } as const satisfies Record<string, CopyKey>
+
+const DONE: Readonly<Record<DoneKind, { title: CopyKey; body: CopyKey }>> = {
+  saved: { title: 'account.saved.title', body: 'account.saved.body' },
+  'saved-elsewhere': { title: 'account.savedElsewhere.title', body: 'account.savedElsewhere.body' },
+  login: { title: 'account.welcomeBack.title', body: 'account.welcomeBack.body' },
+  declined: { title: 'account.callback.declinedTitle', body: 'account.callback.declinedBody' },
+}
 
 function takeGoogleIntent(): 'save' | 'login' {
   try {
@@ -40,19 +58,40 @@ function takeGoogleIntent(): 'save' | 'login' {
   }
 }
 
+/** Tells the game page this tab hands over to what the logged-in account already holds. */
+async function handOff(env: SupabaseEnv): Promise<void> {
+  const auth = await loadAccountAuth()
+  const attestation = await auth.readServerAttestation(env)
+  writeAccountHandoff({
+    attestation:
+      attestation?.attested === true && attestation.attestedAt !== null
+        ? {
+            attestedAt: attestation.attestedAt,
+            consentVersion: attestation.consentVersion,
+            consentedAt: attestation.consentedAt,
+          }
+        : null,
+  })
+}
+
 /**
- * /auth/callback (S19). The URL is read once and wiped from the address bar and history at
- * once (`replaceState`), so the token never lingers or leaks. An email link waits for the
- * player's tap on Finish before using its one-time token (a mail scanner that opens the link
- * uses nothing up); Google's code is exchanged at once (only this browser can). Then the account
- * is this browser's, and "Back to the game" goes to the map: the game picks the session up, and
- * the welcome card asks only what the account does not already hold.
+ * /auth/callback (S19). Our links carry their one-time token in the URL fragment (never sent to
+ * a server); the page reads it once and wipes it from the address bar and history at once. An
+ * email link waits for the player's tap on Finish, naming the address (masked) it is for, so a
+ * mail scanner that opens the link uses nothing up. Then:
+ *  - a save confirmation that is this browser's own guest saves it here; anyone else's (another
+ *    device, or someone who asked to save *their* game with this address) is confirmed without
+ *    this browser ever taking that account (review F1);
+ *  - a log-in this browser asked for signs in; one it did not ask for asks "Log in as …?" first
+ *    (review F2);
+ *  - Google's code is exchanged at once (only the browser that started it can).
+ * "Back to the game" goes to the map, which picks the session up.
  */
 export function AuthCallback() {
   const [view, setView] = useState<View>({ step: 'reading' })
   const title = useRef<HTMLHeadingElement>(null)
 
-  const finish = async (parsed: Extract<ParsedCallback, { kind: 'finish' }>) => {
+  const finish = async (parsed: Finish) => {
     const config = accountEnv()
     if (config === null) {
       setView({ step: 'failed', key: 'account.callback.unavailable' })
@@ -61,7 +100,11 @@ export function AuthCallback() {
     setView({ step: 'working' })
     try {
       const auth = await loadAccountAuth()
-      const result = await auth.finishCallback(config.env, parsed.params)
+      const requested =
+        parsed.params.kind === 'token' &&
+        parsed.params.type !== 'email_change' &&
+        takeLoginRequested(Date.now(), accountJson.pendingUpgradeMaxAgeMs)
+      const result = await auth.finishCallback(config.env, parsed.params, requested)
       if (!result.ok) {
         log.info('An account link did not finish', { code: result.code })
         if (result.code === 'offline' && parsed.params.kind === 'token') {
@@ -80,26 +123,21 @@ export function AuthCallback() {
         })
         return
       }
+      log.info('An account link finished', { outcome: result.outcome })
+      if (result.outcome === 'confirm-login') {
+        setView({ step: 'confirm', maskedEmail: result.maskedEmail })
+        return
+      }
+      if (result.outcome === 'saved-elsewhere') {
+        setView({ step: 'done', kind: 'saved-elsewhere' })
+        return
+      }
       const kind =
-        parsed.params.kind === 'token'
-          ? parsed.params.type === 'email_change'
-            ? 'saved'
-            : 'login'
-          : takeGoogleIntent() === 'save'
-            ? 'saved'
-            : 'login'
-      const attestation = await auth.readServerAttestation(config.env)
-      writeAccountHandoff({
-        attestation:
-          attestation?.attested === true && attestation.attestedAt !== null
-            ? {
-                attestedAt: attestation.attestedAt,
-                consentVersion: attestation.consentVersion,
-                consentedAt: attestation.consentedAt,
-              }
-            : null,
-      })
-      log.info('An account link finished', { kind })
+        result.outcome === 'saved' ||
+        (parsed.params.kind === 'code' && takeGoogleIntent() === 'save')
+          ? 'saved'
+          : 'login'
+      await handOff(config.env)
       setView({ step: 'done', kind })
     } catch (error) {
       log.info('An account link did not finish', {
@@ -107,6 +145,26 @@ export function AuthCallback() {
       })
       setView({ step: 'failed', key: 'account.callback.offline' })
     }
+  }
+
+  const answer = async (yes: boolean) => {
+    const config = accountEnv()
+    if (config === null) return
+    setView({ step: 'working' })
+    const auth = await loadAccountAuth()
+    if (!yes) {
+      await auth.declinePendingLogin()
+      log.info('A log-in link was turned down')
+      setView({ step: 'done', kind: 'declined' })
+      return
+    }
+    const result = await auth.confirmPendingLogin(config.env)
+    if (!result.ok) {
+      setView({ step: 'failed', key: ERROR_KEY.expired })
+      return
+    }
+    await handOff(config.env)
+    setView({ step: 'done', kind: 'login' })
   }
 
   const loginWithGoogle = async () => {
@@ -148,19 +206,24 @@ export function AuthCallback() {
         return view.parsed.params.kind === 'token' && view.parsed.params.type === 'email_change'
           ? copy('account.callback.finishSave')
           : copy('account.callback.finishLogin')
+      case 'confirm':
+        return view.maskedEmail === null
+          ? copy('account.callback.confirmTitleNoEmail')
+          : copy('account.callback.confirmTitle', { email: view.maskedEmail })
       case 'done':
-        return view.kind === 'saved'
-          ? copy('account.saved.title')
-          : copy('account.welcomeBack.title')
+        return copy(DONE[view.kind].title)
       case 'failed':
         return copy(view.key)
     }
   })()
 
+  const readyFor =
+    view.step === 'ready' && view.parsed.email !== null ? maskEmail(view.parsed.email) : null
+
   return (
     <section
       aria-labelledby="auth-callback-title"
-      data-auth-callback={view.step}
+      data-auth-callback={view.step === 'done' ? view.kind : view.step}
       data-cc-feature="cc-feature:auth-callback"
       className="flex w-full max-w-md flex-col gap-3 rounded-3xl border border-line glass p-5 shadow-2xl"
     >
@@ -172,10 +235,38 @@ export function AuthCallback() {
       >
         {heading}
       </h1>
+      {view.step === 'ready' && readyFor !== null ? (
+        <p data-auth-for="" className="text-sm text-fg">
+          {view.parsed.params.kind === 'token' && view.parsed.params.type === 'email_change'
+            ? copy('account.callback.saveFor', { email: readyFor })
+            : copy('account.callback.loginFor', { email: readyFor })}
+        </p>
+      ) : null}
       {view.step === 'done' ? (
         <p role="status" className="text-sm text-fg">
-          {view.kind === 'saved' ? copy('account.saved.body') : copy('account.welcomeBack.body')}
+          {copy(DONE[view.kind].body)}
         </p>
+      ) : null}
+      {view.step === 'confirm' ? (
+        <>
+          <p className="text-sm text-fg">{copy('account.callback.confirmBody')}</p>
+          <button
+            type="button"
+            data-auth-confirm="yes"
+            onClick={() => void answer(true)}
+            className={`${PANEL_BUTTON} bg-taxi text-on-taxi`}
+          >
+            {copy('account.callback.confirmYes')}
+          </button>
+          <button
+            type="button"
+            data-auth-confirm="no"
+            onClick={() => void answer(false)}
+            className={`${PANEL_BUTTON} bg-raised text-fg`}
+          >
+            {copy('account.callback.confirmNo')}
+          </button>
+        </>
       ) : null}
       {view.step === 'ready' && view.notice !== null ? (
         <p role="alert" className="text-sm font-semibold text-danger">

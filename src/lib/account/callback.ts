@@ -1,7 +1,9 @@
 /**
  * What /auth/callback was opened with (S19), parsed from untrusted URL parameters with zod/mini:
- *  - `token_hash` + `type` from our own email templates (supabase/templates): finished only on
- *    the player's tap, since mail scanners open links on their own;
+ *  - `token_hash` + `type` (+ the address it is for, `email`) from our own email templates
+ *    (supabase/templates), in the URL *fragment* only, so a one-time token never reaches a server,
+ *    CDN or router log (review F5). Finished only on the player's tap, since mail scanners open
+ *    links on their own;
  *  - `code` from a Google round trip (PKCE: only the browser that started it can exchange it);
  *  - `error_code` / `error` when GoTrue refused (a Google account already linked elsewhere).
  * Anything else is an incomplete link. Values are never logged.
@@ -20,16 +22,25 @@ export type CallbackParams =
 export type CallbackError = 'identity-exists' | 'expired' | 'google' | 'invalid'
 
 export type ParsedCallback =
-  | { readonly kind: 'finish'; readonly params: CallbackParams }
+  | {
+      readonly kind: 'finish'
+      readonly params: CallbackParams
+      /** The address the link says it is for (shown masked before the tap); null if absent. */
+      readonly email: string | null
+    }
   | { readonly kind: 'error'; readonly error: CallbackError }
 
 // Generous bounds: GoTrue's hashes and codes are far shorter; anything longer is not one.
 const opaque = z.string().check(z.minLength(8), z.maxLength(512), z.regex(/^[A-Za-z0-9._~-]+$/))
 
 const TokenSchema = z.object({ token_hash: opaque, type: z.enum(CALLBACK_TOKEN_TYPES) })
+const EmailSchema = z.string().check(z.maxLength(320), z.regex(/^[^\s@]+@[^\s@]+$/))
 const CodeSchema = z.object({ code: opaque })
 
-/** Reads the callback's query (and fragment, where GoTrue may put an error). */
+/**
+ * Reads the callback's fragment (our links' token) and query (Google's PKCE code and GoTrue's
+ * errors). A token hash in the query is not ours and is refused.
+ */
 export function parseCallback(search: string, hash = ''): ParsedCallback {
   const query = new URLSearchParams(search)
   const fragment = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash)
@@ -40,18 +51,49 @@ export function parseCallback(search: string, hash = ''): ParsedCallback {
     if (errorCode === 'otp_expired') return { kind: 'error', error: 'expired' }
     return { kind: 'error', error: 'google' }
   }
-  const values = Object.fromEntries(query.entries())
-  const token = TokenSchema.safeParse(values)
+  if (query.has('token_hash')) return { kind: 'error', error: 'invalid' }
+  const token = TokenSchema.safeParse(Object.fromEntries(fragment.entries()))
   if (token.success) {
+    const email = EmailSchema.safeParse(fragment.get('email') ?? '')
     return {
       kind: 'finish',
       params: { kind: 'token', tokenHash: token.data.token_hash, type: token.data.type },
+      email: email.success ? email.data : null,
     }
   }
-  const code = CodeSchema.safeParse(values)
-  if (code.success) return { kind: 'finish', params: { kind: 'code', code: code.data.code } }
+  const code = CodeSchema.safeParse(Object.fromEntries(query.entries()))
+  if (code.success) {
+    return { kind: 'finish', params: { kind: 'code', code: code.data.code }, email: null }
+  }
   return { kind: 'error', error: 'invalid' }
 }
 
 /** Which Google round trip this tab started (set before leaving for Google, S19). */
 export const GOOGLE_INTENT_KEY = 'cloutcity:google-intent'
+
+/**
+ * This browser asked for a log-in link (review F2): kept in localStorage with the time it was
+ * asked, never the address. A log-in link opened without one is someone else's request (a link
+ * an attacker sent), so the page asks before switching this device to that account.
+ */
+export const LOGIN_REQUESTED_KEY = 'cloutcity:login-requested'
+
+export function markLoginRequested(nowMs: number): void {
+  try {
+    localStorage.setItem(LOGIN_REQUESTED_KEY, String(nowMs))
+  } catch {
+    // Without it, the log-in link only asks one more question.
+  }
+}
+
+/** Whether this browser asked for a log-in within `maxAgeMs`; the mark is spent by reading it. */
+export function takeLoginRequested(nowMs: number, maxAgeMs: number): boolean {
+  try {
+    const raw = localStorage.getItem(LOGIN_REQUESTED_KEY)
+    localStorage.removeItem(LOGIN_REQUESTED_KEY)
+    const at = raw === null ? Number.NaN : Number(raw)
+    return Number.isSafeInteger(at) && at <= nowMs && nowMs - at <= maxAgeMs
+  } catch {
+    return false
+  }
+}

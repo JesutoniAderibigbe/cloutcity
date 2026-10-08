@@ -27,8 +27,23 @@ const fakeClient = {
     verifyOtp: (...args: unknown[]) => answer('verifyOtp', ...args),
     exchangeCodeForSession: (...args: unknown[]) => answer('exchangeCodeForSession', ...args),
     signOut: (...args: unknown[]) => answer('signOut', ...args),
+    refreshSession: (...args: unknown[]) => answer('refreshSession', ...args),
+    setSession: (...args: unknown[]) => answer('setSession', ...args),
   },
 }
+
+// The throwaway client a link is verified on (review F1/F2): its calls are named `throwaway.*`.
+const throwawayClient = {
+  auth: {
+    verifyOtp: (...args: unknown[]) => answer('throwaway.verifyOtp', ...args),
+    signOut: (...args: unknown[]) => answer('throwaway.signOut', ...args),
+  },
+}
+
+vi.mock('@supabase/supabase-js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@supabase/supabase-js')>()),
+  createClient: () => throwawayClient,
+}))
 
 vi.mock('./supabaseAuth', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./supabaseAuth')>()),
@@ -150,28 +165,105 @@ describe('logging in', () => {
   })
 })
 
-describe('/auth/callback', () => {
-  it('verifies a token hash, or exchanges a code', async () => {
+describe('/auth/callback (review F1, F2)', () => {
+  const HASH = 'h'.repeat(20)
+  const verified = (id: string, email = EMAIL) => ({
+    data: { session: { access_token: 'a', refresh_token: 'r' }, user: { id, email } },
+    error: null,
+  })
+  const here = (id: string | null) => ({
+    data: { session: id === null ? null : { user: { id } } },
+    error: null,
+  })
+
+  it("a save confirmation for this browser's own guest refreshes it here", async () => {
+    answers = { 'throwaway.verifyOtp': verified('u1'), getSession: here('u1') }
+    expect(
+      await auth.finishCallback(
+        ENV,
+        { kind: 'token', tokenHash: HASH, type: 'email_change' },
+        false,
+      ),
+    ).toEqual({ ok: true, outcome: 'saved' })
+    const names = calls.map((call) => call.name)
+    expect(names).toContain('throwaway.verifyOtp')
+    expect(names).toContain('refreshSession')
+    expect(names).not.toContain('verifyOtp')
+    expect(names).not.toContain('setSession')
+  })
+
+  it("someone else's save confirmation is never adopted here (session fixation)", async () => {
+    answers = { 'throwaway.verifyOtp': verified('attacker'), getSession: here('victim') }
+    expect(
+      await auth.finishCallback(
+        ENV,
+        { kind: 'token', tokenHash: HASH, type: 'email_change' },
+        false,
+      ),
+    ).toEqual({ ok: true, outcome: 'saved-elsewhere' })
+    const names = calls.map((call) => call.name)
+    expect(names).toContain('throwaway.signOut')
+    expect(names).not.toContain('refreshSession')
+    expect(names).not.toContain('setSession')
+    // On a device with no session at all (another device), the same: nothing is taken.
+    calls.length = 0
+    answers = { 'throwaway.verifyOtp': verified('owner'), getSession: here(null) }
+    expect(
+      await auth.finishCallback(
+        ENV,
+        { kind: 'token', tokenHash: HASH, type: 'email_change' },
+        true,
+      ),
+    ).toEqual({ ok: true, outcome: 'saved-elsewhere' })
+  })
+
+  it('a log-in this browser asked for signs in on the guest client at once', async () => {
     answers = { verifyOtp: { data: { session: {}, user: {} }, error: null } }
     expect(
-      await auth.finishCallback(ENV, {
-        kind: 'token',
-        tokenHash: 'h'.repeat(20),
-        type: 'email_change',
-      }),
-    ).toEqual({ ok: true })
-    expect(calls[0]?.args).toEqual([{ token_hash: 'h'.repeat(20), type: 'email_change' }])
-    await auth.finishCallback(ENV, { kind: 'code', code: 'c'.repeat(20) })
-    expect(calls[1]).toEqual({ name: 'exchangeCodeForSession', args: ['c'.repeat(20)] })
+      await auth.finishCallback(ENV, { kind: 'token', tokenHash: HASH, type: 'email' }, true),
+    ).toEqual({ ok: true, outcome: 'login' })
+    expect(calls.map((call) => call.name)).toEqual(['verifyOtp'])
+  })
+
+  it('a log-in link this browser did not ask for is held until the player says yes', async () => {
+    answers = { 'throwaway.verifyOtp': verified('owner') }
+    expect(
+      await auth.finishCallback(ENV, { kind: 'token', tokenHash: HASH, type: 'email' }, false),
+    ).toEqual({ ok: true, outcome: 'confirm-login', maskedEmail: 'j•••@example.com' })
+    expect(calls.map((call) => call.name)).toEqual(['throwaway.verifyOtp'])
+    expect(await auth.confirmPendingLogin(ENV)).toEqual({ ok: true })
+    expect(calls.at(-1)).toEqual({
+      name: 'setSession',
+      args: [{ access_token: 'a', refresh_token: 'r' }],
+    })
+    // Spent: a second yes takes nothing.
+    expect(await auth.confirmPendingLogin(ENV)).toEqual({ ok: false, code: 'code-invalid' })
+  })
+
+  it('"Not me" signs the held log-in out and never touches the guest client', async () => {
+    answers = { 'throwaway.verifyOtp': verified('owner') }
+    await auth.finishCallback(ENV, { kind: 'token', tokenHash: HASH, type: 'email' }, false)
+    await auth.declinePendingLogin()
+    expect(calls.map((call) => call.name)).toEqual(['throwaway.verifyOtp', 'throwaway.signOut'])
+  })
+
+  it("Google's code is exchanged on the guest client", async () => {
+    await auth.finishCallback(ENV, { kind: 'code', code: 'c'.repeat(20) }, false)
+    expect(calls[0]).toEqual({ name: 'exchangeCodeForSession', args: ['c'.repeat(20)] })
   })
 
   it('a used or expired link is one answer', async () => {
-    answers = {
-      verifyOtp: { data: { session: null, user: null }, error: authError('otp_expired', 403) },
+    const expired = { data: { session: null, user: null }, error: authError('otp_expired', 403) }
+    answers = { verifyOtp: expired, 'throwaway.verifyOtp': expired }
+    for (const requested of [true, false]) {
+      expect(
+        await auth.finishCallback(
+          ENV,
+          { kind: 'token', tokenHash: HASH, type: 'email' },
+          requested,
+        ),
+      ).toEqual({ ok: false, code: 'code-invalid' })
     }
-    expect(
-      await auth.finishCallback(ENV, { kind: 'token', tokenHash: 'h'.repeat(20), type: 'email' }),
-    ).toEqual({ ok: false, code: 'code-invalid' })
   })
 })
 

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { localStack } from './stack'
 
 /**
@@ -56,4 +58,31 @@ export function codeIn(mail: Mail): string {
 export async function clearMail(email: string): Promise<void> {
   const query = encodeURIComponent(`to:"${email}"`)
   await fetch(`${mailpit()}/api/v1/search?query=${query}`, { method: 'DELETE' })
+}
+
+/** supabase/config.toml `site_url`: our templates link there, whatever redirect was asked. */
+export const STACK_SITE_URL = (() => {
+  const toml = readFileSync(join(import.meta.dirname, '../../../supabase/config.toml'), 'utf8')
+  const found = /^site_url = "([^"]+)"/m.exec(toml)?.[1]
+  if (found === undefined) throw new Error('supabase/config.toml has no site_url')
+  return found
+})()
+
+/**
+ * An emailed link of ours, checked (the stack's site URL, the given path, the token in the
+ * fragment and never the query) and turned into the same path on the server under test (whose
+ * port differs per lane): what the player's tap would open in production.
+ */
+export function ourLink(link: string, path: '/auth/callback' | '/mod'): string {
+  const url = new URL(link)
+  if (`${url.origin}${url.pathname}` !== `${STACK_SITE_URL}${path}` || url.search !== '') {
+    throw new Error(`not our ${path} link: ${url.origin}${url.pathname}${url.search ? '?…' : ''}`)
+  }
+  if (!url.hash.includes('token_hash=')) throw new Error('no token in the link fragment')
+  return `${path}${url.hash}`
+}
+
+/** The fragment parameters of one of our links. */
+export function linkFragment(link: string): URLSearchParams {
+  return new URLSearchParams(new URL(link).hash.slice(1))
 }
