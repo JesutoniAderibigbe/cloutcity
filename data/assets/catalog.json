@@ -358,6 +358,44 @@
       }
     }
   ],
+  "jointMaps": {
+    "modular": {
+      "collapse": [
+        {
+          "match": "^(?:Index|Middle|Ring|Pinky|Thumb)\\d\\.(L|R)$",
+          "into": "Wrist.$1"
+        },
+        {
+          "match": "^PT\\.(L|R)$",
+          "into": "Foot.$1"
+        }
+      ],
+      "rename": {
+        "Root": "root",
+        "Body": "body",
+        "Hips": "hips",
+        "Abdomen": "abdomen",
+        "Torso": "spine",
+        "Chest": "torso",
+        "Neck": "neck",
+        "Head": "head",
+        "Shoulder.L": "shoulder-left",
+        "UpperArm.L": "upper-arm-left",
+        "LowerArm.L": "lower-arm-left",
+        "Wrist.L": "hand-left",
+        "UpperLeg.L": "upper-leg-left",
+        "LowerLeg.L": "lower-leg-left",
+        "Foot.L": "foot-left",
+        "Shoulder.R": "shoulder-right",
+        "UpperArm.R": "upper-arm-right",
+        "LowerArm.R": "lower-arm-right",
+        "Wrist.R": "hand-right",
+        "UpperLeg.R": "upper-leg-right",
+        "LowerLeg.R": "lower-leg-right",
+        "Foot.R": "foot-right"
+      }
+    }
+  },
   "models": [
     {
       "id": "taxi",
@@ -6038,6 +6076,1509 @@
       "instanced": false,
       "nameKey": "models.name.headwearBallcap",
       "attach": "head"
+    },
+    {
+      "id": "outfit-w-casual",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["White"],
+          "meshes": ["Casual_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Orange"],
+          "meshes": ["Casual_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Grey"],
+          "meshes": ["Casual_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWCasual",
+      "meshes": ["Casual_Body", "Casual_Legs", "Casual_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-suit",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Suit.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Black"],
+          "meshes": ["Suit_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Black"],
+          "meshes": ["Suit_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Suit_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWSuit",
+      "meshes": ["Suit_Body", "Suit_Legs", "Suit_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-worker",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Worker.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["White"],
+          "meshes": ["Worker_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Brown_02"],
+          "meshes": ["Worker_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Worker_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWWorker",
+      "meshes": ["Worker_Body", "Worker_Legs", "Worker_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-dress",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Formal.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LimeGreen"],
+          "meshes": ["Formal_Body", "Formal_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Red"],
+          "meshes": ["Formal_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWDress",
+      "meshes": ["Formal_Body", "Formal_Legs", "Formal_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-punk",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Punk.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Pink"],
+          "meshes": ["Punk_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Black"],
+          "meshes": ["Punk_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Punk_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWPunk",
+      "meshes": ["Punk_Body", "Punk_Legs", "Punk_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-outdoors",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Adventurer.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightGreen"],
+          "meshes": ["Adventurer_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Brown_02"],
+          "meshes": ["Adventurer_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Brown_02"],
+          "meshes": ["Adventurer_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWOutdoors",
+      "meshes": ["Adventurer_Body", "Adventurer_Legs", "Adventurer_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-casual",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual_2.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightBrown"],
+          "meshes": ["Casual2_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Casual2_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Red_Dark"],
+          "meshes": ["Casual2_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMCasual",
+      "meshes": ["Casual2_Body", "Casual2_Legs", "Casual2_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-hoodie",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual_Hoodie.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Purple"],
+          "meshes": ["Casual_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Casual_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Purple"],
+          "meshes": ["Casual_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMHoodie",
+      "meshes": ["Casual_Body", "Casual_Legs", "Casual_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-suit",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Suit.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Suit"],
+          "meshes": ["Suit_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Suit"],
+          "meshes": ["Suit_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Suit_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMSuit",
+      "meshes": ["Suit_Body", "Suit_Legs", "Suit_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-worker",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Worker.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightBrown"],
+          "meshes": ["Worker_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Brown"],
+          "meshes": ["Worker_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Grey"],
+          "meshes": ["Worker_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMWorker",
+      "meshes": ["Worker_Body", "Worker_Legs", "Worker_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-beach",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Beach.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightBrown"],
+          "meshes": ["Beach_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Red_Dark"],
+          "meshes": ["Beach_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Red_Dark"],
+          "meshes": ["Beach_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMBeach",
+      "meshes": ["Beach_Body", "Beach_Legs", "Beach_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-punk",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Punk.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Black"],
+          "meshes": ["Punk_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Punk_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Punk_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMPunk",
+      "meshes": ["Punk_Body", "Punk_Legs", "Punk_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-overalls",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Farmer.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Brown"],
+          "meshes": ["Farmer_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Farmer_Body", "Farmer_Pants"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Brown"],
+          "meshes": ["Farmer_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMOveralls",
+      "meshes": ["Farmer_Body", "Farmer_Pants", "Farmer_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-outdoors",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Adventurer.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Green"],
+          "meshes": ["Adventurer_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Brown"],
+          "meshes": ["Adventurer_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Grey"],
+          "meshes": ["Adventurer_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMOutdoors",
+      "meshes": ["Adventurer_Body", "Adventurer_Legs", "Adventurer_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "head-f",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-head",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 300
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 500
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "hair",
+          "materials": ["Hair_Brown"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headF",
+      "meshes": ["Casual_Head"],
+      "joints": "modular",
+      "stripMaterials": ["Hair_Blond"],
+      "protectMaterials": ["Brown", "Hair_Brown"]
+    },
+    {
+      "id": "head-m",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual_Hoodie.gltf"
+        }
+      ],
+      "category": "avatar-head",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 300
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 500
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "hair",
+          "materials": ["Eyebrows"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headM",
+      "meshes": ["Casual_Head"],
+      "joints": "modular",
+      "stripMaterials": ["Hair"],
+      "protectMaterials": ["Eye", "Eyebrows"]
+    },
+    {
+      "id": "hair-bob",
+      "source": "quaternius-modular-women",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair_Blond"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairBob",
+      "fromSkinned": {
+        "mesh": "Casual_Head",
+        "materials": ["Hair_Blond"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-pixie",
+      "source": "quaternius-modular-women",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Adventurer.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair_Brown"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairPixie",
+      "fromSkinned": {
+        "mesh": "Adventurer_Head",
+        "materials": ["Hair_Brown"],
+        "joint": "Head",
+        "exclude": [
+          {
+            "min": [-0.2, 1.685, 0.09],
+            "max": [0.2, 1.73, 0.3]
+          }
+        ]
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-updo",
+      "source": "quaternius-modular-women",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Formal.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Red"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairUpdo",
+      "fromSkinned": {
+        "mesh": "Formad_Head",
+        "materials": ["Red"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-mohawk",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Punk.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Red"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairMohawk",
+      "fromSkinned": {
+        "mesh": "Punk_Head",
+        "materials": ["Red"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-spiky",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Beach.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairSpiky",
+      "fromSkinned": {
+        "mesh": "Beach_Head",
+        "materials": ["Hair"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-ponytail",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Casual_2.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairPonytail",
+      "fromSkinned": {
+        "mesh": "Casual2_Head",
+        "materials": ["Hair"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-tousled",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Casual_Hoodie.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairTousled",
+      "fromSkinned": {
+        "mesh": "Casual_Head",
+        "materials": ["Hair"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-parted",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Suit.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairParted",
+      "fromSkinned": {
+        "mesh": "Suit_Head",
+        "materials": ["Hair"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-swept",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Adventurer.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairSwept",
+      "fromSkinned": {
+        "mesh": "Adventurer_Head",
+        "materials": ["Hair"],
+        "joint": "Head",
+        "exclude": [
+          {
+            "min": [-0.2, 1.4, -0.02],
+            "max": [0.2, 1.665, 0.3]
+          }
+        ]
+      },
+      "attach": "head"
+    },
+    {
+      "id": "avatar-rig-f",
+      "source": "quaternius-modular-women",
+      "kind": "rig",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-rig",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [],
+      "clips": [
+        {
+          "from": "Idle",
+          "as": "idle"
+        },
+        {
+          "from": "Walk",
+          "as": "walk"
+        },
+        {
+          "from": "Run",
+          "as": "run"
+        },
+        {
+          "from": "Wave",
+          "as": "wave"
+        },
+        {
+          "from": "Interact",
+          "as": "interact"
+        }
+      ],
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.avatarRigF",
+      "joints": "modular"
+    },
+    {
+      "id": "avatar-rig-m",
+      "source": "quaternius-modular-men",
+      "kind": "rig",
+      "entries": [
+        {
+          "path": "glTF/Casual_Hoodie.gltf"
+        }
+      ],
+      "category": "avatar-rig",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [],
+      "clips": [
+        {
+          "from": "Idle",
+          "as": "idle"
+        },
+        {
+          "from": "Walk",
+          "as": "walk"
+        },
+        {
+          "from": "Run",
+          "as": "run"
+        },
+        {
+          "from": "Wave",
+          "as": "wave"
+        },
+        {
+          "from": "Interact",
+          "as": "interact"
+        }
+      ],
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.avatarRigM",
+      "joints": "modular"
+    },
+    {
+      "id": "npc-woman",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 800
+        },
+        "mid": {
+          "triangles": 840
+        },
+        "high": {
+          "triangles": 840
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "hair",
+          "materials": ["Hair_Blond", "Hair_Brown"],
+          "meshes": ["Casual_Head"]
+        },
+        {
+          "name": "top",
+          "materials": ["White"],
+          "meshes": ["Casual_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Orange"],
+          "meshes": ["Casual_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Grey"],
+          "meshes": ["Casual_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.npcWoman",
+      "meshes": ["Casual_Body", "Casual_Legs", "Casual_Feet", "Casual_Head"],
+      "joints": "modular",
+      "protectMaterials": ["Brown", "Hair_Brown"]
+    },
+    {
+      "id": "npc-man",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual_2.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 800
+        },
+        "mid": {
+          "triangles": 840
+        },
+        "high": {
+          "triangles": 840
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "hair",
+          "materials": ["Hair", "Eyebrows"],
+          "meshes": ["Casual2_Head"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightBrown"],
+          "meshes": ["Casual2_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Casual2_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Red_Dark"],
+          "meshes": ["Casual2_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.npcMan",
+      "meshes": ["Casual2_Body", "Casual2_Legs", "Casual2_Feet", "Casual2_Head"],
+      "joints": "modular",
+      "protectMaterials": ["Eye", "Eyebrows"]
     }
   ],
   "excluded": [

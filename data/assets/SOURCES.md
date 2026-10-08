@@ -209,7 +209,7 @@ Models: `tree-oak`, `tree-round`, `tree-tall`.
 | `glTF/Suit.gltf`       | 3142156 | `937d5c8d08fb5570f6a4e1dd79a3878335444d175aae3b0e9e2babdac36a17f7` |
 | `glTF/Worker.gltf`     | 3095030 | `e2bfc1039f429e870a0119e274c2dd45f6304f00c39f4570dfeb9ed4d97a063d` |
 
-Models: none yet.
+Models: `outfit-w-casual`, `outfit-w-suit`, `outfit-w-worker`, `outfit-w-dress`, `outfit-w-punk`, `outfit-w-outdoors`, `head-f`, `hair-bob`, `hair-pixie`, `hair-updo`, `avatar-rig-f`, `npc-woman`.
 
 ### Quaternius Ultimate Modular Men 2022-02
 
@@ -234,7 +234,7 @@ Models: none yet.
 | `glTF/Suit.gltf`          | 3315342 | `6c89fbb31b96c1a63ad94e3dee0942bd7b34bc789a5d39fd6a6a1738a9214fb3` |
 | `glTF/Worker.gltf`        | 2967023 | `e49f8ec0f8a7de72dd26b1c01e6413c9a87a9116eeee21f9364ccd36bc286335` |
 
-Models: none yet.
+Models: `outfit-m-casual`, `outfit-m-hoodie`, `outfit-m-suit`, `outfit-m-worker`, `outfit-m-beach`, `outfit-m-punk`, `outfit-m-overalls`, `outfit-m-outdoors`, `head-m`, `hair-mohawk`, `hair-spiky`, `hair-ponytail`, `hair-tousled`, `hair-parted`, `hair-swept`, `avatar-rig-m`, `npc-man`.
 
 ### Quaternius Universal Animation Library Standard 1.0
 
@@ -378,6 +378,35 @@ Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-bear
 | `headwear-durag`    | `clout-city-blender`         | `headwear-durag.glb`           | avatar-hair      |
 | `headwear-beanie`   | `clout-city-blender`         | `headwear-beanie.glb`          | avatar-hair      |
 | `headwear-ballcap`  | `clout-city-blender`         | `headwear-ballcap.glb`         | avatar-hair      |
+| `outfit-w-casual`   | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-body      |
+| `outfit-w-suit`     | `quaternius-modular-women`   | `glTF/Suit.gltf`               | avatar-body      |
+| `outfit-w-worker`   | `quaternius-modular-women`   | `glTF/Worker.gltf`             | avatar-body      |
+| `outfit-w-dress`    | `quaternius-modular-women`   | `glTF/Formal.gltf`             | avatar-body      |
+| `outfit-w-punk`     | `quaternius-modular-women`   | `glTF/Punk.gltf`               | avatar-body      |
+| `outfit-w-outdoors` | `quaternius-modular-women`   | `glTF/Adventurer.gltf`         | avatar-body      |
+| `outfit-m-casual`   | `quaternius-modular-men`     | `glTF/Casual_2.gltf`           | avatar-body      |
+| `outfit-m-hoodie`   | `quaternius-modular-men`     | `glTF/Casual_Hoodie.gltf`      | avatar-body      |
+| `outfit-m-suit`     | `quaternius-modular-men`     | `glTF/Suit.gltf`               | avatar-body      |
+| `outfit-m-worker`   | `quaternius-modular-men`     | `glTF/Worker.gltf`             | avatar-body      |
+| `outfit-m-beach`    | `quaternius-modular-men`     | `glTF/Beach.gltf`              | avatar-body      |
+| `outfit-m-punk`     | `quaternius-modular-men`     | `glTF/Punk.gltf`               | avatar-body      |
+| `outfit-m-overalls` | `quaternius-modular-men`     | `glTF/Farmer.gltf`             | avatar-body      |
+| `outfit-m-outdoors` | `quaternius-modular-men`     | `glTF/Adventurer.gltf`         | avatar-body      |
+| `head-f`            | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-head      |
+| `head-m`            | `quaternius-modular-men`     | `glTF/Casual_Hoodie.gltf`      | avatar-head      |
+| `hair-bob`          | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-hair      |
+| `hair-pixie`        | `quaternius-modular-women`   | `glTF/Adventurer.gltf`         | avatar-hair      |
+| `hair-updo`         | `quaternius-modular-women`   | `glTF/Formal.gltf`             | avatar-hair      |
+| `hair-mohawk`       | `quaternius-modular-men`     | `glTF/Punk.gltf`               | avatar-hair      |
+| `hair-spiky`        | `quaternius-modular-men`     | `glTF/Beach.gltf`              | avatar-hair      |
+| `hair-ponytail`     | `quaternius-modular-men`     | `glTF/Casual_2.gltf`           | avatar-hair      |
+| `hair-tousled`      | `quaternius-modular-men`     | `glTF/Casual_Hoodie.gltf`      | avatar-hair      |
+| `hair-parted`       | `quaternius-modular-men`     | `glTF/Suit.gltf`               | avatar-hair      |
+| `hair-swept`        | `quaternius-modular-men`     | `glTF/Adventurer.gltf`         | avatar-hair      |
+| `avatar-rig-f`      | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-rig       |
+| `avatar-rig-m`      | `quaternius-modular-men`     | `glTF/Casual_Hoodie.gltf`      | avatar-rig       |
+| `npc-woman`         | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-body      |
+| `npc-man`           | `quaternius-modular-men`     | `glTF/Casual_2.gltf`           | avatar-body      |
 
 ## Left out
 

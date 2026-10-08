@@ -10,6 +10,7 @@ import { ModelManifestSchema } from '../../src/lib/data/schemas/assets.ts'
 import { readCatalog } from './build.ts'
 import { buildManifest, gzipSize } from './manifest.ts'
 import type { BuiltModel } from './pipeline.ts'
+import { clipName } from './schema.ts'
 
 const ROOT = join(import.meta.dirname, '../..')
 const manifest = ModelManifestSchema.parse(
@@ -31,7 +32,7 @@ describe('data/assets/manifest.json', () => {
         instanced: model.instanced,
         nameKey: model.nameKey,
         slots: model.slots.map((slot) => slot.name),
-        clips: model.clips,
+        clips: model.clips.map(clipName),
       })
     }
   })

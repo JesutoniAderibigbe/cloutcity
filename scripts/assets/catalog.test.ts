@@ -156,18 +156,40 @@ describe('data/assets/catalog.json', () => {
 
   it('shares one rig scale across every avatar part, so heads, bodies and accessories line up', () => {
     const avatar = catalog.models.filter((model) => model.category.startsWith('avatar-'))
-    // Kenney parts share the fitted rig scale; Blender attachments are modelled in that fitted
-    // frame (scripts/blender/avatar/), so they keep scale 1 and name the joint they follow.
-    const kenney = avatar.filter((model) => model.source !== 'clout-city-blender')
-    const blender = avatar.filter((model) => model.source === 'clout-city-blender')
-    const scales = new Set(kenney.map((model) => ('scale' in model.fit ? model.fit.scale : NaN)))
-    expect(scales.size).toBe(1)
-    for (const model of blender) {
+    // Each pack's parts share one fitted rig scale (Kenney 2.2, the Quaternius modular packs 1,
+    // already in metres); Blender attachments are modelled in the fitted frame
+    // (scripts/blender/avatar/), so they keep scale 1 and name the joint they follow.
+    const packs = new Set(
+      avatar.filter((m) => m.source !== 'clout-city-blender').map((m) => m.source),
+    )
+    for (const pack of packs) {
+      const scales = new Set(
+        avatar
+          .filter((model) => model.source === pack)
+          .map((model) => ('scale' in model.fit ? model.fit.scale : NaN)),
+      )
+      expect(scales.size, pack).toBe(1)
+    }
+    const quaternius = avatar.filter((model) => model.source.startsWith('quaternius-modular'))
+    for (const model of quaternius) expect(model.fit, model.id).toEqual({ scale: 1 })
+    for (const model of avatar.filter((m) => m.source === 'clout-city-blender')) {
       expect(model.fit, model.id).toEqual({ scale: 1 })
       expect(model.pivot, model.id).toBe('source')
       expect(model.kind === 'static' && model.attach !== undefined, model.id).toBe(true)
     }
-    expect(avatar.filter((model) => model.category === 'avatar-head')).toHaveLength(13)
-    expect(avatar.filter((model) => model.category === 'avatar-body')).toHaveLength(12)
+    expect(quaternius.filter((model) => model.category === 'avatar-head')).toHaveLength(2)
+    expect(quaternius.filter((model) => model.id.startsWith('outfit-'))).toHaveLength(14)
+    expect(quaternius.filter((model) => model.kind === 'rig').map((model) => model.id)).toEqual([
+      'avatar-rig-f',
+      'avatar-rig-m',
+    ])
+  })
+
+  it('maps the modular rig to 22 kebab-case joints, with head and torso for attachments', () => {
+    const map = catalog.jointMaps?.modular
+    const names = Object.values(map?.rename ?? {})
+    expect(names).toHaveLength(22)
+    expect(names).toContain('head')
+    expect(names).toContain('torso')
   })
 })

@@ -232,6 +232,17 @@ sha-matching file into `.cache/assets/` by hand and build with `-- --offline`.
   (with `assetVersion`), the lock and `data/assets/SOURCES.md`. It fails when a model breaks
   its per-category cap in `data/config/perf.json` `models` and prints the pressure; it never
   edits perf.json. `-- --check --offline` rebuilds byte-identically from the cache.
+- **Modular avatar parts** (S16b). A skinned model with `meshes` merges those pack meshes into
+  one skinned primitive: `stripMaterials` drops a material (a head's own hair),
+  `protectMaterials` keeps one whole (eyes, brows), tiers give a `triangles` target instead of a
+  ratio, slots match source `materials` and `meshes`, and `joints` names a catalog `jointMaps`
+  entry that folds fingers and pole targets into the wrist and foot and renames every joint to
+  kebab-case (`Chest` becomes `torso`, `Head` `head`). A static model with `fromSkinned` cuts a
+  pack hairstyle from a skinned head in the bind pose. Rig `clips` may rename (`{from, as}`).
+  These parts ship indexed without normals and with meshopt filters; the runtime flat-shades
+  them (`src/scene/models/prepare.ts`). The build also writes `data/avatar/frame.json`, each
+  part's material bounds and each rig's joint positions in the bind pose, which the Blender
+  attachment scripts fit to.
 - **Blender.** `npm run blender:build` runs each model script listed in
   `scripts/blender/lock.json` through `scripts/blender/run.py` with the pinned Blender
   (`--background --factory-startup --python-exit-code 1`, `PYTHONHASHSEED=0`; override the

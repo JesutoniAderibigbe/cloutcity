@@ -259,3 +259,22 @@ export const AvatarSwatchesFileSchema = z.strictObject({
   version: z.literal(1),
   colors: z.record(AvatarTokenSchema, z.string().regex(/^#[0-9a-f]{6}$/i)),
 })
+
+const point = z.tuple([z.number(), z.number(), z.number()])
+
+/**
+ * data/avatar/frame.json (S16b): the bind-pose frame of the modular avatar parts and rigs,
+ * written by `npm run assets:build`: each rig's joint positions and each part's material bounds
+ * in fitted metres. The Blender attachment scripts fit to it.
+ */
+export const AvatarFrameFileSchema = z.strictObject({
+  version: z.literal(1),
+  generatedBy: z.string().min(1),
+  models: z.record(
+    IdSchema,
+    z.strictObject({
+      joints: z.record(IdSchema, point),
+      materials: z.record(z.string().min(1), z.strictObject({ min: point, max: point })),
+    }),
+  ),
+})

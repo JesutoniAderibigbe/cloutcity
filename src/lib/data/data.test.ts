@@ -70,6 +70,7 @@ import {
 import { ModelManifestSchema, ShowcaseSchema } from './schemas/assets'
 import {
   AvatarEngineTablesSchema,
+  AvatarFrameFileSchema,
   AvatarOptionsSchema,
   AvatarSceneFileSchema,
   AvatarSwatchesFileSchema,
@@ -114,6 +115,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'assets/showcase.json': ShowcaseSchema,
   'audio/manifest.json': AudioManifestSchema,
   'avatar/engine.derived.json': AvatarEngineTablesSchema,
+  'avatar/frame.json': AvatarFrameFileSchema,
   'avatar/options.json': AvatarOptionsSchema,
   'avatar/scene.derived.json': AvatarSceneFileSchema,
   'avatar/swatches.derived.json': AvatarSwatchesFileSchema,
@@ -293,11 +295,12 @@ describe('config/perf.json', () => {
       // S04f (Q9): measured shader programs at the default view after the models load (low 9,
       // mid 10, high 13, day and night alike) + 10%, rounded up. A new cap, not a raised one.
       programsMax: { low: 10, mid: 11, high: 15 },
-      // S16 apartment caps (TUNE-8 placeholders), with room kept for S16a's avatar.
+      // S16 apartment caps (TUNE-8 placeholders), with room kept for the avatar (S16b: 4200
+      // triangles, user-approved).
       apartment: {
         drawCallsMax: { low: 24, mid: 32, high: 56 },
         trianglesMax: { low: 12_000, mid: 20_000, high: 30_000 },
-        avatarReserve: { drawCalls: 6, triangles: 4000 },
+        avatarReserve: { drawCalls: 6, triangles: 4200 },
       },
       dprCap: { low: 1, mid: 1.5, high: 2 },
       shadows: { low: 'none', mid: 'blob-or-baked', high: 'pcf-directional' },
@@ -384,14 +387,14 @@ describe('config/perf.json', () => {
         'building-detail': { trianglesMax: { low: 200, mid: 200, high: 200 }, gzKBMax: 4 },
         furniture: { trianglesMax: { low: 600, mid: 800, high: 800 }, gzKBMax: 16 },
         'room-shell': { trianglesMax: { low: 200, mid: 200, high: 200 }, gzKBMax: 4 },
-        'avatar-rig': { trianglesMax: { low: 0, mid: 0, high: 0 }, gzKBMax: 8 },
-        'avatar-head': { trianglesMax: { low: 350, mid: 400, high: 400 }, gzKBMax: 11 },
-        'avatar-body': { trianglesMax: { low: 400, mid: 650, high: 650 }, gzKBMax: 15 },
-        'avatar-accessory': { trianglesMax: { low: 100, mid: 100, high: 100 }, gzKBMax: 4 },
-        // S16a A0.3: approved by the user (the measured hijab is 220 triangles, 2.3 KB gz).
-        'avatar-hair': { trianglesMax: { low: 240, mid: 300, high: 300 }, gzKBMax: 4 },
+        // S16b: the realistic avatar caps the user approved on 2026-10-08 (DEC-51).
+        'avatar-rig': { trianglesMax: { low: 0, mid: 0, high: 0 }, gzKBMax: 28 },
+        'avatar-head': { trianglesMax: { low: 320, mid: 520, high: 520 }, gzKBMax: 12 },
+        'avatar-body': { trianglesMax: { low: 850, mid: 1450, high: 2250 }, gzKBMax: 52 },
+        'avatar-accessory': { trianglesMax: { low: 120, mid: 120, high: 120 }, gzKBMax: 4 },
+        'avatar-hair': { trianglesMax: { low: 260, mid: 520, high: 950 }, gzKBMax: 18 },
       },
-      avatar: { trianglesMax: { low: 1300, mid: 1700, high: 1700 } },
+      avatar: { trianglesMax: { low: 1800, mid: 2900, high: 4100 } },
     })
   })
 
