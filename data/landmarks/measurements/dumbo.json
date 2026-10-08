@@ -1,6 +1,10 @@
 {
   "id": "dumbo",
   "base": "land",
+  "placement": {
+    "headingDeg": 330,
+    "note": "the waterfront (the model's +y) lies to the north-north-west, on the East River (by eye)"
+  },
   "retrieved": "2026-10-08",
   "sources": [
     {

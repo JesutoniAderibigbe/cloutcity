@@ -1,6 +1,10 @@
 {
   "id": "washington-square-arch",
   "base": "land",
+  "placement": {
+    "headingDeg": 29,
+    "note": "the arch faces up Fifth Avenue, on the Manhattan grid (about 29°)"
+  },
   "retrieved": "2026-10-08",
   "sources": [
     {

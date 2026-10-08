@@ -5,11 +5,15 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "9524c8c4d487ffbb7aef9eb65402b7ee412b171767c0595e86b41cb2010759fb",
+  "inputsSha": "bb616eb97ae7e9df43109a5fbe3278f4e9f189b2d6c463d41b516517ae6925e9",
   "caps": {
     "low": 1200,
     "mid": 3500,
     "high": 7000
+  },
+  "placement": {
+    "topM": 48.6,
+    "exclusions": []
   },
   "levels": [
     {

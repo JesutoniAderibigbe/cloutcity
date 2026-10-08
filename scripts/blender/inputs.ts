@@ -76,6 +76,18 @@ function entryOf<T extends Entry>(list: readonly T[], id: string): T | null {
   return list.find((item) => item.id === id) ?? null
 }
 
+/**
+ * The parts of a frame the build reads. The geo build writes `pinLiftM` and `grounds` FROM the
+ * locks (the game-scale top and footprint), so they are left out here: otherwise every geo
+ * rebuild would make the locks stale and every Blender rebuild the frames.
+ */
+function buildFrame(frame: Entry | null): unknown {
+  if (frame === null) return null
+  return Object.fromEntries(
+    Object.entries(frame).filter(([key]) => key !== 'pinLiftM' && key !== 'grounds'),
+  )
+}
+
 /** Every input of a landmark's build, as one plain object. */
 export function buildInputs(id: string): Record<string, unknown> {
   const models = readJson('data/landmarks/models.json') as { models: Entry[] }
@@ -104,7 +116,7 @@ export function buildInputs(id: string): Record<string, unknown> {
     scripts,
     measurements: sha256(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`))),
     model: entryOf(models.models, id),
-    frame: entryOf(frames.landmarks, id),
+    frame: buildFrame(entryOf(frames.landmarks, id)),
     scene: { land: scene.land, camera: scene.camera, landmarks: scene.landmarks },
     palette: Object.fromEntries(
       Object.entries(theme.scene.landmarks).map(([role, token]) => [role, colours[token]]),

@@ -66,6 +66,14 @@ export const LandmarkMeasurementsSchema = z
      */
     base: z.enum(['land', 'water']).optional(),
     /**
+     * Where a landmark without a LION frame faces: the compass heading of the model's +y (its
+     * front, or a district's main axis). The geo build places it at its landmarks.json location
+     * turned by this (0 when absent: map-oriented, like the parks).
+     */
+    placement: z
+      .strictObject({ headingDeg: z.number().min(0).lt(360), note: z.string().min(1) })
+      .optional(),
+    /**
      * A park model's map area: the id of its polygon in data/geo/parks.derived.json. The build
      * fills that outline (around the landmark's landmarks.json location, map-oriented: north up),
      * so the model matches the green the map draws.
@@ -112,6 +120,16 @@ const LockLevelSchema = z.strictObject({
   uncompressedBytes: z.int().positive(),
 })
 
+/** A rectangle in a model's own frame (x east, y north at heading 0), angle from east. */
+export const ModelRectSchema = z.strictObject({
+  x: z.number(),
+  y: z.number(),
+  halfLengthM: metres,
+  halfWidthM: metres,
+  angleDeg: z.number().min(0).lt(360),
+})
+export type ModelRect = z.infer<typeof ModelRectSchema>
+
 export const BlenderLockSchema = z.strictObject({
   version: z.literal(1),
   id: IdSchema,
@@ -125,6 +143,15 @@ export const BlenderLockSchema = z.strictObject({
     low: z.int().positive(),
     mid: z.int().positive(),
     high: z.int().positive(),
+  }),
+  /**
+   * How the geo build places the model (scripts/geo/landmarks.ts): its top above its base (the
+   * pin's lift, at game scale) and the ground it covers, which district buildings, fill blocks
+   * and streets keep clear of.
+   */
+  placement: z.strictObject({
+    topM: metres,
+    exclusions: z.array(ModelRectSchema),
   }),
   levels: z
     .array(LockLevelSchema)

@@ -49,6 +49,27 @@ def expected_size(module, data, true_scale):
     return data["frame"].get("spanM"), base + module.expected_height(data, true_scale)
 
 
+def placement(module, spec, data, bbox):
+    """What the geo build needs to place the model (scripts/geo/landmarks.ts): its top above its
+    base (the pin's lift) and the ground it covers, as rectangles in the model's own frame (x
+    east, y north at heading 0; angle counter-clockwise from east), which district buildings
+    and fill keep clear of. A landmark script may give its own (`exclusions(spec)`: the High
+    Line's corridor, none for a park the map already draws); otherwise the finest level's
+    bounds."""
+    base = inputs.land_top_y(data["scene"]) if data["frame"]["base"] == "land" else 0.0
+    if hasattr(module, "exclusions"):
+        rects = module.exclusions(spec)
+    else:
+        # glTF bounds: x east, z = -north (Blender's +y), y up.
+        (x0, _y0, z0), (x1, _y1, z1) = bbox["min"], bbox["max"]
+        rects = [{"x": (x0 + x1) / 2, "y": -(z0 + z1) / 2, "halfLengthM": (x1 - x0) / 2,
+                  "halfWidthM": (z1 - z0) / 2, "angleDeg": 0.0}]
+    return {
+        "topM": round(bbox["max"][1] - base, 1),
+        "exclusions": [{key: round(value, 1) for key, value in rect.items()} for rect in rects],
+    }
+
+
 def run(landmark_id, out_dir, caps_override=None, true_scale=False):
     """Build, export and check every level; returns the report dict."""
     env.reset_scene()
@@ -99,6 +120,7 @@ def run(landmark_id, out_dir, caps_override=None, true_scale=False):
         "levels": levels,
         # Where preview.py puts land along the axis and which tower it looks at closely.
         "context": module.context(spec) if hasattr(module, "context") else {"land": [], "focus": 0.0},
+        "placement": placement(module, spec, data, levels[0]["bbox"]),
         "problems": problems,
     }
     os.makedirs(out_dir, exist_ok=True)

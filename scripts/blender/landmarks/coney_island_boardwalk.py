@@ -8,6 +8,8 @@ along its measured compass heading with the sea to the south. Numbers (all estim
 data/landmarks/measurements/coney-island-boardwalk.json.
 """
 
+import math
+
 from archetypes import promenade
 from cclib import inputs
 
@@ -50,3 +52,14 @@ def expected_height(data, true_scale=False):
 
 def context(spec):
     return {"land": [], "focus": 0.0, "closeM": 700.0}
+
+
+def exclusions(spec):
+    """The boardwalk and its beach: one rectangle along the deck's heading, sea side included."""
+    turn = math.radians(spec["heading"])
+    ux, uy = math.sin(turn), math.cos(turn)
+    rx, ry = uy, -ux
+    half_w = spec["width"] / 2
+    offset = spec["beach"] / 2
+    return [{"x": rx * offset, "y": ry * offset, "halfLengthM": spec["length"] / 2,
+             "halfWidthM": half_w + offset, "angleDeg": (90.0 - spec["heading"]) % 360.0}]

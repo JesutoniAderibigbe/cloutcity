@@ -1,6 +1,10 @@
 {
   "id": "times-square",
   "base": "land",
+  "placement": {
+    "headingDeg": 29,
+    "note": "the square's long axis follows Broadway and Seventh Avenue on the Manhattan grid, about 29° east of north"
+  },
   "retrieved": "2026-10-08",
   "sources": [
     {

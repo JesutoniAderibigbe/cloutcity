@@ -59,6 +59,18 @@ const ReportSchema = z.object({
     }),
   ),
   problems: z.array(z.string()),
+  placement: z.object({
+    topM: z.number(),
+    exclusions: z.array(
+      z.object({
+        x: z.number(),
+        y: z.number(),
+        halfLengthM: z.number(),
+        halfWidthM: z.number(),
+        angleDeg: z.number(),
+      }),
+    ),
+  }),
 })
 type Report = z.infer<typeof ReportSchema>
 
@@ -237,6 +249,7 @@ async function build(id: string, options: Options): Promise<void> {
     blender: report.blender,
     inputsSha: inputsSha(id),
     caps: report.caps,
+    placement: report.placement,
     levels: report.levels.map((level) => ({
       level: level.level,
       file: relative(ROOT, shippedPath(id, level.level)).split('\\').join('/'),

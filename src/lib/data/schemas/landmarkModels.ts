@@ -546,25 +546,39 @@ export const LandmarkFrameSchema = z.strictObject({
   /** Bridges: the axis ends, first in the first borough the bridge spans. */
   ends: z.tuple([PointSchema, PointSchema]).optional(),
   spanM: metres.optional(),
-  exclusion: ExclusionRectSchema,
-  /** Height of the model's top above its base, unscaled: where a pin sits clear of it. */
+  /** The S07a kit model's ground (absent for a landmark placed at its location only). */
+  exclusion: ExclusionRectSchema.optional(),
+  /**
+   * The Blender model's ground (S07c, from its lock's footprint at game scale): what district
+   * buildings, fill blocks and streets keep clear of when present (`exclusion` otherwise). Empty
+   * for a park the map already draws; several rectangles for a corridor (the High Line).
+   */
+  grounds: z.array(ExclusionRectSchema).optional(),
+  /**
+   * Height of the model's top above its base: where a pin sits clear of it (the larger of the
+   * kit model's top and the Blender model's game-scale top).
+   */
   pinLiftM: metres,
   /**
-   * What the frame was derived from: the LION street, the number of straight LION line pieces used, and either the bridge's
-   * principal-axis centre or the distance from the location to the fronting street.
+   * What the frame was derived from: the LION street, the number of straight LION line pieces
+   * used, and either the bridge's principal-axis centre or the distance from the location to
+   * the fronting street. Absent for a landmark placed at its landmarks.json location (S07c:
+   * monuments, parks, neighbourhoods, the memorial), turned by its measurements' heading.
    */
-  lion: z.union([
-    z.strictObject({
-      street: LionStreetSchema,
-      segments: z.int().positive(),
-      axisCentre: PointSchema,
-    }),
-    z.strictObject({
-      street: LionStreetSchema,
-      segments: z.int().positive(),
-      frontM: nonNegativeMetres,
-    }),
-  ]),
+  lion: z
+    .union([
+      z.strictObject({
+        street: LionStreetSchema,
+        segments: z.int().positive(),
+        axisCentre: PointSchema,
+      }),
+      z.strictObject({
+        street: LionStreetSchema,
+        segments: z.int().positive(),
+        frontM: nonNegativeMetres,
+      }),
+    ])
+    .optional(),
 })
 export type LandmarkFrame = z.infer<typeof LandmarkFrameSchema>
 

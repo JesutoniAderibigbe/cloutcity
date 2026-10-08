@@ -5,11 +5,72 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "ac8ae1f9ccf305eee6a5caca91aa656581d4bcff5eecce5ec2e32dd5776d896c",
+  "inputsSha": "8d7f235dfb8adc182ee15b5659bad28155f54d5559db81ea0400c460a40b3f29",
   "caps": {
     "low": 1200,
     "mid": 3500,
     "high": 7000
+  },
+  "placement": {
+    "topM": 27,
+    "exclusions": [
+      {
+        "x": -257.8,
+        "y": -846.7,
+        "halfLengthM": 115.5,
+        "halfWidthM": 12,
+        "angleDeg": 83
+      },
+      {
+        "x": -205,
+        "y": -646.9,
+        "halfLengthM": 117.1,
+        "halfWidthM": 12,
+        "angleDeg": 67.6
+      },
+      {
+        "x": -88.7,
+        "y": -413.7,
+        "halfLengthM": 167.9,
+        "halfWidthM": 12,
+        "angleDeg": 60.8
+      },
+      {
+        "x": 48.6,
+        "y": -166.6,
+        "halfLengthM": 138.8,
+        "halfWidthM": 12,
+        "angleDeg": 61.1
+      },
+      {
+        "x": 257.8,
+        "y": 211,
+        "halfLengthM": 316.8,
+        "halfWidthM": 12,
+        "angleDeg": 61
+      },
+      {
+        "x": 224,
+        "y": 577.5,
+        "halfLengthM": 219.4,
+        "halfWidthM": 12,
+        "angleDeg": 151.2
+      },
+      {
+        "x": 105.6,
+        "y": 794,
+        "halfLengthM": 144.7,
+        "halfWidthM": 12,
+        "angleDeg": 61.5
+      },
+      {
+        "x": 262,
+        "y": 860.6,
+        "halfLengthM": 117.5,
+        "halfWidthM": 12,
+        "angleDeg": 331.7
+      }
+    ]
   },
   "levels": [
     {

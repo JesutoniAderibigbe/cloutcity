@@ -5,11 +5,23 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "86b7677a82b904136681a308c966333c5bee0c2a2fa3a82ab201cee6bc5648ab",
+  "inputsSha": "e6eb17348e065cda892fc081ee76b270edf74ba4dab6b14d4970b5919c3ea69e",
   "caps": {
     "low": 600,
     "mid": 1800,
     "high": 3500
+  },
+  "placement": {
+    "topM": 47,
+    "exclusions": [
+      {
+        "x": 0,
+        "y": 0,
+        "halfLengthM": 19.4,
+        "halfWidthM": 8,
+        "angleDeg": 0
+      }
+    ]
   },
   "levels": [
     {

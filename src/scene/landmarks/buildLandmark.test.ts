@@ -192,11 +192,14 @@ describe('placement and height', () => {
       const built = build(model, 'high')
       const bounds = boundsOf(built, 0)
       const baseY = frame.base === 'water' ? 0 : LAND_TOP_Y
-      expect(bounds.max.y - baseY).toBeCloseTo(frame.pinLiftM, 1)
-      expect(modelTopM(model)).toBeCloseTo(frame.pinLiftM, 1)
+      // The pin clears the kit model; the Blender model (S07c) may stand taller at game scale.
+      expect(bounds.max.y - baseY).toBeCloseTo(modelTopM(model), 1)
+      expect(frame.pinLiftM).toBeGreaterThanOrEqual(Math.round(modelTopM(model) * 10) / 10)
+      const exclusion = frame.exclusion
+      if (exclusion === undefined) throw new Error(`${model.id}: no kit exclusion`)
       // Every body vertex, turned back into model axes, lies inside the exclusion rectangle.
       const position = built.levels[0]?.body.getAttribute('position')
-      const rad = ((90 - frame.exclusion.angleDeg) * Math.PI) / 180
+      const rad = ((90 - exclusion.angleDeg) * Math.PI) / 180
       let maxAlong = 0
       let maxAcross = 0
       for (let i = 0; i < (position?.count ?? 0); i++) {
@@ -205,11 +208,11 @@ describe('placement and height', () => {
         maxAlong = Math.max(maxAlong, Math.abs(east * Math.sin(rad) + north * Math.cos(rad)))
         maxAcross = Math.max(maxAcross, Math.abs(east * Math.cos(rad) - north * Math.sin(rad)))
       }
-      expect(maxAlong).toBeLessThanOrEqual(frame.exclusion.halfLengthM)
-      expect(maxAcross).toBeLessThanOrEqual(frame.exclusion.halfWidthM)
+      expect(maxAlong).toBeLessThanOrEqual(exclusion.halfLengthM)
+      expect(maxAcross).toBeLessThanOrEqual(exclusion.halfWidthM)
       const { halfWidthM } = modelHalfExtents(model, frame.spanM ?? 0)
-      expect(frame.exclusion.halfWidthM).toBeGreaterThanOrEqual(halfWidthM)
-      expect([frame.exclusion.x, frame.exclusion.y]).toEqual([frame.anchor.x, frame.anchor.y])
+      expect(exclusion.halfWidthM).toBeGreaterThanOrEqual(halfWidthM)
+      expect([exclusion.x, exclusion.y]).toEqual([frame.anchor.x, frame.anchor.y])
     },
   )
 

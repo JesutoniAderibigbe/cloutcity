@@ -60,3 +60,17 @@ def expected_height(data, true_scale=False):
 
 def context(spec):
     return {"land": [], "focus": 0.0, "closeM": 600.0}
+
+
+def exclusions(spec):
+    """The corridor under the deck: one rectangle per route segment, the deck's width plus a
+    margin either side, so no district building or fill block pokes through the park."""
+    rects = []
+    half = spec["deck"]["width"] / 2 + 2.0
+    for (ax, ay), (bx, by) in zip(spec["route"], spec["route"][1:]):
+        length = math.hypot(bx - ax, by - ay)
+        if length < 1e-6:
+            continue
+        rects.append({"x": (ax + bx) / 2, "y": (ay + by) / 2, "halfLengthM": length / 2 + half, "halfWidthM": half,
+                      "angleDeg": math.degrees(math.atan2(by - ay, bx - ax)) % 360.0})
+    return rects

@@ -1,6 +1,10 @@
 {
   "id": "statue-of-liberty",
   "base": "land",
+  "placement": {
+    "headingDeg": 135,
+    "note": "the figure faces south-east, out to the harbour mouth (by eye)"
+  },
   "retrieved": "2026-10-08",
   "sources": [
     {

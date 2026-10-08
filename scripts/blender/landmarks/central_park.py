@@ -99,3 +99,8 @@ def expected_height(data, true_scale=False):
 def context(spec):
     return {"land": [], "focus": 0.0, "closeM": 900.0, "green": [polygon[0] for polygon in spec["area"]]}
 
+
+
+def exclusions(spec):
+    """None: the map already draws the park's green, and its own data keeps buildings out."""
+    return []
