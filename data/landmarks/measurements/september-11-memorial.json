@@ -1,0 +1,54 @@
+{
+  "id": "september-11-memorial",
+  "base": "land",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q1136137 (National September 11 Memorial & Museum)",
+      "url": "https://www.wikidata.org/wiki/Q1136137",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 13.6,
+      "source": "estimate",
+      "note": "the plaza trees' crowns above the street (the raised plaza plus the trees): the model's top"
+    },
+    "plaza": {
+      "widthM": 180,
+      "depthM": 220,
+      "source": "estimate",
+      "note": "the memorial plaza's width and length, proportioned by eye"
+    },
+    "poolM": {
+      "valueM": 53.6,
+      "source": "estimate",
+      "note": "each reflecting pool's side, the commonly published 176 ft (about an acre); Wikidata gives no dimensions"
+    },
+    "poolSpacingM": {
+      "valueM": 110,
+      "source": "estimate",
+      "note": "between the two pools' centres, standing in the original towers' footprints"
+    },
+    "voidM": {
+      "valueM": 18,
+      "source": "estimate",
+      "note": "the central void's side in each pool"
+    },
+    "treeM": {
+      "valueM": 12,
+      "source": "estimate",
+      "note": "a plaza tree's height"
+    }
+  },
+  "readabilityScale": {
+    "note": "Muted and still (CLAUDE.md memorial rules): grey stone, dark water and voids, a dark parapet, plain trees. No emissive, no animation, no text."
+  },
+  "gameScale": {
+    "height": 1.0,
+    "plan": 1.0,
+    "note": "Real scale: a memorial is not exaggerated; its plaza raised 2 m so the pools can be cut into it above the game's solid land."
+  }
+}

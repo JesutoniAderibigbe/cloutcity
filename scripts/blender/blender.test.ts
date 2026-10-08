@@ -38,7 +38,6 @@ const PENDING = new Set([
   'queens-ballpark',
   'brooklyn-arena',
   'coney-island-boardwalk',
-  'september-11-memorial',
   'bronx-ballpark',
 ])
 
@@ -227,8 +226,13 @@ describe.each(built)('%s shipped GLBs', (id) => {
         const length = box.max.z - box.min.z
         expect(Math.abs(length - frame.spanM)).toBeLessThanOrEqual(BBOX_TOLERANCE * frame.spanM)
       }
-      // The lamps glow through the S04f night-glow contract on the levels that draw them.
-      if (level < 3) expect(model.geometry.getAttribute('_emissive')).toBeDefined()
+      if (place?.category === 'memorial') {
+        // Memorials are muted and still (CLAUDE.md): nothing glows.
+        expect(model.geometry.getAttribute('_emissive')).toBeUndefined()
+      } else if (level < 3 && place?.category !== 'park') {
+        // The lamps and windows glow through the S04f night-glow contract (parks may have none).
+        expect(model.geometry.getAttribute('_emissive')).toBeDefined()
+      }
     },
   )
 

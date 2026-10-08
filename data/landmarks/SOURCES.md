@@ -466,6 +466,32 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1184 triangles, 21116 bytes (`public/landmarks/queensboro-bridge/lod2.glb`)
 - L3: 424 triangles, 9192 bytes (`public/landmarks/queensboro-bridge/lod3.glb`)
 
+### september-11-memorial
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q1136137 (National September 11 Memorial & Museum), CC0-1.0, <https://www.wikidata.org/wiki/Q1136137>
+
+Dimensions:
+
+- `heightM`: 13.6 m (estimate): the plaza trees' crowns above the street (the raised plaza plus the trees): the model's top
+- `plaza`: 180 × 220 m (estimate): the memorial plaza's width and length, proportioned by eye
+- `poolM`: 53.6 m (estimate): each reflecting pool's side, the commonly published 176 ft (about an acre); Wikidata gives no dimensions
+- `poolSpacingM`: 110 m (estimate): between the two pools' centres, standing in the original towers' footprints
+- `voidM`: 18 m (estimate): the central void's side in each pool
+- `treeM`: 12 m (estimate): a plaza tree's height
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1, widths ×1. Real scale: a memorial is not exaggerated; its plaza raised 2 m so the pools can be cut into it above the game's solid land.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 3372 triangles, 58708 bytes (`public/landmarks/september-11-memorial/lod0.glb`)
+- L1: 1660 triangles, 30428 bytes (`public/landmarks/september-11-memorial/lod1.glb`)
+- L2: 460 triangles, 10188 bytes (`public/landmarks/september-11-memorial/lod2.glb`)
+- L3: 228 triangles, 6204 bytes (`public/landmarks/september-11-memorial/lod3.glb`)
+
 ### staten-island-ferry
 
 Retrieved 2026-10-08. Sources:

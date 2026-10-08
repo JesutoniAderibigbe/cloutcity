@@ -66,6 +66,9 @@ def run(landmark_id, out_dir, caps_override=None, true_scale=False):
     for level in lod.LEVELS:
         target = lod.budget(level, caps, ratio, above)
         builder, density = lod.fit(lambda d, lv=level: build_level(module, spec, data, lv, d), target)
+        if getattr(module, "MUTED", False) and any(g != (0.0, 0.0, 0.0) for g in builder.glows):
+            # A memorial is muted and still (CLAUDE.md): nothing on it may glow.
+            problems.append("L%d: a muted landmark has glowing faces" % level)
         objects = export.objects_for(builder, landmark_id, level, material)
         entry = {"level": level, "triangles": builder.triangles(), "budget": target, "density": density}
         path = os.path.join(out_dir, "lod%d.glb" % level)
