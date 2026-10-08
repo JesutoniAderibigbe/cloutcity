@@ -14,7 +14,7 @@ bands and railings with the model's game scale); `view` is the level's camera vi
 
 import math
 
-from cclib import curves, loft, prim
+from cclib import curves, loft, ops, prim
 
 #: What each level draws. Finer levels add chamfers, trims, members and lamps.
 LEVELS = {
@@ -29,6 +29,21 @@ LEVELS = {
 }
 
 ARCH_SOFFIT_TONE = 0.52
+#: The floodlit trims' night glow: the lamp colour at this sRGB fraction, so masonry keeps a
+#: little value under the game's night ambient (0.4) without reading as lit windows.
+FLOOD_TONE = 0.42
+
+
+#: The upper towers' faint night glow (floodlit masonry), well below the trims'.
+UPLIGHT_TONE = 0.24
+
+
+def floodlight(builder):
+    return builder.colour("lamp", FLOOD_TONE)
+
+
+def uplight(builder):
+    return builder.colour("lamp", UPLIGHT_TONE)
 TRIM_TONE = 1.1
 PLINTH_TONE = 0.82
 UNDERSIDE_TONE = 0.75
@@ -50,16 +65,17 @@ def deck_profile(spec, view, density):
 def build(spec, level, view, density, builder):
     flags = LEVELS[level]
     profile = deck_profile(spec, view, density)
+    tower = _tower_steel if spec["tower"].get("style") == "steel" else _tower
     for s in spec["towers"]:
-        _tower(spec, s, flags, view, density, builder)
+        tower(spec, s, flags, view, density, builder)
     _anchorages(spec, profile, flags, builder)
     _deck(spec, profile, flags, builder)
     cable_paths = _cables(spec, profile, flags, view, density, builder)
     if flags["suspenders"] > 0:
         _suspenders(spec, profile, cable_paths, flags["suspenders"] * density, view, builder)
-    if flags["stays"] > 0:
+    if flags["stays"] > 0 and spec.get("stay") is not None:
         _stays(spec, profile, flags["stays"] * density, view, builder)
-    if flags["lamps"] > 0:
+    if flags["lamps"] > 0 and spec["deck"].get("promenade") is not None:
         _lamps(spec, profile, flags["lamps"] * density, view, builder)
     if flags["necklace"] > 0:
         _necklace(spec, profile, flags["necklace"] * density, view, builder)
@@ -95,7 +111,7 @@ def _tower(spec, s, flags, view, density, builder):
         zc = road_bottom * f
         wc, dc = w_water + (w_road - w_water) * f + 0.8 * k, d_water + (d_road - d_water) * f + 0.8 * k
         builder.add(prim.box(-wc / 2, wc / 2, s - dc / 2, s + dc / 2, zc - 0.6 * k, zc + 0.6 * k), "granite",
-                    tone=TRIM_TONE, chamfer_dim=1.2 * k if chamfer else None)
+                    tone=TRIM_TONE, chamfer_dim=1.2 * k if chamfer else None, glow=floodlight(builder))
         band = 1.4 * k
         builder.add(
             prim.box(-w_road / 2 - 0.5 * k, w_road / 2 + 0.5 * k, s - d_road / 2 - 0.5 * k, s + d_road / 2 + 0.5 * k,
@@ -103,6 +119,7 @@ def _tower(spec, s, flags, view, density, builder):
             "granite",
             tone=TRIM_TONE,
             chamfer_dim=band if chamfer else None,
+            glow=floodlight(builder),
         )
 
     # Above the roadway: three columns, the arched spandrel, the cornice and the top.
@@ -131,14 +148,15 @@ def _tower(spec, s, flags, view, density, builder):
     for i in range(0, len(edges), 2):
         x0, x1 = edges[i], edges[i + 1]
         builder.add(prim.box(x0, x1, s - d_up / 2, s + d_up / 2, road_bottom, spring), "granite",
-                    chamfer_dim=min(x1 - x0, d_up) if chamfer else None)
+                    chamfer_dim=min(x1 - x0, d_up) if chamfer else None, glow=uplight(builder))
 
     outline = [(-w_up / 2, spring)]
     for cx in centres:
         outline.extend((cx + px, spring + pz) for (px, pz) in sample)
     outline.extend([(w_up / 2, spring), (w_up / 2, corner_base), (-w_up / 2, corner_base)])
     spandrel = prim.prism_xz(outline, s - d_up / 2, s + d_up / 2)
-    builder.add_toned(spandrel, "granite", lambda c, n: ARCH_SOFFIT_TONE if (abs(c[0]) < w_up / 2 - 0.05 and c[2] < corner_base - 0.05 and abs(n[1]) < 0.5) else 1.0)
+    builder.add_toned(spandrel, "granite", lambda c, n: ARCH_SOFFIT_TONE if (abs(c[0]) < w_up / 2 - 0.05 and c[2] < corner_base - 0.05 and abs(n[1]) < 0.5) else 1.0,
+                        glow=uplight(builder))
 
     if flags["trims"]:
         _panels(s, edges, d_up, w_up, road_bottom, spring, corner_base, k, builder)
@@ -152,9 +170,11 @@ def _tower(spec, s, flags, view, density, builder):
     over = 0.9 * k if flags["trims"] else 0.0
     band = 2.2 * k
     builder.add(prim.box(-w_corn / 2 - over, w_corn / 2 + over, s - d_corn / 2 - over, s + d_corn / 2 + over, corner_base, corner_base + band),
-                "granite", tone=TRIM_TONE if flags["trims"] else 1.0, chamfer_dim=band if chamfer else None)
+                "granite", tone=TRIM_TONE if flags["trims"] else 1.0, chamfer_dim=band if chamfer else None,
+                glow=floodlight(builder))
     builder.add(prim.box(-w_corn / 2, w_corn / 2, s - d_corn / 2, s + d_corn / 2, corner_base + band, t["top"]),
-                "granite", chamfer_dim=min(t["top"] - corner_base - band, d_corn) if chamfer else None)
+                "granite", chamfer_dim=min(t["top"] - corner_base - band, d_corn) if chamfer else None,
+                glow=uplight(builder))
 
 
 PANEL_TONE = 0.66
@@ -227,25 +247,28 @@ def _deck(spec, profile, flags, builder):
     k = spec["detail"]
     girder = 1.0 * k
     if flags["deck"] == "slab":
-        builder.add(_sweep_profile(profile, _rect(-half_w, half_w, -thick, 0.0)), "bridge-tan")
+        builder.add(_sweep_profile(profile, _rect(-half_w, half_w, -thick, 0.0)), metal(spec))
         builder.add(_sweep_profile(profile, _rect(-half_w + girder, half_w - girder, -0.2 * k, 0.15 * k)), "asphalt")
         return
     builder.add(_sweep_profile(profile, _rect(-half_w, half_w, -thick, -0.4 * k)), "steel-dark")
-    prom = deck["promenade"]
+    prom = deck.get("promenade")
+    if prom is None:
+        _truss_deck(spec, profile, flags, builder)
+        return
     inner = prom["width"] / 2 + 0.6 * k
     for side in (-1, 1):
         x0, x1 = sorted((side * inner, side * (half_w - girder)))
         builder.add(_sweep_profile(profile, _rect(x0, x1, -0.4 * k, 0.0)), "asphalt")
         # Outer stiffening trusses, read as a girder with a railing above the roadway.
         g0, g1 = sorted((side * (half_w - girder), side * half_w))
-        builder.add(_sweep_profile(profile, _rect(g0, g1, -thick - 0.6 * k, RAIL_M * k)), "bridge-tan")
+        builder.add(_sweep_profile(profile, _rect(g0, g1, -thick - 0.6 * k, RAIL_M * k)), metal(spec))
     if flags["deck"] == "simple":
         builder.add(_sweep_profile(profile, _rect(-inner, inner, -0.4 * k, prom["height"])), "wood-plank")
         return
     # The raised promenade on its inner trusses, between the two inner cables.
     for side in (-1, 1):
         x0, x1 = sorted((side * prom["width"] / 2, side * inner))
-        builder.add(_sweep_profile(profile, _rect(x0, x1, -0.4 * k, prom["height"] + PROMENADE_RAIL_M * k)), "bridge-tan")
+        builder.add(_sweep_profile(profile, _rect(x0, x1, -0.4 * k, prom["height"] + PROMENADE_RAIL_M * k)), metal(spec))
     builder.add(_sweep_profile(profile, _rect(-prom["width"] / 2, prom["width"] / 2, prom["height"] - 0.5 * k,
                                               prom["height"])), "wood-plank")
 
@@ -294,7 +317,7 @@ def _cables(spec, profile, flags, view, density, builder):
         )
         path = [(x, s, cable_z(spec, profile, s)) for s in stations]
         paths[x] = path
-        builder.add(loft.tube(path, c["radius"], flags["cable_sides"]), "bridge-tan")
+        builder.add(loft.tube(path, c["radius"], flags["cable_sides"]), metal(spec))
     return paths
 
 
@@ -315,15 +338,14 @@ def _suspenders(spec, profile, paths, density, view, builder):
     clear = spec["tower"]["road"][1] / 2 + 2.0 * k
     stations = (_span_stations(a0, t0, spacing, clear) + _span_stations(t0, t1, spacing, clear)
                 + _span_stations(t1, a1, spacing, clear))
-    prom_top = spec["deck"]["promenade"]["height"] + PROMENADE_RAIL_M * k
     for x in paths:
-        deck_top = RAIL_M * k if abs(x) > spec["deck"]["promenade"]["width"] else prom_top
+        deck_top = _hanger_foot(spec, x)
         for s in stations:
             top = cable_z(spec, profile, s)
             bottom = curves.profile_at(profile, s) + deck_top
             if top - bottom < 1.0:
                 continue
-            builder.add(prim.ribbon((x, s, bottom), (x, s, top), sp["width"] / 2, (0.0, 1.0, 0.0)), "bridge-tan", jitter=False)
+            builder.add(prim.ribbon((x, s, bottom), (x, s, top), sp["width"] / 2, (0.0, 1.0, 0.0)), metal(spec), jitter=False)
 
 
 def _stays(spec, profile, density, view, builder):
@@ -339,8 +361,7 @@ def _stays(spec, profile, density, view, builder):
     fans = [(t0, +1, st["reach_main"]), (t0, -1, min(st["reach_side"], t0 - a0 - 10)),
             (t1, -1, st["reach_main"]), (t1, +1, min(st["reach_side"], a1 - t1 - 10))]
     for x in spec["cables"]["xs"]:
-        prom = spec["deck"]["promenade"]
-        deck_top = RAIL_M * g if abs(x) > prom["width"] else prom["height"] + PROMENADE_RAIL_M * g
+        deck_top = _hanger_foot(spec, x)
         for tower_s, direction, reach in fans:
             for k in range(1, count + 1):
                 s_end = tower_s + direction * (d_up + reach * k / count)
@@ -349,7 +370,7 @@ def _stays(spec, profile, density, view, builder):
                 along = (0.0, bottom[1] - top[1], bottom[2] - top[2])
                 length = math.sqrt(along[1] ** 2 + along[2] ** 2)
                 across = (0.0, -along[2] / length, along[1] / length)
-                builder.add(prim.ribbon(top, bottom, st["width"] / 2, across), "bridge-tan", tone=0.94, jitter=False)
+                builder.add(prim.ribbon(top, bottom, st["width"] / 2, across), metal(spec), tone=0.94, jitter=False)
 
 
 def _lamps(spec, profile, density, view, builder):
@@ -397,3 +418,101 @@ def _necklace(spec, profile, density, view, builder):
 
 #: Necklace lights are this many times a promenade lamp head.
 NECKLACE_SCALE = 1.3
+
+
+def _hanger_foot(spec, x):
+    """Height above the deck profile where a hanger or stay at x meets the deck."""
+    k = spec["detail"]
+    deck = spec["deck"]
+    prom = deck.get("promenade")
+    if prom is not None and abs(x) <= prom["width"]:
+        return prom["height"] + PROMENADE_RAIL_M * k
+    return deck.get("truss_top", RAIL_M) * k if prom is None else RAIL_M * k
+
+
+# ---- steel towers and truss decks ---------------------------------------------------------
+
+
+def _tower_steel(spec, s, flags, view, density, builder):
+    """A steel tower on a masonry pier: two tapering legs either side of the deck, braced by
+    struts (and X-braces on the finer levels), a crown girder across the top with finials."""
+    t = spec["tower"]
+    deck = spec["deck"]
+    k = spec["detail"]
+    chamfer = flags["chamfer"]
+    pier_w, pier_d = t["pier"]
+    pier_top = t["pier_top"]
+    builder.add(prim.frustum(0, s, 0, pier_top, pier_w, pier_d, pier_w - 1.0 * k, pier_d - 1.0 * k), "granite",
+                chamfer_dim=min(pier_w, pier_d) if chamfer else None, glow=uplight(builder))
+    if flags["plinth"]:
+        builder.add(prim.frustum(0, s, 0, 3.0 * k, pier_w + 2.0 * k, pier_d + 2.0 * k, pier_w + 1.4 * k,
+                                 pier_d + 1.4 * k), "granite", tone=PLINTH_TONE)
+    leg_w, leg_d = t["leg"]
+    centre_x = t["width"] / 2 - leg_w / 2
+    top = t["top"]
+    crown = t["crown"]
+    for side in (-1, 1):
+        x = side * centre_x
+        builder.add(prim.frustum(x, s, pier_top, top - crown, leg_w, leg_d, leg_w * 0.72, leg_d * 0.8), metal(spec),
+                    chamfer_dim=min(leg_w, leg_d) if chamfer else None, glow=uplight(builder))
+        # Finial on each leg.
+        builder.add(prim.frustum(x, s, top - crown, top, leg_w * 0.8, leg_d * 0.85, leg_w * 0.25, leg_d * 0.3),
+                    metal(spec), tone=TRIM_TONE, glow=floodlight(builder))
+    inner = centre_x - leg_w / 2
+    road_bottom = deck["road_at_towers"] - deck["thickness"]
+    struts = [road_bottom - 1.0 * k] + [road_bottom + (top - crown - road_bottom) * f for f in (0.55, 0.82)]
+    depth = leg_d * 0.6
+    for z in struts:
+        builder.add(prim.box(-inner, inner, s - depth / 2, s + depth / 2, z - 1.4 * k, z + 1.4 * k), metal(spec),
+                    tone=0.92)
+    # The crown girder: a deep band across the top, floodlit at night.
+    builder.add(prim.box(-centre_x - leg_w * 0.4, centre_x + leg_w * 0.4, s - leg_d * 0.45, s + leg_d * 0.45,
+                         top - crown - 3.0 * k, top - crown), metal(spec), tone=TRIM_TONE,
+                chamfer_dim=3.0 * k if chamfer else None, glow=floodlight(builder))
+    if flags["trims"]:
+        # X-braces between the upper struts, on both faces of the tower.
+        z0, z1 = struts[1], struts[2]
+        for face in (-1, 1):
+            y = s + face * depth / 2
+            for a, b in (((-inner, y, z0), (inner, y, z1)), ((inner, y, z0), (-inner, y, z1))):
+                along = ops.norm(ops.sub(b, a))
+                across = ops.norm(ops.cross(along, (0.0, 1.0, 0.0)))
+                builder.add(prim.ribbon(a, b, 0.9 * k, across), metal(spec), tone=0.85, jitter=False)
+
+
+def _truss_deck(spec, profile, flags, builder):
+    """A deep stiffening-truss deck (no promenade): asphalt between two truss walls whose faces
+    carry a Warren pattern of darker diagonals on the finer levels."""
+    deck = spec["deck"]
+    k = spec["detail"]
+    half_w = deck["width"] / 2
+    thick = deck["thickness"]
+    wall = 1.2 * k
+    top = deck["truss_top"] * k
+    builder.add(_sweep_profile(profile, _rect(-half_w + wall, half_w - wall, -0.4 * k, 0.0)), "asphalt")
+    for side in (-1, 1):
+        g0, g1 = sorted((side * (half_w - wall), side * half_w))
+        builder.add(_sweep_profile(profile, _rect(g0, g1, -thick, top)), metal(spec))
+    if not flags["trims"]:
+        return
+    panel = deck["panel"]
+    s0, s1 = spec["anchorage"]["s"]
+    count = int((s1 - s0) / panel)
+    for side in (-1, 1):
+        x = side * (half_w + 0.15 * k)
+        for i in range(count):
+            a_s = s0 + i * panel
+            b_s = a_s + panel
+            lo_a = curves.profile_at(profile, a_s) - thick + 0.6 * k
+            hi_b = curves.profile_at(profile, b_s) + top - 0.6 * k
+            if i % 2:
+                lo_a, hi_b = curves.profile_at(profile, a_s) + top - 0.6 * k, curves.profile_at(profile, b_s) - thick + 0.6 * k
+            a, b = (x, a_s, lo_a), (x, b_s, hi_b)
+            along = ops.norm(ops.sub(b, a))
+            across = ops.norm(ops.cross(along, (1.0, 0.0, 0.0)))
+            builder.add(prim.ribbon(a, b, 0.5 * k, across), "steel-dark", jitter=False)
+
+
+def metal(spec):
+    """The painted-steel role of cables, suspenders and girders (Brooklyn's tan by default)."""
+    return spec.get("metal", "bridge-tan")

@@ -13,33 +13,46 @@ import bmesh
 
 from . import ops, paint
 
+#: Night-glow sources: `windows` faces glow in their own colour; `body` faces glow only when
+#: given an explicit `glow` (a floodlit trim). See cclib/paint.py `linear`.
 GROUPS = ("body", "windows")
 
 
 class Builder:
+    """Collects one level's triangles: per face an sRGB colour and a linear night-glow colour
+    (zero = no glow), the S04f `_EMISSIVE` contract."""
+
     def __init__(self, palette, rng, chamfer_ratio=0.0):
         self.palette = palette
         self.rng = rng
         self.chamfer_ratio = chamfer_ratio
-        self.data = {group: {"verts": [], "faces": [], "colors": []} for group in GROUPS}
+        self.verts = []
+        self.faces = []
+        self.colors = []
+        self.glows = []
 
-    def triangles(self, group=None):
-        groups = GROUPS if group is None else (group,)
-        return sum(len(self.data[g]["faces"]) for g in groups)
+    def triangles(self):
+        return len(self.faces)
 
     def colour(self, role, tone=1.0):
         if role not in self.palette:
             raise KeyError("theme.json scene.landmarks has no role %r" % role)
         return paint.shade(self.palette[role], tone)
 
-    def add(self, bm, role, group="body", tone=1.0, chamfer_dim=None, jitter=True):
-        """Append a bmesh, painted `role` (times `tone`), chamfered when chamfer_dim is given."""
+    def add(self, bm, role, group="body", tone=1.0, chamfer_dim=None, jitter=True, glow=None):
+        """Append a bmesh, painted `role` (times `tone`), chamfered when chamfer_dim is given.
+
+        `group="windows"` glows in the face colour; `glow` (sRGB) gives any face its own glow.
+        """
+        if group not in GROUPS:
+            raise ValueError("unknown group %r" % group)
         if chamfer_dim is not None and self.chamfer_ratio > 0:
             ops.chamfer(bm, self.chamfer_ratio, chamfer_dim)
         base = self.colour(role, tone)
-        self._append(bm, group, lambda face: paint.jittered(base, self.rng) if jitter else base)
+        light = paint.linear(base if group == "windows" else glow) if (group == "windows" or glow) else NO_GLOW
+        self._append(bm, lambda face: paint.jittered(base, self.rng) if jitter else base, light)
 
-    def add_toned(self, bm, role, tone_of, group="body"):
+    def add_toned(self, bm, role, tone_of, glow=None):
         """Append a bmesh whose faces take tone_of(centre, normal) times the role colour."""
 
         def colour_of(face):
@@ -47,9 +60,9 @@ class Builder:
             n = face.normal
             return paint.jittered(self.colour(role, tone_of((c.x, c.y, c.z), (n.x, n.y, n.z))), self.rng)
 
-        self._append(bm, group, colour_of)
+        self._append(bm, colour_of, paint.linear(glow) if glow else NO_GLOW)
 
-    def _append(self, bm, group, colour_of):
+    def _append(self, bm, colour_of, glow):
         """Colour each polygon, then triangulate; a polygon's triangles share its vertices.
 
         One colour per polygon (not per triangle) lets the exporter share a quad's corners,
@@ -63,7 +76,6 @@ class Builder:
             colours.append(colour_of(face))
         ops.triangulate(bm)
         bm.verts.index_update()
-        target = self.data[group]
         shared = {}
         for face in bm.faces:
             polygon = face[layer]
@@ -71,13 +83,17 @@ class Builder:
             for loop in face.loops:
                 key = (polygon, loop.vert.index)
                 if key not in shared:
-                    shared[key] = len(target["verts"])
+                    shared[key] = len(self.verts)
                     co = loop.vert.co
-                    target["verts"].append((co.x, co.y, co.z))
+                    self.verts.append((co.x, co.y, co.z))
+                    self.glows.append(glow)
                 corners.append(shared[key])
-            target["faces"].append(tuple(corners))
-            target["colors"].append(colours[polygon])
+            self.faces.append(tuple(corners))
+            self.colors.append(colours[polygon])
         bm.free()
+
+
+NO_GLOW = (0.0, 0.0, 0.0)
 
 
 def _bm_from(verts, faces):

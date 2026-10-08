@@ -122,9 +122,43 @@ Game scale: heights ×1.8, widths ×2. Game scale (orchestrator decision 2026-10
 
 Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
 
-- L0: 6832 triangles, 110584 bytes (`public/landmarks/brooklyn-bridge/lod0.glb`)
-- L1: 3308 triangles, 59864 bytes (`public/landmarks/brooklyn-bridge/lod1.glb`)
-- L2: 1200 triangles, 23660 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
-- L3: 584 triangles, 12708 bytes (`public/landmarks/brooklyn-bridge/lod3.glb`)
+- L0: 6832 triangles, 112856 bytes (`public/landmarks/brooklyn-bridge/lod0.glb`)
+- L1: 3308 triangles, 60468 bytes (`public/landmarks/brooklyn-bridge/lod1.glb`)
+- L2: 1200 triangles, 23780 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
+- L3: 584 triangles, 13288 bytes (`public/landmarks/brooklyn-bridge/lod3.glb`)
+
+### manhattan-bridge
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q125050 (Manhattan Bridge), CC0-1.0, <https://www.wikidata.org/wiki/Q125050>
+- `chamber-1906`: Chamber of Commerce of the State of New York, Rapid Transit in New York City and in the Other Great Cities (1906), ch. 4 "Bridges to Brooklyn", public-domain, <https://nycsubway.org/wiki/Chapter_04:_Bridges_to_Brooklyn>
+
+Dimensions:
+
+- `towerHeightM`: 102 m (wikidata): height (P2048): tower top above the water. (The 1906 text gives the 400 ft of the design then; the towers were built lower.)
+- `mainSpanM`: 451 m (wikidata): main span (P2787); the 1906 text gives 1,470 ft between tower centres
+- `totalLengthM`: 2090 m (wikidata): length (P2043). The game fits the bridge to its LION frame (spanM).
+- `deckWidthM`: 37 m (wikidata): width (P2049); the 1906 text gives the floor as 120 ft wide over all
+- `midspanClearanceM`: 41 m (wikidata): vertical clearance (P2793): the deck top at mid-span
+- `sideSpanM`: 220.98 m (chamber-1906): "each land span will be 725 feet in length"
+- `mainCables`: 4 × 0.54 m diameter (estimate): four cables (the 1906 text specifies cables and suspenders); diameter estimated
+- `trussDepthM`: 7.3 m (estimate): the deep stiffening trusses that carry the double deck, proportioned by eye
+- `towerLeg`: 6 × 10 m (estimate): each steel tower leg's section, proportioned from the tower height
+- `towerPier`: 50 × 18 m (estimate): the masonry pier each tower stands on, wider than the deck
+- `pierTopM`: 12 m (estimate): the masonry pier's top above the water
+- `crownM`: 6 m (estimate): the depth of the crown girder and finials at the top of each tower
+- `anchorage`: 50 × 60 m (estimate): stylised anchorage blocks sized to take the cables; mostly hidden under the game's land top
+
+Readability scale (drawn width ÷ true width): mainCable ×4, suspender ×5, lamp ×3.
+
+Game scale: heights ×1.8, widths ×1.6. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 and widths x1.6 against the real numbers above (1.6, not 2, keeps the 59 m deck inside the frame's 64 m exclusion), so the bridge reads at the 3,000-4,500 m game camera. Lengths along the axis stay real.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6572 triangles, 105968 bytes (`public/landmarks/manhattan-bridge/lod0.glb`)
+- L1: 3244 triangles, 55864 bytes (`public/landmarks/manhattan-bridge/lod1.glb`)
+- L2: 1152 triangles, 23396 bytes (`public/landmarks/manhattan-bridge/lod2.glb`)
+- L3: 548 triangles, 13032 bytes (`public/landmarks/manhattan-bridge/lod3.glb`)
 
 <!-- measurements:end -->

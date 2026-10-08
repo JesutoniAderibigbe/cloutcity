@@ -56,7 +56,7 @@ def run(landmark_id, out_dir, caps_override=None, true_scale=False):
     spec = module.spec(data, true_scale)
     caps = inputs.caps_for(module.CATEGORY, data["perf"], caps_override)
     ratio = data["perf"]["landmarkLodRatioMax"]
-    body, windows = shade.materials(data["palette"])
+    material = shade.export_material()
     length, height = expected_size(module, data, true_scale)
 
     levels = []
@@ -65,7 +65,7 @@ def run(landmark_id, out_dir, caps_override=None, true_scale=False):
     for level in lod.LEVELS:
         target = lod.budget(level, caps, ratio, above)
         builder, density = lod.fit(lambda d, lv=level: build_level(module, spec, data, lv, d), target)
-        objects = export.objects_for(builder, landmark_id, level, body, windows)
+        objects = export.objects_for(builder, landmark_id, level, material)
         entry = {"level": level, "triangles": builder.triangles(), "budget": target, "density": density}
         path = os.path.join(out_dir, "lod%d.glb" % level)
         entry["glb"] = export.export_glb(objects, path)
