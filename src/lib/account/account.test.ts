@@ -113,13 +113,15 @@ describe('maskEmail (S19)', () => {
   })
 })
 
-describe('the log-in request mark (review F2)', () => {
+describe('the log-in request mark (review F2, N1)', () => {
+  const HASH_A = 'a'.repeat(64)
+
   it('without storage (Node) nothing is marked and nothing counts as requested', () => {
-    markLoginRequested(1000)
-    expect(takeLoginRequested(1000, 60_000)).toBe(false)
+    markLoginRequested(1000, HASH_A)
+    expect(takeLoginRequested(1000, 60_000)).toBeNull()
   })
 
-  it('counts a recent mark once, and never a stale or future one', () => {
+  it('gives back the address hash of a recent mark once, never a stale, future or bad one', () => {
     const store = new Map<string, string>()
     const memory = {
       getItem: (key: string) => store.get(key) ?? null,
@@ -129,16 +131,29 @@ describe('the log-in request mark (review F2)', () => {
     const original = (globalThis as { localStorage?: unknown }).localStorage
     ;(globalThis as { localStorage?: unknown }).localStorage = memory
     try {
-      markLoginRequested(1000)
-      expect(takeLoginRequested(5000, 60_000)).toBe(true)
-      expect(takeLoginRequested(5000, 60_000)).toBe(false)
-      markLoginRequested(1000)
-      expect(takeLoginRequested(1000 + 60_001, 60_000)).toBe(false)
-      markLoginRequested(9000)
-      expect(takeLoginRequested(5000, 60_000)).toBe(false)
+      markLoginRequested(1000, HASH_A)
       expect([...store.values()].join()).not.toContain('@')
+      expect(takeLoginRequested(5000, 60_000)).toBe(HASH_A)
+      expect(takeLoginRequested(5000, 60_000)).toBeNull()
+      markLoginRequested(1000, HASH_A)
+      expect(takeLoginRequested(1000 + 60_001, 60_000)).toBeNull()
+      markLoginRequested(9000, HASH_A)
+      expect(takeLoginRequested(5000, 60_000)).toBeNull()
+      markLoginRequested(1000, 'not-a-hash')
+      expect(takeLoginRequested(5000, 60_000)).toBeNull()
+      store.set('cloutcity:login-requested', '1000')
+      expect(takeLoginRequested(5000, 60_000)).toBeNull()
     } finally {
       ;(globalThis as { localStorage?: unknown }).localStorage = original
     }
+  })
+})
+
+describe('emailHash', () => {
+  it('is the SHA-256 of the trimmed, lower-cased address', async () => {
+    const { emailHash } = await import('./emailHash')
+    expect(await emailHash(' Jo@Example.TEST ')).toBe(await emailHash('jo@example.test'))
+    expect(await emailHash('jo@example.test')).toMatch(/^[0-9a-f]{64}$/)
+    expect(await emailHash('jo@example.test')).not.toBe(await emailHash('jo2@example.test'))
   })
 })

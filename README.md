@@ -881,16 +881,20 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   `/auth/callback` (`src/app/auth/callback`, a static page, `no-store`, `Referrer-Policy:
 no-referrer`, never handled by the service worker) wipes the token from the URL at once, names
   the address (masked) and finishes only on a tap of Finish (mail scanners open links on their
-  own). A save confirmation is verified on a throwaway client: only this browser's own guest is
-  refreshed, anyone else's account is never taken (another device, or someone who asked to save
-  _their_ game with this address; that device picks it up by polling). A log-in link this browser
-  did not ask for (`cloutcity:login-requested`, a time, never the address) asks "Log in as …?"
-  before switching; and a played game last synced to any other account always gets the conflict
-  sheet. Google's PKCE code is exchanged at once. `public.check_account_email` answers `ok` or
+  own). A save confirmation link is used only on the device that asked: an anonymous session with a
+  waiting upgrade for that very address (`cloutcity:account` keeps a hash of it, never the address);
+  anywhere else the token is left unused and the page says to finish on that device, where the
+  6-digit code from the same email also works (verified on a throwaway client; only this browser's
+  own guest is refreshed). A log-in link is always verified on a throwaway client and taken at once
+  only when its account has the address this browser asked a link for
+  (`cloutcity:login-requested`: a time and an address hash, set once the link was sent); any other
+  asks "Log in as <the server's address, masked>?" first. A played game last synced to any other
+  account always gets the conflict sheet. Google's PKCE code is exchanged at once. `public.check_account_email` answers `ok` or
   `not_allowed` before a link is sent (rate limited, `data/config/account.json` `emailCheck`), and
   triggers on `auth.users` and `auth.identities` (insert and email updates) refuse a banned email
   however GoTrue is called. Banned emails are hashed canonically (`private.canonical_email`: lower
-  case, trimmed, `+tag` dropped, Gmail dots and googlemail.com folded), with bans recorded before
+  case, trimmed, `+tag` dropped unless nothing would be left, Gmail dots and googlemail.com
+  folded), with bans recorded before
   that still matched by their legacy hash. `private.require_permanent()` is the gate for features
   that need a saved account. On the client, `src/lib/supabase/accountAuth.ts` (lazy, with supabase-js) does
   the calls, `src/lib/supabase/accountSession.ts` follows the account (an upgrade confirmed on another

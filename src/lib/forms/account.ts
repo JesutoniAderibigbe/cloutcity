@@ -74,6 +74,7 @@ export const ACCOUNT_ERROR_KEY: Readonly<Record<AccountCode, CopyKey>> = {
   'identity-exists': 'account.error.identityExists',
   'not-configured': 'account.error.unavailable',
   'no-session': 'account.error.other',
+  'wrong-account': 'account.error.wrongAccount',
   error: 'account.error.other',
 }
 

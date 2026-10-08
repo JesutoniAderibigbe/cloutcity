@@ -72,28 +72,37 @@ export function parseCallback(search: string, hash = ''): ParsedCallback {
 export const GOOGLE_INTENT_KEY = 'cloutcity:google-intent'
 
 /**
- * This browser asked for a log-in link (review F2): kept in localStorage with the time it was
- * asked, never the address. A log-in link opened without one is someone else's request (a link
- * an attacker sent), so the page asks before switching this device to that account.
+ * This browser asked for a log-in link (review F2, N1): kept in localStorage with the time it was
+ * asked and a hash of the address it was for (src/lib/account/emailHash.ts), never the address.
+ * Set only once the link was actually sent. A log-in link is adopted without asking only when the
+ * account it verifies as has that address; any other link asks "Log in as …?" first.
  */
 export const LOGIN_REQUESTED_KEY = 'cloutcity:login-requested'
 
-export function markLoginRequested(nowMs: number): void {
+export function markLoginRequested(nowMs: number, addressHash: string): void {
   try {
-    localStorage.setItem(LOGIN_REQUESTED_KEY, String(nowMs))
+    localStorage.setItem(LOGIN_REQUESTED_KEY, JSON.stringify({ at: nowMs, hash: addressHash }))
   } catch {
     // Without it, the log-in link only asks one more question.
   }
 }
 
-/** Whether this browser asked for a log-in within `maxAgeMs`; the mark is spent by reading it. */
-export function takeLoginRequested(nowMs: number, maxAgeMs: number): boolean {
+const HEX64 = /^[0-9a-f]{64}$/
+
+/**
+ * The hash of the address this browser asked a log-in link for within `maxAgeMs`, or null. The
+ * mark is spent by reading it.
+ */
+export function takeLoginRequested(nowMs: number, maxAgeMs: number): string | null {
   try {
     const raw = localStorage.getItem(LOGIN_REQUESTED_KEY)
     localStorage.removeItem(LOGIN_REQUESTED_KEY)
-    const at = raw === null ? Number.NaN : Number(raw)
-    return Number.isSafeInteger(at) && at <= nowMs && nowMs - at <= maxAgeMs
+    if (raw === null) return null
+    const { at, hash } = JSON.parse(raw) as { at?: unknown; hash?: unknown }
+    if (typeof at !== 'number' || !Number.isSafeInteger(at) || typeof hash !== 'string') return null
+    if (at > nowMs || nowMs - at > maxAgeMs || !HEX64.test(hash)) return null
+    return hash
   } catch {
-    return false
+    return null
   }
 }

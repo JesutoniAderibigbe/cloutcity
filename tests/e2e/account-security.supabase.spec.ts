@@ -2,17 +2,19 @@ import { createClient } from '@supabase/supabase-js'
 import { expect, test } from './fixtures/test'
 import { answerWelcomeCard, welcomeDialog, YEAR } from './fixtures/welcome'
 import {
+  accountSheet,
   bootGame,
   bootGuest,
   finishLink,
   freshEmail,
+  meTab,
   newSavedAccount,
   reachFirstMilestone,
   sessionStatus,
   storedUserId,
   waitSynced,
 } from './helpers/account'
-import { clearMail, linkIn, newestMail } from './helpers/mail'
+import { clearMail, linkFragment, linkIn, newestMail } from './helpers/mail'
 import { database } from './helpers/seed'
 import { localStack } from './helpers/stack'
 
@@ -118,7 +120,7 @@ test("F2: even on yes, a played guest game never lands in the link's account sil
   expect(await cloudOf(attacker.id)).toBeNull()
 })
 
-test('F1: confirming an address someone else asked to save never moves this device into their account', async ({
+test('F1 and pre-hijack: a save link someone else asked for is never used here, nor moves this device', async ({
   page,
   baseURL,
 }) => {
@@ -146,10 +148,11 @@ test('F1: confirming an address someone else asked to save never moves this devi
   await waitSynced(page)
   const victim = await storedUserId(page)
   await finishLink(page, link, 'Tap to save your progress')
-  await expect(page.getByRole('heading', { name: 'Saved', exact: true })).toBeVisible()
-  await expect(page.locator('[data-auth-callback]')).toContainText(
-    'Head back to the device where you asked',
-  )
+  // Not the device that asked to save with this address: the token is not even used.
+  await expect(page.getByRole('heading', { name: 'Finish on your device' })).toBeVisible()
+  const refreshed = await attacker.auth.refreshSession()
+  expect(refreshed.data.user?.is_anonymous).toBe(true)
+  expect(refreshed.data.user?.email ?? '').toBe('')
   await page.locator('[data-auth-back]').click()
   await expect.poll(() => sessionStatus(page), { timeout: 30_000 }).toBe('anonymous')
   expect(await storedUserId(page)).toBe(victim)
@@ -157,6 +160,88 @@ test('F1: confirming an address someone else asked to save never moves this devi
   // The victim's game is in the victim's own guest account, never the attacker's.
   expect(await cloudOf(attackerId)).toBeNull()
   expect(await cloudOf(victim ?? '')).not.toBeNull()
+})
+
+test.describe('X1', () => {
+  // The log-in request for an address with no account is refused by GoTrue (422 otp_disabled);
+  // the browser logs that response.
+  test.use({ injectedConsoleErrors: [/status of 422/] })
+
+  test("X1 (N1): a forged log-in link within an hour of this browser's own request still asks", async ({
+    page,
+    baseURL,
+  }) => {
+    test.setTimeout(240_000)
+    const callback = `${baseURL ?? ''}/auth/callback`
+    const attacker = await newSavedAccount(stack, callback, `zz-${freshEmail()}`)
+    const forged = await foreignLoginLink(attacker.email, callback)
+    const hash = linkFragment(forged).get('token_hash') ?? ''
+    const victim = await newSavedAccount(stack, callback, `aa-${freshEmail()}`)
+
+    await bootGuest(page)
+    await reachFirstMilestone(page)
+    await waitSynced(page)
+    const guest = await storedUserId(page)
+
+    // A log-in for an address with no account sends nothing, so it leaves no mark.
+    await meTab(page).click()
+    await page
+      .getByRole('dialog', { name: 'Me' })
+      .getByRole('button', { name: 'Have an account? Log in' })
+      .click()
+    const sheet = accountSheet(page, 'Log in')
+    await sheet.getByRole('textbox', { name: 'Email' }).fill(freshEmail())
+    await sheet.getByRole('button', { name: 'Email me a link and code' }).click()
+    await expect(sheet.getByText('No account uses that email yet.', { exact: false })).toBeVisible()
+    expect(await page.evaluate(() => localStorage.getItem('cloutcity:login-requested'))).toBeNull()
+
+    // A real request for the victim's own account marks this browser, with no address in it.
+    await clearMail(victim.email)
+    await sheet.getByRole('textbox', { name: 'Email' }).fill(victim.email)
+    await sheet.getByRole('button', { name: 'Email me a link and code' }).click()
+    await expect(sheet.getByRole('heading', { name: 'Check your inbox' })).toBeVisible()
+    const mark = await page.evaluate(() => localStorage.getItem('cloutcity:login-requested'))
+    expect(mark).not.toBeNull()
+    expect(mark).not.toContain('@')
+
+    // The forged link names the victim's address in its fragment: never shown, never trusted.
+    await page.goto(
+      `/auth/callback#token_hash=${hash}&type=email&email=${encodeURIComponent(victim.email)}`,
+    )
+    await expect(page.getByRole('heading', { name: 'Tap to finish logging in' })).toBeVisible()
+    await expect(page.locator('[data-auth-for]')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Finish' }).click()
+    // The server's address (the attacker's), not the fragment's.
+    await expect(page.getByRole('heading', { name: 'Log in as z•••@example.test?' })).toBeVisible()
+    expect(await storedUserId(page)).toBe(guest)
+    await page.getByRole('button', { name: 'Not me' }).click()
+    await expect(page.getByRole('heading', { name: 'Not logged in' })).toBeVisible()
+    expect(await storedUserId(page)).toBe(guest)
+    expect(await cloudOf(attacker.id)).toBeNull()
+  })
+})
+
+test('N1: the log-in link this browser asked for, for that address, is taken without asking', async ({
+  page,
+  baseURL,
+}) => {
+  test.setTimeout(150_000)
+  const callback = `${baseURL ?? ''}/auth/callback`
+  const account = await newSavedAccount(stack, callback)
+  await bootGuest(page)
+  await meTab(page).click()
+  await page
+    .getByRole('dialog', { name: 'Me' })
+    .getByRole('button', { name: 'Have an account? Log in' })
+    .click()
+  const sheet = accountSheet(page, 'Log in')
+  await clearMail(account.email)
+  await sheet.getByRole('textbox', { name: 'Email' }).fill(account.email)
+  await sheet.getByRole('button', { name: 'Email me a link and code' }).click()
+  await expect(sheet.getByRole('heading', { name: 'Check your inbox' })).toBeVisible()
+  await finishLink(page, linkIn(await newestMail(account.email)), 'Tap to finish logging in')
+  await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
+  expect(await storedUserId(page)).toBe(account.id)
 })
 
 test('F8 (recorded): an under-18 answer after a log-in drops the session from the device', async ({

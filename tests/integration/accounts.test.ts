@@ -179,6 +179,24 @@ describe('saving progress with an email (S19)', () => {
     expect(error?.code).toBe('email_exists')
   })
 
+  it('the 6-digit code in the save email confirms the same user, typed on the asking device', async () => {
+    const guest = await pkceGuest()
+    const email = freshEmail()
+    await guest.client.auth.updateUser({ email }, { emailRedirectTo: CALLBACK })
+    const message = await mailTo(email)
+    const code = /<strong>(\d{6})<\/strong>/.exec(message.HTML)?.[1]
+    expect(code).toMatch(/^\d{6}$/)
+    // Verified on a throwaway client, as the game does: the user it confirms is this guest.
+    const verified = await pkceClient().auth.verifyOtp({
+      email,
+      token: code ?? '',
+      type: 'email_change',
+    })
+    expect(verified.error).toBeNull()
+    expect(verified.data.user?.id).toBe(guest.id)
+    expect((await guest.client.auth.getUser()).data.user?.is_anonymous).toBe(false)
+  })
+
   it('a used confirmation link does not work twice', async () => {
     const guest = await pkceGuest()
     const email = freshEmail()
@@ -406,6 +424,20 @@ describe('banned emails follow the person, not the spelling (review F3)', () => 
     expect((await guest.client.rpc('check_account_email', { p_email: variant(local) })).data).toBe(
       'not_allowed',
     )
+  })
+
+  it('an empty local part is never canonicalised to a shared `@domain` (N2)', async () => {
+    const [rows] = await sql<{ a: string; b: string; c: string }[]>`
+      select private.canonical_email('+a@d.test') as a,
+        private.canonical_email('+b@d.test') as b,
+        private.canonical_email('.+x@gmail.com') as c`
+    expect(rows).toEqual({ a: '+a@d.test', b: '+b@d.test', c: '.+x@gmail.com' })
+    const domain = `s19n2${crypto.randomUUID().slice(0, 8)}.test`
+    await ban(`+one@${domain}`)
+    const guest = await newAttestedGuest()
+    expect(
+      (await guest.client.rpc('check_account_email', { p_email: `+two@${domain}` })).data,
+    ).toBe('ok')
   })
 
   it('gmail dots and googlemail.com are the same inbox', async () => {

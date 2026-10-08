@@ -21,6 +21,7 @@
 import { createClient, type Session, type SupabaseClient, type User } from '@supabase/supabase-js'
 import * as z from 'zod/mini'
 import { markLoginRequested, type CallbackParams } from '@/lib/account/callback'
+import { emailHash } from '@/lib/account/emailHash'
 import { maskEmail } from '@/lib/account/mask'
 import { parseRpcError } from './attestation'
 import type { Database } from './database.types'
@@ -39,6 +40,7 @@ export const ACCOUNT_CODES = [
   'identity-exists',
   'not-configured',
   'no-session',
+  'wrong-account',
   'error',
 ] as const
 export type AccountCode = (typeof ACCOUNT_CODES)[number]
@@ -204,8 +206,6 @@ export async function sendLoginLink(
 ): Promise<AccountResult> {
   try {
     const captchaToken = await captchaProvider()
-    // The link this sends is this browser's own request (see finishCallback).
-    markLoginRequested(Date.now())
     const { error } = await client(env).auth.signInWithOtp({
       email,
       options: {
@@ -214,7 +214,10 @@ export async function sendLoginLink(
         ...(captchaToken === undefined ? {} : { captchaToken }),
       },
     })
-    return error === null ? OK : failed(error, 'login')
+    if (error !== null) return failed(error, 'login')
+    // Only a link that was really sent is this browser's own request (see finishCallback).
+    markLoginRequested(Date.now(), await emailHash(email))
+    return OK
   } catch (error) {
     return failed(error, 'login')
   }
@@ -256,19 +259,35 @@ export type CallbackOutcome =
   /** This browser's own guest was saved (its session refreshed). */
   | { readonly ok: true; readonly outcome: 'saved' }
   /**
-   * An account was saved, but not the one signed in here (the link was opened on another device,
-   * or someone else asked to save *their* game with this address): nothing changes here, and the
-   * device that asked picks it up by itself (review F1).
+   * A save confirmation for an address this browser did not ask to save with (pre-hijack
+   * defence): the token is left unused, and the player is told to finish on the device that
+   * asked, by link there or by typing the emailed code there.
+   */
+  | { readonly ok: true; readonly outcome: 'open-elsewhere' }
+  /**
+   * This browser asked, but the link turned out to be for another account (another game asked
+   * to save with the same address at the same time): nothing is taken here (review F1).
    */
   | { readonly ok: true; readonly outcome: 'saved-elsewhere' }
   /** This browser is now signed in to the account (a log-in it asked for, or Google). */
   | { readonly ok: true; readonly outcome: 'login' }
   /**
-   * A log-in link this browser did not ask for (review F2): verified, but not taken yet. The
-   * page asks "Log in as …?" and calls confirmPendingLogin or declinePendingLogin.
+   * A log-in link for an address this browser did not ask about (review F2, N1): verified, but
+   * not taken yet. The page asks "Log in as <the server's address, masked>?" and calls
+   * confirmPendingLogin or declinePendingLogin.
    */
   | { readonly ok: true; readonly outcome: 'confirm-login'; readonly maskedEmail: string | null }
   | Failed
+
+/** What this browser knows about the links it asked for (marks hold hashes, never addresses). */
+export interface CallbackContext {
+  /** Hash of the address a recent log-in link was requested for here, or null. */
+  readonly loginHash: string | null
+  /** Hash of the address a waiting save-progress link was requested for here, or null. */
+  readonly pendingHash: string | null
+  /** The address the link's fragment names (untrusted: only compared, never shown or trusted). */
+  readonly linkEmail: string | null
+}
 
 /**
  * A client that keeps nothing: a link is verified on it, so the session that comes back is
@@ -303,19 +322,26 @@ function linkFailure(error: unknown): Failed {
   return { ok: false, code: code === 'offline' || code === 'not-allowed' ? code : 'code-invalid' }
 }
 
+const sameAddress = async (email: string | null | undefined, hash: string | null) =>
+  hash !== null && email != null && email !== '' && (await emailHash(email)) === hash
+
 /**
- * Finishes a link. Google's PKCE code is exchanged on the guest client (only the browser that
- * started the round trip holds its verifier). An email confirmation (`email_change`) is verified
- * on a throwaway client: only when it confirmed the account already signed in here is the guest
- * client refreshed; anyone else's account is never adopted, so a link someone else requested
- * cannot move this device into their account (session fixation, review F1). A log-in link is
- * taken at once when this browser asked for one (`requested`); otherwise it is verified on a
- * throwaway client and held until the player confirms (login CSRF, review F2).
+ * Finishes a link.
+ *  - Google's PKCE code is exchanged on the guest client (only the browser that started the
+ *    round trip holds its verifier).
+ *  - A save confirmation (`email_change`) is used only by the guest that asked: this browser
+ *    must hold an anonymous session with a waiting upgrade for the very address the link names.
+ *    Anywhere else the token is not consumed (`open-elsewhere`), so a link someone else asked
+ *    for cannot attach this address to their account (pre-hijack). It is verified on a
+ *    throwaway client, and only this browser's own account is refreshed (review F1).
+ *  - A log-in link is always verified on a throwaway client; it is taken at once only when the
+ *    account it verifies as has the address this browser asked a link for (review N1);
+ *    otherwise it is held for the player's "Log in as …?" (review F2).
  */
 export async function finishCallback(
   env: SupabaseEnv,
   params: CallbackParams,
-  requested: boolean,
+  context: CallbackContext,
 ): Promise<CallbackOutcome> {
   try {
     const guest = client(env)
@@ -323,13 +349,25 @@ export async function finishCallback(
       const { error } = await guest.auth.exchangeCodeForSession(params.code)
       return error === null ? { ok: true, outcome: 'login' } : failed(error, 'callback')
     }
-    if (params.type !== 'email_change' && requested) {
-      const { data, error } = await guest.auth.verifyOtp({
+    if (params.type === 'email_change') {
+      const here = (await guest.auth.getSession()).data.session?.user
+      const askedHere =
+        here !== undefined &&
+        here.is_anonymous === true &&
+        (await sameAddress(context.linkEmail, context.pendingHash))
+      if (!askedHere) return { ok: true, outcome: 'open-elsewhere' }
+      const throwaway = throwawayClient(env)
+      const { data, error } = await throwaway.auth.verifyOtp({
         token_hash: params.tokenHash,
-        type: params.type,
+        type: 'email_change',
       })
       if (error !== null) return linkFailure(error)
-      return data.session === null ? fail('code-invalid') : { ok: true, outcome: 'login' }
+      if (data.user === null) return fail('code-invalid')
+      // The session the confirmation handed out is not this device's to keep.
+      if (data.session !== null) await throwaway.auth.signOut({ scope: 'local' })
+      if (data.user.id !== here.id) return { ok: true, outcome: 'saved-elsewhere' }
+      await guest.auth.refreshSession()
+      return { ok: true, outcome: 'saved' }
     }
     const throwaway = throwawayClient(env)
     const { data, error } = await throwaway.auth.verifyOtp({
@@ -338,16 +376,14 @@ export async function finishCallback(
     })
     if (error !== null) return linkFailure(error)
     const verified = data.user
-    if (verified === null) return fail('code-invalid')
-    if (params.type === 'email_change') {
-      const here = (await guest.auth.getSession()).data.session?.user.id
-      // The session the confirmation handed out is not this device's to keep.
-      if (data.session !== null) await throwaway.auth.signOut({ scope: 'local' })
-      if (here !== verified.id) return { ok: true, outcome: 'saved-elsewhere' }
-      await guest.auth.refreshSession()
-      return { ok: true, outcome: 'saved' }
+    if (verified === null || data.session === null) return fail('code-invalid')
+    if (await sameAddress(verified.email, context.loginHash)) {
+      const taken = await guest.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      })
+      return taken.error === null ? { ok: true, outcome: 'login' } : failed(taken.error, 'callback')
     }
-    if (data.session === null) return fail('code-invalid')
     pendingLogin = { client: throwaway, session: data.session }
     return {
       ok: true,
@@ -357,6 +393,38 @@ export async function finishCallback(
     }
   } catch (error) {
     return failed(error, 'callback')
+  }
+}
+
+/**
+ * Saves the guest's progress with the 6-digit code from the save email, typed on the device
+ * that asked. Verified on a throwaway client: only when the code confirmed this browser's own
+ * guest is it refreshed here; a code for another game (someone else asked to save with the same
+ * address) is refused and nothing is taken.
+ */
+export async function verifySaveCode(
+  env: SupabaseEnv,
+  email: string,
+  code: string,
+): Promise<AccountResult> {
+  try {
+    const guest = client(env)
+    const here = (await guest.auth.getSession()).data.session?.user.id
+    if (here === undefined) return fail('no-session')
+    const throwaway = throwawayClient(env)
+    const { data, error } = await throwaway.auth.verifyOtp({
+      email,
+      token: code,
+      type: 'email_change',
+    })
+    if (error !== null) return failed(error, 'code')
+    if (data.session !== null) await throwaway.auth.signOut({ scope: 'local' })
+    if (data.user === null) return fail('code-invalid')
+    if (data.user.id !== here) return fail('wrong-account')
+    await guest.auth.refreshSession()
+    return OK
+  } catch (error) {
+    return failed(error, 'code')
   }
 }
 

@@ -44,17 +44,38 @@ describe('the account flags on this device (S19)', () => {
     const store = storeOn(memory)
     store.getState().dismissPrompt()
     store.getState().setSignedOut(true)
-    store.getState().setPendingUpgrade(1234)
+    store.getState().setPendingUpgrade(1234, 'a'.repeat(64))
     const raw = memory.getItem(ACCOUNT_KEY) ?? ''
     expect(JSON.parse(raw)).toEqual({
-      state: { promptDismissed: true, signedOut: true, pendingUpgradeAt: 1234 },
+      state: {
+        promptDismissed: true,
+        signedOut: true,
+        pendingUpgradeAt: 1234,
+        pendingUpgradeHash: 'a'.repeat(64),
+      },
       version: 1,
     })
+    expect(raw).not.toContain('@')
     expect(storeOn(memory).getState()).toMatchObject({
       promptDismissed: true,
       signedOut: true,
       pendingUpgradeAt: 1234,
+      pendingUpgradeHash: 'a'.repeat(64),
     })
+    store.getState().setPendingUpgrade(null)
+    expect(store.getState().pendingUpgradeHash).toBeNull()
+  })
+
+  it('reads a record written before the address hash existed', () => {
+    const memory = new MemoryStorage()
+    memory.setItem(
+      ACCOUNT_KEY,
+      JSON.stringify({
+        state: { promptDismissed: true, signedOut: false, pendingUpgradeAt: 5 },
+        version: 1,
+      }),
+    )
+    expect(storeOn(memory).getState()).toMatchObject({ promptDismissed: true, pendingUpgradeAt: 5 })
   })
 
   it('ignores stored data that does not fit, or an unknown version', () => {

@@ -19,7 +19,7 @@ import { accountEnv, loadAccountAuth } from './accountEnv'
 import '@/lib/copy/ns/account'
 
 type Finish = Extract<ParsedCallback, { kind: 'finish' }>
-type DoneKind = 'saved' | 'saved-elsewhere' | 'login' | 'declined'
+type DoneKind = 'saved' | 'saved-elsewhere' | 'open-elsewhere' | 'login' | 'declined'
 
 type View =
   | { readonly step: 'reading' }
@@ -44,6 +44,10 @@ const ERROR_KEY = {
 const DONE: Readonly<Record<DoneKind, { title: CopyKey; body: CopyKey }>> = {
   saved: { title: 'account.saved.title', body: 'account.saved.body' },
   'saved-elsewhere': { title: 'account.savedElsewhere.title', body: 'account.savedElsewhere.body' },
+  'open-elsewhere': {
+    title: 'account.callback.openElsewhereTitle',
+    body: 'account.callback.openElsewhereBody',
+  },
   login: { title: 'account.welcomeBack.title', body: 'account.welcomeBack.body' },
   declined: { title: 'account.callback.declinedTitle', body: 'account.callback.declinedBody' },
 }
@@ -100,11 +104,17 @@ export function AuthCallback() {
     setView({ step: 'working' })
     try {
       const auth = await loadAccountAuth()
-      const requested =
-        parsed.params.kind === 'token' &&
-        parsed.params.type !== 'email_change' &&
-        takeLoginRequested(Date.now(), accountJson.pendingUpgradeMaxAgeMs)
-      const result = await auth.finishCallback(config.env, parsed.params, requested)
+      const now = Date.now()
+      const isLogin = parsed.params.kind === 'token' && parsed.params.type !== 'email_change'
+      const { accountStore, upgradePending } = await import('@/state/account')
+      const pending = accountStore.getState()
+      const result = await auth.finishCallback(config.env, parsed.params, {
+        loginHash: isLogin ? takeLoginRequested(now, accountJson.pendingUpgradeMaxAgeMs) : null,
+        pendingHash: upgradePending(pending.pendingUpgradeAt, now)
+          ? (pending.pendingUpgradeHash ?? null)
+          : null,
+        linkEmail: parsed.email,
+      })
       if (!result.ok) {
         log.info('An account link did not finish', { code: result.code })
         if (result.code === 'offline' && parsed.params.kind === 'token') {
@@ -128,8 +138,8 @@ export function AuthCallback() {
         setView({ step: 'confirm', maskedEmail: result.maskedEmail })
         return
       }
-      if (result.outcome === 'saved-elsewhere') {
-        setView({ step: 'done', kind: 'saved-elsewhere' })
+      if (result.outcome === 'saved-elsewhere' || result.outcome === 'open-elsewhere') {
+        setView({ step: 'done', kind: result.outcome })
         return
       }
       const kind =
@@ -217,8 +227,16 @@ export function AuthCallback() {
     }
   })()
 
+  // Only a save link names its address before the tap (it is used only where that address was
+  // asked for); a log-in link's fragment is not trusted for display (review N1): the server's
+  // address is shown after verifying.
   const readyFor =
-    view.step === 'ready' && view.parsed.email !== null ? maskEmail(view.parsed.email) : null
+    view.step === 'ready' &&
+    view.parsed.email !== null &&
+    view.parsed.params.kind === 'token' &&
+    view.parsed.params.type === 'email_change'
+      ? maskEmail(view.parsed.email)
+      : null
 
   return (
     <section
@@ -237,9 +255,7 @@ export function AuthCallback() {
       </h1>
       {view.step === 'ready' && readyFor !== null ? (
         <p data-auth-for="" className="text-sm text-fg">
-          {view.parsed.params.kind === 'token' && view.parsed.params.type === 'email_change'
-            ? copy('account.callback.saveFor', { email: readyFor })
-            : copy('account.callback.loginFor', { email: readyFor })}
+          {copy('account.callback.saveFor', { email: readyFor })}
         </p>
       ) : null}
       {view.step === 'done' ? (

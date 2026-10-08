@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from 'zustand'
 import { PANEL_BUTTON, PanelDialog } from '@/components/hud/PanelDialog'
+import { emailHash } from '@/lib/account/emailHash'
 import { copy } from '@/lib/copy'
 import { accountIdentityStore, accountStore } from '@/state/account'
 import { accountSheetStore, openAccountSheet, useAccountSheet } from '@/state/accountSheet'
@@ -124,12 +125,16 @@ export function AccountSheet() {
           mode={mode}
           initialEmail={email}
           onLoginInstead={(typed) => openAccountSheet('login', typed)}
-          onLinkSent={() => {
-            accountStore.getState().setPendingUpgrade(Date.now())
+          onLinkSent={(sentTo) => {
+            // The address is kept only as a hash: /auth/callback uses a save link only here.
+            void emailHash(sentTo).then((hash) =>
+              accountStore.getState().setPendingUpgrade(Date.now(), hash),
+            )
             void import('@/lib/supabase/accountSession').then((module) =>
               module.runningAccountSession()?.watchUpgrade(),
             )
           }}
+          onSaved={() => setDone('saved')}
           onLoggedIn={() => {
             setDone('login')
             // A signed-out device has no coordinator yet: the account just logged in starts one.

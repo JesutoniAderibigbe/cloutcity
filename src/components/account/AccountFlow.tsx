@@ -260,13 +260,18 @@ function EmailStep({
   )
 }
 
-/** The 6-digit code from the log-in email (works where the link would open another browser). */
+/**
+ * The 6-digit code from the email (works where the link would open another browser): a log-in
+ * code, or a save code typed on the device that asked to save (the only place it counts).
+ */
 function CodeForm({
+  mode,
   email,
-  onLoggedIn,
+  onDone,
 }: {
+  readonly mode: AccountSheetMode
   readonly email: string
-  readonly onLoggedIn: () => void
+  readonly onDone: () => void
 }) {
   const inputId = useId()
   const errorId = useId()
@@ -301,12 +306,16 @@ function CodeForm({
     setVerifying(true)
     const result = await run(
       () =>
-        loadAccountAuth().then((auth) => auth.verifyLoginCode(config.env, email, codeToSend(raw))),
-      'verify-code',
+        loadAccountAuth().then((auth) =>
+          mode === 'save'
+            ? auth.verifySaveCode(config.env, email, codeToSend(raw))
+            : auth.verifyLoginCode(config.env, email, codeToSend(raw)),
+        ),
+      mode === 'save' ? 'verify-save-code' : 'verify-code',
     )
     setVerifying(false)
     if (result.ok) {
-      onLoggedIn()
+      onDone()
       return
     }
     setRefused(result.code)
@@ -344,7 +353,11 @@ function CodeForm({
         aria-disabled={verifying ? true : undefined}
         className={`${PANEL_BUTTON} bg-taxi text-on-taxi`}
       >
-        {verifying ? copy('account.code.verifying') : copy('account.code.verify')}
+        {verifying
+          ? copy('account.code.verifying')
+          : mode === 'save'
+            ? copy('account.code.save')
+            : copy('account.code.verify')}
       </button>
     </form>
   )
@@ -392,14 +405,17 @@ export function AccountFlow({
   initialEmail,
   onLoginInstead,
   onLinkSent,
+  onSaved,
   onLoggedIn,
 }: {
   readonly mode: AccountSheetMode
   readonly initialEmail: string | null
   /** "That email already has an account": switch to log-in with the email as typed. */
   readonly onLoginInstead?: (email: string) => void
-  /** A save link went out (the sheet starts waiting for it). */
-  readonly onLinkSent?: () => void
+  /** A save link went out to `email` (the sheet starts waiting for it). */
+  readonly onLinkSent?: (email: string) => void
+  /** The save code was accepted on this device: the guest is saved. */
+  readonly onSaved?: () => void
   readonly onLoggedIn: () => void
 }) {
   const [sent, setSent] = useState<{ readonly email: string; readonly at: number } | null>(null)
@@ -418,7 +434,7 @@ export function AccountFlow({
           onSent={(email) => {
             setDraft(email)
             setSent({ email, at: Date.now() })
-            if (mode === 'save') onLinkSent?.()
+            if (mode === 'save') onLinkSent?.(email)
           }}
         />
       </div>
@@ -458,9 +474,12 @@ export function AccountFlow({
       </p>
       {mode === 'save' ? (
         <p className="text-sm text-muted">{copy('account.sent.waiting')}</p>
-      ) : (
-        <CodeForm email={sent.email} onLoggedIn={onLoggedIn} />
-      )}
+      ) : null}
+      <CodeForm
+        mode={mode}
+        email={sent.email}
+        onDone={mode === 'save' ? (onSaved ?? (() => {})) : onLoggedIn}
+      />
       {resendError === null ? null : (
         <p role="alert" className="text-sm font-semibold text-danger">
           {copy(ACCOUNT_ERROR_KEY[resendError])}

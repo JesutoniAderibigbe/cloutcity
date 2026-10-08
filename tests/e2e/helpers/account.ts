@@ -131,10 +131,14 @@ export async function finishLink(page: Page, link: string, heading: string): Pro
   expect(headers['cache-control']).toContain('no-store')
   expect(headers['referrer-policy']).toBe('no-referrer')
   await expect(page.getByRole('heading', { name: heading })).toBeVisible()
-  // The token is out of the address bar before anything is tapped, and the page names the
-  // address (masked) the link is for.
+  // The token is out of the address bar before anything is tapped. A save link names the
+  // address (masked) it is for; a log-in link's fragment is never trusted for display (N1).
   expect(page.url()).not.toContain('token_hash')
-  await expect(page.locator('[data-auth-for]')).toContainText('•••@')
+  if (heading === 'Tap to save your progress') {
+    await expect(page.locator('[data-auth-for]')).toContainText('•••@')
+  } else {
+    await expect(page.locator('[data-auth-for]')).toHaveCount(0)
+  }
   await page.getByRole('button', { name: 'Finish' }).click()
 }
 
@@ -155,6 +159,7 @@ export async function nudgeUpgradeCheck(page: Page): Promise<void> {
 export async function newSavedAccount(
   stack: LocalStack,
   callback: string,
+  email: string = freshEmail(),
 ): Promise<{ readonly id: string; readonly email: string }> {
   const memory = new Map<string, string>()
   const client = createClient(stack.apiUrl, stack.anonKey, {
@@ -180,7 +185,6 @@ export async function newSavedAccount(
     p_audio_choice: 'ours',
   })
   if (attested.error !== null) throw attested.error
-  const email = freshEmail()
   const update = await client.auth.updateUser({ email }, { emailRedirectTo: callback })
   if (update.error !== null) throw update.error
   const hash = linkFragment(linkIn(await newestMail(email))).get('token_hash') ?? ''

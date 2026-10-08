@@ -1,13 +1,16 @@
 <!-- S19: saving a guest's progress with an email. The link always goes to
      {{ .SiteURL }}/auth/callback (never a redirect the request named, review F4), with the token
-     in the URL fragment (review F5); the page names the address and finishes only on a tap.
+     in the URL fragment (review F5); the page uses it only on the device that asked to save with
+     this address, on a tap. The 6-digit code is typed on that device too, so a game someone else
+     started can never claim this address from a link opened anywhere else.
      Paste into the hosted dashboard too (Auth > Email Templates > Change Email Address). -->
 <h2>Save your Clout City progress</h2>
-<p>Tap the button to confirm {{ .NewEmail }} and keep your game:</p>
+<p>Tap the button on the device where you asked to confirm {{ .NewEmail }} and keep your game:</p>
 <p>
   <a
     href="{{ .SiteURL }}/auth/callback#token_hash={{ .TokenHash }}&type=email_change&email={{ .NewEmail }}"
     >Save my progress</a
   >
 </p>
-<p>The link works once and runs out in an hour. Didn't ask for this? Ignore this email.</p>
+<p>Or type this code on the device where you asked: <strong>{{ .Token }}</strong></p>
+<p>The link and the code work once and run out in an hour. Didn't ask for this? Ignore this email.</p>

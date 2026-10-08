@@ -51,6 +51,7 @@ vi.mock('./supabaseAuth', async (importOriginal) => ({
 }))
 
 const auth = await import('./accountAuth')
+const { emailHash } = await import('@/lib/account/emailHash')
 
 const ENV = { url: 'http://127.0.0.1:54321', anonKey: 'anon' }
 const CALLBACK = 'https://cloutcity.example/auth/callback'
@@ -165,105 +166,133 @@ describe('logging in', () => {
   })
 })
 
-describe('/auth/callback (review F1, F2)', () => {
+describe('/auth/callback (review F1, F2, N1 and the pre-hijack fix)', () => {
   const HASH = 'h'.repeat(20)
+  const OTHER = 'someone@else.test'
   const verified = (id: string, email = EMAIL) => ({
     data: { session: { access_token: 'a', refresh_token: 'r' }, user: { id, email } },
     error: null,
   })
-  const here = (id: string | null) => ({
-    data: { session: id === null ? null : { user: { id } } },
+  const here = (id: string | null, anonymous = true) => ({
+    data: { session: id === null ? null : { user: { id, is_anonymous: anonymous } } },
     error: null,
   })
+  const none = { loginHash: null, pendingHash: null, linkEmail: null }
+  const save = { kind: 'token', tokenHash: HASH, type: 'email_change' } as const
+  const login = { kind: 'token', tokenHash: HASH, type: 'email' } as const
 
-  it("a save confirmation for this browser's own guest refreshes it here", async () => {
+  it("saves this browser's guest when it asked to save with the link's address", async () => {
     answers = { 'throwaway.verifyOtp': verified('u1'), getSession: here('u1') }
-    expect(
-      await auth.finishCallback(
-        ENV,
-        { kind: 'token', tokenHash: HASH, type: 'email_change' },
-        false,
-      ),
-    ).toEqual({ ok: true, outcome: 'saved' })
+    const context = { ...none, pendingHash: await emailHash(EMAIL), linkEmail: EMAIL }
+    expect(await auth.finishCallback(ENV, save, context)).toEqual({ ok: true, outcome: 'saved' })
     const names = calls.map((call) => call.name)
     expect(names).toContain('throwaway.verifyOtp')
     expect(names).toContain('refreshSession')
     expect(names).not.toContain('verifyOtp')
-    expect(names).not.toContain('setSession')
   })
 
-  it("someone else's save confirmation is never adopted here (session fixation)", async () => {
+  it('never uses a save link where its address was not asked for (pre-hijack)', async () => {
+    for (const [session, context] of [
+      [here('victim'), none],
+      [here('victim'), { ...none, pendingHash: await emailHash(OTHER), linkEmail: EMAIL }],
+      [here(null), { ...none, pendingHash: await emailHash(EMAIL), linkEmail: EMAIL }],
+      [here('saved', false), { ...none, pendingHash: await emailHash(EMAIL), linkEmail: EMAIL }],
+    ] as const) {
+      calls.length = 0
+      answers = { getSession: session, 'throwaway.verifyOtp': verified('attacker') }
+      expect(await auth.finishCallback(ENV, save, context)).toEqual({
+        ok: true,
+        outcome: 'open-elsewhere',
+      })
+      expect(calls.map((call) => call.name)).not.toContain('throwaway.verifyOtp')
+    }
+  })
+
+  it('a save link for another game is never adopted, even where it was asked (F1)', async () => {
     answers = { 'throwaway.verifyOtp': verified('attacker'), getSession: here('victim') }
-    expect(
-      await auth.finishCallback(
-        ENV,
-        { kind: 'token', tokenHash: HASH, type: 'email_change' },
-        false,
-      ),
-    ).toEqual({ ok: true, outcome: 'saved-elsewhere' })
+    const context = { ...none, pendingHash: await emailHash(EMAIL), linkEmail: EMAIL }
+    expect(await auth.finishCallback(ENV, save, context)).toEqual({
+      ok: true,
+      outcome: 'saved-elsewhere',
+    })
     const names = calls.map((call) => call.name)
     expect(names).toContain('throwaway.signOut')
     expect(names).not.toContain('refreshSession')
     expect(names).not.toContain('setSession')
-    // On a device with no session at all (another device), the same: nothing is taken.
-    calls.length = 0
-    answers = { 'throwaway.verifyOtp': verified('owner'), getSession: here(null) }
-    expect(
-      await auth.finishCallback(
-        ENV,
-        { kind: 'token', tokenHash: HASH, type: 'email_change' },
-        true,
-      ),
-    ).toEqual({ ok: true, outcome: 'saved-elsewhere' })
   })
 
-  it('a log-in this browser asked for signs in on the guest client at once', async () => {
-    answers = { verifyOtp: { data: { session: {}, user: {} }, error: null } }
+  it('a log-in link is taken at once only for the address this browser asked about (N1)', async () => {
+    answers = { 'throwaway.verifyOtp': verified('owner', EMAIL) }
     expect(
-      await auth.finishCallback(ENV, { kind: 'token', tokenHash: HASH, type: 'email' }, true),
+      await auth.finishCallback(ENV, login, { ...none, loginHash: await emailHash(EMAIL) }),
     ).toEqual({ ok: true, outcome: 'login' })
-    expect(calls.map((call) => call.name)).toEqual(['verifyOtp'])
+    expect(calls.map((call) => call.name)).toEqual(['throwaway.verifyOtp', 'setSession'])
   })
 
-  it('a log-in link this browser did not ask for is held until the player says yes', async () => {
-    answers = { 'throwaway.verifyOtp': verified('owner') }
+  it("a log-in link for another address asks, showing the server's address, not the fragment's", async () => {
+    answers = { 'throwaway.verifyOtp': verified('attacker', 'attacker@evil.test') }
     expect(
-      await auth.finishCallback(ENV, { kind: 'token', tokenHash: HASH, type: 'email' }, false),
-    ).toEqual({ ok: true, outcome: 'confirm-login', maskedEmail: 'j•••@example.com' })
+      await auth.finishCallback(ENV, login, {
+        loginHash: await emailHash(EMAIL),
+        pendingHash: null,
+        linkEmail: EMAIL,
+      }),
+    ).toEqual({ ok: true, outcome: 'confirm-login', maskedEmail: 'a•••@evil.test' })
     expect(calls.map((call) => call.name)).toEqual(['throwaway.verifyOtp'])
     expect(await auth.confirmPendingLogin(ENV)).toEqual({ ok: true })
     expect(calls.at(-1)).toEqual({
       name: 'setSession',
       args: [{ access_token: 'a', refresh_token: 'r' }],
     })
-    // Spent: a second yes takes nothing.
     expect(await auth.confirmPendingLogin(ENV)).toEqual({ ok: false, code: 'code-invalid' })
   })
 
   it('"Not me" signs the held log-in out and never touches the guest client', async () => {
     answers = { 'throwaway.verifyOtp': verified('owner') }
-    await auth.finishCallback(ENV, { kind: 'token', tokenHash: HASH, type: 'email' }, false)
+    await auth.finishCallback(ENV, login, none)
     await auth.declinePendingLogin()
     expect(calls.map((call) => call.name)).toEqual(['throwaway.verifyOtp', 'throwaway.signOut'])
   })
 
   it("Google's code is exchanged on the guest client", async () => {
-    await auth.finishCallback(ENV, { kind: 'code', code: 'c'.repeat(20) }, false)
+    await auth.finishCallback(ENV, { kind: 'code', code: 'c'.repeat(20) }, none)
     expect(calls[0]).toEqual({ name: 'exchangeCodeForSession', args: ['c'.repeat(20)] })
   })
 
   it('a used or expired link is one answer', async () => {
-    const expired = { data: { session: null, user: null }, error: authError('otp_expired', 403) }
-    answers = { verifyOtp: expired, 'throwaway.verifyOtp': expired }
-    for (const requested of [true, false]) {
-      expect(
-        await auth.finishCallback(
-          ENV,
-          { kind: 'token', tokenHash: HASH, type: 'email' },
-          requested,
-        ),
-      ).toEqual({ ok: false, code: 'code-invalid' })
+    answers = {
+      'throwaway.verifyOtp': {
+        data: { session: null, user: null },
+        error: authError('otp_expired', 403),
+      },
     }
+    expect(await auth.finishCallback(ENV, login, none)).toEqual({ ok: false, code: 'code-invalid' })
+  })
+})
+
+describe('the save code, typed on the device that asked', () => {
+  it("saves only this browser's own guest", async () => {
+    answers = {
+      getSession: { data: { session: { user: { id: 'u1' } } }, error: null },
+      'throwaway.verifyOtp': { data: { session: {}, user: { id: 'u1' } }, error: null },
+    }
+    expect(await auth.verifySaveCode(ENV, EMAIL, '123456')).toEqual({ ok: true })
+    expect(calls.find((call) => call.name === 'throwaway.verifyOtp')?.args).toEqual([
+      { email: EMAIL, token: '123456', type: 'email_change' },
+    ])
+    expect(calls.map((call) => call.name)).toContain('refreshSession')
+  })
+
+  it("refuses a code that confirmed another game's address change", async () => {
+    answers = {
+      getSession: { data: { session: { user: { id: 'u1' } } }, error: null },
+      'throwaway.verifyOtp': { data: { session: {}, user: { id: 'other' } }, error: null },
+    }
+    expect(await auth.verifySaveCode(ENV, EMAIL, '123456')).toEqual({
+      ok: false,
+      code: 'wrong-account',
+    })
+    expect(calls.map((call) => call.name)).not.toContain('refreshSession')
   })
 })
 

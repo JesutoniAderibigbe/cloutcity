@@ -13,7 +13,7 @@ import {
   sessionStatus,
   storedUserId,
 } from './helpers/account'
-import { clearMail, linkIn, newestMail } from './helpers/mail'
+import { clearMail, codeIn, linkIn, newestMail } from './helpers/mail'
 import { database } from './helpers/seed'
 import { localStack } from './helpers/stack'
 
@@ -143,7 +143,10 @@ test.describe('saving by email', () => {
   })
 })
 
-test('a link confirmed on another device saves this one', async ({ page, browser }) => {
+test('another device cannot use the save link; the code typed on this device saves it', async ({
+  page,
+  browser,
+}) => {
   test.setTimeout(120_000)
   await bootGuest(page)
   const userId = await storedUserId(page)
@@ -158,22 +161,27 @@ test('a link confirmed on another device saves this one', async ({ page, browser
   await sheet.getByRole('textbox', { name: 'Email' }).fill(email)
   await sheet.getByRole('button', { name: 'Send my link' }).click()
   await expect(sheet.getByRole('heading', { name: 'Check your inbox' })).toBeVisible()
+  const mail = await newestMail(email)
 
+  // A laptop that did not ask: the link is not used there, and nothing is signed in.
   const laptop = await browser.newContext()
   const other = await laptop.newPage()
-  await finishLink(other, linkIn(await newestMail(email)), 'Tap to save your progress')
-  // The laptop confirms the address but never takes the account (review F1).
-  await expect(other.getByRole('heading', { name: 'Saved', exact: true })).toBeVisible()
+  await finishLink(other, linkIn(mail), 'Tap to save your progress')
+  await expect(other.getByRole('heading', { name: 'Finish on your device' })).toBeVisible()
   await expect(other.locator('[data-auth-callback]')).toContainText(
-    'Head back to the device where you asked',
+    'or type the code from the email there',
   )
   expect(
     await other.evaluate(() => Object.keys(localStorage).filter((key) => key.startsWith('sb-'))),
   ).toEqual([])
   await laptop.close()
+  expect(await sessionStatus(page)).toBe('anonymous')
 
-  await nudgeUpgradeCheck(page)
-  await expect.poll(() => sessionStatus(page), { timeout: 40_000 }).toBe('permanent')
+  // Back on this device, the code from the same email saves the same user.
+  await sheet.getByRole('textbox', { name: 'Or type the 6-digit code' }).fill(codeIn(mail))
+  await sheet.getByRole('button', { name: 'Save with code' }).click()
+  await expect(sheet.locator('[data-account-done="saved"]')).toBeVisible()
+  await expect.poll(() => sessionStatus(page), { timeout: 30_000 }).toBe('permanent')
   expect(await storedUserId(page)).toBe(userId)
 })
 
