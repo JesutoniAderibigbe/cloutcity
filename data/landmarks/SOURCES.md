@@ -267,6 +267,38 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1192 triangles, 24160 bytes (`public/landmarks/manhattan-bridge/lod2.glb`)
 - L3: 584 triangles, 13456 bytes (`public/landmarks/manhattan-bridge/lod3.glb`)
 
+### queens-borough-hall
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q2122585 (Queens Borough Hall), CC0-1.0, <https://www.wikidata.org/wiki/Q2122585>
+
+Dimensions:
+
+- `heightM`: 23 m (estimate): the roof ridge above the street, proportioned by eye (Wikidata Q2122585 lists no height; no PD/CC0 figure found)
+- `block`: 96 × 22 m (estimate): the long main block's plan (the S07a kit's stylised footprint)
+- `wallM`: 20 m (estimate): the main cornice above the street: four storeys of brick over a stone base
+- `basementM`: 3 m (estimate): the stone base storey, drawn as a darker band
+- `atticM`: 1.2 m (estimate): the parapet over the cornice
+- `roofM`: 1.8 m (derived): the low roof: the measured height less the wall and parapet
+- `storeys`: 4 (estimate): window storeys (the S07a kit's four floors)
+- `windowColumns`: 14 (estimate): window bays along the long front (the S07a kit's 14 columns)
+- `portico`: 24 × 5 m (estimate): the central stone portico (the S07a kit's stylised plan)
+- `porticoM`: 16 m (estimate): the portico's top above the street, a balustrade over it
+- `porticoColumns`: 6 (estimate): columns across the portico front
+- `stepsM`: 3 m (estimate): how far the front steps run out ahead of the portico
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.8, widths ×1.15. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 so the long hall reads at the 3,000-4,500 m game camera; the plan x1.15, the most that fits the frame's exclusion (116 m along Queens Boulevard).
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1954 triangles, 28840 bytes (`public/landmarks/queens-borough-hall/lod0.glb`)
+- L1: 602 triangles, 10744 bytes (`public/landmarks/queens-borough-hall/lod1.glb`)
+- L2: 178 triangles, 5588 bytes (`public/landmarks/queens-borough-hall/lod2.glb`)
+- L3: 60 triangles, 3720 bytes (`public/landmarks/queens-borough-hall/lod3.glb`)
+
 ### queensboro-bridge
 
 Retrieved 2026-10-08. Sources:

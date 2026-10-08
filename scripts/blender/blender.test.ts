@@ -25,7 +25,6 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 
 /** Landmarks still on the code-built kit, waiting for their Blender model (S07c chunks A-C). */
 const PENDING = new Set([
-  'queens-borough-hall',
   'midtown-terminal',
   'penn-station',
   'jamaica-station',

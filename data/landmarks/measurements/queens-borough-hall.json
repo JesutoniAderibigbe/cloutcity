@@ -1,0 +1,84 @@
+{
+  "id": "queens-borough-hall",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q2122585 (Queens Borough Hall)",
+      "url": "https://www.wikidata.org/wiki/Q2122585",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 23,
+      "source": "estimate",
+      "note": "the roof ridge above the street, proportioned by eye (Wikidata Q2122585 lists no height; no PD/CC0 figure found)"
+    },
+    "block": {
+      "widthM": 96,
+      "depthM": 22,
+      "source": "estimate",
+      "note": "the long main block's plan (the S07a kit's stylised footprint)"
+    },
+    "wallM": {
+      "valueM": 20,
+      "source": "estimate",
+      "note": "the main cornice above the street: four storeys of brick over a stone base"
+    },
+    "basementM": {
+      "valueM": 3,
+      "source": "estimate",
+      "note": "the stone base storey, drawn as a darker band"
+    },
+    "atticM": {
+      "valueM": 1.2,
+      "source": "estimate",
+      "note": "the parapet over the cornice"
+    },
+    "roofM": {
+      "valueM": 1.8,
+      "source": "derived",
+      "note": "the low roof: the measured height less the wall and parapet"
+    },
+    "storeys": {
+      "count": 4,
+      "source": "estimate",
+      "note": "window storeys (the S07a kit's four floors)"
+    },
+    "windowColumns": {
+      "count": 14,
+      "source": "estimate",
+      "note": "window bays along the long front (the S07a kit's 14 columns)"
+    },
+    "portico": {
+      "widthM": 24,
+      "depthM": 5,
+      "source": "estimate",
+      "note": "the central stone portico (the S07a kit's stylised plan)"
+    },
+    "porticoM": {
+      "valueM": 16,
+      "source": "estimate",
+      "note": "the portico's top above the street, a balustrade over it"
+    },
+    "porticoColumns": {
+      "count": 6,
+      "source": "estimate",
+      "note": "columns across the portico front"
+    },
+    "stepsM": {
+      "valueM": 3,
+      "source": "estimate",
+      "note": "how far the front steps run out ahead of the portico"
+    }
+  },
+  "readabilityScale": {
+    "note": "No thin members: columns are drawn at their real proportion to the bay, windows as punched glass quads."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.15,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 so the long hall reads at the 3,000-4,500 m game camera; the plan x1.15, the most that fits the frame's exclusion (116 m along Queens Boulevard)."
+  }
+}

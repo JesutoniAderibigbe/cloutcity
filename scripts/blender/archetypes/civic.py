@@ -109,7 +109,9 @@ def _block(spec, b, flags, density, lit, builder):
                     roles["trim"], tone=1.02)
         roof_z = top + b["attic"]
     if b["roof_h"] > 0:
-        builder.add(hip_roof(b["cx"], b["cy"], b["w"] - 1.2 * k, b["d"] - 1.2 * k, roof_z, b["roof_h"]), roles["roof"])
+        # The ridge stays at block_top whatever the roof starts on (an open balustrade starts lower).
+        ridge = top + b["attic"] + b["roof_h"]
+        builder.add(hip_roof(b["cx"], b["cy"], b["w"] - 1.2 * k, b["d"] - 1.2 * k, roof_z, ridge - roof_z), roles["roof"])
     rows = min(b["rows"], int(round(b["rows"] * flags["rows"] * density)))
     rows = max(rows, 1)
     pitch = spec["column_pitch"] / max(min(flags["rows"] * density, 1.0), 0.2)

@@ -5,7 +5,7 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "46fcc5622aea82ec6420733a69cc39b6b989ec16d44718805937e769ebea0197",
+  "inputsSha": "ccc6e6e443ee99f86fabe033ce957245f0a464027aefc7b5125c1ee9a210ae06",
   "caps": {
     "low": 600,
     "mid": 1800,
@@ -15,7 +15,7 @@
     {
       "level": 0,
       "file": "public/landmarks/brooklyn-borough-hall/lod0.glb",
-      "sha256": "1648ec666ac7faf1729c2e871e53cd8365583cf25e59954be9c3a86f01029d77",
+      "sha256": "635439d31e85152be19cf72827c009231c7c6d4627306daba73ee76b433f1913",
       "bytes": 27980,
       "triangles": 1676,
       "uncompressedBytes": 158788

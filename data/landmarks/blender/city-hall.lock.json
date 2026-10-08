@@ -5,7 +5,7 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "e8548787d35c74376a371fbaac9c5fdd0daef1ebf5244a0ee57b0f1bfb8887c6",
+  "inputsSha": "dde39b922cf5680a47151fc8f1620afa1a6a5c5239088a009f2c39d0eec1c563",
   "caps": {
     "low": 600,
     "mid": 1800,
@@ -15,7 +15,7 @@
     {
       "level": 0,
       "file": "public/landmarks/city-hall/lod0.glb",
-      "sha256": "7b09d911140c26cb986a06cd53f267ebb196894c6fab82584f62853deaa68ecc",
+      "sha256": "91ce36762de28df7ec35f955b19acc6672613a9372611b161aa69bf7be0913c4",
       "bytes": 50124,
       "triangles": 3350,
       "uncompressedBytes": 316944
