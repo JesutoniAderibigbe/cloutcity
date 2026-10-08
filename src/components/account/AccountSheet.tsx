@@ -130,7 +130,15 @@ export function AccountSheet() {
               module.runningAccountSession()?.watchUpgrade(),
             )
           }}
-          onLoggedIn={() => setDone('login')}
+          onLoggedIn={() => {
+            setDone('login')
+            // A signed-out device has no coordinator yet: the account just logged in starts one.
+            const config = accountEnv()
+            if (config === null) return
+            void import('@/lib/supabase/accountSession').then((module) =>
+              module.ensureAccountSession(config.env),
+            )
+          }}
         />
         {mode === 'save' ? <CarryOver /> : null}
         {mode === 'save' ? (

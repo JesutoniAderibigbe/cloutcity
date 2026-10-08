@@ -870,6 +870,15 @@ describe('cloud save sync: accounts (S19)', () => {
     sync.stop()
   })
 
+  it('a log-in after signing out here saves again: the signed-out status clears', async () => {
+    const s = setup({ user: { id: USER, anonymous: false } })
+    s.status.setState({ status: 'signedOut' })
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    expect(s.status.getState().status).toBe('synced')
+    sync.stop()
+  })
+
   it('flushNow sends what is waiting and settles true once the account holds it', async () => {
     const s = setup()
     const sync = createCloudSync(s.deps)

@@ -783,8 +783,8 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   migrations with `migration up`; never `db reset`, which wipes it for all of them.
   `supabase stop && supabase start` is needed after editing `config.toml`.
 - **Integration tests** read the URLs and keys from `npx supabase status -o json` (no env file
-  needed; `SUPABASE_API_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and
-  `SUPABASE_DB_URL` override them). They fail fast if the stack is down or the newest local
+  needed; `SUPABASE_API_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `SUPABASE_DB_URL` and `SUPABASE_MAILPIT_URL` override them, all five together). They fail fast if the stack is down or the newest local
   migration is not applied. They never reset the database: each test signs in fresh guests.
   `tests/integration/types.test.ts` fails when `database.types.ts` is stale.
 - **Privileges are explicit.** The first migration revokes Supabase's default grants: a new

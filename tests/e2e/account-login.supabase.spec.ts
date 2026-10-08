@@ -223,7 +223,27 @@ test('signing out keeps the game here and never makes a new guest until asked', 
   expect(signUps).toHaveLength(1)
   expect((await playerState(page)).cash).toBe(account.cash)
 
+  // Logging back in here (by code) picks the account's game up again, with no new guest.
   await meTab(page).click()
+  await me.getByRole('button', { name: 'Log in', exact: true }).click()
+  const login = accountSheet(page, 'Log in')
+  await clearMail(account.email)
+  await login.getByRole('textbox', { name: 'Email' }).fill(account.email)
+  await login.getByRole('button', { name: 'Email me a link and code' }).click()
+  await login
+    .getByRole('textbox', { name: 'Or type the 6-digit code' })
+    .fill(await loginCode(account.email))
+  await login.getByRole('button', { name: 'Log in with code' }).click()
+  await expect(login.locator('[data-account-done="login"]')).toBeVisible()
+  await expect.poll(() => sessionStatus(page), { timeout: 20_000 }).toBe('permanent')
+  await waitSynced(page)
+  expect(signUps).toHaveLength(1)
+  expect((await playerState(page)).cash).toBe(account.cash)
+
+  // Signed out again, a new guest game starts only when asked.
+  await meTab(page).click()
+  await me.getByRole('button', { name: 'Sign out' }).click()
+  await expect(me.locator('[data-me-account="signed-out"]')).toBeVisible()
   await me.getByRole('button', { name: 'Start a new guest game' }).click()
   await me.getByRole('button', { name: 'Start over' }).click()
   await expect.poll(() => sessionStatus(page), { timeout: 30_000 }).toBe('anonymous')

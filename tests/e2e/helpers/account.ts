@@ -125,7 +125,11 @@ export async function saveProgressByEmail(
 
 /** Opens an emailed link on `page` and taps Finish. */
 export async function finishLink(page: Page, link: string, heading: string): Promise<void> {
-  await page.goto(link)
+  const response = await page.goto(link)
+  // The page that holds a one-time token is never stored and never sends a Referer.
+  const headers = response?.headers() ?? {}
+  expect(headers['cache-control']).toContain('no-store')
+  expect(headers['referrer-policy']).toBe('no-referrer')
   await expect(page.getByRole('heading', { name: heading })).toBeVisible()
   // The token is out of the address bar before anything is tapped.
   expect(page.url()).not.toContain('token_hash')

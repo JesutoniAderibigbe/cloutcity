@@ -814,6 +814,8 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
     token = session.data.session?.access_token ?? null
     if (user === undefined || stopped) return
     meta = readMeta(user.id, user.is_anonymous === true ? 'anonymous' : 'permanent')
+    // A session is saving again (a log-in after signing out on this device, S19).
+    if (status.getState().status === 'signedOut') setStatus('local')
     writeMeta({})
     const auth = deps.client.auth.onAuthStateChange((_event, next) => {
       token = next?.access_token ?? null

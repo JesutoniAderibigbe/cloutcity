@@ -309,3 +309,14 @@ export async function startAccountSession(
   armSavePrompt()
   return running
 }
+
+/**
+ * Starts the coordinator after a log-in on a device that had no session running it (signed out
+ * of an account here, so no guest was created): the account just signed in takes over, with its
+ * own attestation (an existing account always has one).
+ */
+export async function ensureAccountSession(env: SupabaseEnv): Promise<void> {
+  if (running !== undefined) return
+  const { supabaseClient } = await import('./supabaseAuth')
+  await startAccountSession(supabaseClient(env), env, () => null)
+}
