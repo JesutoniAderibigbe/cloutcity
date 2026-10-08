@@ -74,6 +74,7 @@ export function Buildings({
   const layerRef = useRef<BuildingsLayer | null>(null)
 
   const tierAssets = assets[settings.tier]
+  const shadowKey = `${settings.shadows}:${settings.shadowMapSizePx}`
   const windows = config.buildings.windows[settings.tier]
   const materials = useMemo(() => {
     const mask = windows ? createWindowMask(config.buildings) : null
@@ -89,7 +90,10 @@ export function Buildings({
       blocks: createBuildingMaterial({ gradientMap, colors: 'instance' }),
       blocksDimmed: createBuildingMaterial({ gradientMap, colors: 'instance' }),
     }
-  }, [gradientMap, palette.buildings.window, config.buildings, windows, glow])
+    // A shadow change (tier step) rebuilds the set: the old materials, out of the scene while
+    // the new tier's layer loads, would otherwise keep their old programs compiled (3D-3).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gradientMap, palette.buildings.window, config.buildings, windows, glow, shadowKey])
   useEffect(
     () => () => {
       materials.district.dispose()

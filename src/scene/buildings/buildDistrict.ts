@@ -76,6 +76,15 @@ export function massNoise(index: number): number {
   return ((x ^ (x >>> 16)) >>> 0) / 0x100000000
 }
 
+/**
+ * A linear channel (0..1, but a jittered facade can exceed 1) as a normalised byte. Writing
+ * straight into a Uint8Array would wrap 1.06 × 255 round to a near-black 15 (3D-5), so it
+ * clamps, and rounds rather than truncating.
+ */
+export function toByte(channel: number): number {
+  return Math.min(255, Math.max(0, Math.round(channel * 255)))
+}
+
 export interface DistrictGeometry {
   readonly geometry: BufferGeometry
   readonly masses: number
@@ -152,9 +161,9 @@ export async function buildDistrictGeometry(
     normals[o] = nx
     normals[o + 1] = ny
     normals[o + 2] = nz
-    vertexColors[o] = c.r * 255
-    vertexColors[o + 1] = c.g * 255
-    vertexColors[o + 2] = c.b * 255
+    vertexColors[o] = toByte(c.r)
+    vertexColors[o + 1] = toByte(c.g)
+    vertexColors[o + 2] = toByte(c.b)
     return v++
   }
 
