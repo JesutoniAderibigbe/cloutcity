@@ -47,6 +47,7 @@
     "heightPerDistance": 0.012,
     "minHeightM": 3,
     "maxHeightM": 400,
+    "playerScale": 4,
     "radiusRatio": 0.22,
     "ringOuterRatio": 0.6,
     "ringInnerRatio": 0.42,
@@ -380,7 +381,7 @@
     "standInsetM": 0.08,
     "footprintFill": 0.92,
     "wallItemHeight": 0.55,
-    "avatarHeightM": 1.1,
+    "avatarHeightM": 1.75,
     "grid": {
       "gapShare": 0.06,
       "liftM": 0.1,
