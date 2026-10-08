@@ -308,7 +308,7 @@
       "slots": [
         {
           "name": "body",
-          "tokens": ["navy-700"]
+          "tokens": ["glass-600"]
         }
       ],
       "clips": [],
@@ -532,6 +532,55 @@
       "loadPhase": "after-playable",
       "instanced": true,
       "nameKey": "models.name.hatchbackAmbient"
+    },
+    {
+      "id": "bus-ambient",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "bus-ambient.glb"
+        }
+      ],
+      "category": "vehicle",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "bottom-center",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": [
+        "silver-300",
+        "glass-600",
+        "rubber-900",
+        "asphalt-800",
+        "lamp-200",
+        "signal-500"
+      ],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "body",
+          "tokens": ["silver-300"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "after-playable",
+      "instanced": true,
+      "nameKey": "models.name.busAmbient"
     },
     {
       "id": "streetlight",

@@ -186,6 +186,7 @@
     "models.name.headwearTurban": "Turban",
     "models.name.headwearDurag": "Durag",
     "models.name.headwearBeanie": "Beanie",
-    "models.name.headwearBallcap": "Ball cap"
+    "models.name.headwearBallcap": "Ball cap",
+    "models.name.busAmbient": "City bus (traffic)"
   }
 }

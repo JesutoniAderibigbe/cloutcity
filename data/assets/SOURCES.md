@@ -216,8 +216,9 @@ Models: `tree-oak`, `tree-round`, `tree-tall`.
 | `facial-full-beard.glb` |  6716 | `0bfb923b559bb9cee770ce3aa9c091cadfc548a436e97c61bd838992f999dca8` | `scripts/blender/avatar/facial-full-beard.py` |
 | `acc-gold-hoops.glb`    |  8572 | `a33256fdcdf6298dcd619f6d209289377a4f9146d6d47b07ad35eff87232bb8e` | `scripts/blender/avatar/acc-gold-hoops.py`    |
 | `acc-subway-tote.glb`   |  8384 | `1e46d77559fe7f2a74fa96244dfb8c033f656c0f1afb35b6a40a598f7eee873c` | `scripts/blender/avatar/acc-subway-tote.py`   |
+| `bus-ambient.glb`       | 26144 | `df09f31903349ff9fc1f39fc00ebe62abea47ae1e0222e6dbedcfadeecfdcc06` | `scripts/blender/vehicles/bus-ambient.py`     |
 
-Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`, `hair-afro`, `hair-locs`, `hair-box-braids`, `hair-cornrows`, `hair-buzz`, `headwear-hijab`, `headwear-turban`, `headwear-durag`, `headwear-beanie`, `headwear-ballcap`.
+Models: `bus-ambient`, `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`, `hair-afro`, `hair-locs`, `hair-box-braids`, `hair-cornrows`, `hair-buzz`, `headwear-hijab`, `headwear-turban`, `headwear-durag`, `headwear-beanie`, `headwear-ballcap`.
 
 ## Models
 
@@ -229,6 +230,7 @@ Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-bear
 | `taxi-ambient`      | `kaykit-city-builder-bits`   | `car_taxi.gltf`                | vehicle          |
 | `sedan-ambient`     | `kaykit-city-builder-bits`   | `car_sedan.gltf`               | vehicle          |
 | `hatchback-ambient` | `kaykit-city-builder-bits`   | `car_hatchback.gltf`           | vehicle          |
+| `bus-ambient`       | `clout-city-blender`         | `bus-ambient.glb`              | vehicle          |
 | `streetlight`       | `kaykit-city-builder-bits`   | `streetlight.gltf`             | street-prop      |
 | `hydrant`           | `kaykit-city-builder-bits`   | `firehydrant.gltf`             | street-prop      |
 | `bench`             | `kaykit-city-builder-bits`   | `bench.gltf`                   | street-prop      |
