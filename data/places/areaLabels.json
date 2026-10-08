@@ -1,0 +1,214 @@
+{
+  "labels": [
+    {
+      "id": "east-river",
+      "kind": "water",
+      "nameKey": "map.area.eastRiver",
+      "location": {
+        "lat": 40.77,
+        "lng": -73.9405
+      },
+      "angleDeg": 62
+    },
+    {
+      "id": "east-river-south",
+      "kind": "water",
+      "nameKey": "map.area.eastRiver",
+      "location": {
+        "lat": 40.7055,
+        "lng": -73.984
+      },
+      "angleDeg": 25
+    },
+    {
+      "id": "hudson-river",
+      "kind": "water",
+      "nameKey": "map.area.hudsonRiver",
+      "location": {
+        "lat": 40.755,
+        "lng": -74.011
+      },
+      "angleDeg": 72
+    },
+    {
+      "id": "upper-bay",
+      "kind": "water",
+      "nameKey": "map.area.upperBay",
+      "location": {
+        "lat": 40.67,
+        "lng": -74.042
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "harlem-river",
+      "kind": "water",
+      "nameKey": "map.area.harlemRiver",
+      "location": {
+        "lat": 40.808,
+        "lng": -73.933
+      },
+      "angleDeg": 70
+    },
+    {
+      "id": "newtown-creek",
+      "kind": "water",
+      "nameKey": "map.area.newtownCreek",
+      "location": {
+        "lat": 40.737,
+        "lng": -73.945
+      },
+      "angleDeg": -20
+    },
+    {
+      "id": "flushing-bay",
+      "kind": "water",
+      "nameKey": "map.area.flushingBay",
+      "location": {
+        "lat": 40.765,
+        "lng": -73.86
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "astoria",
+      "kind": "neighborhood",
+      "nameKey": "map.area.astoria",
+      "location": {
+        "lat": 40.7662,
+        "lng": -73.9312
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "long-island-city",
+      "kind": "neighborhood",
+      "nameKey": "map.area.longIslandCity",
+      "location": {
+        "lat": 40.747,
+        "lng": -73.943
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "sunnyside",
+      "kind": "neighborhood",
+      "nameKey": "map.area.sunnyside",
+      "location": {
+        "lat": 40.743,
+        "lng": -73.92
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "jackson-heights",
+      "kind": "neighborhood",
+      "nameKey": "map.area.jacksonHeights",
+      "location": {
+        "lat": 40.755,
+        "lng": -73.885
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "greenpoint",
+      "kind": "neighborhood",
+      "nameKey": "map.area.greenpoint",
+      "location": {
+        "lat": 40.729,
+        "lng": -73.951
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "williamsburg",
+      "kind": "neighborhood",
+      "nameKey": "map.area.williamsburg",
+      "location": {
+        "lat": 40.713,
+        "lng": -73.956
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "bushwick",
+      "kind": "neighborhood",
+      "nameKey": "map.area.bushwick",
+      "location": {
+        "lat": 40.695,
+        "lng": -73.918
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "downtown-brooklyn",
+      "kind": "neighborhood",
+      "nameKey": "map.area.downtownBrooklyn",
+      "location": {
+        "lat": 40.693,
+        "lng": -73.985
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "park-slope",
+      "kind": "neighborhood",
+      "nameKey": "map.area.parkSlope",
+      "location": {
+        "lat": 40.672,
+        "lng": -73.979
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "midtown",
+      "kind": "neighborhood",
+      "nameKey": "map.area.midtown",
+      "location": {
+        "lat": 40.756,
+        "lng": -73.986
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "chelsea",
+      "kind": "neighborhood",
+      "nameKey": "map.area.chelsea",
+      "location": {
+        "lat": 40.746,
+        "lng": -74.001
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "lower-east-side",
+      "kind": "neighborhood",
+      "nameKey": "map.area.lowerEastSide",
+      "location": {
+        "lat": 40.715,
+        "lng": -73.984
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "harlem",
+      "kind": "neighborhood",
+      "nameKey": "map.area.harlem",
+      "location": {
+        "lat": 40.811,
+        "lng": -73.946
+      },
+      "angleDeg": 0
+    },
+    {
+      "id": "upper-east-side",
+      "kind": "neighborhood",
+      "nameKey": "map.area.upperEastSide",
+      "location": {
+        "lat": 40.773,
+        "lng": -73.957
+      },
+      "angleDeg": 0
+    }
+  ]
+}

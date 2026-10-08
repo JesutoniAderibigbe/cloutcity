@@ -57,6 +57,12 @@ export const OPTIONAL_CHUNK_MARKERS = [
   // Pin icons and labels (S04k, src/scene/pins/PinMarks.tsx): after the map is playable; the
   // pins draw without them until the chunk arrives.
   { id: 'pin-marks', marker: 'cc-feature:pin-marks' },
+  // Place plots (S04m, src/scene/plots/layer.ts): after the map is playable; the places keep
+  // their pins without them.
+  { id: 'venue-plots', marker: 'cc-feature:venue-plots' },
+  // The map style chip (S04m, src/scene/style/MapStyleChip.tsx): after the map is playable; the
+  // same choice lives in Phone → Settings.
+  { id: 'map-style', marker: 'cc-feature:map-style' },
   // supabase-js (S18): it only works online (sign-in, cloud saves, profiles, safety), so an
   // offline player gains nothing from having it installed; offline, the session stays local.
   { id: 'supabase-client', marker: 'GoTrueClient' },

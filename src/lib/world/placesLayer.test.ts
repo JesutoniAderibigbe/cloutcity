@@ -4,6 +4,9 @@ import { project } from '@/lib/geo/projection'
 import { landmarkPinLifts, landmarksLayer } from './landmarksLayer'
 import { boroughRenderState, boroughs, findPlace, mapPlaces } from './places'
 import { buildPlacesLayer, placesLayer } from './placesLayer'
+import { plots } from '@/lib/data/config'
+import { modelRef } from '@/lib/data/models'
+import { buildingScale } from './venuePlots'
 
 describe('places layer (S04c)', () => {
   it('has one pin per venue and landmark, at its real coordinates to the metre', () => {
@@ -23,6 +26,11 @@ describe('places layer (S04c)', () => {
     const landTop = scene.land.heightM - scene.land.baseM
     for (const pin of placesLayer.pins) {
       const lift = lifts.get(pin.id)
+      if (pin.kind === 'venue') {
+        // Venues float over their plot buildings instead (S04m), never as badges.
+        expect(pin.badge, pin.id).toBeUndefined()
+        continue
+      }
       if (lift === undefined || pin.kind !== 'landmark') {
         expect(pin.liftM, pin.id).toBeUndefined()
         expect(pin.badge, pin.id).toBeUndefined()
@@ -64,5 +72,23 @@ describe('places layer (S04c)', () => {
 
   it('is deterministic', () => {
     expect(JSON.stringify(buildPlacesLayer())).toBe(JSON.stringify(placesLayer))
+  })
+
+  it('floats each venue pin over its plot building with room for the bubble (S04m)', () => {
+    for (const pin of placesLayer.pins.filter((p) => p.kind === 'venue')) {
+      const style = plots.styles[pin.category]
+      if (style?.model == null) {
+        expect(pin.liftM, pin.id).toBeUndefined()
+        continue
+      }
+      const bounds = modelRef(style.model).bounds
+      if (bounds === undefined) throw new Error(`no bounds for ${style.model}`)
+      const roof =
+        plots.slabM +
+        (bounds.max[1] - bounds.min[1]) *
+          buildingScale(bounds, style.footprintM) *
+          plots.buildingHeightScale
+      expect(pin.liftM ?? 0, pin.id).toBeGreaterThanOrEqual(roof + plots.bubbleClearM - 0.5)
+    }
   })
 })

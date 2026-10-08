@@ -29,6 +29,7 @@ import { usePlayerHome } from '@/state/playerHome'
 import { useSceneFocus } from '@/state/sceneFocus'
 import { usePlayerSpot } from '@/state/trip'
 import { useActiveTier } from '@/state/quality'
+import { registerMapStyleDefault, useMapStyle } from '@/state/mapStyle'
 import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
 import { FreeRowFraming } from './camera/FreeRowFraming'
@@ -52,6 +53,8 @@ import type { SceneProps } from './types'
 
 // Pin icons and labels (S04k): their own chunk, after the city is playable.
 const PinMarks = lazy(() => import('./pins/PinMarks'))
+// The map style chip (S04m): after the city is playable, never on its path.
+const MapStyleChip = lazy(() => import('./style/MapStyleChip'))
 // The trip animation (S08) is never needed before the player picks a trip, so it loads after the
 // city is playable (S04k, PERF-6). Until it has loaded a trip cuts to its arrival, as it does
 // while the apartment has the screen (setTravelAnimator).
@@ -289,6 +292,21 @@ function CityScene3D({
       setBuilt(null)
     }
   }, [parsed, palette, config, expandingSoon, dayNightUniforms])
+  // The map style (S04m) sets the default view; a switch rebuilds the controls at that view.
+  const style = useMapStyle(config.mapStyles.default)
+  useEffect(() => registerMapStyleDefault(config.mapStyles.default), [config.mapStyles.default])
+  const look = config.mapStyles[style]
+  const camera = useMemo(
+    () => ({
+      ...config.camera,
+      distanceM:
+        window.innerWidth < window.innerHeight
+          ? look.camera.portraitDistanceM
+          : look.camera.distanceM,
+      polarDeg: { ...config.camera.polarDeg, default: look.camera.polarDeg },
+    }),
+    [config.camera, look],
+  )
   const placeId = spot?.kind === 'place' ? spot.placeId : null
   const rest = useMemo(() => {
     if (placeId === null || built === null || built instanceof Error) return home
@@ -297,7 +315,6 @@ function CityScene3D({
   }, [placeId, built, home])
   if (built instanceof Error) throw built
 
-  const { camera } = config
   const groundY = landTopY(config.land)
   const clip = nearFar(camera.distanceM, camera)
   const shadows = settings.shadows === 'pcf-directional'
@@ -353,6 +370,7 @@ function CityScene3D({
               gradientMap={built.gradientMap}
               dimmedBoroughs={built.dimmed}
               pins={parsed.geo.places.pins}
+              look={look}
               active={cityReady}
               handleRef={buildingsRef}
             />
@@ -370,7 +388,7 @@ function CityScene3D({
             {cityReady ? (
               // No fallback: the pins draw as before until the marks arrive.
               <Suspense>
-                <PinMarks pins={built.pins} palette={palette} />
+                <PinMarks pins={built.pins} palette={palette} look={look} />
               </Suspense>
             ) : null}
             <PlayerAvatar
@@ -441,6 +459,11 @@ function CityScene3D({
           </DayNightRig>
         </TierSettingsContext>
       </Canvas>
+      {cityReady ? (
+        <Suspense>
+          <MapStyleChip />
+        </Suspense>
+      ) : null}
     </div>
   )
 }

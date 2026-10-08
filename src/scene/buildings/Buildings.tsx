@@ -21,9 +21,9 @@ import { Group, type Texture } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { DistrictAssets } from '@/lib/data/districts'
 import type { QualityTier } from '@/lib/data/schemas/config'
-import type { CitySceneConfig } from '@/lib/data/schemas/scene'
+import type { CitySceneConfig, MapStyle } from '@/lib/data/schemas/scene'
 import { log } from '@/lib/log'
-import type { BoroughId } from '../geo/schema'
+import type { BoroughId, GeoPin } from '../geo/schema'
 import type { StreetPropsLayer } from '../props/layer'
 import { dimmedColor } from '../materials'
 import { useTierSettings } from '../quality/tierSettings'
@@ -56,8 +56,10 @@ interface BuildingsProps {
   /** The city's shared toon ramp. */
   readonly gradientMap: Texture
   readonly dimmedBoroughs: ReadonlySet<BoroughId>
-  /** Pin ground points (local metres): street props keep clear of them. */
-  readonly pins: readonly { readonly x: number; readonly y: number }[]
+  /** The pins: street props keep clear of them, and venues get plots (S04m). */
+  readonly pins: readonly GeoPin[]
+  /** The map style (S04m): background heights, density and plots; a change rebuilds the layer. */
+  readonly look: MapStyle
   /** The city has drawn its first frame: loading may start. */
   readonly active: boolean
   readonly handleRef: RefObject<BuildingsHandle | null>
@@ -71,6 +73,7 @@ export function Buildings({
   gradientMap,
   dimmedBoroughs,
   pins,
+  look,
   active,
   handleRef,
 }: BuildingsProps) {
@@ -132,13 +135,15 @@ export function Buildings({
     [materials],
   )
 
-  // Density and draw distances follow the tier without a reload.
-  const tierView = useRef({ density: settings.buildingDensity, scale: settings.lodDistanceScale })
+  // Density and draw distances follow the tier without a reload; the map style thins the
+  // background further (S04m).
+  const density = settings.buildingDensity * look.buildings.densityScale[settings.tier]
+  const tierView = useRef({ density, scale: settings.lodDistanceScale })
   useEffect(() => {
-    tierView.current = { density: settings.buildingDensity, scale: settings.lodDistanceScale }
-    layerRef.current?.setDensity(settings.buildingDensity)
+    tierView.current = { density, scale: settings.lodDistanceScale }
+    layerRef.current?.setDensity(density)
     layerRef.current?.setDistanceScale(settings.lodDistanceScale)
-  }, [settings.buildingDensity, settings.lodDistanceScale])
+  }, [density, settings.lodDistanceScale])
 
   const fill = config.buildings.fill
   const blockFill = useMemo<BlockFill>(
@@ -168,6 +173,8 @@ export function Buildings({
         assets: tierAssets,
         groundY,
         config: config.buildings,
+        heightScale: look.buildings.heightScale,
+        styleColors: look.colors,
         districtColors: {
           walls: palette.buildings.walls,
           roof: palette.buildings.roof,
@@ -188,6 +195,11 @@ export function Buildings({
           blocks: materials.blocks,
           blocksDimmed: materials.blocksDimmed,
         },
+        ...(look.plots
+          ? {
+              plots: { pins, mask: materials.mask, cacheMaxEntries: config.models.cacheMaxEntries },
+            }
+          : {}),
         prepare: async (object) => {
           if (gl.extensions.has('KHR_parallel_shader_compile')) {
             await gl.compileAsync(object, camera, scene)
@@ -245,6 +257,8 @@ export function Buildings({
   }, [
     active,
     blockFill,
+    pins,
+    look,
     tierAssets,
     groundY,
     config,

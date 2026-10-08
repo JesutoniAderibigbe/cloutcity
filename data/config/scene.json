@@ -521,5 +521,95 @@
       },
       "clip": "idle"
     }
+  },
+  "mapStyles": {
+    "default": "game",
+    "game": {
+      "camera": {
+        "distanceM": 700,
+        "polarDeg": 38,
+        "portraitDistanceM": 1050
+      },
+      "buildings": {
+        "heightScale": 0.32,
+        "densityScale": {
+          "low": 1,
+          "mid": 0.65,
+          "high": 0.55
+        }
+      },
+      "plots": true,
+      "pins": {
+        "venueLift": true,
+        "venueCones": false
+      },
+      "marks": {
+        "iconPx": 50,
+        "labelPx": 30,
+        "maxLabels": 8,
+        "ringWidth": 0.05,
+        "pullToCamera": 0.2
+      },
+      "colors": {
+        "walls": [
+          "softbrick-200",
+          "softstone-100",
+          "softstone-200",
+          "softconcrete-200",
+          "softstone-100",
+          "softbrick-300",
+          "softstone-100",
+          "softglass-200"
+        ],
+        "roof": "softroof-200",
+        "blocks": [
+          "softstone-100",
+          "softstone-200",
+          "softconcrete-200",
+          "softbrick-200",
+          "softstone-100",
+          "softglass-200",
+          "softstone-200",
+          "softstone-100"
+        ],
+        "land": {
+          "manhattan": "road-200",
+          "brooklyn": "road-300",
+          "queens": "road-300"
+        },
+        "park": "parkbright-400",
+        "water": "lagoon-500"
+      },
+      "subwayLiftM": 24
+    },
+    "real": {
+      "camera": {
+        "distanceM": 1100,
+        "polarDeg": 48,
+        "portraitDistanceM": 1100
+      },
+      "buildings": {
+        "heightScale": 1,
+        "densityScale": {
+          "low": 1,
+          "mid": 1,
+          "high": 1
+        }
+      },
+      "plots": false,
+      "pins": {
+        "venueLift": false,
+        "venueCones": true
+      },
+      "marks": {
+        "iconPx": 30,
+        "labelPx": 26,
+        "maxLabels": 6,
+        "ringWidth": 0.09,
+        "pullToCamera": 0.35
+      },
+      "colors": {},
+      "subwayLiftM": 0
+    }
   }
 }

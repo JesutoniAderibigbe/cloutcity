@@ -112,6 +112,11 @@ export interface PinObjects {
   height(): number
   /** Scene height of a pin's head at the current scale (pin icons sit on it, S04k). */
   headY(pin: GeoPin): number
+  /**
+   * Venue pins float `liftM` over their plot buildings (the game map style, S04m) or stand on
+   * the ground (false, the default until the map style says otherwise).
+   */
+  setVenueLift(on: boolean): void
   /** Shows the selection ring under a pin, or hides it (null or an unknown id). */
   setSelected(id: string | null): void
   selectedId(): string | null
@@ -169,7 +174,9 @@ export function buildPins(
     ...pins.filter((pin) => pin.kind === 'venue'),
     ...pins.filter((pin) => pin.kind === 'landmark'),
   ]
-  const baseY = (pin: GeoPin) => groundY + settings.liftM + (pin.liftM ?? 0)
+  let venueLift = false
+  const baseY = (pin: GeoPin) =>
+    groundY + settings.liftM + (pin.kind === 'venue' && !venueLift ? 0 : (pin.liftM ?? 0))
 
   // White base colour: the instance colour carries each pin's style.
   const material = new MeshToonMaterial({ color: new Color(1, 1, 1), gradientMap })
@@ -254,6 +261,10 @@ export function buildPins(
       scaledFor = distance
       height = pinHeight(distance, settings)
       writeMatrices()
+    },
+    setVenueLift(on) {
+      venueLift = on
+      if (height > 0) writeMatrices()
     },
     setSelected(id) {
       selected = id !== null && byId.has(id) ? id : null

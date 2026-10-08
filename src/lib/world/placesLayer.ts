@@ -5,8 +5,11 @@
  */
 import type { Borough } from '@/lib/data/schemas/content'
 import type { PinStyle } from '@/scene/geo/schema'
+import { plots } from '@/lib/data/config'
+import { modelRef } from '@/lib/data/models'
 import { landmarkPinLifts } from './landmarksLayer'
 import { boroughRenderState, boroughs, mapPlaces, placeName, type MapPlace } from './places'
+import { plotPinLifts } from './venuePlots'
 
 export interface PlacePin {
   readonly id: string
@@ -23,7 +26,10 @@ export interface PlacePin {
   readonly y: number
   /** A playable place, a teaser on "expanding soon" land, or a muted memorial. */
   readonly style: PinStyle
-  /** Extra height above the land top (S07a lifts pins over landmark models). Omitted when 0. */
+  /**
+   * Extra height above the land top: S07a lifts pins over landmark models, S04m over a venue's
+   * plot building. Omitted when 0.
+   */
   readonly liftM?: number
   /**
    * The landmark has a 3D model (S07a): its pin is a compact badge floating over the model
@@ -58,10 +64,18 @@ export function buildPlacesLayer(): PlacesLayer {
   })
   const renderOf = new Map(renders.map((render) => [render.id, render]))
   const lifts = landmarkPinLifts()
+  const venueLifts = plotPinLifts(
+    mapPlaces()
+      .filter((place) => place.kind === 'venue')
+      .map((place) => ({ ...place, kind: 'venue' as const, style: 'normal' })),
+    plots,
+    (id) => modelRef(id).bounds,
+  )
   const pins = mapPlaces().map((place): PlacePin => {
     const render = renderOf.get(place.borough)
     if (render === undefined) throw new Error(`places layer: no borough "${place.borough}"`)
     const lift = place.kind === 'landmark' ? lifts.get(place.id) : undefined
+    const venueLift = place.kind === 'venue' ? venueLifts.get(place.id) : undefined
     return {
       id: place.id,
       kind: place.kind,
@@ -73,6 +87,7 @@ export function buildPlacesLayer(): PlacesLayer {
       style: pinStyle(place, render),
       ...(lift === undefined ? {} : { badge: true as const }),
       ...(lift === undefined || lift === 0 ? {} : { liftM: lift }),
+      ...(venueLift === undefined || venueLift === 0 ? {} : { liftM: venueLift }),
     }
   })
   return { pins, boroughs: renders }

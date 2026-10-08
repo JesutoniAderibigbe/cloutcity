@@ -25,6 +25,10 @@ const scene = readJson<{
     polarDeg: { min: number; max: number }
     azimuthDeg: { min: number; max: number }
   }
+  mapStyles: { default: 'game' | 'real' } & Record<
+    'game' | 'real',
+    { camera: { polarDeg: number } }
+  >
 }>('data/config/scene.json')
 const bounds = readJson<{ west: number; south: number; east: number; north: number }>(
   'data/geo/bounds.json',
@@ -210,7 +214,8 @@ test.describe('3D city scene', () => {
     const start = project({ lat: 40.7651, lng: -73.9247 })
     expect(state.target.x).toBeCloseTo(start.x, 0)
     expect(-state.target.z).toBeCloseTo(start.y, 0)
-    expect(state.polarDeg).toBeCloseTo(48, 1)
+    // The default map style's view (S04m, scene.json mapStyles).
+    expect(state.polarDeg).toBeCloseTo(scene.mapStyles[scene.mapStyles.default].camera.polarDeg, 1)
     expect(state.azimuthDeg).toBeCloseTo(0, 1)
     expectInsideLimits(state)
   })

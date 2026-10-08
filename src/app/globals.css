@@ -180,12 +180,22 @@ body {
   grid-row: 4 / 7;
 }
 
+/* The map style chip (S04m) shares the Map data chip's rows, in the opposite corner. */
+.map-style-row {
+  container-type: size;
+  grid-row: 4 / 7;
+}
+
 /* UX-15: in the bottom-end corner above the tab bar while the sheet zone is empty; back in the
    free scene row's corner while a sheet (or the Places panel) fills it, so the chip never sits
    under a sheet. A sheet is open when the zone's content wrapper (OverlayLayout.tsx) holds a
    child other than a passive sr-only status. (`:has()` cannot nest, hence the child test.) */
 .cc-overlay:has([data-overlay-zone='sheet'] > * > :not([data-overlay-passive]))
   .map-attribution-row {
+  grid-row: 4;
+}
+
+.cc-overlay:has([data-overlay-zone='sheet'] > * > :not([data-overlay-passive])) .map-style-row {
   grid-row: 4;
 }
 
