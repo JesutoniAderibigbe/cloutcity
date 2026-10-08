@@ -252,7 +252,7 @@ describe('config/perf.json', () => {
       sceneChunkJsGzKB: 350,
       // S16: the apartment's lazy 3D chunk, reported apart from the before-playable 3D chunk.
       apartmentChunkJsGzKB: 40,
-      totalJsToPlayableGzKB: 550,
+      totalJsToPlayableGzKB: 560,
       baseGeoGzKB: 400,
       districtBuildingsGzKB: { low: 150, mid: 300, high: 400 },
       totalBytesToPlayableGzKB: { low: 1200, mid: 1600, high: 2000 },

@@ -3,7 +3,7 @@
   "shellHeadroomGzKB": 20,
   "sceneChunkJsGzKB": 350,
   "apartmentChunkJsGzKB": 40,
-  "totalJsToPlayableGzKB": 550,
+  "totalJsToPlayableGzKB": 560,
   "baseGeoGzKB": 400,
   "districtBuildingsGzKB": {
     "low": 150,

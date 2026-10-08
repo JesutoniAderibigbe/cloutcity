@@ -149,7 +149,7 @@ All values live in `/data/config/perf.json` and are enforced by `npm run budget`
 |---|---|---|---|
 | Shell JS (route `/`, before the 3D chunk), gzipped | ≤ 180 KB | same | same |
 | 3D chunk JS (three + R3F + drei + scene), gzipped, lazy | ≤ 350 KB | same | same |
-| Total JS to playable, gzipped | ≤ 550 KB | same | same |
+| Total JS to playable, gzipped | ≤ 560 KB (user raised from 550 on 2026-10-08, DEC-47) | same | same |
 | Base geo, gzipped (land, water, parks, subway, stations, POIs, zones) | ≤ 400 KB | same | same |
 | District buildings, gzipped | ≤ 150 KB | ≤ 300 KB | ≤ 400 KB |
 | Total bytes to playable, gzipped (audio excluded; it loads after the player's choice) | ≤ 1.2 MB | ≤ 1.6 MB | ≤ 2.0 MB |
