@@ -92,6 +92,8 @@ const OutfitSchema = z.strictObject({
   variants: z
     .partialRecord(IdSchema, IdSchema)
     .refine((variants) => Object.keys(variants).length > 0, { error: 'an outfit needs a body' }),
+  /** Attachment models this outfit hides, because they would clash with it (S16b). */
+  hides: z.array(IdSchema).optional(),
   nameKey: AvatarNameKeySchema,
 })
 

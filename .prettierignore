@@ -27,3 +27,6 @@ data/geo/SOURCES.md
 src/lib/supabase/database.types.ts
 # Go templates (GoTrue email templates), not plain HTML.
 supabase/templates/
+# Written by npm run blender:build (JSON.stringify), checked by --check.
+scripts/blender/lock.json
+scripts/blender/fixtures/lock.json

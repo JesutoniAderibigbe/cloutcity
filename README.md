@@ -49,7 +49,7 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                                                                                     |
 | `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                                      |
 | `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                                       |
-| `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender                                                                                                    |
+| `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender, `-- --selftest` checks two builds are byte-identical                                              |
 | `npm run homes:update`            | Rewrites `data/homes/engine.derived.json` (the engine's compact home grids and finishes) after editing `data/homes/interiors.json` or `finishes.json`                                                                        |
 | `npm run thumbs`                  | Renders the shop's item thumbnails from the decor models into `public/thumbs` (see 3D models); `-- --check` verifies                                                                                                         |
 | `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                                       |
@@ -239,7 +239,9 @@ sha-matching file into `.cache/assets/` by hand and build with `-- --offline`.
   ratio, slots match source `materials` and `meshes`, and `joints` names a catalog `jointMaps`
   entry that folds fingers and pole targets into the wrist and foot and renames every joint to
   kebab-case (`Chest` becomes `torso`, `Head` `head`). A static model with `fromSkinned` cuts a
-  pack hairstyle from a skinned head in the bind pose. Rig `clips` may rename (`{from, as}`).
+  pack hairstyle from a skinned head in the bind pose. Rig `clips` may rename (`{from, as}`), and
+  `extraClips` adds clips from a committed Blender output (the S16b `talk`/`sit` retarget,
+  `scripts/blender/out/avatar-clips-{f,m}.glb`), bound to the rig's joints by name.
   These parts ship indexed without normals and with meshopt filters; the runtime flat-shades
   them (`src/scene/models/prepare.ts`). The build also writes `data/avatar/frame.json`, each
   part's material bounds and each rig's joint positions in the bind pose, which the Blender
@@ -248,7 +250,12 @@ sha-matching file into `.cache/assets/` by hand and build with `-- --offline`.
   `scripts/blender/lock.json` through `scripts/blender/run.py` with the pinned Blender
   (`--background --factory-startup --python-exit-code 1`, `PYTHONHASHSEED=0`; override the
   executable with `BLENDER_BIN`) and commits the GLBs to `scripts/blender/out/`; the asset build
-  reads them as a `local` source and checks their hashes, so CI never needs Blender.
+  reads them as a `local` source and checks their hashes, so CI never needs Blender. The lock pins
+  each model's runner, script and data `deps` (the avatar attachments read `data/avatar/frame.json`)
+  and, for a script that reads pack files from `.cache/assets` (the S16b talk/sit retarget,
+  `scripts/blender/avatar-anim/retarget.py`, into `out/avatar-clips-{f,m}.glb`), their `sources`
+  by the sha256 in `scripts/assets/sources.lock.json`. `-- --id <id>` builds one model,
+  `-- --selftest` builds each twice and fails unless both match each other and the committed GLB.
 - **Shop thumbnails** (S04k). `npm run thumbs` renders each decor item with a model
   (`scene.json models.decor`) offline in headless Chromium with the pinned three, recoloured to
   its first variant, into content-named `public/thumbs/<item>.<sha8>.webp` and

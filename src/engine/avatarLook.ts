@@ -78,24 +78,25 @@ export function effectiveLook(
   const byKind: Record<string, readonly string[]> = {
     headwear: headwear.model === undefined ? [] : [headwear.model],
     hairPiece: hairHidden || style.piece === undefined ? [] : [style.piece],
-    // S16b: a frame whose bald head is open on top wears its scalp cap whenever no hair covers it.
-    scalpCap:
-      frame.scalpCap !== undefined && (hairHidden || style.piece === undefined)
-        ? [frame.scalpCap]
-        : [],
+    // S16b: a frame whose bald head is open behind the hairline always wears its scalp cap; it
+    // sits inside every hairstyle and covering, and short styles do not reach the open edge.
+    scalpCap: frame.scalpCap === undefined ? [] : [frame.scalpCap],
     facialHair: modelOf(options.facialHair, look.facialHair),
     eyewear: modelOf(options.eyewear, look.eyewear),
     ears: modelOf(options.ears, look.ears),
     item: items,
   }
+  const outfit = optionOf(options.outfits, look.outfit)
+  // An outfit can hide an attachment that clashes with it (the outdoors pack and the tote).
+  const hidden = new Set(outfit.hides ?? [])
   // The scalp cap is part of the head, so it never takes an attachment's place.
   const attachments = [
     ...(byKind.scalpCap ?? []),
     ...options.attachments.priority
       .flatMap((kind) => byKind[kind] ?? [])
+      .filter((model) => !hidden.has(model))
       .slice(0, options.attachments.max),
   ]
-  const outfit = optionOf(options.outfits, look.outfit)
   const body = outfit.variants[frame.id]
   if (body === undefined) {
     throw new Error(`avatarLook: outfit "${outfit.id}" has no ${frame.id} variant`)

@@ -9,168 +9,346 @@
     {
       "id": "hair-afro",
       "script": "scripts/blender/avatar/hair-afro.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/hair-afro.py": "e84c328976a65677b1cc679deae6adb97f20bc6ad246745a57d0e4bb42e60213",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/hair-afro.py": "e4bdf6f29d5545c4a612c773b0c954df93c0282343f394c69b4a47185362f3fd",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "e4f909e91b82767d7144d1d1be4937b6ebeed83a5850b35b24761617d348382e",
-      "bytes": 14180
+      "sha256": "a1940d00cf831edfc85ffe83c68599ab0381c5d4f3f3575aece9898ec9e6246f",
+      "bytes": 19800
     },
     {
       "id": "hair-locs",
       "script": "scripts/blender/avatar/hair-locs.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/hair-locs.py": "14e5f66f36e2a28ac5d2254eef11e01cebff97543f87cd025fd5fe5d54eb92c3",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/hair-locs.py": "61af4fb6aed30fcdbeb58c14cd3cff503a44772ea7b93428f9299b11b85934e4",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "dca6433f8b721e9017bdbaa39292dc6603aa45eceb89ea3dc81d0092f6b70442",
-      "bytes": 14788
+      "sha256": "36e3738f734fe9b164ac70c5d01506cc998df353e4ddb57c956d93fc648547e8",
+      "bytes": 19800
     },
     {
       "id": "hair-box-braids",
       "script": "scripts/blender/avatar/hair-box-braids.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/hair-box-braids.py": "d68b83c0a3441ccb0b4b3333ba0ba833bf32709a50d9883539b37214b06e48f2",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/hair-box-braids.py": "7b4c23f2fd9434d31d0811f919fe41b10c324f2c8b99de49e88e829a2cca5a87",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "b9ae6ba808450eec39ca395e7a9804c22306286f820143b0d5615095d887524c",
-      "bytes": 13884
+      "sha256": "9e9caf841cf0116413aac7edb784274f8be7b7e809fa0f553767c809e19441dd",
+      "bytes": 20832
     },
     {
       "id": "hair-cornrows",
       "script": "scripts/blender/avatar/hair-cornrows.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/hair-cornrows.py": "a87795e3f50b13b6e9fc12737b0cb3e1714e3149b6aeb6104169d9c6bed25637",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/hair-cornrows.py": "508c2cc77647ad4dc3f8a9d8aecc90ab5c2715768c49cb2b09b26f938d5c8dfb",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "c492654cb713311dae1fe47e443716d3cfd8ae6a2dc9385d505f8beb3a93ae9a",
-      "bytes": 17312
+      "sha256": "f5fa6704acb038ab21dd443539ad3e70b89cefbf5b2bcc08e9ebbf9c027f47a4",
+      "bytes": 20744
     },
     {
       "id": "hair-buzz",
       "script": "scripts/blender/avatar/hair-buzz.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/hair-buzz.py": "e24427e3aeec139a47b8ab85aedab8a9d7a394374966357abf7fd7a1b079999f",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/hair-buzz.py": "02b15ce71f2deeda882d433840bbc436e8ff1108a124b866aad7a2e36e604f74",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "dc9c9b4f4f1c14daf0ab43a1acfe9fc2b37b6a2329c8c1c5b96c6242059333d2",
-      "bytes": 7924
+      "sha256": "fdf1df6d8abd6eb7d6395406d3570cb2a6cbd788885525e36643173ad8739ff5",
+      "bytes": 14808
     },
     {
       "id": "headwear-hijab",
       "script": "scripts/blender/avatar/headwear-hijab.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/headwear-hijab.py": "fe83d908b56332cb577aca35c68abac61579c54af33b773ba27742185caae6c0",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/headwear-hijab.py": "53bf49deb5fd51b82fd92848704c4fdd42fbd15625acb82240aeb5e241eed4b0",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "2252cac89e7d0f7c4eb27ea6f5902c06bcd6965eb43717c21301f0ea860951aa",
-      "bytes": 18248
+      "sha256": "0c6a2e3c9c7d47729ce56f73b46e401c9a40a4afda71b3460728875f0ae9441e",
+      "bytes": 19808
     },
     {
       "id": "headwear-turban",
       "script": "scripts/blender/avatar/headwear-turban.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/headwear-turban.py": "f55afabcaa5bdf04311ff20967e0b07a8116c1ac2fce6929ef1f8ae45793e1b9",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/headwear-turban.py": "16d9a2c49efe08e0d054f10ab5056ec0012e3be5978e88d80570f9d70643b2ba",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "8ed63945ec7c3603baaa74b7871863aad60ffc9e9f6c1572ce14c7ba6fbfaf57",
-      "bytes": 12320
+      "sha256": "e07ef77b23f7740a34f8f4d394acea687c6f48fafcfb6d1b2c5aaec094600d2c",
+      "bytes": 19812
     },
     {
       "id": "headwear-durag",
       "script": "scripts/blender/avatar/headwear-durag.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/headwear-durag.py": "5867027da9c18c96e2509b64c80e0bdbc98c5d9e4b1132d60ad798691070f74b",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/headwear-durag.py": "c1807deba6629611f35544c3fa4e37bde034dd2df6a2c880ef33396d0c3d96f2",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "1357ccaf38aa757898a9d6bce351a0186032e88483e9603228b02539ab2516a4",
-      "bytes": 10760
+      "sha256": "d948391a86159de5a52d18dbc25f20068120fbf6befcd1afc4c73c54547af895",
+      "bytes": 19184
     },
     {
       "id": "headwear-beanie",
       "script": "scripts/blender/avatar/headwear-beanie.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/headwear-beanie.py": "b99aea9f5608e1f7bc8d58a22f9ada9c4ad83907f8924ead842fa6792096f8bf",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/headwear-beanie.py": "a015cc2cb456f0a8165453a88c164f284e8fc91c2e9be35fd3fb34b366c35664",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "5cd685830a7f56adf867c20bc0e469f27e3876b5281e21f2b4e07763d7157cc5",
-      "bytes": 14196
+      "sha256": "170bb62aab74310daec348136645f9690dce42a6dd1a5c0308fcd63f23eaaecc",
+      "bytes": 17940
     },
     {
       "id": "headwear-ballcap",
       "script": "scripts/blender/avatar/headwear-ballcap.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/headwear-ballcap.py": "7c6a8cd11d5073fe4259a2b78421e98677d27a31872f92fe4bcc6ffc76797d86",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/headwear-ballcap.py": "a69319d76175907f3e4400fcfe722c1cddc25728ee702ddc7f337a8b6227f20d",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "7d35745781483fe219c907887ccb6ec5c6552f72cfa2363a42c44f958e699362",
-      "bytes": 8892
+      "sha256": "c2543f3f8cfc8957be93d70dfb35a5998e906bdab118b8ccbe0f37f0b08566d8",
+      "bytes": 17008
     },
     {
       "id": "facial-stubble",
       "script": "scripts/blender/avatar/facial-stubble.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/facial-stubble.py": "a5a44f9994963bb7b8f951fe958102d997e143e76613916f9e79fdbae8d22be5",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/facial-stubble.py": "8a17aac53360d2a8f7fc0eed004ebc8ec8aa00e4bb0e99c9ac19f53957092fc8",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "f835d297dc773ad8bb974505134d1cf45e30e96cd0350cf3a9a22155ef81c44f",
-      "bytes": 3892
+      "sha256": "e01bc0eb78f4af024ff8b042eb23650db5958054d1191cf2ac727674b14caa2b",
+      "bytes": 5768
     },
     {
       "id": "facial-moustache",
       "script": "scripts/blender/avatar/facial-moustache.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/facial-moustache.py": "646df65af32639825ec58c089cd57c9da2ed802c3a82c44471fcc5e5a1c586ed",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/facial-moustache.py": "765f659e3cbc881af901361d9f581620198e52173f2eb2d2cb70ca3850d49eb1",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "47b460b78e0d94053fa37aa0073e5f9715353750cef6c66bbf13deb66de3477f",
-      "bytes": 3900
+      "sha256": "f08bdb6f24da9feef6691a1db86f4755d2a7732ca58562e9b51d2b37f5ff229b",
+      "bytes": 4840
     },
     {
       "id": "facial-goatee",
       "script": "scripts/blender/avatar/facial-goatee.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/facial-goatee.py": "d0be1affe4c52aafff2f6aaf6be6d90bbeff151d7263f8232c3ecb8e9f6975c3",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/facial-goatee.py": "4eb9828d79ec8aac80fbda797a0b7fa8a31c07320833f46c5aeda575154efbb0",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "57ada8c39088c1893d23aa2b9ab20ab4760edd1c7dbf8e09f58fb6687a51a231",
-      "bytes": 4828
+      "sha256": "4773bc8ed626a10fd1b5122ab0ca2b84af521c171f0d8b136264554fafaa394d",
+      "bytes": 7016
     },
     {
       "id": "facial-full-beard",
       "script": "scripts/blender/avatar/facial-full-beard.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/facial-full-beard.py": "abe9941c80efd23d2e97e9e12c916f1c7b4fd05d6563c964696dc8c0d4079119",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/facial-full-beard.py": "96c41bd3b48a7fa7c87f0c56a462d4330dc1f3218e0aa3f9e07bd36fcbd1bdd3",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "0bfb923b559bb9cee770ce3aa9c091cadfc548a436e97c61bd838992f999dca8",
-      "bytes": 6716
+      "sha256": "2c180c3e10c11f8318f4ed99fd2c67502c9bd87700a518e3eb39edef1be91ce9",
+      "bytes": 8588
     },
     {
       "id": "acc-gold-hoops",
       "script": "scripts/blender/avatar/acc-gold-hoops.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/acc-gold-hoops.py": "fa09110c4fecde37ab983fb668997af6b2393bbdda2f6821e9513b3cc9129421",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/acc-gold-hoops.py": "361a138d4287f7e4782be9f553cedbe10b9f6f3ac08ce6c21be06e117e989ee0",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "a33256fdcdf6298dcd619f6d209289377a4f9146d6d47b07ad35eff87232bb8e",
+      "sha256": "fb56ae287f18d669a4f9b8787bdc1d1510ae26bd4e263c44e4cf26cdd7a4ac88",
       "bytes": 8572
     },
     {
       "id": "acc-subway-tote",
       "script": "scripts/blender/avatar/acc-subway-tote.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
       "inputs": {
-        "scripts/blender/avatar/acc-subway-tote.py": "ae77358378b145541d1fa531dc200b9569759d559d07e401bfb61d47f06dfcd6",
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/acc-subway-tote.py": "a6b654897e929af9263c34da860914571b14a04f03675e032493f74e85d6de7f",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "1e46d77559fe7f2a74fa96244dfb8c033f656c0f1afb35b6a40a598f7eee873c",
-      "bytes": 8384
+      "sha256": "215771a4e98f3ba3e8beb63dd74b4554bb7752433448ea2e758c14e300b32622",
+      "bytes": 8176
+    },
+    {
+      "id": "glasses",
+      "script": "scripts/blender/avatar/glasses.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
+      "inputs": {
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/glasses.py": "e4ef8e82bcf3f137b1a1d28d688835bfd851bf3369895701733a27b848864f0e",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
+      },
+      "sha256": "ece88e956a205d90e2d7dcd2cea670d55eef60fde5e3926f948c881dd81882ad",
+      "bytes": 7804
+    },
+    {
+      "id": "sunglasses",
+      "script": "scripts/blender/avatar/sunglasses.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
+      "inputs": {
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/sunglasses.py": "058b1de2209016a66d6d1300720897ceb1674755be65f10bc33fb96fda1b43ce",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
+      },
+      "sha256": "511c2f4aa0832fdd78ff78a9a3c73770a20f548d968a566ababdc053eb499cad",
+      "bytes": 7004
+    },
+    {
+      "id": "hearing-aid",
+      "script": "scripts/blender/avatar/hearing-aid.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
+      "inputs": {
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/hearing-aid.py": "b0a3ddfca4aed196b1e480886a5758dd18cbaf88524055bf339773bfcbb62e88",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
+      },
+      "sha256": "19e029befc3bdedb7db043c4c511457db9f9126e766ee62968ecb441da72ebb8",
+      "bytes": 7516
+    },
+    {
+      "id": "scalp-cap-f",
+      "script": "scripts/blender/avatar/scalp-cap-f.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
+      "inputs": {
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar/scalp-cap-f.py": "ddb5191520d0ffdf881042f4ee47e05baff89b28041b37ca0dba60e94f3d65e5",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
+      },
+      "sha256": "60e5ce074a4201a351e4d46a16349b841634453994ad5a621315d0c1660338b8",
+      "bytes": 5444
+    },
+    {
+      "id": "avatar-clips-f",
+      "script": "scripts/blender/avatar-anim/retarget.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
+      "sources": [
+        {
+          "source": "quaternius-ual",
+          "path": "quaternius-ual-standard.zip",
+          "sha256": "cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724"
+        },
+        {
+          "source": "quaternius-modular-women",
+          "path": "glTF/Casual.gltf",
+          "sha256": "b0fe6e92219cd71808844a20a1a8b960fd1cf640a6546dc6362b5add6604e87c"
+        }
+      ],
+      "args": [
+        "frame=f"
+      ],
+      "inputs": {
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar-anim/retarget.py": "f8c62d842d9935c6aa95c0f7df9270be14aab92149a25646073cddfc1a474ef9",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
+      },
+      "sha256": "ceaa23f9c140efdd6704e8382d8f13263c2c747504187a87b358e202d070d049",
+      "bytes": 74660
+    },
+    {
+      "id": "avatar-clips-m",
+      "script": "scripts/blender/avatar-anim/retarget.py",
+      "deps": [
+        "data/avatar/frame.json"
+      ],
+      "sources": [
+        {
+          "source": "quaternius-ual",
+          "path": "quaternius-ual-standard.zip",
+          "sha256": "cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724"
+        },
+        {
+          "source": "quaternius-modular-men",
+          "path": "glTF/Casual_Hoodie.gltf",
+          "sha256": "dd74886c26998a0fa888b4ce557a0932d7d97b0265dd4c763154d081b7a6cb98"
+        }
+      ],
+      "args": [
+        "frame=m"
+      ],
+      "inputs": {
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar-anim/retarget.py": "f8c62d842d9935c6aa95c0f7df9270be14aab92149a25646073cddfc1a474ef9",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
+      },
+      "sha256": "ecb767558bfcae8b754e3262393d4571fcd9053bbcd657c8559e208964123d5e",
+      "bytes": 74984
     },
     {
       "id": "bus-ambient",
       "script": "scripts/blender/vehicles/bus-ambient.py",
       "inputs": {
-        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c",
         "scripts/blender/vehicles/bus-ambient.py": "6ed68fbd692672739d03f75194e1fd1d031b90a455411982f2e9db52b849f366"
       },
       "sha256": "df09f31903349ff9fc1f39fc00ebe62abea47ae1e0222e6dbedcfadeecfdcc06",

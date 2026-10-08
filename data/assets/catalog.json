@@ -3288,6 +3288,168 @@
       "attach": "head"
     },
     {
+      "id": "glasses",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glasses.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["iron-900", "glass-300"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.glasses",
+      "attach": "head"
+    },
+    {
+      "id": "sunglasses",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "sunglasses.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["iron-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.sunglasses",
+      "attach": "head"
+    },
+    {
+      "id": "hearing-aid",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hearing-aid.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["skin-400", "steel-400"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "shell",
+          "tokens": ["skin-400"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hearingAid",
+      "attach": "head"
+    },
+    {
+      "id": "scalp-cap-f",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "scalp-cap-f.glb"
+        }
+      ],
+      "category": "avatar-accessory",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["skin-400"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "tokens": ["skin-400"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.scalpCapF",
+      "attach": "head"
+    },
+    {
       "id": "outfit-w-casual",
       "source": "quaternius-modular-women",
       "kind": "skinned",
@@ -4614,7 +4776,12 @@
       "loadPhase": "after-playable",
       "instanced": false,
       "nameKey": "models.name.avatarRigF",
-      "joints": "modular"
+      "joints": "modular",
+      "extraClips": {
+        "source": "clout-city-blender",
+        "path": "avatar-clips-f.glb",
+        "clips": ["talk", "sit"]
+      }
     },
     {
       "id": "avatar-rig-m",
@@ -4672,7 +4839,12 @@
       "loadPhase": "after-playable",
       "instanced": false,
       "nameKey": "models.name.avatarRigM",
-      "joints": "modular"
+      "joints": "modular",
+      "extraClips": {
+        "source": "clout-city-blender",
+        "path": "avatar-clips-m.glb",
+        "clips": ["talk", "sit"]
+      }
     },
     {
       "id": "npc-woman",

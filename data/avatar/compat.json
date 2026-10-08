@@ -42,25 +42,5 @@
       "outfit-12": "man"
     }
   },
-  "pending": [
-    "hair-afro",
-    "hair-locs",
-    "hair-box-braids",
-    "hair-cornrows",
-    "hair-buzz",
-    "headwear-hijab",
-    "headwear-turban",
-    "headwear-durag",
-    "headwear-beanie",
-    "headwear-ballcap",
-    "facial-stubble",
-    "facial-moustache",
-    "facial-goatee",
-    "facial-full-beard",
-    "glasses",
-    "sunglasses",
-    "hearing-aid",
-    "acc-gold-hoops",
-    "acc-subway-tote"
-  ]
+  "pending": []
 }

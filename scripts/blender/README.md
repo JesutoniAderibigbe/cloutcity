@@ -47,10 +47,18 @@ PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 blender -b --factory-startup -noaudio
 - `run.ts`, `inputs.ts`, `ship.ts`, `sources-md.ts`: the npm entry point, the input digest, the
   runtime packing of each level (one mesh, `_EMISSIVE` lamps, the S04h quantize + meshopt finish)
   and the SOURCES.md section.
-- `avatar/<id>.py` (S16a, DEC-28): the avatar attachments (hair pieces, head coverings, facial
-  hair, accessories). These belong to `npm run blender:build` (`build.ts`, `run.py`, `lock.json`,
-  outputs in `out/`), not to the landmark build: the lock pins only `run.py` and the script, so
-  each script carries its own copy of the shared helpers, and they never import `cclib`.
+- `avatar/<id>.py` (S16a, DEC-28; refit to the Quaternius modular frame in S16b P2a): the avatar
+  attachments (hair pieces, head coverings, facial hair, eyewear, accessories, and `scalp-cap-f`,
+  which closes the women's open bald head). Each is modelled in the characters' bind pose, read
+  from `data/avatar/frame.json`, and checks its own triangle cap and bounds (hair over the crown
+  and never inside the skull, the face left open, facial hair on the jaw outline, hoops and the
+  hearing aid at the ears, lenses at eye height); a failed check fails the build.
+- `avatar-anim/retarget.py` (S16b P2b): bakes the UAL `Idle_Talking_Loop` and
+  `Sitting_Idle_Loop` onto `avatar-rig-f` and `avatar-rig-m` as `talk` and `sit` (rest-pose
+  correction, forward kinematics, the asset build's joint names) and writes the GLB itself.
+- These belong to `npm run blender:build` (`build.ts`, `run.py`, `lock.json`, outputs in `out/`),
+  not to the landmark build: the lock pins only `run.py`, the script and its `deps`/`sources`, so
+  each avatar script carries its own copy of the shared helpers, and they never import `cclib`.
 - `vehicles/<id>.py` (S04l): our own vehicles, built the same way by `npm run blender:build`
   (same runner, lock and `out/`, a copy of the avatar scripts' helpers): `bus-ambient`, the
   living city's generic city bus (no livery, logo, route number or transit-agency colours).

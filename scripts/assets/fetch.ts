@@ -123,9 +123,13 @@ export function remoteUrl(source: Source, path: string): string {
 /** Pack paths (relative to the zip or repository root) of every model entry from a source. */
 export function entryPaths(catalog: Catalog, source: Source): string[] {
   const root = packRoot(source)
-  return catalog.models
+  const entries = catalog.models
     .filter((model) => model.source === source.id)
     .flatMap((model) => model.entries.map((entry) => posix.join(root, entry.path)))
+  const extra = catalog.models.flatMap((model) =>
+    model.extraClips?.source === source.id ? [posix.join(root, model.extraClips.path)] : [],
+  )
+  return [...new Set([...entries, ...extra])]
 }
 
 async function readIfExists(path: string): Promise<Uint8Array | undefined> {

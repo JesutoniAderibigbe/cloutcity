@@ -242,8 +242,12 @@ describe('Blender Python lint', () => {
     .map((entry) => join(entry.parentPath, entry.name))
     // S04h's runner and its smoke fixture belong to `npm run blender:build` (scripts/blender/build.ts).
     .filter((file) => !S04H_FILES.has(relative(BLENDER_DIR, file).split('\\').join('/')))
+  // base64, zipfile and mathutils: the S16b retarget reads the pinned UAL zip and does its maths.
   const ALLOWED = new Set([
     'argparse',
+    'base64',
+    'zipfile',
+    'mathutils',
     'hashlib',
     'importlib',
     'json',

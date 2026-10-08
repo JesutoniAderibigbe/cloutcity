@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "14de803adafa00ad",
+  "assetVersion": "e32255af2964d7d8",
   "models": [
     {
       "id": "taxi",
@@ -1724,32 +1724,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.facialStubble",
-      "bounds": { "min": [-0.44, 0.755, 0.348], "max": [0.44, 0.97, 0.362] },
+      "bounds": { "min": [-0.0809, 1.5438, 0.063], "max": [0.0809, 1.6218, 0.1622] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/facial-stubble.high.cbb9d3a9.glb",
-          "sha256": "cbb9d3a977c63064f0278d809bf5fdd1cbe684c972c1f85ad3d4e5527dca6482",
-          "bytes": 3056,
-          "gzBytes": 1053,
-          "triangles": 36
+          "file": "/models/facial-stubble.high.a493bb45.glb",
+          "sha256": "a493bb45ca77ad24ace524aa3f876e1e759df2a25f45bd6ad2a8274975f681f7",
+          "bytes": 4388,
+          "gzBytes": 2245,
+          "triangles": 60
         },
         "mid": {
-          "file": "/models/facial-stubble.high.cbb9d3a9.glb",
-          "sha256": "cbb9d3a977c63064f0278d809bf5fdd1cbe684c972c1f85ad3d4e5527dca6482",
-          "bytes": 3056,
-          "gzBytes": 1053,
-          "triangles": 36
+          "file": "/models/facial-stubble.high.a493bb45.glb",
+          "sha256": "a493bb45ca77ad24ace524aa3f876e1e759df2a25f45bd6ad2a8274975f681f7",
+          "bytes": 4388,
+          "gzBytes": 2245,
+          "triangles": 60
         },
         "high": {
-          "file": "/models/facial-stubble.high.cbb9d3a9.glb",
-          "sha256": "cbb9d3a977c63064f0278d809bf5fdd1cbe684c972c1f85ad3d4e5527dca6482",
-          "bytes": 3056,
-          "gzBytes": 1053,
-          "triangles": 36
+          "file": "/models/facial-stubble.high.a493bb45.glb",
+          "sha256": "a493bb45ca77ad24ace524aa3f876e1e759df2a25f45bd6ad2a8274975f681f7",
+          "bytes": 4388,
+          "gzBytes": 2245,
+          "triangles": 60
         }
       }
     },
@@ -1760,32 +1760,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.facialMoustache",
-      "bounds": { "min": [-0.19, 0.87, 0.348], "max": [0.19, 0.98, 0.39] },
+      "bounds": { "min": [-0.0424, 1.5908, 0.1406], "max": [0.0424, 1.6218, 0.1667] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/facial-moustache.high.cc8b4279.glb",
-          "sha256": "cc8b42793921b271c71067c7bca3400b5247bffbc69849f67460959a353254be",
-          "bytes": 3104,
-          "gzBytes": 1077,
-          "triangles": 36
+          "file": "/models/facial-moustache.high.37f4d7f8.glb",
+          "sha256": "37f4d7f8717efa9738448591aecdeb3b72b80fe0082be596988caa4fb0b16d8e",
+          "bytes": 3484,
+          "gzBytes": 1621,
+          "triangles": 48
         },
         "mid": {
-          "file": "/models/facial-moustache.high.cc8b4279.glb",
-          "sha256": "cc8b42793921b271c71067c7bca3400b5247bffbc69849f67460959a353254be",
-          "bytes": 3104,
-          "gzBytes": 1077,
-          "triangles": 36
+          "file": "/models/facial-moustache.high.37f4d7f8.glb",
+          "sha256": "37f4d7f8717efa9738448591aecdeb3b72b80fe0082be596988caa4fb0b16d8e",
+          "bytes": 3484,
+          "gzBytes": 1621,
+          "triangles": 48
         },
         "high": {
-          "file": "/models/facial-moustache.high.cc8b4279.glb",
-          "sha256": "cc8b42793921b271c71067c7bca3400b5247bffbc69849f67460959a353254be",
-          "bytes": 3104,
-          "gzBytes": 1077,
-          "triangles": 36
+          "file": "/models/facial-moustache.high.37f4d7f8.glb",
+          "sha256": "37f4d7f8717efa9738448591aecdeb3b72b80fe0082be596988caa4fb0b16d8e",
+          "bytes": 3484,
+          "gzBytes": 1621,
+          "triangles": 48
         }
       }
     },
@@ -1796,32 +1796,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.facialGoatee",
-      "bounds": { "min": [-0.16, 0.74, 0.348], "max": [0.16, 0.975, 0.41] },
+      "bounds": { "min": [-0.0408, 1.5608, 0.1348], "max": [0.0408, 1.6188, 0.1653] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/facial-goatee.high.5b6450c7.glb",
-          "sha256": "5b6450c79b6ba74f5f7754dce77b7da8b57bc55a0821127865b47352ec7af676",
-          "bytes": 3168,
-          "gzBytes": 1082,
-          "triangles": 48
+          "file": "/models/facial-goatee.high.3328a69a.glb",
+          "sha256": "3328a69afea6fbda10458c0a53c99afdfaad14c11bdf16aef2e1bf086884d585",
+          "bytes": 3928,
+          "gzBytes": 1966,
+          "triangles": 76
         },
         "mid": {
-          "file": "/models/facial-goatee.high.5b6450c7.glb",
-          "sha256": "5b6450c79b6ba74f5f7754dce77b7da8b57bc55a0821127865b47352ec7af676",
-          "bytes": 3168,
-          "gzBytes": 1082,
-          "triangles": 48
+          "file": "/models/facial-goatee.high.3328a69a.glb",
+          "sha256": "3328a69afea6fbda10458c0a53c99afdfaad14c11bdf16aef2e1bf086884d585",
+          "bytes": 3928,
+          "gzBytes": 1966,
+          "triangles": 76
         },
         "high": {
-          "file": "/models/facial-goatee.high.5b6450c7.glb",
-          "sha256": "5b6450c79b6ba74f5f7754dce77b7da8b57bc55a0821127865b47352ec7af676",
-          "bytes": 3168,
-          "gzBytes": 1082,
-          "triangles": 48
+          "file": "/models/facial-goatee.high.3328a69a.glb",
+          "sha256": "3328a69afea6fbda10458c0a53c99afdfaad14c11bdf16aef2e1bf086884d585",
+          "bytes": 3928,
+          "gzBytes": 1966,
+          "triangles": 76
         }
       }
     },
@@ -1832,32 +1832,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.facialFullBeard",
-      "bounds": { "min": [-0.485, 0.68, -0.06], "max": [0.485, 1.02, 0.42] },
+      "bounds": { "min": [-0.092, 1.5438, 0.059], "max": [0.092, 1.6638, 0.1677] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/facial-full-beard.high.d7983720.glb",
-          "sha256": "d798372094b8eaf239f81857bf4653bac1a4d07aa6d502302aae4192b7207471",
-          "bytes": 3628,
-          "gzBytes": 1230,
-          "triangles": 72
+          "file": "/models/facial-full-beard.high.71812a1d.glb",
+          "sha256": "71812a1d18be0a38da9f41117d3c4dd43e793ae0cedeef8fe22040adb564ce50",
+          "bytes": 5104,
+          "gzBytes": 2819,
+          "triangles": 96
         },
         "mid": {
-          "file": "/models/facial-full-beard.high.d7983720.glb",
-          "sha256": "d798372094b8eaf239f81857bf4653bac1a4d07aa6d502302aae4192b7207471",
-          "bytes": 3628,
-          "gzBytes": 1230,
-          "triangles": 72
+          "file": "/models/facial-full-beard.high.71812a1d.glb",
+          "sha256": "71812a1d18be0a38da9f41117d3c4dd43e793ae0cedeef8fe22040adb564ce50",
+          "bytes": 5104,
+          "gzBytes": 2819,
+          "triangles": 96
         },
         "high": {
-          "file": "/models/facial-full-beard.high.d7983720.glb",
-          "sha256": "d798372094b8eaf239f81857bf4653bac1a4d07aa6d502302aae4192b7207471",
-          "bytes": 3628,
-          "gzBytes": 1230,
-          "triangles": 72
+          "file": "/models/facial-full-beard.high.71812a1d.glb",
+          "sha256": "71812a1d18be0a38da9f41117d3c4dd43e793ae0cedeef8fe22040adb564ce50",
+          "bytes": 5104,
+          "gzBytes": 2819,
+          "triangles": 96
         }
       }
     },
@@ -1868,31 +1868,31 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.accGoldHoops",
-      "bounds": { "min": [-0.5313, 0.757, -0.083], "max": [0.5313, 0.923, 0.083] },
+      "bounds": { "min": [-0.1014, 1.6396, 0.0528], "max": [0.1014, 1.666, 0.0792] },
       "slots": [],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/acc-gold-hoops.high.df9a4071.glb",
-          "sha256": "df9a4071c637dcf66f9a80ff9fa3554f99c7641376ae8f22a6b45880167608bd",
-          "bytes": 3748,
-          "gzBytes": 1319,
+          "file": "/models/acc-gold-hoops.high.7fdfd62d.glb",
+          "sha256": "7fdfd62da449980b49f737cbd08fdaefdeb0929195792209ea3de20e2a2b1e4e",
+          "bytes": 3768,
+          "gzBytes": 1315,
           "triangles": 96
         },
         "mid": {
-          "file": "/models/acc-gold-hoops.high.df9a4071.glb",
-          "sha256": "df9a4071c637dcf66f9a80ff9fa3554f99c7641376ae8f22a6b45880167608bd",
-          "bytes": 3748,
-          "gzBytes": 1319,
+          "file": "/models/acc-gold-hoops.high.7fdfd62d.glb",
+          "sha256": "7fdfd62da449980b49f737cbd08fdaefdeb0929195792209ea3de20e2a2b1e4e",
+          "bytes": 3768,
+          "gzBytes": 1315,
           "triangles": 96
         },
         "high": {
-          "file": "/models/acc-gold-hoops.high.df9a4071.glb",
-          "sha256": "df9a4071c637dcf66f9a80ff9fa3554f99c7641376ae8f22a6b45880167608bd",
-          "bytes": 3748,
-          "gzBytes": 1319,
+          "file": "/models/acc-gold-hoops.high.7fdfd62d.glb",
+          "sha256": "7fdfd62da449980b49f737cbd08fdaefdeb0929195792209ea3de20e2a2b1e4e",
+          "bytes": 3768,
+          "gzBytes": 1315,
           "triangles": 96
         }
       }
@@ -1904,32 +1904,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.accSubwayTote",
-      "bounds": { "min": [0.0301, 0.24, -0.505], "max": [0.405, 0.8758, 0.359] },
+      "bounds": { "min": [-0.021, 0.98, -0.1069], "max": [0.171, 1.4914, 0.0607] },
       "slots": ["fabric"],
       "attach": "torso",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/acc-subway-tote.high.0720672c.glb",
-          "sha256": "0720672c3d228a146dec76d6a22a4b4f2b5c6fa16afc669b49bd08f7f5b17a78",
-          "bytes": 4236,
-          "gzBytes": 2098,
-          "triangles": 88
+          "file": "/models/acc-subway-tote.high.003f5405.glb",
+          "sha256": "003f54050db29e720ecb491790f6a80792edee096fbd228ad8cc7bb55109cccf",
+          "bytes": 3960,
+          "gzBytes": 1855,
+          "triangles": 80
         },
         "mid": {
-          "file": "/models/acc-subway-tote.high.0720672c.glb",
-          "sha256": "0720672c3d228a146dec76d6a22a4b4f2b5c6fa16afc669b49bd08f7f5b17a78",
-          "bytes": 4236,
-          "gzBytes": 2098,
-          "triangles": 88
+          "file": "/models/acc-subway-tote.high.003f5405.glb",
+          "sha256": "003f54050db29e720ecb491790f6a80792edee096fbd228ad8cc7bb55109cccf",
+          "bytes": 3960,
+          "gzBytes": 1855,
+          "triangles": 80
         },
         "high": {
-          "file": "/models/acc-subway-tote.high.0720672c.glb",
-          "sha256": "0720672c3d228a146dec76d6a22a4b4f2b5c6fa16afc669b49bd08f7f5b17a78",
-          "bytes": 4236,
-          "gzBytes": 2098,
-          "triangles": 88
+          "file": "/models/acc-subway-tote.high.003f5405.glb",
+          "sha256": "003f54050db29e720ecb491790f6a80792edee096fbd228ad8cc7bb55109cccf",
+          "bytes": 3960,
+          "gzBytes": 1855,
+          "triangles": 80
         }
       }
     },
@@ -1940,32 +1940,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.hairAfro",
-      "bounds": { "min": [-0.68, 1.05, -0.66], "max": [0.68, 1.95, 0.54] },
+      "bounds": { "min": [-0.1277, 1.6069, -0.1008], "max": [0.1277, 1.8912, 0.1455] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/hair-afro.high.24f6a7d1.glb",
-          "sha256": "24f6a7d13c2114c37e46cf102a23f51b2728b303160b811cd61b266e04b1eb46",
-          "bytes": 5808,
-          "gzBytes": 3009,
-          "triangles": 168
+          "file": "/models/hair-afro.high.02d8df3c.glb",
+          "sha256": "02d8df3c5317345cf76a21383e168c1fd91ecb47e07a603c92aa3aab33815cf4",
+          "bytes": 9276,
+          "gzBytes": 6369,
+          "triangles": 240
         },
         "mid": {
-          "file": "/models/hair-afro.high.24f6a7d1.glb",
-          "sha256": "24f6a7d13c2114c37e46cf102a23f51b2728b303160b811cd61b266e04b1eb46",
-          "bytes": 5808,
-          "gzBytes": 3009,
-          "triangles": 168
+          "file": "/models/hair-afro.high.02d8df3c.glb",
+          "sha256": "02d8df3c5317345cf76a21383e168c1fd91ecb47e07a603c92aa3aab33815cf4",
+          "bytes": 9276,
+          "gzBytes": 6369,
+          "triangles": 240
         },
         "high": {
-          "file": "/models/hair-afro.high.24f6a7d1.glb",
-          "sha256": "24f6a7d13c2114c37e46cf102a23f51b2728b303160b811cd61b266e04b1eb46",
-          "bytes": 5808,
-          "gzBytes": 3009,
-          "triangles": 168
+          "file": "/models/hair-afro.high.02d8df3c.glb",
+          "sha256": "02d8df3c5317345cf76a21383e168c1fd91ecb47e07a603c92aa3aab33815cf4",
+          "bytes": 9276,
+          "gzBytes": 6369,
+          "triangles": 240
         }
       }
     },
@@ -1976,32 +1976,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.hairLocs",
-      "bounds": { "min": [-0.5354, 0.5, -0.4354], "max": [0.5354, 1.49, 0.37] },
+      "bounds": { "min": [-0.124, 1.4222, -0.0883], "max": [0.1311, 1.8407, 0.1432] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/hair-locs.high.5c5c4e07.glb",
-          "sha256": "5c5c4e0712b05e157e0c85f13299e5c4cd5db52ee43625f52999fa31e50ca86b",
-          "bytes": 5252,
-          "gzBytes": 1755,
-          "triangles": 176
+          "file": "/models/hair-locs.high.674a4c62.glb",
+          "sha256": "674a4c628894a13c14219e8e075e91452ff7849bf88284c6853b5771443dc5c5",
+          "bytes": 7984,
+          "gzBytes": 5185,
+          "triangles": 240
         },
         "mid": {
-          "file": "/models/hair-locs.high.5c5c4e07.glb",
-          "sha256": "5c5c4e0712b05e157e0c85f13299e5c4cd5db52ee43625f52999fa31e50ca86b",
-          "bytes": 5252,
-          "gzBytes": 1755,
-          "triangles": 176
+          "file": "/models/hair-locs.high.674a4c62.glb",
+          "sha256": "674a4c628894a13c14219e8e075e91452ff7849bf88284c6853b5771443dc5c5",
+          "bytes": 7984,
+          "gzBytes": 5185,
+          "triangles": 240
         },
         "high": {
-          "file": "/models/hair-locs.high.5c5c4e07.glb",
-          "sha256": "5c5c4e0712b05e157e0c85f13299e5c4cd5db52ee43625f52999fa31e50ca86b",
-          "bytes": 5252,
-          "gzBytes": 1755,
-          "triangles": 176
+          "file": "/models/hair-locs.high.674a4c62.glb",
+          "sha256": "674a4c628894a13c14219e8e075e91452ff7849bf88284c6853b5771443dc5c5",
+          "bytes": 7984,
+          "gzBytes": 5185,
+          "triangles": 240
         }
       }
     },
@@ -2012,32 +2012,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.hairBoxBraids",
-      "bounds": { "min": [-0.545, 0.36, -0.4403], "max": [0.5275, 1.49, 0.37] },
+      "bounds": { "min": [-0.1246, 1.3025, -0.0899], "max": [0.1283, 1.8387, 0.1432] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/hair-box-braids.high.4ab52683.glb",
-          "sha256": "4ab52683434a243b8b47eb44feb64c423f75e0cf05f2ed0f9f4d36e3243eec73",
-          "bytes": 5560,
-          "gzBytes": 2158,
-          "triangles": 164
+          "file": "/models/hair-box-braids.high.2079294c.glb",
+          "sha256": "2079294cf1a22550a67f586a8d31faeee7840aa7699e86228630048970b60c71",
+          "bytes": 8032,
+          "gzBytes": 5125,
+          "triangles": 253
         },
         "mid": {
-          "file": "/models/hair-box-braids.high.4ab52683.glb",
-          "sha256": "4ab52683434a243b8b47eb44feb64c423f75e0cf05f2ed0f9f4d36e3243eec73",
-          "bytes": 5560,
-          "gzBytes": 2158,
-          "triangles": 164
+          "file": "/models/hair-box-braids.high.2079294c.glb",
+          "sha256": "2079294cf1a22550a67f586a8d31faeee7840aa7699e86228630048970b60c71",
+          "bytes": 8032,
+          "gzBytes": 5125,
+          "triangles": 253
         },
         "high": {
-          "file": "/models/hair-box-braids.high.4ab52683.glb",
-          "sha256": "4ab52683434a243b8b47eb44feb64c423f75e0cf05f2ed0f9f4d36e3243eec73",
-          "bytes": 5560,
-          "gzBytes": 2158,
-          "triangles": 164
+          "file": "/models/hair-box-braids.high.2079294c.glb",
+          "sha256": "2079294cf1a22550a67f586a8d31faeee7840aa7699e86228630048970b60c71",
+          "bytes": 8032,
+          "gzBytes": 5125,
+          "triangles": 253
         }
       }
     },
@@ -2048,32 +2048,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.hairCornrows",
-      "bounds": { "min": [-0.475, 0.86, -0.405], "max": [0.475, 1.505, 0.365] },
+      "bounds": { "min": [-0.0984, 1.6172, -0.0672], "max": [0.0984, 1.8325, 0.1434] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/hair-cornrows.high.c6d05f43.glb",
-          "sha256": "c6d05f43a275dddb4cdb2feb3e070847fe8c2a2ad061eeabdd066ce3124a8a7e",
-          "bytes": 5960,
-          "gzBytes": 1864,
-          "triangles": 208
+          "file": "/models/hair-cornrows.high.d3b51f28.glb",
+          "sha256": "d3b51f2864781b5334fa1a5608ee2d7a60e410e9337286e2faa288b48fd312c2",
+          "bytes": 9908,
+          "gzBytes": 7043,
+          "triangles": 252
         },
         "mid": {
-          "file": "/models/hair-cornrows.high.c6d05f43.glb",
-          "sha256": "c6d05f43a275dddb4cdb2feb3e070847fe8c2a2ad061eeabdd066ce3124a8a7e",
-          "bytes": 5960,
-          "gzBytes": 1864,
-          "triangles": 208
+          "file": "/models/hair-cornrows.high.d3b51f28.glb",
+          "sha256": "d3b51f2864781b5334fa1a5608ee2d7a60e410e9337286e2faa288b48fd312c2",
+          "bytes": 9908,
+          "gzBytes": 7043,
+          "triangles": 252
         },
         "high": {
-          "file": "/models/hair-cornrows.high.c6d05f43.glb",
-          "sha256": "c6d05f43a275dddb4cdb2feb3e070847fe8c2a2ad061eeabdd066ce3124a8a7e",
-          "bytes": 5960,
-          "gzBytes": 1864,
-          "triangles": 208
+          "file": "/models/hair-cornrows.high.d3b51f28.glb",
+          "sha256": "d3b51f2864781b5334fa1a5608ee2d7a60e410e9337286e2faa288b48fd312c2",
+          "bytes": 9908,
+          "gzBytes": 7043,
+          "triangles": 252
         }
       }
     },
@@ -2084,32 +2084,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.hairBuzz",
-      "bounds": { "min": [-0.475, 0.86, -0.375], "max": [0.475, 1.475, 0.365] },
+      "bounds": { "min": [-0.1013, 1.6175, -0.0658], "max": [0.1013, 1.8317, 0.1458] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/hair-buzz.high.d6985142.glb",
-          "sha256": "d698514221844b958c07e2e15f397819390d4749a5d0e5616f866be38382aeca",
-          "bytes": 4184,
-          "gzBytes": 1549,
-          "triangles": 88
+          "file": "/models/hair-buzz.high.33516237.glb",
+          "sha256": "33516237c1b3f504536a122790f0532510d3b76aab7c253fe063816daa332df2",
+          "bytes": 7496,
+          "gzBytes": 4963,
+          "triangles": 176
         },
         "mid": {
-          "file": "/models/hair-buzz.high.d6985142.glb",
-          "sha256": "d698514221844b958c07e2e15f397819390d4749a5d0e5616f866be38382aeca",
-          "bytes": 4184,
-          "gzBytes": 1549,
-          "triangles": 88
+          "file": "/models/hair-buzz.high.33516237.glb",
+          "sha256": "33516237c1b3f504536a122790f0532510d3b76aab7c253fe063816daa332df2",
+          "bytes": 7496,
+          "gzBytes": 4963,
+          "triangles": 176
         },
         "high": {
-          "file": "/models/hair-buzz.high.d6985142.glb",
-          "sha256": "d698514221844b958c07e2e15f397819390d4749a5d0e5616f866be38382aeca",
-          "bytes": 4184,
-          "gzBytes": 1549,
-          "triangles": 88
+          "file": "/models/hair-buzz.high.33516237.glb",
+          "sha256": "33516237c1b3f504536a122790f0532510d3b76aab7c253fe063816daa332df2",
+          "bytes": 7496,
+          "gzBytes": 4963,
+          "triangles": 176
         }
       }
     },
@@ -2120,32 +2120,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.headwearHijab",
-      "bounds": { "min": [-0.56, 0.52, -0.43], "max": [0.56, 1.53, 0.4] },
+      "bounds": { "min": [-0.1667, 1.4382, -0.0797], "max": [0.1667, 1.8427, 0.1802] },
       "slots": ["fabric"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/headwear-hijab.high.8b6b7a33.glb",
-          "sha256": "8b6b7a33d0d8b40f6004852169629aa02b12db0c4317f3e371c67bf8cb1bf262",
-          "bytes": 6532,
-          "gzBytes": 2328,
-          "triangles": 220
+          "file": "/models/headwear-hijab.high.c6424da6.glb",
+          "sha256": "c6424da629853c59a35a13c94e48bd6f135e3674660739c2b11a59e9571cbfae",
+          "bytes": 8456,
+          "gzBytes": 5273,
+          "triangles": 240
         },
         "mid": {
-          "file": "/models/headwear-hijab.high.8b6b7a33.glb",
-          "sha256": "8b6b7a33d0d8b40f6004852169629aa02b12db0c4317f3e371c67bf8cb1bf262",
-          "bytes": 6532,
-          "gzBytes": 2328,
-          "triangles": 220
+          "file": "/models/headwear-hijab.high.c6424da6.glb",
+          "sha256": "c6424da629853c59a35a13c94e48bd6f135e3674660739c2b11a59e9571cbfae",
+          "bytes": 8456,
+          "gzBytes": 5273,
+          "triangles": 240
         },
         "high": {
-          "file": "/models/headwear-hijab.high.8b6b7a33.glb",
-          "sha256": "8b6b7a33d0d8b40f6004852169629aa02b12db0c4317f3e371c67bf8cb1bf262",
-          "bytes": 6532,
-          "gzBytes": 2328,
-          "triangles": 220
+          "file": "/models/headwear-hijab.high.c6424da6.glb",
+          "sha256": "c6424da629853c59a35a13c94e48bd6f135e3674660739c2b11a59e9571cbfae",
+          "bytes": 8456,
+          "gzBytes": 5273,
+          "triangles": 240
         }
       }
     },
@@ -2156,32 +2156,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.headwearTurban",
-      "bounds": { "min": [-0.505, 1.15, -0.4], "max": [0.505, 1.64, 0.4233] },
+      "bounds": { "min": [-0.1205, 1.6448, -0.0906], "max": [0.1205, 1.8727, 0.1704] },
       "slots": ["fabric"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/headwear-turban.high.c8d92360.glb",
-          "sha256": "c8d92360222387ce8841e2624a951ac8265220d2eec4c511618cf4dd7f4ed64a",
-          "bytes": 5284,
-          "gzBytes": 2205,
-          "triangles": 144
+          "file": "/models/headwear-turban.high.95f72a43.glb",
+          "sha256": "95f72a432c42cb0df1b44fa401390eae665082e84fd301a9cfbd1eb53824230e",
+          "bytes": 9364,
+          "gzBytes": 6541,
+          "triangles": 240
         },
         "mid": {
-          "file": "/models/headwear-turban.high.c8d92360.glb",
-          "sha256": "c8d92360222387ce8841e2624a951ac8265220d2eec4c511618cf4dd7f4ed64a",
-          "bytes": 5284,
-          "gzBytes": 2205,
-          "triangles": 144
+          "file": "/models/headwear-turban.high.95f72a43.glb",
+          "sha256": "95f72a432c42cb0df1b44fa401390eae665082e84fd301a9cfbd1eb53824230e",
+          "bytes": 9364,
+          "gzBytes": 6541,
+          "triangles": 240
         },
         "high": {
-          "file": "/models/headwear-turban.high.c8d92360.glb",
-          "sha256": "c8d92360222387ce8841e2624a951ac8265220d2eec4c511618cf4dd7f4ed64a",
-          "bytes": 5284,
-          "gzBytes": 2205,
-          "triangles": 144
+          "file": "/models/headwear-turban.high.95f72a43.glb",
+          "sha256": "95f72a432c42cb0df1b44fa401390eae665082e84fd301a9cfbd1eb53824230e",
+          "bytes": 9364,
+          "gzBytes": 6541,
+          "triangles": 240
         }
       }
     },
@@ -2192,32 +2192,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.headwearDurag",
-      "bounds": { "min": [-0.49, 0.46, -0.41], "max": [0.49, 1.48, 0.38] },
+      "bounds": { "min": [-0.1082, 1.46, -0.0677], "max": [0.1082, 1.8347, 0.1549] },
       "slots": ["fabric"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/headwear-durag.high.346b43cf.glb",
-          "sha256": "346b43cffe733e99b3278fcf3c242ab16495db28f0f5c6c01042f9d00ba8e677",
-          "bytes": 4768,
-          "gzBytes": 1831,
-          "triangles": 124
+          "file": "/models/headwear-durag.high.bfec922f.glb",
+          "sha256": "bfec922f6e77c7d99b18caa60cf89c36fbff8bca960866535ebe92269624cc4a",
+          "bytes": 8700,
+          "gzBytes": 5868,
+          "triangles": 232
         },
         "mid": {
-          "file": "/models/headwear-durag.high.346b43cf.glb",
-          "sha256": "346b43cffe733e99b3278fcf3c242ab16495db28f0f5c6c01042f9d00ba8e677",
-          "bytes": 4768,
-          "gzBytes": 1831,
-          "triangles": 124
+          "file": "/models/headwear-durag.high.bfec922f.glb",
+          "sha256": "bfec922f6e77c7d99b18caa60cf89c36fbff8bca960866535ebe92269624cc4a",
+          "bytes": 8700,
+          "gzBytes": 5868,
+          "triangles": 232
         },
         "high": {
-          "file": "/models/headwear-durag.high.346b43cf.glb",
-          "sha256": "346b43cffe733e99b3278fcf3c242ab16495db28f0f5c6c01042f9d00ba8e677",
-          "bytes": 4768,
-          "gzBytes": 1831,
-          "triangles": 124
+          "file": "/models/headwear-durag.high.bfec922f.glb",
+          "sha256": "bfec922f6e77c7d99b18caa60cf89c36fbff8bca960866535ebe92269624cc4a",
+          "bytes": 8700,
+          "gzBytes": 5868,
+          "triangles": 232
         }
       }
     },
@@ -2228,32 +2228,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.headwearBeanie",
-      "bounds": { "min": [-0.505, 1.15, -0.395], "max": [0.505, 1.71, 0.39] },
+      "bounds": { "min": [-0.1191, 1.6058, -0.0793], "max": [0.1191, 1.8927, 0.1626] },
       "slots": ["fabric"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/headwear-beanie.high.9be19fbd.glb",
-          "sha256": "9be19fbdb99121a55f266a55ba7661153a016f0d1c324bb5cfb39062af5cabd2",
-          "bytes": 5680,
-          "gzBytes": 2710,
-          "triangles": 168
+          "file": "/models/headwear-beanie.high.b848fe16.glb",
+          "sha256": "b848fe16fa5d77db80afee221e6abcd62fa66b72bb9a54b9217514c2a2347d45",
+          "bytes": 8376,
+          "gzBytes": 5721,
+          "triangles": 216
         },
         "mid": {
-          "file": "/models/headwear-beanie.high.9be19fbd.glb",
-          "sha256": "9be19fbdb99121a55f266a55ba7661153a016f0d1c324bb5cfb39062af5cabd2",
-          "bytes": 5680,
-          "gzBytes": 2710,
-          "triangles": 168
+          "file": "/models/headwear-beanie.high.b848fe16.glb",
+          "sha256": "b848fe16fa5d77db80afee221e6abcd62fa66b72bb9a54b9217514c2a2347d45",
+          "bytes": 8376,
+          "gzBytes": 5721,
+          "triangles": 216
         },
         "high": {
-          "file": "/models/headwear-beanie.high.9be19fbd.glb",
-          "sha256": "9be19fbdb99121a55f266a55ba7661153a016f0d1c324bb5cfb39062af5cabd2",
-          "bytes": 5680,
-          "gzBytes": 2710,
-          "triangles": 168
+          "file": "/models/headwear-beanie.high.b848fe16.glb",
+          "sha256": "b848fe16fa5d77db80afee221e6abcd62fa66b72bb9a54b9217514c2a2347d45",
+          "bytes": 8376,
+          "gzBytes": 5721,
+          "triangles": 216
         }
       }
     },
@@ -2264,32 +2264,176 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.headwearBallcap",
-      "bounds": { "min": [-0.485, 1.2, -0.38], "max": [0.485, 1.57, 0.68] },
+      "bounds": { "min": [-0.11, 1.6377, -0.0749], "max": [0.11, 1.8567, 0.2266] },
       "slots": ["fabric"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/headwear-ballcap.high.0ce5aa3e.glb",
-          "sha256": "0ce5aa3e6a7cf2c9fbc7d5ec81ae76df5f6d6fdacec554dad24a1227a41d6de3",
-          "bytes": 4352,
-          "gzBytes": 1787,
-          "triangles": 100
+          "file": "/models/headwear-ballcap.high.6e27ed94.glb",
+          "sha256": "6e27ed94d918e9d2ae105fc59e299666e1413ee517828fdd3e9d4d7cfe20d0b9",
+          "bytes": 8056,
+          "gzBytes": 5420,
+          "triangles": 204
         },
         "mid": {
-          "file": "/models/headwear-ballcap.high.0ce5aa3e.glb",
-          "sha256": "0ce5aa3e6a7cf2c9fbc7d5ec81ae76df5f6d6fdacec554dad24a1227a41d6de3",
-          "bytes": 4352,
-          "gzBytes": 1787,
-          "triangles": 100
+          "file": "/models/headwear-ballcap.high.6e27ed94.glb",
+          "sha256": "6e27ed94d918e9d2ae105fc59e299666e1413ee517828fdd3e9d4d7cfe20d0b9",
+          "bytes": 8056,
+          "gzBytes": 5420,
+          "triangles": 204
         },
         "high": {
-          "file": "/models/headwear-ballcap.high.0ce5aa3e.glb",
-          "sha256": "0ce5aa3e6a7cf2c9fbc7d5ec81ae76df5f6d6fdacec554dad24a1227a41d6de3",
-          "bytes": 4352,
-          "gzBytes": 1787,
-          "triangles": 100
+          "file": "/models/headwear-ballcap.high.6e27ed94.glb",
+          "sha256": "6e27ed94d918e9d2ae105fc59e299666e1413ee517828fdd3e9d4d7cfe20d0b9",
+          "bytes": 8056,
+          "gzBytes": 5420,
+          "triangles": 204
+        }
+      }
+    },
+    {
+      "id": "glasses",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.glasses",
+      "bounds": { "min": [-0.1003, 1.6748, 0.0539], "max": [0.1003, 1.7168, 0.1769] },
+      "slots": [],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/glasses.high.2f921a9d.glb",
+          "sha256": "2f921a9d525b445487e267f3f655dd3d1cfb8453701298b050a31302197deb0e",
+          "bytes": 3676,
+          "gzBytes": 2039,
+          "triangles": 76
+        },
+        "mid": {
+          "file": "/models/glasses.high.2f921a9d.glb",
+          "sha256": "2f921a9d525b445487e267f3f655dd3d1cfb8453701298b050a31302197deb0e",
+          "bytes": 3676,
+          "gzBytes": 2039,
+          "triangles": 76
+        },
+        "high": {
+          "file": "/models/glasses.high.2f921a9d.glb",
+          "sha256": "2f921a9d525b445487e267f3f655dd3d1cfb8453701298b050a31302197deb0e",
+          "bytes": 3676,
+          "gzBytes": 2039,
+          "triangles": 76
+        }
+      }
+    },
+    {
+      "id": "sunglasses",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.sunglasses",
+      "bounds": { "min": [-0.1003, 1.6723, 0.0539], "max": [0.1003, 1.7193, 0.1769] },
+      "slots": [],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/sunglasses.high.f2d377bd.glb",
+          "sha256": "f2d377bd2d0358fa04c3f5ad1e7834571f4cde6003d2066e0ed558409d090820",
+          "bytes": 3732,
+          "gzBytes": 2043,
+          "triangles": 76
+        },
+        "mid": {
+          "file": "/models/sunglasses.high.f2d377bd.glb",
+          "sha256": "f2d377bd2d0358fa04c3f5ad1e7834571f4cde6003d2066e0ed558409d090820",
+          "bytes": 3732,
+          "gzBytes": 2043,
+          "triangles": 76
+        },
+        "high": {
+          "file": "/models/sunglasses.high.f2d377bd.glb",
+          "sha256": "f2d377bd2d0358fa04c3f5ad1e7834571f4cde6003d2066e0ed558409d090820",
+          "bytes": 3732,
+          "gzBytes": 2043,
+          "triangles": 76
+        }
+      }
+    },
+    {
+      "id": "hearing-aid",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hearingAid",
+      "bounds": { "min": [-0.1079, 1.6648, 0.03], "max": [-0.0944, 1.7157, 0.071] },
+      "slots": ["shell"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hearing-aid.high.5c7f2d7f.glb",
+          "sha256": "5c7f2d7f4ed14896dbac53d59a194bf6f2eb57d0026ef42598f971c5a7894615",
+          "bytes": 4012,
+          "gzBytes": 1859,
+          "triangles": 72
+        },
+        "mid": {
+          "file": "/models/hearing-aid.high.5c7f2d7f.glb",
+          "sha256": "5c7f2d7f4ed14896dbac53d59a194bf6f2eb57d0026ef42598f971c5a7894615",
+          "bytes": 4012,
+          "gzBytes": 1859,
+          "triangles": 72
+        },
+        "high": {
+          "file": "/models/hearing-aid.high.5c7f2d7f.glb",
+          "sha256": "5c7f2d7f4ed14896dbac53d59a194bf6f2eb57d0026ef42598f971c5a7894615",
+          "bytes": 4012,
+          "gzBytes": 1859,
+          "triangles": 72
+        }
+      }
+    },
+    {
+      "id": "scalp-cap-f",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.scalpCapF",
+      "bounds": { "min": [-0.0862, 1.6238, -0.0407], "max": [0.0862, 1.8147, 0.1279] },
+      "slots": ["skin"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/scalp-cap-f.high.b6632a9f.glb",
+          "sha256": "b6632a9fe77a74fe7b10d5507ca9d63003bfa4cef5bda2b114495d00915670fa",
+          "bytes": 4104,
+          "gzBytes": 2175,
+          "triangles": 56
+        },
+        "mid": {
+          "file": "/models/scalp-cap-f.high.b6632a9f.glb",
+          "sha256": "b6632a9fe77a74fe7b10d5507ca9d63003bfa4cef5bda2b114495d00915670fa",
+          "bytes": 4104,
+          "gzBytes": 2175,
+          "triangles": 56
+        },
+        "high": {
+          "file": "/models/scalp-cap-f.high.b6632a9f.glb",
+          "sha256": "b6632a9fe77a74fe7b10d5507ca9d63003bfa4cef5bda2b114495d00915670fa",
+          "bytes": 4104,
+          "gzBytes": 2175,
+          "triangles": 56
         }
       }
     },
@@ -3186,27 +3330,27 @@
       "nameKey": "models.name.avatarRigF",
       "slots": [],
       "emissive": false,
-      "clips": ["idle", "walk", "run", "wave", "interact"],
+      "clips": ["idle", "walk", "run", "wave", "interact", "talk", "sit"],
       "tiers": {
         "low": {
-          "file": "/models/avatar-rig-f.high.f8e04087.glb",
-          "sha256": "f8e04087413bf9f185da7ead1ed558e71bd7ebffbb53d6861dce5054e48793f5",
-          "bytes": 58504,
-          "gzBytes": 14700,
+          "file": "/models/avatar-rig-f.high.6982f196.glb",
+          "sha256": "6982f196a6cb1669937fffa4fe8cf9eebd20c94184a354e1920dbbc6b2406f8b",
+          "bytes": 80928,
+          "gzBytes": 21765,
           "triangles": 0
         },
         "mid": {
-          "file": "/models/avatar-rig-f.high.f8e04087.glb",
-          "sha256": "f8e04087413bf9f185da7ead1ed558e71bd7ebffbb53d6861dce5054e48793f5",
-          "bytes": 58504,
-          "gzBytes": 14700,
+          "file": "/models/avatar-rig-f.high.6982f196.glb",
+          "sha256": "6982f196a6cb1669937fffa4fe8cf9eebd20c94184a354e1920dbbc6b2406f8b",
+          "bytes": 80928,
+          "gzBytes": 21765,
           "triangles": 0
         },
         "high": {
-          "file": "/models/avatar-rig-f.high.f8e04087.glb",
-          "sha256": "f8e04087413bf9f185da7ead1ed558e71bd7ebffbb53d6861dce5054e48793f5",
-          "bytes": 58504,
-          "gzBytes": 14700,
+          "file": "/models/avatar-rig-f.high.6982f196.glb",
+          "sha256": "6982f196a6cb1669937fffa4fe8cf9eebd20c94184a354e1920dbbc6b2406f8b",
+          "bytes": 80928,
+          "gzBytes": 21765,
           "triangles": 0
         }
       }
@@ -3220,27 +3364,27 @@
       "nameKey": "models.name.avatarRigM",
       "slots": [],
       "emissive": false,
-      "clips": ["idle", "walk", "run", "wave", "interact"],
+      "clips": ["idle", "walk", "run", "wave", "interact", "talk", "sit"],
       "tiers": {
         "low": {
-          "file": "/models/avatar-rig-m.high.9e26cfe8.glb",
-          "sha256": "9e26cfe8adb5c070c2578e90dc70e84c680b08676ef785634cc3392e18af93d5",
-          "bytes": 59348,
-          "gzBytes": 15463,
+          "file": "/models/avatar-rig-m.high.992618a5.glb",
+          "sha256": "992618a549cdef9117d59b6c4d87fe0db165138729f9425c6ee50b69ff4f903a",
+          "bytes": 82108,
+          "gzBytes": 22514,
           "triangles": 0
         },
         "mid": {
-          "file": "/models/avatar-rig-m.high.9e26cfe8.glb",
-          "sha256": "9e26cfe8adb5c070c2578e90dc70e84c680b08676ef785634cc3392e18af93d5",
-          "bytes": 59348,
-          "gzBytes": 15463,
+          "file": "/models/avatar-rig-m.high.992618a5.glb",
+          "sha256": "992618a549cdef9117d59b6c4d87fe0db165138729f9425c6ee50b69ff4f903a",
+          "bytes": 82108,
+          "gzBytes": 22514,
           "triangles": 0
         },
         "high": {
-          "file": "/models/avatar-rig-m.high.9e26cfe8.glb",
-          "sha256": "9e26cfe8adb5c070c2578e90dc70e84c680b08676ef785634cc3392e18af93d5",
-          "bytes": 59348,
-          "gzBytes": 15463,
+          "file": "/models/avatar-rig-m.high.992618a5.glb",
+          "sha256": "992618a549cdef9117d59b6c4d87fe0db165138729f9425c6ee50b69ff4f903a",
+          "bytes": 82108,
+          "gzBytes": 22514,
           "triangles": 0
         }
       }

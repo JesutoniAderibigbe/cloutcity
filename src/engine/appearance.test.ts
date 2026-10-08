@@ -124,7 +124,8 @@ describe('effectiveLook', () => {
     expect(drawn.head).toBe('head-f')
     expect(drawn.rig).toBe('avatar-rig-f')
     expect(drawn.body).toBe('outfit-w-casual')
-    expect(drawn.attachments).toEqual(['hair-afro', 'facial-stubble'])
+    // The woman frame always wears its scalp cap first (S16b), outside the attachment cap.
+    expect(drawn.attachments).toEqual(['scalp-cap-f', 'hair-afro', 'facial-stubble'])
     const man = effectiveLook(
       publicAvatar(wearing({ ...look, body: 'man', outfit: 'hoodie' }, [])),
       config,
@@ -166,37 +167,47 @@ describe('effectiveLook', () => {
     const drawn = effectiveLook(publicAvatar(wearing(covered, [])), config, creatorConfig)
     expect(drawn.hairHidden).toBe(true)
     expect(drawn.head).toBe('head-f')
-    expect(drawn.attachments).toEqual(['headwear-hijab'])
+    expect(drawn.attachments).toEqual(['scalp-cap-f', 'headwear-hijab'])
     expect(drawn.look.hairStyle).toBe('locs')
     const pack: Look = { ...base, hairStyle: 'bob', headwear: 'ballcap' }
     expect(
       effectiveLook(publicAvatar(wearing(pack, [])), config, creatorConfig).attachments,
-    ).toEqual(['headwear-ballcap'])
+    ).toEqual(['scalp-cap-f', 'headwear-ballcap'])
     expect(options.headwear.every((option) => option.id === 'none' || option.hidesHair)).toBe(true)
   })
 
-  it('a frame’s scalp cap shows under no hair or a covering, outside the attachment cap', () => {
-    const withCap = {
-      ...creatorConfig,
-      options: {
-        ...options,
-        bodies: options.bodies.map((body) =>
-          body.id === 'woman' ? { ...body, scalpCap: 'scalp-cap-f' } : body,
-        ),
-      },
+  it('the woman frame always wears its scalp cap, outside the attachment cap', () => {
+    expect(options.bodies.find((body) => body.id === 'woman')?.scalpCap).toBe('scalp-cap-f')
+    expect(options.bodies.find((body) => body.id === 'man')?.scalpCap).toBeUndefined()
+    for (const hairStyle of ['shaved', 'bob', 'buzz']) {
+      const look = effectiveLook(
+        publicAvatar(wearing({ ...base, body: 'woman', hairStyle }, [])),
+        config,
+        creatorConfig,
+      )
+      expect(look.attachments[0], hairStyle).toBe('scalp-cap-f')
     }
-    const shaved = effectiveLook(
-      publicAvatar(wearing({ ...base, hairStyle: 'shaved' }, [])),
+    const man = effectiveLook(
+      publicAvatar(wearing({ ...base, body: 'man', hairStyle: 'shaved' }, [])),
       config,
-      withCap,
+      creatorConfig,
     )
-    expect(shaved.attachments[0]).toBe('scalp-cap-f')
-    const bob = effectiveLook(
-      publicAvatar(wearing({ ...base, hairStyle: 'bob' }, [])),
+    expect(man.attachments).not.toContain('scalp-cap-f')
+  })
+
+  it('the outdoors outfit hides the subway tote, which would clash with its backpack', () => {
+    const outdoors = effectiveLook(
+      publicAvatar(wearing({ ...base, outfit: 'outdoors' }, ['subway-tote'])),
       config,
-      withCap,
+      creatorConfig,
     )
-    expect(bob.attachments).not.toContain('scalp-cap-f')
+    expect(outdoors.attachments).not.toContain('acc-subway-tote')
+    const casual = effectiveLook(
+      publicAvatar(wearing({ ...base, outfit: 'casual' }, ['subway-tote'])),
+      config,
+      creatorConfig,
+    )
+    expect(casual.attachments).toContain('acc-subway-tote')
   })
 
   it('keeps at most four attachments, in priority order: items go first', () => {
@@ -212,6 +223,7 @@ describe('effectiveLook', () => {
     expect(options.attachments.max).toBe(4)
     // The cap hides the afro piece; the hoops (an item, last in priority) fall past the cap.
     expect(drawn.attachments).toEqual([
+      'scalp-cap-f',
       'headwear-ballcap',
       'facial-goatee',
       'glasses',
