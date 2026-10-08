@@ -288,7 +288,9 @@
       "steel-dark": "steel-700",
       "asphalt": "asphalt-600",
       "wood-plank": "wood-500",
-      "lamp": "lamp-200"
+      "lamp": "lamp-200",
+      "patina": "patina-300",
+      "gilt": "gilt-400"
     },
     "buildings": {
       "walls": [
@@ -385,6 +387,8 @@
     "blush-300": "#e3a9a2",
     "white-50": "#f7f6f2",
     "granite-300": "#bab2a5",
-    "tan-300": "#c8b99a"
+    "tan-300": "#c8b99a",
+    "patina-300": "#86b5a1",
+    "gilt-400": "#d4a24a"
   }
 }
