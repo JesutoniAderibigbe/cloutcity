@@ -25,6 +25,8 @@ import { setTravelAnimator, tripStore, type ActiveTrip } from '@/state/trip'
 import type { AvatarConfig } from '../avatar/buildAvatar'
 import { beginContinuous, endContinuous } from '../quality/continuity'
 import type { ScenePalette, TravelAnimation } from '../types'
+import type { GeoPin } from '../geo/schema'
+import { placeMoves, relocateRoute } from './relocateRoute'
 import { createTravelRunner } from './travelRunner'
 
 interface TravelAnimatorProps {
@@ -42,6 +44,11 @@ interface TravelAnimatorProps {
   readonly enabled: boolean
   /** The tier draws the trail (off on low unless the config allows it). */
   readonly trail: boolean
+  /**
+   * The pins when the game map draws venues at compact points (S04n): trips start and end
+   * there. Null on the Real NYC style.
+   */
+  readonly pins: readonly GeoPin[] | null
 }
 
 export function TravelAnimator({
@@ -54,7 +61,9 @@ export function TravelAnimator({
   animation,
   enabled,
   trail,
+  pins,
 }: TravelAnimatorProps) {
+  const moves = useMemo(() => (pins === null ? [] : placeMoves(pins)), [pins])
   const get = useThree((state) => state.get)
   const invalidate = useThree((state) => state.invalidate)
   const scene = useThree((state) => state.scene)
@@ -92,7 +101,7 @@ export function TravelAnimator({
         return
       }
       if (runner.tripId !== trip.id) beginContinuous('travel')
-      runner.start(trip)
+      runner.start(moves.length === 0 ? trip : { ...trip, route: relocateRoute(trip.route, moves) })
       invalidate()
     }
     follow(tripStore.getState().active)
@@ -103,7 +112,7 @@ export function TravelAnimator({
       off()
       stop()
     }
-  }, [runner, avatarRef, invalidate])
+  }, [runner, avatarRef, invalidate, moves])
 
   // The player's own gesture takes the camera back from the follow.
   useEffect(() => {

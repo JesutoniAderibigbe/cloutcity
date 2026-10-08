@@ -91,6 +91,17 @@ export function buildBadgePinGeometry(): BufferGeometry {
   return merged([stem, medallion], 'badge')
 }
 
+/**
+ * Where a pin stands: its compact game-map point (S04n, the places layer's `gx`/`gy`) when
+ * `compact` and it has one, else its real point.
+ */
+export function pinPoint(
+  pin: Pick<GeoPin, 'x' | 'y' | 'gx' | 'gy'>,
+  compact: boolean,
+): { readonly x: number; readonly y: number } {
+  return compact && pin.gx !== undefined && pin.gy !== undefined ? { x: pin.gx, y: pin.gy } : pin
+}
+
 /** Pin height for a camera distance, clamped. */
 export function pinHeight(distance: number, pins: SceneConfig['pins']): number {
   return Math.min(pins.maxHeightM, Math.max(pins.minHeightM, distance * pins.heightPerDistance))
@@ -117,6 +128,10 @@ export interface PinObjects {
    * the ground (false, the default until the map style says otherwise).
    */
   setVenueLift(on: boolean): void
+  /** Venues stand at their compact game-map points (S04n) or at their real points (false). */
+  setCompact(on: boolean): void
+  /** Where a pin stands now (local metres, x east, y north). */
+  pointOf(pin: GeoPin): { readonly x: number; readonly y: number }
   /** Shows the selection ring under a pin, or hides it (null or an unknown id). */
   setSelected(id: string | null): void
   selectedId(): string | null
@@ -175,6 +190,7 @@ export function buildPins(
     ...pins.filter((pin) => pin.kind === 'landmark'),
   ]
   let venueLift = false
+  let compact = false
   const baseY = (pin: GeoPin) =>
     groundY + settings.liftM + (pin.kind === 'venue' && !venueLift ? 0 : (pin.liftM ?? 0))
 
@@ -232,7 +248,8 @@ export function buildPins(
     const pin = selected === null ? undefined : byId.get(selected)
     ring.visible = pin !== undefined
     if (pin === undefined) return
-    ring.position.set(pin.x, baseY(pin), -pin.y)
+    const at = pinPoint(pin, compact)
+    ring.position.set(at.x, baseY(pin), -at.y)
     ring.scale.setScalar(height)
   }
 
@@ -241,7 +258,8 @@ export function buildPins(
     for (const look of PIN_LOOKS) {
       const mesh = meshes[look]
       byLook[look].forEach((pin, i) => {
-        _position.set(pin.x, baseY(pin), -pin.y)
+        const at = pinPoint(pin, compact)
+        _position.set(at.x, baseY(pin), -at.y)
         mesh.setMatrixAt(i, _matrix.compose(_position, _identity, _scale))
       })
       mesh.instanceMatrix.needsUpdate = true
@@ -266,6 +284,12 @@ export function buildPins(
       venueLift = on
       if (height > 0) writeMatrices()
     },
+    setCompact(on) {
+      if (compact === on) return
+      compact = on
+      if (height > 0) writeMatrices()
+    },
+    pointOf: (pin) => pinPoint(pin, compact),
     setSelected(id) {
       selected = id !== null && byId.has(id) ? id : null
       placeRing()
@@ -275,14 +299,17 @@ export function buildPins(
     headY: (pin) => baseY(pin) + PIN_HEAD[pinLook(pin)] * height,
     groundOf(id) {
       const pin = byId.get(id)
-      return pin === undefined ? null : new Vector3(pin.x, groundY, -pin.y)
+      if (pin === undefined) return null
+      const at = pinPoint(pin, compact)
+      return new Vector3(at.x, groundY, -at.y)
     },
     screenPins(camera, width, height_) {
       const out: ScreenPin[] = []
       // A tap can land before the frame that follows a camera move has rendered.
       camera.updateMatrixWorld()
       for (const pin of ordered) {
-        _head.set(pin.x, baseY(pin) + PIN_HEAD[pinLook(pin)] * height, -pin.y).project(camera)
+        const at = pinPoint(pin, compact)
+        _head.set(at.x, baseY(pin) + PIN_HEAD[pinLook(pin)] * height, -at.y).project(camera)
         // Behind the camera or beyond the far plane: not on screen.
         if (_head.z < -1 || _head.z > 1) continue
         out.push({

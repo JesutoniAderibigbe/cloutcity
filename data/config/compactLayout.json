@@ -1,0 +1,12 @@
+{
+  "pitchM": 108,
+  "maxRings": 10,
+  "fixedCategories": ["subway-station"],
+  "pullToHome": 1,
+  "anchorStepM": 27,
+  "centreOffsetM": { "x": 0, "y": -216 },
+  "realBias": 0.25,
+  "landmarkClearM": 170,
+  "subwayClearM": 48,
+  "avoidParks": true
+}

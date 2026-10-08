@@ -59,6 +59,7 @@ import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
 import {
   AmbientConfigSchema,
   AreaLabelsFileSchema,
+  CompactLayoutConfigSchema,
   PinMarksConfigSchema,
   PlotsConfigSchema,
   SceneConfigSchema,
@@ -152,6 +153,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/phone.json': PhoneConfigSchema,
   'config/pinMarks.json': PinMarksConfigSchema,
   'config/plots.json': PlotsConfigSchema,
+  'config/compactLayout.json': CompactLayoutConfigSchema,
   'places/icons.json': PlaceIconsConfigSchema,
   'places/areaLabels.json': AreaLabelsFileSchema,
   'config/profile.json': ProfileConfigSchema,

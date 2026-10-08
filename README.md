@@ -870,7 +870,14 @@ camera starts over it).
   square onto the district material by the lazy `src/scene/plots/layer.ts`), district masses and
   fill blocks keep clear of plots and are drawn lower and lighter, venue pins float over their
   roofs as big icon bubbles, and big area names (`data/places/areaLabels.json`, `map.area.*`
-  copy) lie on the water and over the neighbourhoods. **Real NYC**: the full city as before.
+  copy) lie on the water and over the neighbourhoods. Venues stand packed (S04n,
+  `data/config/compactLayout.json`, planned on the server by `src/lib/world/compactLayout.ts`
+  into the places layer's `gx`/`gy`): each neighbourhood's venues on a road-separated grid around
+  its home, subway station or the point of the zone nearest a home, wholly inside their own zone,
+  off parks, the subway ribbons and landmarks; homes, landmarks and stations never move. Pins,
+  bubbles, plots, clearings, props, pedestrians, camera focus and trip animations use those
+  points; travel time, fares and distances always use real positions on both styles.
+  **Real NYC**: the full city as before, every place at its real point.
   Both share every material: a switch changes colours, heights, visibility and instance data and
   rebuilds the buildings layer, never a shader program.
 - **Config.** Camera start, zoom/tilt/turn limits, layer heights, line widths, marker and chip

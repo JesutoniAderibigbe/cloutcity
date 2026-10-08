@@ -337,7 +337,10 @@ const MapStyleSchema = z.strictObject({
     /** Multiplies the tier's perf.json buildingDensity. */
     densityScale: tierRatios,
   }),
-  /** Places and homes stand on plots with a building (data/config/plots.json). */
+  /**
+   * Places and homes stand on plots with a building (data/config/plots.json), and venues at
+   * their compact game positions (the places layer's `gx`/`gy`, data/config/compactLayout.json).
+   */
   plots: z.boolean(),
   /**
    * The subway ribbons rise this much above `subway.liftM`: over a flattened background the
@@ -946,6 +949,45 @@ export const PlotsConfigSchema = z.strictObject({
     alphaTest: z.number().gt(0).lt(1),
   }),
 })
+
+/**
+ * data/config/compactLayout.json (S04n): where venues stand on the game map style, packed like a
+ * game map's. Each neighbourhood's (zone's) venues are laid on a square grid of `pitchM` around
+ * an anchor: the zone's home, else a fixed venue (a subway station, which stays at its station),
+ * else the point of the zone that best trades nearness to the nearest home (`pullToHome`)
+ * against nearness to the venues' own centre. Every plot
+ * stays wholly inside its own zone, off parks, clear of the subway ribbons and landmark models,
+ * and never overlaps another (the grid's gap between plots is the road). Homes, landmarks and
+ * fixed venues never move. The server plans it (src/lib/world/compactLayout.ts) into the places
+ * layer's `gx`/`gy`; the Real NYC style keeps every real position. Travel time, fares and
+ * distances always use the real positions.
+ */
+export const CompactLayoutConfigSchema = z.strictObject({
+  /** Grid step between plot centres: the plot's side plus the road between two plots. */
+  pitchM: metres,
+  /** How many grid rings around the anchor are searched for a free slot. */
+  maxRings: z.int().min(1).max(20),
+  /** Venue categories that keep their real position (and anchor their zone's grid). */
+  fixedCategories: z.array(MODEL_ID),
+  /** How strongly an anchorless zone's grid is pulled toward the nearest home (1: all the way). */
+  pullToHome: z.number().min(0).max(1),
+  /** Spacing of the points an anchorless zone's anchor is chosen from. */
+  anchorStepM: metres,
+  /**
+   * Venues gather around the anchor moved by this much (metres east, north), so the cluster
+   * fills the default view, which frames its target high on the screen.
+   */
+  centreOffsetM: z.strictObject({ x: z.number(), y: z.number() }),
+  /** Weight of the distance to the venue's real position against the distance to the anchor. */
+  realBias: z.number().min(0).max(1),
+  /** A plot centre keeps this far from every landmark's point. */
+  landmarkClearM: z.number().nonnegative(),
+  /** A plot centre keeps this far from every subway ribbon. */
+  subwayClearM: z.number().nonnegative(),
+  /** No plot corner (or centre) on a park, cemetery or other park-layer area. */
+  avoidParks: z.boolean(),
+})
+export type CompactLayoutConfig = z.infer<typeof CompactLayoutConfigSchema>
 
 export const AREA_KINDS = ['water', 'neighborhood'] as const
 
