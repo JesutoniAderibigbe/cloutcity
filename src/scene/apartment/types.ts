@@ -34,6 +34,8 @@ export interface ApartmentView {
   readonly cells: Readonly<Record<string, CellState>> | null
   /** The canvas's accessible name ("Your apartment, Queens room"). */
   readonly label: string
+  /** The name of the button that brings a turned room back to its home view ("Reset view"). */
+  readonly resetLabel: string
   /** The personal-clock minute, for the lighting seam (S04f). */
   readonly minute: number
   readonly tier: QualityTier

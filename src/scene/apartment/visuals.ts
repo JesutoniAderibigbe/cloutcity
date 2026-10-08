@@ -25,11 +25,13 @@ import {
 import type { QualityTier } from '@/lib/data/schemas/config'
 import { createToonRamp } from '../toonRamp'
 import { buildDecorModel, type DecorModel } from './buildDecor'
-import { buildRoomGeometry, type ShellFinishes } from './buildRoom'
-import type { ApartmentConfig, RoomInterior, RoomPalette } from './data'
+import { buildRoomGeometry, shownRanges, type ShellFinishes } from './buildRoom'
+import type { ApartmentConfig, RoomInterior, RoomPalette, RoomWall } from './data'
 
 export interface RoomVisual {
   readonly object: Object3D
+  /** Leaves out the walls between the camera and the room (the turned cutaway, S40b). */
+  setHiddenWalls(hidden: ReadonlySet<RoomWall>): void
   dispose(): void
 }
 
@@ -91,14 +93,22 @@ export function createPlaceholderVisuals(
   return {
     buildRoom(layout, _tier, finishes) {
       const geometry: BufferGeometry = buildRoomGeometry(layout, config, palette, finishes)
-      // Single-sided: a wall between the camera and the room is culled (the cutaway).
+      const sections = geometry.groups.map(({ start, count }) => ({ start, count }))
+      // Single-sided: from the front, a wall's outer face turns away and is culled (the cutaway).
       const material = new MeshToonMaterial({ vertexColors: true, gradientMap, side: FrontSide })
-      const mesh = new Mesh(geometry, material)
+      // A material list, so the renderer draws the geometry's groups: the walls shown now.
+      const mesh = new Mesh(geometry, [material])
       mesh.name = 'apartment-room'
       mesh.receiveShadow = true
       mesh.raycast = noRaycast
       return {
         object: mesh,
+        setHiddenWalls(hidden) {
+          geometry.clearGroups()
+          for (const range of shownRanges(sections, hidden)) {
+            geometry.addGroup(range.start, range.count, range.materialIndex)
+          }
+        },
         dispose() {
           geometry.dispose()
           material.dispose()

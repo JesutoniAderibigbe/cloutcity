@@ -15,6 +15,7 @@ const view: ApartmentView = {
   finishes: { wall: 'butter-cream', floor: 'bodega-checker' },
   cells: null,
   label: 'Your apartment, Queens room',
+  resetLabel: 'Reset view',
   minute: 0,
   tier: 'mid',
 }

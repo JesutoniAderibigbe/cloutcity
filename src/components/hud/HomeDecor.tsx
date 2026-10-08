@@ -300,10 +300,11 @@ export default function HomeDecor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [held, heldDef, mode, tab, selected, apartment.placed, inventory, layout, size, refusal])
 
+  const resetLabel = copy('home.view.reset')
   useEffect(() => {
-    const view: ApartmentView = { home, placed, finishes, cells, label, minute, tier }
+    const view: ApartmentView = { home, placed, finishes, cells, label, resetLabel, minute, tier }
     setApartmentView(view)
-  }, [home, placed, finishes, cells, label, minute, tier])
+  }, [home, placed, finishes, cells, label, resetLabel, minute, tier])
 
   /** Starts placing `itemId`: where it stands when moving, else the first spot it fits. */
   const startHold = (itemId: string, moving: boolean) => {

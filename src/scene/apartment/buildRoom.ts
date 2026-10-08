@@ -3,11 +3,13 @@
  * parquet or a solid pour), walls with thickness and a darker cap read from above like a doll's
  * house, the wall paint (or the loft's exposed brick on the back wall), baseboards and crown
  * moulding, windows with frames, sills, panes and curtains, the door in its frame, and the
- * home's built-in counters. Everything is one vertex-coloured geometry (one draw call).
+ * home's built-in counters. Everything is one vertex-coloured geometry, grouped by wall
+ * (ROOM_SECTIONS) so the orbit can leave out the walls between the camera and the room.
  *
- * The cutaway: there is no front wall, and the walls' outer faces turn away from the camera, so
- * the material's back-face culling hides them. Trim, panes and doors sit `insetM` in front of
- * their wall so they never fight it in the depth test.
+ * The cutaway: there is no front wall. From the front the walls' outer faces turn away from the
+ * camera and back-face culling hides them; once the player turns the room (S40b) past a wall,
+ * `hiddenWalls` names it and the shell draws without it. Trim, panes and doors sit `insetM` in
+ * front of their wall so they never fight it in the depth test.
  *
  * Room space (data/homes/interiors.json): metres, x right, y up, z toward the camera, the floor's
  * centre at the origin. Along the back wall an opening's `centerM` runs with x; along a side wall
@@ -423,7 +425,19 @@ function counterParts(
   ]
 }
 
-/** The room shell as one vertex-coloured geometry, with `finishes` on its walls and floor. */
+/**
+ * The shell's sections, in the order its geometry holds them: each wall with everything on it
+ * (paint, brick, trim, openings), and the base (slab, floor, counters). The order keeps every
+ * set of walls the orbit hides (`hiddenWalls`: one wall, or the back with one side) a cut that
+ * leaves at most two contiguous ranges, so the shell never costs more than two draw calls.
+ */
+export const ROOM_SECTIONS = ['back', 'left', 'base', 'right'] as const
+export type RoomSection = (typeof ROOM_SECTIONS)[number]
+
+/**
+ * The room shell as one vertex-coloured geometry, with `finishes` on its walls and floor: one
+ * material group per section (ROOM_SECTIONS order, every group material 0).
+ */
 export function buildRoomGeometry(
   interior: RoomInterior,
   config: ApartmentConfig,
@@ -438,26 +452,28 @@ export function buildRoomGeometry(
   const floor = finishLook(finishes.floor)
   const accent = shell.accentBack === null ? null : finishLook(shell.accentBack)
   const paintHex = paint.colors[0]
-  const parts: BufferGeometry[] = [
+  const sections: Record<RoomSection, BufferGeometry[]> = {
+    back: [],
+    left: [],
+    base: [],
+    right: [],
+  }
+  sections.base.push(
     slab(
       [-room.widthM / 2 - thickness, -config.floorThicknessM, -room.depthM / 2 - thickness],
       [room.widthM / 2 + thickness, 0, room.depthM / 2],
       colors.cap,
     ),
     ...floorFinishParts(floor, room, 0.002),
-    ...walls.flatMap((wall) => {
-      const brick = paint.pattern === 'brick' ? paint : wall === 'back' ? accent : null
-      // A brick wall's body shows through the joints, so it takes the mortar colour.
-      const body = brick === null ? paintHex : brick.colors[1]
-      return wallBody(wall, room, openings, thickness, body, colors.cap)
-    }),
-  ]
-  // A painted brick finish covers every wall; the loft's accent shows brick on the back wall only.
+  )
   for (const wall of walls) {
+    const parts = sections[wall]
+    // A painted brick finish covers every wall; the loft's accent shows brick on the back wall only.
     const brick = paint.pattern === 'brick' ? paint : wall === 'back' ? accent : null
+    // A brick wall's body shows through the joints, so it takes the mortar colour.
+    const body = brick === null ? paintHex : brick.colors[1]
+    parts.push(...wallBody(wall, room, openings, thickness, body, colors.cap))
     if (brick !== null) parts.push(...brickFace(wall, room, openings, brick, inset))
-  }
-  for (const wall of walls) {
     const length = wallLength(wall, room)
     parts.push(
       wallBox(
@@ -488,16 +504,59 @@ export function buildRoomGeometry(
     }
   }
   for (const opening of openings) {
-    parts.push(
+    sections[opening.wall].push(
       ...(opening.kind === 'window'
         ? windowParts(opening, room, config, colors)
         : doorParts(opening, room, config, colors)),
     )
   }
   for (const fixture of interior.fixtures) {
-    if (fixture.kind === 'counter') parts.push(...counterParts(interior, fixture.slotId, colors))
+    if (fixture.kind === 'counter') {
+      sections.base.push(...counterParts(interior, fixture.slotId, colors))
+    }
   }
-  return mergeParts(parts, 'room')
+  const merged = mergeParts(
+    ROOM_SECTIONS.map((section) => mergeParts(sections[section], `room ${section}`)),
+    'room',
+    true,
+  )
+  for (const group of merged.groups) group.materialIndex = 0
+  return merged
+}
+
+/**
+ * The shell's draw ranges (geometry groups, material 0) with the `hidden` walls left out:
+ * `sections` are the shell's groups in ROOM_SECTIONS order; neighbouring shown sections join.
+ */
+export function shownRanges(
+  sections: readonly { readonly start: number; readonly count: number }[],
+  hidden: ReadonlySet<RoomWall>,
+): { start: number; count: number; materialIndex: number }[] {
+  const ranges: { start: number; count: number; materialIndex: number }[] = []
+  ROOM_SECTIONS.forEach((section, i) => {
+    const range = sections[i]
+    if (range === undefined || (section !== 'base' && hidden.has(section))) return
+    const last = ranges.at(-1)
+    if (last !== undefined && last.start + last.count === range.start) last.count += range.count
+    else ranges.push({ start: range.start, count: range.count, materialIndex: 0 })
+  })
+  return ranges
+}
+
+/**
+ * The walls that stand between a camera at (x, z) (room metres) and the room: a wall whose outer
+ * face the camera can see. The orbit hides them, like a doll's house turned round.
+ */
+export function hiddenWalls(
+  room: RoomInterior['room'],
+  x: number,
+  z: number,
+): ReadonlySet<RoomWall> {
+  const hidden = new Set<RoomWall>()
+  if (z < -room.depthM / 2) hidden.add('back')
+  if (x < -room.widthM / 2) hidden.add('left')
+  if (x > room.widthM / 2) hidden.add('right')
+  return hidden
 }
 
 /** The room's bounding box: floor slab to ceiling, wall to open front. */

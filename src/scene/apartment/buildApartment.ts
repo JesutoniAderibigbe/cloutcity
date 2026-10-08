@@ -8,7 +8,10 @@
  * - hand-made model meshes sharing one material merged into one mesh (`mergeMeshes`), so a
  *   furnished room costs a handful of draw calls whatever it holds;
  * - buy mode's grid: every cell a tile in one InstancedMesh (one draw call), coloured by state;
- * - the mid tier's blob shadows under floor and surface items in one InstancedMesh.
+ * - the mid tier's blob shadows under floor and surface items in one InstancedMesh;
+ * - the turned cutaway (S40b): the walls between the camera and the room are left out with
+ *   everything hung on them, their grid cells and their taps (`setHiddenWalls`). Wall items merge
+ *   per wall for this, so a hidden wall's decor drops with it.
  *
  * Renders state only: what sits where comes from the save through props. A tap is resolved to the
  * cell under it by intersecting the floor and wall planes (`cellAt`), never by raycasting meshes.
@@ -39,7 +42,7 @@ import {
 import { footprintSize, gridSlots, parseSlot, type GridSlot, type Turn } from '@/engine/homeGrid'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { ShellFinishes } from './buildRoom'
-import type { ApartmentConfig, RoomInterior, RoomPalette } from './data'
+import type { ApartmentConfig, RoomInterior, RoomPalette, RoomWall } from './data'
 import { boxAt, mergeParts, paintedPart } from './parts'
 import type { CellState } from './types'
 import type { ApartmentVisuals, DecorVisual, RoomVisual } from './visuals'
@@ -64,6 +67,11 @@ export interface ApartmentObjects {
   setFinishes(finishes: ShellFinishes): void
   /** Blob shadows on the mid tier, cast shadows on the high tier. */
   setTier(tier: QualityTier): void
+  /**
+   * Leaves out `hidden` walls with their decor and grid cells, and taps no longer find their
+   * cells. Returns whether anything changed (so the caller asks for a frame only then).
+   */
+  setHiddenWalls(hidden: ReadonlySet<RoomWall>): boolean
   /** The cell under a point of the canvas (CSS pixels from its top left), or null. */
   cellAt(camera: Camera, x: number, y: number, width: number, height: number): string | null
   /** A cell's centre on screen, in CSS pixels from the canvas's top left, or null behind the camera. */
@@ -169,8 +177,21 @@ export function buildApartment(
   const slots = gridSlots(grid)
   let tier: QualityTier = 'mid'
   let finishes = initialFinishes
-  let roomVisual: RoomVisual = visuals.buildRoom(interior, tier, finishes)
-  group.add(roomVisual.object)
+  let cutWalls: ReadonlySet<RoomWall> = new Set()
+  const buildShell = () => {
+    const visual = visuals.buildRoom(interior, tier, finishes)
+    visual.setHiddenWalls(cutWalls)
+    group.add(visual.object)
+    return visual
+  }
+  let roomVisual: RoomVisual = buildShell()
+
+  /** The wall a slot hangs on, or null for a floor slot. */
+  const wallOf = (slotId: string): RoomWall | null => {
+    const slot = parseSlot(slotId, grid)
+    return slot?.kind === 'wall' ? slot.wall : null
+  }
+  const shown = (wall: RoomWall | null) => wall === null || !cutWalls.has(wall)
 
   // Where an item's footprint is centred, and the turn about y, for a floor or wall slot.
   const placeAt = (slotId: string, footprint: PlacedFill['footprint'], turn: Turn) => {
@@ -415,18 +436,29 @@ export function buildApartment(
     }
     merged = []
     decorRoot.clear()
-    const byMaterial = new Map<Material, { geometry: BufferGeometry; matrix: Matrix4 }[]>()
-    const visualsNow = [...fixtures, ...[...drawn.values()].map((entry) => entry.visual)]
-    for (const visual of visualsNow) {
+    // Keyed by the wall an item hangs on ('' for the floor), then by material.
+    const bySection = new Map<
+      RoomWall | '',
+      Map<Material, { geometry: BufferGeometry; matrix: Matrix4 }[]>
+    >()
+    const visualsNow: { visual: DecorVisual; wall: RoomWall | null }[] = [
+      ...fixtures.map((visual) => ({ visual, wall: null })),
+      ...[...drawn.values()].map(({ fill, visual }) => ({ visual, wall: wallOf(fill.slotId) })),
+    ]
+    for (const { visual, wall } of visualsNow) {
       visual.object.updateMatrixWorld(true)
       let mergeable = true
       visual.object.traverse((child) => {
         if (child instanceof Mesh && Array.isArray(child.material)) mergeable = false
       })
       if (!mergeable) {
+        visual.object.userData.wall = wall
+        visual.object.visible = shown(wall)
         decorRoot.add(visual.object)
         continue
       }
+      const byMaterial = bySection.get(wall ?? '') ?? new Map()
+      bySection.set(wall ?? '', byMaterial)
       visual.object.traverse((child) => {
         if (!(child instanceof Mesh)) return
         const material = child.material as Material
@@ -435,14 +467,19 @@ export function buildApartment(
         byMaterial.set(material, list)
       })
     }
-    for (const [material, meshes] of byMaterial) {
-      const mesh = new Mesh(mergeMeshes(meshes), material)
-      mesh.name = 'apartment-decor-merged'
-      mesh.raycast = noRaycast
-      mesh.receiveShadow = true
-      mesh.castShadow = tier === 'high'
-      merged.push(mesh)
-      group.add(mesh)
+    for (const [section, byMaterial] of bySection) {
+      const wall = section === '' ? null : section
+      for (const [material, meshes] of byMaterial) {
+        const mesh = new Mesh(mergeMeshes(meshes), material)
+        mesh.name = 'apartment-decor-merged'
+        mesh.userData.wall = wall
+        mesh.visible = shown(wall)
+        mesh.raycast = noRaycast
+        mesh.receiveShadow = true
+        mesh.castShadow = tier === 'high'
+        merged.push(mesh)
+        group.add(mesh)
+      }
     }
   }
 
@@ -461,8 +498,35 @@ export function buildApartment(
     right: new Plane(new Vector3(-1, 0, 0), room.widthM / 2),
   }
   let shownCells: Readonly<Record<string, CellState>> = {}
+  let lastCells: Readonly<Record<string, CellState>> | null = null
   const raycaster = new Raycaster()
   const hit = new Vector3()
+
+  const setCells = (cells: Readonly<Record<string, CellState>> | null) => {
+    lastCells = cells
+    tiles.visible = cells !== null
+    frames.visible = cells !== null
+    shownCells = cells ?? {}
+    if (cells === null) return
+    slots.forEach((slot, i) => {
+      const state = slot.kind === 'wall' && cutWalls.has(slot.wall) ? undefined : cells[slot.id]
+      const framed = state === 'ghost' || state === 'refused' || state === 'selected'
+      if (state === undefined) {
+        tiles.setMatrixAt(i, hidden)
+        frames.setMatrixAt(i, hidden)
+        return
+      }
+      const matrix = tileMatrix(slot)
+      tiles.setMatrixAt(i, matrix)
+      tiles.setColorAt(i, stateColors[state])
+      frames.setMatrixAt(i, framed ? matrix : hidden)
+      frames.setColorAt(i, stateColors[state])
+    })
+    for (const mesh of [tiles, frames]) {
+      mesh.instanceMatrix.needsUpdate = true
+      if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
+    }
+  }
 
   return {
     group,
@@ -491,37 +555,13 @@ export function buildApartment(
       rebuildMerged()
       layoutBlobs()
     },
-    setCells(cells) {
-      tiles.visible = cells !== null
-      frames.visible = cells !== null
-      shownCells = cells ?? {}
-      if (cells === null) return
-      slots.forEach((slot, i) => {
-        const state = cells[slot.id]
-        const framed = state === 'ghost' || state === 'refused' || state === 'selected'
-        if (state === undefined) {
-          tiles.setMatrixAt(i, hidden)
-          frames.setMatrixAt(i, hidden)
-          return
-        }
-        const matrix = tileMatrix(slot)
-        tiles.setMatrixAt(i, matrix)
-        tiles.setColorAt(i, stateColors[state])
-        frames.setMatrixAt(i, framed ? matrix : hidden)
-        frames.setColorAt(i, stateColors[state])
-      })
-      for (const mesh of [tiles, frames]) {
-        mesh.instanceMatrix.needsUpdate = true
-        if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
-      }
-    },
+    setCells,
     setFinishes(next) {
       if (next.wall === finishes.wall && next.floor === finishes.floor) return
       finishes = next
       group.remove(roomVisual.object)
       roomVisual.dispose()
-      roomVisual = visuals.buildRoom(interior, tier, finishes)
-      group.add(roomVisual.object)
+      roomVisual = buildShell()
     },
     setTier(next) {
       if (next === tier) return
@@ -529,12 +569,22 @@ export function buildApartment(
       // A visual may differ by tier (S04h models can), so the room is rebuilt for it.
       group.remove(roomVisual.object)
       roomVisual.dispose()
-      roomVisual = visuals.buildRoom(interior, tier, finishes)
-      group.add(roomVisual.object)
+      roomVisual = buildShell()
       for (const { visual } of drawn.values()) visual.setCastShadow(tier === 'high')
       for (const mesh of merged) mesh.castShadow = tier === 'high'
       if (stands !== null) stands.castShadow = tier === 'high'
       layoutBlobs()
+    },
+    setHiddenWalls(next) {
+      if (next.size === cutWalls.size && [...next].every((wall) => cutWalls.has(wall))) return false
+      cutWalls = new Set(next)
+      roomVisual.setHiddenWalls(cutWalls)
+      for (const mesh of merged) mesh.visible = shown(mesh.userData.wall as RoomWall | null)
+      for (const child of decorRoot.children) {
+        child.visible = shown(child.userData.wall as RoomWall | null)
+      }
+      if (lastCells !== null) setCells(lastCells)
+      return true
     },
     cellAt(camera, x, y, width, height) {
       raycaster.setFromCamera(new Vector2((x / width) * 2 - 1, 1 - (y / height) * 2), camera)
@@ -554,8 +604,13 @@ export function buildApartment(
         const r = index(hit.z + halfD, room.depthM)
         consider(ray.origin.distanceTo(hit), c >= 0 && r >= 0 ? `f${c}-${r}` : null)
       }
-      const wallHit = (wall: 'back' | 'left' | 'right') => {
-        if (ray.intersectPlane(plane[wall], hit) === null || hit.y < 0 || hit.y > room.heightM) {
+      const wallHit = (wall: RoomWall) => {
+        if (
+          cutWalls.has(wall) ||
+          ray.intersectPlane(plane[wall], hit) === null ||
+          hit.y < 0 ||
+          hit.y > room.heightM
+        ) {
           return
         }
         const along = wall === 'back' ? hit.x + halfW : hit.z + halfD

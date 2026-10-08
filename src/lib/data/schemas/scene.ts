@@ -687,6 +687,32 @@ export const SceneConfigSchema = z.strictObject({
     /** The room's projected box fills the free scene area with this much margin. */
     fitMargin: z.number().min(1),
     /**
+     * Turning the room (S40b, src/scene/apartment/RoomOrbit.tsx): one finger or the mouse turns
+     * it all the way round and tilts it between the polar limits (degrees from straight down,
+     * widened to take in the home's own angle), a pinch or the wheel zooms between shares of the
+     * fitted distance, never closer than `outsideShare` of the room's bounding radius (so the
+     * camera never enters a wall or the floor). `damping` is three's OrbitControls factor;
+     * `resetEase` the share of the way back to the home view covered per frame. A second tap on
+     * the backdrop within `doubleTapMs` and `doubleTapSlopPx` of the first resets the view.
+     */
+    orbit: z
+      .strictObject({
+        minPolarDeg: z.number().min(0).lt(90),
+        maxPolarDeg: z.number().gt(0).lt(90),
+        zoomInShare: z.number().gt(0).max(1),
+        zoomOutShare: z.number().min(1),
+        outsideShare: z.number().gt(1),
+        damping: z.number().gt(0).max(1),
+        rotateSpeed: z.number().positive(),
+        zoomSpeed: z.number().positive(),
+        resetEase: z.number().gt(0).max(1),
+        doubleTapMs: z.int().positive(),
+        doubleTapSlopPx: z.number().positive(),
+      })
+      .refine((o) => o.minPolarDeg < o.maxPolarDeg, {
+        error: 'the orbit needs a tilt range',
+      }),
+    /**
      * The room's light comes from the city's day/night keyframe (scene `dayNight.room` scales
      * it); only the direction through the window and the shadow map size are the room's own.
      */

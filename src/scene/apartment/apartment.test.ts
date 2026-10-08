@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { BoxGeometry, Matrix4, PerspectiveCamera, type InstancedMesh } from 'three'
+import { BoxGeometry, Matrix4, Mesh, PerspectiveCamera, type InstancedMesh } from 'three'
 import sceneJson from '@data/config/scene.json'
 import finishesJson from '@data/homes/finishes.json'
 import itemsJson from '@data/items/items.json'
 import { HOME_IDS } from '@/lib/data/homes'
 import { buildApartment, mergeMeshes, type PlacedFill } from './buildApartment'
 import { buildDecorModel, DECOR_MODEL_IDS } from './buildDecor'
-import { buildRoomGeometry, roomBounds } from './buildRoom'
+import { buildRoomGeometry, hiddenWalls, ROOM_SECTIONS, roomBounds, shownRanges } from './buildRoom'
 import {
   apartmentConfig,
   avatarReserve,
@@ -93,7 +93,7 @@ describe('decor models', () => {
 })
 
 describe('room shell', () => {
-  it('is one vertex-coloured geometry for every home and every finish, within budget', () => {
+  it('is one vertex-coloured geometry, grouped by wall, for every home and finish, within budget', () => {
     for (const home of HOME_IDS) {
       const interior = roomInterior(home)
       for (const finish of finishesJson.finishes) {
@@ -103,7 +103,16 @@ describe('room shell', () => {
             : { wall: interior.shell.wallPaint, floor: finish.id }
         const geometry = buildRoomGeometry(interior, apartmentConfig, roomPalette, finishes)
         expect(geometry.getAttribute('color')).toBeDefined()
-        expect(geometry.groups).toHaveLength(0)
+        // One group per section, all on the one material, covering the geometry end to end.
+        expect(geometry.groups).toHaveLength(ROOM_SECTIONS.length)
+        let next = 0
+        for (const group of geometry.groups) {
+          expect(group.materialIndex).toBe(0)
+          expect(group.start).toBe(next)
+          expect(group.count).toBeGreaterThan(0)
+          next += group.count
+        }
+        expect(next).toBe(geometry.getAttribute('position').count)
         // Room for the avatar and the furniture inside the low tier's triangle cap.
         expect(triangleCount(geometry), `${home} ${finish.id}`).toBeLessThan(
           tierBudget('low').trianglesMax / 3,
@@ -111,6 +120,43 @@ describe('room shell', () => {
         geometry.dispose()
       }
     }
+  })
+})
+
+describe('turned cutaway (S40b)', () => {
+  const room = roomInterior('queens-room').room
+  const halfW = room.widthM / 2
+  const halfD = room.depthM / 2
+
+  it('hides only the walls whose outer face the camera can see', () => {
+    expect([...hiddenWalls(room, 0, halfD + 5)]).toEqual([])
+    expect([...hiddenWalls(room, 0, -halfD - 1)]).toEqual(['back'])
+    expect([...hiddenWalls(room, -halfW - 1, 0)]).toEqual(['left'])
+    expect([...hiddenWalls(room, halfW + 1, 0)]).toEqual(['right'])
+    expect([...hiddenWalls(room, -halfW - 1, -halfD - 1)].sort()).toEqual(['back', 'left'])
+  })
+
+  it('draws the shown sections in at most two ranges, base always', () => {
+    // back, left, base, right: 10, 20, 30, 40 vertices.
+    const sections = [
+      { start: 0, count: 10 },
+      { start: 10, count: 20 },
+      { start: 30, count: 30 },
+      { start: 60, count: 40 },
+    ]
+    const ranges = (walls: string[]) =>
+      shownRanges(sections, new Set(walls as ('back' | 'left' | 'right')[])).map(
+        ({ start, count }) => [start, count],
+      )
+    expect(ranges([])).toEqual([[0, 100]])
+    expect(ranges(['back'])).toEqual([[10, 90]])
+    expect(ranges(['left'])).toEqual([
+      [0, 10],
+      [30, 70],
+    ])
+    expect(ranges(['right'])).toEqual([[0, 60]])
+    expect(ranges(['back', 'left'])).toEqual([[30, 70]])
+    expect(ranges(['back', 'right'])).toEqual([[10, 50]])
   })
 })
 
@@ -293,6 +339,74 @@ describe('apartment scene graph', () => {
     }
     // Off the room: nothing.
     expect(apartment.cellAt(camera, 2, 2, 390, 844)).toBeNull()
+    apartment.dispose()
+  })
+})
+
+describe('apartment scene graph, turned (S40b)', () => {
+  const interior = roomInterior('queens-room')
+
+  it('drops a hidden wall with its decor, grid cells and taps, and brings it back', () => {
+    const apartment = buildApartment(
+      interior,
+      apartmentConfig,
+      roomPalette,
+      createPlaceholderVisuals(apartmentConfig, roomPalette, toonRamp),
+      { wall: interior.shell.wallPaint, floor: interior.shell.floorFinish },
+    )
+    const fills: Record<string, PlacedFill> = {
+      'fairy-string-lights': {
+        itemId: 'fairy-string-lights',
+        slotId: 'w-back-0',
+        turn: 0,
+        mount: 'wall',
+        footprint: '1x1',
+        color: '#ffffff',
+      },
+    }
+    apartment.setPlaced(fills)
+    apartment.setCells({ 'w-back-1': 'free', 'f0-0': 'free' })
+    const room = apartment.group.getObjectByName('apartment-room') as Mesh
+    const lights = apartment.group.getObjectByName('apartment-decor-fairy-string-lights')
+    const tiles = apartment.group.getObjectByName('apartment-grid') as InstancedMesh
+    const tileScale = (slotId: string) => {
+      const matrix = new Matrix4()
+      tiles.getMatrixAt(
+        apartment.slots.findIndex((slot) => slot.id === slotId),
+        matrix,
+      )
+      return matrix.getMaxScaleOnAxis()
+    }
+    // Built whole: the four sections join into one draw range.
+    expect(room.geometry.groups).toHaveLength(1)
+    expect(apartment.setHiddenWalls(new Set())).toBe(false)
+
+    expect(apartment.setHiddenWalls(new Set(['back']))).toBe(true)
+    expect(apartment.setHiddenWalls(new Set(['back']))).toBe(false)
+    expect(room.geometry.groups).toHaveLength(1)
+    expect(room.geometry.groups[0]?.start).toBeGreaterThan(0)
+    expect(lights?.visible).toBe(false)
+    expect(tileScale('w-back-1')).toBe(0)
+    expect(tileScale('f0-0')).toBeGreaterThan(0)
+
+    // A camera behind the back wall looking in: the back wall no longer catches the tap.
+    const camera = new PerspectiveCamera(40, 1, 0.05, 100)
+    camera.position.set(0, 1.3, -interior.room.depthM / 2 - 4)
+    camera.lookAt(0, 0, 0)
+    camera.updateMatrixWorld()
+    expect(apartment.cellAt(camera, 0.5, 0.5, 1, 1)).toMatch(/^f/)
+
+    // A finish rebuild keeps the cut.
+    apartment.setFinishes({ wall: 'mint-fresh', floor: interior.shell.floorFinish })
+    const rebuilt = apartment.group.getObjectByName('apartment-room') as Mesh
+    expect(rebuilt.geometry.groups[0]?.start).toBeGreaterThan(0)
+
+    expect(apartment.setHiddenWalls(new Set())).toBe(true)
+    expect(rebuilt.geometry.groups).toEqual([
+      { start: 0, count: rebuilt.geometry.getAttribute('position').count, materialIndex: 0 },
+    ])
+    expect(lights?.visible).toBe(true)
+    expect(tileScale('w-back-1')).toBeGreaterThan(0)
     apartment.dispose()
   })
 })

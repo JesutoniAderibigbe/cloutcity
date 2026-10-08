@@ -5,6 +5,7 @@
     "home.score": "Home score {score}: +{clout} clout",
     "home.scoreCapped": "Home score {score}: +{clout} clout. That is the home clout cap.",
     "home.view.label": "Your apartment, {home}",
+    "home.view.reset": "Reset view",
     "home.kind.wall.lower": "wall",
     "home.kind.floor.lower": "floor",
     "home.kind.surface.lower": "surface",

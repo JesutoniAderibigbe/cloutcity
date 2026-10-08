@@ -388,6 +388,19 @@
       "opacity": 0.55
     },
     "fitMargin": 1.04,
+    "orbit": {
+      "minPolarDeg": 15,
+      "maxPolarDeg": 76,
+      "zoomInShare": 0.6,
+      "zoomOutShare": 1.5,
+      "outsideShare": 1.15,
+      "damping": 0.12,
+      "rotateSpeed": 0.85,
+      "zoomSpeed": 0.9,
+      "resetEase": 0.18,
+      "doubleTapMs": 320,
+      "doubleTapSlopPx": 28
+    },
     "lights": {
       "sunDirection": {
         "x": -0.6,

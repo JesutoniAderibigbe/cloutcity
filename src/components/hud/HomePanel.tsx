@@ -175,10 +175,20 @@ export function HomePanel() {
   const placed = useMemo(() => placedView(player), [player])
   const finishes = useMemo(() => finishesView(player), [player])
   const label = copy('home.view.label', { home: homeName(home) })
+  const resetLabel = copy('home.view.reset')
   useEffect(() => {
     if (decorLive) return
-    setApartmentView({ home, placed, finishes, cells: null, label, minute, tier: DEVICE_TIER })
-  }, [decorLive, home, placed, finishes, label, minute])
+    setApartmentView({
+      home,
+      placed,
+      finishes,
+      cells: null,
+      label,
+      resetLabel,
+      minute,
+      tier: DEVICE_TIER,
+    })
+  }, [decorLive, home, placed, finishes, label, resetLabel, minute])
   // Closing the panel closes the room.
   useEffect(() => () => setApartmentView(null), [])
 
