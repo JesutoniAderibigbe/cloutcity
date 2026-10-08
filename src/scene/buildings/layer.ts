@@ -19,6 +19,7 @@ import {
   massesFor,
   type DistrictColors,
   type DistrictGeometry,
+  type DistrictMass,
 } from './buildDistrict'
 import { BlocksMiniSchema, DistrictBuildingsMiniSchema } from './schema'
 import { distanceToDistrict, drawDistances, type ViewPoint } from './view'
@@ -70,6 +71,11 @@ export interface BuildingsLayerOptions {
   readonly onChange: () => void
   /** A file failed to load or validate (the rest of the city carries on without it). */
   readonly onError: (url: string, reason: string) => void
+  /**
+   * A district is built and drawn: its masses, most prominent first (the street props' roof
+   * water towers stand on them, S04i).
+   */
+  readonly onDistrictReady?: (id: string, masses: readonly DistrictMass[]) => void
   readonly fetchJson?: (url: string) => Promise<unknown>
   readonly yieldFn?: () => Promise<void>
 }
@@ -204,8 +210,9 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
       if (!parsed.success || parsed.data.district !== id) throw new Error('invalid district file')
       if (disposed) return
       const step = createSlicer(options.config.buildSliceMs, options.yieldFn)
+      const masses = districtMasses(parsed.data)
       const built = await buildDistrictGeometry(
-        districtMasses(parsed.data),
+        masses,
         options.groundY,
         options.districtColors,
         step,
@@ -227,6 +234,7 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
       group.add(mesh)
       applyView()
       options.onChange()
+      options.onDistrictReady?.(id, masses)
     } catch (error) {
       entry.status = 'failed'
       fail(asset.url, error)

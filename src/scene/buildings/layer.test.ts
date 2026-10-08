@@ -38,7 +38,11 @@ function cameraOver(id: string): PerspectiveCamera {
   return camera
 }
 
-function layerWith(fetchJson: (url: string) => Promise<unknown>, onError = vi.fn()) {
+function layerWith(
+  fetchJson: (url: string) => Promise<unknown>,
+  onError = vi.fn(),
+  onDistrictReady?: Parameters<typeof createBuildingsLayer>[0]['onDistrictReady'],
+) {
   const material = new MeshBasicMaterial()
   return createBuildingsLayer({
     assets,
@@ -58,6 +62,7 @@ function layerWith(fetchJson: (url: string) => Promise<unknown>, onError = vi.fn
     onError,
     fetchJson,
     yieldFn: async () => undefined,
+    ...(onDistrictReady === undefined ? {} : { onDistrictReady }),
   })
 }
 
@@ -102,6 +107,28 @@ describe('buildings layer', () => {
     far.updateMatrixWorld()
     layer.setView(far)
     expect(layer.view().districts.find((d) => d.id === 'jamaica')?.visible).toBe(false)
+    layer.dispose()
+  })
+
+  it('hands each built district its masses, most prominent first (S04i water towers)', async () => {
+    const { fetchJson } = fakeFetch()
+    const ready = vi.fn()
+    const layer = layerWith(fetchJson, vi.fn(), ready)
+    layer.setView(cameraOver('jamaica'))
+    layer.start()
+    for (let i = 0; i < 20 && layer.view().busy; i++) await settle()
+    const loaded = layer.view().districts.filter((d) => d.status === 'ready')
+    expect(ready.mock.calls.map(([id]) => id as string).sort()).toEqual(
+      loaded.map((d) => d.id).sort(),
+    )
+    const call = ready.mock.calls.find(([id]) => id === 'jamaica')
+    const masses = (call?.[1] ?? []) as { prominence: number }[]
+    expect(masses).toHaveLength(
+      layer.view().districts.find((d) => d.id === 'jamaica')?.masses ?? -1,
+    )
+    for (let i = 1; i < masses.length; i++) {
+      expect(masses[i - 1]?.prominence ?? 0).toBeGreaterThanOrEqual(masses[i]?.prominence ?? 0)
+    }
     layer.dispose()
   })
 
