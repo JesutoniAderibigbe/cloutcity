@@ -1,12 +1,10 @@
 """Turn a level's Builder into Blender objects and write it as GLB.
 
-Two files per level: an uncompressed GLB (the master, kept in the gitignored .cache/blender)
-and, when asked, a meshopt-compressed one through Blender's own exporter (the interim shipped
-file until the S04h asset script owns compression). Export settings are fixed so the bytes
-depend only on the geometry: no extras, no images, no animation, cameras or lights.
-
-No normals are written: every face is flat, and three's GLTFLoader shades a primitive without
-normals with `flatShading` (per-pixel face normals), which saves 12 bytes per vertex.
+One uncompressed GLB per level (the master, kept in the gitignored .cache/blender); run.ts then
+merges and compresses it into the S04h runtime format (scripts/blender/ship.ts). Export settings
+are fixed so the bytes depend only on the geometry: no extras, no images, no animation, cameras
+or lights. Flat normals are written: the runtime draws every model with the one shared model
+material (src/scene/models/materials.ts), which reads them.
 """
 
 import hashlib
@@ -41,7 +39,7 @@ def objects_for(builder, landmark_id, level, body_material, windows_material):
     return objects
 
 
-def export_glb(objects, path, compress):
+def export_glb(objects, path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     for obj in bpy.context.scene.objects:
         obj.select_set(obj in objects)
@@ -59,13 +57,13 @@ def export_glb(objects, path, compress):
         export_materials="EXPORT",
         export_image_format="NONE",
         export_texcoords=False,
-        export_normals=False,
+        export_normals=True,
         export_tangents=False,
         export_vertex_color="ACTIVE",
         export_all_vertex_colors=False,
         export_active_vertex_color_when_no_material=False,
         export_attributes=False,
-        export_meshopt_compression_enable=compress,
+        export_meshopt_compression_enable=False,
         export_draco_mesh_compression_enable=False,
     )
     return file_facts(path)

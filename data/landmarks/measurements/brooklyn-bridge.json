@@ -129,10 +129,15 @@
     }
   },
   "readabilityScale": {
-    "mainCable": 3,
+    "mainCable": 4,
     "suspender": 5,
     "stay": 5,
     "lamp": 3,
     "note": "Thin members are drawn this many times their true width so they read at game distance; suspenders and stays are also grouped (drawn sparser than the real 1,520)."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 2.0,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 and widths x2 against the real numbers above, so the towers, deck and cables read at the 3,000-4,500 m game camera. Lengths along the axis stay real (the towers 486 m apart, fitted to the LION frame)."
   }
 }

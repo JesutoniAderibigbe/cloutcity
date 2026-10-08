@@ -68,7 +68,7 @@ describe('src/scene/landmarks', () => {
       manifest.models.flatMap((model) => Object.values(model.tiers).map((tier) => tier.file)),
     )
     // Our own landmark models, built by scripts/blender and pinned by data/landmarks/blender locks.
-    const blender = /^\/models\/landmarks\/([a-z0-9-]+)\/lod[0-3]\.glb$/
+    const blender = /^\/landmarks\/([a-z0-9-]+)\/lod[0-3]\.glb$/
     const lockListed = (file: string) => {
       const id = blender.exec(file)?.[1]
       if (id === undefined) return false

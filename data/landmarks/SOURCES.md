@@ -116,13 +116,15 @@ Dimensions:
 - `sideSpanM`: 283.4 m (derived): (total length - both approaches - main span) / 2, from the values above
 - `anchorage`: 36 × 39 m (estimate): stylised anchorage blocks sized to take the cables; mostly hidden under the game's land top
 
-Readability scale (drawn width ÷ true width): mainCable ×3, suspender ×5, stay ×5, lamp ×3.
+Readability scale (drawn width ÷ true width): mainCable ×4, suspender ×5, stay ×5, lamp ×3.
+
+Game scale: heights ×1.8, widths ×2. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 and widths x2 against the real numbers above, so the towers, deck and cables read at the 3,000-4,500 m game camera. Lengths along the axis stay real (the towers 486 m apart, fitted to the LION frame).
 
 Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
 
-- L0: 6720 triangles, 167808 bytes (`public/models/landmarks/brooklyn-bridge/lod0.glb`)
-- L1: 3200 triangles, 85140 bytes (`public/models/landmarks/brooklyn-bridge/lod1.glb`)
-- L2: 1200 triangles, 33548 bytes (`public/models/landmarks/brooklyn-bridge/lod2.glb`)
-- L3: 560 triangles, 16316 bytes (`public/models/landmarks/brooklyn-bridge/lod3.glb`)
+- L0: 6832 triangles, 110584 bytes (`public/landmarks/brooklyn-bridge/lod0.glb`)
+- L1: 3308 triangles, 59864 bytes (`public/landmarks/brooklyn-bridge/lod1.glb`)
+- L2: 1200 triangles, 23660 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
+- L3: 584 triangles, 12708 bytes (`public/landmarks/brooklyn-bridge/lod3.glb`)
 
 <!-- measurements:end -->

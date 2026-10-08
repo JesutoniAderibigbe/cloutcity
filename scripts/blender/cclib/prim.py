@@ -133,6 +133,16 @@ def quad_strip(left, right):
     return _bm_from(verts, faces)
 
 
+def diamond(centre, r):
+    """An octahedron of radius r: a lamp or light bulb in 8 triangles."""
+    x, y, z = centre
+    verts = [(x + r, y, z), (x - r, y, z), (x, y + r, z), (x, y - r, z), (x, y, z + r), (x, y, z - r)]
+    faces = [(0, 2, 4), (2, 1, 4), (1, 3, 4), (3, 0, 4), (2, 0, 5), (1, 2, 5), (3, 1, 5), (0, 3, 5)]
+    bm = _bm_from(verts, faces)
+    ops.recalc_normals(bm)
+    return bm
+
+
 def quad(a, b, c, d):
     """One flat quad (a trim or an inset panel laid just proud of a face)."""
     return _bm_from([a, b, c, d], [(0, 1, 2, 3)])

@@ -44,6 +44,10 @@ function landmarkSection({ measurements, lock }: MeasuredLandmark): string[] {
     '',
     `Readability scale (drawn width ÷ true width): ${scales.map(([k, v]) => `${k} ×${v}`).join(', ')}.`,
   )
+  if (measurements.gameScale !== undefined) {
+    const { height, plan, note } = measurements.gameScale
+    lines.push('', `Game scale: heights ×${height}, widths ×${plan}. ${note}`)
+  }
   if (lock === undefined) {
     lines.push('', 'Not built yet.')
   } else {

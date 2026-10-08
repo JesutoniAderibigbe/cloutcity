@@ -7,7 +7,8 @@ the second (s = +half); x is across the deck. The water plane is z = 0 and the l
 `land_top`, where the deck meets the ground at both ends.
 
 `build(spec, level, view, density, builder)` adds one level's parts. `spec` is plain numbers
-(prepared by a landmark script from its measurements); `view` is the level's camera view
+(prepared by a landmark script from its measurements; `spec["detail"]` scales the fixed trims,
+bands and railings with the model's game scale); `view` is the level's camera view
 (cclib.camera_aware.View); `density` (<= 2) scales counts so the level fits its budget.
 """
 
@@ -18,19 +19,22 @@ from cclib import curves, loft, prim
 #: What each level draws. Finer levels add chamfers, trims, members and lamps.
 LEVELS = {
     0: {"chamfer": True, "trims": True, "plinth": True, "cable_sides": 6, "cables": "all", "suspenders": 1.0,
-        "stays": 1.0, "lamps": 1.0, "deck": "full", "arch_hi": 10},
+        "stays": 1.0, "lamps": 1.0, "necklace": 1.0, "deck": "full", "arch_hi": 10},
     1: {"chamfer": True, "trims": True, "plinth": True, "cable_sides": 4, "cables": "all", "suspenders": 0.5,
-        "stays": 0.5, "lamps": 0.5, "deck": "full", "arch_hi": 5},
+        "stays": 0.5, "lamps": 0.5, "necklace": 0.6, "deck": "full", "arch_hi": 5},
     2: {"chamfer": False, "trims": False, "plinth": False, "cable_sides": 3, "cables": "all", "suspenders": 0.3,
-        "stays": 0.25, "lamps": 0.0, "deck": "simple", "arch_hi": 2},
+        "stays": 0.25, "lamps": 0.0, "necklace": 0.35, "deck": "simple", "arch_hi": 2},
     3: {"chamfer": False, "trims": False, "plinth": False, "cable_sides": 3, "cables": "outer", "suspenders": 0.0,
-        "stays": 0.0, "lamps": 0.0, "deck": "slab", "arch_hi": 1},
+        "stays": 0.0, "lamps": 0.0, "necklace": 0.0, "deck": "slab", "arch_hi": 1},
 }
 
-ARCH_SOFFIT_TONE = 0.68
+ARCH_SOFFIT_TONE = 0.52
 TRIM_TONE = 1.1
 PLINTH_TONE = 0.82
 UNDERSIDE_TONE = 0.75
+#: Girder railing and promenade railing heights above their deck, real metres (x `detail`).
+RAIL_M = 1.5
+PROMENADE_RAIL_M = 1.1
 
 
 def deck_profile(spec, view, density):
@@ -57,6 +61,8 @@ def build(spec, level, view, density, builder):
         _stays(spec, profile, flags["stays"] * density, view, builder)
     if flags["lamps"] > 0:
         _lamps(spec, profile, flags["lamps"] * density, view, builder)
+    if flags["necklace"] > 0:
+        _necklace(spec, profile, flags["necklace"] * density, view, builder)
     return builder
 
 
@@ -69,6 +75,7 @@ def _tower(spec, s, flags, view, density, builder):
     chamfer = flags["chamfer"]
     (w_water, d_water), (w_road, d_road), (w_corn, d_corn) = t["water"], t["road"], t["cornice"]
     road_bottom = deck["road_at_towers"] - deck["thickness"]
+    k = spec["detail"]
 
     def dim(w, d):
         return min(w, d) if chamfer else None
@@ -77,21 +84,22 @@ def _tower(spec, s, flags, view, density, builder):
     builder.add(prim.frustum(0, s, 0, road_bottom, w_water, d_water, w_road, d_road), "granite", chamfer_dim=dim(w_road, d_road))
     if flags["plinth"]:
         builder.add(
-            prim.frustum(0, s, 0, t["plinth_h"], w_water + 2.4, d_water + 2.4, w_water + 1.6, d_water + 1.6),
+            prim.frustum(0, s, 0, t["plinth_h"], w_water + 2.4 * k, d_water + 2.4 * k, w_water + 1.6 * k, d_water + 1.6 * k),
             "granite",
             tone=PLINTH_TONE,
             chamfer_dim=dim(w_water, d_water),
         )
     if flags["trims"]:
         # A string course part-way up the pier, where the batter is interpolated.
-        k = 0.45
-        zc = road_bottom * k
-        wc, dc = w_water + (w_road - w_water) * k + 0.8, d_water + (d_road - d_water) * k + 0.8
-        builder.add(prim.box(-wc / 2, wc / 2, s - dc / 2, s + dc / 2, zc - 0.6, zc + 0.6), "granite", tone=TRIM_TONE,
-                    chamfer_dim=1.2 if chamfer else None)
-        band = 1.4
+        f = 0.45
+        zc = road_bottom * f
+        wc, dc = w_water + (w_road - w_water) * f + 0.8 * k, d_water + (d_road - d_water) * f + 0.8 * k
+        builder.add(prim.box(-wc / 2, wc / 2, s - dc / 2, s + dc / 2, zc - 0.6 * k, zc + 0.6 * k), "granite",
+                    tone=TRIM_TONE, chamfer_dim=1.2 * k if chamfer else None)
+        band = 1.4 * k
         builder.add(
-            prim.box(-w_road / 2 - 0.5, w_road / 2 + 0.5, s - d_road / 2 - 0.5, s + d_road / 2 + 0.5, road_bottom - band, road_bottom),
+            prim.box(-w_road / 2 - 0.5 * k, w_road / 2 + 0.5 * k, s - d_road / 2 - 0.5 * k, s + d_road / 2 + 0.5 * k,
+                     road_bottom - band, road_bottom),
             "granite",
             tone=TRIM_TONE,
             chamfer_dim=band if chamfer else None,
@@ -133,40 +141,44 @@ def _tower(spec, s, flags, view, density, builder):
     builder.add_toned(spandrel, "granite", lambda c, n: ARCH_SOFFIT_TONE if (abs(c[0]) < w_up / 2 - 0.05 and c[2] < corner_base - 0.05 and abs(n[1]) < 0.5) else 1.0)
 
     if flags["trims"]:
-        _panels(s, edges, d_up, w_up, road_bottom, spring, corner_base, builder)
-        impost = 1.0
+        _panels(s, edges, d_up, w_up, road_bottom, spring, corner_base, k, builder)
+        impost = 1.0 * k
+        o = 0.35 * k
         for i in range(0, len(edges), 2):
             x0, x1 = edges[i], edges[i + 1]
-            builder.add(prim.box(x0 - 0.35, x1 + 0.35, s - d_up / 2 - 0.35, s + d_up / 2 + 0.35, spring - impost, spring),
+            builder.add(prim.box(x0 - o, x1 + o, s - d_up / 2 - o, s + d_up / 2 + o, spring - impost, spring),
                         "granite", tone=TRIM_TONE, chamfer_dim=impost if chamfer else None)
     # Cornice: an overhanging band, then the top block.
-    over = 0.9 if flags["trims"] else 0.0
-    band = 2.2
+    over = 0.9 * k if flags["trims"] else 0.0
+    band = 2.2 * k
     builder.add(prim.box(-w_corn / 2 - over, w_corn / 2 + over, s - d_corn / 2 - over, s + d_corn / 2 + over, corner_base, corner_base + band),
                 "granite", tone=TRIM_TONE if flags["trims"] else 1.0, chamfer_dim=band if chamfer else None)
     builder.add(prim.box(-w_corn / 2, w_corn / 2, s - d_corn / 2, s + d_corn / 2, corner_base + band, t["top"]),
                 "granite", chamfer_dim=min(t["top"] - corner_base - band, d_corn) if chamfer else None)
 
 
-PANEL_TONE = 0.84
+PANEL_TONE = 0.66
 PANEL_PROUD = 0.12
 
 
-def _panels(s, edges, d_up, w_up, z0, spring, cornice, builder):
-    """Inset panels on the columns' faces: darker quads just proud of the stone, which read as
-    the recessed panels of the real towers for 2 triangles each."""
+def _panels(s, edges, d_up, w_up, z0, spring, cornice, k, builder):
+    """Recessed panels on the columns' faces: a dark quad just proud of the stone reads as a
+    deep recess (in the stone's own shadow) for 2 triangles each."""
+    proud = PANEL_PROUD * k
+    margin = 3.0 * k
     for i in range(0, len(edges), 2):
         x0, x1 = edges[i], edges[i + 1]
         inset = 0.2 * (x1 - x0)
         for side in (-1, 1):
-            y = s + side * (d_up / 2 + PANEL_PROUD)
-            builder.add(prim.quad((x0 + inset, y, z0 + 3.0), (x1 - inset, y, z0 + 3.0),
-                                  (x1 - inset, y, spring - 3.0), (x0 + inset, y, spring - 3.0)),
+            y = s + side * (d_up / 2 + proud)
+            builder.add(prim.quad((x0 + inset, y, z0 + margin), (x1 - inset, y, z0 + margin),
+                                  (x1 - inset, y, spring - margin), (x0 + inset, y, spring - margin)),
                         "granite", tone=PANEL_TONE)
+    edge = 0.15 * d_up
     for side in (-1, 1):
-        x = side * (w_up / 2 + PANEL_PROUD)
-        builder.add(prim.quad((x, s - d_up / 2 + 2.2, z0 + 3.0), (x, s + d_up / 2 - 2.2, z0 + 3.0),
-                              (x, s + d_up / 2 - 2.2, cornice - 3.0), (x, s - d_up / 2 + 2.2, cornice - 3.0)),
+        x = side * (w_up / 2 + proud)
+        builder.add(prim.quad((x, s - d_up / 2 + edge, z0 + margin), (x, s + d_up / 2 - edge, z0 + margin),
+                              (x, s + d_up / 2 - edge, cornice - margin), (x, s - d_up / 2 + edge, cornice - margin)),
                     "granite", tone=PANEL_TONE)
 
 
@@ -178,18 +190,20 @@ def _anchorages(spec, profile, flags, builder):
     deck = spec["deck"]
     for s_anchor, direction in zip(a["s"], (-1, 1)):
         z_deck = curves.profile_at(profile, s_anchor)
-        base = max(0.0, spec["land_top"] - 6.0)
+        base = max(0.0, spec["land_top"] - 6.0 * spec["detail"])
         top = z_deck - deck["thickness"]
         s0, s1 = sorted((s_anchor, s_anchor + direction * a["depth"]))
         builder.add(prim.box(-a["width"] / 2, a["width"] / 2, s0, s1, base, top), "granite",
                     chamfer_dim=min(a["width"], a["depth"]) if flags["chamfer"] else None)
         if flags["trims"]:
             # Masonry ears either side of the deck, where the outer cables enter.
-            ear = (a["width"] - deck["width"]) / 2 - 0.5
+            k = spec["detail"]
+            ear = (a["width"] - deck["width"]) / 2 - 0.5 * k
             for side in (-1, 1):
-                xa = side * (deck["width"] / 2 + 0.5)
+                xa = side * (deck["width"] / 2 + 0.5 * k)
                 xb = side * (a["width"] / 2)
-                builder.add(prim.box(min(xa, xb), max(xa, xb), s0, s1, top, z_deck + 3.0), "granite", tone=TRIM_TONE,
+                builder.add(prim.box(min(xa, xb), max(xa, xb), s0, s1, top, z_deck + 3.0 * k), "granite",
+                            tone=TRIM_TONE,
                             chamfer_dim=ear if flags["chamfer"] else None)
 
 
@@ -210,27 +224,30 @@ def _deck(spec, profile, flags, builder):
     deck = spec["deck"]
     half_w = deck["width"] / 2
     thick = deck["thickness"]
+    k = spec["detail"]
+    girder = 1.0 * k
     if flags["deck"] == "slab":
         builder.add(_sweep_profile(profile, _rect(-half_w, half_w, -thick, 0.0)), "bridge-tan")
-        builder.add(_sweep_profile(profile, _rect(-half_w + 1.0, half_w - 1.0, -0.2, 0.15)), "asphalt")
+        builder.add(_sweep_profile(profile, _rect(-half_w + girder, half_w - girder, -0.2 * k, 0.15 * k)), "asphalt")
         return
-    builder.add(_sweep_profile(profile, _rect(-half_w, half_w, -thick, -0.4)), "steel-dark")
+    builder.add(_sweep_profile(profile, _rect(-half_w, half_w, -thick, -0.4 * k)), "steel-dark")
     prom = deck["promenade"]
-    inner = prom["width"] / 2 + 0.6
+    inner = prom["width"] / 2 + 0.6 * k
     for side in (-1, 1):
-        x0, x1 = sorted((side * inner, side * (half_w - 1.0)))
-        builder.add(_sweep_profile(profile, _rect(x0, x1, -0.4, 0.0)), "asphalt")
+        x0, x1 = sorted((side * inner, side * (half_w - girder)))
+        builder.add(_sweep_profile(profile, _rect(x0, x1, -0.4 * k, 0.0)), "asphalt")
         # Outer stiffening trusses, read as a girder with a railing above the roadway.
-        g0, g1 = sorted((side * (half_w - 1.0), side * half_w))
-        builder.add(_sweep_profile(profile, _rect(g0, g1, -thick - 0.6, 1.5)), "bridge-tan")
+        g0, g1 = sorted((side * (half_w - girder), side * half_w))
+        builder.add(_sweep_profile(profile, _rect(g0, g1, -thick - 0.6 * k, RAIL_M * k)), "bridge-tan")
     if flags["deck"] == "simple":
-        builder.add(_sweep_profile(profile, _rect(-inner, inner, -0.4, prom["height"])), "wood-plank")
+        builder.add(_sweep_profile(profile, _rect(-inner, inner, -0.4 * k, prom["height"])), "wood-plank")
         return
     # The raised promenade on its inner trusses, between the two inner cables.
     for side in (-1, 1):
         x0, x1 = sorted((side * prom["width"] / 2, side * inner))
-        builder.add(_sweep_profile(profile, _rect(x0, x1, -0.4, prom["height"] + 1.1)), "bridge-tan")
-    builder.add(_sweep_profile(profile, _rect(-prom["width"] / 2, prom["width"] / 2, prom["height"] - 0.5, prom["height"])), "wood-plank")
+        builder.add(_sweep_profile(profile, _rect(x0, x1, -0.4 * k, prom["height"] + PROMENADE_RAIL_M * k)), "bridge-tan")
+    builder.add(_sweep_profile(profile, _rect(-prom["width"] / 2, prom["width"] / 2, prom["height"] - 0.5 * k,
+                                              prom["height"])), "wood-plank")
 
 
 # ---- cables, suspenders, stays, lamps -----------------------------------------------------
@@ -253,10 +270,10 @@ def cable_z(spec, profile, s):
         low = spec["deck"]["mid"] + c["low_above_deck"]
         return curves.catenary_y(u, c["saddle_z"], c["saddle_z"], c["saddle_z"] - low)
     if s < t0:
-        za = curves.profile_at(profile, a0) - 0.5
+        za = curves.profile_at(profile, a0) - 0.5 * spec["detail"]
         u = (s - a0) / (t0 - a0)
         return curves.catenary_y(u, za, c["saddle_z"], c["side_sag"] * (t0 - a0))
-    za = curves.profile_at(profile, a1) - 0.5
+    za = curves.profile_at(profile, a1) - 0.5 * spec["detail"]
     u = (s - t1) / (a1 - t1)
     return curves.catenary_y(u, c["saddle_z"], za, c["side_sag"] * (a1 - t1))
 
@@ -294,12 +311,13 @@ def _suspenders(spec, profile, paths, density, view, builder):
     t0, t1 = spec["towers"]
     a0, a1 = spec["anchorage"]["s"]
     spacing = sp["spacing"] / max(density, 1e-3)
-    clear = spec["tower"]["road"][1] / 2 + 2.0
+    k = spec["detail"]
+    clear = spec["tower"]["road"][1] / 2 + 2.0 * k
     stations = (_span_stations(a0, t0, spacing, clear) + _span_stations(t0, t1, spacing, clear)
                 + _span_stations(t1, a1, spacing, clear))
-    prom_top = spec["deck"]["promenade"]["height"] + 1.1
+    prom_top = spec["deck"]["promenade"]["height"] + PROMENADE_RAIL_M * k
     for x in paths:
-        deck_top = 1.5 if abs(x) > spec["deck"]["promenade"]["width"] else prom_top
+        deck_top = RAIL_M * k if abs(x) > spec["deck"]["promenade"]["width"] else prom_top
         for s in stations:
             top = cable_z(spec, profile, s)
             bottom = curves.profile_at(profile, s) + deck_top
@@ -317,14 +335,16 @@ def _stays(spec, profile, density, view, builder):
     a0, a1 = spec["anchorage"]["s"]
     saddle = spec["cables"]["saddle_z"]
     d_up = spec["tower"]["road"][1] / 2
+    g = spec["detail"]
     fans = [(t0, +1, st["reach_main"]), (t0, -1, min(st["reach_side"], t0 - a0 - 10)),
             (t1, -1, st["reach_main"]), (t1, +1, min(st["reach_side"], a1 - t1 - 10))]
     for x in spec["cables"]["xs"]:
-        deck_top = 1.5 if abs(x) > spec["deck"]["promenade"]["width"] else spec["deck"]["promenade"]["height"] + 1.1
+        prom = spec["deck"]["promenade"]
+        deck_top = RAIL_M * g if abs(x) > prom["width"] else prom["height"] + PROMENADE_RAIL_M * g
         for tower_s, direction, reach in fans:
             for k in range(1, count + 1):
                 s_end = tower_s + direction * (d_up + reach * k / count)
-                top = (x, tower_s + direction * d_up, saddle - 2.0 - 1.2 * k * 6 / count)
+                top = (x, tower_s + direction * d_up, saddle - (2.0 + 1.2 * k * 6 / count) * g)
                 bottom = (x, s_end, curves.profile_at(profile, s_end) + deck_top)
                 along = (0.0, bottom[1] - top[1], bottom[2] - top[2])
                 length = math.sqrt(along[1] ** 2 + along[2] ** 2)
@@ -339,16 +359,41 @@ def _lamps(spec, profile, density, view, builder):
     t0, t1 = spec["towers"]
     a0, a1 = spec["anchorage"]["s"]
     spacing = lamp["spacing"] / max(density, 1e-3)
-    clear = spec["tower"]["road"][1] / 2 + 4.0
+    clear = spec["tower"]["road"][1] / 2 + 4.0 * spec["detail"]
     prom = spec["deck"]["promenade"]
     stations = (_span_stations(a0, t0, spacing, clear) + _span_stations(t0, t1, spacing, clear)
                 + _span_stations(t1, a1, spacing, clear))
     for i, s in enumerate(stations):
         side = -1 if i % 2 == 0 else 1
-        x = side * (prom["width"] / 2 - 0.4)
+        x = side * (prom["width"] / 2 - 0.4 * spec["detail"])
         z0 = curves.profile_at(profile, s) + prom["height"]
         post = lamp["post"] / 2
         builder.add(prim.box(x - post, x + post, s - post, s + post, z0, z0 + lamp["height"]), "steel-dark", jitter=False)
         h = lamp["head"] / 2
         builder.add(prim.box(x - h, x + h, s - h, s + h, z0 + lamp["height"], z0 + lamp["height"] + lamp["head"]), "lamp",
                     group="windows", jitter=False)
+
+
+def _necklace(spec, profile, density, view, builder):
+    """Lights strung along the outer main cables: the bridge's night silhouette. Each is a small
+    diamond (8 triangles) in the lamp colour, so it glows with the night-glow contract."""
+    lamp = spec["lamp"]
+    size = lamp["head"] * NECKLACE_SCALE
+    if not view.shows(size):
+        return
+    t0, t1 = spec["towers"]
+    a0, a1 = spec["anchorage"]["s"]
+    spacing = lamp["necklace_spacing"] / max(density, 1e-3)
+    clear = spec["tower"]["road"][1] / 2 + spacing / 2
+    stations = (_span_stations(a0, t0, spacing, clear) + _span_stations(t0, t1, spacing, clear)
+                + _span_stations(t1, a1, spacing, clear))
+    outer = max(abs(x) for x in spec["cables"]["xs"])
+    lift = spec["cables"]["radius"] + size / 2
+    for x in (-outer, outer):
+        for s in stations:
+            builder.add(prim.diamond((x, s, cable_z(spec, profile, s) + lift), size / 2), "lamp",
+                        group="windows", jitter=False)
+
+
+#: Necklace lights are this many times a promenade lamp head.
+NECKLACE_SCALE = 1.3

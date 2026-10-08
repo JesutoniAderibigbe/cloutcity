@@ -2,12 +2,12 @@
 
     PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 blender -b --factory-startup -noaudio \
         --python-exit-code 1 -P scripts/blender/build.py -- --id brooklyn-bridge --out <dir> \
-        [--caps low/mid/high] [--compress]
+        [--caps low/mid/high] [--true-scale]
 
-Normally run through `npm run landmarks:blender` (scripts/blender/run.ts). Writes
-<out>/lod<n>.glb (uncompressed), <out>/meshopt/lod<n>.glb with --compress, and
-<out>/report.json (triangles, bytes, sha256, bounds per level). Exits 3 on a Blender that is
-not the pinned one and 1 on any failed check.
+Normally run through `npm run landmarks:blender` (scripts/blender/run.ts), which then compresses
+each level into the S04h runtime format (scripts/blender/ship.ts). Writes <out>/lod<n>.glb
+(uncompressed) and <out>/report.json (triangles, bytes, sha256, bounds per level). Exits 3 on a
+Blender that is not the pinned one and 1 on any failed check.
 """
 
 import importlib
@@ -43,22 +43,21 @@ def build_level(module, spec, data, level, density):
 CHAMFER_RATIO = 0.02
 
 
-def expected_size(data):
+def expected_size(module, data, true_scale):
     """(length along the axis, height) the model must measure."""
-    dims = data["measurements"]["dimensions"]
-    return data["frame"]["spanM"], dims["towerHeightM"]["valueM"]
+    return data["frame"]["spanM"], module.expected_height(data, true_scale)
 
 
-def run(landmark_id, out_dir, caps_override=None, compress=False):
+def run(landmark_id, out_dir, caps_override=None, true_scale=False):
     """Build, export and check every level; returns the report dict."""
     env.reset_scene()
     data = inputs.landmark_inputs(landmark_id)
     module = landmark_module(landmark_id)
-    spec = module.spec(data)
+    spec = module.spec(data, true_scale)
     caps = inputs.caps_for(module.CATEGORY, data["perf"], caps_override)
     ratio = data["perf"]["landmarkLodRatioMax"]
     body, windows = shade.materials(data["palette"])
-    length, height = expected_size(data)
+    length, height = expected_size(module, data, true_scale)
 
     levels = []
     problems = []
@@ -69,7 +68,7 @@ def run(landmark_id, out_dir, caps_override=None, compress=False):
         objects = export.objects_for(builder, landmark_id, level, body, windows)
         entry = {"level": level, "triangles": builder.triangles(), "budget": target, "density": density}
         path = os.path.join(out_dir, "lod%d.glb" % level)
-        entry["glb"] = export.export_glb(objects, path, compress=False)
+        entry["glb"] = export.export_glb(objects, path)
         problems += ["L%d: %s" % (level, p) for p in validate.check(path, landmark_id, level)]
         gltf = validate.read_glb_json(path)
         if validate.triangles(gltf) != entry["triangles"]:
@@ -81,10 +80,6 @@ def run(landmark_id, out_dir, caps_override=None, compress=False):
             problems.append("L%d: length %.1f m, expected %.1f" % (level, size_len, length))
         if abs(size_h - height) > BBOX_TOLERANCE * height:
             problems.append("L%d: height %.1f m, expected %.1f" % (level, size_h, height))
-        if compress:
-            cpath = os.path.join(out_dir, "meshopt", "lod%d.glb" % level)
-            entry["meshopt"] = export.export_glb(objects, cpath, compress=True)
-            problems += ["L%d meshopt: %s" % (level, p) for p in validate.check(cpath, landmark_id, level)]
         export.remove(objects)
         levels.append(entry)
         above = entry["triangles"]
@@ -95,6 +90,7 @@ def run(landmark_id, out_dir, caps_override=None, compress=False):
         "id": landmark_id,
         "blender": {"version": version, "buildHash": build_hash},
         "caps": caps,
+        "trueScale": true_scale,
         "ratio": ratio,
         "levels": levels,
         "problems": problems,
@@ -109,7 +105,7 @@ def run(landmark_id, out_dir, caps_override=None, compress=False):
 def main():
     env.require_pinned_version()
     args = inputs.parse_args()
-    report = run(args.id, os.path.abspath(args.out), args.caps, args.compress)
+    report = run(args.id, os.path.abspath(args.out), args.caps, args.true_scale)
     for entry in report["levels"]:
         sys.stdout.write("L%d %6d tris (budget %d, density %.3f) %7d B\n" % (
             entry["level"], entry["triangles"], entry["budget"], entry["density"], entry["glb"]["bytes"]))

@@ -7,13 +7,19 @@
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { Box3, type BufferAttribute } from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { describe, expect, it } from 'vitest'
 import framesJson from '../../data/landmarks/frames.derived.json'
 import modelsJson from '../../data/landmarks/models.json'
 import perfJson from '../../data/config/perf.json'
 import { LandmarkMeasurementsSchema } from '../../src/lib/data/schemas/landmarkBlender.ts'
 import { BLENDER_DIR, MEASUREMENTS_DIR, ROOT, measuredIds } from './inputs.ts'
+import { prepareGltf } from '../../src/scene/models/prepare.ts'
 import { checkLandmark, readLock, sourcesProblems } from './run.ts'
+
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 
 /** Landmarks still on the code-built kit, waiting for their Blender model (S07c chunks A-C). */
 const PENDING = new Set([
@@ -79,30 +85,6 @@ function triangles(gltf: Gltf): number {
     }
   }
   return total
-}
-
-/** Bounds of every mesh node, under its scale and translation (rotation is not allowed). */
-function bbox(gltf: Gltf): { min: number[]; max: number[] } {
-  const min = [Infinity, Infinity, Infinity]
-  const max = [-Infinity, -Infinity, -Infinity]
-  for (const node of gltf.nodes ?? []) {
-    if (node.mesh === undefined) continue
-    expect(node.rotation ?? [0, 0, 0, 1]).toEqual([0, 0, 0, 1])
-    const t = node.translation ?? [0, 0, 0]
-    const s = node.scale ?? [1, 1, 1]
-    for (const primitive of gltf.meshes?.[node.mesh]?.primitives ?? []) {
-      const accessor = gltf.accessors[primitive.attributes.POSITION ?? -1]
-      for (let axis = 0; axis < 3; axis++) {
-        for (const v of [accessor?.min?.[axis], accessor?.max?.[axis]]) {
-          if (v === undefined) throw new Error('POSITION accessor without min/max')
-          const w = v * (s[axis] ?? 1) + (t[axis] ?? 0)
-          min[axis] = Math.min(min[axis] ?? w, w)
-          max[axis] = Math.max(max[axis] ?? w, w)
-        }
-      }
-    }
-  }
-  return { min, max }
 }
 
 const modelIds = modelsJson.models.map((model) => model.id)
@@ -196,32 +178,53 @@ describe.each(built)('%s shipped GLBs', (id) => {
     }
   })
 
-  it('names its nodes <id>-lod<n>-body|windows and uses only cc-body and cc-windows', () => {
+  it('ships one mesh named <id>-lod<n> with the placeholder material (shared model program)', () => {
     gltfs.forEach((gltf, level) => {
-      for (const node of gltf.nodes ?? []) {
-        expect(node.name).toMatch(new RegExp(`^${id}-lod${level}-(body|windows)$`))
+      const meshNodes = (gltf.nodes ?? []).filter((node) => node.mesh !== undefined)
+      expect(meshNodes.map((node) => node.name)).toEqual([`${id}-lod${level}`])
+      expect(gltf.meshes?.length).toBe(1)
+      expect(gltf.meshes?.[0]?.primitives.length).toBe(1)
+      expect((gltf.materials ?? []).map((material) => material.name)).toEqual(['model'])
+      const attributes = Object.keys(gltf.meshes?.[0]?.primitives[0]?.attributes ?? {}).sort()
+      for (const name of attributes) {
+        expect(['COLOR_0', 'NORMAL', 'POSITION', '_EMISSIVE']).toContain(name)
       }
-      const names = (gltf.materials ?? []).map((material) => material.name)
-      expect(names).toContain('cc-body')
-      for (const name of names) expect(['cc-body', 'cc-windows']).toContain(name)
     })
   })
 
-  it('measures its real height and its frame length (within 2 %) and stands on y = 0', () => {
-    const height = measurements.dimensions.towerHeightM
-    if (height === undefined || !('valueM' in height)) throw new Error('no towerHeightM')
-    for (const gltf of gltfs) {
-      const { min, max } = bbox(gltf)
-      expect(Math.abs((max[1] ?? 0) - height.valueM)).toBeLessThanOrEqual(
-        BBOX_TOLERANCE * height.valueM,
+  it.each(lock.levels.map((level) => [level.level, level.file] as const))(
+    'L%i decodes with three r182 + its bundled MeshoptDecoder into one static model at real size',
+    async (level, file) => {
+      const bytes = readFileSync(join(ROOT, file))
+      const parsed = await loader.parseAsync(
+        bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+        '',
       )
-      expect(min[1]).toBeGreaterThanOrEqual(-0.01)
+      const model = prepareGltf(parsed, { id: `${id}-lod${level}`, kind: 'static' })
+      if (model.kind !== 'static') throw new Error('not static')
+      expect(model.triangles).toBe(lock.levels[level]?.triangles)
+      const box = new Box3().setFromBufferAttribute(
+        model.geometry.getAttribute('position') as BufferAttribute,
+      )
+      box.applyMatrix4(model.matrix)
+      const height = expectedHeight()
+      expect(Math.abs(box.max.y - height)).toBeLessThanOrEqual(BBOX_TOLERANCE * height)
+      expect(box.min.y).toBeGreaterThanOrEqual(-0.05)
       if (frame?.spanM !== undefined) {
-        const length = (max[2] ?? 0) - (min[2] ?? 0)
+        const length = box.max.z - box.min.z
         expect(Math.abs(length - frame.spanM)).toBeLessThanOrEqual(BBOX_TOLERANCE * frame.spanM)
       }
-    }
-  })
+      // The lamps glow through the S04f night-glow contract on the levels that draw them.
+      if (level < 3) expect(model.geometry.getAttribute('_emissive')).toBeDefined()
+    },
+  )
+
+  /** The tower top above the water, at the measurements' game scale. */
+  function expectedHeight(): number {
+    const height = measurements.dimensions.towerHeightM
+    if (height === undefined || !('valueM' in height)) throw new Error('no towerHeightM')
+    return height.valueM * (measurements.gameScale?.height ?? 1)
+  }
 })
 
 const S04H_FILES = new Set(['run.py', 'fixtures/smoke-crate.py'])

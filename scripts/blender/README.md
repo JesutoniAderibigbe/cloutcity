@@ -20,15 +20,15 @@ PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 blender -b --factory-startup -noaudio
 
 ## Commands
 
-| Command                                                                   | What it does                                                                                                                                                                                                       |
-| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run landmarks:blender`                                               | Builds every landmark with a measurements file, copies its compressed GLBs to `public/models/landmarks/<id>/lod<n>.glb`, writes `data/landmarks/blender/<id>.lock.json` and the measurements section of SOURCES.md |
-| `npm run landmarks:blender -- --id <id>`                                  | One landmark                                                                                                                                                                                                       |
-| `npm run landmarks:blender -- --preview`                                  | Also renders review PNGs into `/previews/landmarks/<id>/` (gitignored)                                                                                                                                             |
-| `npm run landmarks:blender -- --variant <name> --caps <low>/<mid>/<high>` | An exploratory build under other triangle caps, into `.cache/blender/<id>/<name>` only                                                                                                                             |
-| `npm run landmarks:blender -- --verify`                                   | Rebuilds and byte-compares with the shipped GLBs                                                                                                                                                                   |
-| `npm run landmarks:blender -- --selftest`                                 | In Blender: two builds are byte-identical, and a wrong PIN exits 3                                                                                                                                                 |
-| `npm run landmarks:check`                                                 | No Blender: every lock matches its inputs and shipped files, and SOURCES.md is current                                                                                                                             |
+| Command                                                                                    | What it does                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run landmarks:blender`                                                                | Builds every landmark with a measurements file, packs its levels into `public/landmarks/<id>/lod<n>.glb`, writes `data/landmarks/blender/<id>.lock.json` and the measurements section of SOURCES.md |
+| `npm run landmarks:blender -- --id <id>`                                                   | One landmark                                                                                                                                                                                        |
+| `npm run landmarks:blender -- --preview`                                                   | Also renders review PNGs into `/previews/landmarks/<id>/` (gitignored)                                                                                                                              |
+| `npm run landmarks:blender -- --variant <name> [--caps <low>/<mid>/<high>] [--true-scale]` | An exploratory build (other caps, or the real proportions) into `.cache/blender/<id>/<name>` only; `--preview` puts a `truescale` variant beside the shipped one                                    |
+| `npm run landmarks:blender -- --verify`                                                    | Rebuilds and byte-compares with the shipped GLBs                                                                                                                                                    |
+| `npm run landmarks:blender -- --selftest`                                                  | In Blender: two builds are byte-identical, and a wrong PIN exits 3                                                                                                                                  |
+| `npm run landmarks:check`                                                                  | No Blender: every lock matches its inputs and shipped files, and SOURCES.md is current                                                                                                              |
 
 ## Layout
 
@@ -44,8 +44,9 @@ PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 blender -b --factory-startup -noaudio
   (levels and budgets), `camera_aware` (detail the game camera can see), `export`, `validate`.
 - `archetypes/`: reusable model kinds (`suspension.py`).
 - `landmarks/<id>.py`: one per landmark, turning its measurements into archetype parameters.
-- `run.ts`, `inputs.ts`, `sources-md.ts`: the npm entry point, the input digest and the
-  SOURCES.md section.
+- `run.ts`, `inputs.ts`, `ship.ts`, `sources-md.ts`: the npm entry point, the input digest, the
+  runtime packing of each level (one mesh, `_EMISSIVE` lamps, the S04h quantize + meshopt finish)
+  and the SOURCES.md section.
 
 ## Rules
 
@@ -56,5 +57,11 @@ PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 blender -b --factory-startup -noaudio
   (`scene.landmarks`); at most two materials per level (`cc-body`, `cc-windows`).
 - Four levels: tiers use high [L0, L1, L2], mid [L1, L2, L3], low [L2, L3]. Each tier's finest
   level fits its perf.json cap and each level is at most half the one above.
-- GLBs carry no normals (three shades them flat), no images, animations, cameras or lights.
+- Shipped levels use the S04h runtime format: one mesh and one primitive (POSITION, flat NORMAL,
+  COLOR_0, `_EMISSIVE` for lamps), a placeholder material the runtime replaces with the shared
+  model material (no new shader program), meshopt with the vertex codec three r182 decodes. No
+  images, animations, cameras or lights.
+- Game scale: a measurements file may give `gameScale` (heights and widths drawn larger than
+  real so the model reads at the 3-4.5 km game camera; lengths along a bridge axis stay real).
+  `--variant truescale --true-scale` builds the real proportions for comparison.
 - Commit only the shipped GLBs and the locks. `.cache/blender/` and `/previews/` are ignored.

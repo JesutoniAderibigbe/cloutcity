@@ -27,12 +27,11 @@ def main():
     root = env.repo_path(".cache", "blender", "selftest")
     failures = []
 
-    first = build.run(landmark_id, os.path.join(root, "1"), compress=True)
-    second = build.run(landmark_id, os.path.join(root, "2"), compress=True)
+    first = build.run(landmark_id, os.path.join(root, "1"))
+    second = build.run(landmark_id, os.path.join(root, "2"))
     for a, b in zip(first["levels"], second["levels"]):
-        for kind in ("glb", "meshopt"):
-            if a[kind]["sha256"] != b[kind]["sha256"]:
-                failures.append("L%d %s differs between two builds" % (a["level"], kind))
+        if a["glb"]["sha256"] != b["glb"]["sha256"]:
+            failures.append("L%d differs between two builds" % a["level"])
 
     try:
         env.require_pinned_version(pin=("0.0.0", "000000000000"))

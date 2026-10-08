@@ -5,8 +5,9 @@
  *                                                compressed GLBs, write its lock and SOURCES.md
  *   npm run landmarks:blender -- --id <id>       one landmark
  *   npm run landmarks:blender -- --preview       also render review PNGs into /previews
- *   npm run landmarks:blender -- --variant <name> --caps <low/mid/high>
- *                                                an exploratory build under other caps, into
+ *   npm run landmarks:blender -- --variant <name> [--caps <low/mid/high>] [--true-scale]
+ *                                                an exploratory build (other caps, or the real
+ *                                                proportions instead of the game scale) into
  *                                                .cache/blender/<id>/<name> only (never shipped)
  *   npm run landmarks:blender -- --verify        rebuild and byte-compare with what ships
  *   npm run landmarks:blender -- --selftest      the in-Blender self-test (scripts/blender/selftest.py)
@@ -15,10 +16,11 @@
  *
  * Blender comes from $BLENDER or `blender` on PATH and must be the version in scripts/blender/PIN
  * (the build exits 3 otherwise). It always runs headless with a factory startup, no audio and
- * --python-exit-code 1, so a Python error fails the run.
+ * --python-exit-code 1, so a Python error fails the run. Each level is then merged and compressed
+ * into the S04h runtime format by ship.ts.
  */
 import { spawnSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { z } from 'zod'
 import {
@@ -36,6 +38,7 @@ import {
   inputsSha,
   measuredIds,
 } from './inputs.ts'
+import { shipLevel } from './ship.ts'
 import { renderSection, withSection, type MeasuredLandmark } from './sources-md.ts'
 
 const CACHE = join(ROOT, '.cache/blender')
@@ -53,7 +56,6 @@ const ReportSchema = z.object({
       level: z.int(),
       triangles: z.int(),
       glb: z.object({ bytes: z.int(), sha256: z.string() }),
-      meshopt: z.object({ bytes: z.int(), sha256: z.string() }),
     }),
   ),
   problems: z.array(z.string()),
@@ -66,6 +68,7 @@ interface Options {
   readonly preview: boolean
   readonly variant: string | undefined
   readonly caps: string | undefined
+  readonly trueScale: boolean
 }
 
 function parseArgs(argv: readonly string[]): Options {
@@ -79,8 +82,9 @@ function parseArgs(argv: readonly string[]): Options {
   const id = value('--id')
   const variant = value('--variant')
   const caps = value('--caps')
-  if ((variant === undefined) !== (caps === undefined)) {
-    throw new Error('--variant and --caps go together')
+  const trueScale = argv.includes('--true-scale')
+  if (variant === undefined && (caps !== undefined || trueScale)) {
+    throw new Error('--caps and --true-scale need a --variant (they are never shipped)')
   }
   if (variant !== undefined && !/^[a-z0-9-]+$/.test(variant)) throw new Error('bad --variant')
   const mode = argv.includes('--check')
@@ -96,6 +100,7 @@ function parseArgs(argv: readonly string[]): Options {
     preview: argv.includes('--preview'),
     variant,
     caps,
+    trueScale,
   }
 }
 
@@ -158,23 +163,50 @@ function writeSources(): void {
   writeFileSync(SOURCES_MD, withSection(markdown, renderSection(measured(measuredIds()))))
 }
 
-function build(id: string, options: Options): void {
+interface Shipped {
+  readonly bytes: Uint8Array
+  readonly sha256: string
+  readonly triangles: number
+}
+
+/** Runs build.py into `out`, then ships every level into `out/ship/lod<n>.glb`. */
+async function buildInto(
+  id: string,
+  out: string,
+  extra: readonly string[],
+): Promise<{ report: Report; shipped: Shipped[] }> {
+  blender('build.py', ['--id', id, '--out', out, ...extra])
+  const report = readReport(out)
+  mkdirSync(join(out, 'ship'), { recursive: true })
+  const shipped: Shipped[] = []
+  for (const level of LEVELS) {
+    const tier = await shipLevel(readFileSync(join(out, `lod${level}.glb`)), id, level)
+    writeFileSync(join(out, 'ship', `lod${level}.glb`), tier.bytes)
+    shipped.push({
+      bytes: tier.bytes,
+      sha256: fileSha(join(out, 'ship', `lod${level}.glb`)),
+      triangles: tier.triangles,
+    })
+  }
+  return { report, shipped }
+}
+
+async function build(id: string, options: Options): Promise<void> {
   const label = options.variant ?? 'shipped'
   const out = join(CACHE, id, label)
   write(`${id} (${label}):`)
-  blender('build.py', [
-    '--id',
-    id,
-    '--out',
-    out,
-    '--compress',
+  const { report, shipped } = await buildInto(id, out, [
     ...(options.caps === undefined ? [] : ['--caps', options.caps]),
+    ...(options.trueScale ? ['--true-scale'] : []),
   ])
-  const report = readReport(out)
   for (const level of report.levels) {
+    const ship = shipped[level.level]
+    if (ship === undefined || ship.triangles !== level.triangles) {
+      throw new Error(`${id} L${level.level}: shipped triangles differ from the build`)
+    }
     write(
-      `  L${level.level}: ${level.triangles} tris, ${level.meshopt.bytes} B meshopt ` +
-        `(${Math.round(level.meshopt.bytes / level.triangles)} B/tri), ${level.glb.bytes} B uncompressed`,
+      `  L${level.level}: ${level.triangles} tris, ${ship.bytes.byteLength} B shipped ` +
+        `(${Math.round(ship.bytes.byteLength / level.triangles)} B/tri), ${level.glb.bytes} B uncompressed`,
     )
   }
   if (options.preview) {
@@ -187,15 +219,18 @@ function build(id: string, options: Options): void {
       join(PREVIEWS, id, label),
       '--label',
       label,
+      // Beside the true-scale build, when one has been made (--variant truescale --true-scale).
+      ...(label !== 'truescale' && existsSync(join(CACHE, id, 'truescale', 'report.json'))
+        ? ['--compare', join(CACHE, id, 'truescale')]
+        : []),
     ])
     write(`  previews: ${relative(ROOT, join(PREVIEWS, id, label))}`)
   }
   if (options.variant !== undefined) return
 
   mkdirSync(join(SHIPPED_DIR, id), { recursive: true })
-  for (const level of LEVELS) {
-    copyFileSync(join(out, 'meshopt', `lod${level}.glb`), shippedPath(id, level))
-  }
+  for (const level of LEVELS)
+    writeFileSync(shippedPath(id, level), shipped[level]?.bytes ?? new Uint8Array())
   const lock: BlenderLock = {
     version: 1,
     id,
@@ -205,8 +240,8 @@ function build(id: string, options: Options): void {
     levels: report.levels.map((level) => ({
       level: level.level,
       file: relative(ROOT, shippedPath(id, level.level)).split('\\').join('/'),
-      sha256: level.meshopt.sha256,
-      bytes: level.meshopt.bytes,
+      sha256: shipped[level.level]?.sha256 ?? '',
+      bytes: shipped[level.level]?.bytes.byteLength ?? 0,
       triangles: level.triangles,
       uncompressedBytes: level.glb.bytes,
     })),
@@ -238,30 +273,27 @@ export function sourcesProblems(): string[] {
   return markdown === expected ? [] : ['data/landmarks/SOURCES.md measurements section is stale']
 }
 
-function verify(id: string): string[] {
-  const out = join(CACHE, 'verify', id)
-  blender('build.py', ['--id', id, '--out', out, '--compress'])
-  const report = readReport(out)
+async function verify(id: string): Promise<string[]> {
+  const { shipped } = await buildInto(id, join(CACHE, 'verify', id), [])
   const lock = readLock(id)
-  return report.levels.flatMap((level) => {
-    const shipped = lock?.levels[level.level]
-    return shipped?.sha256 === level.meshopt.sha256
+  return shipped.flatMap((level, i) =>
+    lock?.levels[i]?.sha256 === level.sha256
       ? []
-      : [`${id}: L${level.level} rebuilds to different bytes than ship`]
-  })
+      : [`${id}: L${i} rebuilds to different bytes than ship`],
+  )
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2))
   let problems: string[] = []
   if (options.mode === 'check') {
     problems = [...options.ids.flatMap(checkLandmark), ...sourcesProblems()]
   } else if (options.mode === 'verify') {
-    problems = options.ids.flatMap(verify)
+    for (const id of options.ids) problems.push(...(await verify(id)))
   } else if (options.mode === 'selftest') {
     for (const id of options.ids) blender('selftest.py', ['--id', id])
   } else {
-    for (const id of options.ids) build(id, options)
+    for (const id of options.ids) await build(id, options)
     if (options.variant === undefined) writeSources()
   }
   for (const problem of problems) process.stderr.write(`${problem}\n`)
@@ -269,4 +301,4 @@ function main(): void {
   write(`landmarks:blender ${options.mode}: ok (${options.ids.join(', ')})`)
 }
 
-if (import.meta.main) main()
+if (import.meta.main) await main()

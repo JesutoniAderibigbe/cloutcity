@@ -14,7 +14,7 @@ export const ROOT = join(import.meta.dirname, '../..')
 export const BLENDER_DIR = join(ROOT, 'scripts/blender')
 export const MEASUREMENTS_DIR = join(ROOT, 'data/landmarks/measurements')
 export const LOCK_DIR = join(ROOT, 'data/landmarks/blender')
-export const SHIPPED_DIR = join(ROOT, 'public/models/landmarks')
+export const SHIPPED_DIR = join(ROOT, 'public/landmarks')
 
 /** The Python module that builds a landmark: landmarks/<id with underscores>.py. */
 export const landmarkModule = (id: string) => `landmarks/${id.replaceAll('-', '_')}.py`

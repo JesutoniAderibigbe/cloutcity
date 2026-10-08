@@ -56,6 +56,17 @@ export const LandmarkMeasurementsSchema = z
     sources: z.array(MeasurementSourceSchema).min(1),
     dimensions: z.record(z.string().regex(/^[a-z][A-Za-z]*$/), DimensionSchema),
     readabilityScale: z.record(z.string(), z.union([readability, z.string()])),
+    /**
+     * Game scale: heights and widths drawn this many times the real numbers so the model reads
+     * at the game camera (3-4.5 km); lengths along a bridge axis stay real.
+     */
+    gameScale: z
+      .strictObject({
+        height: z.number().min(1).max(2.5),
+        plan: z.number().min(1).max(2.5),
+        note: z.string().min(1),
+      })
+      .optional(),
   })
   .superRefine((file, ctx) => {
     const ids = new Set(file.sources.map((source) => source.id))
@@ -74,7 +85,7 @@ export type LandmarkMeasurements = z.infer<typeof LandmarkMeasurementsSchema>
 const LockLevelSchema = z.strictObject({
   level: z.int().min(0).max(3),
   /** The shipped (compressed) file, relative to the repository root. */
-  file: z.string().regex(/^public\/models\/landmarks\/[a-z0-9-]+\/lod[0-3]\.glb$/),
+  file: z.string().regex(/^public\/landmarks\/[a-z0-9-]+\/lod[0-3]\.glb$/),
   sha256,
   bytes: z.int().positive(),
   triangles: z.int().positive(),

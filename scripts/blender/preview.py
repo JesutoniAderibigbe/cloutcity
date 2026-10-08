@@ -2,16 +2,22 @@
 so what is reviewed is what ships).
 
     blender -b --factory-startup -noaudio --python-exit-code 1 -P scripts/blender/preview.py -- \
-        --id brooklyn-bridge --glb <dir with lod<n>.glb and report.json> --out <png dir>
+        --id brooklyn-bridge --glb <dir with lod<n>.glb and report.json> --out <png dir> \
+        [--compare <a true-scale build dir>] [--label <prefix>]
 
-Views (EEVEE, soft sun and sky):
-- game camera: polar 48° at azimuth -40/0/+40, and polar 12°, framing the whole model;
-- close views of the second tower at polar 48° (420 m and the minimum camera distance) and
-  60° (the lowest the game allows), from the azimuth limit nearer the axis so the arches show;
-- each in day and golden hour, at 390x390 and 1280x720;
-- each tier's finest level at the minimum camera distance (day, 1280x720);
-- a Workbench strip of the four levels with their triangle counts;
-- a far check at 4500 m (the game's default camera distance) with each tier's level there.
+Lighting follows the S04f day/night keyframes (scene.json `dayNight`, theme.json `sky`): the
+sun's direction (never below `minSunElevationDeg`), colour and intensity, the ambient and
+hemisphere fill as the world colour, the harbour colour, and the lamps glowing by the
+keyframe's `nightGlow` times `models.emissive.nightIntensity`. Blender's EEVEE only
+approximates the game's three.js renderer; the numbers map one to one, the response does not.
+
+Views:
+- the game camera on a 390x844 phone (polar 48°, azimuth 0) at the default distance and at the
+  landmark focus distance, with the level each quality tier shows there, at golden hour and at
+  night (and day at the default distance);
+- close views of the second tower (420 m, polar 48° and 60°) at golden hour and at night;
+- with --compare: the true-scale build beside this one, from the same cameras;
+- a Workbench strip of the four levels with their triangle counts.
 
 The model stands in a plain context: water at y = 0 and land slabs at the land top beyond
 its ends, turned to its real heading, so the base and the approaches can be judged.
@@ -31,15 +37,15 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from cclib import env, inputs, lod, shade  # noqa: E402
 
-WATER = (0.2, 0.31, 0.37)
-LAND = (0.46, 0.45, 0.41)
-#: (sun elevation°, sun azimuth°, sun colour, sun strength, sky colour, sky strength)
-LIGHTING = {
-    "day": (46.0, 150.0, (1.0, 0.93, 0.82), 3.4, (0.6, 0.71, 0.86), 0.6),
-    "golden": (12.0, 245.0, (1.0, 0.68, 0.42), 4.0, (0.74, 0.62, 0.6), 0.45),
-}
-SIZES = {"square": (390, 390), "wide": (1280, 720)}
+#: Blender sun strength and world strength per unit of the game's light intensities, set so the
+#: day keyframe matches the S04h showcase's exposure.
+SUN_PER_INTENSITY = 2.2
+WORLD_PER_INTENSITY = 0.35
 EXPOSURE = -0.4
+PHONE = (390, 844)
+WIDE = (1280, 720)
+#: Lateral gap between the compared models in the side-by-side views.
+COMPARE_GAP_M = 420.0
 
 
 def parse_args():
@@ -48,8 +54,21 @@ def parse_args():
     parser.add_argument("--id", required=True)
     parser.add_argument("--glb", required=True)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--compare", default=None)
     parser.add_argument("--label", default="")
     return parser.parse_args(rest)
+
+
+def hex_linear(hex_colour):
+    srgb = [int(hex_colour[i:i + 2], 16) / 255.0 for i in (1, 3, 5)]
+    return tuple(c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in srgb)
+
+
+def theme_colour(theme, token):
+    for group in ("models", "world", "colors"):
+        if token in theme.get(group, {}):
+            return hex_linear(theme[group][token])
+    raise KeyError(token)
 
 
 def solid_material(name, rgb):
@@ -87,8 +106,9 @@ def import_level(path, level, body, windows, heading_rad, offset=(0.0, 0.0, 0.0)
 
 def context(data, heading_rad):
     """Water, and land slabs at the land top beyond each end of a bridge (or under a building)."""
-    water = solid_material("preview-water", WATER)
-    land = solid_material("preview-land", LAND)
+    theme = inputs.read_json("data", "config", "theme.json")
+    water = solid_material("preview-water", (1.0, 1.0, 1.0))
+    land = solid_material("preview-land", theme_colour(theme, theme["scene"]["land"]["brooklyn"]))
     box_object("water", -20000, 20000, -20000, 20000, -1.0, 0.0, water)
     top = inputs.land_top_y(data["scene"])
     frame = data["frame"]
@@ -104,22 +124,42 @@ def context(data, heading_rad):
         obj.rotation_euler = (0.0, 0.0, heading_rad)
 
 
-def lights(mode):
-    elevation, azimuth, colour, strength, sky, sky_strength = LIGHTING[mode]
+def keyframe(scene_cfg, keyframe_id):
+    return next(k for k in scene_cfg["dayNight"]["keyframes"] if k["id"] == keyframe_id)
+
+
+def lights(data, keyframe_id, windows):
+    """The S04f keyframe's light: sun, world fill, harbour colour and the lamps' night glow."""
+    scene_cfg = data["scene"]
+    theme = inputs.read_json("data", "config", "theme.json")
+    k = keyframe(scene_cfg, keyframe_id)
+    sky = theme["sky"][keyframe_id]
     for obj in [o for o in bpy.data.objects if o.type == "LIGHT"]:
         bpy.data.objects.remove(obj, do_unlink=True)
     sun_data = bpy.data.lights.new("sun", "SUN")
-    sun_data.energy = strength
-    sun_data.color = colour
+    sun_data.energy = k["sunIntensity"] * SUN_PER_INTENSITY
+    sun_data.color = theme_colour(theme, sky["sun"])
     sun_data.angle = math.radians(4.0)
     sun = bpy.data.objects.new("sun", sun_data)
-    sun.rotation_euler = (math.radians(90.0 - elevation), 0.0, math.radians(azimuth))
+    elevation = max(k["sun"]["elevationDeg"], scene_cfg["dayNight"]["minSunElevationDeg"])
+    # Blender's sun shines down its -Z; tilt it to the elevation, then turn it to the compass
+    # azimuth (clockwise from north; at 180° the light comes from the south).
+    sun.rotation_euler = (math.radians(90.0 - elevation), 0.0, math.radians(180.0 - k["sun"]["azimuthDeg"]))
     bpy.context.scene.collection.objects.link(sun)
     world = bpy.context.scene.world or bpy.data.worlds.new("world")
     bpy.context.scene.world = world
+    ambient = theme_colour(theme, sky["ambient"])
+    hemi = theme_colour(theme, sky["hemisphereSky"])
+    a, h = k["ambientIntensity"], k["hemisphereIntensity"]
+    fill = tuple((ambient[i] * a + hemi[i] * h) / max(a + h, 1e-6) for i in range(3))
     background = world.node_tree.nodes.get("Background")
-    background.inputs["Color"].default_value = (sky[0], sky[1], sky[2], 1.0)
-    background.inputs["Strength"].default_value = sky_strength
+    background.inputs["Color"].default_value = (fill[0], fill[1], fill[2], 1.0)
+    background.inputs["Strength"].default_value = (a + h) * WORLD_PER_INTENSITY
+    water = theme_colour(theme, sky["water"])
+    bsdf = bpy.data.materials["preview-water"].node_tree.nodes.get("Principled BSDF")
+    bsdf.inputs["Base Color"].default_value = (water[0], water[1], water[2], 1.0)
+    glow = k["nightGlow"] * scene_cfg["models"]["emissive"]["nightIntensity"]
+    windows.node_tree.nodes.get("Principled BSDF").inputs["Emission Strength"].default_value = glow
 
 
 def camera(target, distance, polar_deg, azimuth_deg, fov_deg):
@@ -171,11 +211,19 @@ def eevee():
     scene.render.film_transparent = False
 
 
-def fit_distance(length, size, fov_deg, fill=0.85):
-    """Camera distance at which `length` spans `fill` of the frame's width."""
-    aspect = size[0] / size[1]
-    width_at_1 = 2.0 * math.tan(math.radians(fov_deg) / 2.0) * aspect
-    return length / (fill * width_at_1)
+def tier_level(scene_cfg, tier, distance, bridge):
+    """The level `tier` shows at `distance` (scene.json landmarks.lod)."""
+    multiplier = scene_cfg["landmarks"]["bridgeDistanceMultiplier"] if bridge else 1.0
+    switches = [d * multiplier for d in scene_cfg["landmarks"]["lod"][tier]["distancesM"]]
+    levels = lod.TIER_LEVELS[tier]
+    return levels[max(i for i, d in enumerate(switches) if d <= distance)]
+
+
+def import_all(directory, body, windows, heading_rad, offset):
+    return {
+        lv: import_level(os.path.join(directory, "lod%d.glb" % lv), lv, body, windows, heading_rad, offset)
+        for lv in lod.LEVELS
+    }
 
 
 def main():
@@ -187,72 +235,73 @@ def main():
         report = json.load(handle)
     scene_cfg = data["scene"]
     fov = scene_cfg["camera"]["fovDeg"]
-    heading = data["frame"]["headingDeg"]
-    heading_rad = -math.radians(heading)
+    heading_rad = -math.radians(data["frame"]["headingDeg"])
+    bridge = data["frame"]["base"] == "water"
     body, windows = shade.materials(data["palette"])
     os.makedirs(args.out, exist_ok=True)
     prefix = os.path.join(args.out, args.label + "-" if args.label else "")
 
     context(data, heading_rad)
-    levels = {lv: import_level(os.path.join(args.glb, "lod%d.glb" % lv), lv, body, windows, heading_rad) for lv in lod.LEVELS}
-    height = data["measurements"]["dimensions"]["towerHeightM"]["valueM"]
-    length = data["frame"].get("spanM", 200.0)
-    centre = (0.0, 0.0, height * 0.35)
-    tower_s = data["model"]["params"]["towers"]["offsetsM"][1]
-    tower = (-math.sin(heading_rad) * tower_s, math.cos(heading_rad) * tower_s, height * 0.55)
+    levels = import_all(args.glb, body, windows, heading_rad, (0.0, 0.0, 0.0))
+    top = max(e["bbox"]["max"][1] for e in report["levels"])
+    centre = (0.0, 0.0, top * 0.35)
+    tower_s = data["model"]["params"]["towers"]["offsetsM"][1] if bridge else 0.0
+    tower = (-math.sin(heading_rad) * tower_s, math.cos(heading_rad) * tower_s, top * 0.55)
+    polar = scene_cfg["camera"]["polarDeg"]
+    # The azimuth limit whose camera looks most nearly along a bridge, so its arches show.
+    arch_az = scene_cfg["camera"]["azimuthDeg"]["max"]
+    views = (("default", scene_cfg["camera"]["distanceM"]), ("focus", scene_cfg["focus"]["maxDistanceM"]))
 
     eevee()
-    show_only(levels, 0)
-    polar = scene_cfg["camera"]["polarDeg"]
-    arch_az = scene_cfg["camera"]["azimuthDeg"]["max"]
-    for mode in LIGHTING:
-        lights(mode)
-        for size_name, size in SIZES.items():
-            d = fit_distance(length, size, fov)
-            for az in (polar_az for polar_az in (-40, 0, 40)):
-                camera(centre, d, polar["default"], az, fov)
-                render("%sgame-p48-az%+d-%s-%s.png" % (prefix, az, mode, size_name), size)
-            camera(centre, d, polar["min"], 0, fov)
-            render("%sgame-p12-%s-%s.png" % (prefix, mode, size_name), size)
-            camera(tower, 420.0, polar["default"], arch_az, fov)
-            render("%sclose-tower-p48-%s-%s.png" % (prefix, mode, size_name), size)
-            camera(tower, scene_cfg["camera"]["minDistanceM"], polar["default"], arch_az, fov)
-            render("%sclose-min-distance-%s-%s.png" % (prefix, mode, size_name), size)
-            camera(tower, 360.0, polar["max"], arch_az, fov)
-            render("%sclose-tower-p60-%s-%s.png" % (prefix, mode, size_name), size)
+    for keyframe_id in ("golden", "night", "day"):
+        lights(data, keyframe_id, windows)
+        for view, distance in views:
+            if keyframe_id == "day" and view == "focus":
+                continue
+            for tier in ("high", "mid", "low"):
+                level = tier_level(scene_cfg, tier, distance, bridge)
+                show_only(levels, level)
+                camera(centre, distance, polar["default"], 0, fov)
+                render("%sgame-%s-%dm-%s-L%d-%s.png" % (prefix, view, distance, tier, level, keyframe_id), PHONE)
+        if keyframe_id == "day":
+            continue
+        show_only(levels, 0)
+        camera(tower, 420.0, polar["default"], arch_az, fov)
+        render("%sclose-tower-p48-%s.png" % (prefix, keyframe_id), WIDE)
+        camera(tower, 420.0, polar["max"], arch_az, fov)
+        render("%sclose-tower-p60-%s.png" % (prefix, keyframe_id), WIDE)
 
-    # Each tier's finest level up close: what a mid or low device shows at the minimum distance.
-    lights("day")
-    for tier, tier_levels in lod.TIER_LEVELS.items():
-        show_only(levels, tier_levels[0])
-        camera(tower, scene_cfg["camera"]["minDistanceM"], polar["default"], arch_az, fov)
-        render("%sclose-min-distance-%s-L%d.png" % (prefix, tier, tier_levels[0]), SIZES["wide"])
-
-    # Far check at the default camera distance: the level each tier shows there.
-    far = scene_cfg["camera"]["distanceM"]
-    multiplier = scene_cfg["landmarks"]["bridgeDistanceMultiplier"] if data["frame"]["base"] == "water" else 1.0
-    for tier, tier_levels in lod.TIER_LEVELS.items():
-        switches = [d * multiplier for d in scene_cfg["landmarks"]["lod"][tier]["distancesM"]]
-        level = tier_levels[max(i for i, d in enumerate(switches) if d <= far)]
-        show_only(levels, level)
-        camera(centre, far, polar["default"], 0, fov)
-        render("%sfar-4500m-%s-L%d.png" % (prefix, tier, level), SIZES["square"])
+    if args.compare:
+        # The true-scale build beside this one, shifted across the bridge axis.
+        side = (math.cos(heading_rad) * COMPARE_GAP_M, math.sin(heading_rad) * COMPARE_GAP_M, 0.0)
+        other = import_all(args.compare, body, windows, heading_rad, side)
+        middle = (side[0] / 2, side[1] / 2, centre[2])
+        lights(data, "golden", windows)
+        for view, distance in views + (("near", 1500.0),):
+            level = tier_level(scene_cfg, "high", distance, bridge)
+            show_only(levels, level)
+            show_only(other, level)
+            camera(middle, distance, polar["default"], 0, fov)
+            render("%scompare-%s-%dm-high-L%d-golden.png" % (prefix, view, distance, level), WIDE)
+        for objects in other.values():
+            for obj in objects:
+                obj.hide_render = True
 
     # Workbench LOD strip: the four levels side by side with their triangle counts.
+    spacing = 3.5 * max(abs(v) for e in report["levels"] for v in (e["bbox"]["min"][0], e["bbox"]["max"][0]))
     for lv, objects in levels.items():
         for obj in objects:
             obj.hide_render = False
             obj.rotation_euler = (0.0, 0.0, 0.0)
-            obj.location = ((lv - 1.5) * 140.0, 0.0, 0.0)
+            obj.location = ((lv - 1.5) * spacing, 0.0, 0.0)
     for obj in bpy.data.objects:
         if obj.name.startswith(("water", "land")):
             obj.hide_render = True
     scene = bpy.context.scene
-    strip_s = data["model"]["params"]["towers"]["offsetsM"][1] if data["frame"]["base"] == "water" else 0.0
+    strip_s = tower_s
     scene.render.engine = "BLENDER_WORKBENCH"
     scene.display.shading.light = "STUDIO"
     scene.display.shading.color_type = "VERTEX"
-    scene.display.shading.single_color = (0.05, 0.05, 0.05)
     scene.display.shading.show_cavity = True
     scene.display.shading.show_object_outline = True
     scene.display.shading.background_type = "VIEWPORT"
@@ -261,15 +310,15 @@ def main():
     for entry in report["levels"]:
         curve = bpy.data.curves.new("label%d" % entry["level"], "FONT")
         curve.body = "L%d\n%d tris" % (entry["level"], entry["triangles"])
-        curve.size = 16.0
+        curve.size = spacing * 0.11
         curve.align_x = "CENTER"
         curve.materials.append(label_material)
         label = bpy.data.objects.new("label%d" % entry["level"], curve)
-        label.location = ((entry["level"] - 1.5) * 140.0, strip_s - 190.0, 95.0)
+        label.location = ((entry["level"] - 1.5) * spacing, strip_s - spacing * 1.35, top * 1.1)
         label.rotation_euler = (math.radians(58.0), 0.0, math.radians(-20.0))
         scene.collection.objects.link(label)
-    camera((0.0, strip_s - 60.0, 30.0), 620.0, 58.0, -20.0, fov)
-    render("%slod-strip-workbench.png" % prefix, SIZES["wide"])
+    camera((0.0, strip_s - spacing * 0.45, top * 0.35), spacing * 4.4, 58.0, -20.0, fov)
+    render("%slod-strip-workbench.png" % prefix, WIDE)
 
 
 if __name__ == "__main__":

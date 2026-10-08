@@ -28,9 +28,9 @@ def parse_args(argv=None):
         help="triangle caps low/mid/high (e.g. 1500/5000/10000); default perf.json",
     )
     parser.add_argument(
-        "--compress",
+        "--true-scale",
         action="store_true",
-        help="also write meshopt-compressed GLBs (the interim shipped files) under <out>/meshopt",
+        help="build the real proportions instead of the measurements' gameScale (for comparison)",
     )
     return parser.parse_args(rest)
 

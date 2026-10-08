@@ -39,11 +39,7 @@ const glbJson = (file: string) =>
 
 describe('public/models', () => {
   it('holds only .glb files, exactly the manifest’s', () => {
-    // public/models/landmarks/ holds the Blender-built landmark levels (S07c), pinned by their
-    // locks in data/landmarks/blender and checked by scripts/blender/blender.test.ts.
-    const onDisk = readdirSync(MODELS)
-      .filter((name) => name !== 'landmarks')
-      .sort()
+    const onDisk = readdirSync(MODELS).sort()
     expect(onDisk.every((name) => name.endsWith('.glb'))).toBe(true)
     expect(onDisk).toEqual([...files.keys()].map((file) => file.replace('/models/', '')).sort())
   })
