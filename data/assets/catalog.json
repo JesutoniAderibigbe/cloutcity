@@ -4107,7 +4107,13 @@
       "fromSkinned": {
         "mesh": "Punk_Head",
         "materials": ["Red"],
-        "joint": "Head"
+        "joint": "Head",
+        "exclude": [
+          {
+            "min": [-0.03, 1.55, 0.12],
+            "max": [0.03, 1.615, 0.2]
+          }
+        ]
       },
       "attach": "head"
     },

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "ee92cdf3452d74f7",
+  "assetVersion": "34d4542075385a40",
   "models": [
     {
       "id": "taxi",
@@ -2828,32 +2828,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.hairMohawk",
-      "bounds": { "min": [-0.0388, 1.569, -0.1595], "max": [0.0446, 1.9654, 0.2303] },
+      "bounds": { "min": [-0.0388, 1.6647, -0.1595], "max": [0.0446, 1.9654, 0.2303] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/hair-mohawk.low.15f833ff.glb",
-          "sha256": "15f833fffb64796d344b6f5bf64f32598076ce033130263b8c842fec98f0fb09",
-          "bytes": 3404,
-          "gzBytes": 1890,
-          "triangles": 248
+          "file": "/models/hair-mohawk.low.d9cbf6cc.glb",
+          "sha256": "d9cbf6cc4020b930d8c49e208551213271bab81bc1f91c9f37a214462f363946",
+          "bytes": 3388,
+          "gzBytes": 1889,
+          "triangles": 250
         },
         "mid": {
-          "file": "/models/hair-mohawk.mid.198e1c14.glb",
-          "sha256": "198e1c14ee1d7d593c86c1174589a5ca221d51fd6880f3c195d00c6f5ff27cbe",
-          "bytes": 4388,
-          "gzBytes": 2594,
-          "triangles": 498
+          "file": "/models/hair-mohawk.mid.b7732355.glb",
+          "sha256": "b773235524809995a8a134225dd0af753a252150eca9ffccb284eeb350cd5087",
+          "bytes": 4404,
+          "gzBytes": 2498,
+          "triangles": 500
         },
         "high": {
-          "file": "/models/hair-mohawk.high.29bcb5b6.glb",
-          "sha256": "29bcb5b689602dca509aeb07810d8239a95fb456da2e128c690aa3f3add4f32c",
-          "bytes": 4732,
-          "gzBytes": 2702,
-          "triangles": 588
+          "file": "/models/hair-mohawk.high.638e9b5f.glb",
+          "sha256": "638e9b5f938c3c9b34abd7a2095e948772465c82ae9e86713e55d5e763c23bdf",
+          "bytes": 4420,
+          "gzBytes": 2497,
+          "triangles": 504
         }
       }
     },
