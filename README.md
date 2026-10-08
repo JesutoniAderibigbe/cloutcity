@@ -48,6 +48,7 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                                      |
 | `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                                       |
 | `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender                                                                                                    |
+| `npm run thumbs`                  | Renders the shop's item thumbnails from the decor models into `public/thumbs` (see 3D models); `-- --check` verifies                                                                                                         |
 | `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                                       |
 
 Gate order used by the build loop:
@@ -228,6 +229,13 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
   (`--background --factory-startup --python-exit-code 1`, `PYTHONHASHSEED=0`; override the
   executable with `BLENDER_BIN`) and commits the GLBs to `scripts/blender/out/`; the asset build
   reads them as a `local` source and checks their hashes, so CI never needs Blender.
+- **Shop thumbnails** (S04k). `npm run thumbs` renders each decor item with a model
+  (`scene.json models.decor`) offline in headless Chromium with the pinned three, recoloured to
+  its first variant, into content-named `public/thumbs/<item>.<sha8>.webp` and
+  `data/items/thumbs.derived.json` (`-- --check` verifies the item list). Re-run it after a
+  decor model or variant changes. Items without a model show their icon from
+  `data/items/looks.json`. Thumbnails are never precached; they are served immutable and load
+  lazily in the shop.
 - **To add a model:** add it to the catalog (and its `models.name.*` copy key in
   `data/copy/models/base.json`), run `npm run assets:build -- --update` once, then
   `npm run assets:build`, and check the printed colour report and cap pressure.
@@ -712,13 +720,20 @@ camera starts over it).
   beside it in two more instanced meshes (fill-lite, S04i: `scene.json` `buildings.fill`,
   `perf.json` `fillTreesMax`), all on the blocks' materials. `onDistrictReady(id, masses)` tells
   listeners (street props) when a district is built. District walls carry a window mask that glows with the shared night-glow
-  uniform (`src/scene/lighting/nightGlow.ts`).
+  uniform (`src/scene/lighting/nightGlow.ts`), read with a mip bias
+  (`scene.json buildings.windowMipBias`) so far facades glow evenly (TUNE-16).
 - **Landmarks (S07a).** `src/scene/landmarks/Landmarks.tsx` builds the code-built kit models
   (`buildLandmark`) after the first frame, nearest first, each in a drei `Detailed` with the
   tier's levels and distances (`scene.json` `landmarks.lod`); teaser landmarks on "expanding
   soon" land use the dimmed material; name chips show copy names only. `landmarkSource(id)`
   (`src/scene/landmarks/source.ts`) is where Blender models (DEC-25) take over per landmark.
-  Modelled landmarks' pins are badges lifted over the model (`liftM`).
+  Modelled landmarks' pins are badges lifted over the model (`liftM`). Name chips draw over the
+  buildings and are laid out on the server so none overlaps another (`chipShiftM`, UX-14).
+- **Pin marks (S04k).** `src/scene/pins/PinMarks.tsx` (a lazy chunk after the map is playable)
+  puts each pin's category icon (`data/places/icons.json`) on its head and short name labels on
+  the nearest few (`data/config/pinMarks.json`), keeping labels off icons, name chips and the HUD;
+  one mesh and atlas with the chips' material settings, so no new shader program. The Places
+  list shows the same icons and category labels (`categories` copy namespace).
 - **Config.** Camera start, zoom/tilt/turn limits, layer heights, line widths, marker and chip
   sizes, the shadow and the day/night keyframes live in `data/config/scene.json`; scene colours
   are world tokens in the `scene` block of `data/config/theme.json` (resolved to hex on the
@@ -728,9 +743,10 @@ camera starts over it).
   pans, pinch or wheel zooms towards the pointer, two fingers or right drag rotate and tilt; the
   target stays inside `data/geo/bounds.json`. Rendering is on demand (`frameloop="demand"`), so an
   idle map draws zero frames.
-- **Attribution.** `src/scene/MapAttribution.tsx` shows the NYC Open Data and MTA lines in the free
-  scene row of the overlay grid (a one-line form when the row is short, via a container query in
-  `globals.css`); `/credits` has the full text.
+- **Attribution.** `src/scene/MapAttribution.tsx` is a small "Map data" chip in the screen's
+  bottom-end corner above the tab bar, moving up to the free scene row's corner while a sheet is
+  open (UX-15, CSS only); a tap shows the NYC Open Data and MTA lines (a one-line form when the
+  row is short, via a container query in `globals.css`); `/credits` has the full text.
 - **Failures.** Before the canvas mounts, the shell checks for WebGL2 and downloads the geo body
   (`src/scene/geo/load.ts`, which never rejects); the 3D chunk validates it without throwing. No
   WebGL, a failed download, a non-JSON body or a schema failure each show the error status
