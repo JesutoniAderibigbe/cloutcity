@@ -284,6 +284,31 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L2: 588 triangles, 13484 bytes (`public/landmarks/times-square/lod2.glb`)
 - L3: 290 triangles, 8056 bytes (`public/landmarks/times-square/lod3.glb`)
 
+### washington-square-arch
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q2550491 (Washington Square Arch), CC0-1.0, <https://www.wikidata.org/wiki/Q2550491>
+
+Dimensions:
+
+- `heightM`: 23.5 m (estimate): the commonly published 77 ft; Wikidata has no height and no public-domain survey was found
+- `widthM`: 17.4 m (estimate): the commonly published 57 ft overall width
+- `openingM`: 9.1 × 14.3 m (estimate): the commonly published opening: piers 30 ft apart (widthM), 47 ft to the crown (depthM)
+- `depthM`: 6 m (estimate): the arch's depth through the opening, proportioned by eye
+- `atticM`: 5.5 m (estimate): the attic above the entablature, proportioned by eye
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×2, widths ×2. Game scale (orchestrator decision 2026-10-08, the user may overrule): x2, so the 23 m arch reads at the game camera above the park's trees.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 636 triangles, 12536 bytes (`public/landmarks/washington-square-arch/lod0.glb`)
+- L1: 300 triangles, 7160 bytes (`public/landmarks/washington-square-arch/lod1.glb`)
+- L2: 148 triangles, 4796 bytes (`public/landmarks/washington-square-arch/lod2.glb`)
+- L3: 68 triangles, 3632 bytes (`public/landmarks/washington-square-arch/lod3.glb`)
+
 ### wedge-building
 
 Retrieved 2026-10-08. Sources:

@@ -1,0 +1,49 @@
+{
+  "id": "washington-square-arch",
+  "base": "land",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q2550491 (Washington Square Arch)",
+      "url": "https://www.wikidata.org/wiki/Q2550491",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 23.5,
+      "source": "estimate",
+      "note": "the commonly published 77 ft; Wikidata has no height and no public-domain survey was found"
+    },
+    "widthM": {
+      "valueM": 17.4,
+      "source": "estimate",
+      "note": "the commonly published 57 ft overall width"
+    },
+    "openingM": {
+      "widthM": 9.1,
+      "depthM": 14.3,
+      "source": "estimate",
+      "note": "the commonly published opening: piers 30 ft apart (widthM), 47 ft to the crown (depthM)"
+    },
+    "depthM": {
+      "valueM": 6.0,
+      "source": "estimate",
+      "note": "the arch's depth through the opening, proportioned by eye"
+    },
+    "atticM": {
+      "valueM": 5.5,
+      "source": "estimate",
+      "note": "the attic above the entablature, proportioned by eye"
+    }
+  },
+  "readabilityScale": {
+    "note": "Plain volumes: no figures and no inscription; darker panels stand for the pier sculpture."
+  },
+  "gameScale": {
+    "height": 2.0,
+    "plan": 2.0,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): x2, so the 23 m arch reads at the game camera above the park's trees."
+  }
+}
