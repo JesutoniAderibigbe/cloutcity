@@ -361,7 +361,23 @@ def _terrace(spec, s, detail, builder):
                                     z0 + h * (steps - i) / (steps + 1)), "stone", tone=0.95)
     builder.add(setback.extrude(rect(-d / 2 + d * 0.38, d / 2, -w / 2, w / 2), z0, z0 + 0.6 * k), "granite",
                 tone=0.96)
-    fx, fy = at(d * 0.18, 0.0)
+    if s["fountain"] > 0:
+        _fountain(spec, s, at(d * 0.18, 0.0), detail, flood, builder)
+    if detail >= 1:
+        # Arcade openings under the upper terrace, darker (recessed), facing the plaza.
+        for i in range(-2, 3):
+            cx, cy = at(-d / 2 + d * 0.38 + 0.05, i * w * 0.08)
+            ox, oy = uy * w * 0.03, -ux * w * 0.03
+            zb, zt2 = z0 + 0.4 * k, z0 + h * 0.75
+            builder.add(prim.quad((cx - ox, cy - oy, zb), (cx + ox, cy + oy, zb), (cx + ox, cy + oy, zt2),
+                                  (cx - ox, cy - oy, zt2), (ux, uy, 0.0)), "stone", tone=0.62, jitter=False)
+
+
+def _fountain(spec, s, centre, detail, flood, builder):
+    """A round basin with a tiered fountain in it (no figure)."""
+    k = spec["detail"]
+    z0 = spec["land_top"]
+    fx, fy = centre
     sides = (16, 12, 8)[min(detail, 2)] if detail else 8
     r = s["fountain"]
     builder.add(setback_ring(fx, fy, z0, z0 + 1.2 * k, r, sides), "stone", tone=1.05, glow=flood)
@@ -375,14 +391,6 @@ def _terrace(spec, s, detail, builder):
         builder.add(setback_ring(fx, fy, zt, zt + 0.5 * k, r * (0.45 - 0.18 * i), sides // 2), "stone", tone=1.1,
                     glow=flood)
         zt += 0.5 * k
-    if detail >= 1:
-        # Arcade openings under the upper terrace, darker (recessed), facing the plaza.
-        for i in range(-2, 3):
-            cx, cy = at(-d / 2 + d * 0.38 + 0.05, i * w * 0.08)
-            ox, oy = uy * w * 0.03, -ux * w * 0.03
-            zb, zt2 = z0 + 0.4 * k, z0 + h * 0.75
-            builder.add(prim.quad((cx - ox, cy - oy, zb), (cx + ox, cy + oy, zb), (cx + ox, cy + oy, zt2),
-                                  (cx - ox, cy - oy, zt2), (ux, uy, 0.0)), "stone", tone=0.62, jitter=False)
 
 
 def setback_ring(cx, cy, z0, z1, r, sides):

@@ -368,6 +368,61 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1192 triangles, 24160 bytes (`public/landmarks/manhattan-bridge/lod2.glb`)
 - L3: 584 triangles, 13456 bytes (`public/landmarks/manhattan-bridge/lod3.glb`)
 
+### prospect-park
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q1049632 (Prospect Park) and its features: Q106694860 Prospect Park Lake, Q4931524 Prospect Park Boathouse, Q6647480 Litchfield Villa, CC0-1.0, <https://www.wikidata.org/wiki/Q1049632>
+
+Dimensions:
+
+- `heightM`: 21 m (estimate): the villa's tower top above the park, proportioned by eye
+- `treeLowM`: 13 m (estimate): the lower canopy height of the tree masses
+- `treeHighM`: 19 m (estimate): the upper canopy height (below the villa tower)
+- `treeSpacingM`: 48 m (estimate): canopy mound spacing at the finest level at density 1
+- `longMeadowNorth`: 40.6685, -73.9695 (estimate): the Long Meadow's northern half, by eye
+- `longMeadowNorthAxes`: 330 × 140 m (estimate): its semi-axes, the long one running south-south-west
+- `longMeadowSouth`: 40.6627, -73.9732 (estimate): the Long Meadow's southern half, by eye
+- `longMeadowSouthAxes`: 290 × 130 m (estimate): its semi-axes
+- `longMeadowHeadingDeg`: 205 m (estimate): the compass heading of the Long Meadow's long axis
+- `nethermead`: 40.6597, -73.9683 (estimate): the Nethermead, the park's middle meadow, by eye
+- `nethermeadAxes`: 170 × 115 m (estimate): its semi-axes
+- `lake`: 40.6535, -73.968 (estimate): Prospect Park Lake's middle, by eye (Wikidata Q106694860 gives no point)
+- `lakeAxes`: 420 × 190 m (derived): semi-axes of an ellipse of the lake's Wikidata area (60 acres, P2046), the long axis east-north-east
+- `lakeHeadingDeg`: 75 m (estimate): the compass heading of the lake's long axis
+- `lullwater`: 40.6573, -73.9652 (estimate): the Lullwater, the narrow water from the boathouse down to the lake, by eye
+- `lullwaterAxes`: 240 × 34 m (estimate): its semi-axes, the long one north-south
+- `boathouse`: 40.660833, -73.965278 (wikidata): Prospect Park Boathouse (Q4931524, P625): a generic pale pavilion and terrace over the water
+- `boathouse2`: 40 × 26 m (estimate): the boathouse terrace's width and depth
+- `boathouseM`: 9 m (estimate): the boathouse's height
+- `villa`: 40.666944, -73.973889 (wikidata): Litchfield Villa (Q6647480, P625): a generic villa with a square tower
+- `villaKeep`: 10 × 9 m (estimate): the villa's half-length and height
+- `villaTowerWidthM`: 6 m (estimate): the villa tower's side
+- `villaRoofM`: 3 m (estimate): the tower's pointed roof
+- `driveWidthM`: 9 m (estimate): the park drive's width
+- `lampSpacingM`: 80 m (estimate): lamps along the drive at the finest level
+- `drive0`: 40.6703, -73.9688 (estimate): loop drive point 0: north, near Grand Army Plaza (by eye)
+- `drive1`: 40.6668, -73.9722 (estimate): loop drive point 1: west side (by eye)
+- `drive2`: 40.6618, -73.9758 (estimate): loop drive point 2: south-west (by eye)
+- `drive3`: 40.656, -73.972 (estimate): loop drive point 3: west of the lake (by eye)
+- `drive4`: 40.6512, -73.97 (estimate): loop drive point 4: south-west of the lake (by eye)
+- `drive5`: 40.6503, -73.966 (estimate): loop drive point 5: south of the lake (by eye)
+- `drive6`: 40.654, -73.964 (estimate): loop drive point 6: east of the lake (by eye)
+- `drive7`: 40.66, -73.9645 (estimate): loop drive point 7: east side (by eye)
+- `drive8`: 40.666, -73.965 (estimate): loop drive point 8: north-east (by eye)
+- `drive9`: 40.6698, -73.966 (estimate): loop drive point 9: north (by eye)
+
+Readability scale (drawn width ÷ true width): structures ×2, paths ×2, lamp ×3.
+
+Game scale: heights ×1.8, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8; the plan stays the map's park outline (x1.0); structures and the drive take the readability scale.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6726 triangles, 179324 bytes (`public/landmarks/prospect-park/lod0.glb`)
+- L1: 3002 triangles, 80532 bytes (`public/landmarks/prospect-park/lod1.glb`)
+- L2: 1173 triangles, 33020 bytes (`public/landmarks/prospect-park/lod2.glb`)
+- L3: 539 triangles, 16044 bytes (`public/landmarks/prospect-park/lod3.glb`)
+
 ### queens-borough-hall
 
 Retrieved 2026-10-08. Sources:
