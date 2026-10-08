@@ -32,6 +32,15 @@ export interface AmbientHookState {
   readonly positionsHash: string
   /** Frames the ambient ticker has requested. */
   readonly ticks: number
+  /** The townsfolk (S04o): what the last frame drew, and each drawn local's middle (client px). */
+  readonly townsfolk: {
+    readonly status: 'off' | 'loading' | 'ready' | 'failed'
+    readonly drawn: number
+    readonly triangles: number
+    readonly drawCalls: number
+    readonly kitsDrawn: number
+    readonly points: readonly { readonly id: string; readonly x: number; readonly y: number }[]
+  }
 }
 
 /** Set by AmbientLife for its life; read by the test hook. */

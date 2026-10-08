@@ -22,6 +22,6 @@ export interface AmbientAssets {
   readonly streetsUrl: string
   /** ambient.json `vehicles.models[tier]`, in order. */
   readonly vehicles: readonly AmbientModelAsset[]
-  /** What the tier's pedestrian source loads (pedestrianModelIds), in order. */
+  /** What the tier's pedestrians and townsfolk load (characterModelIds), in order. */
   readonly pedestrians: readonly AmbientModelAsset[]
 }

@@ -60,6 +60,9 @@ export const OPTIONAL_CHUNK_MARKERS = [
   // Place plots (S04m, src/scene/plots/layer.ts): after the map is playable; the places keep
   // their pins without them.
   { id: 'venue-plots', marker: 'cc-feature:venue-plots' },
+  // A local's card on the map (S04o, src/scene/townsfolk/TownsfolkCard.tsx): after the map is
+  // playable, opened by tapping a townsperson.
+  { id: 'townsfolk-card', marker: 'cc-feature:townsfolk-card' },
   // The map style chip (S04m, src/scene/style/MapStyleChip.tsx): after the map is playable; the
   // same choice lives in Phone → Settings.
   { id: 'map-style', marker: 'cc-feature:map-style' },

@@ -16,6 +16,10 @@
  *
  * The FPS step-down lowers ambient density before it drops a tier: this chunk registers the
  * density levels and its own FPS floor with the quality store.
+ *
+ * The townsfolk (S04o, townsfolk.ts) live here too: Sims-like locals at the player's size around
+ * the places, on the same material, ticker and pauses. A tap on one claims the map tap
+ * (src/scene/pins/mapTaps.ts) and opens their card (src/state/townsfolk.ts, TownsfolkCard.tsx).
  */
 import { useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -26,7 +30,8 @@ import type { GeoBase } from '../geo/schema'
 import { decodePath } from '@/lib/geo/codec'
 import { log } from '@/lib/log'
 import { useReducedMotion } from '@/lib/useReducedMotion'
-import { maxDensityLevel } from '@/lib/world/ambient/density'
+import { densityShare, maxDensityLevel } from '@/lib/world/ambient/density'
+import type { TownsfolkVenue } from '@/lib/world/ambient/townsfolk'
 import type {
   AmbientConfig,
   AmbientTier,
@@ -39,7 +44,9 @@ import type { AvatarConfig } from '../avatar/buildAvatar'
 import { acquireModels } from '../models/runtime'
 import { ambientSteps } from '../quality/ambientSteps'
 import { beginContinuous, endContinuous } from '../quality/continuity'
+import { claimMapTaps } from '../pins/mapTaps'
 import { loadStreets } from '../streets/loadStreets'
+import { selectLocal, townsfolkBridge, townsfolkStore } from '@/state/townsfolk'
 import type { AmbientAssets, AmbientModelAsset } from './assets'
 import { createAmbientLayer, type AmbientCaps, type AmbientLayer, type AmbientView } from './layer'
 import {
@@ -49,6 +56,8 @@ import {
   type AmbientMode,
   type AmbientPauseReason,
 } from './registry'
+import type { ScenePedestrianKit } from './pedestrianKits'
+import { createTownsfolkLayer, type TownsfolkLayer, type TownsfolkView } from './townsfolk'
 import { catalogVehicleKits, type AmbientModelLoader } from './vehicleKits'
 
 const config = ambientJson as unknown as AmbientConfig
@@ -101,6 +110,11 @@ export interface AmbientLifeProps {
   readonly geo: Pick<GeoBase, 'subway' | 'places' | 'landmarks'>
   readonly subwayPalette: readonly string[]
   readonly homes: readonly { readonly x: number; readonly y: number }[]
+  /**
+   * Where the townsfolk hang out: the place pins as the map draws them (built.pins, so they
+   * follow whatever layout the map style puts the places in).
+   */
+  readonly venues: readonly TownsfolkVenue[]
   /** The blocks' material recipe (createBuildingMaterial, instance colours): zero new programs. */
   readonly createMaterial: () => Material
   readonly groundY: number
@@ -119,6 +133,7 @@ export default function AmbientLife({
   geo,
   subwayPalette,
   homes,
+  venues,
   createMaterial,
   groundY,
   config: scene,
@@ -161,6 +176,8 @@ export default function AmbientLife({
   const live = mode === 'live'
 
   const layerRef = useRef<AmbientLayer | null>(null)
+  const townsfolkRef = useRef<TownsfolkLayer | null>(null)
+  const townsfolkViewRef = useRef<TownsfolkView | null>(null)
   useEffect(() => {
     nightRef.current = night
     invalidate()
@@ -222,6 +239,26 @@ export default function AmbientLife({
     }
     const { travel, avatar } = scene
     const trains = config.trains
+    // The pedestrians' and the townsfolk's kits, baked from one load of the character models.
+    // The bakers (skeleton cloning, posing) load only when a tier draws characters.
+    const characterKits = (async (): Promise<{
+      pedestrians: ScenePedestrianKit[]
+      townsfolk: ScenePedestrianKit[]
+    }> => {
+      if (assets.pedestrians.length === 0) return { pedestrians: [], townsfolk: [] }
+      const { PEDESTRIAN_KIT_SOURCES, bakeTownsfolkKits } = await import('./pedestrianKits')
+      const source = PEDESTRIAN_KIT_SOURCES[config.pedestrians.source]
+      const { loader, release } = loaderFor(assets.pedestrians)
+      try {
+        const [pedestrians, townsfolk] = await Promise.all([
+          source === undefined ? [] : source(tier, loader),
+          bakeTownsfolkKits(tier, config.townsfolk, loader),
+        ])
+        return { pedestrians, townsfolk }
+      } finally {
+        release()
+      }
+    })()
     const created = createAmbientLayer({
       tier,
       config,
@@ -258,19 +295,7 @@ export default function AmbientLife({
           release()
         }
       },
-      pedestrianKits: async () => {
-        if (assets.pedestrians.length === 0) return []
-        // The bakers (skeleton cloning, posing) load only when a tier draws pedestrians.
-        const { PEDESTRIAN_KIT_SOURCES } = await import('./pedestrianKits')
-        const source = PEDESTRIAN_KIT_SOURCES[config.pedestrians.source]
-        if (source === undefined) return []
-        const { loader, release } = loaderFor(assets.pedestrians)
-        try {
-          return await source(tier, loader)
-        } finally {
-          release()
-        }
-      },
+      pedestrianKits: async () => (await characterKits).pedestrians,
       prepare: async (object) => {
         const { camera } = get()
         if (gl.extensions.has('KHR_parallel_shader_compile')) {
@@ -283,16 +308,92 @@ export default function AmbientLife({
         log.info('ambient life: not loaded', { reason })
       },
     })
+    const townsfolk = createTownsfolkLayer({
+      tier,
+      config,
+      material: created.material,
+      groundY,
+      venues,
+      // The player's drawn height (src/scene/avatar/buildAvatar.ts avatarSize × playerScale),
+      // repeated so this chunk does not pull the avatar builder in.
+      playerHeight: (distance) =>
+        Math.min(
+          avatar.maxHeightM,
+          Math.max(avatar.minHeightM, distance * avatar.heightPerDistance),
+        ) * avatar.playerScale,
+      kits: async () => (await characterKits).townsfolk,
+      onChange: () => invalidate(),
+      onFailure: (reason) => log.info('ambient life: not loaded', { reason }),
+    })
     sceneRoot.add(created.group)
+    sceneRoot.add(townsfolk.group)
     layerRef.current = created
+    townsfolkRef.current = townsfolk
     invalidate()
     return () => {
+      sceneRoot.remove(townsfolk.group)
+      townsfolk.dispose()
       sceneRoot.remove(created.group)
       created.dispose()
       if (layerRef.current === created) layerRef.current = null
+      if (townsfolkRef.current === townsfolk) townsfolkRef.current = null
       viewRef.current = null
+      townsfolkViewRef.current = null
+      selectLocal(null)
     }
-  }, [assets, tier, geo, subwayPalette, homes, groundY, scene, get, gl, sceneRoot, invalidate])
+  }, [
+    assets,
+    tier,
+    geo,
+    subwayPalette,
+    homes,
+    venues,
+    groundY,
+    scene,
+    get,
+    gl,
+    sceneRoot,
+    invalidate,
+  ])
+
+  // A tap on a local opens their card; a tap elsewhere on the map closes it (and goes on to the
+  // pins). The card reaches the locals in view through the bridge.
+  useEffect(() => {
+    const off = claimMapTaps((x, y, width, height) => {
+      const layer = townsfolkRef.current
+      const id = layer?.pick(get().camera, x, y, width, height) ?? null
+      const profile = id === null ? null : (layer?.profile(id) ?? null)
+      selectLocal(profile)
+      if (profile !== null) invalidate()
+      return profile !== null
+    })
+    townsfolkBridge.current = {
+      nearby: () => {
+        const layer = townsfolkRef.current
+        if (layer === null) return []
+        return layer.drawnIds().flatMap((id) => {
+          const profile = layer.profile(id)
+          return profile === null ? [] : [profile]
+        })
+      },
+      headAt: (id) => {
+        const layer = townsfolkRef.current
+        if (layer === null) return null
+        const rect = gl.domElement.getBoundingClientRect()
+        const head = layer.headOnScreen(id, get().camera, rect.width, rect.height)
+        return head === null ? null : { x: head.x + rect.left, y: head.y + rect.top }
+      },
+    }
+    return () => {
+      off()
+      townsfolkBridge.current = null
+    }
+  }, [get, gl, invalidate])
+
+  // The map is covered (the apartment or creator) or the city paused hidden: no card over it.
+  useEffect(() => {
+    if (hidden && townsfolkStore.getState().selected !== null) selectLocal(null)
+  }, [hidden])
 
   // Density levels and the ambient-only FPS floor for the step-down (density before tier).
   useEffect(() => {
@@ -348,6 +449,16 @@ export default function AmbientLife({
       level: levelRef.current,
       night: nightRef.current,
     })
+    // The locals stay out at night (the city is alive); only the FPS step-down thins them.
+    townsfolkViewRef.current =
+      townsfolkRef.current?.update({
+        tS: ms / 1000,
+        camera,
+        distance,
+        targetX: target.x,
+        targetY: -target.z,
+        share: densityShare(config.density, levelRef.current, 0),
+      }) ?? null
     return viewRef.current
   }
 
@@ -376,7 +487,8 @@ export default function AmbientLife({
     let lastCheck = 0
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop)
-      const drawing = viewRef.current !== null && drawnTotal(viewRef.current) > 0
+      const drawing =
+        viewRef.current !== null && drawnTotal(viewRef.current, townsfolkViewRef.current) > 0
       if (drawing) {
         // Half a display frame of tolerance, so a 60 Hz display hits a 30 fps cap exactly.
         if (now - lastTick >= minGap - 8) {
@@ -391,7 +503,7 @@ export default function AmbientLife({
       if (now - lastCheck >= 1000) {
         lastCheck = now
         const view = updateRef.current()
-        if (view !== null && drawnTotal(view) > 0) invalidate()
+        if (view !== null && drawnTotal(view, townsfolkViewRef.current) > 0) invalidate()
       }
     }
     raf = requestAnimationFrame(loop)
@@ -404,10 +516,22 @@ export default function AmbientLife({
   // Test-hook builds: scene.ambient() (src/scene/testHooks.tsx).
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_TEST_HOOKS !== '1') return
+    const townsfolkState = (): AmbientHookState['townsfolk'] => {
+      const layer = townsfolkRef.current
+      const view = townsfolkViewRef.current ?? layer?.view() ?? null
+      if (layer === null || view === null) {
+        return { status: 'off', drawn: 0, triangles: 0, drawCalls: 0, kitsDrawn: 0, points: [] }
+      }
+      const rect = gl.domElement.getBoundingClientRect()
+      const points = layer
+        .screenPoints(get().camera, rect.width, rect.height)
+        .map((p) => ({ id: p.id, x: p.x + rect.left, y: p.y + rect.top }))
+      return { ...view, points }
+    }
     const read = (): AmbientHookState => {
       const layer = layerRef.current
       const view = viewRef.current ?? layer?.view() ?? null
-      const meshes = layer?.meshes() ?? []
+      const meshes = [...(layer?.meshes() ?? []), ...(townsfolkRef.current?.meshes() ?? [])]
       if (layer === null || view === null) {
         return {
           status: 'loading',
@@ -423,6 +547,7 @@ export default function AmbientLife({
           inMemorialClearance: 0,
           positionsHash: '0',
           ticks: ticksRef.current,
+          townsfolk: townsfolkState(),
         }
       }
       return {
@@ -439,13 +564,14 @@ export default function AmbientLife({
         inMemorialClearance: view.inMemorialClearance,
         positionsHash: view.positionsHash,
         ticks: ticksRef.current,
+        townsfolk: townsfolkState(),
       }
     }
     ambientHook.current = read
     return () => {
       if (ambientHook.current === read) ambientHook.current = null
     }
-  }, [mode, pauseReason, gl, sceneRoot])
+  }, [mode, pauseReason, gl, sceneRoot, get])
 
   return null
 }
@@ -463,8 +589,12 @@ export function trainLineColors(
   return new Map(ids.map((id, index) => [id, palette[index % palette.length] ?? palette[0] ?? '']))
 }
 
-const drawnTotal = (view: AmbientView) =>
-  view.drawn.vehicles + view.drawn.buses + view.drawn.pedestrians + view.drawn.trainCars
+const drawnTotal = (view: AmbientView, townsfolk: TownsfolkView | null) =>
+  view.drawn.vehicles +
+  view.drawn.buses +
+  view.drawn.pedestrians +
+  view.drawn.trainCars +
+  (townsfolk?.drawn ?? 0)
 
 /** Whether the ambient material compiled to the very program the blocks draw with. */
 function sameProgram(

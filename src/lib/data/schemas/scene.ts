@@ -212,6 +212,65 @@ const distanceScale = z.strictObject({
   max: z.number().min(1),
 })
 
+/** The rig clips a townsperson can be posed in (src/scene/ambient/kitIds.ts). */
+export const TOWNSFOLK_POSES = ['idle', 'talk', 'wave', 'walk'] as const
+
+/**
+ * The townsfolk (S04o): Sims-like locals drawn at the player's size, hanging out at the places
+ * and walking between them, tappable for a small profile card. NPCs, never players (UX-3).
+ */
+const TownsfolkConfigSchema = z.strictObject({
+  /** Locals who call each place home (their own slots; visitors take the gaps). */
+  perVenue: ambientTier(z.int().min(1).max(8)),
+  /** Drawn at once, nearest in view first. */
+  maxShown: ambientTier(z.int().min(0).max(40)),
+  /** Places within this of the camera target are simulated. */
+  focusRadiusM: ambientTier(metres),
+  /** Drawn only while the camera is at most this far from its target. */
+  showBelowDistanceM: ambientTier(metres),
+  /** A local's height as a share of the player's (scene.json `avatar`, × `playerScale`). */
+  heightOfPlayer: z.number().gt(0).max(1.5),
+  /** The hangout ring's centre this many metres in front of (south of) the place point. */
+  frontM: z.number().nonnegative(),
+  /** Ring spacing between neighbours, and its smallest radius, in local heights. */
+  spacingOfHeight: z.number().positive(),
+  minRingOfHeight: z.number().positive(),
+  /** One hangout-then-walk cycle. */
+  epochS: z.number().positive(),
+  walkSpeedMps: metres,
+  /** Walking takes at most this share of a cycle: farther places are never visited. */
+  maxWalkShare: z.number().gt(0).lt(1),
+  /** How many of the nearest places a local visits. */
+  neighbours: z.int().min(0).max(8),
+  /** Chance a cycle is spent at home. */
+  homeShare: chance,
+  /** The poses each tier bakes (4 draw calls per pose and model); `walk` for walking. */
+  poses: ambientTier(
+    z
+      .array(z.enum(TOWNSFOLK_POSES))
+      .min(1)
+      .refine((poses) => new Set(poses).size === poses.length, { error: 'duplicate pose' }),
+  ),
+  /** Chance a hangout is spent talking or waving (where the tier has the pose); else idle. */
+  poseShare: z
+    .strictObject({ talk: chance, wave: chance })
+    .refine((share) => share.talk + share.wave <= 1, { error: 'pose shares exceed 1' }),
+  /** Where in its clip each standing pose is taken, as a share of the clip. */
+  poseTime: z.strictObject({ idle: unit, talk: unit, wave: unit }),
+  faceJitterRad: z.number().nonnegative(),
+  bobOfHeight: z.number().nonnegative(),
+  bobHz: z.number().positive(),
+  /** Hair (and shoe) colours: the kits' `accent` bucket. */
+  hair: z.array(HEX).min(1),
+  names: z.strictObject({
+    woman: z.array(z.string().min(1).max(16)).min(1),
+    man: z.array(z.string().min(1).max(16)).min(1),
+    initials: z.string().regex(/^[A-Z]+$/),
+  }),
+  /** Vibe ids: copy keys `townsfolk.vibe.<id>`. */
+  vibes: z.array(z.string().regex(/^[a-z][a-zA-Z0-9]*$/)).min(1),
+})
+
 /**
  * data/config/ambient.json, the living city (S04l, DEC-52): ambient traffic, pedestrians and
  * subway trains, deterministic from `seed` and the city clock (src/lib/world/ambient/). Counts
@@ -308,6 +367,7 @@ export const AmbientConfigSchema = z.strictObject({
   }),
   /** How the vehicle kits sort baked colours into buckets (src/scene/ambient/vehicleKits.ts). */
   vehicleKit: VehicleKitConfigSchema,
+  townsfolk: TownsfolkConfigSchema,
 })
 export type AmbientConfigFile = z.infer<typeof AmbientConfigSchema>
 

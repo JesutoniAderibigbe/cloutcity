@@ -2,7 +2,8 @@
 
 /**
  * Picking and selection for the place pins (S04c):
- * - a tap on the canvas (tap.ts) picks the nearest pin head on screen (pick.ts) and opens its
+ * - a tap on the canvas (tap.ts) that nothing over the pins claims (mapTaps.ts: a local, S04o)
+ *   picks the nearest pin head on screen (pick.ts) and opens its
  *   sheet through `openPlace` (origin `map`), or opens the Places panel as a chooser when the
  *   tap lands on several pins at once;
  * - the open place gets the selection ring;
@@ -22,6 +23,7 @@ import { openPlacesChooser } from '@/state/placesPanel'
 import { easeInOut, focusPose, mixPose, type CameraPose } from '../camera/focus'
 import { beginContinuous, endContinuous } from '../quality/continuity'
 import type { PinObjects } from './buildPins'
+import { mapTapClaimed } from './mapTaps'
 import { pickPin } from './pick'
 import { attachTapDetector } from './tap'
 
@@ -62,12 +64,11 @@ export function PlacePins({ pins, config, groundY }: PlacePinsProps) {
       { slopPx: config.pins.tapSlopPx, maxMs: config.pins.tapMaxMs },
       (clientX, clientY) => {
         const rect = canvas.getBoundingClientRect()
+        const x = clientX - rect.left
+        const y = clientY - rect.top
+        if (mapTapClaimed(x, y, rect.width, rect.height)) return
         const screen = pins.screenPins(get().camera, rect.width, rect.height)
-        const picked = pickPin(
-          screen,
-          { x: clientX - rect.left, y: clientY - rect.top },
-          config.pins,
-        )
+        const picked = pickPin(screen, { x, y }, config.pins)
         if (picked.kind === 'one') openPlace(picked.id, { origin: 'map' })
         else if (picked.kind === 'many') openPlacesChooser(picked.ids)
       },

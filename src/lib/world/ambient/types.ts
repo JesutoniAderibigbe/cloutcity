@@ -212,6 +212,38 @@ export interface DensityConfig {
   readonly night: number
 }
 
+export type TownsfolkPose = 'idle' | 'talk' | 'wave' | 'walk'
+
+/** ambient.json `townsfolk` (S04o, schemas/scene.ts TownsfolkConfigSchema documents each field). */
+export interface TownsfolkConfig {
+  readonly perVenue: PerAmbientTier<number>
+  readonly maxShown: PerAmbientTier<number>
+  readonly focusRadiusM: PerAmbientTier<number>
+  readonly showBelowDistanceM: PerAmbientTier<number>
+  readonly heightOfPlayer: number
+  readonly frontM: number
+  readonly spacingOfHeight: number
+  readonly minRingOfHeight: number
+  readonly epochS: number
+  readonly walkSpeedMps: number
+  readonly maxWalkShare: number
+  readonly neighbours: number
+  readonly homeShare: number
+  readonly poses: PerAmbientTier<readonly TownsfolkPose[]>
+  readonly poseShare: { readonly talk: number; readonly wave: number }
+  readonly poseTime: { readonly idle: number; readonly talk: number; readonly wave: number }
+  readonly faceJitterRad: number
+  readonly bobOfHeight: number
+  readonly bobHz: number
+  readonly hair: readonly string[]
+  readonly names: {
+    readonly woman: readonly string[]
+    readonly man: readonly string[]
+    readonly initials: string
+  }
+  readonly vibes: readonly string[]
+}
+
 export interface AmbientConfig {
   readonly seed: number
   readonly cellM: number
@@ -232,6 +264,7 @@ export interface AmbientConfig {
       readonly tailMaxGreenShare: number
     }
   }
+  readonly townsfolk: TownsfolkConfig
 }
 
 // ---- simulation inputs -----------------------------------------------------------------------

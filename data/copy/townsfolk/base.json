@@ -1,0 +1,30 @@
+{
+  "strings": {
+    "townsfolk.meet": "Meet the locals",
+    "townsfolk.none": "No locals in view right now. Move the map to find some.",
+    "townsfolk.card.label": "{name}, a local",
+    "townsfolk.card.badge": "Local",
+    "townsfolk.card.notPlayer": "Not a player",
+    "townsfolk.card.sayHi": "Say hi",
+    "townsfolk.card.sayHiSoon": "Say hi, coming soon",
+    "townsfolk.card.soon": "Soon",
+    "townsfolk.card.next": "Next local",
+    "townsfolk.card.close": "Close",
+    "townsfolk.vibe.chopped": "On a mission for a perfect chopped cheese.",
+    "townsfolk.vibe.playlist": "Here for the vibes. Staying for the playlist.",
+    "townsfolk.vibe.onebr": "Saving up for a Brooklyn 1BR. Manifesting.",
+    "townsfolk.vibe.icedCoffee": "Third iced coffee today. It's fine. Everything's fine.",
+    "townsfolk.vibe.knowsDj": "Says they know the DJ. Nobody has checked.",
+    "townsfolk.vibe.thrift": "Thrift flips only. Full price is a myth.",
+    "townsfolk.vibe.content": "Shooting content between shifts.",
+    "townsfolk.vibe.fiveMin": "Always \"five minutes away.\" Never five minutes away.",
+    "townsfolk.vibe.bodegaCat": "Knows every bodega cat by name.",
+    "townsfolk.vibe.battery": "Running on vibes and 4% battery.",
+    "townsfolk.vibe.nightShift": "Night shift tonight. Main character energy all day.",
+    "townsfolk.vibe.rooftop": "Knows a rooftop. Won't say which.",
+    "townsfolk.vibe.sneakers": "Fresh kicks, zero puddles. That's the plan.",
+    "townsfolk.vibe.openMic": "Open mic Thursday. Rehearsing on the block.",
+    "townsfolk.vibe.brunch": "Brunch is a lifestyle, not a meal.",
+    "townsfolk.vibe.bike": "Bikes everywhere. Has opinions about bike lanes."
+  }
+}
