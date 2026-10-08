@@ -199,6 +199,8 @@ export function AvatarModel({
     onAssembledRef.current?.(ready.assembled)
     return () => {
       onAssembledRef.current?.(null)
+      // The avatar leaves the scene (unmount, or rebuilt for new parts): no longer 'ready'.
+      onStatusRef.current?.('loading')
       ready.assembled.dispose()
     }
   }, [ready])

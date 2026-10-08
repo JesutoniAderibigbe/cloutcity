@@ -12,6 +12,7 @@ import {
   massTriangles,
   massesFor,
   pick,
+  toByte,
 } from './buildDistrict'
 import { DistrictBuildingsMiniSchema, type DistrictBuildings } from './schema'
 
@@ -181,5 +182,22 @@ describe('buildDistrictGeometry', () => {
     // geo:build counted 3815 triangles for jamaica.low (earcut can only drop degenerate ones).
     expect(built.triangleEnds[built.masses - 1]).toBeLessThanOrEqual(3815)
     expect(built.triangleEnds[built.masses - 1]).toBeGreaterThan(3815 * 0.95)
+  })
+})
+
+describe('facade colour bytes (3D-5)', () => {
+  it('clamps and rounds a channel instead of wrapping', () => {
+    expect(toByte(1.06)).toBe(255)
+    expect(toByte(-0.2)).toBe(0)
+    expect(toByte(0.5)).toBe(128)
+  })
+
+  it('keeps a white wall bright whatever its jitter, never wrapping to dark', async () => {
+    const white = { ...COLORS, walls: ['#ffffff'], roof: '#ffffff', jitter: 0.5 }
+    const built = await buildDistrictGeometry(districtMasses(file()), 0, white, noYield)
+    const colors = built.geometry.getAttribute('color') as BufferAttribute
+    const array = colors.array as Uint8Array
+    // Shade spans 0.5..1.5: unclamped, a brightened channel would wrap to a dark byte.
+    for (const value of array) expect(value).toBeGreaterThanOrEqual(127)
   })
 })

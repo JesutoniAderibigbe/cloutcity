@@ -38,6 +38,7 @@ import { landTopY } from './geo/buildLand'
 import type { GeoLoadFailure } from './geo/load'
 import { safeParseGeoBase } from './geo/schema'
 import { Landmarks, type LandmarksHandle } from './landmarks/Landmarks'
+import { ReleaseProgramsOnShadowChange } from './quality/releasePrograms'
 import { TierMonitor } from './quality/TierMonitor'
 import { TierSettingsContext, type ActiveTierSettings } from './quality/tierSettings'
 import { yieldToMain } from './schedule'
@@ -374,6 +375,10 @@ function CityScene3D({
             <PlayableMark readyRef={readyRef} placedRef={placedRef} />
             {/* The apartment has the screen: nothing to measure, no frames forced. */}
             <TierMonitor stepDown={quality.stepDown} paused={hidden} />
+            <ReleaseProgramsOnShadowChange
+              shadowKey={shadows ? `pcf:${settings.shadowMapSizePx}` : 'off'}
+              shadowsOn={shadows}
+            />
             <FocusRedraw hidden={hidden} />
             <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
             <TestHooks

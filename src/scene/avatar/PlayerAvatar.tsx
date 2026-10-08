@@ -121,9 +121,18 @@ export function PlayerAvatar({
     [built, invalidate],
   )
 
+  const drawModel = showModel && loadModel
+  // 3D-1: whenever the hand-made avatar is not drawn (a step-down to a capsule tier unmounts
+  // it), the capsule comes back, whatever the model last reported.
+  useEffect(() => {
+    if (drawModel) return
+    built.setCapsuleVisible(true)
+    invalidate()
+  }, [built, drawModel, invalidate])
+
   return (
     <primitive object={built.group}>
-      {showModel && loadModel && (
+      {drawModel && (
         <Suspense fallback={null}>
           <PlayerAvatarModel
             parts={model.parts}
