@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "brooklyn-borough-hall",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "46fcc5622aea82ec6420733a69cc39b6b989ec16d44718805937e769ebea0197",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/brooklyn-borough-hall/lod0.glb",
+      "sha256": "1648ec666ac7faf1729c2e871e53cd8365583cf25e59954be9c3a86f01029d77",
+      "bytes": 27980,
+      "triangles": 1676,
+      "uncompressedBytes": 158788
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/brooklyn-borough-hall/lod1.glb",
+      "sha256": "544b2510f5e4e19696c31053c3f4b615e86270d37a2a5714400bba37a03f2245",
+      "bytes": 13164,
+      "triangles": 672,
+      "uncompressedBytes": 64056
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/brooklyn-borough-hall/lod2.glb",
+      "sha256": "83967c3d108a10f0407afcdc4f1c466230f2f2ed1b07bd1f24d6f2d347270f49",
+      "bytes": 7580,
+      "triangles": 280,
+      "uncompressedBytes": 27552
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/brooklyn-borough-hall/lod3.glb",
+      "sha256": "fc982835b783d04ade6db66e9446867823db84091216b39a5d7422a2ad5dcd36",
+      "bytes": 4796,
+      "triangles": 108,
+      "uncompressedBytes": 11780
+    }
+  ]
+}

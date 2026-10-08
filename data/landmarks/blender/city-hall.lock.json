@@ -5,7 +5,7 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "7adc5010db4564b1cfab997214bc271b39e21382bb188ca9f16665a900254a28",
+  "inputsSha": "e8548787d35c74376a371fbaac9c5fdd0daef1ebf5244a0ee57b0f1bfb8887c6",
   "caps": {
     "low": 600,
     "mid": 1800,
@@ -15,15 +15,15 @@
     {
       "level": 0,
       "file": "public/landmarks/city-hall/lod0.glb",
-      "sha256": "13ae2be8d2558da86f7405d2b838fff3849239893e08e6b6a7bd426d8d1ab97f",
-      "bytes": 50116,
+      "sha256": "7b09d911140c26cb986a06cd53f267ebb196894c6fab82584f62853deaa68ecc",
+      "bytes": 50124,
       "triangles": 3350,
       "uncompressedBytes": 316944
     },
     {
       "level": 1,
       "file": "public/landmarks/city-hall/lod1.glb",
-      "sha256": "ff568694e1c79df5f5ab4db043f3837b8b2f9206acb9d48b3280076a36e0fbfe",
+      "sha256": "2dae4a4ea2a748d71ff4db62b92bbc3bfa51aeae7a806ffbde9cc0750580e771",
       "bytes": 20048,
       "triangles": 1186,
       "uncompressedBytes": 112468
@@ -31,8 +31,8 @@
     {
       "level": 2,
       "file": "public/landmarks/city-hall/lod2.glb",
-      "sha256": "d400b33f42febec4bcb21a3be2735bc81d889a24624a6d6f6f8b7d541eabbf3a",
-      "bytes": 9740,
+      "sha256": "14776dfbe2217724ff565065950d746ad54f608adc3ea9736458ffaa7491caf5",
+      "bytes": 9744,
       "triangles": 386,
       "uncompressedBytes": 37612
     },

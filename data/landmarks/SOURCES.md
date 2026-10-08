@@ -85,6 +85,44 @@ HAER/HABS, NPS, public-domain texts), never traced from photos. A value marked `
 wider than they are, by the readability scale, so they read at game distance. The models
 are ours: no third-party licence applies to them.
 
+### brooklyn-borough-hall
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q929403 (Brooklyn Borough Hall), CC0-1.0, <https://www.wikidata.org/wiki/Q929403>
+
+Dimensions:
+
+- `heightM`: 44 m (estimate): the cupola's tip above the street, proportioned by eye (Wikidata Q929403 lists no height; no PD/CC0 figure found)
+- `block`: 40 × 26 m (estimate): the main block's plan (the S07a kit's stylised footprint)
+- `wallM`: 17 m (estimate): the main cornice above the street: a tall raised basement and two storeys
+- `basementM`: 4.5 m (estimate): the raised basement, drawn as a darker rusticated band; the portico floor stands at its top
+- `atticM`: 1.2 m (estimate): the parapet over the cornice
+- `roofM`: 2.5 m (estimate): the low hipped roof
+- `storeys`: 2 (estimate): window storeys over the raised basement
+- `portico`: 22 × 6 m (estimate): the Greek Revival front portico (the S07a kit's stylised plan)
+- `porticoM`: 15 m (estimate): the portico's entablature top above the street
+- `pedimentM`: 5 m (estimate): the pediment's rise over the entablature
+- `porticoColumns`: 6 (estimate): columns across the portico front (hexastyle)
+- `stepsM`: 8 m (estimate): how far the tall flight of front steps runs out ahead of the portico
+- `cupolaBaseWidthM`: 10 m (estimate): the cupola's square lower stage across (drawn plain: no dial or text)
+- `cupolaBaseM`: 5 m (estimate): the square lower stage's height
+- `cupolaDrumDiameterM`: 8 m (estimate): the colonnaded drum across
+- `cupolaDrumM`: 8 m (estimate): the colonnaded drum's height
+- `cupolaDomeM`: 4.5 m (estimate): the dome's rise over the drum
+- `lanternM`: 3 m (estimate): the lantern on the dome
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.8, widths ×1.35. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 so the hall and its cupola read at the 3,000-4,500 m game camera; the plan x1.35, the most that fits the frame's exclusion (60 x 58 m) with the portico and steps.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1676 triangles, 27980 bytes (`public/landmarks/brooklyn-borough-hall/lod0.glb`)
+- L1: 672 triangles, 13164 bytes (`public/landmarks/brooklyn-borough-hall/lod1.glb`)
+- L2: 280 triangles, 7580 bytes (`public/landmarks/brooklyn-borough-hall/lod2.glb`)
+- L3: 108 triangles, 4796 bytes (`public/landmarks/brooklyn-borough-hall/lod3.glb`)
+
 ### brooklyn-bridge
 
 Retrieved 2026-10-07. Sources:
@@ -162,9 +200,9 @@ Game scale: heights ×1.8, widths ×1.25. Game scale (orchestrator decision 2026
 
 Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
 
-- L0: 3350 triangles, 50116 bytes (`public/landmarks/city-hall/lod0.glb`)
+- L0: 3350 triangles, 50124 bytes (`public/landmarks/city-hall/lod0.glb`)
 - L1: 1186 triangles, 20048 bytes (`public/landmarks/city-hall/lod1.glb`)
-- L2: 386 triangles, 9740 bytes (`public/landmarks/city-hall/lod2.glb`)
+- L2: 386 triangles, 9744 bytes (`public/landmarks/city-hall/lod2.glb`)
 - L3: 168 triangles, 5940 bytes (`public/landmarks/city-hall/lod3.glb`)
 
 ### deco-spire

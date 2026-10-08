@@ -202,7 +202,8 @@ def _portico(spec, p, flags, builder):
     x0, x1 = p["cx"] - p["w"] / 2, p["cx"] + p["w"] / 2
     back, front = p["back"], p["back"] + p["depth"]
     top = z0 + p["h"]
-    stylo = 1.2 * k
+    # The portico floor stands at the top of its steps (a raised portico on a tall flight).
+    stylo = max(1.2 * k, p["steps_h"])
     ent = 2.0 * k
     # Steps down to the street in front of the portico.
     steps = flags["steps"]
