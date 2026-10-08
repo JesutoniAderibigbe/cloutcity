@@ -32,18 +32,21 @@ import { useThree } from '@react-three/fiber'
 import { Detailed } from '@react-three/drei/core/Detailed'
 import {
   BufferAttribute,
+  CircleGeometry,
   Color,
   Mesh,
   MeshBasicMaterial,
   Vector3,
   type LOD,
+  type Material,
   type Texture,
 } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { CitySceneConfig } from '@/lib/data/schemas/scene'
 import { log } from '@/lib/log'
-import type { GeoLandmark } from '../geo/schema'
+import { LAY_FLAT_X } from '../geo/coords'
+import type { GeoLandmark, GeoPin } from '../geo/schema'
 import { DayNightContext, isNightGlowExcluded, useNightGlow } from '../lighting/nightGlow'
 import { createBuildingMaterial, createWindowMask } from '../buildings/materials'
 import { litWindowUv } from '../props/mergeChunk'
@@ -109,6 +112,13 @@ interface LandmarksProps {
   readonly names: Readonly<Record<string, string>>
   /** Pin lift per landmark id (places layer `liftM`): chips float at the same height. */
   readonly pinLifts: ReadonlyMap<string, number>
+  /**
+   * The game map's ring landmarks (S07d) by id: where each stands there and at what size, or
+   * null on Real NYC, where every landmark stands at its real frame.
+   */
+  readonly game: ReadonlyMap<string, GameSpot> | null
+  /** The city's water and park materials: a ring landmark's pond and island draw with them. */
+  readonly groundMaterials: { readonly water: Material; readonly park: Material }
   readonly handleRef: RefObject<LandmarksHandle | null>
 }
 
@@ -119,6 +129,36 @@ const _anchor = new Vector3()
 
 const isBridge = (entry: GeoLandmark) => entry.frame.base === 'water'
 
+/** A ring landmark on the game map: its pin's `gx`/`gy` and `game` (src/lib/world/placesLayer.ts). */
+export interface GameSpot extends NonNullable<GeoPin['game']> {
+  readonly x: number
+  readonly y: number
+}
+
+/** Where a landmark is drawn now, at what size, and where its chip floats. */
+interface Placement {
+  readonly x: number
+  readonly y: number
+  readonly scale: number
+  readonly liftM: number
+  readonly chipShiftM: number
+}
+
+/** The island under a pond's landmark, as a share of the pond's radius. */
+const ISLAND_SHARE = 0.72
+/** The pond and its island sit just over the land top, the island over the pond (metres). */
+const POND_RISE_M = 0.4
+const ISLAND_RISE_M = 0.8
+const POND_SEGMENTS = 40
+
+function pondGeometry(radius: number, y: number): CircleGeometry {
+  const geometry = new CircleGeometry(radius, POND_SEGMENTS)
+  geometry.rotateX(LAY_FLAT_X)
+  geometry.translate(0, y, 0)
+  geometry.deleteAttribute('uv')
+  return geometry
+}
+
 export function Landmarks({
   landmarks,
   palette,
@@ -128,8 +168,31 @@ export function Landmarks({
   active,
   names,
   pinLifts,
+  game,
+  groundMaterials,
   handleRef,
 }: LandmarksProps) {
+  const placeOf = useCallback(
+    (entry: GeoLandmark): Placement => {
+      const spot = game?.get(entry.id)
+      return spot === undefined
+        ? {
+            x: entry.frame.anchor.x,
+            y: entry.frame.anchor.y,
+            scale: 1,
+            liftM: pinLifts.get(entry.id) ?? 0,
+            chipShiftM: entry.chipShiftM ?? 0,
+          }
+        : {
+            x: spot.x,
+            y: spot.y,
+            scale: spot.scale,
+            liftM: spot.liftM,
+            chipShiftM: spot.chipShiftM ?? 0,
+          }
+    },
+    [game, pinLifts],
+  )
   const settings = useTierSettings()
   const tier = settings.tier
   const camera = useThree((state) => state.camera)
@@ -204,11 +267,11 @@ export function Landmarks({
       windows: config.landmarks.windows,
     }
     camera.getWorldPosition(_anchor)
-    const order = [...landmarks].sort(
-      (a, b) =>
-        Math.hypot(a.frame.anchor.x - _anchor.x, a.frame.anchor.y + _anchor.z) -
-        Math.hypot(b.frame.anchor.x - _anchor.x, b.frame.anchor.y + _anchor.z),
-    )
+    const away = (entry: GeoLandmark) => {
+      const at = placeOf(entry)
+      return Math.hypot(at.x - _anchor.x, at.y + _anchor.z)
+    }
+    const order = [...landmarks].sort((a, b) => away(a) - away(b))
     const step = createSlicer(config.buildings.buildSliceMs)
     void (async () => {
       for (const entry of order) {
@@ -247,6 +310,8 @@ export function Landmarks({
     return () => {
       cancelled = true
     }
+    // The order is only a priority: a map style switch moves the models without a rebuild.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, landmarks, tier, groundY, config, palette.landmarks, camera, invalidate])
 
   // Frees the previous tier's geometry once it is replaced (or on unmount).
@@ -272,13 +337,13 @@ export function Landmarks({
     const loaded = new Map<string, readonly GlbLevel[]>()
     const failures: string[] = []
     camera.getWorldPosition(_anchor)
+    const away = (entry: GeoLandmark) => {
+      const at = placeOf(entry)
+      return Math.hypot(at.x - _anchor.x, at.y + _anchor.z)
+    }
     const order = landmarks
       .filter((entry) => entry.glb !== undefined)
-      .sort(
-        (a, b) =>
-          Math.hypot(a.frame.anchor.x - _anchor.x, a.frame.anchor.y + _anchor.z) -
-          Math.hypot(b.frame.anchor.x - _anchor.x, b.frame.anchor.y + _anchor.z),
-      )
+      .sort((a, b) => away(a) - away(b))
     const step = createSlicer(config.buildings.buildSliceMs)
     const dimColor = new Color(palette.landmarks.dimmed)
     const publish = (done: boolean) => {
@@ -317,6 +382,8 @@ export function Landmarks({
       cancelled = true
       for (const levels of loaded.values()) for (const level of levels) level.geometry.dispose()
     }
+    // The order is only a priority: a map style switch moves the models without a reload.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     active,
     kitDone,
@@ -343,11 +410,12 @@ export function Landmarks({
     const list: NameChip[] = landmarks.flatMap((entry) => {
       const text = names[entry.id]
       if (text === undefined) return []
+      const at = placeOf(entry)
       return [
         {
-          x: entry.frame.anchor.x,
-          y: entry.frame.anchor.y - config.landmarkChips.offsetM + (entry.chipShiftM ?? 0),
-          height: groundY + (pinLifts.get(entry.id) ?? 0) + config.landmarkChips.liftM,
+          x: at.x,
+          y: at.y - config.landmarkChips.offsetM + at.chipShiftM,
+          height: groundY + at.liftM + config.landmarkChips.liftM,
           text,
         },
       ]
@@ -372,7 +440,7 @@ export function Landmarks({
     mesh.name = LANDMARK_CHIPS_NAME
     mesh.raycast = noRaycast
     return { mesh, texture, material, list, texts: list.map((chip) => chip.text) }
-  }, [built, landmarks, names, pinLifts, groundY, config.landmarkChips, palette.chip, unlitTint])
+  }, [built, landmarks, names, placeOf, groundY, config.landmarkChips, palette.chip, unlitTint])
   useEffect(
     () => () => {
       chips?.mesh.geometry.dispose()
@@ -427,7 +495,8 @@ export function Landmarks({
             const drawn = glbLevels ?? model?.levels
             const levels = drawn?.length ?? 0
             const source: LandmarkSource = glbLevels === undefined ? 'kit' : 'glb'
-            _anchor.set(entry.frame.anchor.x, groundY, -entry.frame.anchor.y).project(camera)
+            const at = placeOf(entry)
+            _anchor.set(at.x, groundY, -at.y).project(camera)
             const onScreen = _anchor.z >= -1 && _anchor.z <= 1
             return {
               id: entry.id,
@@ -442,7 +511,10 @@ export function Landmarks({
                 glbLevels === undefined
                   ? (model?.triangles ?? [])
                   : glbLevels.map((level) => level.triangles),
-              lod: landmarkLod(config.landmarks, tier, settings.lodDistanceScale, isBridge(entry)),
+              lod: ((lod) => ({
+                ...lod,
+                distances: lod.distances.map((distance) => distance * at.scale),
+              }))(landmarkLod(config.landmarks, tier, settings.lodDistanceScale, isBridge(entry))),
               screen: onScreen
                 ? {
                     x: rect.left + ((_anchor.x + 1) / 2) * rect.width,
@@ -477,14 +549,64 @@ export function Landmarks({
     groundY,
     config.landmarks,
     settings,
+    placeOf,
   ])
+
+  // Ponds (S07d): a ring landmark set "on the water" stands on an island in a pond beside the
+  // cluster, drawn with the city's own water and park materials.
+  const ponds = useMemo(() => {
+    if (game === null) return []
+    return [...game.entries()].flatMap(([id, spot]) =>
+      spot.pondM === undefined
+        ? []
+        : [
+            {
+              id,
+              x: spot.x,
+              y: spot.y,
+              water: pondGeometry(spot.pondM, groundY + POND_RISE_M),
+              island: pondGeometry(spot.pondM * ISLAND_SHARE, groundY + ISLAND_RISE_M),
+            },
+          ],
+    )
+  }, [game, groundY])
+  useEffect(
+    () => () => {
+      for (const pond of ponds) {
+        pond.water.dispose()
+        pond.island.dispose()
+      }
+    },
+    [ponds],
+  )
 
   if (built === null) return null
   return (
     <group name="landmarks">
+      {ponds.map((pond) => (
+        <group
+          key={`pond-${pond.id}`}
+          name={`landmark-${pond.id}-pond`}
+          position={[pond.x, 0, -pond.y]}
+        >
+          <mesh geometry={pond.water} material={groundMaterials.water} raycast={noRaycast} />
+          <mesh
+            geometry={pond.island}
+            material={groundMaterials.park}
+            receiveShadow
+            raycast={noRaycast}
+          />
+        </group>
+      ))}
       {landmarks.map((entry) => {
         const lod = landmarkLod(config.landmarks, tier, settings.lodDistanceScale, isBridge(entry))
         const glbLevels = glbOf(entry.id)
+        // A ring landmark on the game map stands at its ring spot, scaled about the land top, so
+        // its base stays on the ground.
+        const at = placeOf(entry)
+        // A model drawn at `scale` looks at distance d as the full model does at d / scale, so
+        // its levels switch that much nearer; it still culls where a full-size one would.
+        const switches = lod.distances.map((distance) => distance * at.scale)
         if (glbLevels !== undefined) {
           // A teaser draws dimmed and flat, like its kit. A memorial shares the district
           // material and its program, but loaded with no lit uv (glbLitUv): every vertex samples
@@ -498,9 +620,10 @@ export function Landmarks({
                 else lods.current.set(entry.id, object)
               }}
               name={`landmark-${entry.id}`}
-              position={[entry.frame.anchor.x, 0, -entry.frame.anchor.y]}
+              position={[at.x, groundY * (1 - at.scale), -at.y]}
               rotation={[0, (-entry.frame.headingDeg * Math.PI) / 180, 0]}
-              distances={[...lod.distances.slice(0, glbLevels.length), lod.cullM]}
+              scale={at.scale}
+              distances={[...switches.slice(0, glbLevels.length), lod.cullM]}
               hysteresis={config.landmarks.hysteresis}
             >
               {[
@@ -533,8 +656,9 @@ export function Landmarks({
               else lods.current.set(model.id, object)
             }}
             name={`landmark-${model.id}`}
-            position={[entry.frame.anchor.x, 0, -entry.frame.anchor.y]}
-            distances={[...lod.distances.slice(0, model.levels.length), lod.cullM]}
+            position={[at.x, groundY * (1 - at.scale), -at.y]}
+            scale={at.scale}
+            distances={[...switches.slice(0, model.levels.length), lod.cullM]}
             hysteresis={config.landmarks.hysteresis}
           >
             {[

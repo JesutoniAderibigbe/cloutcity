@@ -191,8 +191,11 @@ export function buildPins(
   ]
   let venueLift = false
   let compact = false
+  // A ring landmark on the game map (S07d) floats over its model drawn there at its game scale.
+  const liftOf = (pin: GeoPin) =>
+    compact && pin.game !== undefined ? pin.game.liftM : (pin.liftM ?? 0)
   const baseY = (pin: GeoPin) =>
-    groundY + settings.liftM + (pin.kind === 'venue' && !venueLift ? 0 : (pin.liftM ?? 0))
+    groundY + settings.liftM + (pin.kind === 'venue' && !venueLift ? 0 : liftOf(pin))
 
   // White base colour: the instance colour carries each pin's style.
   const material = new MeshToonMaterial({ color: new Color(1, 1, 1), gradientMap })

@@ -1190,8 +1190,8 @@ export const PlotsConfigSchema = z.strictObject({
  * subway station, which stays at its station), else the point of the area that best trades
  * nearness to the nearest home (`pullToHome`) against nearness to the venues' own centre. Every
  * plot stays wholly inside its area, off parks, clear of the subway ribbons and landmark models,
- * and never overlaps another (the grid's gap between plots is the road). Homes, landmarks and
- * fixed venues never move. The server plans it (src/lib/world/compactLayout.ts) into the places
+ * and never overlaps another (the grid's gap between plots is the road). Homes and fixed venues
+ * never move; landmarks move only into the famous-places ring (`landmarkRing`, S07d). The server plans it (src/lib/world/compactLayout.ts) into the places
  * layer's `gx`/`gy`; the Real NYC style keeps every real position. Travel time, fares and
  * distances always use the real positions.
  */
@@ -1224,8 +1224,48 @@ export const CompactLayoutConfigSchema = z.strictObject({
   subwayClearM: z.number().nonnegative(),
   /** No plot corner (or centre) on a park, cemetery or other park-layer area. */
   avoidParks: z.boolean(),
+  /**
+   * The famous-places ring (S07d): on the game map, these landmarks stand around one home's
+   * cluster (src/lib/world/landmarkRing.ts), so the default view shows them beside the venues,
+   * the way a game map shows its sights. Each goes the nearest fitting spot out from the
+   * cluster's centre along its bearing (swept either side by `sweepDeg`): wholly on the home's
+   * borough, off parks, clear of every plot, subway ribbon and other landmark. Real NYC keeps
+   * the real positions, and travel always uses them.
+   */
+  landmarkRing: z
+    .strictObject({
+      /** The home (data/homes/homes.json) whose cluster the ring surrounds: the start home. */
+      aroundHome: MODEL_ID,
+      /** The models' size on the game map (scaled about the land top), unless a landmark sets its own. */
+      scale: z.number().gt(0).max(1),
+      /** Clear ground kept between a landmark's footprint and a plot or another landmark. */
+      gapM: z.number().nonnegative(),
+      /** How far out from the centre the search runs, and its step. */
+      maxM: metres,
+      stepM: metres,
+      /** The bearing is swept this far either side, in `sweepStepDeg` steps, nearest first. */
+      sweepDeg: z.number().min(0).max(180),
+      sweepStepDeg: z.number().gt(0).max(90),
+      landmarks: z
+        .array(
+          z.strictObject({
+            id: MODEL_ID,
+            /** Clockwise from north (0 north, 90 east): which side of the cluster it stands on. */
+            bearingDeg: z.number().min(0).lt(360),
+            scale: z.number().gt(0).max(1).optional(),
+            /**
+             * It stands on an island in a pond of this radius (the harbour's statue, set "on the
+             * water" beside the cluster). The pond is its footprint.
+             */
+            pondM: metres.optional(),
+          }),
+        )
+        .min(1),
+    })
+    .optional(),
 })
 export type CompactLayoutConfig = z.infer<typeof CompactLayoutConfigSchema>
+export type LandmarkRingConfig = NonNullable<CompactLayoutConfig['landmarkRing']>
 
 export const AREA_KINDS = ['water', 'neighborhood'] as const
 

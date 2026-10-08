@@ -12,7 +12,15 @@
  */
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { Color, Group, InstancedMesh, Mesh, MeshBasicMaterial, type Texture } from 'three'
+import {
+  Color,
+  Group,
+  InstancedMesh,
+  Mesh,
+  MeshBasicMaterial,
+  type Material,
+  type Texture,
+} from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
 import type { CitySceneConfig } from '@/lib/data/schemas/scene'
@@ -54,6 +62,12 @@ export interface CityObjects {
   readonly boroughs: readonly BoroughView[]
   /** The shared toon ramp: district buildings and landmarks shade with the same steps. */
   readonly gradientMap: Texture
+  /**
+   * The harbour's and the parks' materials: a ring landmark's pond and island (S07d) draw with
+   * them (receiving shadows as the water and parks do), so they compile no program of their own
+   * and the pond follows the day/night water colour.
+   */
+  readonly groundMaterials: { readonly water: Material; readonly park: Material }
   /** Boroughs drawn as "expanding soon" land. */
   readonly dimmed: ReadonlySet<BoroughId>
   /** Rescales station markers and pins and toggles line letters for a camera distance. */
@@ -221,6 +235,7 @@ export async function buildCity(
     pins,
     boroughs,
     gradientMap: materials.gradientMap,
+    groundMaterials: { water: materials.water, park: materials.park },
     dimmed,
     setOutlines(visible) {
       if (casing !== null) casing.visible = visible

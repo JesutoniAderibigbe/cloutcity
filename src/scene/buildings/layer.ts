@@ -120,7 +120,11 @@ export interface BuildingsLayerOptions {
    * masses and fill blocks keep clear of every plot; the plots themselves load lazily.
    */
   readonly plots?: {
-    readonly pins: readonly (Omit<PlotPlace, 'kind'> & { readonly kind: string })[]
+    readonly pins: readonly (Omit<PlotPlace, 'kind'> & {
+      readonly kind: string
+      /** A ring landmark on the game map (S07d): masses and blocks clear its footprint too. */
+      readonly game?: { readonly clearM: number }
+    })[]
     readonly mask: WindowMask | null
     readonly cacheMaxEntries: number
   }
@@ -242,10 +246,15 @@ export function createBuildingsLayer(input: BuildingsLayerOptions): BuildingsLay
   const clearings =
     options.plots === undefined
       ? []
-      : plotClearings(
-          planPlots(plotPlaces(options.plots.pins, homePoints()), plotsJson as PlotsConfig),
-          plotsJson as PlotsConfig,
-        )
+      : [
+          ...plotClearings(
+            planPlots(plotPlaces(options.plots.pins, homePoints()), plotsJson as PlotsConfig),
+            plotsJson as PlotsConfig,
+          ),
+          ...options.plots.pins.flatMap((pin) =>
+            pin.game === undefined ? [] : [{ x: pin.x, y: pin.y, half: pin.game.clearM }],
+          ),
+        ]
   let plots: PlotsLayer | null = null
 
   const ranges = () => drawDistances(options.config, scale)

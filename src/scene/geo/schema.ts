@@ -146,6 +146,16 @@ export const PlacesMiniSchema = z.strictObject({
       /** Where a venue stands on the game map style (S04n); omitted means its real point. */
       gx: z.optional(metre),
       gy: z.optional(metre),
+      /** A ring landmark on the game map (S07d): its model's size, lift, clearing, pond, chip. */
+      game: z.optional(
+        z.strictObject({
+          scale: z.number().check(z.gt(0), z.lte(1)),
+          liftM: z.number().check(z.gte(0)),
+          clearM: z.number().check(z.gt(0)),
+          pondM: z.optional(z.number().check(z.gt(0))),
+          chipShiftM: z.optional(z.number()),
+        }),
+      ),
     }),
   ),
   boroughs: listOf(

@@ -42,7 +42,7 @@ import { buildCity, City, type CityObjects } from './City'
 import { landTopY } from './geo/buildLand'
 import type { GeoLoadFailure } from './geo/load'
 import { safeParseGeoBase } from './geo/schema'
-import { Landmarks, type LandmarksHandle } from './landmarks/Landmarks'
+import { Landmarks, type GameSpot, type LandmarksHandle } from './landmarks/Landmarks'
 import { ReleaseProgramsOnShadowChange } from './quality/releasePrograms'
 import { TierMonitor } from './quality/TierMonitor'
 import { TierSettingsContext, type ActiveTierSettings } from './quality/tierSettings'
@@ -326,6 +326,17 @@ function CityScene3D({
   useLayoutEffect(() => {
     if (built !== null && !(built instanceof Error)) built.pins.setCompact(compact)
   }, [built, compact])
+  // The famous-places ring (S07d): on the game map these landmarks stand around the start
+  // cluster at their pins' game points, at their game scale.
+  const landmarkGame = useMemo(() => {
+    if (!compact || pins === null) return null
+    const spots = new Map<string, GameSpot>()
+    for (const pin of pins) {
+      if (pin.game === undefined || pin.gx === undefined || pin.gy === undefined) continue
+      spots.set(pin.id, { ...pin.game, x: pin.gx, y: pin.gy })
+    }
+    return spots
+  }, [compact, pins])
   // The townsfolk (S04o) hang out at the place pins where this style draws them.
   const venues = useMemo(
     () =>
@@ -436,6 +447,8 @@ function CityScene3D({
                 active={cityReady}
                 names={landmarkNames}
                 pinLifts={pinLifts}
+                game={landmarkGame}
+                groundMaterials={built.groundMaterials}
                 handleRef={landmarksRef}
               />
               {cityReady ? (

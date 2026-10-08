@@ -9,5 +9,24 @@
   "realBias": 0.25,
   "landmarkClearM": 170,
   "subwayClearM": 48,
-  "avoidParks": true
+  "avoidParks": true,
+  "landmarkRing": {
+    "aroundHome": "queens-room",
+    "scale": 0.6,
+    "gapM": 25,
+    "maxM": 1500,
+    "stepM": 10,
+    "sweepDeg": 40,
+    "sweepStepDeg": 5,
+    "landmarks": [
+      { "id": "statue-of-liberty", "bearingDeg": 215, "pondM": 95 },
+      { "id": "deco-spire", "bearingDeg": 300 },
+      { "id": "times-square", "bearingDeg": 335 },
+      { "id": "midtown-terminal", "bearingDeg": 20 },
+      { "id": "queens-ballpark", "bearingDeg": 70 },
+      { "id": "queens-borough-hall", "bearingDeg": 115 },
+      { "id": "brooklyn-arena", "bearingDeg": 170 },
+      { "id": "wedge-building", "bearingDeg": 250 }
+    ]
+  }
 }
