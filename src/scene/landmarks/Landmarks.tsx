@@ -140,9 +140,10 @@ export function Landmarks({
   )
   useEffect(() => () => materials.dispose(), [materials])
 
-  // Blender models draw on a district material, built exactly as Buildings.tsx builds its own,
-  // so they share the program the buildings compiled (S07c: no new shader program). Their
-  // glowing vertices sample a lit window of the same mask.
+  // Blender models, and the kit's bodies, draw on a district material, built exactly as
+  // Buildings.tsx builds its own, so they share the program the buildings compiled (S07c: no new
+  // shader program). Glowing Blender vertices sample a lit window of the same mask; every other
+  // vertex (and the kit's bodies, which carry no uv) reads a wall texel.
   const windowsOn = config.buildings.windows[tier]
   const glbMaterial = useMemo(() => {
     const mask = windowsOn ? createWindowMask(config.buildings) : null
@@ -451,6 +452,14 @@ export function Landmarks({
         const lod = landmarkLod(config.landmarks, tier, settings.lodDistanceScale, isBridge(entry))
         const glbLevels = glbOf(entry.id)
         if (glbLevels !== undefined) {
+          // A teaser draws dimmed and flat, like its kit. A memorial never glows, so it never
+          // takes the window-masked material: the kit's plain body (vertex colours, no glow).
+          const glbMaterialOf =
+            entry.style === 'teaser'
+              ? materials.dimmed
+              : isNightGlowExcluded(entry.category)
+                ? materials.body
+                : glbMaterial.material
           return (
             <Detailed
               key={entry.id}
@@ -470,7 +479,7 @@ export function Landmarks({
                     key={level.level}
                     name={`landmark-${entry.id}-glb${level.level}`}
                     geometry={level.geometry}
-                    material={glbMaterial.material}
+                    material={glbMaterialOf}
                     raycast={noRaycast}
                   />
                 )),
@@ -503,7 +512,9 @@ export function Landmarks({
                 <group key={level.level} name={`landmark-${model.id}-l${level.level}`}>
                   <mesh
                     geometry={level.body}
-                    material={teaser ? set.dimmed : set.body}
+                    material={
+                      teaser ? set.dimmed : set === plainMaterials ? set.body : glbMaterial.material
+                    }
                     raycast={noRaycast}
                   />
                   {level.windows !== undefined && !teaser ? (
