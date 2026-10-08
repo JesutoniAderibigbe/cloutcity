@@ -17,6 +17,9 @@ import {
   placeName,
   type MapPlace,
 } from '@/lib/world/places'
+import { placeIcon, placeIconGroup } from '@/lib/world/placeIcons'
+import { placeGroupLabel } from '@/lib/world/placeIconCopy'
+import type { PlaceIconGroup } from '@/lib/data/schemas/content'
 import { openPlace, useOpenPlaceId } from '@/state/placeSheet'
 import {
   closePlacesPanel,
@@ -122,6 +125,29 @@ export function PlacesPanel() {
     </span>
   )
 
+  /**
+   * A row's visible text (S04k): the place's category icon, its name and the category under
+   * it. The button's accessible name (aria-label) stays the name and its lock reason, so the
+   * icon is decorative.
+   */
+  const rowText = (name: string, group: PlaceIconGroup) => (
+    <span className="flex min-w-0 items-center gap-2.5">
+      <span
+        aria-hidden="true"
+        data-place-icon={group}
+        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-canvas/70 text-base leading-none"
+      >
+        {placeIcon(group)}
+      </span>
+      <span className="min-w-0">
+        <span className="block leading-tight">{name}</span>
+        <span aria-hidden="true" className="block text-xs leading-tight font-medium text-muted">
+          {placeGroupLabel(group)}
+        </span>
+      </span>
+    </span>
+  )
+
   const placeButton = (place: MapPlace) => {
     const here = isAtPlace({ location }, place.id)
     return (
@@ -134,7 +160,7 @@ export function PlacesPanel() {
           onClick={() => pick(place)}
           className={`${BUTTON} flex items-center justify-between gap-2 bg-raised text-fg`}
         >
-          <span className="min-w-0">{placeName(place)}</span>
+          {rowText(placeName(place), placeIconGroup(place.category))}
           {here ? hereBadge : null}
         </button>
       </li>
@@ -158,7 +184,7 @@ export function PlacesPanel() {
           }}
           className={`${BUTTON} flex items-center justify-between gap-2 bg-raised text-fg`}
         >
-          <span className="min-w-0">{homeLabel}</span>
+          {rowText(homeLabel, 'home')}
           {atHome ? hereBadge : null}
         </button>
       </li>

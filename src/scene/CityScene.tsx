@@ -138,7 +138,6 @@ export function CityScene() {
         credits={copy('map.attribution.credits')}
         toggle={copy('map.attribution.toggle')}
         gridTemplateRows={overlayRows}
-        row={FREE_SCENE_GRID_ROW}
       />
     </div>
   )

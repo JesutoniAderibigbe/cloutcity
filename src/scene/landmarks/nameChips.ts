@@ -13,6 +13,9 @@ const FONT_STACK = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
 
 type ChipConfig = SceneConfig['landmarkChips']
 
+/** The chips mesh's name: pin labels (src/scene/pins/buildPinMarks.ts) keep clear of it. */
+export const LANDMARK_CHIPS_NAME = 'landmark-name-chips'
+
 export interface NameChip {
   /** Local metres of the chip's centre (x east, y north). */
   readonly x: number

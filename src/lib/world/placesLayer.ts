@@ -6,13 +6,18 @@
 import type { Borough } from '@/lib/data/schemas/content'
 import type { PinStyle } from '@/scene/geo/schema'
 import { landmarkPinLifts } from './landmarksLayer'
-import { boroughRenderState, boroughs, mapPlaces, type MapPlace } from './places'
+import { boroughRenderState, boroughs, mapPlaces, placeName, type MapPlace } from './places'
 
 export interface PlacePin {
   readonly id: string
   readonly kind: MapPlace['kind']
   readonly category: MapPlace['category']
   readonly borough: Borough
+  /**
+   * The place's display name from the server's copy (a generic label where the real name is
+   * trademarked), for the pin's label (S04k). Data in the geo body, so no copy ships in a chunk.
+   */
+  readonly name: string
   /** Local metres, rounded to whole metres like every other geo layer. */
   readonly x: number
   readonly y: number
@@ -62,6 +67,7 @@ export function buildPlacesLayer(): PlacesLayer {
       kind: place.kind,
       category: place.category,
       borough: place.borough,
+      name: placeName(place),
       x: Math.round(place.x),
       y: Math.round(place.y),
       style: pinStyle(place, render),

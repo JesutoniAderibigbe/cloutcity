@@ -15,6 +15,7 @@ import {
   NIGHT_GLOW_EXCLUDED,
   NIGHT_GLOW_PROGRAM_KEYS,
   createDayNightUniforms,
+  glslFloat,
   isNightGlowExcluded,
   nightGlowSource,
   patchNightGlow,
@@ -96,9 +97,11 @@ describe('patchNightGlow', () => {
     expect(m.vertexShader).toContain('vNightGlowUv = uv;')
     expect(m.fragmentShader).toContain('uniform sampler2D uNightGlowMask;')
     expect(m.fragmentShader).toContain(
-      'totalEmissiveRadiance += uNightGlowColor * texture( uNightGlowMask, vNightGlowUv ).r * uNightGlow;',
+      'totalEmissiveRadiance += uNightGlowColor * texture( uNightGlowMask, vNightGlowUv, NIGHT_GLOW_MASK_BIAS ).r * uNightGlow;',
     )
     expect(m.uniforms.uNightGlowMask?.value).toBe(mask)
+    // Without a bias the define falls back to 0 (TUNE-16).
+    expect(m.fragmentShader).toContain('#define NIGHT_GLOW_MASK_BIAS 0.0')
 
     const whole = new MeshToonMaterial()
     patchNightGlow(whole, 'uniform', { uniform: uNightGlow })
@@ -171,5 +174,13 @@ describe('patchNightGlow', () => {
     expect(uniforms.uNightGlow.value).toBe(0)
     expect(uniforms.unlitTint.value.getHex()).toBe(0xffffff)
     expect(createDayNightUniforms().uNightGlow).not.toBe(uniforms.uNightGlow)
+  })
+})
+
+describe('glslFloat', () => {
+  it('writes a float literal GLSL accepts', () => {
+    expect(glslFloat(1)).toBe('1.0')
+    expect(glslFloat(1.25)).toBe('1.25')
+    expect(glslFloat(0)).toBe('0.0')
   })
 })

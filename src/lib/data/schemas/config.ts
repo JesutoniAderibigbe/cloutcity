@@ -409,7 +409,6 @@ export const ScenePaletteRefsSchema = z.strictObject({
    * item's variants (data/items/items.json, `colors`).
    */
   apartment: z.strictObject({
-    background: tokenRef,
     floor: tokenRef,
     wall: tokenRef,
     trim: tokenRef,

@@ -29,7 +29,12 @@ import type { ScenePalette } from '../types'
 import { buildLandmark, disposeLandmark, type BuiltLandmark } from './buildLandmark'
 import { landmarkLod, type LandmarkLod } from './lod'
 import { createLandmarkMaterials } from './materials'
-import { buildNameChipGeometry, createNameAtlas, type NameChip } from './nameChips'
+import {
+  LANDMARK_CHIPS_NAME,
+  buildNameChipGeometry,
+  createNameAtlas,
+  type NameChip,
+} from './nameChips'
 import { landmarkSource, type LandmarkSource } from './source'
 
 /** One landmark as the e2e hook reads it (src/scene/testHooks.tsx). */
@@ -190,7 +195,7 @@ export function Landmarks({
       return [
         {
           x: entry.frame.anchor.x,
-          y: entry.frame.anchor.y - config.landmarkChips.offsetM,
+          y: entry.frame.anchor.y - config.landmarkChips.offsetM + (entry.chipShiftM ?? 0),
           height: groundY + (pinLifts.get(model.id) ?? 0) + config.landmarkChips.liftM,
           text,
         },
@@ -203,13 +208,17 @@ export function Landmarks({
       palette.chip.ink,
       config.landmarkChips,
     )
+    // Drawn over the buildings (UX-14): a chip sinking into Midtown's towers cannot be read. A
+    // depth setting is GL state, not a shader define: no new program.
     const material = new MeshBasicMaterial({
       map: texture,
       alphaTest: config.landmarkChips.alphaTest,
+      depthTest: false,
     })
     material.color = unlitTint
     const mesh = new Mesh(buildNameChipGeometry(list, config.landmarkChips), material)
-    mesh.name = 'landmark-name-chips'
+    mesh.renderOrder = 1
+    mesh.name = LANDMARK_CHIPS_NAME
     mesh.raycast = noRaycast
     return { mesh, texture, material, texts: list.map((chip) => chip.text) }
   }, [built, entries, names, pinLifts, groundY, config.landmarkChips, palette.chip, unlitTint])

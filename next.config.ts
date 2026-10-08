@@ -68,6 +68,12 @@ const nextConfig: NextConfig = {
         has: [{ type: 'query', key: 'v' }],
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
+      {
+        // Shop thumbnails (npm run thumbs) are named by their content's sha256, so a URL never
+        // changes: the browser keeps them. They are not precached (precacheGlobs).
+        source: '/thumbs/:file',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
     ]
   },
 }

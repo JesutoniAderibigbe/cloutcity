@@ -35,10 +35,13 @@ import {
   EventsFileSchema,
   HomesFileSchema,
   HomeInteriorsFileSchema,
+  ItemLooksFileSchema,
   NeighborhoodsFileSchema,
   ItemsFileSchema,
+  ItemThumbsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
+  PlaceIconsConfigSchema,
   PremiumFileSchema,
   VenuesFileSchema,
 } from './schemas/content'
@@ -46,7 +49,7 @@ import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './sche
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
 import { BlenderLockSchema, LandmarkMeasurementsSchema } from './schemas/landmarkBlender'
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
-import { SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
+import { PinMarksConfigSchema, SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
@@ -128,6 +131,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/offline.json': OfflineConfigSchema,
   'config/onboarding.json': OnboardingConfigSchema,
   'config/perf.json': PerfConfigSchema,
+  'config/pinMarks.json': PinMarksConfigSchema,
+  'places/icons.json': PlaceIconsConfigSchema,
   'config/profile.json': ProfileConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
   'config/props.json': StreetPropsConfigSchema,
@@ -150,6 +155,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'homes/interiors.json': HomeInteriorsFileSchema,
   'homes/neighborhoods.json': NeighborhoodsFileSchema,
   'items/items.json': ItemsFileSchema,
+  'items/looks.json': ItemLooksFileSchema,
+  'items/thumbs.derived.json': ItemThumbsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/frames.derived.json': LandmarkFramesFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
@@ -1050,6 +1057,9 @@ describe('cross-file references', () => {
     club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
     colors: items.flatMap((entry) => entry.decor?.variants.map((variant) => variant.nameKey) ?? []),
     housing: Object.values(homeInteriors).flatMap((home) => home.slots.map((slot) => slot.nameKey)),
+    categories: Object.values(
+      PlaceIconsConfigSchema.parse(readJson('places/icons.json')).groups,
+    ).map((group) => group.labelKey),
   }
 
   it('every copy key named by content exists in data/copy', () => {
@@ -1096,5 +1106,23 @@ describe('economy baseline (S12, read by S18c)', () => {
     const cash = { maxGainPerAction: -1, maxGainPerGameDay: 0, maxGainPerGameHour: 0 }
     expect(EconomyBaselineSchema.safeParse({ ...file, cash }).success).toBe(false)
     expect(EconomyBaselineSchema.safeParse({ ...file, extra: 1 }).success).toBe(false)
+  })
+})
+
+describe('shop thumbnails and looks (S04k)', () => {
+  const looks = ItemLooksFileSchema.parse(readJson('items/looks.json'))
+  const thumbs = ItemThumbsFileSchema.parse(readJson('items/thumbs.derived.json'))
+  const ids = items.map((item) => item.id).sort()
+
+  it('gives every item an icon, and names no unknown item', () => {
+    expect(Object.keys(looks.icons).sort()).toEqual(ids)
+  })
+
+  it('renders a thumbnail for every decor item with a model, each file present', () => {
+    const decor = (readJson('config/scene.json') as { models: { decor: object } }).models.decor
+    expect(Object.keys(thumbs).sort()).toEqual(Object.keys(decor).sort())
+    for (const url of Object.values(thumbs)) {
+      expect(statSync(join(DATA, '../public', url)).size).toBeGreaterThan(200)
+    }
   })
 })

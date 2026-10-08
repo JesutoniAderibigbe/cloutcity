@@ -522,6 +522,11 @@ export const SceneConfigSchema = z.strictObject({
      * vary within the tile.
      */
     windowTileCells: z.int().min(1).max(16),
+    /**
+     * Mip bias of the window mask (TUNE-16): above 0, a wall reads the mask's averaged mips
+     * sooner, so distant facades glow evenly instead of showing one-pixel dotted windows.
+     */
+    windowMipBias: z.number().min(0).max(4),
     /** The window pattern costs fragment work: off where the tier has no headroom. */
     windows: z.strictObject({ low: z.boolean(), mid: z.boolean(), high: z.boolean() }),
     /** Per-building spread of the facade's brightness (0.12 = plus or minus 12%). */
@@ -616,6 +621,35 @@ export const SceneConfigSchema = z.strictObject({
   }),
 })
 export type SceneConfig = z.infer<typeof SceneConfigSchema>
+
+/**
+ * data/config/pinMarks.json. Pin marks (S04k, src/scene/pins/buildPinMarks.ts): a category icon on every playable pin's head
+ * (`iconPx` CSS pixels across, whatever the zoom) and a short name label over the nearest
+ * venues and unmodelled landmarks (at most `maxLabels`, within `labelRadiusM` of the camera
+ * target, while the camera is within `labelMaxDistanceM`). A label never covers an icon, a
+ * landmark name chip or another label. All quads in one mesh and one runtime atlas, drawn with
+ * the name chips' unlit material settings, so they add no shader program.
+ */
+export const PinMarksConfigSchema = z.strictObject({
+  iconPx: metres,
+  labelPx: metres,
+  labelGapPx: z.number().nonnegative(),
+  iconCellPx: z.int().min(16).max(256),
+  labelCellWidthPx: z.int().min(32).max(1024),
+  labelCellHeightPx: z.int().min(16).max(256),
+  atlasColumns: z.int().min(1).max(16),
+  labelMaxChars: z.int().min(4).max(40),
+  labelMaxDistanceM: metres,
+  labelRadiusM: metres,
+  maxLabels: z.int().min(0).max(32),
+  /** How far, in pin heights, the icon sits in front of the pin's head (toward the camera). */
+  pullToCamera: z.number().min(0).max(2),
+  iconFontScale: ratio.max(1),
+  labelFontScale: ratio.max(1),
+  ringWidth: ratio.max(0.3),
+  alphaTest: z.number().gt(0).lt(1),
+})
+export type PinMarksConfig = z.infer<typeof PinMarksConfigSchema>
 
 /**
  * What the city's 3D chunk reads: the scene config without the blocks other code reads itself

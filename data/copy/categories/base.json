@@ -1,0 +1,19 @@
+{
+  "strings": {
+    "categories.job": "Job",
+    "categories.food": "Food",
+    "categories.coffee": "Coffee",
+    "categories.nightlife": "Nightlife",
+    "categories.shop": "Shop",
+    "categories.gym": "Gym",
+    "categories.park": "Park",
+    "categories.transit": "Station",
+    "categories.landmark": "Landmark",
+    "categories.skyline": "Skyline",
+    "categories.bridge": "Bridge",
+    "categories.stadium": "Stadium",
+    "categories.neighborhood": "Neighborhood",
+    "categories.memorial": "Memorial",
+    "categories.home": "Home"
+  }
+}

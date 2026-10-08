@@ -535,6 +535,59 @@ export const EventLocationCategorySchema = z.union([
 /** Every place category the engine can be told the player is at, memorials included. */
 export type LocationCategory = Landmark['category'] | Venue['type']
 
+/**
+ * data/places/icons.json (S04k): each place category's icon group, drawn on its map pin and
+ * beside it in the Places list. Every venue type and landmark category maps to a group; `home`
+ * is the player's home row. The icon is decorative (emoji, aria-hidden); the group's label is a
+ * copy key, checked in src/lib/data/data.test.ts.
+ */
+export const PLACE_ICON_GROUPS = [
+  'job',
+  'food',
+  'coffee',
+  'nightlife',
+  'shop',
+  'gym',
+  'park',
+  'transit',
+  'landmark',
+  'skyline',
+  'bridge',
+  'stadium',
+  'neighborhood',
+  'memorial',
+  'home',
+] as const
+export type PlaceIconGroup = (typeof PLACE_ICON_GROUPS)[number]
+
+/**
+ * data/items/looks.json (S04k): the shop's thumbnail size for the offline renders (npm run
+ * thumbs) and each item's icon, shown when it has no rendered thumbnail. Every item has one
+ * (checked in src/lib/data/data.test.ts).
+ */
+export const ItemLooksFileSchema = z.strictObject({
+  thumbs: z.strictObject({ sizePx: z.int().min(32).max(512) }),
+  icons: z.record(IdSchema, z.string().min(1).max(16)),
+})
+
+/** data/items/thumbs.derived.json (npm run thumbs): item id → content-named thumbnail URL. */
+export const ItemThumbsFileSchema = z.record(
+  IdSchema,
+  z.string().regex(/^\/thumbs\/[a-z0-9-]+\.[0-9a-f]{8}\.webp$/),
+)
+
+export const PlaceIconsConfigSchema = z.strictObject({
+  groups: z.record(
+    z.enum(PLACE_ICON_GROUPS),
+    z.strictObject({ icon: z.string().min(1).max(16), labelKey: z.string().min(1) }),
+  ),
+  categories: z.record(
+    z.union([z.enum(VENUE_TYPES), z.enum(LANDMARK_CATEGORIES)]),
+    z.enum(PLACE_ICON_GROUPS),
+  ),
+})
+export type PlaceIconsConfig = z.infer<typeof PlaceIconsConfigSchema>
+
 const statPoints = z.int().nonnegative()
 
 /** An inclusive range; at least one bound, and min <= max. */

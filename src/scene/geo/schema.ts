@@ -135,6 +135,7 @@ export const PlacesMiniSchema = z.strictObject({
       kind: z.enum(PIN_KINDS),
       category: id,
       borough,
+      name: z.string(),
       x: metre,
       y: metre,
       style: z.enum(PIN_STYLES),
@@ -190,6 +191,7 @@ export const LandmarksMiniSchema = z.strictObject({
           }),
           pinLiftM: z.number().check(z.gt(0)),
         }),
+        chipShiftM: z.optional(z.number()),
       })
       .check(
         z.refine(
@@ -209,6 +211,8 @@ export interface GeoLandmark {
   readonly style: 'normal' | 'teaser'
   readonly model: LandmarkModel
   readonly frame: LandmarkFrame
+  /** Name chip shift north (+) or south (-) that clears a neighbour's chip (UX-14). */
+  readonly chipShiftM?: number
 }
 
 /** The body of GET /geo/base (src/app/geo/base/route.ts). */

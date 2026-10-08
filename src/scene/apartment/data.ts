@@ -50,7 +50,6 @@ export interface RoomInterior {
 
 /** The room's colours as hex, resolved from theme.json `scene.apartment` world tokens. */
 export interface RoomPalette {
-  readonly background: string
   readonly floor: string
   readonly wall: string
   readonly trim: string
@@ -155,7 +154,6 @@ export const dayNightConfig: { readonly room: SceneConfig['dayNight']['room'] } 
 const refs = themeJson.scene.apartment
 
 export const roomPalette: RoomPalette = {
-  background: worldHex(refs.background),
   floor: worldHex(refs.floor),
   wall: worldHex(refs.wall),
   trim: worldHex(refs.trim),

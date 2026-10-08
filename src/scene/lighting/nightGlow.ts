@@ -12,7 +12,9 @@
  * `customProgramCacheKey`, so all materials of a source share one compiled program:
  * - `'attribute'`: the `_EMISSIVE` vertex attribute (vec3, linear RGB; zero where nothing glows).
  *   GLTFLoader lowercases custom attribute names, so the geometry attribute is `_emissive`.
- * - `'mask'`: the red channel of a window mask texture (NoColorSpace), read with the mesh's `uv`.
+ * - `'mask'`: the red channel of a window mask texture (NoColorSpace), read with the mesh's `uv`
+ *   and a mip bias (`maskBias`, TUNE-16): far walls read the mask's averaged mips, an even glow,
+ *   before single lit windows shrink to the dotted moiré of one or two pixels each.
  * - `'uniform'`: the whole material glows.
  *
  * Memorials never glow (CLAUDE.md: no effects at memorials), and neither does a muted material.
@@ -80,6 +82,8 @@ export interface NightGlowOptions {
   readonly color?: ColorRepresentation
   /** The window mask; required for `'mask'`. */
   readonly mask?: Texture
+  /** Mip bias for the mask (a shader define: one value per program, scene.json buildings). */
+  readonly maskBias?: number
   /** A muted material (a muted pin) never glows. */
   readonly muted?: boolean
   /** Landmark category; one in NIGHT_GLOW_EXCLUDED never glows. */
@@ -101,8 +105,9 @@ const SHADER_TEXT: Readonly<
   mask: {
     vertexHead: 'varying vec2 vNightGlowUv;',
     vertexBody: 'vNightGlowUv = uv;',
-    fragmentHead: 'varying vec2 vNightGlowUv;\nuniform sampler2D uNightGlowMask;',
-    mask: 'texture( uNightGlowMask, vNightGlowUv ).r',
+    fragmentHead:
+      'varying vec2 vNightGlowUv;\nuniform sampler2D uNightGlowMask;\n#ifndef NIGHT_GLOW_MASK_BIAS\n#define NIGHT_GLOW_MASK_BIAS 0.0\n#endif',
+    mask: 'texture( uNightGlowMask, vNightGlowUv, NIGHT_GLOW_MASK_BIAS ).r',
   },
   uniform: { vertexHead: '', vertexBody: '', fragmentHead: '', mask: '1.0' },
 }
@@ -138,6 +143,12 @@ export function injectNightGlow(
     `totalEmissiveRadiance += uNightGlowColor * ${text.mask} * ${NIGHT_GLOW_UNIFORM};`,
   )
   return { vertexShader, fragmentShader }
+}
+
+/** A number as a GLSL float literal (`1` → `1.0`): a define's text is pasted into the shader. */
+export function glslFloat(value: number): string {
+  const text = String(value)
+  return /[.e]/.test(text) ? text : `${text}.0`
 }
 
 const patched = new WeakMap<Material, NightGlowSource>()
@@ -190,6 +201,9 @@ export function patchNightGlow(
   const key = NIGHT_GLOW_PROGRAM_KEYS[source]
   material.customProgramCacheKey =
     previousKey === undefined ? () => key : () => `${previousKey()}|${key}`
+  if (options.maskBias !== undefined) {
+    material.defines = { ...material.defines, NIGHT_GLOW_MASK_BIAS: glslFloat(options.maskBias) }
+  }
   material.needsUpdate = true
   patched.set(material, source)
   return true

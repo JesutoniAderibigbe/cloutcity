@@ -18,7 +18,7 @@
  * browser restores the context, so the canvas is never remounted; this only reports the loss
  * and, after the first frame drawn again, the recovery.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { addAfterEffect, Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
@@ -46,8 +46,16 @@ import { DayNightRig } from './lighting/DayNightRig'
 import { createDayNightUniforms } from './lighting/nightGlow'
 import { useDayNightLighting } from './lighting/useDayNightLighting'
 import { TestHooks } from './testHooks'
-import { TravelAnimator } from './travel/TravelAnimator'
 import type { SceneProps } from './types'
+
+// Pin icons and labels (S04k): their own chunk, after the city is playable.
+const PinMarks = lazy(() => import('./pins/PinMarks'))
+// The trip animation (S08) is never needed before the player picks a trip, so it loads after the
+// city is playable (S04k, PERF-6). Until it has loaded a trip cuts to its arrival, as it does
+// while the apartment has the screen (setTravelAnimator).
+const TravelAnimator = lazy(() =>
+  import('./travel/TravelAnimator').then((module) => ({ default: module.TravelAnimator })),
+)
 
 perfMark('cc:3d:chunk')
 
@@ -349,6 +357,12 @@ function CityScene3D({
               pinLifts={pinLifts}
               handleRef={landmarksRef}
             />
+            {cityReady ? (
+              // No fallback: the pins draw as before until the marks arrive.
+              <Suspense>
+                <PinMarks pins={built.pins} palette={palette} />
+              </Suspense>
+            ) : null}
             <PlayerAvatar
               at={rest}
               groupRef={avatarRef}
@@ -364,17 +378,21 @@ function CityScene3D({
                 placedRef.current = true
               }}
             />
-            <TravelAnimator
-              avatarRef={avatarRef}
-              groundY={groundY}
-              palette={palette.travel}
-              gradientMap={built.gradientMap}
-              config={config.travel}
-              avatar={config.avatar}
-              animation={travelAnimation}
-              enabled={cityReady && !hidden}
-              trail={tier !== 'low' || config.travel.trailOnLow}
-            />
+            {cityReady ? (
+              <Suspense>
+                <TravelAnimator
+                  avatarRef={avatarRef}
+                  groundY={groundY}
+                  palette={palette.travel}
+                  gradientMap={built.gradientMap}
+                  config={config.travel}
+                  avatar={config.avatar}
+                  animation={travelAnimation}
+                  enabled={!hidden}
+                  trail={tier !== 'low' || config.travel.trailOnLow}
+                />
+              </Suspense>
+            ) : null}
             <PlayableMark readyRef={readyRef} placedRef={placedRef} />
             {/* The apartment has the screen: nothing to measure, no frames forced. */}
             <TierMonitor stepDown={quality.stepDown} paused={hidden} />
