@@ -229,6 +229,8 @@ export interface MarksView {
   readonly headY: (pin: GeoPin) => number
   /** Landmark name chips to keep labels off, or null while they are hidden. */
   readonly chips: Mesh | null
+  /** Canvas pixels from the top that the HUD covers: no label is placed above this line. */
+  readonly topInsetPx: number
 }
 
 export interface PinMarksObjects {
@@ -400,6 +402,9 @@ export function buildPinMarks(
         const lh = settings.labelPx
         const lw = lh * labelAspect
         const bottom = p.y - r - settings.labelGapPx
+        // Whole on screen and below the HUD, or not at all: a clipped name reads as a glitch.
+        if (p.x - lw / 2 < 0 || p.x + lw / 2 > width || bottom - lh < view.topInsetPx) return
+        if (bottom > height) return
         candidates.push({
           index: i,
           distance: ground,

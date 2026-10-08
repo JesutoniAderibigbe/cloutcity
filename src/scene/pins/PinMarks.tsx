@@ -23,6 +23,17 @@ import { buildPinMarks, CHIPS_MESH_NAME } from './buildPinMarks'
 
 const marksConfig = pinMarksJson as PinMarksConfig
 
+/**
+ * How far the free scene row (the scene's status row, which repeats the overlay grid) starts
+ * below the canvas top: the HUD covers everything above it. Read from the DOM by attribute, not
+ * through src/scene/types.ts, which would pull that module into this chunk.
+ */
+function topInset(canvas: HTMLCanvasElement): number {
+  const row = document.querySelector('[data-free-scene-row]')
+  if (row === null) return 0
+  return Math.max(0, row.getBoundingClientRect().top - canvas.getBoundingClientRect().top)
+}
+
 interface OrbitLike {
   readonly target: Vector3
   getDistance(): number
@@ -41,7 +52,7 @@ export default function PinMarks({ pins, palette }: PinMarksProps) {
     return () => marks.dispose()
   }, [marks, invalidate])
 
-  useFrame(({ camera, controls, scene, size }) => {
+  useFrame(({ camera, controls, gl, scene, size }) => {
     // The camera rig's MapControls, read by shape: importing the class here would split it out
     // of the 3D chunk into a chunk of its own.
     const rig = controls as Partial<OrbitLike> | null
@@ -57,6 +68,7 @@ export default function PinMarks({ pins, palette }: PinMarksProps) {
       pinHeight: pins.height(),
       headY: pins.headY,
       chips: chips instanceof Mesh ? chips : null,
+      topInsetPx: topInset(gl.domElement),
     })
   })
 
