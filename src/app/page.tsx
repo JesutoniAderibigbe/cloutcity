@@ -7,6 +7,7 @@ import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
 import { CreatorMount } from '@/components/creator/CreatorMount'
 import { CreatorOfferMount } from '@/components/creator/CreatorOfferMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
+import { CleanScreenExit } from '@/components/nav/CleanScreenExit'
 import { OfflineSupportMount } from '@/components/offline/OfflineSupportMount'
 import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
@@ -47,7 +48,12 @@ export default function HomePage() {
               <SaveProgressMount />
             </>
           ),
-          hud: <HudFrame places={<PlacesButton />} />,
+          hud: (
+            <>
+              <HudFrame places={<PlacesButton />} />
+              <CleanScreenExit />
+            </>
+          ),
           toast: (
             <>
               <LevelUpToastMount />

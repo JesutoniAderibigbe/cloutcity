@@ -70,6 +70,13 @@ export const HUD_COMPACT_HEIGHT_VAR = '--overlay-hud-compact-h'
 export const BANNER_MIN_VAR = '--overlay-banner-min'
 export const BANNER_HEIGHT_VAR = '--overlay-banner-h'
 
+/**
+ * The sheet row's ceiling (S58): `sheetMaxHeightVh` normally; a tall sheet (the phone, the store
+ * directory, `data-sheet-tall`) raises it in globals.css with `:has()`, so the row takes the free
+ * scene area down to its minimum while it shows. No JS measures anything.
+ */
+export const SHEET_MAX_VAR = '--overlay-sheet-max-h'
+
 /** The HUD track: the CSS variable, falling back to the two-row height outside the layout. */
 export function hudTrack(config: OverlayLayoutConfig): string {
   return `var(${HUD_HEIGHT_VAR}, ${config.hudHeightPx}px)`
@@ -106,7 +113,7 @@ export function overlayGridTracks(config: OverlayLayoutConfig): readonly string[
     hudTrack(config),
     `minmax(${config.freeSceneMinHeightPx}px, 1fr)`,
     `minmax(0, ${config.toastHeightPx}px)`,
-    `minmax(0, ${config.sheetMaxHeightVh}dvh)`,
+    `minmax(0, var(${SHEET_MAX_VAR}, ${config.sheetMaxHeightVh}dvh))`,
     `calc(${config.tabBarHeightPx}px + env(safe-area-inset-bottom, 0px))`,
   ]
 }
