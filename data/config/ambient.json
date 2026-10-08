@@ -33,8 +33,8 @@
   "vehicles": {
     "models": {
       "low": ["sedan-ambient"],
-      "mid": ["taxi-ambient", "sedan-ambient"],
-      "high": ["taxi-ambient", "sedan-ambient", "hatchback-ambient"]
+      "mid": ["taxi-ambient", "sedan-ambient", "bus-ambient"],
+      "high": ["taxi-ambient", "sedan-ambient", "hatchback-ambient", "bus-ambient"]
     },
     "taxiShare": 0.35,
     "busShare": 0.25,
@@ -103,7 +103,7 @@
     },
     "bobM": 0.06,
     "bobHz": 1.8,
-    "memorialMarginM": 120,
+    "lookOnlyMarginM": 120,
     "palette": {
       "skin": [
         "#f3d3b9",
@@ -141,10 +141,21 @@
       "mid": 3,
       "high": 4
     },
+    "carLengthM": 18,
+    "carWidthM": 3,
+    "carHeightM": 3.5,
     "gapRatio": 0.08,
     "stationSnapM": 40,
     "minStopGapM": 150,
-    "memorialMarginM": 300,
-    "memorialFadeM": 60
+    "lookOnlyMarginM": 300,
+    "lookOnlyFadeM": 60
+  },
+  "vehicleKit": {
+    "light": {
+      "warmMinRed": 0.5,
+      "warmMaxBlueShare": 0.6,
+      "tailMinRed": 0.3,
+      "tailMaxGreenShare": 0.25
+    }
   }
 }

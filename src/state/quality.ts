@@ -45,6 +45,16 @@ export interface QualityState extends PersistedQuality {
   /** Runtime step-downs this session. */
   readonly steps: number
   readonly lastStepAtMs: number | null
+  /** Living city density step-downs this session (S04l); kept across a tier change. */
+  readonly ambientSteps: number
+  /** How many density steps the living city allows (0 until it has loaded). */
+  readonly ambientStepsMax: number
+  /** The FPS floor while the living city alone keeps the map animating, or null. */
+  readonly ambientBelowFps: number | null
+  /** The living city registers its limits once loaded (and 0 / null when it goes). */
+  setAmbient(stepsMax: number, belowFps: number | null): void
+  /** Records one density step-down (shares the tier step's cooldown). */
+  recordAmbientStep(nowMs: number): void
   /** Records the picker's result. Step-downs are kept: they describe this session's frame rate. */
   setDetected(pick: TierPick, dataSaver: boolean): void
   /** The settings choice; null returns to automatic. No change, no write. */
@@ -83,6 +93,12 @@ export function createQualityStore(
         dataSaver: false,
         steps: 0,
         lastStepAtMs: null,
+        ambientSteps: 0,
+        ambientStepsMax: 0,
+        ambientBelowFps: null,
+        setAmbient: (ambientStepsMax, ambientBelowFps) => set({ ambientStepsMax, ambientBelowFps }),
+        recordAmbientStep: (nowMs) =>
+          set({ ambientSteps: get().ambientSteps + 1, lastStepAtMs: nowMs }),
         setDetected: (pick, dataSaver) =>
           set({ auto: pick.tier, autoReasons: pick.reasons, dataSaver }),
         setOverride: (override) => {

@@ -30,6 +30,7 @@ import type { BoroughView, CityObjects } from './City'
 import type { LandmarksHandle, LandmarksState } from './landmarks/Landmarks'
 import type { PinKind, PinStyle } from './geo/schema'
 import type { StreetPropsView } from './props/layer'
+import { ambientHook, type AmbientHookState } from './ambient/registry'
 import { nightGlowSource } from './lighting/nightGlow'
 import { continuousSince } from './quality/continuity'
 import { SUN_LIGHT_NAME } from './SunLight'
@@ -174,6 +175,8 @@ export interface SceneTestHook {
   landmarks(): LandmarksState | null
   /** Street props (S04i); null before the buildings mount. */
   props(): ScenePropsState | null
+  /** The living city (S04l); `off` before its chunk mounts. */
+  ambient(): AmbientHookState | { readonly status: 'off' }
   /** The day/night lighting (S04f). */
   lighting(): SceneLightingState
   /** Shader programs the renderer holds (renderer.info.programs). */
@@ -360,6 +363,7 @@ export function TestHooks({
           meshes: meshes.length,
         }
       },
+      ambient: () => ambientHook.current?.() ?? { status: 'off' },
       lighting: () => {
         const sun = scene.getObjectByName(SUN_LIGHT_NAME)
         return {

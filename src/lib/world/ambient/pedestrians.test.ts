@@ -85,7 +85,7 @@ describe('ambient pedestrians', () => {
 
   it('never walks inside a memorial clearance, and drops anchors in one', () => {
     const memorial = { x: 100, y: 100, r: 30 }
-    const avoid = [{ ...memorial, r: memorial.r + ambientConfig.pedestrians.memorialMarginM }]
+    const avoid = [{ ...memorial, r: memorial.r + ambientConfig.pedestrians.lookOnlyMarginM }]
     const sim = make({
       graph: gridGraph({ pedestrianAvoid: avoid }),
       avoid,

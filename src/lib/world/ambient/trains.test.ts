@@ -107,8 +107,8 @@ describe('ambient trains', () => {
       trainCarsAt(run, 3, 20, t, trains, [memorial], out)
       for (const pose of out) {
         const d = Math.hypot(pose.x - memorial.x, pose.y - memorial.y)
-        if (d < trains.memorialMarginM) expect(pose.alpha).toBe(0)
-        if (d > trains.memorialMarginM + trains.memorialFadeM) expect(pose.scale).toBe(1)
+        if (d < trains.lookOnlyMarginM) expect(pose.alpha).toBe(0)
+        if (d > trains.lookOnlyMarginM + trains.lookOnlyFadeM) expect(pose.scale).toBe(1)
       }
     }
   })

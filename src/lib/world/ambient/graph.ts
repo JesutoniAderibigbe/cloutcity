@@ -7,7 +7,7 @@
  * Vehicles never use an edge that reaches into a `vehicleAvoid` circle (the streets file's
  * memorial clearances, already cut away by the build: this is the belt to its braces).
  * Pedestrians never use one that reaches into a `pedestrianAvoid` circle (memorial clearance
- * plus `pedestrians.memorialMarginM`).
+ * plus `pedestrians.lookOnlyMarginM`).
  *
  * Pure and deterministic: the same chains and seed give the same graph, signals included.
  */

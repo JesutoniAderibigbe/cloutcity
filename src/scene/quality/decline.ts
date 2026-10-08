@@ -10,14 +10,16 @@ import { selectActiveTier, type QualityState, type QualityStore } from '@/state/
 import { continuousSince } from './continuity'
 
 /**
- * Whether a decline could step the tier down at all: automatic tier, no data saver, above low
- * and under the session's step limit. Otherwise there is nothing to measure, so the monitor
+ * Whether a decline could step anything down: a living city density level left (S04l), or
+ * the tier (automatic, no data saver, above low and under the session's step limit). Otherwise there is nothing to measure, so the monitor
  * stays off and never forces frames (a low-tier device keeps rendering on demand only).
  */
 export function canStepDown(state: QualityState, stepDown: FpsStepDown): boolean {
   const active = selectActiveTier(state)
+  if (active === null) return false
+  // The living city's density steps down first, on every tier (S04l).
+  if (state.ambientSteps < state.ambientStepsMax) return true
   return (
-    active !== null &&
     active !== 'low' &&
     state.override === null &&
     !state.dataSaver &&
@@ -44,9 +46,15 @@ export function onMonitorDecline(
       active,
       overrideActive: state.override !== null,
       dataSaver: state.dataSaver,
+      ambientSteps: state.ambientSteps,
+      ambientStepsMax: state.ambientStepsMax,
     },
     stepDown,
   )
+  if (decision.action === 'ambient-down') {
+    state.recordAmbientStep(nowMs)
+    logger.info('3D map ambient density stepped down for frame rate', { level: decision.level })
+  }
   if (decision.action === 'step-down') {
     state.recordStepDown(nowMs)
     logger.info('3D map quality stepped down for frame rate', { from: active, to: decision.to })

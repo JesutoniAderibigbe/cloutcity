@@ -5,6 +5,7 @@
  */
 import { z } from 'zod'
 import { STREET_PROP_MODELS } from './config'
+import { VehicleKitConfigSchema } from './ambientKit'
 import { LandmarkSceneConfigSchema } from './landmarkModels'
 
 const HEX = z.string().regex(/^#[0-9a-f]{6}$/i)
@@ -273,7 +274,7 @@ export const AmbientConfigSchema = z.strictObject({
     scale: distanceScale,
     bobM: z.number().nonnegative(),
     bobHz: z.number().positive(),
-    memorialMarginM: z.number().nonnegative(),
+    lookOnlyMarginM: z.number().nonnegative(),
     palette: z.strictObject({
       skin: z.array(HEX).min(1),
       tops: z.array(HEX).min(1),
@@ -285,12 +286,21 @@ export const AmbientConfigSchema = z.strictObject({
     dwellS: z.number().nonnegative(),
     headwayS: z.number().positive(),
     cars: ambientTier(z.int().min(1).max(8)),
+    /**
+     * A car's real size; far out it grows like the trip's train (avatar height × scene.json
+     * `travel` ratios), never smaller than this.
+     */
+    carLengthM: metres,
+    carWidthM: metres,
+    carHeightM: metres,
     gapRatio: z.number().nonnegative(),
     stationSnapM: metres,
     minStopGapM: z.number().nonnegative(),
-    memorialMarginM: z.number().nonnegative(),
-    memorialFadeM: z.number().nonnegative(),
+    lookOnlyMarginM: z.number().nonnegative(),
+    lookOnlyFadeM: z.number().nonnegative(),
   }),
+  /** How the vehicle kits sort baked colours into buckets (src/scene/ambient/vehicleKits.ts). */
+  vehicleKit: VehicleKitConfigSchema,
 })
 export type AmbientConfigFile = z.infer<typeof AmbientConfigSchema>
 

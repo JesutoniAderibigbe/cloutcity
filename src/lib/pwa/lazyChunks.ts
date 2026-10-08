@@ -16,6 +16,8 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'apartment-decor-models', marker: 'apartment decor models: ' },
   // Street props (S04i, src/scene/props/layer.ts): mid and high only, once the camera zooms in.
   { id: 'street-props', marker: 'street props: ' },
+  // The living city (S04l, src/scene/ambient/AmbientLife.tsx): after the map is playable.
+  { id: 'ambient-life', marker: 'ambient life: ' },
   // The look runtime (S16a): the full look options and derived avatar refs (resolveLook.ts), with
   // the map avatar's model chunk, the room avatar and the creator preview.
   { id: 'avatar-look', marker: 'resolveLook: unknown option' },

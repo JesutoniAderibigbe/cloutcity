@@ -27,6 +27,36 @@ describe('lower', () => {
 })
 
 describe('stepDecision', () => {
+  it('lowers the living city density before the tier (S04l)', () => {
+    const ambient = { ...STEPS, ambientSteps: 0, ambientStepsMax: 2 }
+    expect(stepDecision(ambient, cfg)).toEqual({ action: 'ambient-down', level: 1 })
+    expect(stepDecision({ ...ambient, ambientSteps: 1 }, cfg)).toEqual({
+      action: 'ambient-down',
+      level: 2,
+    })
+    expect(stepDecision({ ...ambient, ambientSteps: 2 }, cfg)).toEqual({
+      action: 'step-down',
+      to: 'mid',
+    })
+    // On low, with an override or data saver, density still steps; the tier never does.
+    for (const change of [
+      { active: 'low' as const },
+      { overrideActive: true },
+      { dataSaver: true },
+    ]) {
+      expect(stepDecision({ ...ambient, ...change }, cfg).action).toBe('ambient-down')
+    }
+    // The same window and cooldown rules hold.
+    expect(stepDecision({ ...ambient, continuousSinceMs: null }, cfg)).toEqual({
+      action: 'ignore',
+      reason: 'gap',
+    })
+    expect(stepDecision({ ...ambient, lastStepAtMs: NOW - 1 }, cfg)).toEqual({
+      action: 'ignore',
+      reason: 'cooldown',
+    })
+  })
+
   it('steps one tier down on a decline after a full continuous window', () => {
     expect(stepDecision(STEPS, cfg)).toEqual({ action: 'step-down', to: 'mid' })
     expect(stepDecision({ ...STEPS, active: 'mid' }, cfg)).toEqual({

@@ -96,7 +96,7 @@ export interface StreetEdge {
   readonly halfWidthM: number
   /** STREET_FLAGS bits (parkLeft 1, parkRight 2, wide 4). */
   readonly flags: number
-  /** Inside a pedestrian memorial clearance (`pedestrians.memorialMarginM`): never walked. */
+  /** Inside a pedestrian memorial clearance (`pedestrians.lookOnlyMarginM`): never walked. */
   readonly nearMemorial: boolean
 }
 
@@ -176,7 +176,7 @@ export interface PedestriansConfig {
   readonly bobM: number
   readonly bobHz: number
   /** Kept this far beyond a memorial's clearance radius; a memorial is never an anchor. */
-  readonly memorialMarginM: number
+  readonly lookOnlyMarginM: number
   readonly palette: {
     readonly skin: readonly string[]
     readonly tops: readonly string[]
@@ -189,6 +189,10 @@ export interface TrainsConfig {
   readonly dwellS: number
   readonly headwayS: number
   readonly cars: PerAmbientTier<number>
+  /** A car's real size (the runtime scales it up with distance like the trip's train). */
+  readonly carLengthM: number
+  readonly carWidthM: number
+  readonly carHeightM: number
   /** Gap between cars as a share of a car's length. */
   readonly gapRatio: number
   /** A station counts as a stop of a line path within this many metres of it. */
@@ -196,9 +200,9 @@ export interface TrainsConfig {
   /** Stops closer than this along a path merge into one. */
   readonly minStopGapM: number
   /** Hidden within this many metres of a memorial pin (a line under the memorial). */
-  readonly memorialMarginM: number
-  /** The last metres before `memorialMarginM` fade the cars out. */
-  readonly memorialFadeM: number
+  readonly lookOnlyMarginM: number
+  /** The last metres before `lookOnlyMarginM` fade the cars out. */
+  readonly lookOnlyFadeM: number
 }
 
 export interface DensityConfig {
@@ -219,6 +223,15 @@ export interface AmbientConfig {
   readonly vehicles: VehiclesConfig
   readonly pedestrians: PedestriansConfig
   readonly trains: TrainsConfig
+  /** Kit baking thresholds (data/config ambient.json `vehicleKit`, schemas/ambientKit.ts). */
+  readonly vehicleKit: {
+    readonly light: {
+      readonly warmMinRed: number
+      readonly warmMaxBlueShare: number
+      readonly tailMinRed: number
+      readonly tailMaxGreenShare: number
+    }
+  }
 }
 
 // ---- simulation inputs -----------------------------------------------------------------------

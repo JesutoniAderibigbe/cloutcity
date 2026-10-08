@@ -12,7 +12,7 @@
  * scale fade) at the start of the epoch and into one at the end.
  *
  * No memorial is ever an anchor, and no anchor stands within its clearance plus
- * `memorialMarginM` (the caller passes those circles grown already).
+ * `lookOnlyMarginM` (the caller passes those circles grown already).
  */
 import { createRng, type Rng } from '../streetProps'
 import { cellKey } from './graph'
@@ -51,7 +51,7 @@ export interface PedestrianSimOptions {
   readonly tier: AmbientTier
   /** Candidate anchors; memorials and anchors in a clearance are dropped here. */
   readonly anchors: readonly PedestrianAnchor[]
-  /** Memorial clearances already grown by `memorialMarginM`. */
+  /** Memorial clearances already grown by `lookOnlyMarginM`. */
   readonly avoid: readonly Circle[]
   /** How many pedestrian kits the tier has (an outfit picks one). */
   readonly kits: number

@@ -8,18 +8,18 @@
  * store records a step-down when it allows one.
  *
  * PerformanceMonitor counts frames over wall time, and the map renders on demand, so it runs
- * only inside the continuous window (continuity.ts): while a gesture or a flight is under way
- * the monitor requests every frame, and it restarts from scratch each time the window opens, so
- * idle time never reads as a low frame rate. Outside the window the map stays idle, and the
- * monitor is off altogether while no step-down is possible (canStepDown: the low tier, a
- * settings choice, data saver, or the session's step limit reached).
+ * only inside the continuous window (continuity.ts): while a gesture, a flight or a trip is under
+ * way the monitor requests every frame (the living city paces its own), and it restarts from scratch each time the window opens, so
+ * idle time never reads as a low frame rate. Outside the window the map is paused, and the
+ * monitor is off altogether while no step-down is possible (canStepDown: no density level left
+ * and the low tier, a settings choice, data saver, or the session's step limit reached).
  */
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { PerformanceMonitor } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import type { FpsStepDown } from '@/lib/data/schemas/config'
 import { qualityStore } from '@/state/quality'
-import { continuousSince, subscribeContinuous } from './continuity'
+import { continuousSince, onlyAmbient, subscribeContinuous } from './continuity'
 import { canStepDown, onMonitorDecline } from './decline'
 
 const serverSince = () => null
@@ -40,9 +40,9 @@ export function TierMonitor({
   const measuring = armed && since !== null && !paused
 
   // Inside the window every frame requests the next, so FPS reflects the device rather than
-  // how often input arrives.
+  // how often input arrives; the living city alone paces its own capped frames (S04l).
   useFrame(() => {
-    if (!paused && continuousSince() !== null && armedNow()) invalidate()
+    if (!paused && continuousSince() !== null && !onlyAmbient() && armedNow()) invalidate()
   })
   useEffect(() => {
     if (measuring) invalidate()
@@ -52,7 +52,11 @@ export function TierMonitor({
     () => onMonitorDecline(qualityStore, stepDown, performance.now()),
     [stepDown],
   )
-  const bounds = useCallback((): [number, number] => [stepDown.belowFps, Infinity], [stepDown])
+  // At its 30 fps cap the living city alone sits too near the floor: it has its own (S04l).
+  const bounds = useCallback((): [number, number] => {
+    const ambient = qualityStore.getState().ambientBelowFps
+    return [onlyAmbient() && ambient !== null ? ambient : stepDown.belowFps, Infinity]
+  }, [stepDown])
 
   if (!measuring) return null
   return (

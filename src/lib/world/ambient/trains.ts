@@ -6,8 +6,8 @@
  * around that round trip, about `headwayS` apart, from a phase hashed per line and path, so a
  * position needs no state at all: the city clock alone places every car.
  *
- * Cars are articulated along the path behind the head car. Within `memorialMarginM` of a
- * memorial a car is hidden (it fades out over `memorialFadeM` before), as a line under the
+ * Cars are articulated along the path behind the head car. Within `lookOnlyMarginM` of a
+ * memorial a car is hidden (it fades out over `lookOnlyFadeM` before), as a line under the
  * memorial is.
  */
 import { createSample, hashInt, makePath, sampleAt, yawOf, type Path, type XY } from './path'
@@ -170,7 +170,7 @@ const headSoon: TrainHead = { arc: 0, dir: 1 }
 
 /**
  * Writes the poses of a run's `cars` cars (`carLengthM` long each, the runtime's distance-scaled
- * length) into `out[0..cars)` at city time `tS`; returns how many are visible.
+ * length) into `out[offset..offset + cars)` at city time `tS`; returns how many are visible.
  */
 export function trainCarsAt(
   run: TrainRun,
@@ -179,17 +179,18 @@ export function trainCarsAt(
   tS: number,
   trains: Pick<
     AmbientConfig['trains'],
-    'dwellS' | 'gapRatio' | 'memorialMarginM' | 'memorialFadeM'
+    'dwellS' | 'gapRatio' | 'lookOnlyMarginM' | 'lookOnlyFadeM'
   >,
   memorials: readonly XY[],
   out: AmbientPose[],
+  offset = 0,
 ): number {
   const { arc, dir } = trainHead(run, tS, trains.dwellS, headNow)
   const pitch = carLengthM * (1 + trains.gapRatio)
   const moving = Math.abs(trainHead(run, tS + 0.5, trains.dwellS, headSoon).arc - arc) * 2
   let visible = 0
   for (let i = 0; i < cars; i++) {
-    const pose = out[i]
+    const pose = out[offset + i]
     if (pose === undefined) break
     // Car centres trail the head's centre; the train never runs past a terminal.
     const centre = Math.max(0, Math.min(run.path.length, arc - dir * (i * pitch + carLengthM / 2)))
@@ -201,9 +202,9 @@ export function trainCarsAt(
     let fade = 1
     for (const m of memorials) {
       const d = Math.hypot(p.x - m.x, p.y - m.y)
-      if (d < trains.memorialMarginM) fade = 0
-      else if (d < trains.memorialMarginM + trains.memorialFadeM) {
-        fade = Math.min(fade, (d - trains.memorialMarginM) / trains.memorialFadeM)
+      if (d < trains.lookOnlyMarginM) fade = 0
+      else if (d < trains.lookOnlyMarginM + trains.lookOnlyFadeM) {
+        fade = Math.min(fade, (d - trains.lookOnlyMarginM) / trains.lookOnlyFadeM)
       }
     }
     const dx = head.x - tail.x
