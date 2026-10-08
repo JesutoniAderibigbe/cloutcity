@@ -9,14 +9,21 @@ import type { AvatarOptions } from './schemas/avatar'
 import type { SceneConfig } from './schemas/scene'
 import { toModelRef } from './models'
 
-/** Every model id the options name (heads, hair pieces, attachments, bodies). */
+/** Every model id the options name (faces, rigs, hair pieces, attachments, bodies). */
 export function optionModelIds(options: AvatarOptions): string[] {
   const ids = [
-    ...options.hairStyles.flatMap((style) => [style.head, ...(style.piece ? [style.piece] : [])]),
+    ...options.bodies.flatMap((body) => [
+      body.head,
+      body.rig,
+      ...(body.scalpCap === undefined ? [] : [body.scalpCap]),
+    ]),
+    ...options.hairStyles.flatMap((style) => (style.piece ? [style.piece] : [])),
     ...[...options.facialHair, ...options.headwear, ...options.eyewear, ...options.ears].flatMap(
       (option) => (option.model === undefined ? [] : [option.model]),
     ),
-    ...options.outfits.map((outfit) => outfit.body),
+    ...options.outfits.flatMap((outfit) =>
+      Object.values(outfit.variants).filter((id) => id !== undefined),
+    ),
   ]
   return [...new Set(ids)]
 }
@@ -50,6 +57,8 @@ export function deriveAvatarSwatches(
 
 export function deriveAvatarSceneRefs(sources: {
   readonly options: AvatarOptions
+  /** data/avatar/compat.json `pending`: models left out until their refit lands (S16b). */
+  readonly pending: readonly string[]
   readonly manifest: readonly ModelManifestEntry[]
   /** theme.json `models`: token → hex. */
   readonly palette: Readonly<Record<string, string>>
@@ -58,17 +67,20 @@ export function deriveAvatarSceneRefs(sources: {
   readonly itemModels: readonly string[]
 }): AvatarSceneRefs {
   const byId = new Map(sources.manifest.map((model) => [model.id, model]))
-  const rig = byId.get('avatar-rig')
-  if (rig === undefined) throw new Error('the manifest has no avatar-rig')
   const models: Record<string, ReturnType<typeof toModelRef>> = {}
   for (const id of [...optionModelIds(sources.options), ...sources.itemModels].sort()) {
     const model = byId.get(id)
-    if (model !== undefined) models[id] = toModelRef(model)
+    // Pending models (S16b P2a) are left out, so the look runtime skips them as missing.
+    if (model !== undefined && !sources.pending.includes(id)) {
+      models[id] = toModelRef(model)
+    }
+  }
+  for (const body of sources.options.bodies) {
+    if (models[body.rig] === undefined) throw new Error(`the manifest has no ${body.rig}`)
   }
   const colors = swatchHexes(sources.options, sources.palette)
   return {
     version: 1,
-    rig: toModelRef(rig),
     models,
     colors,
     attachments: sources.avatarLook.attachments,

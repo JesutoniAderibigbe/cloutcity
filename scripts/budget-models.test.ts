@@ -13,7 +13,7 @@ const manifest = ModelManifestSchema.parse(manifestJson)
 
 describe('modelBytes', () => {
   it('counts a file shared by two tiers or models once', () => {
-    const rig = manifest.models.find((model) => model.id === 'avatar-rig')
+    const rig = manifest.models.find((model) => model.id === 'avatar-rig-f')
     if (rig === undefined) throw new Error('rig missing')
     const twice = { ...manifest, models: [rig, { ...rig, id: 'rig-copy' }] }
     expect(modelBytes(twice, 'mid', () => true)).toEqual({
@@ -74,7 +74,9 @@ describe('modelBudgetLines', () => {
   })
 
   it('rejects a player avatar part missing from the manifest', () => {
-    const scene = { models: { player: { head: 'head-nobody', body: 'body-female-a' } } }
+    const scene = {
+      models: { player: { rig: 'avatar-rig-f', head: 'head-nobody', body: 'outfit-w-casual' } },
+    }
     expect(() => modelBudgetLines(manifestJson, perfJson, scene, new Map())).toThrow(/head-nobody/)
   })
 })

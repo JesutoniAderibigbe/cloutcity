@@ -69,8 +69,8 @@ export function resolveShowcase(
         spacingM: lineup.spacingM,
         rowDepthM: lineup.rowDepthM,
         clip: lineup.clip,
-        rig: modelRef('avatar-rig'),
         avatars: lineup.avatars.map((avatar) => ({
+          rig: modelRef(avatar.rig),
           head: modelRef(avatar.head),
           body: modelRef(avatar.body),
           colors: { head: slotHex(avatar.colors.head), body: slotHex(avatar.colors.body) },

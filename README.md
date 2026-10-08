@@ -204,9 +204,15 @@ Four channels (music, sfx, ambience, voice) under a master, each with its own vo
 
 ## 3D models
 
-Hand-made low-poly models (S04h, DEC-24/25/26) come only from free CC0 packs pinned by commit or
-by zip sha256 (KayKit City Builder, Furniture and Restaurant Bits; Kenney Mini Characters,
-Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scripts.
+Hand-made low-poly models (S04h, DEC-24/25/26) come only from free CC0 packs pinned by commit,
+zip, Drive file or itch upload plus sha256 (KayKit City Builder, Furniture and Restaurant Bits;
+Kenney Furniture Kit, City Kit Commercial and Nature Kit; Quaternius Ultimate
+Modular Women and Men as single Google Drive files, and the Universal Animation Library as an
+itch.io upload) and from our own Blender scripts. Download kinds: `github-raw` (files at a
+commit), `zip`, `gdrive-files` (each pack path names its Drive file id; an HTML page in place of
+a file fails), `itch` (the page's CSRF token buys a short-lived signed URL; the lock records the
+upload endpoint) and `local` (Blender outputs). If an itch or Drive fetch breaks, put the
+sha-matching file into `.cache/assets/` by hand and build with `-- --offline`.
 
 - **Catalog.** `data/assets/catalog.json` lists the packs (licence, licence-file phrases, pin,
   colour grade) and the models (entries, category, real-world fit, pivot, per-tier
@@ -227,6 +233,17 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
   (with `assetVersion`), the lock and `data/assets/SOURCES.md`. It fails when a model breaks
   its per-category cap in `data/config/perf.json` `models` and prints the pressure; it never
   edits perf.json. `-- --check --offline` rebuilds byte-identically from the cache.
+- **Modular avatar parts** (S16b). A skinned model with `meshes` merges those pack meshes into
+  one skinned primitive: `stripMaterials` drops a material (a head's own hair),
+  `protectMaterials` keeps one whole (eyes, brows), tiers give a `triangles` target instead of a
+  ratio, slots match source `materials` and `meshes`, and `joints` names a catalog `jointMaps`
+  entry that folds fingers and pole targets into the wrist and foot and renames every joint to
+  kebab-case (`Chest` becomes `torso`, `Head` `head`). A static model with `fromSkinned` cuts a
+  pack hairstyle from a skinned head in the bind pose. Rig `clips` may rename (`{from, as}`).
+  These parts ship indexed without normals and with meshopt filters; the runtime flat-shades
+  them (`src/scene/models/prepare.ts`). The build also writes `data/avatar/frame.json`, each
+  part's material bounds and each rig's joint positions in the bind pose, which the Blender
+  attachment scripts fit to.
 - **Blender.** `npm run blender:build` runs each model script listed in
   `scripts/blender/lock.json` through `scripts/blender/run.py` with the pinned Blender
   (`--background --factory-startup --python-exit-code 1`, `PYTHONHASHSEED=0`; override the

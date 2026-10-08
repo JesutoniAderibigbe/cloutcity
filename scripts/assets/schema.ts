@@ -48,6 +48,41 @@ const DownloadSchema = z.discriminatedUnion('kind', [
     root: packPath,
   }),
   z.strictObject({
+    /**
+     * Single files in a public Google Drive folder (S16b: the Quaternius modular packs ship as
+     * Drive folders, not archives). Each pack path maps to the file's stable Drive id; the lock
+     * pins every file's sha256, so a re-upload (a new id or new bytes) fails the build.
+     */
+    kind: z.literal('gdrive-files'),
+    files: z
+      .array(
+        z.strictObject({
+          path: packPath,
+          id: z.string().regex(/^[A-Za-z0-9_-]{20,}$/),
+        }),
+      )
+      .min(1)
+      .refine((files) => new Set(files.map((file) => file.path)).size === files.length, {
+        error: 'paths repeat',
+      }),
+  }),
+  z.strictObject({
+    /**
+     * One upload of a free itch.io page (S16b: the Universal Animation Library). itch hands out a
+     * short-lived signed URL per download, so the lock pins the upload's sha256 and records the
+     * stable upload endpoint, never the signed URL.
+     */
+    kind: z.literal('itch'),
+    page: httpsUrl.refine((url) => /^https:\/\/[a-z0-9-]+\.itch\.io\/[a-z0-9-]+$/.test(url), {
+      error: 'must be an itch.io game page',
+    }),
+    uploadId: z.int().positive(),
+    /** File name in the cache (.cache/assets/). */
+    file: z.string().regex(/^[a-z0-9._-]+\.zip$/),
+    /** Folder inside the zip that model entries are relative to. */
+    root: packPath,
+  }),
+  z.strictObject({
     kind: z.literal('local'),
     /** Committed Blender outputs, verified against scripts/blender/lock.json. */
     root: z.literal('scripts/blender/out'),
@@ -109,20 +144,28 @@ const EntrySchema = z.strictObject({
   rotateYDeg: z.number().optional(),
 })
 
-const TierSchema = z.strictObject({
-  /** Target share of triangles kept by MeshoptSimplifier; 1 keeps the mesh as authored. */
-  ratio: z.number().gt(0).max(1),
-  /** Relative error bound for the simplifier. */
-  error: z.number().min(0).max(1),
+const TierSchema = z.union([
+  z.strictObject({
+    /** Target share of triangles kept by MeshoptSimplifier; 1 keeps the mesh as authored. */
+    ratio: z.number().gt(0).max(1),
+    /** Relative error bound for the simplifier. */
+    error: z.number().min(0).max(1),
+    /**
+     * MeshoptSimplifier flags (S04l ambient LODs): `Permissive` collapses across UV and normal
+     * seams, so a far-away LOD can drop below the seam floor (its colours may bleed at seams).
+     */
+    flags: z
+      .array(z.enum(['Permissive']))
+      .min(1)
+      .optional(),
+  }),
   /**
-   * MeshoptSimplifier flags (S04l ambient LODs): `Permissive` collapses across UV and normal
-   * seams, so a far-away LOD can drop below the seam floor (its colours may bleed at seams).
+   * A triangle target for the whole model (S16b: the realistic avatars carry per-tier caps far
+   * below their authored counts). Protected materials are kept whole and count towards it.
    */
-  flags: z
-    .array(z.enum(['Permissive']))
-    .min(1)
-    .optional(),
-})
+  z.strictObject({ triangles: z.int().positive() }),
+])
+export type Tier = z.infer<typeof TierSchema>
 
 /** Uniform scale so the model's size along one measure is `metres` (1 scene unit = 1 m). */
 const FitSchema = z.union([
@@ -140,7 +183,14 @@ export type Box3 = z.infer<typeof BoxSchema>
 
 const SlotSchema = z.strictObject({
   name: IdSchema,
-  tokens: z.array(token).min(1),
+  /** Palette tokens the slot's triangles snapped to. */
+  tokens: z.array(token).min(1).optional(),
+  /**
+   * S16b: source material names (glTF material `name`) the slot covers, and optionally the mesh
+   * nodes, so a flat-coloured pack paints skin, hair and each garment by material, not by hue.
+   */
+  materials: z.array(z.string().min(1)).min(1).optional(),
+  meshes: z.array(z.string().min(1)).min(1).optional(),
   /** Skinned only: limit the slot to triangles whose strongest joint is one of these. */
   joints: z.array(z.string().min(1)).min(1).optional(),
   /** Limit the slot to triangles inside this box (S16a: a body's `shoes` are its feet). */
@@ -151,6 +201,28 @@ const SlotSchema = z.strictObject({
    */
   exclude: z.strictObject({ box: BoxSchema }).optional(),
 })
+
+/**
+ * Collapses and renames a pack's joints (S16b): fingers, thumbs and pole targets fold into the
+ * wrist and foot (their weights are added there), and every kept joint gets a kebab-case name,
+ * so three's track names stay clean and attachments keep naming `head` and `torso`.
+ */
+export const JointMapSchema = z.strictObject({
+  /** Joints matching `match` (a regex) fold into `into` (`$1`… take its groups). */
+  collapse: z.array(z.strictObject({ match: z.string().min(1), into: z.string().min(1) })),
+  /** Every kept joint's new name. */
+  rename: z.record(z.string().min(1), IdSchema),
+})
+export type JointMap = z.infer<typeof JointMapSchema>
+
+/** A rig clip kept as authored, or renamed (`from` in the pack, `as` in the game). */
+const ClipSchema = z.union([
+  z.string().min(1),
+  z.strictObject({ from: z.string().min(1), as: IdSchema }),
+])
+export type ClipRule = z.infer<typeof ClipSchema>
+export const clipName = (clip: ClipRule) => (typeof clip === 'string' ? clip : clip.as)
+export const clipSource = (clip: ClipRule) => (typeof clip === 'string' ? clip : clip.from)
 
 export const ModelSchema = z
   .strictObject({
@@ -164,6 +236,30 @@ export const ModelSchema = z
     entries: z.array(EntrySchema).min(1),
     /** Skinned only: the mesh to keep from the entry (heads and bodies share one rig). */
     mesh: z.string().min(1).optional(),
+    /**
+     * Skinned only (S16b): the meshes (node or mesh names) merged into one skinned primitive, in
+     * this order: a modular pack's body, legs and feet are one outfit.
+     */
+    meshes: z.array(z.string().min(1)).min(1).optional(),
+    /** Skinned and rig models (S16b): the catalog `jointMaps` entry applied to the joints. */
+    joints: IdSchema.optional(),
+    /** Skinned `meshes` models: source materials dropped whole (a head's own hair). */
+    stripMaterials: z.array(z.string().min(1)).min(1).optional(),
+    /** Skinned `meshes` models: materials never simplified (eyes and brows keep the face). */
+    protectMaterials: z.array(z.string().min(1)).min(1).optional(),
+    /**
+     * Static only (S16b): take the triangles of these materials from a skinned pack mesh, in the
+     * rig's bind pose (the character's frame, as the runtime attaches it), less any inside
+     * `exclude` (fitted metres): a pack hairstyle becomes an attachment on `joint`.
+     */
+    fromSkinned: z
+      .strictObject({
+        mesh: z.string().min(1),
+        materials: z.array(z.string().min(1)).min(1),
+        joint: z.string().min(1),
+        exclude: z.array(BoxSchema).min(1).optional(),
+      })
+      .optional(),
     /**
      * Skinned only (S16a D3): triangles dropped before the bake, a source colour (sRGB hex,
      * before grading; within `maxDeltaE` CIEDE2000, default 2) inside a box (fitted metres): a
@@ -220,8 +316,8 @@ export const ModelSchema = z
     glowRule: z.enum(['recessed']).optional(),
     /** Recolourable regions (`_SLOT` = index + 1), matched by token. */
     slots: z.array(SlotSchema),
-    /** Rig only: animation clips kept (everything else is dropped). */
-    clips: z.array(z.string().min(1)),
+    /** Rig only: animation clips kept (everything else is dropped), optionally renamed. */
+    clips: z.array(ClipSchema),
     loadPhase: z.enum(MODEL_LOAD_PHASES),
     /** Drawn many times at once (InstancedMesh in Part 2). */
     instanced: z.boolean(),
@@ -244,9 +340,38 @@ export const ModelSchema = z
     error: 'only static models attach to a joint',
     path: ['attach'],
   })
-  .refine((model) => (model.kind === 'skinned') === (model.mesh !== undefined), {
-    error: 'skinned models (and only they) name the mesh to keep',
-    path: ['mesh'],
+  .refine(
+    (model) =>
+      (model.kind === 'skinned') === ((model.mesh !== undefined) !== (model.meshes !== undefined)),
+    {
+      error: 'skinned models (and only they) name the mesh or meshes to keep',
+      path: ['mesh'],
+    },
+  )
+  .refine(
+    (model) =>
+      model.meshes !== undefined ||
+      (model.stripMaterials === undefined && model.protectMaterials === undefined),
+    { error: 'material strip and protect rules need `meshes`', path: ['stripMaterials'] },
+  )
+  .refine((model) => model.joints === undefined || model.kind !== 'static', {
+    error: 'only skinned and rig models map joints',
+    path: ['joints'],
+  })
+  .refine((model) => model.fromSkinned === undefined || model.kind === 'static', {
+    error: 'only static models take triangles from a skinned mesh',
+    path: ['fromSkinned'],
+  })
+  .refine(
+    (model) =>
+      model.kind !== 'skinned' ||
+      model.meshes !== undefined ||
+      MODEL_TIERS.every((tier) => 'ratio' in model.tiers[tier]),
+    { error: 'triangle targets need `meshes` on skinned models', path: ['tiers'] },
+  )
+  .refine((model) => model.slots.every((slot) => slot.tokens !== undefined || slot.materials), {
+    error: 'a slot names tokens or materials',
+    path: ['slots'],
   })
   .refine(
     (model) => model.kind === 'skinned' || model.slots.every((slot) => slot.joints === undefined),
@@ -273,7 +398,7 @@ export const ModelSchema = z
   })
   .refine(
     (model) =>
-      model.slots.every((slot) => slot.tokens.every((t) => model.swatches.includes(t))) &&
+      model.slots.every((slot) => (slot.tokens ?? []).every((t) => model.swatches.includes(t))) &&
       model.emissive.every((t) => model.swatches.includes(t)) &&
       Object.keys(model.glow ?? {}).every((t) => model.emissive.includes(t)),
     {
@@ -289,6 +414,8 @@ export const CatalogSchema = z
     /** Default CIEDE2000 snapping tolerance. */
     maxDeltaE: z.number().positive().max(100),
     sources: z.array(SourceSchema).min(1),
+    /** Joint collapse and rename tables by id (S16b), named by models' `joints`. */
+    jointMaps: z.record(IdSchema, JointMapSchema).optional(),
     models: z.array(ModelSchema),
     /** Pack items and packs deliberately left out, with the reason (LEGAL review record). */
     excluded: z.array(z.strictObject({ item: z.string().min(1), reason: z.string().min(1) })),
@@ -315,6 +442,13 @@ export const CatalogSchema = z
         })
       }
       modelIds.add(model.id)
+      if (model.joints !== undefined && catalog.jointMaps?.[model.joints] === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `unknown joint map ${model.joints}`,
+          path: ['models', i, 'joints'],
+        })
+      }
       if (!sourceIds.has(model.source)) {
         ctx.addIssue({
           code: 'custom',

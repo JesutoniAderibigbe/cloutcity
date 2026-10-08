@@ -33,7 +33,7 @@
     "high": 800000
   },
   "programsMax": {
-    "low": 10,
+    "low": 11,
     "mid": 11,
     "high": 15
   },
@@ -50,7 +50,7 @@
     },
     "avatarReserve": {
       "drawCalls": 6,
-      "triangles": 4000
+      "triangles": 4200
     }
   },
   "dprCap": {
@@ -374,46 +374,46 @@
         "mid": 0,
         "high": 0
       },
-      "gzKBMax": 8
+      "gzKBMax": 28
     },
     "avatar-head": {
       "trianglesMax": {
-        "low": 350,
-        "mid": 400,
-        "high": 400
+        "low": 320,
+        "mid": 520,
+        "high": 520
       },
-      "gzKBMax": 11
+      "gzKBMax": 12
     },
     "avatar-body": {
       "trianglesMax": {
-        "low": 400,
-        "mid": 650,
-        "high": 650
+        "low": 850,
+        "mid": 1450,
+        "high": 2250
       },
-      "gzKBMax": 15
+      "gzKBMax": 52
     },
     "avatar-accessory": {
       "trianglesMax": {
-        "low": 100,
-        "mid": 100,
-        "high": 100
+        "low": 120,
+        "mid": 120,
+        "high": 120
       },
       "gzKBMax": 4
     },
     "avatar-hair": {
       "trianglesMax": {
-        "low": 240,
-        "mid": 300,
-        "high": 300
+        "low": 260,
+        "mid": 520,
+        "high": 950
       },
-      "gzKBMax": 4
+      "gzKBMax": 18
     }
   },
   "avatar": {
     "trianglesMax": {
-      "low": 1300,
-      "mid": 1700,
-      "high": 1700
+      "low": 1800,
+      "mid": 2900,
+      "high": 4100
     }
   }
 }

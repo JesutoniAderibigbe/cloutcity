@@ -17,7 +17,7 @@
       },
       "look": {
         "part": "outfit",
-        "outfit": "outfit-03",
+        "outfit": "casual",
         "top": "white"
       }
     },
@@ -38,7 +38,7 @@
       },
       "look": {
         "part": "outfit",
-        "outfit": "outfit-07",
+        "outfit": "punk",
         "top": "denim"
       }
     },
@@ -59,7 +59,7 @@
       },
       "look": {
         "part": "outfit",
-        "outfit": "outfit-10",
+        "outfit": "outdoors",
         "top": "charcoal"
       }
     },

@@ -106,8 +106,9 @@
         "clip": "idle",
         "avatars": [
           {
-            "head": "head-female-a",
-            "body": "body-female-a",
+            "rig": "avatar-rig-f",
+            "head": "head-f",
+            "body": "outfit-w-casual",
             "colors": {
               "head": {
                 "skin": "skin-200",
@@ -121,8 +122,9 @@
             }
           },
           {
-            "head": "head-male-a",
-            "body": "body-male-a",
+            "rig": "avatar-rig-m",
+            "head": "head-m",
+            "body": "outfit-m-hoodie",
             "colors": {
               "head": {
                 "skin": "skin-600",
@@ -130,44 +132,126 @@
               },
               "body": {
                 "skin": "skin-600",
-                "top": "mustard-400",
+                "top": "red-600",
                 "bottom": "charcoal-800"
               }
             }
           },
           {
-            "head": "head-female-b",
-            "body": "body-female-b",
+            "rig": "avatar-rig-f",
+            "head": "head-f",
+            "body": "outfit-w-suit",
             "colors": {
               "head": {
-                "skin": "skin-400",
-                "hair": "hair-500"
+                "skin": "skin-800",
+                "hair": "hair-900"
               },
               "body": {
-                "skin": "skin-400",
-                "top": "red-600",
+                "skin": "skin-800",
+                "top": "navy-800",
                 "bottom": "navy-800"
               }
             }
           },
           {
-            "head": "head-male-b",
-            "body": "body-male-b",
+            "rig": "avatar-rig-m",
+            "head": "head-m",
+            "body": "outfit-m-casual",
+            "colors": {
+              "head": {
+                "skin": "skin-300",
+                "hair": "hair-300"
+              },
+              "body": {
+                "skin": "skin-300",
+                "top": "mustard-400",
+                "bottom": "denim-600"
+              }
+            }
+          },
+          {
+            "rig": "avatar-rig-f",
+            "head": "head-f",
+            "body": "outfit-w-dress",
+            "colors": {
+              "head": {
+                "skin": "skin-500",
+                "hair": "hair-700"
+              },
+              "body": {
+                "skin": "skin-500",
+                "top": "rust-500"
+              }
+            }
+          },
+          {
+            "rig": "avatar-rig-m",
+            "head": "head-m",
+            "body": "outfit-m-suit",
+            "colors": {
+              "head": {
+                "skin": "skin-700",
+                "hair": "hair-900"
+              },
+              "body": {
+                "skin": "skin-700",
+                "top": "charcoal-800",
+                "bottom": "charcoal-800"
+              }
+            }
+          },
+          {
+            "rig": "avatar-rig-f",
+            "head": "head-f",
+            "body": "outfit-w-punk",
             "colors": {
               "head": {
                 "skin": "skin-100",
-                "hair": "hair-500"
+                "hair": "hair-100"
               },
               "body": {
                 "skin": "skin-100",
+                "top": "red-600",
+                "bottom": "charcoal-800"
+              }
+            }
+          },
+          {
+            "rig": "avatar-rig-m",
+            "head": "head-m",
+            "body": "outfit-m-worker",
+            "colors": {
+              "head": {
+                "skin": "skin-400",
+                "hair": "hair-700"
+              },
+              "body": {
+                "skin": "skin-400",
                 "top": "olive-600",
                 "bottom": "denim-600"
               }
             }
           },
           {
-            "head": "head-female-c",
-            "body": "body-female-c",
+            "rig": "avatar-rig-f",
+            "head": "head-f",
+            "body": "outfit-w-outdoors",
+            "colors": {
+              "head": {
+                "skin": "skin-700",
+                "hair": "hair-900"
+              },
+              "body": {
+                "skin": "skin-700",
+                "top": "olive-600",
+                "bottom": "rust-500"
+              }
+            }
+          },
+          {
+            "rig": "avatar-rig-m",
+            "head": "head-m",
+            "body": "outfit-m-beach",
             "colors": {
               "head": {
                 "skin": "skin-800",
@@ -176,13 +260,14 @@
               "body": {
                 "skin": "skin-800",
                 "top": "cream-100",
-                "bottom": "rust-500"
+                "bottom": "teal-600"
               }
             }
           },
           {
-            "head": "head-male-c",
-            "body": "body-male-c",
+            "rig": "avatar-rig-f",
+            "head": "head-f",
+            "body": "outfit-w-worker",
             "colors": {
               "head": {
                 "skin": "skin-300",
@@ -190,97 +275,23 @@
               },
               "body": {
                 "skin": "skin-300",
-                "top": "navy-800",
-                "bottom": "olive-600"
-              }
-            }
-          },
-          {
-            "head": "head-female-d",
-            "body": "body-female-d",
-            "colors": {
-              "head": {
-                "skin": "skin-500",
-                "hair": "hair-500"
-              },
-              "body": {
-                "skin": "skin-500",
-                "top": "blush-300",
-                "bottom": "charcoal-800"
-              }
-            }
-          },
-          {
-            "head": "head-male-d",
-            "body": "body-male-d",
-            "colors": {
-              "head": {
-                "skin": "skin-700",
-                "hair": "hair-900"
-              },
-              "body": {
-                "skin": "skin-700",
                 "top": "white-50",
                 "bottom": "denim-600"
               }
             }
           },
           {
-            "head": "head-female-e",
-            "body": "body-female-e",
+            "rig": "avatar-rig-m",
+            "head": "head-m",
+            "body": "outfit-m-overalls",
             "colors": {
               "head": {
-                "skin": "skin-200",
-                "hair": "hair-700"
-              },
-              "body": {
-                "skin": "skin-200",
-                "top": "mustard-400",
-                "bottom": "navy-800"
-              }
-            }
-          },
-          {
-            "head": "head-male-e",
-            "body": "body-male-e",
-            "colors": {
-              "head": {
-                "skin": "skin-400",
-                "hair": "hair-500"
-              },
-              "body": {
-                "skin": "skin-400",
-                "top": "teal-600",
-                "bottom": "charcoal-800"
-              }
-            }
-          },
-          {
-            "head": "head-female-f",
-            "body": "body-female-f",
-            "colors": {
-              "head": {
-                "skin": "skin-600",
-                "hair": "hair-700"
-              },
-              "body": {
-                "skin": "skin-600",
-                "top": "rust-500",
-                "bottom": "cream-100"
-              }
-            }
-          },
-          {
-            "head": "head-male-f",
-            "body": "body-male-f",
-            "colors": {
-              "head": {
-                "skin": "skin-300",
+                "skin": "skin-500",
                 "hair": "hair-900"
               },
               "body": {
-                "skin": "skin-300",
-                "top": "red-600",
+                "skin": "skin-500",
+                "top": "rust-500",
                 "bottom": "denim-600"
               }
             }

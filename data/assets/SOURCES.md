@@ -15,12 +15,14 @@ refuses any other licence and checks each pack’s licence file on every run.
   (`data/config/theme.json` → `models`, DEC-26) within a CIEDE2000 tolerance.
 - Merges each static model into one mesh, scales it to real-world size and re-centres it.
 - Simplifies per quality tier (meshoptimizer), quantizes and compresses (EXT_meshopt_compression).
-- Avatar parts keep the shared Kenney rig; the rig keeps only the clips listed in the catalog.
+- Avatar parts (Quaternius modular packs) merge each outfit or face into one skinned mesh, fold
+  fingers into the hands, rename the joints and simplify to per-tier triangle targets; each rig
+  keeps only the clips listed in the catalog. Pack hairstyles are cut out as attachments.
 
 ## Attribution
 
-Not required by CC0; credited on /credits as thanks: Kenney (www.kenney.nl) and Kay Lousberg
-(www.kaylousberg.com).
+Not required by CC0; credited on /credits as thanks: Kenney (www.kenney.nl), Kay Lousberg
+(www.kaylousberg.com) and Quaternius (quaternius.com).
 
 ## Packs
 
@@ -120,23 +122,6 @@ Models: `bed`, `couch`, `armchair`, `floor-lamp`, `table-lamp`, `rug`, `shelf`.
 
 Models: `fridge`, `stove`, `crate`.
 
-### Kenney Mini Characters 1.0
-
-- Id: `kenney-mini-characters`
-- Author: Kenney
-- Page: <https://kenney.nl/assets/mini-characters>
-- Licence: CC0 1.0 Universal (public domain dedication) <https://creativecommons.org/publicdomain/zero/1.0/>
-- Licence evidence: `License.txt` contains "License: (Creative Commons Zero, CC0)" and "http://creativecommons.org/publicdomain/zero/1.0/"
-- Download: <https://kenney.nl/media/pages/assets/mini-characters/bfc7e272b4-1774770718/kenney_mini-characters.zip> (models under `Models/GLB format/`)
-- Colour grade (OKLCH): lightness × 1, chroma × 1
-- Retrieved: 2026-10-07
-
-| File                         |   Bytes | sha256                                                             |
-| ---------------------------- | ------: | ------------------------------------------------------------------ |
-| `kenney_mini-characters.zip` | 2403059 | `9e1d48e6d7b8479ebbe84df71eb5bd8e1b3f0da546dea641890dccc8a02d0999` |
-
-Models: `avatar-rig`, `head-female-a`, `body-female-a`, `head-female-b`, `body-female-b`, `head-female-c`, `body-female-c`, `head-female-d`, `body-female-d`, `head-female-e`, `body-female-e`, `head-female-f`, `body-female-f`, `head-male-a`, `body-male-a`, `head-male-b`, `body-male-b`, `head-male-c`, `body-male-c`, `head-male-d`, `body-male-d`, `head-male-e`, `body-male-e`, `head-male-f`, `head-base`, `body-male-f`, `glasses`, `sunglasses`, `hearing-aid`.
-
 ### Kenney Furniture Kit 2.0
 
 - Id: `kenney-furniture-kit`
@@ -187,6 +172,71 @@ Models: `block-a`, `block-b`, `block-c`, `block-d`, `block-e`, `block-f`, `build
 | `kenney_nature-kit.zip` | 10537521 | `fa7974a0d342bfe63c38664ba9f8ec1a4aab8ea25f099bdc56870e33588c4d9d` |
 
 Models: `tree-oak`, `tree-round`, `tree-tall`.
+
+### Quaternius Ultimate Modular Women 2022-02
+
+- Id: `quaternius-modular-women`
+- Author: Quaternius
+- Page: <https://quaternius.com/packs/ultimatemodularwomen.html>
+- Licence: CC0 1.0 Universal (public domain dedication) <https://creativecommons.org/publicdomain/zero/1.0/>
+- Licence evidence: `License.txt` contains "CC0 1.0 Universal (CC0 1.0)" and "https://creativecommons.org/publicdomain/zero/1.0/"
+- Download: single files of a public Google Drive folder, by file id (`License.txt` = `1lIFL16xEpoPbr0j_HUATgmcEnAmYoIK2`, `glTF/Casual.gltf` = `18b3WwlrwrFYWAM7BcnjWeIxKJyxAQiGh`, `glTF/Suit.gltf` = `1GjWtofxjmPku25cXJxHrzLLeUbXw7A_s`, `glTF/Worker.gltf` = `1iwF_fqDErPH9uyol6NmS-MnzGgsZ5ejV`, `glTF/Formal.gltf` = `1iayBzVv_zLjuPtaNPouw_auwKlQLLmes`, `glTF/Punk.gltf` = `1ITb_iFiroAsmjQI38z_p6nNXinwliVLA`, `glTF/Adventurer.gltf` = `1uxAFnDp73NO1c16LvHHjAYh1-deMNk5I`)
+- Colour grade (OKLCH): lightness × 1, chroma × 1
+- Retrieved: 2026-10-08
+
+| File                   |   Bytes | sha256                                                             |
+| ---------------------- | ------: | ------------------------------------------------------------------ |
+| `License.txt`          |     372 | `e8dbf915a2b82229913e301a0787696611241bdefec4832bc084f54161db1efe` |
+| `glTF/Adventurer.gltf` | 3205962 | `65094211e53b49f6a834c617cc056834686fe794a0b515a6b97faa3e1130cc95` |
+| `glTF/Casual.gltf`     | 3131788 | `b0fe6e92219cd71808844a20a1a8b960fd1cf640a6546dc6362b5add6604e87c` |
+| `glTF/Formal.gltf`     | 3082953 | `fdfcf454c4de037d31973eb28d8591bd7763035d49f46b380e63b1c832dc7ddf` |
+| `glTF/Punk.gltf`       | 3063914 | `61cc7f85a8e9b700cdb92ae8ebd6e3bdd1e8a510b57027f6c7d8c2b6ff3b0e0f` |
+| `glTF/Suit.gltf`       | 3142156 | `937d5c8d08fb5570f6a4e1dd79a3878335444d175aae3b0e9e2babdac36a17f7` |
+| `glTF/Worker.gltf`     | 3095030 | `e2bfc1039f429e870a0119e274c2dd45f6304f00c39f4570dfeb9ed4d97a063d` |
+
+Models: `outfit-w-casual`, `outfit-w-suit`, `outfit-w-worker`, `outfit-w-dress`, `outfit-w-punk`, `outfit-w-outdoors`, `head-f`, `hair-bob`, `hair-pixie`, `hair-updo`, `avatar-rig-f`, `npc-woman`.
+
+### Quaternius Ultimate Modular Men 2022-02
+
+- Id: `quaternius-modular-men`
+- Author: Quaternius
+- Page: <https://quaternius.com/packs/ultimatemodularcharacters.html>
+- Licence: CC0 1.0 Universal (public domain dedication) <https://creativecommons.org/publicdomain/zero/1.0/>
+- Licence evidence: `License.txt` contains "CC0 1.0 Universal (CC0 1.0)" and "https://creativecommons.org/publicdomain/zero/1.0/"
+- Download: single files of a public Google Drive folder, by file id (`License.txt` = `1TTvylHa1CsiJuHFWWiv6PFGhLM-aAH5z`, `glTF/Casual_2.gltf` = `1Jn7kULNmrtqP8BUUL19h8MhbdOnwPFhv`, `glTF/Casual_Hoodie.gltf` = `1em1So1xwwQNfHJYMvzKcXkZllvtxpKP5`, `glTF/Suit.gltf` = `1NhXHnGU0zK9hBrT5FoZp8nTz_EmvTPg5`, `glTF/Worker.gltf` = `14d8n7IDnnlnGt_uiATnNg3uvi_4dyd9V`, `glTF/Beach.gltf` = `1IL1YJPJvNkuGnKI69-W-VMBIDCo-u49N`, `glTF/Punk.gltf` = `1yHWu5ezXq4dYBcn4sWiNd16YN9fMtXo0`, `glTF/Farmer.gltf` = `1B9Dln-oR5Yk6sdsDR3yHCw86LobAN3Zd`, `glTF/Adventurer.gltf` = `1fzSq1Rr037f7QkfXPWEAzmbLMNx-FpPA`)
+- Colour grade (OKLCH): lightness × 1, chroma × 1
+- Retrieved: 2026-10-08
+
+| File                      |   Bytes | sha256                                                             |
+| ------------------------- | ------: | ------------------------------------------------------------------ |
+| `License.txt`             |     372 | `e8dbf915a2b82229913e301a0787696611241bdefec4832bc084f54161db1efe` |
+| `glTF/Adventurer.gltf`    | 3671456 | `21f7a61afb6bd6cef6961490c367594e3c2fc01ec1f041662131172ce763063e` |
+| `glTF/Beach.gltf`         | 3166143 | `76e001ea131fd76a1bd938a7862606cb8037f7049b632783580b9bf4da2371a8` |
+| `glTF/Casual_2.gltf`      | 3058092 | `55c654d09a2a5ff6e3bd6158d4a1b462f181cd6f1e12a0f5e9d959f9c3abc438` |
+| `glTF/Casual_Hoodie.gltf` | 3104001 | `dd74886c26998a0fa888b4ce557a0932d7d97b0265dd4c763154d081b7a6cb98` |
+| `glTF/Farmer.gltf`        | 2998119 | `46d3e85fa8d848ee479ab8e4672c16724ee4ea51f3af5733705a153937f93555` |
+| `glTF/Punk.gltf`          | 3003321 | `f9224072f5e6cbb207eca250faa7f1868614a1a984074fe79c7b2862df4feb42` |
+| `glTF/Suit.gltf`          | 3315342 | `6c89fbb31b96c1a63ad94e3dee0942bd7b34bc789a5d39fd6a6a1738a9214fb3` |
+| `glTF/Worker.gltf`        | 2967023 | `e49f8ec0f8a7de72dd26b1c01e6413c9a87a9116eeee21f9364ccd36bc286335` |
+
+Models: `outfit-m-casual`, `outfit-m-hoodie`, `outfit-m-suit`, `outfit-m-worker`, `outfit-m-beach`, `outfit-m-punk`, `outfit-m-overalls`, `outfit-m-outdoors`, `head-m`, `hair-mohawk`, `hair-spiky`, `hair-ponytail`, `hair-tousled`, `hair-parted`, `hair-swept`, `avatar-rig-m`, `npc-man`.
+
+### Quaternius Universal Animation Library Standard 1.0
+
+- Id: `quaternius-ual`
+- Author: Quaternius
+- Page: <https://quaternius.itch.io/universal-animation-library>
+- Licence: CC0 1.0 Universal (public domain dedication) <https://creativecommons.org/publicdomain/zero/1.0/>
+- Licence evidence: `Universal Animation Library[Standard]/License.txt` contains "CC0 1.0 Universal (CC0 1.0)" and "https://creativecommons.org/publicdomain/zero/1.0/"
+- Download: <https://quaternius.itch.io/universal-animation-library> upload 17958403, cached as `quaternius-ual-standard.zip` (models under `Universal Animation Library[Standard]/Unreal-Godot/`)
+- Colour grade (OKLCH): lightness × 1, chroma × 1
+- Retrieved: 2026-10-08
+
+| File                          |    Bytes | sha256                                                             |
+| ----------------------------- | -------: | ------------------------------------------------------------------ |
+| `quaternius-ual-standard.zip` | 15904933 | `cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724` |
+
+Models: none yet.
 
 ### Clout City Blender models 1
 
@@ -273,35 +323,6 @@ Models: `bus-ambient`, `facial-stubble`, `facial-moustache`, `facial-goatee`, `f
 | `wall-window`       | `kenney-furniture-kit`       | `wallWindow.glb`               | room-shell       |
 | `wall-doorway`      | `kenney-furniture-kit`       | `wallDoorway.glb`              | room-shell       |
 | `floor`             | `kenney-furniture-kit`       | `floorFull.glb`                | room-shell       |
-| `avatar-rig`        | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-rig       |
-| `head-female-a`     | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-head      |
-| `body-female-a`     | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-body      |
-| `head-female-b`     | `kenney-mini-characters`     | `character-female-b.glb`       | avatar-head      |
-| `body-female-b`     | `kenney-mini-characters`     | `character-female-b.glb`       | avatar-body      |
-| `head-female-c`     | `kenney-mini-characters`     | `character-female-c.glb`       | avatar-head      |
-| `body-female-c`     | `kenney-mini-characters`     | `character-female-c.glb`       | avatar-body      |
-| `head-female-d`     | `kenney-mini-characters`     | `character-female-d.glb`       | avatar-head      |
-| `body-female-d`     | `kenney-mini-characters`     | `character-female-d.glb`       | avatar-body      |
-| `head-female-e`     | `kenney-mini-characters`     | `character-female-e.glb`       | avatar-head      |
-| `body-female-e`     | `kenney-mini-characters`     | `character-female-e.glb`       | avatar-body      |
-| `head-female-f`     | `kenney-mini-characters`     | `character-female-f.glb`       | avatar-head      |
-| `body-female-f`     | `kenney-mini-characters`     | `character-female-f.glb`       | avatar-body      |
-| `head-male-a`       | `kenney-mini-characters`     | `character-male-a.glb`         | avatar-head      |
-| `body-male-a`       | `kenney-mini-characters`     | `character-male-a.glb`         | avatar-body      |
-| `head-male-b`       | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-head      |
-| `body-male-b`       | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-body      |
-| `head-male-c`       | `kenney-mini-characters`     | `character-male-c.glb`         | avatar-head      |
-| `body-male-c`       | `kenney-mini-characters`     | `character-male-c.glb`         | avatar-body      |
-| `head-male-d`       | `kenney-mini-characters`     | `character-male-d.glb`         | avatar-head      |
-| `body-male-d`       | `kenney-mini-characters`     | `character-male-d.glb`         | avatar-body      |
-| `head-male-e`       | `kenney-mini-characters`     | `character-male-e.glb`         | avatar-head      |
-| `body-male-e`       | `kenney-mini-characters`     | `character-male-e.glb`         | avatar-body      |
-| `head-male-f`       | `kenney-mini-characters`     | `character-male-f.glb`         | avatar-head      |
-| `head-base`         | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-head      |
-| `body-male-f`       | `kenney-mini-characters`     | `character-male-f.glb`         | avatar-body      |
-| `glasses`           | `kenney-mini-characters`     | `aid-glasses.glb`              | avatar-accessory |
-| `sunglasses`        | `kenney-mini-characters`     | `aid-sunglasses.glb`           | avatar-accessory |
-| `hearing-aid`       | `kenney-mini-characters`     | `aid_hearing.glb`              | avatar-accessory |
 | `facial-stubble`    | `clout-city-blender`         | `facial-stubble.glb`           | avatar-accessory |
 | `facial-moustache`  | `clout-city-blender`         | `facial-moustache.glb`         | avatar-accessory |
 | `facial-goatee`     | `clout-city-blender`         | `facial-goatee.glb`            | avatar-accessory |
@@ -318,14 +339,46 @@ Models: `bus-ambient`, `facial-stubble`, `facial-moustache`, `facial-goatee`, `f
 | `headwear-durag`    | `clout-city-blender`         | `headwear-durag.glb`           | avatar-hair      |
 | `headwear-beanie`   | `clout-city-blender`         | `headwear-beanie.glb`          | avatar-hair      |
 | `headwear-ballcap`  | `clout-city-blender`         | `headwear-ballcap.glb`         | avatar-hair      |
+| `outfit-w-casual`   | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-body      |
+| `outfit-w-suit`     | `quaternius-modular-women`   | `glTF/Suit.gltf`               | avatar-body      |
+| `outfit-w-worker`   | `quaternius-modular-women`   | `glTF/Worker.gltf`             | avatar-body      |
+| `outfit-w-dress`    | `quaternius-modular-women`   | `glTF/Formal.gltf`             | avatar-body      |
+| `outfit-w-punk`     | `quaternius-modular-women`   | `glTF/Punk.gltf`               | avatar-body      |
+| `outfit-w-outdoors` | `quaternius-modular-women`   | `glTF/Adventurer.gltf`         | avatar-body      |
+| `outfit-m-casual`   | `quaternius-modular-men`     | `glTF/Casual_2.gltf`           | avatar-body      |
+| `outfit-m-hoodie`   | `quaternius-modular-men`     | `glTF/Casual_Hoodie.gltf`      | avatar-body      |
+| `outfit-m-suit`     | `quaternius-modular-men`     | `glTF/Suit.gltf`               | avatar-body      |
+| `outfit-m-worker`   | `quaternius-modular-men`     | `glTF/Worker.gltf`             | avatar-body      |
+| `outfit-m-beach`    | `quaternius-modular-men`     | `glTF/Beach.gltf`              | avatar-body      |
+| `outfit-m-punk`     | `quaternius-modular-men`     | `glTF/Punk.gltf`               | avatar-body      |
+| `outfit-m-overalls` | `quaternius-modular-men`     | `glTF/Farmer.gltf`             | avatar-body      |
+| `outfit-m-outdoors` | `quaternius-modular-men`     | `glTF/Adventurer.gltf`         | avatar-body      |
+| `head-f`            | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-head      |
+| `head-m`            | `quaternius-modular-men`     | `glTF/Casual_Hoodie.gltf`      | avatar-head      |
+| `hair-bob`          | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-hair      |
+| `hair-pixie`        | `quaternius-modular-women`   | `glTF/Adventurer.gltf`         | avatar-hair      |
+| `hair-updo`         | `quaternius-modular-women`   | `glTF/Formal.gltf`             | avatar-hair      |
+| `hair-mohawk`       | `quaternius-modular-men`     | `glTF/Punk.gltf`               | avatar-hair      |
+| `hair-spiky`        | `quaternius-modular-men`     | `glTF/Beach.gltf`              | avatar-hair      |
+| `hair-ponytail`     | `quaternius-modular-men`     | `glTF/Casual_2.gltf`           | avatar-hair      |
+| `hair-tousled`      | `quaternius-modular-men`     | `glTF/Casual_Hoodie.gltf`      | avatar-hair      |
+| `hair-parted`       | `quaternius-modular-men`     | `glTF/Suit.gltf`               | avatar-hair      |
+| `hair-swept`        | `quaternius-modular-men`     | `glTF/Adventurer.gltf`         | avatar-hair      |
+| `avatar-rig-f`      | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-rig       |
+| `avatar-rig-m`      | `quaternius-modular-men`     | `glTF/Casual_Hoodie.gltf`      | avatar-rig       |
+| `npc-woman`         | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-body      |
+| `npc-man`           | `quaternius-modular-men`     | `glTF/Casual_2.gltf`           | avatar-body      |
 
 ## Left out
 
-| Item                                             | Why                                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------------------- |
-| KayKit City Builder Bits `car_police.gltf`       | Police livery (LEGAL): no law-enforcement markings in the city.                 |
-| KayKit City Builder Bits `car_stationwagon.gltf` | Not needed yet (three cars cover traffic variety).                              |
-| Pack textures, previews and source files         | Only geometry and baked colours ship (no images, no pack artwork as files).     |
-| Quaternius packs                                 | Rejected at planning: per-item downloads with no pinnable archive.              |
-| Poly Pizza models                                | Rejected at planning: per-model licences and authors, not pinnable as one pack. |
-| Kenney Mini Characters wheelchairs and canes     | Deferred (A11Y-5): they need pose, travel and animation work first.             |
+| Item                                                                                                                | Why                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| KayKit City Builder Bits `car_police.gltf`                                                                          | Police livery (LEGAL): no law-enforcement markings in the city.                                                                                                                        |
+| KayKit City Builder Bits `car_stationwagon.gltf`                                                                    | Not needed yet (three cars cover traffic variety).                                                                                                                                     |
+| Pack textures, previews and source files                                                                            | Only geometry and baked colours ship (no images, no pack artwork as files).                                                                                                            |
+| Poly Pizza models                                                                                                   | Rejected at planning: per-model licences and authors, not pinnable as one pack.                                                                                                        |
+| Avatar wheelchairs and canes                                                                                        | Deferred (A11Y-5): they need pose, travel and animation work first; the Kenney Mini Characters pack that had them is retired (S16b), so they will be modelled for the realistic frame. |
+| Quaternius Ultimate Modular Women/Men: Soldier, Swat, SciFi, Spacesuit, Medieval, Witch and King outfits            | LEGAL/tone (S16b): nothing military, police, weapon, fantasy or sci-fi ships.                                                                                                          |
+| Quaternius Ultimate Modular Men: Pistol and Sword meshes; every pack's gun, sword, punch, kick, hit and death clips | LEGAL (S16b): no weapons or combat.                                                                                                                                                    |
+| Quaternius Universal Base Characters                                                                                | Rejected (S16b): the free Standard zip holds only nude Superhero bodies; regular bodies and outfits are in the paid Source zip (DEC-24: free only).                                    |
+| Kenney Mini Characters                                                                                              | Retired (S16b, DEC-51): the chunky minis gave way to the realistic Quaternius modular characters.                                                                                      |

@@ -109,8 +109,7 @@ export function ambientAssets(tier: QualityTier): AmbientAssets {
   const vehicles = ambientConfig.vehicles.models[tier].filter((id) =>
     id.startsWith('bus') ? caps.bus[tier] > 0 : caps.vehicle[tier] > 0,
   )
-  const pedestrians =
-    caps.pedestrian[tier] > 0 ? pedestrianModelIds(ambientConfig.pedestrians.source, tier) : []
+  const pedestrians = caps.pedestrian[tier] > 0 ? pedestrianModelIds(tier) : []
   return {
     streetsUrl: streetsUrl(),
     vehicles: vehicles.map(asset),

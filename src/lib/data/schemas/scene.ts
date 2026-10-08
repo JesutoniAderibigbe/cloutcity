@@ -266,8 +266,8 @@ export const AmbientConfigSchema = z.strictObject({
     paint: z.array(HEX).min(1),
   }),
   pedestrians: z.strictObject({
-    /** The S16b seam: the temporary Kenney bake, or S16b's own ambient LOD. */
-    source: z.enum(['kenney-temp', 's16b']),
+    /** Where pedestrian kits come from (the S16b seam): the merged `npc-*` models. */
+    source: z.enum(['s16b']),
     anchors: z.array(z.enum(['place', 'home', 'landmark'])).min(1),
     anchorRadiusM: metres,
     perAnchor: ambientTier(z.int().min(0).max(7)),
@@ -538,14 +538,15 @@ export const SceneConfigSchema = z.strictObject({
     /** Decoded models kept in memory after their last user unmounts (LRU). */
     cacheMaxEntries: z.int().min(1),
     /**
-     * The player's hand-made avatar on the map (S05 swap): the shared rig with this head and
-     * body, posed on `clip`. The capsule placeholder stays while it loads, if it fails, on
-     * devices reporting less than `minDeviceMemoryGB` (navigator.deviceMemory), and on the
-     * tiers in `capsuleTiers` (the low tier's triangle headroom, TUNE-7).
+     * The player's hand-made avatar on the map (S05 swap): this rig, head and body (until the
+     * HUD has read the look), posed on `clip`. The capsule placeholder stays while it loads, if
+     * it fails, on devices reporting less than `minDeviceMemoryGB` (navigator.deviceMemory),
+     * and on the tiers in `capsuleTiers` (S16b: none; the low tier draws the low-LOD model).
      */
     player: z.strictObject({
+      rig: z.string().regex(/^avatar-rig-[a-z0-9-]+$/),
       head: z.string().regex(/^head-[a-z0-9-]+$/),
-      body: z.string().regex(/^body-[a-z0-9-]+$/),
+      body: z.string().regex(/^outfit-[a-z0-9-]+$/),
       clip: z.string().min(1),
       minDeviceMemoryGB: z.number().positive(),
       capsuleTiers: z.array(z.enum(['low', 'mid', 'high'])),

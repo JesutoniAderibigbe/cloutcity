@@ -7,6 +7,8 @@
 
 /** The fields of a saved look, one option id each (data/avatar/options.json). */
 export const LOOK_FIELDS = [
+  // First: the outfits a look may hold depend on it (S16b).
+  'body',
   'skin',
   'hairStyle',
   'hairColor',
@@ -62,13 +64,22 @@ export type RollScope = (typeof ROLL_SCOPES)[number]
 
 /**
  * What the engine needs of the look options on the playable path: the ids each field may hold,
- * the hairstyles that limit their hair colours, the defaults and the random chances. Models,
+ * the outfits each body has, the legacy aliases, the defaults and the random chances. Models,
  * tokens and copy keys stay in data/avatar/options.json, which only the creator and the avatar
  * chunks load (PERF-6).
  */
 export interface AvatarIdTables {
   readonly look: Readonly<Record<LookField, readonly string[]>>
-  readonly hairColorLimits: Readonly<Record<string, readonly string[]>>
+  /** Body id → the outfits that body has (S16b). */
+  readonly outfitsByBody: Readonly<Record<string, readonly string[]>>
+  /**
+   * Older builds' ids (S16b, data/avatar/compat.json): Kenney-era hairstyle and outfit ids →
+   * today's, and each old outfit → the body it implies.
+   */
+  readonly legacy: {
+    readonly ids: Readonly<Record<string, string>>
+    readonly body: Readonly<Record<string, string>>
+  }
   readonly defaults: Readonly<Record<LookField, string>>
   readonly random: {
     readonly facialHair: number
@@ -108,29 +119,24 @@ export interface AvatarEngineTables {
   readonly neighborhoods: readonly string[]
 }
 
-/** The ids `field` may hold. A hairstyle may limit the hair colours (SLOT-1 fallback (c)). */
+/** The ids `field` may hold: the body frame limits the outfits (S16b). */
 export function lookFieldIds(
   field: LookField,
   tables: AvatarIdTables,
-  hairStyle?: string,
+  body?: string,
 ): readonly string[] {
-  if (
-    field === 'hairColor' &&
-    hairStyle !== undefined &&
-    Object.hasOwn(tables.hairColorLimits, hairStyle)
-  ) {
-    return tables.hairColorLimits[hairStyle] ?? []
-  }
-  return tables.look[field]
+  return (
+    (field === 'outfit' && body !== undefined && tables.outfitsByBody[body]) || tables.look[field]
+  )
 }
 
-/** The first field of `look` that names no option (or a hair colour its style does not offer), or null. */
+/** The first field of `look` that names no option (or an outfit its body lacks), or null. */
 export function lookIssue(
   look: Readonly<Record<LookField, string>>,
   tables: AvatarIdTables,
 ): LookField | null {
   for (const field of LOOK_FIELDS) {
-    if (!lookFieldIds(field, tables, look.hairStyle).includes(look[field])) return field
+    if (!lookFieldIds(field, tables, look.body).includes(look[field])) return field
   }
   return null
 }

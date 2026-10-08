@@ -233,3 +233,168 @@ describe('ensurePacks', () => {
     )
   })
 })
+
+describe('Drive files and itch uploads (S16b)', () => {
+  const DRIVE_LICENCE = 'CC0 1.0 Universal (CC0 1.0)'
+  const ids = { licence: 'L'.repeat(24), casual: 'C'.repeat(24) }
+  const itchPage = 'https://someone.itch.io/anims'
+  const signed = 'https://mirror.example.org/signed/anims.zip?token=1'
+
+  const s16bCatalog = (): Catalog =>
+    CatalogSchema.parse({
+      version: 1,
+      maxDeltaE: 10,
+      sources: [
+        {
+          id: 'drive-pack',
+          kind: 'cc0-pack',
+          title: 'Drive pack',
+          version: '2022-02',
+          author: 'Someone',
+          homepage: 'https://example.org/drive-pack',
+          licence: 'CC0-1.0',
+          licenceEvidence: { entry: 'License.txt', mustContain: [DRIVE_LICENCE] },
+          download: {
+            kind: 'gdrive-files',
+            files: [
+              { path: 'License.txt', id: ids.licence },
+              { path: 'glTF/Casual.gltf', id: ids.casual },
+            ],
+          },
+          factorEncoding: 'linear',
+          grade: { lightness: 1, chroma: 1 },
+        },
+        {
+          id: 'itch-pack',
+          kind: 'cc0-pack',
+          title: 'Itch pack',
+          version: '1.0',
+          author: 'Someone',
+          homepage: itchPage,
+          licence: 'CC0-1.0',
+          licenceEvidence: { entry: 'Anims/License.txt', mustContain: [DRIVE_LICENCE] },
+          download: {
+            kind: 'itch',
+            page: itchPage,
+            uploadId: 42,
+            file: 'anims.zip',
+            root: 'Anims/glb',
+          },
+          factorEncoding: 'linear',
+          grade: { lightness: 1, chroma: 1 },
+        },
+      ],
+      models: [],
+      excluded: [],
+    })
+
+  const driveUrl = (id: string) =>
+    `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`
+  let posts: { url: string; cookie: string | null; body: string }[]
+
+  beforeEach(() => {
+    posts = []
+    files.set(driveUrl(ids.licence), encode(`Pack\n${DRIVE_LICENCE}\n`))
+    files.set(driveUrl(ids.casual), encode('{"asset":{"version":"2.0"}}'))
+    files.set(
+      signed,
+      zipSync({
+        'Anims/License.txt': encode(DRIVE_LICENCE),
+        'Anims/glb/a.glb': new Uint8Array([5]),
+      }),
+    )
+  })
+
+  const itchFetch = async (url: string, init: RequestInit) => {
+    if (url === itchPage) {
+      return new Response('<head><meta name="csrf_token" value="tok=="/></head>', {
+        headers: { 'set-cookie': 'itchio_token=abc; Path=/; HttpOnly' },
+      })
+    }
+    if (url === `${itchPage}/file/42?source=game_download`) {
+      posts.push({
+        url,
+        cookie: new Headers(init.headers).get('cookie'),
+        body: String(init.body),
+      })
+      return Response.json({ url: signed, external: false })
+    }
+    return fakeFetch(url)
+  }
+
+  const runS16b = (mode: 'default' | 'update' | 'offline', lock?: unknown) =>
+    ensurePacks({
+      root: cacheDir,
+      cacheDir,
+      catalog: s16bCatalog(),
+      lock: lock === undefined ? undefined : SourcesLockSchema.parse(lock),
+      mode,
+      today: '2026-10-08',
+      fetch: itchFetch,
+      sleep: async () => undefined,
+    })
+
+  it('--update pins every listed Drive file by id and the itch upload by its endpoint', async () => {
+    const { lock, packs } = await runS16b('update')
+    const drive = lock.sources.find((s) => s.id === 'drive-pack')
+    expect(drive?.files.map((f) => [f.path, f.url])).toEqual([
+      ['License.txt', driveUrl(ids.licence)],
+      ['glTF/Casual.gltf', driveUrl(ids.casual)],
+    ])
+    const itch = lock.sources.find((s) => s.id === 'itch-pack')
+    expect(itch?.files).toEqual([
+      expect.objectContaining({ path: 'anims.zip', url: `${itchPage}/file/42` }),
+    ])
+    expect(posts).toEqual([
+      {
+        url: `${itchPage}/file/42?source=game_download`,
+        cookie: 'itchio_token=abc',
+        body: 'csrf_token=tok%3D%3D',
+      },
+    ])
+    expect(packs.get('itch-pack')?.files.get('Anims/glb/a.glb')).toEqual(new Uint8Array([5]))
+    fetched = []
+    await runS16b('offline', lock)
+    await runS16b('default', lock)
+    expect(fetched).toEqual([])
+  })
+
+  it('refuses an HTML page from Drive in place of the file', async () => {
+    files.set(driveUrl(ids.casual), encode('  <!DOCTYPE html><html>Quota exceeded</html>'))
+    await expect(runS16b('update')).rejects.toThrow(/answered with an HTML page/)
+  })
+
+  it('fails on a changed upstream file, a re-pointed Drive id and a stale cache offline', async () => {
+    const { lock } = await runS16b('update')
+    await rm(join(cacheDir, 'drive-pack'), { recursive: true, force: true })
+    files.set(driveUrl(ids.casual), encode('{"asset":{"version":"2.0"},"changed":true}'))
+    await expect(runS16b('default', lock)).rejects.toThrow(/Casual\.gltf changed upstream/)
+    await expect(runS16b('offline', lock)).rejects.toThrow(/no cached copy matching the lock/)
+    const repointed = {
+      ...lock,
+      sources: lock.sources.map((s) => ({
+        ...s,
+        files: s.files.map((f) => ({ ...f, url: f.url.replace(ids.licence, 'X'.repeat(24)) })),
+      })),
+    }
+    await expect(runS16b('default', repointed)).rejects.toThrow(/another Drive id/)
+    files.set(driveUrl(ids.casual), encode('{"asset":{"version":"2.0"}}'))
+    await runS16b('default', lock)
+    await rm(join(cacheDir, 'anims.zip'), { force: true })
+    await writeFile(join(cacheDir, 'anims.zip'), encode('stale'))
+    await expect(runS16b('offline', lock)).rejects.toThrow(/anims\.zip has no cached copy/)
+  })
+
+  it('needs a Drive id for every entry and an itch.io page', () => {
+    const cat = s16bCatalog()
+    const [drive, itch] = cat.sources
+    expect(() => remoteUrl(drive as Catalog['sources'][number], 'glTF/Suit.gltf')).toThrow(
+      /has no Drive id/,
+    )
+    const offsite = {
+      ...cat,
+      sources: [{ ...itch, download: { ...itch?.download, page: 'https://example.org/anims' } }],
+    }
+    expect(CatalogSchema.safeParse(offsite).success).toBe(false)
+  })
+})

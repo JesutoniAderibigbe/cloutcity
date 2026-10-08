@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "63f92a6409afe3b2",
+  "assetVersion": "14de803adafa00ad",
   "models": [
     {
       "id": "taxi",
@@ -1718,1031 +1718,6 @@
       }
     },
     {
-      "id": "avatar-rig",
-      "kind": "rig",
-      "category": "avatar-rig",
-      "loadPhase": "playable",
-      "instanced": false,
-      "nameKey": "models.name.avatarRig",
-      "slots": [],
-      "emissive": false,
-      "clips": [
-        "idle",
-        "walk",
-        "sprint",
-        "sit",
-        "drive",
-        "pick-up",
-        "interact-right",
-        "emote-yes",
-        "emote-no",
-        "holding-right"
-      ],
-      "tiers": {
-        "low": {
-          "file": "/models/avatar-rig.high.dbf1201c.glb",
-          "sha256": "dbf1201c5121f393b2b153af73ff966f800d85415116926486974724fa5d8df4",
-          "bytes": 17852,
-          "gzBytes": 5493,
-          "triangles": 0
-        },
-        "mid": {
-          "file": "/models/avatar-rig.high.dbf1201c.glb",
-          "sha256": "dbf1201c5121f393b2b153af73ff966f800d85415116926486974724fa5d8df4",
-          "bytes": 17852,
-          "gzBytes": 5493,
-          "triangles": 0
-        },
-        "high": {
-          "file": "/models/avatar-rig.high.dbf1201c.glb",
-          "sha256": "dbf1201c5121f393b2b153af73ff966f800d85415116926486974724fa5d8df4",
-          "bytes": 17852,
-          "gzBytes": 5493,
-          "triangles": 0
-        }
-      }
-    },
-    {
-      "id": "head-female-a",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleA",
-      "bounds": { "min": [-0.4989, 0.7551, -0.6422], "max": [0.4989, 1.7062, 0.4568] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-female-a.low.af2fd2fa.glb",
-          "sha256": "af2fd2fac424fd77e134e6fad6cf248d26e1a891bc0ebefb61af102567d337e9",
-          "bytes": 9108,
-          "gzBytes": 5371,
-          "triangles": 256
-        },
-        "mid": {
-          "file": "/models/head-female-a.high.59a96e52.glb",
-          "sha256": "59a96e5298b52b4bfc870baab0f0083836f13516f1b0f8d4b28a73810dd2102d",
-          "bytes": 9564,
-          "gzBytes": 5777,
-          "triangles": 298
-        },
-        "high": {
-          "file": "/models/head-female-a.high.59a96e52.glb",
-          "sha256": "59a96e5298b52b4bfc870baab0f0083836f13516f1b0f8d4b28a73810dd2102d",
-          "bytes": 9564,
-          "gzBytes": 5777,
-          "triangles": 298
-        }
-      }
-    },
-    {
-      "id": "body-female-a",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleA",
-      "bounds": { "min": [-1.2087, 0, -0.3583], "max": [1.2087, 0.858, 0.3023] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-female-a.low.74dccb6b.glb",
-          "sha256": "74dccb6b5f71b3a9ebd84b506e21883d31fef1c47ea4196b41a59ca89c5d06a5",
-          "bytes": 13652,
-          "gzBytes": 8761,
-          "triangles": 346
-        },
-        "mid": {
-          "file": "/models/body-female-a.high.a553bb09.glb",
-          "sha256": "a553bb09f8068bd315564363ea5748fafedcb0a0978dc7f2a273679a6cfa1062",
-          "bytes": 18332,
-          "gzBytes": 12020,
-          "triangles": 578
-        },
-        "high": {
-          "file": "/models/body-female-a.high.a553bb09.glb",
-          "sha256": "a553bb09f8068bd315564363ea5748fafedcb0a0978dc7f2a273679a6cfa1062",
-          "bytes": 18332,
-          "gzBytes": 12020,
-          "triangles": 578
-        }
-      }
-    },
-    {
-      "id": "head-female-b",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleB",
-      "bounds": { "min": [-0.5225, 0.7551, -0.4639], "max": [0.5225, 1.5914, 0.4568] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-female-b.low.0873a80f.glb",
-          "sha256": "0873a80f0b6d23e5582a3759c70a33c8783ab8c7ba857993a5da31cb93eaaa9f",
-          "bytes": 12764,
-          "gzBytes": 8509,
-          "triangles": 314
-        },
-        "mid": {
-          "file": "/models/head-female-b.high.a299bf74.glb",
-          "sha256": "a299bf746f4652aa079057d45e8b75ccf34d5a711c15ba4307055e82c8c8a3b0",
-          "bytes": 13028,
-          "gzBytes": 8676,
-          "triangles": 340
-        },
-        "high": {
-          "file": "/models/head-female-b.high.a299bf74.glb",
-          "sha256": "a299bf746f4652aa079057d45e8b75ccf34d5a711c15ba4307055e82c8c8a3b0",
-          "bytes": 13028,
-          "gzBytes": 8676,
-          "triangles": 340
-        }
-      }
-    },
-    {
-      "id": "body-female-b",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleB",
-      "bounds": { "min": [-0.8439, 0, -0.3376], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-female-b.low.710f2f4b.glb",
-          "sha256": "710f2f4b9c1d981ca22a51561fb695aa4c1f400263e1561a13377270b4033356",
-          "bytes": 11008,
-          "gzBytes": 6249,
-          "triangles": 270
-        },
-        "mid": {
-          "file": "/models/body-female-b.high.9f4419b5.glb",
-          "sha256": "9f4419b582b9b6c5f3bd377be140d4e8b0015808936235af3cb8613051a3dc2b",
-          "bytes": 13436,
-          "gzBytes": 7944,
-          "triangles": 402
-        },
-        "high": {
-          "file": "/models/body-female-b.high.9f4419b5.glb",
-          "sha256": "9f4419b582b9b6c5f3bd377be140d4e8b0015808936235af3cb8613051a3dc2b",
-          "bytes": 13436,
-          "gzBytes": 7944,
-          "triangles": 402
-        }
-      }
-    },
-    {
-      "id": "head-female-c",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleC",
-      "bounds": { "min": [-0.4989, 0.7551, -0.6422], "max": [0.4989, 1.7062, 0.4568] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-female-c.low.c74f4bb8.glb",
-          "sha256": "c74f4bb81ef452dde48f6ce236b5fdbf258bbf9cd1a50eee6b7d40a277b0cd6b",
-          "bytes": 11000,
-          "gzBytes": 6870,
-          "triangles": 272
-        },
-        "mid": {
-          "file": "/models/head-female-c.high.b57a1179.glb",
-          "sha256": "b57a11795e203928ec5bdf55084c542e240eabd338940738983588d68597790d",
-          "bytes": 11640,
-          "gzBytes": 7426,
-          "triangles": 312
-        },
-        "high": {
-          "file": "/models/head-female-c.high.b57a1179.glb",
-          "sha256": "b57a11795e203928ec5bdf55084c542e240eabd338940738983588d68597790d",
-          "bytes": 11640,
-          "gzBytes": 7426,
-          "triangles": 312
-        }
-      }
-    },
-    {
-      "id": "body-female-c",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleC",
-      "bounds": { "min": [-0.8439, 0, -0.3952], "max": [0.8439, 0.8279, 0.2687] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-female-c.low.27539eb9.glb",
-          "sha256": "27539eb9297be55d6c4e3dd5c225075c46d2623b533e0717c1d1af0492dc504a",
-          "bytes": 11136,
-          "gzBytes": 6652,
-          "triangles": 272
-        },
-        "mid": {
-          "file": "/models/body-female-c.high.a7d3b13d.glb",
-          "sha256": "a7d3b13d25cb1e6bb56035b971af55e9f2a4f668e3911abc90b1580b8fe7abb1",
-          "bytes": 14252,
-          "gzBytes": 8867,
-          "triangles": 420
-        },
-        "high": {
-          "file": "/models/body-female-c.high.a7d3b13d.glb",
-          "sha256": "a7d3b13d25cb1e6bb56035b971af55e9f2a4f668e3911abc90b1580b8fe7abb1",
-          "bytes": 14252,
-          "gzBytes": 8867,
-          "triangles": 420
-        }
-      }
-    },
-    {
-      "id": "head-female-d",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleD",
-      "bounds": { "min": [-0.4989, 0.7551, -0.6422], "max": [0.4989, 1.7062, 0.4568] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-female-d.low.bf522b70.glb",
-          "sha256": "bf522b702215676dd5732157d89691387dbcb2dcb6427602b85dddc31085ff89",
-          "bytes": 11380,
-          "gzBytes": 7082,
-          "triangles": 282
-        },
-        "mid": {
-          "file": "/models/head-female-d.high.553dad2c.glb",
-          "sha256": "553dad2c3079c989b99911e0e9183512f28900b45d3c501b52bd4e4de2fb6bf9",
-          "bytes": 11832,
-          "gzBytes": 7463,
-          "triangles": 322
-        },
-        "high": {
-          "file": "/models/head-female-d.high.553dad2c.glb",
-          "sha256": "553dad2c3079c989b99911e0e9183512f28900b45d3c501b52bd4e4de2fb6bf9",
-          "bytes": 11832,
-          "gzBytes": 7463,
-          "triangles": 322
-        }
-      }
-    },
-    {
-      "id": "body-female-d",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleD",
-      "bounds": { "min": [-0.8439, 0, -0.389], "max": [0.8439, 0.8102, 0.2625] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-female-d.low.b5a34fe3.glb",
-          "sha256": "b5a34fe3291b6ab5a65040558a6e73d033343c9843faf7f842c190519834cd7a",
-          "bytes": 12584,
-          "gzBytes": 8057,
-          "triangles": 320
-        },
-        "mid": {
-          "file": "/models/body-female-d.high.a367a93d.glb",
-          "sha256": "a367a93d98fceb852929cc82bbe4a3229397e5a7d12bbe9beba7339405122a5b",
-          "bytes": 15328,
-          "gzBytes": 10036,
-          "triangles": 475
-        },
-        "high": {
-          "file": "/models/body-female-d.high.a367a93d.glb",
-          "sha256": "a367a93d98fceb852929cc82bbe4a3229397e5a7d12bbe9beba7339405122a5b",
-          "bytes": 15328,
-          "gzBytes": 10036,
-          "triangles": 475
-        }
-      }
-    },
-    {
-      "id": "head-female-e",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleE",
-      "bounds": { "min": [-0.4989, 0.6452, -0.7027], "max": [0.4989, 1.5762, 0.4568] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-female-e.low.3110d78c.glb",
-          "sha256": "3110d78c7d60f3f12d28ba9a559c8001640f13dde4394911e994e6a379bb2101",
-          "bytes": 9260,
-          "gzBytes": 5517,
-          "triangles": 274
-        },
-        "mid": {
-          "file": "/models/head-female-e.high.d675dafb.glb",
-          "sha256": "d675dafb11199039ce12da6837cacbf2b9bf5ca0f923185a45e1ac7a124f09d4",
-          "bytes": 9844,
-          "gzBytes": 5890,
-          "triangles": 322
-        },
-        "high": {
-          "file": "/models/head-female-e.high.d675dafb.glb",
-          "sha256": "d675dafb11199039ce12da6837cacbf2b9bf5ca0f923185a45e1ac7a124f09d4",
-          "bytes": 9844,
-          "gzBytes": 5890,
-          "triangles": 322
-        }
-      }
-    },
-    {
-      "id": "body-female-e",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleE",
-      "bounds": { "min": [-0.8439, 0, -0.3033], "max": [0.8439, 0.8102, 0.2455] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-female-e.low.af59290c.glb",
-          "sha256": "af59290c1d26b2ac5cb9c37b2377b77e1a8067c414148162cb069c2339130560",
-          "bytes": 11292,
-          "gzBytes": 6563,
-          "triangles": 286
-        },
-        "mid": {
-          "file": "/models/body-female-e.high.08db60df.glb",
-          "sha256": "08db60df8fea54d08e4a16f3eaaff480a2c55300dcad334ea815f50c13fbb5b5",
-          "bytes": 14284,
-          "gzBytes": 8481,
-          "triangles": 434
-        },
-        "high": {
-          "file": "/models/body-female-e.high.08db60df.glb",
-          "sha256": "08db60df8fea54d08e4a16f3eaaff480a2c55300dcad334ea815f50c13fbb5b5",
-          "bytes": 14284,
-          "gzBytes": 8481,
-          "triangles": 434
-        }
-      }
-    },
-    {
-      "id": "head-female-f",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleF",
-      "bounds": { "min": [-0.649, 0.7551, -0.3792], "max": [0.649, 1.4769, 0.4568] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-female-f.low.879c6c45.glb",
-          "sha256": "879c6c451004af25a4be1778f3ebd034aaeee57ea81d065019477a66787ea3d8",
-          "bytes": 9908,
-          "gzBytes": 6028,
-          "triangles": 223
-        },
-        "mid": {
-          "file": "/models/head-female-f.high.15ff2f3f.glb",
-          "sha256": "15ff2f3fca0921bf80086774fc97a95a4da3f86eec0d0072b1144b38f6ffa8d9",
-          "bytes": 10856,
-          "gzBytes": 6673,
-          "triangles": 288
-        },
-        "high": {
-          "file": "/models/head-female-f.high.15ff2f3f.glb",
-          "sha256": "15ff2f3fca0921bf80086774fc97a95a4da3f86eec0d0072b1144b38f6ffa8d9",
-          "bytes": 10856,
-          "gzBytes": 6673,
-          "triangles": 288
-        }
-      }
-    },
-    {
-      "id": "body-female-f",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleF",
-      "bounds": { "min": [-0.8439, 0, -0.5136], "max": [0.8439, 0.8463, 0.2428] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-female-f.low.e92bd9bc.glb",
-          "sha256": "e92bd9bce12e9ee3745c1d7589fc9a131aaf42430fde3cec80fe7e895c96c864",
-          "bytes": 12392,
-          "gzBytes": 7435,
-          "triangles": 332
-        },
-        "mid": {
-          "file": "/models/body-female-f.high.a0ebc18a.glb",
-          "sha256": "a0ebc18a46d87cf2cf2599796346c08f783ebd89d6c5db485df621d055100984",
-          "bytes": 15888,
-          "gzBytes": 10020,
-          "triangles": 500
-        },
-        "high": {
-          "file": "/models/body-female-f.high.a0ebc18a.glb",
-          "sha256": "a0ebc18a46d87cf2cf2599796346c08f783ebd89d6c5db485df621d055100984",
-          "bytes": 15888,
-          "gzBytes": 10020,
-          "triangles": 500
-        }
-      }
-    },
-    {
-      "id": "head-male-a",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleA",
-      "bounds": { "min": [-0.4989, 0.7551, -0.3792], "max": [0.4989, 1.4769, 0.3688] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-male-a.low.28b8c004.glb",
-          "sha256": "28b8c004245920cdef1e782a1ed105d752b23518c9101185630095b2e5b40b69",
-          "bytes": 8344,
-          "gzBytes": 4636,
-          "triangles": 199
-        },
-        "mid": {
-          "file": "/models/head-male-a.high.e5cfcc8d.glb",
-          "sha256": "e5cfcc8d5ed10bfb6b58c5f0f7fcb8c536caef3243710341689eb7da1878e0b4",
-          "bytes": 8640,
-          "gzBytes": 4869,
-          "triangles": 229
-        },
-        "high": {
-          "file": "/models/head-male-a.high.e5cfcc8d.glb",
-          "sha256": "e5cfcc8d5ed10bfb6b58c5f0f7fcb8c536caef3243710341689eb7da1878e0b4",
-          "bytes": 8640,
-          "gzBytes": 4869,
-          "triangles": 229
-        }
-      }
-    },
-    {
-      "id": "body-male-a",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleA",
-      "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-male-a.low.271e9e8e.glb",
-          "sha256": "271e9e8e409e51d3c89be1de2ecd0751b286f256870047646bbdf831cdc04623",
-          "bytes": 11688,
-          "gzBytes": 7085,
-          "triangles": 310
-        },
-        "mid": {
-          "file": "/models/body-male-a.high.6acf5a98.glb",
-          "sha256": "6acf5a98302314d09c018a937457789344cf17c1573b969e43dda0b183ae7a79",
-          "bytes": 14308,
-          "gzBytes": 8835,
-          "triangles": 450
-        },
-        "high": {
-          "file": "/models/body-male-a.high.6acf5a98.glb",
-          "sha256": "6acf5a98302314d09c018a937457789344cf17c1573b969e43dda0b183ae7a79",
-          "bytes": 14308,
-          "gzBytes": 8835,
-          "triangles": 450
-        }
-      }
-    },
-    {
-      "id": "head-male-b",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleB",
-      "bounds": { "min": [-0.4989, 0.5791, -0.3572], "max": [0.4989, 1.4549, 0.4985] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-male-b.low.a4468ecd.glb",
-          "sha256": "a4468ecd8e179ce674d341a37a671732409848c6fbc138659f08968169710ede",
-          "bytes": 10616,
-          "gzBytes": 6294,
-          "triangles": 245
-        },
-        "mid": {
-          "file": "/models/head-male-b.high.2c024610.glb",
-          "sha256": "2c02461033cf6d24347b770135698705d018e29f1f20495d914695ea5fdd1225",
-          "bytes": 10996,
-          "gzBytes": 6478,
-          "triangles": 288
-        },
-        "high": {
-          "file": "/models/head-male-b.high.2c024610.glb",
-          "sha256": "2c02461033cf6d24347b770135698705d018e29f1f20495d914695ea5fdd1225",
-          "bytes": 10996,
-          "gzBytes": 6478,
-          "triangles": 288
-        }
-      }
-    },
-    {
-      "id": "body-male-b",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleB",
-      "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-male-b.low.66aa142e.glb",
-          "sha256": "66aa142ec556078799336577fb6db7e61e6d629e3135f8daa8d7fc072db9cf4b",
-          "bytes": 10840,
-          "gzBytes": 6289,
-          "triangles": 258
-        },
-        "mid": {
-          "file": "/models/body-male-b.high.832559d1.glb",
-          "sha256": "832559d18cebbcba5340978426e2d6567a97aed17cdf017ddc156830ef7ad37f",
-          "bytes": 13452,
-          "gzBytes": 8250,
-          "triangles": 402
-        },
-        "high": {
-          "file": "/models/body-male-b.high.832559d1.glb",
-          "sha256": "832559d18cebbcba5340978426e2d6567a97aed17cdf017ddc156830ef7ad37f",
-          "bytes": 13452,
-          "gzBytes": 8250,
-          "triangles": 402
-        }
-      }
-    },
-    {
-      "id": "head-male-c",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleC",
-      "bounds": { "min": [-0.4989, 0.7551, -0.4136], "max": [0.4989, 1.7441, 0.5998] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-male-c.low.8fbec18f.glb",
-          "sha256": "8fbec18f79963a638d55125f78a24a31476fc56fc1d539c7ee929490af145814",
-          "bytes": 11072,
-          "gzBytes": 6983,
-          "triangles": 261
-        },
-        "mid": {
-          "file": "/models/head-male-c.high.1628bcaf.glb",
-          "sha256": "1628bcaf8b73db3cc0f3e28bde6f234fcadd6f1824442189aa305b96150a6002",
-          "bytes": 11592,
-          "gzBytes": 7342,
-          "triangles": 299
-        },
-        "high": {
-          "file": "/models/head-male-c.high.1628bcaf.glb",
-          "sha256": "1628bcaf8b73db3cc0f3e28bde6f234fcadd6f1824442189aa305b96150a6002",
-          "bytes": 11592,
-          "gzBytes": 7342,
-          "triangles": 299
-        }
-      }
-    },
-    {
-      "id": "body-male-c",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleC",
-      "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8279, 0.2538] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-male-c.low.712d2d6f.glb",
-          "sha256": "712d2d6f39e3e5194a55be6ff49de2807964d237a6d05b1ab7949f5f957e62cd",
-          "bytes": 11736,
-          "gzBytes": 7140,
-          "triangles": 314
-        },
-        "mid": {
-          "file": "/models/body-male-c.high.25576441.glb",
-          "sha256": "25576441251a950f8e8bda326583658ca3ebc34ab53bae09951748ced756ce4b",
-          "bytes": 15156,
-          "gzBytes": 9750,
-          "triangles": 494
-        },
-        "high": {
-          "file": "/models/body-male-c.high.25576441.glb",
-          "sha256": "25576441251a950f8e8bda326583658ca3ebc34ab53bae09951748ced756ce4b",
-          "bytes": 15156,
-          "gzBytes": 9750,
-          "triangles": 494
-        }
-      }
-    },
-    {
-      "id": "head-male-d",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleD",
-      "bounds": { "min": [-0.4989, 0.7551, -0.3792], "max": [0.4989, 1.5879, 0.3688] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-male-d.low.944f9008.glb",
-          "sha256": "944f90084d9d20b2589267afad18c8fc97348c1dd81a6e0525c1d4ed06fe3e3c",
-          "bytes": 8960,
-          "gzBytes": 5153,
-          "triangles": 193
-        },
-        "mid": {
-          "file": "/models/head-male-d.high.190544c9.glb",
-          "sha256": "190544c9ef6fbad827508a5362e0f0d277c85fe90280298e2554baca48b0dfce",
-          "bytes": 9372,
-          "gzBytes": 5411,
-          "triangles": 221
-        },
-        "high": {
-          "file": "/models/head-male-d.high.190544c9.glb",
-          "sha256": "190544c9ef6fbad827508a5362e0f0d277c85fe90280298e2554baca48b0dfce",
-          "bytes": 9372,
-          "gzBytes": 5411,
-          "triangles": 221
-        }
-      }
-    },
-    {
-      "id": "body-male-d",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleD",
-      "bounds": { "min": [-0.8439, 0, -0.3347], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-male-d.low.a42e4230.glb",
-          "sha256": "a42e42300b36190c621458e174c141fe7c3486350359c83bbd2d941845f051fe",
-          "bytes": 11964,
-          "gzBytes": 7397,
-          "triangles": 323
-        },
-        "mid": {
-          "file": "/models/body-male-d.high.e82216ab.glb",
-          "sha256": "e82216ab82c4aace0a059868d1e69951e9b04d6b90ab553c976c35d7e6a889de",
-          "bytes": 14980,
-          "gzBytes": 9755,
-          "triangles": 490
-        },
-        "high": {
-          "file": "/models/body-male-d.high.e82216ab.glb",
-          "sha256": "e82216ab82c4aace0a059868d1e69951e9b04d6b90ab553c976c35d7e6a889de",
-          "bytes": 14980,
-          "gzBytes": 9755,
-          "triangles": 490
-        }
-      }
-    },
-    {
-      "id": "head-male-e",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleE",
-      "bounds": { "min": [-0.4989, 0.7551, -0.3792], "max": [0.4989, 1.4871, 0.3731] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-male-e.low.25460f8a.glb",
-          "sha256": "25460f8ab0889b2725ec8238a4d46b5e6d915edf6c34d7f04314654771d5fd4a",
-          "bytes": 9240,
-          "gzBytes": 5325,
-          "triangles": 204
-        },
-        "mid": {
-          "file": "/models/head-male-e.high.827f8d51.glb",
-          "sha256": "827f8d5123e98e48c898e96361e632e30d685e58ce13c1d322f89b23bb1f01d0",
-          "bytes": 9692,
-          "gzBytes": 5664,
-          "triangles": 244
-        },
-        "high": {
-          "file": "/models/head-male-e.high.827f8d51.glb",
-          "sha256": "827f8d5123e98e48c898e96361e632e30d685e58ce13c1d322f89b23bb1f01d0",
-          "bytes": 9692,
-          "gzBytes": 5664,
-          "triangles": 244
-        }
-      }
-    },
-    {
-      "id": "body-male-e",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleE",
-      "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-male-e.low.5fe7b592.glb",
-          "sha256": "5fe7b592ed8bc03fe16b4857b2f27d44a972982794bf33766d082bdcdd0b6051",
-          "bytes": 11304,
-          "gzBytes": 6489,
-          "triangles": 278
-        },
-        "mid": {
-          "file": "/models/body-male-e.high.d49e21f2.glb",
-          "sha256": "d49e21f2d115e6d5eedf3de42e4baed01313f7a656ca951b96818edfaa5c37fb",
-          "bytes": 13808,
-          "gzBytes": 8278,
-          "triangles": 422
-        },
-        "high": {
-          "file": "/models/body-male-e.high.d49e21f2.glb",
-          "sha256": "d49e21f2d115e6d5eedf3de42e4baed01313f7a656ca951b96818edfaa5c37fb",
-          "bytes": 13808,
-          "gzBytes": 8278,
-          "triangles": 422
-        }
-      }
-    },
-    {
-      "id": "head-male-f",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleF",
-      "bounds": { "min": [-0.4989, 0.7551, -0.3792], "max": [0.4989, 1.4769, 0.3688] },
-      "slots": ["skin", "hair"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-male-f.low.e6537e60.glb",
-          "sha256": "e6537e60e7299f07e7717e790b3f145b4ee292d12df266862dee5644f7dbf966",
-          "bytes": 8276,
-          "gzBytes": 4598,
-          "triangles": 189
-        },
-        "mid": {
-          "file": "/models/head-male-f.high.5c3ad492.glb",
-          "sha256": "5c3ad492e4193beb89c6282a3dae41347010fa052dccf59b7dbc434c19169448",
-          "bytes": 8548,
-          "gzBytes": 4831,
-          "triangles": 213
-        },
-        "high": {
-          "file": "/models/head-male-f.high.5c3ad492.glb",
-          "sha256": "5c3ad492e4193beb89c6282a3dae41347010fa052dccf59b7dbc434c19169448",
-          "bytes": 8548,
-          "gzBytes": 4831,
-          "triangles": 213
-        }
-      }
-    },
-    {
-      "id": "head-base",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headBase",
-      "bounds": { "min": [-0.4989, 0.7551, -0.3572], "max": [0.4989, 1.4549, 0.4139] },
-      "slots": ["skin"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/head-base.low.0e62d98b.glb",
-          "sha256": "0e62d98bd4c9b0243231d2793d0608868ea9254c071268b6d86396215d1fe2bd",
-          "bytes": 7988,
-          "gzBytes": 4266,
-          "triangles": 143
-        },
-        "mid": {
-          "file": "/models/head-base.high.43a68a71.glb",
-          "sha256": "43a68a71bd4ba894d444a3d042611611680002333d4949c64cf5ee0e631c5579",
-          "bytes": 8324,
-          "gzBytes": 4472,
-          "triangles": 183
-        },
-        "high": {
-          "file": "/models/head-base.high.43a68a71.glb",
-          "sha256": "43a68a71bd4ba894d444a3d042611611680002333d4949c64cf5ee0e631c5579",
-          "bytes": 8324,
-          "gzBytes": 4472,
-          "triangles": 183
-        }
-      }
-    },
-    {
-      "id": "body-male-f",
-      "kind": "skinned",
-      "category": "avatar-body",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleF",
-      "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8102, 0.2758] },
-      "slots": ["shoes", "skin", "top", "bottom"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/body-male-f.low.574b7ce2.glb",
-          "sha256": "574b7ce2980a635e0c0d786f6f062dcad7ae61db4c22896d8265e4438e77529e",
-          "bytes": 12360,
-          "gzBytes": 7354,
-          "triangles": 326
-        },
-        "mid": {
-          "file": "/models/body-male-f.high.9dbacd6a.glb",
-          "sha256": "9dbacd6a4bda52d7d7515a916e828f508ef91b4361f9f4f31b5d64791dbe62a2",
-          "bytes": 15628,
-          "gzBytes": 9779,
-          "triangles": 488
-        },
-        "high": {
-          "file": "/models/body-male-f.high.9dbacd6a.glb",
-          "sha256": "9dbacd6a4bda52d7d7515a916e828f508ef91b4361f9f4f31b5d64791dbe62a2",
-          "bytes": 15628,
-          "gzBytes": 9779,
-          "triangles": 488
-        }
-      }
-    },
-    {
-      "id": "glasses",
-      "kind": "static",
-      "category": "avatar-accessory",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.glasses",
-      "bounds": { "min": [-0.363, 0, -0.202], "max": [0.363, 0.2108, 0.202] },
-      "slots": [],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/glasses.high.7efd38b7.glb",
-          "sha256": "7efd38b7f33aa144bea3cdb1c88bb841245feebbffba7330e6a38ff8b1a9f0a9",
-          "bytes": 3340,
-          "gzBytes": 1736,
-          "triangles": 52
-        },
-        "mid": {
-          "file": "/models/glasses.high.7efd38b7.glb",
-          "sha256": "7efd38b7f33aa144bea3cdb1c88bb841245feebbffba7330e6a38ff8b1a9f0a9",
-          "bytes": 3340,
-          "gzBytes": 1736,
-          "triangles": 52
-        },
-        "high": {
-          "file": "/models/glasses.high.7efd38b7.glb",
-          "sha256": "7efd38b7f33aa144bea3cdb1c88bb841245feebbffba7330e6a38ff8b1a9f0a9",
-          "bytes": 3340,
-          "gzBytes": 1736,
-          "triangles": 52
-        }
-      }
-    },
-    {
-      "id": "sunglasses",
-      "kind": "static",
-      "category": "avatar-accessory",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.sunglasses",
-      "bounds": { "min": [-0.363, 0, -0.202], "max": [0.363, 0.2108, 0.202] },
-      "slots": [],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/sunglasses.high.ccdc6a07.glb",
-          "sha256": "ccdc6a07c7fb11e1827a904a0379acc5c5c40d2444deaf146632909c1f98a1aa",
-          "bytes": 3028,
-          "gzBytes": 1441,
-          "triangles": 62
-        },
-        "mid": {
-          "file": "/models/sunglasses.high.ccdc6a07.glb",
-          "sha256": "ccdc6a07c7fb11e1827a904a0379acc5c5c40d2444deaf146632909c1f98a1aa",
-          "bytes": 3028,
-          "gzBytes": 1441,
-          "triangles": 62
-        },
-        "high": {
-          "file": "/models/sunglasses.high.ccdc6a07.glb",
-          "sha256": "ccdc6a07c7fb11e1827a904a0379acc5c5c40d2444deaf146632909c1f98a1aa",
-          "bytes": 3028,
-          "gzBytes": 1441,
-          "triangles": 62
-        }
-      }
-    },
-    {
-      "id": "hearing-aid",
-      "kind": "static",
-      "category": "avatar-accessory",
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.hearingAid",
-      "bounds": { "min": [-0.055, 0, -0.1724], "max": [0.055, 0.2718, 0.1724] },
-      "slots": ["shell"],
-      "emissive": false,
-      "clips": [],
-      "tiers": {
-        "low": {
-          "file": "/models/hearing-aid.high.133e6460.glb",
-          "sha256": "133e6460d6a4d4440d2622ada60f6fe31d1b769a83a3aeba227aff5f06be1d86",
-          "bytes": 3724,
-          "gzBytes": 1672,
-          "triangles": 48
-        },
-        "mid": {
-          "file": "/models/hearing-aid.high.133e6460.glb",
-          "sha256": "133e6460d6a4d4440d2622ada60f6fe31d1b769a83a3aeba227aff5f06be1d86",
-          "bytes": 3724,
-          "gzBytes": 1672,
-          "triangles": 48
-        },
-        "high": {
-          "file": "/models/hearing-aid.high.133e6460.glb",
-          "sha256": "133e6460d6a4d4440d2622ada60f6fe31d1b769a83a3aeba227aff5f06be1d86",
-          "bytes": 3724,
-          "gzBytes": 1672,
-          "triangles": 48
-        }
-      }
-    },
-    {
       "id": "facial-stubble",
       "kind": "static",
       "category": "avatar-accessory",
@@ -3315,6 +2290,1028 @@
           "bytes": 4352,
           "gzBytes": 1787,
           "triangles": 100
+        }
+      }
+    },
+    {
+      "id": "outfit-w-casual",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWCasual",
+      "bounds": { "min": [-0.8251, -0.0086, -0.0589], "max": [0.8251, 1.5405, 0.2708] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-w-casual.low.5fce2685.glb",
+          "sha256": "5fce268508e98e37e6f037cf3b0caba1a165fb04f1cdeaa6f62ca6bfa83959f4",
+          "bytes": 16328,
+          "gzBytes": 10895,
+          "triangles": 819
+        },
+        "mid": {
+          "file": "/models/outfit-w-casual.mid.c1c22382.glb",
+          "sha256": "c1c2238233745799385216d870bc5844ffe1a16ef274f8846ba7b5e1612cc383",
+          "bytes": 20624,
+          "gzBytes": 14431,
+          "triangles": 1399
+        },
+        "high": {
+          "file": "/models/outfit-w-casual.high.31a90181.glb",
+          "sha256": "31a90181823774e7560916ec0897b1259b265f6e1cb2ba06edee3f001378da66",
+          "bytes": 26032,
+          "gzBytes": 19699,
+          "triangles": 2199
+        }
+      }
+    },
+    {
+      "id": "outfit-w-suit",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWSuit",
+      "bounds": { "min": [-0.8219, -0.0019, -0.0589], "max": [0.8246, 1.5405, 0.2715] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-w-suit.low.4e439f87.glb",
+          "sha256": "4e439f878529d5e99e0e2f6873064716795eb7d64a6dd6220634d78d1dab6a47",
+          "bytes": 16608,
+          "gzBytes": 11230,
+          "triangles": 819
+        },
+        "mid": {
+          "file": "/models/outfit-w-suit.mid.1ace2898.glb",
+          "sha256": "1ace28986c73c5c44f4b002df3d86c234a6b6c2e20158d02ce23114e1d393fcf",
+          "bytes": 21300,
+          "gzBytes": 15405,
+          "triangles": 1399
+        },
+        "high": {
+          "file": "/models/outfit-w-suit.high.63fd17fe.glb",
+          "sha256": "63fd17fe2d2a70c748062dac0c5de4d89c0ddefee6c3d4c7949aad5e2feb246c",
+          "bytes": 27064,
+          "gzBytes": 20551,
+          "triangles": 2199
+        }
+      }
+    },
+    {
+      "id": "outfit-w-worker",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWWorker",
+      "bounds": { "min": [-0.8246, -0.0019, -0.0589], "max": [0.8219, 1.5405, 0.2715] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-w-worker.low.b91ffa4f.glb",
+          "sha256": "b91ffa4fd0f036ccce8a265838dec99adc1a7eadd1d4ca46cb3a4c6730f28d5a",
+          "bytes": 18488,
+          "gzBytes": 12639,
+          "triangles": 819
+        },
+        "mid": {
+          "file": "/models/outfit-w-worker.mid.6fab4679.glb",
+          "sha256": "6fab4679d33d8af0483782497f775f8e033edc197150cb8a8e5620b4cfb85a8b",
+          "bytes": 23576,
+          "gzBytes": 16759,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-w-worker.high.9d2dc562.glb",
+          "sha256": "9d2dc56232560ebb0d7803c40fc2db7607d71177c6cece0798dd8e92454dcfc0",
+          "bytes": 29328,
+          "gzBytes": 21650,
+          "triangles": 2199
+        }
+      }
+    },
+    {
+      "id": "outfit-w-dress",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWDress",
+      "bounds": { "min": [-0.8246, 0.0014, -0.0883], "max": [0.8246, 1.5405, 0.2555] },
+      "slots": ["skin", "top", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-w-dress.low.996dcba9.glb",
+          "sha256": "996dcba9d966d95a43b890073d1826b6d723242c05ce46d2d6d663021bf0418e",
+          "bytes": 16920,
+          "gzBytes": 11268,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-w-dress.mid.6cd332b7.glb",
+          "sha256": "6cd332b7e363297e328361429a1e47b10ba6e391e207da800103bca2c5d4a81c",
+          "bytes": 21280,
+          "gzBytes": 15292,
+          "triangles": 1399
+        },
+        "high": {
+          "file": "/models/outfit-w-dress.high.35204542.glb",
+          "sha256": "35204542c8bd0e8e22238a8504abf7854600b60a5960a13a187f644269722b8c",
+          "bytes": 26704,
+          "gzBytes": 20040,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "outfit-w-punk",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWPunk",
+      "bounds": { "min": [-0.8246, 0.0018, -0.0589], "max": [0.8219, 1.5403, 0.2589] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-w-punk.low.bdd4f430.glb",
+          "sha256": "bdd4f430cc4840902a297d6e665d7403954883f90eea369fef62a14e272fdb8d",
+          "bytes": 18360,
+          "gzBytes": 12732,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-w-punk.mid.dd1c599a.glb",
+          "sha256": "dd1c599a5b16ebdb6be72c78bb63b700d67c666c7895c6d5e84a0002c677a9dc",
+          "bytes": 23240,
+          "gzBytes": 17064,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-w-punk.high.1e0c5930.glb",
+          "sha256": "1e0c5930bc8f0355ada3bfbc9440f583ab649852b268ba55d69b62f5bec632dc",
+          "bytes": 29244,
+          "gzBytes": 22193,
+          "triangles": 2199
+        }
+      }
+    },
+    {
+      "id": "outfit-w-outdoors",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWOutdoors",
+      "bounds": { "min": [-0.8246, -0.0003, -0.1984], "max": [0.8219, 1.5688, 0.2592] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-w-outdoors.low.d002347f.glb",
+          "sha256": "d002347f3f7c61364ecc3a50c006a6a3970a51e9f9772e3817b904bd20ed171a",
+          "bytes": 18352,
+          "gzBytes": 12902,
+          "triangles": 818
+        },
+        "mid": {
+          "file": "/models/outfit-w-outdoors.mid.ede8bf75.glb",
+          "sha256": "ede8bf75459f188426b4a7c1036bf419cbb7889be059c1b4311efdf4b84ae032",
+          "bytes": 22932,
+          "gzBytes": 16837,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-w-outdoors.high.98b69160.glb",
+          "sha256": "98b69160b0cf8174f04a2eb22f8a369bb8eecd0d6a52ccb4f5f9109861d51ca8",
+          "bytes": 28800,
+          "gzBytes": 21830,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "outfit-m-casual",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMCasual",
+      "bounds": { "min": [-0.8377, -0.0014, -0.0654], "max": [0.8377, 1.5569, 0.2867] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-m-casual.low.1d7b7f7d.glb",
+          "sha256": "1d7b7f7d076fdb5d4f37388dca2b7e452e46fc1e2820c5a7f8250121bb9a6628",
+          "bytes": 16524,
+          "gzBytes": 10778,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-m-casual.mid.cd980c15.glb",
+          "sha256": "cd980c15f82dd20fc15f7ff3932cc48a221f58477310ca13eabe25335246d1a7",
+          "bytes": 21040,
+          "gzBytes": 14585,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-m-casual.high.8bf914e9.glb",
+          "sha256": "8bf914e92dd678a44a24a1a52ec1921cc4b3dd7e4d3f570f49e93acb411d48d6",
+          "bytes": 26692,
+          "gzBytes": 19954,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "outfit-m-hoodie",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMHoodie",
+      "bounds": { "min": [-0.8348, -0.0025, -0.0911], "max": [0.8377, 1.5736, 0.2867] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-m-hoodie.low.5d1683ce.glb",
+          "sha256": "5d1683ce16212c939ae5b641420d571dd3b0b367789848e0a229d5db03683950",
+          "bytes": 16880,
+          "gzBytes": 11560,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-m-hoodie.mid.b40672a2.glb",
+          "sha256": "b40672a284f655880f0af3e203138c72ca18dac18097eb3ef703cd6b02329be2",
+          "bytes": 21388,
+          "gzBytes": 15299,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-m-hoodie.high.c8a18e93.glb",
+          "sha256": "c8a18e93f16786c07e65ef207099a200bfff5bc5764c0d0768019a003a0950c7",
+          "bytes": 27404,
+          "gzBytes": 20452,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "outfit-m-suit",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMSuit",
+      "bounds": { "min": [-0.8377, -0.0013, -0.0654], "max": [0.8377, 1.5587, 0.2867] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-m-suit.low.989b4263.glb",
+          "sha256": "989b4263ae389d2424b7b107318751c2f08f62928e7a3cf690eff8922c9371b2",
+          "bytes": 16972,
+          "gzBytes": 11516,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-m-suit.mid.c6e3ab24.glb",
+          "sha256": "c6e3ab24e01c6c90b2437e9ec55711e9df7b50debc7eae84100f338d73cedbf0",
+          "bytes": 21520,
+          "gzBytes": 15921,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-m-suit.high.e0aa41d6.glb",
+          "sha256": "e0aa41d638711676b71eb19c66ee2fcace50730fe5a711677de3cc107083f5d6",
+          "bytes": 27368,
+          "gzBytes": 20940,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "outfit-m-worker",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMWorker",
+      "bounds": { "min": [-0.8348, -0.002, -0.0654], "max": [0.8348, 1.5569, 0.2867] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-m-worker.low.05b5b16c.glb",
+          "sha256": "05b5b16c51d8694fa62fbaef2bed57c3b86f05cdf9406e5438cc4c273a8b30a5",
+          "bytes": 19204,
+          "gzBytes": 13255,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-m-worker.mid.2ef49bed.glb",
+          "sha256": "2ef49bed37372cf468fb104e381465619180b6f89656e3747a2009711573feb9",
+          "bytes": 24020,
+          "gzBytes": 17022,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-m-worker.high.2711c0c7.glb",
+          "sha256": "2711c0c7b49c3396c0d5c2dfa1d6421907332876fea4151b86a9fc030e220721",
+          "bytes": 30388,
+          "gzBytes": 22088,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "outfit-m-beach",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMBeach",
+      "bounds": { "min": [-0.8348, -0.005, -0.0689], "max": [0.8348, 1.5437, 0.2875] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-m-beach.low.2a6ab936.glb",
+          "sha256": "2a6ab936a89fb091aca214d2ab5aeefa982a10b553907e67a8e8616eae4c0cc3",
+          "bytes": 17924,
+          "gzBytes": 12047,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-m-beach.mid.09bb6c9d.glb",
+          "sha256": "09bb6c9d5bc112d44e0cb0f5977f22427d88bbef9ed6969c5bfee141a5f89638",
+          "bytes": 22820,
+          "gzBytes": 16145,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-m-beach.high.ac40e9a7.glb",
+          "sha256": "ac40e9a7c3d4fc7c8effa37f184295867b11c470c9cd64980618db8f5a45dd67",
+          "bytes": 28756,
+          "gzBytes": 21180,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "outfit-m-punk",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMPunk",
+      "bounds": { "min": [-0.8377, -0.0025, -0.0736], "max": [0.8348, 1.5999, 0.2867] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-m-punk.low.935499d7.glb",
+          "sha256": "935499d7bf60a83aacaa6a8e9bf4e2fce3e10af40d874afe8daeb89ccf3d594a",
+          "bytes": 17044,
+          "gzBytes": 11475,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-m-punk.mid.c6499ee9.glb",
+          "sha256": "c6499ee9df696031c19b43b9f3b1827ce48e7098dff415be7dfea79135c7e62d",
+          "bytes": 21712,
+          "gzBytes": 15526,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-m-punk.high.9dc4fe8c.glb",
+          "sha256": "9dc4fe8c9741deb81ba7735ad91f595ec26adb1250ecf40bdf637da7db685cc4",
+          "bytes": 27612,
+          "gzBytes": 21283,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "outfit-m-overalls",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMOveralls",
+      "bounds": { "min": [-0.8348, 0.0013, -0.0691], "max": [0.8348, 1.5552, 0.2867] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-m-overalls.low.278d18dc.glb",
+          "sha256": "278d18dc5f1b4ac27f3b0ba83c1c25904a34ad6f7f32c86e07ec4e33f02ff680",
+          "bytes": 17728,
+          "gzBytes": 11980,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-m-overalls.mid.e7a49db6.glb",
+          "sha256": "e7a49db684cd7412432d7065321371cfae9342dedcfb90f13a8f374a3b1ef19d",
+          "bytes": 22476,
+          "gzBytes": 16142,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-m-overalls.high.4ffef702.glb",
+          "sha256": "4ffef702ff2c231db6300637608f5e755957260628fdfaf627d7fca6640f4a1e",
+          "bytes": 28684,
+          "gzBytes": 21884,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "outfit-m-outdoors",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMOutdoors",
+      "bounds": { "min": [-0.8348, -0.0012, -0.0664], "max": [0.8348, 1.5569, 0.2867] },
+      "slots": ["skin", "top", "bottom", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/outfit-m-outdoors.low.9a55ba18.glb",
+          "sha256": "9a55ba186925ec0098490eebafa568e0d312fb72fe10b09cff44d84bc52353a7",
+          "bytes": 18252,
+          "gzBytes": 12643,
+          "triangles": 820
+        },
+        "mid": {
+          "file": "/models/outfit-m-outdoors.mid.5bf02c0b.glb",
+          "sha256": "5bf02c0bdc02d90e6b8e4b5055d6bf25a335bffa0890a1c45456e3fcde9f8add",
+          "bytes": 22876,
+          "gzBytes": 16577,
+          "triangles": 1400
+        },
+        "high": {
+          "file": "/models/outfit-m-outdoors.high.14504cb1.glb",
+          "sha256": "14504cb1553da413f7e2a1dc4af301fade204c8d2c3c33f5a3d622c7f50a4c2e",
+          "bytes": 29360,
+          "gzBytes": 22173,
+          "triangles": 2200
+        }
+      }
+    },
+    {
+      "id": "head-f",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headF",
+      "bounds": { "min": [-0.0934, 1.5384, -0.0456], "max": [0.0934, 1.7887, 0.1774] },
+      "slots": ["skin", "hair"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/head-f.low.ecc00dad.glb",
+          "sha256": "ecc00dad4070e7c731d71a45fa06fb64c372b819f78d587c4e47b252eb872497",
+          "bytes": 11388,
+          "gzBytes": 6380,
+          "triangles": 300
+        },
+        "mid": {
+          "file": "/models/head-f.high.9ff7b0b3.glb",
+          "sha256": "9ff7b0b3fc3f26689bdb87af105c8c48c7d6990d91896409ca227ec70deea182",
+          "bytes": 12060,
+          "gzBytes": 6963,
+          "triangles": 398
+        },
+        "high": {
+          "file": "/models/head-f.high.9ff7b0b3.glb",
+          "sha256": "9ff7b0b3fc3f26689bdb87af105c8c48c7d6990d91896409ca227ec70deea182",
+          "bytes": 12060,
+          "gzBytes": 6963,
+          "triangles": 398
+        }
+      }
+    },
+    {
+      "id": "head-m",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headM",
+      "bounds": { "min": [-0.0943, 1.4994, -0.0621], "max": [0.1071, 1.8257, 0.1751] },
+      "slots": ["skin", "hair"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/head-m.low.c5e91a0e.glb",
+          "sha256": "c5e91a0e065403e461b15c3983c6158c7731f5fe98108a7d26bbdf70de8a7aa5",
+          "bytes": 11376,
+          "gzBytes": 6392,
+          "triangles": 300
+        },
+        "mid": {
+          "file": "/models/head-m.high.2b48b9a1.glb",
+          "sha256": "2b48b9a1481d6c7f151775fbd0ea866d4868911f996285e1ec0cc511749e4107",
+          "bytes": 12644,
+          "gzBytes": 7520,
+          "triangles": 484
+        },
+        "high": {
+          "file": "/models/head-m.high.2b48b9a1.glb",
+          "sha256": "2b48b9a1481d6c7f151775fbd0ea866d4868911f996285e1ec0cc511749e4107",
+          "bytes": 12644,
+          "gzBytes": 7520,
+          "triangles": 484
+        }
+      }
+    },
+    {
+      "id": "hair-bob",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairBob",
+      "bounds": { "min": [-0.1164, 1.5232, -0.0995], "max": [0.1147, 1.8435, 0.1925] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-bob.low.c57a22cd.glb",
+          "sha256": "c57a22cd9b23c91fc5744e634ad358f70bed41e5686d4ba45061474a16bf9930",
+          "bytes": 3524,
+          "gzBytes": 2075,
+          "triangles": 249
+        },
+        "mid": {
+          "file": "/models/hair-bob.mid.fdc6f9c9.glb",
+          "sha256": "fdc6f9c96a6160466f8ed35947ed74e6390f1c649866e726762c9c80fefdcdba",
+          "bytes": 4624,
+          "gzBytes": 2962,
+          "triangles": 499
+        },
+        "high": {
+          "file": "/models/hair-bob.high.a7a26fdf.glb",
+          "sha256": "a7a26fdf61cceb71f6152e13745a645c4baa5cc483f747b27554c3228c6c1955",
+          "bytes": 6332,
+          "gzBytes": 4328,
+          "triangles": 900
+        }
+      }
+    },
+    {
+      "id": "hair-pixie",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairPixie",
+      "bounds": { "min": [-0.101, 1.6336, -0.0544], "max": [0.101, 1.8276, 0.1698] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-pixie.high.b11d3ae7.glb",
+          "sha256": "b11d3ae70578bee46bd91452e8aa2085d67837f8eb45e7972b0fc5df1dec471c",
+          "bytes": 3328,
+          "gzBytes": 1836,
+          "triangles": 230
+        },
+        "mid": {
+          "file": "/models/hair-pixie.high.b11d3ae7.glb",
+          "sha256": "b11d3ae70578bee46bd91452e8aa2085d67837f8eb45e7972b0fc5df1dec471c",
+          "bytes": 3328,
+          "gzBytes": 1836,
+          "triangles": 230
+        },
+        "high": {
+          "file": "/models/hair-pixie.high.b11d3ae7.glb",
+          "sha256": "b11d3ae70578bee46bd91452e8aa2085d67837f8eb45e7972b0fc5df1dec471c",
+          "bytes": 3328,
+          "gzBytes": 1836,
+          "triangles": 230
+        }
+      }
+    },
+    {
+      "id": "hair-updo",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairUpdo",
+      "bounds": { "min": [-0.1191, 1.5247, -0.117], "max": [0.1191, 1.8436, 0.1994] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-updo.low.130a86c3.glb",
+          "sha256": "130a86c3c4f745ff2a82e9caad6bbb17cb3e4d7b568978fc6de6390508c9c5d1",
+          "bytes": 3476,
+          "gzBytes": 2008,
+          "triangles": 248
+        },
+        "mid": {
+          "file": "/models/hair-updo.mid.c8f8b1bb.glb",
+          "sha256": "c8f8b1bbbfab0f94cba100b5c4a0d7e867d094a80ee3850ae5661d028d379e3a",
+          "bytes": 4640,
+          "gzBytes": 2932,
+          "triangles": 500
+        },
+        "high": {
+          "file": "/models/hair-updo.high.2d79faf1.glb",
+          "sha256": "2d79faf10145724abc88ce60f3531e331c76c9aa7d6e1cacc2dac1c59a54905e",
+          "bytes": 6324,
+          "gzBytes": 4094,
+          "triangles": 900
+        }
+      }
+    },
+    {
+      "id": "hair-mohawk",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairMohawk",
+      "bounds": { "min": [-0.0388, 1.6647, -0.1595], "max": [0.0446, 1.9654, 0.2303] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-mohawk.low.d9cbf6cc.glb",
+          "sha256": "d9cbf6cc4020b930d8c49e208551213271bab81bc1f91c9f37a214462f363946",
+          "bytes": 3388,
+          "gzBytes": 1889,
+          "triangles": 250
+        },
+        "mid": {
+          "file": "/models/hair-mohawk.mid.b7732355.glb",
+          "sha256": "b773235524809995a8a134225dd0af753a252150eca9ffccb284eeb350cd5087",
+          "bytes": 4404,
+          "gzBytes": 2498,
+          "triangles": 500
+        },
+        "high": {
+          "file": "/models/hair-mohawk.high.638e9b5f.glb",
+          "sha256": "638e9b5f938c3c9b34abd7a2095e948772465c82ae9e86713e55d5e763c23bdf",
+          "bytes": 4420,
+          "gzBytes": 2497,
+          "triangles": 504
+        }
+      }
+    },
+    {
+      "id": "hair-spiky",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairSpiky",
+      "bounds": { "min": [-0.1128, 1.6053, -0.0861], "max": [0.1126, 1.8777, 0.1809] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-spiky.low.e0fe0252.glb",
+          "sha256": "e0fe02523484e774f5962f0324b0bb339205c53bce9cda6468dfe05e185101b0",
+          "bytes": 3532,
+          "gzBytes": 2086,
+          "triangles": 250
+        },
+        "mid": {
+          "file": "/models/hair-spiky.mid.edd93bb0.glb",
+          "sha256": "edd93bb02da37e14ed912bfee4e48db74afc9133e01243bc7acf6fdfe80ea0bc",
+          "bytes": 4636,
+          "gzBytes": 2967,
+          "triangles": 500
+        },
+        "high": {
+          "file": "/models/hair-spiky.high.6d11c14b.glb",
+          "sha256": "6d11c14b898744e4fa67130f769f14abd1bf21508965960e4628279cc7ff6f5e",
+          "bytes": 6292,
+          "gzBytes": 4083,
+          "triangles": 900
+        }
+      }
+    },
+    {
+      "id": "hair-ponytail",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairPonytail",
+      "bounds": { "min": [-0.1125, 1.5567, -0.168], "max": [0.1123, 1.8566, 0.1573] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-ponytail.low.71c0fa1f.glb",
+          "sha256": "71c0fa1f6d84fe5a71532bda13d03b91cc73ad445fe5b7d34c93b4895cc9f8cb",
+          "bytes": 3496,
+          "gzBytes": 1998,
+          "triangles": 248
+        },
+        "mid": {
+          "file": "/models/hair-ponytail.mid.ad1ed15e.glb",
+          "sha256": "ad1ed15e8a6877eb51c60b9404f5bfdc7d4760389f1396896a4b3d7852a169e4",
+          "bytes": 4608,
+          "gzBytes": 2886,
+          "triangles": 500
+        },
+        "high": {
+          "file": "/models/hair-ponytail.high.dfde043e.glb",
+          "sha256": "dfde043efa92d84d8b68ce203f20760a0792521b0a61daee66b23e9c1d090de3",
+          "bytes": 6220,
+          "gzBytes": 4015,
+          "triangles": 900
+        }
+      }
+    },
+    {
+      "id": "hair-tousled",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairTousled",
+      "bounds": { "min": [-0.1138, 1.6254, -0.0872], "max": [0.1136, 1.8662, 0.1692] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-tousled.low.e5407042.glb",
+          "sha256": "e54070423bef95b80149388efd8fd9b66800e815df3d7b4c27e10cdbca875624",
+          "bytes": 3564,
+          "gzBytes": 2070,
+          "triangles": 248
+        },
+        "mid": {
+          "file": "/models/hair-tousled.mid.b13596b0.glb",
+          "sha256": "b13596b06783a84a3f35bb69ac45fcc3afc30d052c07125304920b82518122a7",
+          "bytes": 4640,
+          "gzBytes": 2806,
+          "triangles": 500
+        },
+        "high": {
+          "file": "/models/hair-tousled.high.ca563452.glb",
+          "sha256": "ca56345240f354fb05539ecab19ea9ba69c11f19043603f0594b61b18675d180",
+          "bytes": 6288,
+          "gzBytes": 3988,
+          "triangles": 900
+        }
+      }
+    },
+    {
+      "id": "hair-parted",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairParted",
+      "bounds": { "min": [-0.1155, 1.5937, -0.0849], "max": [0.1074, 1.8556, 0.1703] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-parted.low.dc0e8c2c.glb",
+          "sha256": "dc0e8c2c00c3268eccb817985a3a90b690d8e1c0d9965b2612f09cfac1dc3ac8",
+          "bytes": 3468,
+          "gzBytes": 2040,
+          "triangles": 234
+        },
+        "mid": {
+          "file": "/models/hair-parted.mid.27127723.glb",
+          "sha256": "2712772396c41190cc3330cae4e9ec8314b6513c00e4aac7ceeb2d6a2955aa72",
+          "bytes": 4664,
+          "gzBytes": 3037,
+          "triangles": 496
+        },
+        "high": {
+          "file": "/models/hair-parted.high.d319777b.glb",
+          "sha256": "d319777bf134ac96b41b921a8317fd0da0a876fd44e6961cc1f8da0df5c5b9d0",
+          "bytes": 6324,
+          "gzBytes": 4309,
+          "triangles": 900
+        }
+      }
+    },
+    {
+      "id": "hair-swept",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairSwept",
+      "bounds": { "min": [-0.1074, 1.6254, -0.0936], "max": [0.1077, 1.8542, 0.1669] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-swept.low.8bd81320.glb",
+          "sha256": "8bd81320df4f40a1782d5552fa13c190d0ff41778298086af72569997d998d12",
+          "bytes": 3464,
+          "gzBytes": 2032,
+          "triangles": 229
+        },
+        "mid": {
+          "file": "/models/hair-swept.mid.243b1e6d.glb",
+          "sha256": "243b1e6df16370155e2c65a9cc01df2ec030d1350b70e25b634816a1cab80b62",
+          "bytes": 4844,
+          "gzBytes": 3206,
+          "triangles": 500
+        },
+        "high": {
+          "file": "/models/hair-swept.high.aa301d14.glb",
+          "sha256": "aa301d149d430fdeaee07540c44fe656aabacd60c84084d1b40d165cf7e39d79",
+          "bytes": 6604,
+          "gzBytes": 4599,
+          "triangles": 900
+        }
+      }
+    },
+    {
+      "id": "avatar-rig-f",
+      "kind": "rig",
+      "category": "avatar-rig",
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.avatarRigF",
+      "slots": [],
+      "emissive": false,
+      "clips": ["idle", "walk", "run", "wave", "interact"],
+      "tiers": {
+        "low": {
+          "file": "/models/avatar-rig-f.high.f8e04087.glb",
+          "sha256": "f8e04087413bf9f185da7ead1ed558e71bd7ebffbb53d6861dce5054e48793f5",
+          "bytes": 58504,
+          "gzBytes": 14700,
+          "triangles": 0
+        },
+        "mid": {
+          "file": "/models/avatar-rig-f.high.f8e04087.glb",
+          "sha256": "f8e04087413bf9f185da7ead1ed558e71bd7ebffbb53d6861dce5054e48793f5",
+          "bytes": 58504,
+          "gzBytes": 14700,
+          "triangles": 0
+        },
+        "high": {
+          "file": "/models/avatar-rig-f.high.f8e04087.glb",
+          "sha256": "f8e04087413bf9f185da7ead1ed558e71bd7ebffbb53d6861dce5054e48793f5",
+          "bytes": 58504,
+          "gzBytes": 14700,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "avatar-rig-m",
+      "kind": "rig",
+      "category": "avatar-rig",
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.avatarRigM",
+      "slots": [],
+      "emissive": false,
+      "clips": ["idle", "walk", "run", "wave", "interact"],
+      "tiers": {
+        "low": {
+          "file": "/models/avatar-rig-m.high.9e26cfe8.glb",
+          "sha256": "9e26cfe8adb5c070c2578e90dc70e84c680b08676ef785634cc3392e18af93d5",
+          "bytes": 59348,
+          "gzBytes": 15463,
+          "triangles": 0
+        },
+        "mid": {
+          "file": "/models/avatar-rig-m.high.9e26cfe8.glb",
+          "sha256": "9e26cfe8adb5c070c2578e90dc70e84c680b08676ef785634cc3392e18af93d5",
+          "bytes": 59348,
+          "gzBytes": 15463,
+          "triangles": 0
+        },
+        "high": {
+          "file": "/models/avatar-rig-m.high.9e26cfe8.glb",
+          "sha256": "9e26cfe8adb5c070c2578e90dc70e84c680b08676ef785634cc3392e18af93d5",
+          "bytes": 59348,
+          "gzBytes": 15463,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "npc-woman",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.npcWoman",
+      "bounds": { "min": [-0.8223, -0.0064, -0.0888], "max": [0.8223, 1.8431, 0.2661] },
+      "slots": ["skin", "top", "bottom", "hair", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/npc-woman.low.2c98742c.glb",
+          "sha256": "2c98742c1be421bfedbc82209b580ea58c65aef79b3d1f098934af793d525a65",
+          "bytes": 15724,
+          "gzBytes": 10551,
+          "triangles": 785
+        },
+        "mid": {
+          "file": "/models/npc-woman.high.bc0cbee9.glb",
+          "sha256": "bc0cbee9917507f90c6cabe72be5ae0cf543cbb2c186183b84a187dba67febcf",
+          "bytes": 16036,
+          "gzBytes": 10828,
+          "triangles": 833
+        },
+        "high": {
+          "file": "/models/npc-woman.high.bc0cbee9.glb",
+          "sha256": "bc0cbee9917507f90c6cabe72be5ae0cf543cbb2c186183b84a187dba67febcf",
+          "bytes": 16036,
+          "gzBytes": 10828,
+          "triangles": 833
+        }
+      }
+    },
+    {
+      "id": "npc-man",
+      "kind": "skinned",
+      "category": "avatar-body",
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.npcMan",
+      "bounds": { "min": [-0.8348, 0.0006, -0.168], "max": [0.8281, 1.8513, 0.2823] },
+      "slots": ["skin", "top", "bottom", "hair", "shoes"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/npc-man.low.8e9385b3.glb",
+          "sha256": "8e9385b36fad1ebf5321dce0499ab852f423dc8dd52652b7e551ab40330b1935",
+          "bytes": 16420,
+          "gzBytes": 11184,
+          "triangles": 797
+        },
+        "mid": {
+          "file": "/models/npc-man.high.641af184.glb",
+          "sha256": "641af1846a3a2e610c3030f2e75b4560baadee82a21be90d2f20138f0a9274f7",
+          "bytes": 16904,
+          "gzBytes": 11697,
+          "triangles": 840
+        },
+        "high": {
+          "file": "/models/npc-man.high.641af184.glb",
+          "sha256": "641af1846a3a2e610c3030f2e75b4560baadee82a21be90d2f20138f0a9274f7",
+          "bytes": 16904,
+          "gzBytes": 11697,
+          "triangles": 840
         }
       }
     }

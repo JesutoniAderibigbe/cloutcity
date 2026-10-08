@@ -12,7 +12,7 @@ import { deriveAvatarSceneRefs, deriveAvatarSwatches } from './avatarScene'
 import { scene, theme } from './config'
 import { items } from './content'
 import { modelManifest } from './models'
-import { AvatarOptionsSchema, TraitsFileSchema } from './schemas/avatar'
+import { AvatarCompatSchema, AvatarOptionsSchema, TraitsFileSchema } from './schemas/avatar'
 import { NeighborhoodsFileSchema } from './schemas/content'
 import { CreatorConfigSchema } from './schemas/creator'
 
@@ -33,6 +33,7 @@ describe('data/avatar/engine.derived.json', () => {
   it('is what the source files derive to (run `npm run avatar:update` after editing them)', async () => {
     const tables = deriveAvatarEngineTables({
       options: AvatarOptionsSchema.parse(readJson('avatar/options.json')),
+      compat: AvatarCompatSchema.parse(readJson('avatar/compat.json')),
       traits: TraitsFileSchema.parse(readJson('avatar/traits.json')),
       creator: CreatorConfigSchema.parse(readJson('config/creator.json')),
       neighborhoods: NeighborhoodsFileSchema.parse(readJson('homes/neighborhoods.json'))
@@ -47,6 +48,7 @@ describe('data/avatar/engine.derived.json', () => {
   it('data/avatar/scene.derived.json is the avatar models, colours and placement (run `npm run avatar:update`)', async () => {
     const refs = deriveAvatarSceneRefs({
       options: AvatarOptionsSchema.parse(readJson('avatar/options.json')),
+      pending: AvatarCompatSchema.parse(readJson('avatar/compat.json')).pending,
       manifest: modelManifest.models,
       palette: theme.models,
       avatarLook: scene.avatarLook,

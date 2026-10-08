@@ -58,7 +58,11 @@ function playerModel(): SceneProps['playerModel'] {
   const head = modelRef(scene.models.player.head)
   if (head.bounds === undefined) throw new Error(`Avatar head ${head.id} has no bounds`)
   return {
-    parts: { rig: modelRef('avatar-rig'), head, body: modelRef(scene.models.player.body) },
+    parts: {
+      rig: modelRef(scene.models.player.rig),
+      head,
+      body: modelRef(scene.models.player.body),
+    },
     heightM: head.bounds.max[1],
     tint: lookTintTable(),
   }

@@ -21,6 +21,12 @@ function downloadLine(source: Source): string {
   if (download.kind === 'github-raw') {
     return `- Download: raw files of <https://github.com/${download.repo}> at commit \`${download.commit}\` (models under \`${download.root}/\`)`
   }
+  if (download.kind === 'gdrive-files') {
+    return `- Download: single files of a public Google Drive folder, by file id (${download.files.map((file) => `\`${file.path}\` = \`${file.id}\``).join(', ')})`
+  }
+  if (download.kind === 'itch') {
+    return `- Download: <${download.page}> upload ${download.uploadId}, cached as \`${download.file}\` (models under \`${download.root}/\`)`
+  }
   return `- Built by \`npm run blender:build\` into \`${download.root}/\` (Blender pinned in scripts/blender/lock.json)`
 }
 
@@ -94,12 +100,14 @@ export function renderSourcesMd(catalog: Catalog, lock: SourcesLock, blender: Bl
     '  (`data/config/theme.json` → `models`, DEC-26) within a CIEDE2000 tolerance.',
     '- Merges each static model into one mesh, scales it to real-world size and re-centres it.',
     '- Simplifies per quality tier (meshoptimizer), quantizes and compresses (EXT_meshopt_compression).',
-    '- Avatar parts keep the shared Kenney rig; the rig keeps only the clips listed in the catalog.',
+    '- Avatar parts (Quaternius modular packs) merge each outfit or face into one skinned mesh, fold',
+    '  fingers into the hands, rename the joints and simplify to per-tier triangle targets; each rig',
+    '  keeps only the clips listed in the catalog. Pack hairstyles are cut out as attachments.',
     '',
     '## Attribution',
     '',
-    'Not required by CC0; credited on /credits as thanks: Kenney (www.kenney.nl) and Kay Lousberg',
-    '(www.kaylousberg.com).',
+    'Not required by CC0; credited on /credits as thanks: Kenney (www.kenney.nl), Kay Lousberg',
+    '(www.kaylousberg.com) and Quaternius (quaternius.com).',
     '',
     '## Packs',
     '',

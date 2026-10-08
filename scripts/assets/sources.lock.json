@@ -308,18 +308,6 @@
       ]
     },
     {
-      "id": "kenney-mini-characters",
-      "retrieved": "2026-10-07",
-      "files": [
-        {
-          "path": "kenney_mini-characters.zip",
-          "url": "https://kenney.nl/media/pages/assets/mini-characters/bfc7e272b4-1774770718/kenney_mini-characters.zip",
-          "sha256": "9e1d48e6d7b8479ebbe84df71eb5bd8e1b3f0da546dea641890dccc8a02d0999",
-          "bytes": 2403059
-        }
-      ]
-    },
-    {
       "id": "kenney-furniture-kit",
       "retrieved": "2026-10-07",
       "files": [
@@ -352,6 +340,126 @@
           "url": "https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip",
           "sha256": "fa7974a0d342bfe63c38664ba9f8ec1a4aab8ea25f099bdc56870e33588c4d9d",
           "bytes": 10537521
+        }
+      ]
+    },
+    {
+      "id": "quaternius-modular-women",
+      "retrieved": "2026-10-08",
+      "files": [
+        {
+          "path": "License.txt",
+          "url": "https://drive.usercontent.google.com/download?id=1lIFL16xEpoPbr0j_HUATgmcEnAmYoIK2&export=download&confirm=t",
+          "sha256": "e8dbf915a2b82229913e301a0787696611241bdefec4832bc084f54161db1efe",
+          "bytes": 372
+        },
+        {
+          "path": "glTF/Adventurer.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1uxAFnDp73NO1c16LvHHjAYh1-deMNk5I&export=download&confirm=t",
+          "sha256": "65094211e53b49f6a834c617cc056834686fe794a0b515a6b97faa3e1130cc95",
+          "bytes": 3205962
+        },
+        {
+          "path": "glTF/Casual.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=18b3WwlrwrFYWAM7BcnjWeIxKJyxAQiGh&export=download&confirm=t",
+          "sha256": "b0fe6e92219cd71808844a20a1a8b960fd1cf640a6546dc6362b5add6604e87c",
+          "bytes": 3131788
+        },
+        {
+          "path": "glTF/Formal.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1iayBzVv_zLjuPtaNPouw_auwKlQLLmes&export=download&confirm=t",
+          "sha256": "fdfcf454c4de037d31973eb28d8591bd7763035d49f46b380e63b1c832dc7ddf",
+          "bytes": 3082953
+        },
+        {
+          "path": "glTF/Punk.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1ITb_iFiroAsmjQI38z_p6nNXinwliVLA&export=download&confirm=t",
+          "sha256": "61cc7f85a8e9b700cdb92ae8ebd6e3bdd1e8a510b57027f6c7d8c2b6ff3b0e0f",
+          "bytes": 3063914
+        },
+        {
+          "path": "glTF/Suit.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1GjWtofxjmPku25cXJxHrzLLeUbXw7A_s&export=download&confirm=t",
+          "sha256": "937d5c8d08fb5570f6a4e1dd79a3878335444d175aae3b0e9e2babdac36a17f7",
+          "bytes": 3142156
+        },
+        {
+          "path": "glTF/Worker.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1iwF_fqDErPH9uyol6NmS-MnzGgsZ5ejV&export=download&confirm=t",
+          "sha256": "e2bfc1039f429e870a0119e274c2dd45f6304f00c39f4570dfeb9ed4d97a063d",
+          "bytes": 3095030
+        }
+      ]
+    },
+    {
+      "id": "quaternius-modular-men",
+      "retrieved": "2026-10-08",
+      "files": [
+        {
+          "path": "License.txt",
+          "url": "https://drive.usercontent.google.com/download?id=1TTvylHa1CsiJuHFWWiv6PFGhLM-aAH5z&export=download&confirm=t",
+          "sha256": "e8dbf915a2b82229913e301a0787696611241bdefec4832bc084f54161db1efe",
+          "bytes": 372
+        },
+        {
+          "path": "glTF/Adventurer.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1fzSq1Rr037f7QkfXPWEAzmbLMNx-FpPA&export=download&confirm=t",
+          "sha256": "21f7a61afb6bd6cef6961490c367594e3c2fc01ec1f041662131172ce763063e",
+          "bytes": 3671456
+        },
+        {
+          "path": "glTF/Beach.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1IL1YJPJvNkuGnKI69-W-VMBIDCo-u49N&export=download&confirm=t",
+          "sha256": "76e001ea131fd76a1bd938a7862606cb8037f7049b632783580b9bf4da2371a8",
+          "bytes": 3166143
+        },
+        {
+          "path": "glTF/Casual_2.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1Jn7kULNmrtqP8BUUL19h8MhbdOnwPFhv&export=download&confirm=t",
+          "sha256": "55c654d09a2a5ff6e3bd6158d4a1b462f181cd6f1e12a0f5e9d959f9c3abc438",
+          "bytes": 3058092
+        },
+        {
+          "path": "glTF/Casual_Hoodie.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1em1So1xwwQNfHJYMvzKcXkZllvtxpKP5&export=download&confirm=t",
+          "sha256": "dd74886c26998a0fa888b4ce557a0932d7d97b0265dd4c763154d081b7a6cb98",
+          "bytes": 3104001
+        },
+        {
+          "path": "glTF/Farmer.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1B9Dln-oR5Yk6sdsDR3yHCw86LobAN3Zd&export=download&confirm=t",
+          "sha256": "46d3e85fa8d848ee479ab8e4672c16724ee4ea51f3af5733705a153937f93555",
+          "bytes": 2998119
+        },
+        {
+          "path": "glTF/Punk.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1yHWu5ezXq4dYBcn4sWiNd16YN9fMtXo0&export=download&confirm=t",
+          "sha256": "f9224072f5e6cbb207eca250faa7f1868614a1a984074fe79c7b2862df4feb42",
+          "bytes": 3003321
+        },
+        {
+          "path": "glTF/Suit.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=1NhXHnGU0zK9hBrT5FoZp8nTz_EmvTPg5&export=download&confirm=t",
+          "sha256": "6c89fbb31b96c1a63ad94e3dee0942bd7b34bc789a5d39fd6a6a1738a9214fb3",
+          "bytes": 3315342
+        },
+        {
+          "path": "glTF/Worker.gltf",
+          "url": "https://drive.usercontent.google.com/download?id=14d8n7IDnnlnGt_uiATnNg3uvi_4dyd9V&export=download&confirm=t",
+          "sha256": "e49f8ec0f8a7de72dd26b1c01e6413c9a87a9116eeee21f9364ccd36bc286335",
+          "bytes": 2967023
+        }
+      ]
+    },
+    {
+      "id": "quaternius-ual",
+      "retrieved": "2026-10-08",
+      "files": [
+        {
+          "path": "quaternius-ual-standard.zip",
+          "url": "https://quaternius.itch.io/universal-animation-library/file/17958403",
+          "sha256": "cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724",
+          "bytes": 15904933
         }
       ]
     }

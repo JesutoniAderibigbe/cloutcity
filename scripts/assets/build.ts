@@ -38,6 +38,8 @@ export const CATALOG_PATH = join(ROOT, 'data/assets/catalog.json')
 export const MANIFEST_PATH = join(ROOT, 'data/assets/manifest.json')
 export const SOURCES_MD_PATH = join(ROOT, 'data/assets/SOURCES.md')
 export const LOCK_PATH = join(ROOT, 'scripts/assets/sources.lock.json')
+/** S16b: bind-pose measurements of the modular avatar parts and rigs (the Blender frame). */
+export const FRAME_PATH = join(ROOT, 'data/avatar/frame.json')
 export const CACHE_DIR = join(ROOT, '.cache/assets')
 export const PUBLIC_DIR = join(ROOT, 'public')
 export const MODELS_DIR = join(PUBLIC_DIR, 'models')
@@ -82,7 +84,7 @@ export function catalogProblems(
       ...Object.values(model.remap ?? {}),
       ...model.emissive,
       ...Object.values(model.glow ?? {}),
-      ...model.slots.flatMap((slot) => slot.tokens),
+      ...model.slots.flatMap((slot) => slot.tokens ?? []),
     ]
     for (const token of new Set(tokens)) {
       if (!(token in palette)) problems.push(`${model.id}: ${token} is not a theme models token`)
@@ -213,6 +215,23 @@ async function formatted(path: string, text: string): Promise<string> {
   return format(text, { ...options, filepath: path })
 }
 
+/**
+ * data/avatar/frame.json: where each modular avatar part's materials and each rig's joints sit
+ * in the bind pose, in fitted metres with glTF axes (+y up, +z out of the face). The Blender
+ * attachment scripts read it as a lock input, so a pack change re-fits them (S16b P2a).
+ */
+export function avatarFrame(built: readonly BuiltModel[]) {
+  return {
+    version: 1,
+    generatedBy: 'npm run assets:build (scripts/assets/pipeline.ts)',
+    models: Object.fromEntries(
+      built.flatMap((model) =>
+        model.frame === undefined ? [] : [[model.model.id, model.frame] as const],
+      ),
+    ),
+  }
+}
+
 export interface BuildResult {
   readonly texts: ReadonlyMap<string, string>
   /** Absolute path under public/models → bytes. */
@@ -258,6 +277,7 @@ export async function buildAssets(
       palette: theme.models,
       maxDeltaE: catalog.maxDeltaE,
       grade: source.grade,
+      jointMaps: catalog.jointMaps ?? {},
     })
     for (const warning of result.warnings) log(`warn ${model.id}: ${warning}`)
     const colours = [...result.colours.entries()]
@@ -273,6 +293,7 @@ export async function buildAssets(
     [MANIFEST_PATH, await formatted(MANIFEST_PATH, JSON.stringify(manifest))],
     [LOCK_PATH, await formatted(LOCK_PATH, JSON.stringify(lock))],
     [SOURCES_MD_PATH, await formatted(SOURCES_MD_PATH, renderSourcesMd(catalog, lock, blender))],
+    [FRAME_PATH, await formatted(FRAME_PATH, JSON.stringify(avatarFrame(built)))],
   ])
   const models = new Map(
     [...files.entries()].map(([file, bytes]) => [join(PUBLIC_DIR, ...file.split('/')), bytes]),
@@ -347,7 +368,9 @@ async function main(): Promise<void> {
   }
   for (const [path, bytes] of result.models) await writeFile(path, bytes)
   for (const [path, text] of result.texts) await writeFile(path, text)
-  write(`wrote ${result.models.size} model files, the manifest, the lock and SOURCES.md`)
+  write(
+    `wrote ${result.models.size} model files, the manifest, the lock, SOURCES.md and frame.json`,
+  )
 }
 
 if (import.meta.main) {

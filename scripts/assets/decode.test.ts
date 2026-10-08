@@ -85,8 +85,8 @@ describe('three r182 GLTFLoader + bundled MeshoptDecoder', () => {
   )
 
   it('stands every avatar part upright at a person’s height in its bind pose', async () => {
-    const body = manifest.models.find((model) => model.id === 'body-female-a')
-    const head = manifest.models.find((model) => model.id === 'head-female-a')
+    const body = manifest.models.find((model) => model.id === 'outfit-w-casual')
+    const head = manifest.models.find((model) => model.id === 'head-f')
     if (body === undefined || head === undefined) throw new Error('avatar parts missing')
     const box = new Box3()
     const point = new Vector3()

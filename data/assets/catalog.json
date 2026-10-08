@@ -84,33 +84,6 @@
       }
     },
     {
-      "id": "kenney-mini-characters",
-      "kind": "cc0-pack",
-      "title": "Kenney Mini Characters",
-      "version": "1.0",
-      "author": "Kenney",
-      "homepage": "https://kenney.nl/assets/mini-characters",
-      "licence": "CC0-1.0",
-      "licenceEvidence": {
-        "entry": "License.txt",
-        "mustContain": [
-          "License: (Creative Commons Zero, CC0)",
-          "http://creativecommons.org/publicdomain/zero/1.0/"
-        ]
-      },
-      "download": {
-        "kind": "zip",
-        "url": "https://kenney.nl/media/pages/assets/mini-characters/bfc7e272b4-1774770718/kenney_mini-characters.zip",
-        "file": "kenney_mini-characters.zip",
-        "root": "Models/GLB format"
-      },
-      "factorEncoding": "linear",
-      "grade": {
-        "lightness": 1,
-        "chroma": 1
-      }
-    },
-    {
       "id": "kenney-furniture-kit",
       "kind": "cc0-pack",
       "title": "Kenney Furniture Kit",
@@ -192,6 +165,150 @@
       }
     },
     {
+      "id": "quaternius-modular-women",
+      "kind": "cc0-pack",
+      "title": "Quaternius Ultimate Modular Women",
+      "version": "2022-02",
+      "author": "Quaternius",
+      "homepage": "https://quaternius.com/packs/ultimatemodularwomen.html",
+      "licence": "CC0-1.0",
+      "licenceEvidence": {
+        "entry": "License.txt",
+        "mustContain": [
+          "CC0 1.0 Universal (CC0 1.0)",
+          "https://creativecommons.org/publicdomain/zero/1.0/"
+        ]
+      },
+      "download": {
+        "kind": "gdrive-files",
+        "files": [
+          {
+            "path": "License.txt",
+            "id": "1lIFL16xEpoPbr0j_HUATgmcEnAmYoIK2"
+          },
+          {
+            "path": "glTF/Casual.gltf",
+            "id": "18b3WwlrwrFYWAM7BcnjWeIxKJyxAQiGh"
+          },
+          {
+            "path": "glTF/Suit.gltf",
+            "id": "1GjWtofxjmPku25cXJxHrzLLeUbXw7A_s"
+          },
+          {
+            "path": "glTF/Worker.gltf",
+            "id": "1iwF_fqDErPH9uyol6NmS-MnzGgsZ5ejV"
+          },
+          {
+            "path": "glTF/Formal.gltf",
+            "id": "1iayBzVv_zLjuPtaNPouw_auwKlQLLmes"
+          },
+          {
+            "path": "glTF/Punk.gltf",
+            "id": "1ITb_iFiroAsmjQI38z_p6nNXinwliVLA"
+          },
+          {
+            "path": "glTF/Adventurer.gltf",
+            "id": "1uxAFnDp73NO1c16LvHHjAYh1-deMNk5I"
+          }
+        ]
+      },
+      "factorEncoding": "linear",
+      "grade": {
+        "lightness": 1,
+        "chroma": 1
+      }
+    },
+    {
+      "id": "quaternius-modular-men",
+      "kind": "cc0-pack",
+      "title": "Quaternius Ultimate Modular Men",
+      "version": "2022-02",
+      "author": "Quaternius",
+      "homepage": "https://quaternius.com/packs/ultimatemodularcharacters.html",
+      "licence": "CC0-1.0",
+      "licenceEvidence": {
+        "entry": "License.txt",
+        "mustContain": [
+          "CC0 1.0 Universal (CC0 1.0)",
+          "https://creativecommons.org/publicdomain/zero/1.0/"
+        ]
+      },
+      "download": {
+        "kind": "gdrive-files",
+        "files": [
+          {
+            "path": "License.txt",
+            "id": "1TTvylHa1CsiJuHFWWiv6PFGhLM-aAH5z"
+          },
+          {
+            "path": "glTF/Casual_2.gltf",
+            "id": "1Jn7kULNmrtqP8BUUL19h8MhbdOnwPFhv"
+          },
+          {
+            "path": "glTF/Casual_Hoodie.gltf",
+            "id": "1em1So1xwwQNfHJYMvzKcXkZllvtxpKP5"
+          },
+          {
+            "path": "glTF/Suit.gltf",
+            "id": "1NhXHnGU0zK9hBrT5FoZp8nTz_EmvTPg5"
+          },
+          {
+            "path": "glTF/Worker.gltf",
+            "id": "14d8n7IDnnlnGt_uiATnNg3uvi_4dyd9V"
+          },
+          {
+            "path": "glTF/Beach.gltf",
+            "id": "1IL1YJPJvNkuGnKI69-W-VMBIDCo-u49N"
+          },
+          {
+            "path": "glTF/Punk.gltf",
+            "id": "1yHWu5ezXq4dYBcn4sWiNd16YN9fMtXo0"
+          },
+          {
+            "path": "glTF/Farmer.gltf",
+            "id": "1B9Dln-oR5Yk6sdsDR3yHCw86LobAN3Zd"
+          },
+          {
+            "path": "glTF/Adventurer.gltf",
+            "id": "1fzSq1Rr037f7QkfXPWEAzmbLMNx-FpPA"
+          }
+        ]
+      },
+      "factorEncoding": "linear",
+      "grade": {
+        "lightness": 1,
+        "chroma": 1
+      }
+    },
+    {
+      "id": "quaternius-ual",
+      "kind": "cc0-pack",
+      "title": "Quaternius Universal Animation Library Standard",
+      "version": "1.0",
+      "author": "Quaternius",
+      "homepage": "https://quaternius.itch.io/universal-animation-library",
+      "licence": "CC0-1.0",
+      "licenceEvidence": {
+        "entry": "Universal Animation Library[Standard]/License.txt",
+        "mustContain": [
+          "CC0 1.0 Universal (CC0 1.0)",
+          "https://creativecommons.org/publicdomain/zero/1.0/"
+        ]
+      },
+      "download": {
+        "kind": "itch",
+        "page": "https://quaternius.itch.io/universal-animation-library",
+        "uploadId": 17958403,
+        "file": "quaternius-ual-standard.zip",
+        "root": "Universal Animation Library[Standard]/Unreal-Godot"
+      },
+      "factorEncoding": "linear",
+      "grade": {
+        "lightness": 1,
+        "chroma": 1
+      }
+    },
+    {
       "id": "clout-city-blender",
       "kind": "blender-script",
       "title": "Clout City Blender models",
@@ -214,6 +331,44 @@
       }
     }
   ],
+  "jointMaps": {
+    "modular": {
+      "collapse": [
+        {
+          "match": "^(?:Index|Middle|Ring|Pinky|Thumb)\\d\\.(L|R)$",
+          "into": "Wrist.$1"
+        },
+        {
+          "match": "^PT\\.(L|R)$",
+          "into": "Foot.$1"
+        }
+      ],
+      "rename": {
+        "Root": "root",
+        "Body": "body",
+        "Hips": "hips",
+        "Abdomen": "abdomen",
+        "Torso": "spine",
+        "Chest": "torso",
+        "Neck": "neck",
+        "Head": "head",
+        "Shoulder.L": "shoulder-left",
+        "UpperArm.L": "upper-arm-left",
+        "LowerArm.L": "lower-arm-left",
+        "Wrist.L": "hand-left",
+        "UpperLeg.L": "upper-leg-left",
+        "LowerLeg.L": "lower-leg-left",
+        "Foot.L": "foot-left",
+        "Shoulder.R": "shoulder-right",
+        "UpperArm.R": "upper-arm-right",
+        "LowerArm.R": "lower-arm-right",
+        "Wrist.R": "hand-right",
+        "UpperLeg.R": "upper-leg-right",
+        "LowerLeg.R": "lower-leg-right",
+        "Foot.R": "foot-right"
+      }
+    }
+  },
   "models": [
     {
       "id": "taxi",
@@ -2450,2984 +2605,6 @@
       "nameKey": "models.name.floor"
     },
     {
-      "id": "avatar-rig",
-      "source": "kenney-mini-characters",
-      "kind": "rig",
-      "entries": [
-        {
-          "path": "character-female-a.glb"
-        }
-      ],
-      "category": "avatar-rig",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 1,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [],
-      "emissive": [],
-      "slots": [],
-      "clips": [
-        "idle",
-        "walk",
-        "sprint",
-        "sit",
-        "drive",
-        "pick-up",
-        "interact-right",
-        "emote-yes",
-        "emote-no",
-        "holding-right"
-      ],
-      "loadPhase": "playable",
-      "instanced": false,
-      "nameKey": "models.name.avatarRig"
-    },
-    {
-      "id": "head-female-a",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-a.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleA"
-    },
-    {
-      "id": "body-female-a",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-a.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleA"
-    },
-    {
-      "id": "head-female-b",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-b.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleB",
-      "remap": {
-        "#b26345": "hair-500",
-        "#bb6a4a": "hair-500",
-        "#bf6e4d": "hair-300",
-        "#c57150": "hair-300",
-        "#ca7653": "hair-300",
-        "#ce7956": "hair-300",
-        "#d17c59": "hair-300",
-        "#d57f5a": "hair-300",
-        "#d9835d": "hair-300",
-        "#de8660": "hair-300",
-        "#e28a62": "hair-300",
-        "#e68e65": "hair-300",
-        "#ea9168": "hair-300"
-      },
-      "remapMaxDeltaE": 1
-    },
-    {
-      "id": "body-female-b",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-b.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleB"
-    },
-    {
-      "id": "head-female-c",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-c.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleC"
-    },
-    {
-      "id": "body-female-c",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-c.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleC"
-    },
-    {
-      "id": "head-female-d",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-d.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleD",
-      "remap": {
-        "#b26345": "hair-500",
-        "#b66648": "hair-500",
-        "#bb6a4a": "hair-500",
-        "#bf6e4d": "hair-300",
-        "#c57150": "hair-300",
-        "#ca7653": "hair-300",
-        "#d17c59": "hair-300",
-        "#d57f5a": "hair-300",
-        "#d9835d": "hair-300",
-        "#de8660": "hair-300",
-        "#e28a62": "hair-300",
-        "#e68e65": "hair-300",
-        "#ea9168": "hair-300"
-      },
-      "remapMaxDeltaE": 1
-    },
-    {
-      "id": "body-female-d",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-d.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleD"
-    },
-    {
-      "id": "head-female-e",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-e.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleE"
-    },
-    {
-      "id": "body-female-e",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-e.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleE"
-    },
-    {
-      "id": "head-female-f",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-f.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headFemaleF",
-      "remap": {
-        "#865643": "hair-500",
-        "#8a5743": "hair-500",
-        "#8e5843": "hair-500",
-        "#925943": "hair-500",
-        "#9a5a43": "hair-500",
-        "#9d5b43": "hair-500",
-        "#a15c43": "hair-500",
-        "#a85e43": "hair-500",
-        "#ac5f43": "hair-500"
-      },
-      "remapMaxDeltaE": 1
-    },
-    {
-      "id": "body-female-f",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-female-f.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyFemaleF"
-    },
-    {
-      "id": "head-male-a",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-a.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleA",
-      "strip": [
-        {
-          "colors": [
-            "#a5accf",
-            "#9fa7c8",
-            "#aab2d5",
-            "#9ba3c3",
-            "#afb7dc",
-            "#b7c0e6",
-            "#bac2e9",
-            "#d0d0e1",
-            "#e1e1ec"
-          ],
-          "box": {
-            "min": [-0.4, 0.96, -0.07],
-            "max": [0.4, 1.15, 0.42]
-          }
-        }
-      ]
-    },
-    {
-      "id": "body-male-a",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-a.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleA"
-    },
-    {
-      "id": "head-male-b",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-b.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleB"
-    },
-    {
-      "id": "body-male-b",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-b.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleB"
-    },
-    {
-      "id": "head-male-c",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-c.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleC"
-    },
-    {
-      "id": "body-male-c",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-c.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleC"
-    },
-    {
-      "id": "head-male-d",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-d.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleD",
-      "remap": {
-        "#b26345": "hair-500",
-        "#bf6e4d": "hair-300",
-        "#ce7956": "hair-300",
-        "#d17c59": "hair-300",
-        "#d57f5a": "hair-300",
-        "#d9835d": "hair-300",
-        "#de8660": "hair-300",
-        "#e28a62": "hair-300",
-        "#e68e65": "hair-300"
-      },
-      "remapMaxDeltaE": 1
-    },
-    {
-      "id": "body-male-d",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-d.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleD"
-    },
-    {
-      "id": "head-male-e",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-e.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleE",
-      "strip": [
-        {
-          "colors": [
-            "#a5accf",
-            "#9fa7c8",
-            "#aab2d5",
-            "#9ba3c3",
-            "#afb7dc",
-            "#b7c0e6",
-            "#bac2e9",
-            "#d0d0e1",
-            "#e1e1ec"
-          ],
-          "box": {
-            "min": [-0.4, 0.96, -0.07],
-            "max": [0.4, 1.15, 0.42]
-          }
-        }
-      ],
-      "remap": {
-        "#865643": "hair-500",
-        "#925943": "hair-500",
-        "#975943": "hair-500",
-        "#9a5a43": "hair-500",
-        "#9d5b43": "hair-500",
-        "#a15c43": "hair-500",
-        "#a45d43": "hair-500",
-        "#a85e43": "hair-500",
-        "#ac5f43": "hair-500"
-      },
-      "remapMaxDeltaE": 1
-    },
-    {
-      "id": "body-male-e",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-e.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleE"
-    },
-    {
-      "id": "head-male-f",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-f.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-100",
-        "hair-200",
-        "hair-300",
-        "hair-700",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        },
-        {
-          "name": "hair",
-          "tokens": ["hair-100", "hair-200", "hair-300", "hair-700", "hair-900"],
-          "exclude": {
-            "box": {
-              "min": [-0.29, 0.86, 0.346],
-              "max": [0.29, 1.14, 0.358]
-            }
-          }
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headMaleF"
-    },
-    {
-      "id": "head-base",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-b.glb"
-        }
-      ],
-      "mesh": "head-mesh",
-      "category": "avatar-head",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "hair-900"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.headBase",
-      "strip": [
-        {
-          "colors": [
-            "#b66648",
-            "#c57150",
-            "#bb6a4a",
-            "#bf6e4d",
-            "#ca7653",
-            "#865643",
-            "#8a5743",
-            "#ce7956"
-          ],
-          "box": {
-            "min": [-0.36, 0.55, 0.23],
-            "max": [0.36, 0.99, 0.53]
-          }
-        },
-        {
-          "colors": ["#afb7dc", "#a5accf", "#949bba"],
-          "box": {
-            "min": [0.33, 1.06, -0.2],
-            "max": [0.49, 1.21, 0.09]
-          },
-          "maxDeltaE": 8
-        }
-      ]
-    },
-    {
-      "id": "body-male-f",
-      "source": "kenney-mini-characters",
-      "kind": "skinned",
-      "entries": [
-        {
-          "path": "character-male-f.glb"
-        }
-      ],
-      "mesh": "body-mesh",
-      "category": "avatar-body",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 0.6,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "denim-600",
-        "navy-800",
-        "olive-600",
-        "rust-500",
-        "cream-100",
-        "charcoal-800",
-        "red-600",
-        "mustard-400",
-        "teal-600",
-        "blush-300",
-        "white-50"
-      ],
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shoes",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800",
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "box": {
-            "min": [-1.5, 0.066, -1],
-            "max": [1.5, 0.198, 1]
-          }
-        },
-        {
-          "name": "skin",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ],
-          "exclude": {
-            "box": {
-              "min": [-1.5, 0, -1],
-              "max": [1.5, 0.198, 1]
-            }
-          }
-        },
-        {
-          "name": "top",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["torso", "arm-left", "arm-right", "head"]
-        },
-        {
-          "name": "bottom",
-          "tokens": [
-            "denim-600",
-            "navy-800",
-            "olive-600",
-            "rust-500",
-            "cream-100",
-            "charcoal-800",
-            "red-600",
-            "mustard-400",
-            "teal-600",
-            "blush-300",
-            "white-50"
-          ],
-          "joints": ["root", "leg-left", "leg-right"]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.bodyMaleF"
-    },
-    {
-      "id": "glasses",
-      "source": "kenney-mini-characters",
-      "kind": "static",
-      "entries": [
-        {
-          "path": "aid-glasses.glb"
-        }
-      ],
-      "category": "avatar-accessory",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 1,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": ["iron-900", "glass-300", "steel-400"],
-      "remap": {
-        "#a6add0": "glass-300",
-        "#e2e2ed": "steel-400"
-      },
-      "maxDeltaE": 40,
-      "emissive": [],
-      "slots": [],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.glasses"
-    },
-    {
-      "id": "sunglasses",
-      "source": "kenney-mini-characters",
-      "kind": "static",
-      "entries": [
-        {
-          "path": "aid-sunglasses.glb"
-        }
-      ],
-      "category": "avatar-accessory",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 1,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": ["iron-900"],
-      "remap": {
-        "#3f3f46": "iron-900"
-      },
-      "maxDeltaE": 40,
-      "emissive": [],
-      "slots": [],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.sunglasses"
-    },
-    {
-      "id": "hearing-aid",
-      "source": "kenney-mini-characters",
-      "kind": "static",
-      "entries": [
-        {
-          "path": "aid_hearing.glb"
-        }
-      ],
-      "category": "avatar-accessory",
-      "fit": {
-        "scale": 2.2
-      },
-      "pivot": "source",
-      "tiers": {
-        "low": {
-          "ratio": 1,
-          "error": 0.02
-        },
-        "mid": {
-          "ratio": 1.0,
-          "error": 0.02
-        },
-        "high": {
-          "ratio": 1.0,
-          "error": 0.02
-        }
-      },
-      "swatches": [
-        "skin-100",
-        "skin-200",
-        "skin-300",
-        "skin-400",
-        "skin-500",
-        "skin-600",
-        "skin-700",
-        "skin-800",
-        "steel-400"
-      ],
-      "remap": {
-        "#a6add0": "steel-400"
-      },
-      "maxDeltaE": 30,
-      "emissive": [],
-      "slots": [
-        {
-          "name": "shell",
-          "tokens": [
-            "skin-100",
-            "skin-200",
-            "skin-300",
-            "skin-400",
-            "skin-500",
-            "skin-600",
-            "skin-700",
-            "skin-800"
-          ]
-        }
-      ],
-      "clips": [],
-      "loadPhase": "creator",
-      "instanced": false,
-      "nameKey": "models.name.hearingAid"
-    },
-    {
       "id": "facial-stubble",
       "source": "clout-city-blender",
       "kind": "static",
@@ -6109,6 +3286,1515 @@
       "instanced": false,
       "nameKey": "models.name.headwearBallcap",
       "attach": "head"
+    },
+    {
+      "id": "outfit-w-casual",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["White"],
+          "meshes": ["Casual_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Orange"],
+          "meshes": ["Casual_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Grey"],
+          "meshes": ["Casual_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWCasual",
+      "meshes": ["Casual_Body", "Casual_Legs", "Casual_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-suit",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Suit.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Black"],
+          "meshes": ["Suit_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Black"],
+          "meshes": ["Suit_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Suit_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWSuit",
+      "meshes": ["Suit_Body", "Suit_Legs", "Suit_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-worker",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Worker.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["White"],
+          "meshes": ["Worker_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Brown_02"],
+          "meshes": ["Worker_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Worker_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWWorker",
+      "meshes": ["Worker_Body", "Worker_Legs", "Worker_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-dress",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Formal.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LimeGreen"],
+          "meshes": ["Formal_Body", "Formal_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Red"],
+          "meshes": ["Formal_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWDress",
+      "meshes": ["Formal_Body", "Formal_Legs", "Formal_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-punk",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Punk.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Pink"],
+          "meshes": ["Punk_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Black"],
+          "meshes": ["Punk_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Punk_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWPunk",
+      "meshes": ["Punk_Body", "Punk_Legs", "Punk_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-w-outdoors",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Adventurer.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightGreen"],
+          "meshes": ["Adventurer_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Brown_02"],
+          "meshes": ["Adventurer_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Brown_02"],
+          "meshes": ["Adventurer_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitWOutdoors",
+      "meshes": ["Adventurer_Body", "Adventurer_Legs", "Adventurer_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-casual",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual_2.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightBrown"],
+          "meshes": ["Casual2_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Casual2_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Red_Dark"],
+          "meshes": ["Casual2_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMCasual",
+      "meshes": ["Casual2_Body", "Casual2_Legs", "Casual2_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-hoodie",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual_Hoodie.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Purple"],
+          "meshes": ["Casual_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Casual_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Purple"],
+          "meshes": ["Casual_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMHoodie",
+      "meshes": ["Casual_Body", "Casual_Legs", "Casual_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-suit",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Suit.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Suit"],
+          "meshes": ["Suit_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Suit"],
+          "meshes": ["Suit_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Suit_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMSuit",
+      "meshes": ["Suit_Body", "Suit_Legs", "Suit_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-worker",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Worker.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightBrown"],
+          "meshes": ["Worker_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Brown"],
+          "meshes": ["Worker_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Grey"],
+          "meshes": ["Worker_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMWorker",
+      "meshes": ["Worker_Body", "Worker_Legs", "Worker_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-beach",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Beach.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightBrown"],
+          "meshes": ["Beach_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Red_Dark"],
+          "meshes": ["Beach_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Red_Dark"],
+          "meshes": ["Beach_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMBeach",
+      "meshes": ["Beach_Body", "Beach_Legs", "Beach_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-punk",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Punk.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Black"],
+          "meshes": ["Punk_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Punk_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Black"],
+          "meshes": ["Punk_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMPunk",
+      "meshes": ["Punk_Body", "Punk_Legs", "Punk_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-overalls",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Farmer.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Brown"],
+          "meshes": ["Farmer_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Farmer_Body", "Farmer_Pants"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Brown"],
+          "meshes": ["Farmer_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMOveralls",
+      "meshes": ["Farmer_Body", "Farmer_Pants", "Farmer_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "outfit-m-outdoors",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Adventurer.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 820
+        },
+        "mid": {
+          "triangles": 1400
+        },
+        "high": {
+          "triangles": 2200
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["Green"],
+          "meshes": ["Adventurer_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Brown"],
+          "meshes": ["Adventurer_Legs"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Grey"],
+          "meshes": ["Adventurer_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.outfitMOutdoors",
+      "meshes": ["Adventurer_Body", "Adventurer_Legs", "Adventurer_Feet"],
+      "joints": "modular"
+    },
+    {
+      "id": "head-f",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-head",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 300
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 500
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "hair",
+          "materials": ["Hair_Brown"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headF",
+      "meshes": ["Casual_Head"],
+      "joints": "modular",
+      "stripMaterials": ["Hair_Blond"],
+      "protectMaterials": ["Brown", "Hair_Brown"]
+    },
+    {
+      "id": "head-m",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual_Hoodie.gltf"
+        }
+      ],
+      "category": "avatar-head",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 300
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 500
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "hair",
+          "materials": ["Eyebrows"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headM",
+      "meshes": ["Casual_Head"],
+      "joints": "modular",
+      "stripMaterials": ["Hair"],
+      "protectMaterials": ["Eye", "Eyebrows"]
+    },
+    {
+      "id": "hair-bob",
+      "source": "quaternius-modular-women",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair_Blond"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairBob",
+      "fromSkinned": {
+        "mesh": "Casual_Head",
+        "materials": ["Hair_Blond"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-pixie",
+      "source": "quaternius-modular-women",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Adventurer.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair_Brown"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairPixie",
+      "fromSkinned": {
+        "mesh": "Adventurer_Head",
+        "materials": ["Hair_Brown"],
+        "joint": "Head",
+        "exclude": [
+          {
+            "min": [-0.2, 1.685, 0.09],
+            "max": [0.2, 1.73, 0.3]
+          }
+        ]
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-updo",
+      "source": "quaternius-modular-women",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Formal.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Red"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairUpdo",
+      "fromSkinned": {
+        "mesh": "Formad_Head",
+        "materials": ["Red"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-mohawk",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Punk.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Red"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairMohawk",
+      "fromSkinned": {
+        "mesh": "Punk_Head",
+        "materials": ["Red"],
+        "joint": "Head",
+        "exclude": [
+          {
+            "min": [-0.03, 1.55, 0.12],
+            "max": [0.03, 1.615, 0.2]
+          }
+        ]
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-spiky",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Beach.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairSpiky",
+      "fromSkinned": {
+        "mesh": "Beach_Head",
+        "materials": ["Hair"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-ponytail",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Casual_2.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairPonytail",
+      "fromSkinned": {
+        "mesh": "Casual2_Head",
+        "materials": ["Hair"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-tousled",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Casual_Hoodie.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairTousled",
+      "fromSkinned": {
+        "mesh": "Casual_Head",
+        "materials": ["Hair"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-parted",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Suit.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairParted",
+      "fromSkinned": {
+        "mesh": "Suit_Head",
+        "materials": ["Hair"],
+        "joint": "Head"
+      },
+      "attach": "head"
+    },
+    {
+      "id": "hair-swept",
+      "source": "quaternius-modular-men",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "glTF/Adventurer.gltf"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 250
+        },
+        "mid": {
+          "triangles": 500
+        },
+        "high": {
+          "triangles": 900
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "materials": ["Hair"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairSwept",
+      "fromSkinned": {
+        "mesh": "Adventurer_Head",
+        "materials": ["Hair"],
+        "joint": "Head",
+        "exclude": [
+          {
+            "min": [-0.2, 1.4, -0.02],
+            "max": [0.2, 1.665, 0.3]
+          }
+        ]
+      },
+      "attach": "head"
+    },
+    {
+      "id": "avatar-rig-f",
+      "source": "quaternius-modular-women",
+      "kind": "rig",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-rig",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [],
+      "clips": [
+        {
+          "from": "Idle",
+          "as": "idle"
+        },
+        {
+          "from": "Walk",
+          "as": "walk"
+        },
+        {
+          "from": "Run",
+          "as": "run"
+        },
+        {
+          "from": "Wave",
+          "as": "wave"
+        },
+        {
+          "from": "Interact",
+          "as": "interact"
+        }
+      ],
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.avatarRigF",
+      "joints": "modular"
+    },
+    {
+      "id": "avatar-rig-m",
+      "source": "quaternius-modular-men",
+      "kind": "rig",
+      "entries": [
+        {
+          "path": "glTF/Casual_Hoodie.gltf"
+        }
+      ],
+      "category": "avatar-rig",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [],
+      "clips": [
+        {
+          "from": "Idle",
+          "as": "idle"
+        },
+        {
+          "from": "Walk",
+          "as": "walk"
+        },
+        {
+          "from": "Run",
+          "as": "run"
+        },
+        {
+          "from": "Wave",
+          "as": "wave"
+        },
+        {
+          "from": "Interact",
+          "as": "interact"
+        }
+      ],
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.avatarRigM",
+      "joints": "modular"
+    },
+    {
+      "id": "npc-woman",
+      "source": "quaternius-modular-women",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 800
+        },
+        "mid": {
+          "triangles": 840
+        },
+        "high": {
+          "triangles": 840
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["White"],
+          "meshes": ["Casual_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["Orange"],
+          "meshes": ["Casual_Legs"]
+        },
+        {
+          "name": "hair",
+          "materials": ["Hair_Blond", "Hair_Brown"],
+          "meshes": ["Casual_Head"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Grey"],
+          "meshes": ["Casual_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.npcWoman",
+      "meshes": ["Casual_Body", "Casual_Legs", "Casual_Feet", "Casual_Head"],
+      "joints": "modular",
+      "protectMaterials": ["Brown", "Hair_Brown"]
+    },
+    {
+      "id": "npc-man",
+      "source": "quaternius-modular-men",
+      "kind": "skinned",
+      "entries": [
+        {
+          "path": "glTF/Casual_2.gltf"
+        }
+      ],
+      "category": "avatar-body",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "triangles": 800
+        },
+        "mid": {
+          "triangles": 840
+        },
+        "high": {
+          "triangles": 840
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [
+        {
+          "name": "skin",
+          "materials": ["Skin"]
+        },
+        {
+          "name": "top",
+          "materials": ["LightBrown"],
+          "meshes": ["Casual2_Body"]
+        },
+        {
+          "name": "bottom",
+          "materials": ["LightBlue"],
+          "meshes": ["Casual2_Legs"]
+        },
+        {
+          "name": "hair",
+          "materials": ["Hair", "Eyebrows"],
+          "meshes": ["Casual2_Head"]
+        },
+        {
+          "name": "shoes",
+          "materials": ["Red_Dark"],
+          "meshes": ["Casual2_Feet"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "after-playable",
+      "instanced": false,
+      "nameKey": "models.name.npcMan",
+      "meshes": ["Casual2_Body", "Casual2_Legs", "Casual2_Feet", "Casual2_Head"],
+      "joints": "modular",
+      "protectMaterials": ["Eye", "Eyebrows"]
     }
   ],
   "excluded": [
@@ -6125,16 +4811,28 @@
       "reason": "Only geometry and baked colours ship (no images, no pack artwork as files)."
     },
     {
-      "item": "Quaternius packs",
-      "reason": "Rejected at planning: per-item downloads with no pinnable archive."
-    },
-    {
       "item": "Poly Pizza models",
       "reason": "Rejected at planning: per-model licences and authors, not pinnable as one pack."
     },
     {
-      "item": "Kenney Mini Characters wheelchairs and canes",
-      "reason": "Deferred (A11Y-5): they need pose, travel and animation work first."
+      "item": "Avatar wheelchairs and canes",
+      "reason": "Deferred (A11Y-5): they need pose, travel and animation work first; the Kenney Mini Characters pack that had them is retired (S16b), so they will be modelled for the realistic frame."
+    },
+    {
+      "item": "Quaternius Ultimate Modular Women/Men: Soldier, Swat, SciFi, Spacesuit, Medieval, Witch and King outfits",
+      "reason": "LEGAL/tone (S16b): nothing military, police, weapon, fantasy or sci-fi ships."
+    },
+    {
+      "item": "Quaternius Ultimate Modular Men: Pistol and Sword meshes; every pack's gun, sword, punch, kick, hit and death clips",
+      "reason": "LEGAL (S16b): no weapons or combat."
+    },
+    {
+      "item": "Quaternius Universal Base Characters",
+      "reason": "Rejected (S16b): the free Standard zip holds only nude Superhero bodies; regular bodies and outfits are in the paid Source zip (DEC-24: free only)."
+    },
+    {
+      "item": "Kenney Mini Characters",
+      "reason": "Retired (S16b, DEC-51): the chunky minis gave way to the realistic Quaternius modular characters."
     }
   ]
 }

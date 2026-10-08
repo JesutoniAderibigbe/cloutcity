@@ -3,39 +3,23 @@
  * them in the page's ambient assets (src/lib/data/districts.ts) without loading the bakers.
  */
 import type { AmbientTier, PerAmbientTier } from '@/lib/world/ambient/types'
+import { NPC_VARIANTS, type NpcVariant } from '../avatar/npc'
 
-export interface KenneyPedestrianParts {
-  readonly body: string
-  readonly head: string
-}
-
-/** The shared avatar rig (catalog id) and the clip the pose is taken from. */
-export const AVATAR_RIG_ID = 'avatar-rig'
+/** The clip a pedestrian's pose is taken from. */
 export const WALK_CLIP = 'walk'
 
 /**
- * Which Kenney parts each tier bakes (one kit = one InstancedMesh per bucket): the lightest
- * low-tier bodies and heads that are not the default player look (scene.json models.player).
- * Temporary until S16b; its source decides its own kits.
+ * The S16b pedestrians each tier bakes (one kit = one InstancedMesh per bucket): the merged
+ * `npc-*` models, never the player look's parts (UX-3).
  */
-export const KENNEY_TEMP_PEDESTRIANS: PerAmbientTier<readonly KenneyPedestrianParts[]> = {
-  low: [{ body: 'body-male-b', head: 'head-male-f' }],
-  mid: [{ body: 'body-male-b', head: 'head-male-f' }],
-  high: [
-    { body: 'body-male-b', head: 'head-male-f' },
-    { body: 'body-female-b', head: 'head-female-f' },
-  ],
+export const PEDESTRIANS: PerAmbientTier<readonly NpcVariant[]> = {
+  // One kit on low: the man, furthest from the default player look (a woman in casual wear).
+  low: NPC_VARIANTS.filter((variant) => variant.model === 'npc-man'),
+  mid: NPC_VARIANTS,
+  high: NPC_VARIANTS,
 }
 
-/** The model ids the `kenney-temp` source loads for a tier, rig first. */
-export function kenneyTempModelIds(tier: AmbientTier): string[] {
-  return [
-    AVATAR_RIG_ID,
-    ...KENNEY_TEMP_PEDESTRIANS[tier].flatMap((parts) => [parts.body, parts.head]),
-  ]
-}
-
-/** The models a pedestrian source loads (none for a source that has not landed yet). */
-export function pedestrianModelIds(source: 'kenney-temp' | 's16b', tier: AmbientTier): string[] {
-  return source === 'kenney-temp' ? kenneyTempModelIds(tier) : []
+/** The model ids the `s16b` source loads for a tier: each kit's rig and model, once each. */
+export function pedestrianModelIds(tier: AmbientTier): string[] {
+  return [...new Set(PEDESTRIANS[tier].flatMap((variant) => [variant.rig, variant.model]))]
 }

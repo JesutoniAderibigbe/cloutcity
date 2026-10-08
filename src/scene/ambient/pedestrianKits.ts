@@ -1,16 +1,13 @@
 /**
- * Ambient pedestrian kits (S04l part B, DEC-52 decisions 8–9). Behind the S16b seam
- * (`PedestrianKitSource`, chosen by `pedestrians.source` in data/config/ambient.json):
- *
- * - `kenney-temp` (this file, temporary): bakes the existing Kenney Mini Characters body and
- *   head GLBs, posed rigid in mid-stride by the shared avatar rig's `walk` clip, into the
- *   `skin`, `top`, `bottom` and `accent` colour buckets. No new files, no skinning at runtime:
- *   at the closest zoom a pedestrian is a few pixels tall, so limb motion cannot be seen; the
- *   runtime adds a bob and sway instead.
- * - `s16b`: S16b's own ambient LOD replaces it by changing that one config value.
+ * Ambient pedestrian kits (S04l part B, DEC-52 decisions 8–9), behind the `PedestrianKitSource`
+ * seam (`pedestrians.source` in data/config/ambient.json). The `s16b` source bakes each tier's
+ * merged pedestrian models (`npc-*`: body, face and hair in one skinned mesh, S16b), posed rigid
+ * in mid-stride by their frame's rig `walk` clip, into the `skin`, `top`, `bottom` and `accent`
+ * colour buckets. No skinning at runtime: at the closest zoom a pedestrian is a few pixels tall,
+ * so limb motion cannot be seen; the runtime adds a bob and sway instead.
  *
  * Kits are not players (UX-3): the runtime draws them small, with no ring, chip or handle, and
- * never picks or counts them. The parts used here avoid the default player look.
+ * never picks or counts them. The models used here avoid the default player look.
  */
 import {
   AnimationMixer,
@@ -29,19 +26,13 @@ import {
 } from '@/lib/world/ambient/types'
 import type { RigModel, SkinnedPartModel } from '../models/prepare'
 import { groundParts, partsBounds, splitIntoBuckets } from './buckets'
-import { AVATAR_RIG_ID, KENNEY_TEMP_PEDESTRIANS, WALK_CLIP, kenneyTempModelIds } from './kitIds'
+import { PEDESTRIANS, WALK_CLIP, pedestrianModelIds } from './kitIds'
 import type { AmbientLoadedModel, AmbientModelLoader } from './vehicleKits'
 
 export type ScenePedestrianKit = PedestrianKit<BufferGeometry>
 export type ScenePedestrianKitSource = PedestrianKitSource<BufferGeometry, AmbientModelLoader>
 
-export {
-  AVATAR_RIG_ID,
-  KENNEY_TEMP_PEDESTRIANS,
-  WALK_CLIP,
-  kenneyTempModelIds,
-  type KenneyPedestrianParts,
-} from './kitIds'
+export { PEDESTRIANS, WALK_CLIP, pedestrianModelIds } from './kitIds'
 
 /** Walk-cycle phases tried when looking for the widest stride. */
 const STRIDE_SAMPLES = 16
@@ -195,73 +186,68 @@ function asSkinned(loaded: AmbientLoadedModel | undefined, id: string): SkinnedP
 }
 
 /**
- * Bakes one pedestrian kit: body and head posed at the walk clip's widest stride, skinned per
- * vertex on the CPU, flat normals recomputed, split into the four buckets, feet on y = 0.
+ * Bakes one pedestrian kit: its parts posed at the walk clip's widest stride (the first part
+ * sets it), skinned per vertex on the CPU, flat normals recomputed, split into the four buckets,
+ * feet on y = 0.
  */
-export function bakeKenneyPedestrian(
+export function bakePedestrian(
   id: string,
   rig: RigModel,
-  body: { readonly model: SkinnedPartModel; readonly slots: readonly string[] },
-  head: { readonly model: SkinnedPartModel; readonly slots: readonly string[] },
+  parts: readonly { readonly model: SkinnedPartModel; readonly slots: readonly string[] }[],
 ): ScenePedestrianKit {
-  const posedBody = posable(body.model, body.slots, rig)
-  const posedHead = posable(head.model, head.slots, rig)
+  const posed = parts.map((part) => posable(part.model, part.slots, rig))
   try {
+    const [first] = posed
+    if (first === undefined) throw new Error('a pedestrian needs a part')
     const clip = rig.clips.find((candidate) => candidate.name === WALK_CLIP)
-    const time = midStrideTime(posedBody, clip?.duration ?? 0)
-    pose(posedBody, time)
-    pose(posedHead, time)
-    const tagged = [bucketTagged(posedBody), bucketTagged(posedHead)]
+    const time = midStrideTime(first, clip?.duration ?? 0)
+    for (const part of posed) pose(part, time)
+    const tagged = posed.map(bucketTagged)
     const combined = concat(tagged)
     for (const geometry of tagged) geometry.dispose()
-    const parts = splitIntoBuckets(
+    const buckets = splitIntoBuckets(
       combined,
       ({ slot }) => PEDESTRIAN_BUCKETS[slot - 1] ?? 'accent',
       { order: PEDESTRIAN_BUCKETS, flatNormals: true },
     )
     combined.dispose()
-    groundParts(parts)
-    const { min, max } = partsBounds(parts)
+    groundParts(buckets)
+    const { min, max } = partsBounds(buckets)
     return {
       id,
-      parts: parts.map(({ bucket, geometry, color }) => ({ bucket, geometry, color })),
+      parts: buckets.map(({ bucket, geometry, color }) => ({ bucket, geometry, color })),
       heightM: max.y - min.y,
-      triangles: parts.reduce((sum, part) => sum + part.triangles, 0),
+      triangles: buckets.reduce((sum, part) => sum + part.triangles, 0),
       dispose() {
-        for (const part of parts) part.geometry.dispose()
+        for (const part of buckets) part.geometry.dispose()
       },
     }
   } finally {
-    for (const posed of [posedBody, posedHead]) {
-      posed.mixer.stopAllAction()
-      posed.mixer.uncacheRoot(posed.root)
+    for (const part of posed) {
+      part.mixer.stopAllAction()
+      part.mixer.uncacheRoot(part.root)
       // The clones share the cached geometry; only their skeletons are their own.
-      for (const mesh of posed.meshes) mesh.skeleton.dispose()
+      for (const mesh of part.meshes) mesh.skeleton.dispose()
     }
   }
 }
 
-/** `pedestrians.source: 'kenney-temp'`. */
-export const kenneyTempPedestrians: ScenePedestrianKitSource = async (tier, loadModels) => {
-  const ids = kenneyTempModelIds(tier)
-  const loaded = await loadModels(ids)
-  const [rigEntry, ...partEntries] = loaded
-  if (rigEntry?.model.kind !== 'rig') throw new Error(`"${AVATAR_RIG_ID}" is not a rig`)
-  const rig = rigEntry.model
+/** `pedestrians.source: 's16b'`: each tier's `npc-*` models on their frame's rig. */
+export const s16bPedestrians: ScenePedestrianKitSource = async (tier, loadModels) => {
+  const loaded = await loadModels(pedestrianModelIds(tier))
+  const byId = new Map(loaded.map((entry) => [entry.ref.id, entry]))
   const kits: ScenePedestrianKit[] = []
   try {
-    KENNEY_TEMP_PEDESTRIANS[tier].forEach((parts, i) => {
-      const bodyEntry = partEntries[i * 2]
-      const headEntry = partEntries[i * 2 + 1]
+    for (const variant of PEDESTRIANS[tier]) {
+      const rig = byId.get(variant.rig)?.model
+      if (rig?.kind !== 'rig') throw new Error(`"${variant.rig}" is not a rig`)
+      const entry = byId.get(variant.model)
       kits.push(
-        bakeKenneyPedestrian(
-          `${parts.body}+${parts.head}`,
-          rig,
-          { model: asSkinned(bodyEntry, parts.body), slots: bodyEntry?.ref.slots ?? [] },
-          { model: asSkinned(headEntry, parts.head), slots: headEntry?.ref.slots ?? [] },
-        ),
+        bakePedestrian(variant.model, rig, [
+          { model: asSkinned(entry, variant.model), slots: entry?.ref.slots ?? [] },
+        ]),
       )
-    })
+    }
   } catch (error) {
     for (const kit of kits) kit.dispose()
     throw error
@@ -269,12 +255,7 @@ export const kenneyTempPedestrians: ScenePedestrianKitSource = async (tier, load
   return kits
 }
 
-/**
- * Every pedestrian source by `pedestrians.source`. `s16b` has no source until S16b lands; the
- * runtime treats a missing source as "no pedestrians" and logs it.
- */
-export const PEDESTRIAN_KIT_SOURCES: Readonly<
-  Partial<Record<'kenney-temp' | 's16b', ScenePedestrianKitSource>>
-> = {
-  'kenney-temp': kenneyTempPedestrians,
+/** Every pedestrian source by `pedestrians.source`. */
+export const PEDESTRIAN_KIT_SOURCES: Readonly<Record<'s16b', ScenePedestrianKitSource>> = {
+  s16b: s16bPedestrians,
 }

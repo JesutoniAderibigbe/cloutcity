@@ -71,6 +71,19 @@ function disposeMaterials(meshes: readonly Mesh[]): void {
   }
 }
 
+/**
+ * S16b pack parts ship indexed and without normals (each shared corner stored once): unweld
+ * them so every face owns its corners, then give each face its own normal, the faceted look of
+ * the pack. three's computeVertexNormals on a non-indexed geometry yields face normals.
+ */
+export function flatShaded(geometry: BufferGeometry): BufferGeometry {
+  if (geometry.getAttribute('normal') !== undefined) return geometry
+  const flat = geometry.index === null ? geometry : geometry.toNonIndexed()
+  flat.computeVertexNormals()
+  if (flat !== geometry) geometry.dispose()
+  return flat
+}
+
 export function prepareGltf(gltf: GLTF, model: Pick<ModelRef, 'id' | 'kind'>): LoadedModel {
   if (model.kind === 'rig') {
     disposeMaterials(meshesOf(gltf.scene))
@@ -79,6 +92,7 @@ export function prepareGltf(gltf: GLTF, model: Pick<ModelRef, 'id' | 'kind'>): L
   gltf.scene.updateMatrixWorld(true)
   const meshes = meshesOf(gltf.scene)
   disposeMaterials(meshes)
+  for (const mesh of meshes) mesh.geometry = flatShaded(mesh.geometry)
   if (model.kind === 'skinned') {
     if (!meshes.some((mesh) => mesh instanceof SkinnedMesh)) {
       throw new Error(`Model "${model.id}" has no skinned mesh`)

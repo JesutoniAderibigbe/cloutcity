@@ -39,17 +39,25 @@ const SkinToneSchema = SwatchSchema.extend({ nameKey: AvatarNameKeySchema })
 const ColorSchema = SwatchSchema.extend({ nameKey: ColorNameKeySchema })
 
 /**
- * A hairstyle: a head model, plus a hair piece for the styles Kenney's heads do not have (they
- * sit on the bald `head-base`). `hairColors`, when set, is the only hair colours the style offers
- * (SLOT-1 fallback (c): a head whose features cannot be kept off the hair slot offers only dark
- * colours).
+ * A body frame (S16b, DEC-51): the face (a bald head; its brows take the hair colour), the rig
+ * whose clips pose it, and an optional scalp cap drawn whenever no hair piece covers the head.
+ */
+const BodySchema = z.strictObject({
+  id: IdSchema,
+  head: IdSchema,
+  rig: IdSchema,
+  scalpCap: IdSchema.optional(),
+  nameKey: AvatarNameKeySchema,
+})
+
+/**
+ * A hairstyle: the hair piece on the body's bald head (none for a close shave), open to every
+ * body and every hair colour (S16b: hair and brows are recoloured by material).
  */
 const HairStyleSchema = z.strictObject({
   id: IdSchema,
-  head: IdSchema,
   piece: IdSchema.optional(),
   nameKey: AvatarNameKeySchema,
-  hairColors: z.array(IdSchema).min(1).optional(),
 })
 
 /** An attachment option; `none` has no model. */
@@ -78,7 +86,25 @@ const HeadwearSchema = z
     path: ['model'],
   })
 
-const OutfitSchema = z.strictObject({ id: IdSchema, body: IdSchema, nameKey: AvatarNameKeySchema })
+/** An outfit: its body model per body frame (S16b); a frame without one does not offer it. */
+const OutfitSchema = z.strictObject({
+  id: IdSchema,
+  variants: z
+    .partialRecord(IdSchema, IdSchema)
+    .refine((variants) => Object.keys(variants).length > 0, { error: 'an outfit needs a body' }),
+  nameKey: AvatarNameKeySchema,
+})
+
+/**
+ * Ids older builds saved (S16b): Kenney-era hairstyles and outfits map to today's, and an old
+ * outfit implies the body frame, so a v12 save keeps a stable look with no save bump.
+ */
+const LegacySchema = z.strictObject({
+  /** Old hairstyle and outfit ids → today's. */
+  ids: z.record(IdSchema, IdSchema),
+  /** Old outfit id → the body it implies. */
+  body: z.record(IdSchema, IdSchema),
+})
 
 /** Root scale of the rig: heights stay within a few percent so the avatar fits every reserve. */
 const HeightSchema = z.strictObject({
@@ -105,6 +131,7 @@ const listOf = <T extends z.ZodType<{ readonly id: string }>>(schema: T) =>
 export const AvatarOptionsSchema = z
   .strictObject({
     version: z.literal(1),
+    bodies: listOf(BodySchema),
     skinTones: listOf(SkinToneSchema),
     hairColors: listOf(ColorSchema),
     hairStyles: listOf(HairStyleSchema),
@@ -152,18 +179,35 @@ export const AvatarOptionsSchema = z
   )
   .refine(
     (options) =>
-      options.hairStyles.every(
-        (style) =>
-          style.hairColors === undefined ||
-          style.hairColors.every((id) => options.hairColors.some((color) => color.id === id)),
+      options.outfits.every((outfit) =>
+        Object.keys(outfit.variants).every((body) => options.bodies.some((b) => b.id === body)),
+      ) &&
+      options.bodies.every((body) =>
+        options.outfits.some((outfit) => outfit.variants[body.id] !== undefined),
       ),
-    { error: 'a hairstyle limits hair colours to ones that exist', path: ['hairStyles'] },
+    { error: 'outfit variants name bodies, and every body has an outfit', path: ['outfits'] },
   )
   .refine((options) => lookIssue(options.defaults, deriveAvatarIds(options)) === null, {
     error: 'defaults must name an option in every field',
     path: ['defaults'],
   })
 export type AvatarOptions = z.infer<typeof AvatarOptionsSchema>
+
+/**
+ * data/avatar/compat.json (S16b): what keeps older saves and unfinished models working, kept
+ * out of options.json so the look options the creator chunks carry stay small. Only the derive
+ * step reads it; the engine gets its tables (engine.derived.json), the scene its refs.
+ */
+export const AvatarCompatSchema = z.strictObject({
+  version: z.literal(1),
+  legacy: LegacySchema,
+  /**
+   * Models awaiting the Blender refit to the realistic frame (S16b P2a): saves keep their
+   * options, but nothing draws them, the creator hides them and random looks skip them.
+   */
+  pending: z.array(IdSchema),
+})
+export type AvatarCompat = z.infer<typeof AvatarCompatSchema>
 
 const TraitEffectSchema = z.strictObject({
   kind: z.enum(TRAIT_EFFECT_KINDS),
@@ -218,7 +262,8 @@ export const AvatarEngineTablesSchema = z.strictObject({
         typeof idList
       >,
     ),
-    hairColorLimits: z.record(IdSchema, idList.min(1)),
+    outfitsByBody: z.record(IdSchema, idList.min(1)),
+    legacy: LegacySchema,
     defaults: LookIdsSchema,
     random: z.strictObject({
       facialHair: probability,
@@ -247,7 +292,6 @@ export const AvatarEngineTablesSchema = z.strictObject({
  */
 export const AvatarSceneFileSchema = z.strictObject({
   version: z.literal(1),
-  rig: ModelRefSchema,
   models: z.record(IdSchema, ModelRefSchema),
   colors: z.record(AvatarTokenSchema, z.string().regex(/^#[0-9a-f]{6}$/i)),
   attachments: SceneConfigSchema.shape.avatarLook.shape.attachments,
@@ -258,4 +302,23 @@ export const AvatarSceneFileSchema = z.strictObject({
 export const AvatarSwatchesFileSchema = z.strictObject({
   version: z.literal(1),
   colors: z.record(AvatarTokenSchema, z.string().regex(/^#[0-9a-f]{6}$/i)),
+})
+
+const point = z.tuple([z.number(), z.number(), z.number()])
+
+/**
+ * data/avatar/frame.json (S16b): the bind-pose frame of the modular avatar parts and rigs,
+ * written by `npm run assets:build`: each rig's joint positions and each part's material bounds
+ * in fitted metres. The Blender attachment scripts fit to it.
+ */
+export const AvatarFrameFileSchema = z.strictObject({
+  version: z.literal(1),
+  generatedBy: z.string().min(1),
+  models: z.record(
+    IdSchema,
+    z.strictObject({
+      joints: z.record(IdSchema, point),
+      materials: z.record(z.string().min(1), z.strictObject({ min: point, max: point })),
+    }),
+  ),
 })

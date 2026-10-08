@@ -15,6 +15,7 @@ import {
   type ModelTierFile,
 } from '../../src/lib/data/schemas/assets.ts'
 import type { BuiltModel } from './pipeline.ts'
+import { clipName } from './schema.ts'
 
 export const MODELS_URL_PREFIX = '/models/'
 
@@ -66,7 +67,7 @@ export function buildManifest(models: readonly BuiltModel[]): ManifestOutput {
       slots: model.slots.map((slot) => slot.name),
       ...(model.attach === undefined ? {} : { attach: model.attach }),
       emissive: built.emissive,
-      clips: model.clips,
+      clips: model.clips.map(clipName),
       tiers: Object.fromEntries(MODEL_TIERS.map((tier) => [tier, tierFiles[tier]])) as Record<
         ModelTier,
         ModelTierFile

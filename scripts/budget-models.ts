@@ -67,7 +67,7 @@ export function loaderLeaks(files: ReadonlyMap<string, string>): string[] {
 }
 
 const PlayerSchema = z.object({
-  models: z.object({ player: z.object({ head: z.string(), body: z.string() }) }),
+  models: z.object({ player: z.object({ rig: z.string(), head: z.string(), body: z.string() }) }),
 })
 const PlayableLimitSchema = z.object({
   totalBytesToPlayableGzKB: PerfConfigSchema.shape.totalBytesToPlayableGzKB,
@@ -90,7 +90,7 @@ export function modelBudgetLines(
   const manifest = ModelManifestSchema.parse(manifestJson)
   const limits = PlayableLimitSchema.parse(perfJson).totalBytesToPlayableGzKB
   const player = PlayerSchema.parse(sceneJson).models.player
-  const avatarIds = new Set(['avatar-rig', player.head, player.body])
+  const avatarIds = new Set([player.rig, player.head, player.body])
   for (const id of avatarIds) {
     if (!manifest.models.some((model) => model.id === id)) {
       throw new Error(`scene.json models.player names "${id}", which is not in the manifest`)

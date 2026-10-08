@@ -60,24 +60,62 @@ describe('data/assets/catalog.json', () => {
     }
   })
 
-  it('pins the planned packs: three KayKit commits and four Kenney zips', () => {
-    const pins = catalog.sources.map((source) =>
-      source.download.kind === 'github-raw'
-        ? source.download.commit
-        : source.download.kind === 'zip'
-          ? source.download.url
-          : source.download.root,
-    )
+  it('pins the planned packs: KayKit commits, three Kenney zips, Quaternius Drive files and itch upload', () => {
+    const pins = catalog.sources.map((source) => {
+      const { download } = source
+      if (download.kind === 'github-raw') return download.commit
+      if (download.kind === 'zip') return download.url
+      if (download.kind === 'gdrive-files') return download.files.map((file) => file.id).join(',')
+      if (download.kind === 'itch') return `${download.page}#${download.uploadId}`
+      return download.root
+    })
     expect(pins).toEqual([
       '63976910ca04d16f0fc531b9c614244be8128713',
       '96d5930a8dbdb363409bbc2d3341718b00e17c9c',
       '153c8a7535b48237854cb54ff6890679f8c574d1',
-      'https://kenney.nl/media/pages/assets/mini-characters/bfc7e272b4-1774770718/kenney_mini-characters.zip',
       'https://kenney.nl/media/pages/assets/furniture-kit/440e0608a4-1677580847/kenney_furniture-kit.zip',
       'https://kenney.nl/media/pages/assets/city-kit-commercial/a742d900eb-1753115042/kenney_city-kit-commercial_2.1.zip',
       'https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip',
+      [
+        '1lIFL16xEpoPbr0j_HUATgmcEnAmYoIK2',
+        '18b3WwlrwrFYWAM7BcnjWeIxKJyxAQiGh',
+        '1GjWtofxjmPku25cXJxHrzLLeUbXw7A_s',
+        '1iwF_fqDErPH9uyol6NmS-MnzGgsZ5ejV',
+        '1iayBzVv_zLjuPtaNPouw_auwKlQLLmes',
+        '1ITb_iFiroAsmjQI38z_p6nNXinwliVLA',
+        '1uxAFnDp73NO1c16LvHHjAYh1-deMNk5I',
+      ].join(','),
+      [
+        '1TTvylHa1CsiJuHFWWiv6PFGhLM-aAH5z',
+        '1Jn7kULNmrtqP8BUUL19h8MhbdOnwPFhv',
+        '1em1So1xwwQNfHJYMvzKcXkZllvtxpKP5',
+        '1NhXHnGU0zK9hBrT5FoZp8nTz_EmvTPg5',
+        '14d8n7IDnnlnGt_uiATnNg3uvi_4dyd9V',
+        '1IL1YJPJvNkuGnKI69-W-VMBIDCo-u49N',
+        '1yHWu5ezXq4dYBcn4sWiNd16YN9fMtXo0',
+        '1B9Dln-oR5Yk6sdsDR3yHCw86LobAN3Zd',
+        '1fzSq1Rr037f7QkfXPWEAzmbLMNx-FpPA',
+      ].join(','),
+      'https://quaternius.itch.io/universal-animation-library#17958403',
       'scripts/blender/out',
     ])
+  })
+
+  it('pins the Quaternius packs to the CC0 licence text (S16b)', () => {
+    const quaternius = catalog.sources.filter((source) => source.author === 'Quaternius')
+    expect(quaternius.map((source) => source.id)).toEqual([
+      'quaternius-modular-women',
+      'quaternius-modular-men',
+      'quaternius-ual',
+    ])
+    for (const source of quaternius) {
+      expect(source.licence).toBe('CC0-1.0')
+      expect(source.licenceEvidence.mustContain).toEqual([
+        'CC0 1.0 Universal (CC0 1.0)',
+        'https://creativecommons.org/publicdomain/zero/1.0/',
+      ])
+    }
+    expect(catalog.excluded.some((entry) => entry.item === 'Quaternius packs')).toBe(false)
   })
 
   it('has no cross-file problems: tokens, copy keys and Blender outputs all exist', () => {
@@ -104,7 +142,9 @@ describe('data/assets/catalog.json', () => {
 
   it('collapses across seams (Permissive) only for the far-away ambient LODs (S04l)', () => {
     for (const model of catalog.models) {
-      const permissive = Object.values(model.tiers).some((tier) => tier.flags !== undefined)
+      const permissive = Object.values(model.tiers).some(
+        (tier) => 'flags' in tier && tier.flags !== undefined,
+      )
       // The Blender bus is authored at its ambient size and needs no simplifying.
       const simplifiedLod = model.id.endsWith('-ambient') && model.source !== 'clout-city-blender'
       expect(permissive, model.id).toBe(simplifiedLod)
@@ -135,18 +175,40 @@ describe('data/assets/catalog.json', () => {
 
   it('shares one rig scale across every avatar part, so heads, bodies and accessories line up', () => {
     const avatar = catalog.models.filter((model) => model.category.startsWith('avatar-'))
-    // Kenney parts share the fitted rig scale; Blender attachments are modelled in that fitted
-    // frame (scripts/blender/avatar/), so they keep scale 1 and name the joint they follow.
-    const kenney = avatar.filter((model) => model.source !== 'clout-city-blender')
-    const blender = avatar.filter((model) => model.source === 'clout-city-blender')
-    const scales = new Set(kenney.map((model) => ('scale' in model.fit ? model.fit.scale : NaN)))
-    expect(scales.size).toBe(1)
-    for (const model of blender) {
+    // Each pack's parts share one fitted rig scale (Kenney 2.2, the Quaternius modular packs 1,
+    // already in metres); Blender attachments are modelled in the fitted frame
+    // (scripts/blender/avatar/), so they keep scale 1 and name the joint they follow.
+    const packs = new Set(
+      avatar.filter((m) => m.source !== 'clout-city-blender').map((m) => m.source),
+    )
+    for (const pack of packs) {
+      const scales = new Set(
+        avatar
+          .filter((model) => model.source === pack)
+          .map((model) => ('scale' in model.fit ? model.fit.scale : NaN)),
+      )
+      expect(scales.size, pack).toBe(1)
+    }
+    const quaternius = avatar.filter((model) => model.source.startsWith('quaternius-modular'))
+    for (const model of quaternius) expect(model.fit, model.id).toEqual({ scale: 1 })
+    for (const model of avatar.filter((m) => m.source === 'clout-city-blender')) {
       expect(model.fit, model.id).toEqual({ scale: 1 })
       expect(model.pivot, model.id).toBe('source')
       expect(model.kind === 'static' && model.attach !== undefined, model.id).toBe(true)
     }
-    expect(avatar.filter((model) => model.category === 'avatar-head')).toHaveLength(13)
-    expect(avatar.filter((model) => model.category === 'avatar-body')).toHaveLength(12)
+    expect(quaternius.filter((model) => model.category === 'avatar-head')).toHaveLength(2)
+    expect(quaternius.filter((model) => model.id.startsWith('outfit-'))).toHaveLength(14)
+    expect(quaternius.filter((model) => model.kind === 'rig').map((model) => model.id)).toEqual([
+      'avatar-rig-f',
+      'avatar-rig-m',
+    ])
+  })
+
+  it('maps the modular rig to 22 kebab-case joints, with head and torso for attachments', () => {
+    const map = catalog.jointMaps?.modular
+    const names = Object.values(map?.rename ?? {})
+    expect(names).toHaveLength(22)
+    expect(names).toContain('head')
+    expect(names).toContain('torso')
   })
 })

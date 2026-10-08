@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import compat from '@data/avatar/compat.json'
 import swatches from '@data/avatar/swatches.derived.json'
 import { LOOK_FIELDS, lookProblem } from '@/engine/appearance'
 import { engineConfig } from '@/engine/config'
@@ -13,8 +14,9 @@ const options = creatorConfig.options
 const base = engineConfig.avatar.defaults
 
 describe('the Look step as data (S16a, GR-12)', () => {
-  it('has the five categories, and every look field in exactly one of them', () => {
+  it('has the six categories (S16b: Body first), and every look field in exactly one', () => {
     expect(LOOK_CATEGORIES.map((category) => category.id)).toEqual([
+      'body',
       'hair',
       'facialHair',
       'accessories',
@@ -29,6 +31,7 @@ describe('the Look step as data (S16a, GR-12)', () => {
   it('keeps each category to its own parts: hair styles in Hair, coverings in Accessories', () => {
     const where = (field: string) =>
       LOOK_CATEGORIES.find((category) => (category.fields as readonly string[]).includes(field))?.id
+    expect(where('body')).toBe('body')
     expect(where('hairStyle')).toBe('hair')
     expect(where('facialHair')).toBe('facialHair')
     for (const field of ['headwear', 'eyewear', 'ears']) expect(where(field)).toBe('accessories')
@@ -49,7 +52,17 @@ describe('the Look step as data (S16a, GR-12)', () => {
       }
     }
     expect(lookChoices('skin', base, options)).toHaveLength(options.skinTones.length)
-    expect(lookChoices('hairStyle', base, options)).toHaveLength(options.hairStyles.length)
+    // Pending styles (S16b P2a) are not offered yet.
+    const pendingStyles = options.hairStyles.filter(
+      (style) => style.piece !== undefined && compat.pending.includes(style.piece),
+    )
+    expect(lookChoices('hairStyle', base, options)).toHaveLength(
+      options.hairStyles.length - pendingStyles.length,
+    )
+    expect(lookChoices('body', base, options).map((c) => c.nameKey)).toEqual([
+      'avatar.body.woman',
+      'avatar.body.man',
+    ])
     expect(lookChoices('shoes', base, options).map((c) => c.id)).toEqual(options.shoeColors)
   })
 
@@ -64,13 +77,17 @@ describe('the Look step as data (S16a, GR-12)', () => {
     }
   })
 
-  it('a hairstyle that offers only some hair colours moves the draft to one of them', () => {
-    for (const style of options.hairStyles) {
-      for (const color of options.hairColors) {
-        const look = withChoice({ ...base, hairColor: color.id }, 'hairStyle', style.id, options)
-        expect(lookProblem(look, engineConfig), `${style.id} ${color.id}`).toBeNull()
-      }
-    }
+  it('offers each body only its outfits, and a body switch keeps the outfit valid', () => {
+    const woman = lookChoices('outfit', { ...base, body: 'woman' }, options).map((c) => c.id)
+    const man = lookChoices('outfit', { ...base, body: 'man' }, options).map((c) => c.id)
+    expect(woman).toContain('dress')
+    expect(woman).not.toContain('hoodie')
+    expect(man).toContain('hoodie')
+    expect(man).not.toContain('dress')
+    const dressed = { ...base, body: 'woman', outfit: 'dress' }
+    const switched = withChoice(dressed, 'body', 'man', options)
+    expect(switched.outfit).not.toBe('dress')
+    expect(lookProblem(switched, engineConfig)).toBeNull()
   })
 
   it('names the covering that hides the hair', () => {
