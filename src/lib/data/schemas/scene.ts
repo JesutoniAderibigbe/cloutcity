@@ -4,6 +4,7 @@
  * here: they are palette tokens in data/config/theme.json (`scene`).
  */
 import { z } from 'zod'
+import { STREET_PROP_MODELS } from './config'
 import { LandmarkSceneConfigSchema } from './landmarkModels'
 
 const metres = z.number().positive()
@@ -87,6 +88,94 @@ export const DayNightConfigSchema = z
         .length === 2,
     { error: 'the interface must switch to night once and back to day once', path: ['keyframes'] },
   )
+
+const propsTier = <T extends z.ZodType>(value: T) => z.strictObject({ mid: value, high: value })
+const chance = z.number().min(0).max(1)
+const propModel = z.enum(STREET_PROP_MODELS)
+const perChunk = propsTier(z.int().nonnegative())
+
+/**
+ * data/config/props.json, street dressing (S04i): hand-made props on the real LION street chains
+ * of the prop zones (geo/streets.derived.json), placed on the client, seeded per chain, merged per
+ * `chunkM` square onto the district material (one draw call per chunk, no new shader program)
+ * and drawn only around the camera focus once the camera is within `showBelowDistanceM`. Off on
+ * the low tier, which never fetches the streets. Distances are metres, `spacingM` along a chain.
+ * Its own file, not a block of scene.json, because client islands bundle scene.json whole.
+ */
+export const StreetPropsConfigSchema = z
+  .strictObject({
+    /** Seed for src/engine/rng.ts, mixed with each chain's first point. */
+    seed: z.int().nonnegative(),
+    chunkM: metres,
+    /** Props draw only while the camera is at most this far from its target. */
+    showBelowDistanceM: propsTier(metres),
+    /** The streets file and the prop models load once the camera comes this close. */
+    prefetchBelowDistanceM: propsTier(metres),
+    /** Chunks whose centre lies this far from the camera target at most are candidates. */
+    focusRadiusM: propsTier(metres),
+    /** From the curb onto the sidewalk (streetlights, trees, benches, hydrants, lights). */
+    sidewalkOffsetM: metres.max(5),
+    /** From the curb into the parking lane (parked cars). */
+    parkingOffsetM: metres,
+    /** No prop within this distance of a pin's ground point. */
+    pinClearM: metres,
+    /** No prop along a chain within its half-width plus this of a junction. */
+    junctionClearM: z.number().nonnegative(),
+    /** Their `_emissive` vertices glow in the window colour at night (window-mask lit cell). */
+    glowModels: z.array(propModel),
+    /**
+     * Per rule, at most `perChunk` props in one chunk (the ones ranked first by a hash of their
+     * position), so a chunk never holds more than its share of perf.json `streetProps` caps.
+     */
+    rules: z.strictObject({
+      streetlight: z.strictObject({
+        spacingM: propsTier(metres),
+        alternate: z.boolean(),
+        perChunk,
+      }),
+      tree: z.strictObject({
+        models: z.array(propModel).min(1),
+        spacingM: propsTier(metres),
+        chance,
+        perChunk,
+      }),
+      hydrant: z.strictObject({ chance, perChunk }),
+      bench: z.strictObject({
+        nearPlacesM: metres,
+        parkEdges: z.boolean(),
+        spacingM: metres,
+        perChunk,
+      }),
+      parked: z.strictObject({
+        models: propsTier(z.array(propModel).min(1)),
+        taxiShare: chance,
+        /** Per parking slot, per tier. */
+        chance: propsTier(chance),
+        slotM: metres,
+        perChunk,
+      }),
+      trafficLight: z.strictObject({ wideOnly: z.boolean(), chance, perChunk }),
+      waterTower: z
+        .strictObject({
+          minHeightM: metres,
+          maxHeightM: metres,
+          chance,
+          pinClearM: metres,
+          perChunk,
+        })
+        .refine((tower) => tower.minHeightM <= tower.maxHeightM, {
+          error: 'minHeightM must not exceed maxHeightM',
+        }),
+    }),
+  })
+  .refine(
+    (props) =>
+      (['mid', 'high'] as const).every(
+        (tier) => props.showBelowDistanceM[tier] <= props.prefetchBelowDistanceM[tier],
+      ),
+    { error: 'props must load before they show: showBelowDistanceM <= prefetchBelowDistanceM' },
+  )
+export type StreetPropsConfig = z.infer<typeof StreetPropsConfigSchema>
 
 export const SceneConfigSchema = z.strictObject({
   /** The camera starts over the player's home (data/homes/homes.json), not a fixed point. */

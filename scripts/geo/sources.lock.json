@@ -438,6 +438,363 @@
           "bytes": 339253
         }
       ]
+    },
+    {
+      "id": "dcp-lion-props-midtown",
+      "title": "LION streets for street props (Midtown)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.999382%2C40.743193%2C-73.968618%2C40.766607&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.999382%2C40.743193%2C-73.968618%2C40.766607&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 1644,
+      "pages": [
+        {
+          "sha256": "ee194bfee348d39d60dafd51a883c178521f9462dbce49911c7bc9b4a5e2d187",
+          "bytes": 330602
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-lower-manhattan",
+      "title": "LION streets for street props (Lower Manhattan)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.020833%2C40.698494%2C-73.997167%2C40.716506&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.020833%2C40.698494%2C-73.997167%2C40.716506&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 1114,
+      "pages": [
+        {
+          "sha256": "d60ea5d79acfdeb1037a138c32163729983a1c395ca1ced4bc7b68c409a738db",
+          "bytes": 234601
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-downtown-brooklyn-dumbo",
+      "title": "LION streets for street props (Downtown Brooklyn and DUMBO)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.998649%2C40.688895%2C-73.977351%2C40.705105&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.998649%2C40.688895%2C-73.977351%2C40.705105&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 1016,
+      "pages": [
+        {
+          "sha256": "e68403083eeee860508707b6f34dcdf9545f3b2eb9903e4b2b15400f8678141c",
+          "bytes": 206158
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-williamsburg",
+      "title": "LION streets for street props (Williamsburg)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.968649%2C40.705895%2C-73.947351%2C40.722105&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.968649%2C40.705895%2C-73.947351%2C40.722105&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 938,
+      "pages": [
+        {
+          "sha256": "ed958b5b9c426a0cd8a5c04ca94fb5786f93cb63dc776e7da82df5d255ef9089",
+          "bytes": 189378
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-long-island-city",
+      "title": "LION streets for street props (Long Island City)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.955833%2C40.737994%2C-73.932167%2C40.756006&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.955833%2C40.737994%2C-73.932167%2C40.756006&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 920,
+      "pages": [
+        {
+          "sha256": "58e18ae6a878ecbcc1a59dda43f7d56e1f9e2985e3c27c9878ddb721c44f1d69",
+          "bytes": 183201
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-astoria",
+      "title": "LION streets for street props (Astoria)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.931283%2C40.757696%2C-73.914717%2C40.770304&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.931283%2C40.757696%2C-73.914717%2C40.770304&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 315,
+      "pages": [
+        {
+          "sha256": "1509e08f53e78d2b123fc138dde885c9c3e9504578fcec171edb438cddc550cf",
+          "bytes": 61618
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-flushing",
+      "title": "LION streets for street props (Flushing)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.8371%2C40.753596%2C-73.8229%2C40.764404&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.8371%2C40.753596%2C-73.8229%2C40.764404&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 311,
+      "pages": [
+        {
+          "sha256": "a6ba7c5b6578781fa1cbb4c307309687d8fa26c763917a9b25c50dca207ed9f0",
+          "bytes": 62401
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-jamaica",
+      "title": "LION streets for street props (Jamaica)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.8071%2C40.696596%2C-73.7929%2C40.707404&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.8071%2C40.696596%2C-73.7929%2C40.707404&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 322,
+      "pages": [
+        {
+          "sha256": "360f4c430218c498d910150c4b8cb13a2b4ecdc2040bb8e987289bcd74487f65",
+          "bytes": 63071
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-ditmars-steinway",
+      "title": "LION streets for street props (Ditmars-Steinway)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.916625%2C40.764047%2C-73.905975%2C40.772153&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.916625%2C40.764047%2C-73.905975%2C40.772153&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 176,
+      "pages": [
+        {
+          "sha256": "231576809d92b87e097e2765a51c63e2650f743c3800a145307034b5baf4bc95",
+          "bytes": 34695
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-sunnyside",
+      "title": "LION streets for street props (Sunnyside)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.938325%2C40.735447%2C-73.927675%2C40.743553&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.938325%2C40.735447%2C-73.927675%2C40.743553&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 186,
+      "pages": [
+        {
+          "sha256": "8fac57658e8281d09f485c5772c53b59ca21b264db76be897e0d2302db75c784",
+          "bytes": 37408
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-crown-heights",
+      "title": "LION streets for street props (Crown Heights)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.954183%2C40.677696%2C-73.937617%2C40.690304&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.954183%2C40.677696%2C-73.937617%2C40.690304&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 448,
+      "pages": [
+        {
+          "sha256": "9cd77828781cd261049ddd7e3c6bf68a54860a2329a45a3aa03103593b168e43",
+          "bytes": 88920
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-bushwick",
+      "title": "LION streets for street props (Bushwick)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.927325%2C40.699947%2C-73.916675%2C40.708053&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.927325%2C40.699947%2C-73.916675%2C40.708053&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 178,
+      "pages": [
+        {
+          "sha256": "88ed0e25cba69670341c7edf3970ca83ead0c802264fe6f32825a78f43a0c89a",
+          "bytes": 35351
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-gowanus",
+      "title": "LION streets for street props (Gowanus)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.993325%2C40.672947%2C-73.982675%2C40.681053&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.993325%2C40.672947%2C-73.982675%2C40.681053&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 151,
+      "pages": [
+        {
+          "sha256": "4ad96ab9d1c11da68db92c7aa296958dd12a93a34d9cfd29a1373fcfe45fb56f",
+          "bytes": 29456
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-fort-greene",
+      "title": "LION streets for street props (Fort Greene)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.976325%2C40.694947%2C-73.965675%2C40.703053&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.976325%2C40.694947%2C-73.965675%2C40.703053&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 134,
+      "pages": [
+        {
+          "sha256": "fa8d126e54dee314278371a995b2c008d614fd8346e14e112f4a16b6d98109aa",
+          "bytes": 29591
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-lower-east-side",
+      "title": "LION streets for street props (Lower East Side)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.003558%2C40.711845%2C-73.983442%2C40.727155&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.003558%2C40.711845%2C-73.983442%2C40.727155&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 1213,
+      "pages": [
+        {
+          "sha256": "ea6a2e550cb24666712fb7f0d92b93f53c24964ebaa30c87a43a7115e1896cbc",
+          "bytes": 242247
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-union-square",
+      "title": "LION streets for street props (Union Square)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.998875%2C40.724746%2C-73.981125%2C40.738254&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.998875%2C40.724746%2C-73.981125%2C40.738254&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 763,
+      "pages": [
+        {
+          "sha256": "1388f75e51dadeec91bb46593772d059b10015f90c39c7a1a88154684db5f050",
+          "bytes": 153407
+        }
+      ]
+    },
+    {
+      "id": "dcp-lion-props-chelsea",
+      "title": "LION streets for street props (Chelsea)",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.arcgis.com/home/item.html?id=db6fdacfc5ff44e7a244e2f798d98a7d",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.008966%2C40.736295%2C-73.990034%2C40.750705&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson",
+      "countUrl": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.008966%2C40.736295%2C-73.990034%2C40.750705&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-08",
+      "count": 612,
+      "pages": [
+        {
+          "sha256": "cf59d8b54e8dc403fc5640e5a01065b5522634c310819432451947391d3c4b72",
+          "bytes": 122901
+        }
+      ]
     }
   ]
 }

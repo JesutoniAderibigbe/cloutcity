@@ -4,6 +4,7 @@
  *
  *   npm run geo:build                 use the cache, download what is missing (must match lock)
  *   npm run geo:build -- --update     download everything, accept new upstream files, rewrite lock
+ *   npm run geo:build -- --add        download and pin only sources the lock lacks (new zones)
  *   npm run geo:build -- --offline    never touch the network
  *   npm run geo:build -- --check      rebuild in memory and fail if committed files differ
  */
@@ -21,16 +22,18 @@ import {
 } from '../../src/lib/data/schemas/config.ts'
 import { landmarkModelsFileSchemaFor } from '../../src/lib/data/schemas/landmarkModels.ts'
 import { LION_SOURCE_IDS } from '../../src/lib/geo/sources.ts'
+import { STREET_SOURCE_IDS } from '../../src/lib/geo/streetSources.ts'
 import type { FramePlace } from './landmarks.ts'
 import {
   LockSchema,
   PartialLockSchema,
-  buildingSourceDefinitions,
   pageFile,
+  pagedSourceDefinitions,
   type Lock,
 } from './lock.ts'
 import { ensureSources, type SourceMode } from './sources.ts'
 import {
+  OUTPUT_FILES,
   buildGeoOutputs,
   type GeoBoundsInput,
   type GeoBuildParams,
@@ -174,13 +177,18 @@ export async function buildFromSources(
   }
   const parse = (bytes: Uint8Array): unknown => JSON.parse(new TextDecoder().decode(bytes))
   const buildings = new Map<string, readonly unknown[]>()
-  for (const [id, pages] of sources.pages) buildings.set(id, pages.map(parse))
+  const streets = new Map<string, readonly unknown[]>()
+  const streetIds: ReadonlySet<string> = new Set(STREET_SOURCE_IDS)
+  for (const [id, pages] of sources.pages) {
+    ;(streetIds.has(id) ? streets : buildings).set(id, pages.map(parse))
+  }
   const inputs: RawGeoInputs = {
     boroughs: parse(raw('dcp-borough-boundaries')),
     ntas: parse(raw('dcp-nta-2020')),
     gtfsZip: raw('mta-gtfs-subway'),
     density: parse(raw('dcp-mappluto-density')),
     buildings,
+    streets,
     lion: new Map(LION_SOURCE_IDS.map((id) => [id, parse(raw(id))])),
   }
   return buildGeoOutputs(inputs, { ...(await readBuildParams()), lock, expected: EXPECTED_COUNTS })
@@ -227,6 +235,13 @@ export function budgetErrors(totals: readonly TierTotal[], perf: PerfConfig): st
   ])
 }
 
+/** perf.json streetsGzKB failures for the tiers that fetch the streets file (cap above 0). */
+export function streetsBudgetErrors(gz: number, perf: PerfConfig): string[] {
+  return QUALITY_TIERS.filter(
+    (tier) => perf.streetsGzKB[tier] > 0 && gz > perf.streetsGzKB[tier] * 1000,
+  ).map((tier) => `${tier}: streets ${kb(gz)} gz exceed streetsGzKB ${perf.streetsGzKB[tier]} KB`)
+}
+
 async function committedTieredFiles(): Promise<string[]> {
   const names = await readdir(join(DATA, DISTRICTS_DIR)).catch(() => [])
   const blocks = (await readdir(join(DATA, 'geo'))).filter((name) =>
@@ -239,15 +254,21 @@ async function committedTieredFiles(): Promise<string[]> {
 }
 
 function parseArgs(argv: readonly string[]): { mode: SourceMode; check: boolean } {
-  const known = new Set(['--update', '--offline', '--check'])
+  const known = new Set(['--update', '--add', '--offline', '--check'])
   const unknown = argv.filter((arg) => !known.has(arg))
   if (unknown.length > 0) throw new Error(`Unknown option ${unknown.join(' ')}`)
   const update = argv.includes('--update')
+  const add = argv.includes('--add')
   const offline = argv.includes('--offline')
   const check = argv.includes('--check')
-  if (update && (offline || check))
-    throw new Error('--update cannot be combined with --offline or --check')
-  return { mode: update ? 'update' : offline ? 'offline' : 'default', check }
+  if (update && (offline || check || add))
+    throw new Error('--update cannot be combined with --add, --offline or --check')
+  if (add && (offline || check))
+    throw new Error('--add cannot be combined with --offline or --check')
+  return {
+    mode: update ? 'update' : add ? 'add' : offline ? 'offline' : 'default',
+    check,
+  }
 }
 
 const kb = (bytes: number) => `${(bytes / 1000).toFixed(1)} KB`
@@ -259,11 +280,11 @@ async function main(): Promise<void> {
   const perf = PerfConfigSchema.parse(await readJson(join(DATA, 'config/perf.json')))
   const { lock, files, pages } = await ensureSources({
     cacheDir: CACHE_DIR,
-    lock: await readLock(LOCK_PATH, mode === 'update'),
+    lock: await readLock(LOCK_PATH, mode === 'update' || mode === 'add'),
     mode,
     today,
     log: write,
-    pagedDefinitions: buildingSourceDefinitions(config.districts),
+    pagedDefinitions: pagedSourceDefinitions(config),
   })
   const result = await buildFromSources(lock, { files, pages })
 
@@ -283,6 +304,7 @@ async function main(): Promise<void> {
     const isBase =
       path.endsWith('.derived.json') &&
       !path.endsWith('manifest.derived.json') &&
+      path !== OUTPUT_FILES.streets &&
       !tieredPaths.has(path)
     if (isBase) baseGz += gz
     if (!tieredPaths.has(path)) write(`${path}: ${kb(Buffer.byteLength(text))} raw, ${kb(gz)} gz`)
@@ -295,16 +317,21 @@ async function main(): Promise<void> {
   }
   for (const stat of result.blockStats) {
     write(
-      `${stat.path}: ${stat.instances} blocks, ${stat.triangles} triangles, ${kb(gzBytes(result.files.get(stat.path) ?? ''))} gz`,
+      `${stat.path}: ${stat.instances} blocks (${stat.carved} carved for street props), ${stat.triangles} triangles, ${kb(gzBytes(result.files.get(stat.path) ?? ''))} gz`,
     )
   }
+  const streets = result.streetStats
+  const streetsGz = gzBytes(result.files.get(streets.path) ?? '')
+  write(
+    `${streets.path}: ${streets.segments} segments (${streets.duplicates} repeated across zones, ${streets.outsideZones} outside the zones, ${streets.cut} cut by a clearance) → ${streets.chains} chains, ${streets.vertices} vertices, ${kb(streetsGz)} gz of ${perf.streetsGzKB.mid} KB`,
+  )
   const totals = tierTotals(result)
   for (const { tier, gzBytes: bytes, triangles } of totals) {
     write(
       `${tier} buildings total: ${kb(bytes)} gz of ${perf.districtBuildingsGzKB[tier]} KB, ${triangles} of ${perf.buildingTrianglesMax[tier]} triangles`,
     )
   }
-  const overBudget = budgetErrors(totals, perf)
+  const overBudget = [...budgetErrors(totals, perf), ...streetsBudgetErrors(streetsGz, perf)]
   if (overBudget.length > 0) throw new Error(`over budget:\n  ${overBudget.join('\n  ')}`)
 
   const stale = (await committedTieredFiles()).filter((path) => !result.files.has(path))
@@ -327,7 +354,7 @@ async function main(): Promise<void> {
     await writeFile(target, text)
   }
   for (const path of [...RETIRED_FILES, ...stale]) await rm(join(DATA, path), { force: true })
-  if (mode === 'update') await writeFile(LOCK_PATH, lockText(lock))
+  if (mode === 'update' || mode === 'add') await writeFile(LOCK_PATH, lockText(lock))
   write(`wrote ${result.files.size} files`)
 }
 

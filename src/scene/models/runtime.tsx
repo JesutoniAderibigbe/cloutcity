@@ -36,7 +36,7 @@ function modelCache(maxIdle: number): RefCountLru<LoadedModel> {
  * apartment). The caller must call `release` exactly once, whether or not the load succeeded.
  */
 export function acquireModels(
-  refs: readonly ModelRef[],
+  refs: readonly Pick<ModelRef, 'id' | 'kind' | 'files'>[],
   tier: ModelTier,
   maxIdle: number,
 ): { readonly models: Promise<LoadedModel[]>; release(): void } {

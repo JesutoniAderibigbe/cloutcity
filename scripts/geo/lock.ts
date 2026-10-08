@@ -2,12 +2,13 @@
  * scripts/geo/sources.lock.json: the pinned upstream files the geo build reads. The source
  * definitions below are the single source of truth for what is downloaded and from where; the
  * lock adds what was actually retrieved (date, sha256, size), so a changed upstream file fails
- * the build instead of silently changing the map. District building footprints are paged
- * queries built from data/config/geo.json `districts` (buildingSourceDefinitions); their lock
- * entries (`pagedSources`) pin every page and the query's feature count.
+ * the build instead of silently changing the map. District building footprints and the street
+ * props' LION streets are paged queries built from data/config/geo.json `districts` and
+ * `streets.zones` (pagedSourceDefinitions); their lock entries (`pagedSources`) pin every page
+ * and the query's feature count.
  */
 import { z } from 'zod'
-import type { GeoDistrict } from '../../src/lib/data/schemas/config.ts'
+import type { GeoConfig, GeoDistrict } from '../../src/lib/data/schemas/config.ts'
 import { METRES_PER_DEG_LAT, METRES_PER_DEG_LNG } from '../../src/lib/geo/projection.ts'
 import {
   BUILDING_SOURCE_IDS,
@@ -17,6 +18,14 @@ import {
   buildingSourceId,
   type GeoSourceId,
 } from '../../src/lib/geo/sources.ts'
+import {
+  STREET_SOURCE_IDS,
+  streetSourceId,
+  type StreetZoneId,
+} from '../../src/lib/geo/streetSources.ts'
+
+/** Every paged download, buildings first: the lock lists them in this order. */
+export const PAGED_SOURCE_IDS = [...BUILDING_SOURCE_IDS, ...STREET_SOURCE_IDS] as const
 
 const httpsUrl = z.url({ protocol: /^https$/ })
 
@@ -48,7 +57,7 @@ export type LockEntry = z.infer<typeof LockEntrySchema>
  * page with resultOffset/resultRecordCount, each page cached as `<id>-pNN.geojson`.
  */
 const PagedSourceDefinitionSchema = z.strictObject({
-  id: z.enum(BUILDING_SOURCE_IDS),
+  id: z.enum(PAGED_SOURCE_IDS),
   title: z.string().min(1),
   publisher: z.string().min(1),
   catalogUrl: httpsUrl,
@@ -81,7 +90,7 @@ export type PagedLockEntry = z.infer<typeof PagedLockEntrySchema>
 export const PartialLockSchema = z.strictObject({
   version: z.literal(1),
   sources: z.array(LockEntrySchema),
-  /** One per configured district, in BUILDING_SOURCE_IDS order. */
+  /** One per configured district, then one per prop zone, in PAGED_SOURCE_IDS order. */
   pagedSources: z.array(PagedLockEntrySchema),
 })
 
@@ -92,10 +101,10 @@ export const LockSchema = PartialLockSchema.refine(
   { error: `sources must list ${GEO_SOURCE_IDS.join(', ')} in that order` },
 ).refine(
   (lock) => {
-    const order = lock.pagedSources.map((entry) => BUILDING_SOURCE_IDS.indexOf(entry.id))
+    const order = lock.pagedSources.map((entry) => PAGED_SOURCE_IDS.indexOf(entry.id))
     return order.every((index, i) => i === 0 || index > (order[i - 1] ?? -1))
   },
-  { error: 'pagedSources must be unique and in BUILDING_SOURCE_IDS order' },
+  { error: 'pagedSources must be unique and in PAGED_SOURCE_IDS order' },
 )
 export type Lock = z.infer<typeof LockSchema>
 
@@ -126,13 +135,13 @@ const query = (params: Readonly<Record<string, string>>) =>
     .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
     .join('&')
 
-/** The district circle's bounding box in WGS84, rounded outwards to 6 decimals. */
-function envelope(district: GeoDistrict): string {
-  const dLat = district.radiusM / METRES_PER_DEG_LAT
-  const dLng = district.radiusM / METRES_PER_DEG_LNG
+/** A circle's bounding box in WGS84, rounded outwards to 6 decimals. */
+function envelope(circle: Pick<GeoDistrict, 'center' | 'radiusM'>): string {
+  const dLat = circle.radiusM / METRES_PER_DEG_LAT
+  const dLng = circle.radiusM / METRES_PER_DEG_LNG
   const down = (value: number) => Math.floor(value * 1e6) / 1e6
   const up = (value: number) => Math.ceil(value * 1e6) / 1e6
-  const { lat, lng } = district.center
+  const { lat, lng } = circle.center
   return [down(lng - dLng), down(lat - dLat), up(lng + dLng), up(lat + dLat)].join(',')
 }
 
@@ -171,6 +180,69 @@ export const buildingSourceDefinitions = (districts: readonly GeoDistrict[]) =>
         BUILDING_SOURCE_IDS.indexOf(buildingSourceId(b.id)),
     )
     .map(buildingSourceDefinition)
+
+/** A prop zone's circle (S04i): a building district or one of `streets.zones`. */
+export interface StreetZoneCircle {
+  readonly id: StreetZoneId
+  readonly label: string
+  readonly center: GeoDistrict['center']
+  readonly radiusM: number
+}
+
+/** Every prop zone, districts first, in STREET_ZONE_IDS order. */
+export const streetZoneCircles = (config: Pick<GeoConfig, 'districts' | 'streets'>) =>
+  [...config.districts, ...config.streets.zones].sort(
+    (a, b) =>
+      PAGED_SOURCE_IDS.indexOf(streetSourceId(a.id)) -
+      PAGED_SOURCE_IDS.indexOf(streetSourceId(b.id)),
+  ) as readonly StreetZoneCircle[]
+
+/**
+ * Ordinary streets only (LION, verified against the layer's `?f=json` metadata, 26C):
+ * `RW_TYPE` is a 2-character string, ' 1' = street (highways, bridges, tunnels, ramps, paths
+ * and the rest have other codes); `FeatureTyp` '0' = a public street (not private, paper or a
+ * boundary); `RB_Layer` 'B' or 'G' = the single-line centerline (roadbeds of divided streets are
+ * 'R' and would draw a street twice).
+ */
+export const STREET_WHERE = "RW_TYPE=' 1' AND FeatureTyp='0' AND RB_Layer IN ('B','G')"
+/** The only attributes requested: the segment id (for de-duplication), name and width (feet). */
+export const STREET_OUT_FIELDS = 'SegmentID,Street,StreetWidth_Min'
+/** The LION layer's maxRecordCount. */
+const STREET_PAGE_SIZE = 2000
+
+/** The paged LION street download of one prop zone (`dcp-lion-props-<zone id>`). */
+export function streetSourceDefinition(zone: StreetZoneCircle): PagedSourceDefinition {
+  const filter = {
+    where: STREET_WHERE,
+    geometry: envelope(zone),
+    geometryType: 'esriGeometryEnvelope',
+    inSR: '4326',
+  }
+  const layer = `${ARCGIS}/LION/FeatureServer/0/query`
+  return PagedSourceDefinitionSchema.parse({
+    id: streetSourceId(zone.id),
+    title: `LION streets for street props (${zone.label})`,
+    publisher: 'NYC Department of City Planning',
+    catalogUrl: `https://www.arcgis.com/home/item.html?id=${LION_ITEM_ID}`,
+    url: `${layer}?${query({
+      ...filter,
+      outFields: STREET_OUT_FIELDS,
+      outSR: '4326',
+      geometryPrecision: '6',
+      orderByFields: 'SegmentID,OBJECTID',
+      f: 'geojson',
+    })}`,
+    countUrl: `${layer}?${query({ ...filter, returnCountOnly: 'true', f: 'json' })}`,
+    pageSize: STREET_PAGE_SIZE,
+    terms: NYC_OPEN_DATA_TERMS,
+  })
+}
+
+/** Every paged download the build reads: district footprints, then prop zone streets. */
+export const pagedSourceDefinitions = (config: Pick<GeoConfig, 'districts' | 'streets'>) => [
+  ...buildingSourceDefinitions(config.districts),
+  ...streetZoneCircles(config).map(streetSourceDefinition),
+]
 
 /** Per community district: lots, total building and lot area (sq ft), average floors. */
 const PLUTO_STATISTICS = JSON.stringify([

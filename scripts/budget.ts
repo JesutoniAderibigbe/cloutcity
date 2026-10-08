@@ -256,6 +256,18 @@ const ApartmentLimitSchema = z.object({
   apartmentChunkJsGzKB: PerfConfigSchema.shape.apartmentChunkJsGzKB,
 })
 
+/** perf.json `streetsGzKB` (S04i): per tier, 0 where the streets are never fetched. */
+export function readStreetsLimits(perf: unknown): Record<(typeof QUALITY_TIERS)[number], number> {
+  const result = PerfConfigSchema.shape.streetsGzKB.safeParse(
+    (perf as { streetsGzKB?: unknown } | null)?.streetsGzKB,
+  )
+  if (!result.success) throw new Error('data/config/perf.json: invalid or missing streetsGzKB')
+  if (QUALITY_TIERS.every((tier) => result.data[tier] === 0)) {
+    throw new Error('data/config/perf.json: streetsGzKB must allow at least one tier')
+  }
+  return result.data
+}
+
 export function readApartmentChunkLimit(perf: unknown): number {
   const result = ApartmentLimitSchema.safeParse(perf)
   if (!result.success) {
@@ -392,11 +404,12 @@ async function precacheFileBytes(url: string, root: string, distDir: string): Pr
 }
 
 /**
- * URLs the precache must never hold (S04e): the 3D models and audio (they load on demand and are
- * cached by the worker then), source maps, and server, moderator, worker and share-image routes.
+ * URLs the precache must never hold (S04e): the 3D models, audio and the street props' chains
+ * (S04i; they load on demand and are cached by the worker then), source maps, and server,
+ * moderator, worker and share-image routes.
  */
 export const PRECACHE_FORBIDDEN =
-  /^\/(?:models|audio|api|mod|serwist|og)(?:\/|$)|\.(?:glb|map)(?:[?#]|$)/
+  /^\/(?:models|audio|api|mod|serwist|og|geo\/streets)(?:[/?]|$)|\.(?:glb|map)(?:[?#]|$)/
 
 /**
  * Problems with the precache list: a forbidden URL, or a required one missing. `required` is the
@@ -846,6 +859,24 @@ async function main(): Promise<void> {
       results.push(result)
       lines.push(report(result, `${count} districts plus /geo/blocks/${tier}`))
     }
+  }
+
+  // S04i: the street props' chains, fetched only on mid and high once the camera zooms in.
+  const streetsBody = await readFile(join(appDir, 'geo/streets.body')).catch(() => null)
+  if (streetsBody === null) {
+    lines.push('SKIP Streets (/geo/streets): this build has no streets route yet (S04i)')
+  } else {
+    const streetsLimits = readStreetsLimits(perf)
+    const tiers = QUALITY_TIERS.filter((tier) => streetsLimits[tier] > 0)
+    const limit = Math.min(...tiers.map((tier) => streetsLimits[tier]))
+    const result = checkBudget('Streets (/geo/streets, lazy)', gzipBytes(streetsBody), limit)
+    results.push(result)
+    lines.push(
+      report(
+        result,
+        `fetched on ${tiers.join(' and ')} once the camera zooms in; never on ${QUALITY_TIERS.filter((t) => !tiers.includes(t)).join(', ')}, never precached`,
+      ),
+    )
   }
 
   const optional = optionalChunkLine(chunks, urls)

@@ -312,6 +312,182 @@ reduced to the fields used and ordered by segment id so the bytes are stable.
 - File: `.cache/geo/dcp-lion-vanderbilt-avenue.geojson` (17610 bytes, sha256 `24a1c143a0d8925f97ce04894472ca57dda0777507c76fffac93d55290063ec6`)
 - Terms: NYC Open Data Terms of Use <https://www.nyc.gov/html/data/terms.html>
 
+### LION street centerlines (street props)
+
+One paged envelope query per prop zone (each building district, plus the circles around
+homes, venues and landmarks in `data/config/geo.json` `streets.zones`), reduced to the
+fields used (`outFields=SegmentID,Street,StreetWidth_Min`) and ordered by segment id so the bytes are stable.
+
+- Filter: `RW_TYPE=' 1' AND FeatureTyp='0' AND RB_Layer IN ('B','G')` (ordinary public streets, single centerline; no highways,
+  bridges, tunnels, ramps, paths, private or paper streets, and no roadbeds of divided streets).
+- Used for: `geo/streets.derived.json` (the chains street props stand on, mid and high tiers
+  only) and to carve the procedural blocks that would cover a real street in a prop zone
+  outside the districts (`geo/blocks.<tier>.derived.json`, tiers mid, high).
+- Transformations: segments de-duplicated by `SegmentID` and kept when their midpoint lies in
+  a prop zone circle; cut wherever they come within 150 m of a memorial, or within a
+  landmark's exclusion rectangle grown by 10 m, both grown by the street's half-width plus
+  6 m; joined into chains by street name, width and continuity; Douglas-Peucker
+  (1 m) between junctions, rounded to whole metres. `StreetWidth_Min` (feet, curb to
+  curb; 30 ft when missing) becomes each chain's half-width to 0.5 m; chains at least
+  60 ft wide are flagged wide; a side whose point 8 m beyond the curb lies in a park
+  (`geo/parks.derived.json`) is flagged a park edge. No street name is kept.
+- The item's own notice: "The Department of City Planning make no representation as to the accuracy of the information or its suitability for any purposes. The Department and the City disclaim any liability for errors that may be contained herein."
+
+Zones:
+
+#### LION streets for street props (Midtown)
+
+- Source id: `dcp-lion-props-midtown` (centre 40.7549, -73.984; radius 1300 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.999382%2C40.743193%2C-73.968618%2C40.766607&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.999382%2C40.743193%2C-73.968618%2C40.766607&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (1644 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-midtown-p00.geojson` (330602 bytes, sha256 `ee194bfee348d39d60dafd51a883c178521f9462dbce49911c7bc9b4a5e2d187`)
+
+#### LION streets for street props (Lower Manhattan)
+
+- Source id: `dcp-lion-props-lower-manhattan` (centre 40.7075, -74.009; radius 1000 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.020833%2C40.698494%2C-73.997167%2C40.716506&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.020833%2C40.698494%2C-73.997167%2C40.716506&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (1114 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-lower-manhattan-p00.geojson` (234601 bytes, sha256 `d60ea5d79acfdeb1037a138c32163729983a1c395ca1ced4bc7b68c409a738db`)
+
+#### LION streets for street props (Downtown Brooklyn and DUMBO)
+
+- Source id: `dcp-lion-props-downtown-brooklyn-dumbo` (centre 40.697, -73.988; radius 900 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.998649%2C40.688895%2C-73.977351%2C40.705105&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.998649%2C40.688895%2C-73.977351%2C40.705105&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (1016 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-downtown-brooklyn-dumbo-p00.geojson` (206158 bytes, sha256 `e68403083eeee860508707b6f34dcdf9545f3b2eb9903e4b2b15400f8678141c`)
+
+#### LION streets for street props (Williamsburg)
+
+- Source id: `dcp-lion-props-williamsburg` (centre 40.714, -73.958; radius 900 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.968649%2C40.705895%2C-73.947351%2C40.722105&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.968649%2C40.705895%2C-73.947351%2C40.722105&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (938 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-williamsburg-p00.geojson` (189378 bytes, sha256 `ed958b5b9c426a0cd8a5c04ca94fb5786f93cb63dc776e7da82df5d255ef9089`)
+
+#### LION streets for street props (Long Island City)
+
+- Source id: `dcp-lion-props-long-island-city` (centre 40.747, -73.944; radius 1000 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.955833%2C40.737994%2C-73.932167%2C40.756006&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.955833%2C40.737994%2C-73.932167%2C40.756006&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (920 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-long-island-city-p00.geojson` (183201 bytes, sha256 `58e18ae6a878ecbcc1a59dda43f7d56e1f9e2985e3c27c9878ddb721c44f1d69`)
+
+#### LION streets for street props (Astoria)
+
+- Source id: `dcp-lion-props-astoria` (centre 40.764, -73.923; radius 700 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.931283%2C40.757696%2C-73.914717%2C40.770304&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.931283%2C40.757696%2C-73.914717%2C40.770304&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (315 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-astoria-p00.geojson` (61618 bytes, sha256 `1509e08f53e78d2b123fc138dde885c9c3e9504578fcec171edb438cddc550cf`)
+
+#### LION streets for street props (Flushing)
+
+- Source id: `dcp-lion-props-flushing` (centre 40.759, -73.83; radius 600 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.8371%2C40.753596%2C-73.8229%2C40.764404&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.8371%2C40.753596%2C-73.8229%2C40.764404&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (311 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-flushing-p00.geojson` (62401 bytes, sha256 `a6ba7c5b6578781fa1cbb4c307309687d8fa26c763917a9b25c50dca207ed9f0`)
+
+#### LION streets for street props (Jamaica)
+
+- Source id: `dcp-lion-props-jamaica` (centre 40.702, -73.8; radius 600 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.8071%2C40.696596%2C-73.7929%2C40.707404&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.8071%2C40.696596%2C-73.7929%2C40.707404&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (322 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-jamaica-p00.geojson` (63071 bytes, sha256 `360f4c430218c498d910150c4b8cb13a2b4ecdc2040bb8e987289bcd74487f65`)
+
+#### LION streets for street props (Ditmars-Steinway)
+
+- Source id: `dcp-lion-props-ditmars-steinway` (centre 40.7681, -73.9113; radius 450 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.916625%2C40.764047%2C-73.905975%2C40.772153&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.916625%2C40.764047%2C-73.905975%2C40.772153&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (176 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-ditmars-steinway-p00.geojson` (34695 bytes, sha256 `231576809d92b87e097e2765a51c63e2650f743c3800a145307034b5baf4bc95`)
+
+#### LION streets for street props (Sunnyside)
+
+- Source id: `dcp-lion-props-sunnyside` (centre 40.7395, -73.933; radius 450 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.938325%2C40.735447%2C-73.927675%2C40.743553&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.938325%2C40.735447%2C-73.927675%2C40.743553&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (186 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-sunnyside-p00.geojson` (37408 bytes, sha256 `8fac57658e8281d09f485c5772c53b59ca21b264db76be897e0d2302db75c784`)
+
+#### LION streets for street props (Crown Heights)
+
+- Source id: `dcp-lion-props-crown-heights` (centre 40.684, -73.9459; radius 700 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.954183%2C40.677696%2C-73.937617%2C40.690304&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.954183%2C40.677696%2C-73.937617%2C40.690304&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (448 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-crown-heights-p00.geojson` (88920 bytes, sha256 `9cd77828781cd261049ddd7e3c6bf68a54860a2329a45a3aa03103593b168e43`)
+
+#### LION streets for street props (Bushwick)
+
+- Source id: `dcp-lion-props-bushwick` (centre 40.704, -73.922; radius 450 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.927325%2C40.699947%2C-73.916675%2C40.708053&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.927325%2C40.699947%2C-73.916675%2C40.708053&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (178 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-bushwick-p00.geojson` (35351 bytes, sha256 `88ed0e25cba69670341c7edf3970ca83ead0c802264fe6f32825a78f43a0c89a`)
+
+#### LION streets for street props (Gowanus)
+
+- Source id: `dcp-lion-props-gowanus` (centre 40.677, -73.988; radius 450 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.993325%2C40.672947%2C-73.982675%2C40.681053&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.993325%2C40.672947%2C-73.982675%2C40.681053&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (151 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-gowanus-p00.geojson` (29456 bytes, sha256 `4ad96ab9d1c11da68db92c7aa296958dd12a93a34d9cfd29a1373fcfe45fb56f`)
+
+#### LION streets for street props (Fort Greene)
+
+- Source id: `dcp-lion-props-fort-greene` (centre 40.699, -73.971; radius 450 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.976325%2C40.694947%2C-73.965675%2C40.703053&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.976325%2C40.694947%2C-73.965675%2C40.703053&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (134 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-fort-greene-p00.geojson` (29591 bytes, sha256 `fa8d126e54dee314278371a995b2c008d614fd8346e14e112f4a16b6d98109aa`)
+
+#### LION streets for street props (Lower East Side)
+
+- Source id: `dcp-lion-props-lower-east-side` (centre 40.7195, -73.9935; radius 850 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.003558%2C40.711845%2C-73.983442%2C40.727155&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.003558%2C40.711845%2C-73.983442%2C40.727155&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (1213 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-lower-east-side-p00.geojson` (242247 bytes, sha256 `ea6a2e550cb24666712fb7f0d92b93f53c24964ebaa30c87a43a7115e1896cbc`)
+
+#### LION streets for street props (Union Square)
+
+- Source id: `dcp-lion-props-union-square` (centre 40.7315, -73.99; radius 750 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.998875%2C40.724746%2C-73.981125%2C40.738254&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-73.998875%2C40.724746%2C-73.981125%2C40.738254&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (763 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-union-square-p00.geojson` (153407 bytes, sha256 `1388f75e51dadeec91bb46593772d059b10015f90c39c7a1a88154684db5f050`)
+
+#### LION streets for street props (Chelsea)
+
+- Source id: `dcp-lion-props-chelsea` (centre 40.7435, -73.9995; radius 800 m)
+- Query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.008966%2C40.736295%2C-73.990034%2C40.750705&geometryType=esriGeometryEnvelope&inSR=4326&outFields=SegmentID%2CStreet%2CStreetWidth_Min&outSR=4326&geometryPrecision=6&orderByFields=SegmentID%2COBJECTID&f=geojson>
+- Count query: <https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/LION/FeatureServer/0/query?where=RW_TYPE%3D'%201'%20AND%20FeatureTyp%3D'0'%20AND%20RB_Layer%20IN%20('B'%2C'G')&geometry=-74.008966%2C40.736295%2C-73.990034%2C40.750705&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json> (612 features)
+- Retrieved: 2026-10-08
+- Pages of 2000 (`resultOffset`/`resultRecordCount`):
+  - `.cache/geo/dcp-lion-props-chelsea-p00.geojson` (122901 bytes, sha256 `cf59d8b54e8dc403fc5640e5a01065b5522634c310819432451947391d3c4b72`)
+
 ## MTA
 
 ### MTA New York City Transit subway static GTFS

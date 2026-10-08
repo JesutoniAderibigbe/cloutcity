@@ -1,0 +1,96 @@
+{
+  "seed": 4211,
+  "chunkM": 200,
+  "showBelowDistanceM": {
+    "mid": 1500,
+    "high": 2000
+  },
+  "prefetchBelowDistanceM": {
+    "mid": 3000,
+    "high": 3500
+  },
+  "focusRadiusM": {
+    "mid": 700,
+    "high": 900
+  },
+  "sidewalkOffsetM": 1.6,
+  "parkingOffsetM": 2.2,
+  "pinClearM": 14,
+  "junctionClearM": 4,
+  "glowModels": ["streetlight", "taxi"],
+  "rules": {
+    "streetlight": {
+      "spacingM": {
+        "mid": 60,
+        "high": 40
+      },
+      "alternate": true,
+      "perChunk": {
+        "mid": 12,
+        "high": 18
+      }
+    },
+    "tree": {
+      "models": ["tree-round", "tree-oak"],
+      "spacingM": {
+        "mid": 40,
+        "high": 24
+      },
+      "chance": 0.5,
+      "perChunk": {
+        "mid": 7,
+        "high": 15
+      }
+    },
+    "hydrant": {
+      "chance": 0.4,
+      "perChunk": {
+        "mid": 3,
+        "high": 4
+      }
+    },
+    "bench": {
+      "nearPlacesM": 60,
+      "parkEdges": true,
+      "spacingM": 40,
+      "perChunk": {
+        "mid": 3,
+        "high": 4
+      }
+    },
+    "parked": {
+      "models": {
+        "mid": ["taxi", "sedan"],
+        "high": ["taxi", "sedan", "hatchback"]
+      },
+      "taxiShare": 0.35,
+      "chance": {
+        "mid": 0.004,
+        "high": 0.006
+      },
+      "slotM": 7,
+      "perChunk": {
+        "mid": 1,
+        "high": 1
+      }
+    },
+    "trafficLight": {
+      "wideOnly": false,
+      "chance": 1,
+      "perChunk": {
+        "mid": 1,
+        "high": 1
+      }
+    },
+    "waterTower": {
+      "minHeightM": 18,
+      "maxHeightM": 60,
+      "chance": 0.12,
+      "pinClearM": 40,
+      "perChunk": {
+        "mid": 3,
+        "high": 4
+      }
+    }
+  }
+}

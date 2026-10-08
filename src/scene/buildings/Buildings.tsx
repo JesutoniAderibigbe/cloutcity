@@ -8,6 +8,10 @@
  * (`lodDistanceScale`) and whether walls get windows, which glow with the shared night-glow
  * uniform (src/scene/lighting/nightGlow.ts; S04f's day/night rig drives it). Nothing here is
  * pickable.
+ *
+ * Street props (S04i) mount here too, on mid and high only: their layer is a lazy chunk imported
+ * once the camera comes within `props.prefetchBelowDistanceM` of its target, and draws on the
+ * district material (src/scene/props/layer.ts).
  */
 import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
@@ -18,9 +22,11 @@ import type { QualityTier } from '@/lib/data/schemas/config'
 import type { CitySceneConfig } from '@/lib/data/schemas/scene'
 import { log } from '@/lib/log'
 import type { BoroughId } from '../geo/schema'
+import type { StreetPropsLayer } from '../props/layer'
 import { dimmedColor } from '../materials'
 import { useTierSettings } from '../quality/tierSettings'
 import type { ScenePalette } from '../types'
+import { massesFor, type DistrictMass } from './buildDistrict'
 import { createBuildingsLayer, type BuildingsLayer, type BuildingsLayerView } from './layer'
 import { useNightGlow } from '../lighting/nightGlow'
 import { createBuildingMaterial, createWindowMask, windowTile } from './materials'
@@ -34,6 +40,8 @@ export interface BuildingsState extends BuildingsLayerView {
 
 export interface BuildingsHandle {
   state(): BuildingsState | null
+  /** Street props (S04i): whether the tier draws them, and the layer once loaded. */
+  props(): { readonly enabled: boolean; readonly layer: StreetPropsLayer | null }
 }
 
 interface BuildingsProps {
@@ -44,6 +52,8 @@ interface BuildingsProps {
   /** The city's shared toon ramp. */
   readonly gradientMap: Texture
   readonly dimmedBoroughs: ReadonlySet<BoroughId>
+  /** Pin ground points (local metres): street props keep clear of them. */
+  readonly pins: readonly { readonly x: number; readonly y: number }[]
   /** The city has drawn its first frame: loading may start. */
   readonly active: boolean
   readonly handleRef: RefObject<BuildingsHandle | null>
@@ -56,6 +66,7 @@ export function Buildings({
   groundY,
   gradientMap,
   dimmedBoroughs,
+  pins,
   active,
   handleRef,
 }: BuildingsProps) {
@@ -72,6 +83,10 @@ export function Buildings({
     return group
   }, [])
   const layerRef = useRef<BuildingsLayer | null>(null)
+  const propsRef = useRef<StreetPropsLayer | null>(null)
+  // Roof water tower candidates per district (drawn masses of a tower's height), kept for the
+  // props layer, which may load after the districts.
+  const towersRef = useRef(new Map<string, readonly DistrictMass[]>())
 
   const tierAssets = assets[settings.tier]
   const shadowKey = `${settings.shadows}:${settings.shadowMapSizePx}`
@@ -116,6 +131,7 @@ export function Buildings({
   // set), following the camera; a tier change replaces it.
   useEffect(() => {
     if (!active) return
+    towersRef.current = new Map()
     const layer = createBuildingsLayer({
       assets: tierAssets,
       groundY,
@@ -144,6 +160,15 @@ export function Buildings({
       },
       onChange: invalidate,
       onError: (url, reason) => log.warn('District buildings failed to load', { url, reason }),
+      onDistrictReady: (id, masses) => {
+        if (tierAssets.props === null) return
+        const [min, max] = tierAssets.props.towerHeightM
+        const drawn = masses
+          .slice(0, massesFor(tierView.current.density, masses.length))
+          .filter((mass) => mass.h >= min && mass.h <= max)
+        towersRef.current.set(id, drawn)
+        propsRef.current?.addTowers(id, drawn)
+      },
     })
     layerRef.current = layer
     root.add(layer.group)
@@ -175,17 +200,72 @@ export function Buildings({
     invalidate,
   ])
 
+  // Street props: nothing is imported or fetched until the camera comes close (never on low).
+  const propsAssets = tierAssets.props
+  useEffect(() => {
+    if (!active || propsAssets === null || !(controls instanceof MapControls)) return
+    const rig = controls
+    let stop: (() => void) | undefined
+    let done = false
+    const near = () => {
+      if (rig.getDistance() > propsAssets.prefetchBelowDistanceM) return
+      rig.removeEventListener('change', near)
+      import('../props/layer').then(
+        ({ mountStreetProps }) => {
+          if (done) return
+          stop = mountStreetProps({
+            rig,
+            root,
+            assets: propsAssets,
+            tier: settings.tier,
+            config,
+            materials,
+            groundY,
+            pins,
+            towers: towersRef.current,
+            layerRef: propsRef,
+            three: { gl, camera, scene },
+            onChange: invalidate,
+          })
+        },
+        (error: unknown) => log.info('Street props not loaded', { error: String(error) }),
+      )
+    }
+    rig.addEventListener('change', near)
+    near()
+    return () => {
+      done = true
+      rig.removeEventListener('change', near)
+      stop?.()
+    }
+  }, [
+    active,
+    propsAssets,
+    controls,
+    settings.tier,
+    config,
+    materials,
+    groundY,
+    pins,
+    gl,
+    camera,
+    scene,
+    invalidate,
+    root,
+  ])
+
   useEffect(() => {
     handleRef.current = {
       state: () => {
         const view = layerRef.current?.view()
         return view === undefined ? null : { ...view, windows, nightGlow: glow.value }
       },
+      props: () => ({ enabled: propsAssets !== null, layer: propsRef.current }),
     }
     return () => {
       handleRef.current = null
     }
-  }, [handleRef, windows, glow])
+  }, [handleRef, windows, glow, propsAssets])
 
   return <primitive object={root} />
 }

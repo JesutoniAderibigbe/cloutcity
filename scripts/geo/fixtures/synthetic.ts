@@ -10,8 +10,14 @@ import { strToU8, zipSync } from 'fflate'
 import type { GeoConfig } from '../../../src/lib/data/schemas/config.ts'
 import type { LandmarkModel } from '../../../src/lib/data/schemas/landmarkModels.ts'
 import { buildingSourceId, type LionSourceId } from '../../../src/lib/geo/sources.ts'
+import { streetSourceId } from '../../../src/lib/geo/streetSources.ts'
 import type { FramePlace } from '../landmarks.ts'
-import { SOURCE_DEFINITIONS, buildingSourceDefinition, type Lock } from '../lock.ts'
+import {
+  SOURCE_DEFINITIONS,
+  buildingSourceDefinition,
+  streetSourceDefinition,
+  type Lock,
+} from '../lock.ts'
 import type { GeoBuildParams, RawGeoInputs } from '../transform.ts'
 import {
   FIXTURE_BUILDING_COUNT,
@@ -19,6 +25,7 @@ import {
   FIXTURE_DENSITY,
   FIXTURE_DISTRICT,
 } from './buildings.ts'
+import { FIXTURE_STREET_COUNTS, FIXTURE_STREET_PAGES, FIXTURE_STREET_ZONE } from './streets.ts'
 
 type Ring = [number, number][]
 
@@ -196,6 +203,18 @@ export const FIXTURE_CONFIG: GeoConfig = {
   },
   landmarkFrontMaxM: 80,
   landmarkExclusionMarginM: 10,
+  streets: {
+    zones: [FIXTURE_STREET_ZONE],
+    lookOnlyClearM: 150,
+    exclusionMarginM: 10,
+    simplifyM: 1,
+    carveMarginM: 2,
+    carveTiers: ['mid', 'high'],
+    defaultWidthFt: 30,
+    wideMinFt: 60,
+    reachM: 6,
+    parkProbeM: 8,
+  },
 }
 
 export const FIXTURE_LOCK: Lock = {
@@ -215,6 +234,18 @@ export const FIXTURE_LOCK: Lock = {
         sha256: String(index + 5).repeat(64),
         bytes: 2000 + index,
       })),
+    },
+    {
+      ...streetSourceDefinition(FIXTURE_DISTRICT),
+      retrieved: '2026-01-04',
+      count: FIXTURE_STREET_COUNTS.district,
+      pages: [{ sha256: '7'.repeat(64), bytes: 3000 }],
+    },
+    {
+      ...streetSourceDefinition(FIXTURE_STREET_ZONE),
+      retrieved: '2026-01-04',
+      count: FIXTURE_STREET_COUNTS.extra,
+      pages: [{ sha256: '8'.repeat(64), bytes: 3001 }],
     },
   ],
 }
@@ -342,6 +373,10 @@ export function fixtureInputs(p3Lng?: number): RawGeoInputs {
     gtfsZip: fixtureGtfsZip(p3Lng),
     density: FIXTURE_DENSITY,
     buildings: new Map([[buildingSourceId(FIXTURE_DISTRICT.id), FIXTURE_BUILDING_PAGES]]),
+    streets: new Map<string, readonly unknown[]>([
+      [streetSourceId(FIXTURE_DISTRICT.id), FIXTURE_STREET_PAGES.district],
+      [streetSourceId(FIXTURE_STREET_ZONE.id), FIXTURE_STREET_PAGES.extra],
+    ]),
     lion: fixtureLion(),
   }
 }

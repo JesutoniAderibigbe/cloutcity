@@ -26,6 +26,7 @@ import {
   PRECACHE_FORBIDDEN,
   perfOverridePath,
   precacheProblems,
+  readStreetsLimits,
   workerWarmUrls,
 } from './budget'
 
@@ -566,6 +567,8 @@ describe('precacheProblems (S04e)', () => {
       '/og/card',
       '/serwist/sw.js',
       '/a.js.map',
+      '/geo/streets?v=0123456789ab',
+      '/geo/streets',
     ]) {
       expect(PRECACHE_FORBIDDEN.test(url), url).toBe(true)
     }
@@ -578,9 +581,24 @@ describe('precacheProblems (S04e)', () => {
       '/_next/static/chunks/a.js',
       '/modern',
       '/apiary',
+      '/geo/blocks/mid?v=1',
     ]) {
       expect(PRECACHE_FORBIDDEN.test(url), url).toBe(false)
     }
+  })
+})
+
+describe('readStreetsLimits (S04i)', () => {
+  it('reads streetsGzKB per tier and refuses a missing or all-zero entry', () => {
+    expect(readStreetsLimits({ streetsGzKB: { low: 0, mid: 60, high: 60 } })).toEqual({
+      low: 0,
+      mid: 60,
+      high: 60,
+    })
+    expect(() => readStreetsLimits({})).toThrow(/streetsGzKB/)
+    expect(() => readStreetsLimits({ streetsGzKB: { low: 0, mid: 0, high: 0 } })).toThrow(
+      /at least one tier/,
+    )
   })
 })
 

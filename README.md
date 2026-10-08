@@ -576,7 +576,13 @@ blocks elsewhere to `data/geo/blocks.<tier>.derived.json`; the build fails if a 
 exceeds `perf.json` `districtBuildingsGzKB` or `buildingTrianglesMax`. The same build derives the
 landmark frames (`data/landmarks/frames.derived.json`, from DCP LION street centerlines) first,
 and drops every footprint whose centroid lies in a landmark's `landmarks[].exclusion` rectangle
-and every block that would touch one.
+and every block that would touch one. For street props (S04i) it pages the LION street
+centerlines of every prop zone (each district plus `geo.json` `streets.zones`) into
+`data/geo/streets.derived.json`: ordinary streets only, cut clear of memorials and landmark
+grounds, joined into chains with their junctions; on the tiers in `streets.carveTiers` it also
+carves out the fill blocks a real street crosses in an extra zone. The build fails if the file
+exceeds `perf.json` `streetsGzKB`. `--add` downloads and pins only sources the lock lacks (a new
+prop zone) and leaves every pinned source as it is.
 The output is deterministic: `npm run geo:build -- --check` rebuilds
 in memory and fails if a committed file differs, and `npm test` rebuilds from the cache when it
 is present. `--update` accepts changed upstream files and rewrites the lock; `--offline` never
@@ -612,6 +618,9 @@ step-down rule and the `e2e:perf` run settings (`perfRun`). `npm run budget` (af
 - `baseGeoGzKB`: the prerendered `/geo/base` body (`.next/server/app/geo/base.body`);
 - `districtBuildingsGzKB`: per tier, every prerendered `/geo/districts/<tier>/<id>` body plus
   `/geo/blocks/<tier>`, once the build has those routes (S04d; until then the line says SKIP);
+- `streetsGzKB` (S04i): the prerendered `/geo/streets` body against the smallest limit of the
+  tiers that fetch it (mid and high; 0 on low means never fetched). The precache must never hold
+  it, and the street props' lazy chunk (marker `street props: `) stays out of the precache too;
 - `serviceWorkerGzKB` and `precacheGzKB` (S04e): the service worker script and everything it
   precaches. The precache must also hold every file of the path to playable and the versioned
   base geo, and never `/models`, `/audio`, `.glb`, source maps or `/api`, `/mod`, `/serwist`,
@@ -704,6 +713,16 @@ camera starts over it).
   prominent masses first). Blocks are one instanced mesh per borough with only the in-view
   instances drawn. District walls carry a window mask that glows with the shared night-glow
   uniform (`src/scene/lighting/nightGlow.ts`).
+- **Street props (S04i).** On mid and high only, once the camera comes within
+  `data/config/props.json` `prefetchBelowDistanceM` of its target, Buildings.tsx imports the lazy
+  `src/scene/props/layer.ts`, which fetches `/geo/streets?v=<hash>` and the prop models, places
+  streetlights, trees, benches, hydrants, traffic lights, parked cars and roof water towers along
+  the real streets (`src/lib/world/streetProps.ts`, seeded per chain, never within `pinClearM` of
+  a pin or near a memorial), and below `showBelowDistanceM` draws the 200 m chunks nearest the
+  target within `perf.json` `streetProps` (instances per model, triangles, draw calls). Each chunk
+  is one merged mesh on the district material, so props add no shader program; streetlight lamps
+  and taxi signs glow by sampling a lit window of the district window mask. Nothing is pickable,
+  and nothing loads or draws at the default view or on low.
 - **Landmarks (S07a).** `src/scene/landmarks/Landmarks.tsx` builds the code-built kit models
   (`buildLandmark`) after the first frame, nearest first, each in a drei `Detailed` with the
   tier's levels and distances (`scene.json` `landmarks.lod`); teaser landmarks on "expanding

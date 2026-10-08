@@ -13,14 +13,24 @@ import { join } from 'node:path'
 import geoConfigJson from '@data/config/geo.json'
 import { project } from '@/lib/geo/projection'
 import type { BuildingDistrictId } from '@/lib/geo/sources'
+import type { StreetPropsAssets } from '@/scene/props/layer'
+import { perf, props as propsConfig } from './config'
 import { geoManifest } from './geo'
+import { modelRef } from './models'
 import { parseDataFile } from './parse'
-import { GeoConfigSchema, QUALITY_TIERS, type QualityTier } from './schemas/config'
+import {
+  GeoConfigSchema,
+  QUALITY_TIERS,
+  STREET_PROP_MODELS,
+  type QualityTier,
+} from './schemas/config'
 import {
   BlocksFileSchema,
   BuildingsFileSchema,
+  StreetsFileSchema,
   type BlocksFile,
   type BuildingsFile,
+  type StreetsFile,
 } from './schemas/world'
 
 export const geoConfig = parseDataFile('config/geo.json', GeoConfigSchema, geoConfigJson)
@@ -30,6 +40,8 @@ export const districtDataPath = (id: string, tier: QualityTier) =>
   `geo/districts/${id}.${tier}.derived.json`
 /** data/ path of one tier's procedural blocks. */
 export const blocksDataPath = (tier: QualityTier) => `geo/blocks.${tier}.derived.json`
+/** data/ path of the street props' chains (S04i), one file for the tiers that draw props. */
+export const STREETS_DATA_PATH = 'geo/streets.derived.json'
 
 /** The first 12 hex digits of a data file's sha256 in the geo manifest. */
 function fileVersion(path: string): string {
@@ -53,6 +65,8 @@ export interface DistrictAssets {
   readonly districts: readonly DistrictAsset[]
   /** /geo/blocks/<tier>?v=<hash>. */
   readonly blocksUrl: string
+  /** Street props (S04i), or null where the tier draws none (low: nothing is ever fetched). */
+  readonly props: StreetPropsAssets | null
 }
 
 /** Everything the scene loads for one tier's buildings. */
@@ -69,7 +83,46 @@ export function districtAssets(tier: QualityTier): DistrictAssets {
       }
     }),
     blocksUrl: `/geo/blocks/${tier}?v=${fileVersion(blocksDataPath(tier))}`,
+    props: streetPropsAssets(tier),
   }
+}
+
+/** /geo/streets?v=<hash>: fetched by the props layer only, never warmed or precached. */
+export const streetsUrl = () => `/geo/streets?v=${fileVersion(STREETS_DATA_PATH)}`
+
+/**
+ * What the page carries for one tier's street props (kept small: it rides in the page's
+ * payload): the streets URL, the distance that loads them, the water towers' height range (so
+ * the buildings keep only candidate masses) and the GLB of every model data/config/props.json places
+ * there, a model capped at 0 instances left out so it is never downloaded. The lazy props chunk
+ * reads the rest of props.json and perf.json `streetProps` itself. Null where the tier
+ * draws no chunk (low): nothing is ever fetched there.
+ */
+export function streetPropsAssets(tier: QualityTier): StreetPropsAssets | null {
+  const budget = perf.streetProps
+  if (tier === 'low' || budget.drawCallsMax[tier] === 0) return null
+  const props = propsConfig
+  const placed = new Set<string>([
+    'streetlight',
+    ...props.rules.tree.models,
+    'hydrant',
+    'bench',
+    ...props.rules.parked.models[tier],
+    'traffic-light',
+    'water-tower',
+  ])
+  const ids = STREET_PROP_MODELS.filter((id) => placed.has(id) && budget.instancesMax[id][tier] > 0)
+  return {
+    url: streetsUrl(),
+    prefetchBelowDistanceM: props.prefetchBelowDistanceM[tier],
+    towerHeightM: [props.rules.waterTower.minHeightM, props.rules.waterTower.maxHeightM],
+    files: Object.fromEntries(ids.map((id) => [id, modelRef(id).files[tier]])),
+  }
+}
+
+/** The street chains, validated (prerendered into /geo/streets). */
+export async function readStreets(): Promise<StreetsFile> {
+  return parseDataFile(STREETS_DATA_PATH, StreetsFileSchema, await readDataJson(STREETS_DATA_PATH))
 }
 
 /**

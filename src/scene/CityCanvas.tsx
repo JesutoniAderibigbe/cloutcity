@@ -333,6 +333,7 @@ function CityScene3D({
               groundY={groundY}
               gradientMap={built.gradientMap}
               dimmedBoroughs={built.dimmed}
+              pins={parsed.geo.places.pins}
               active={cityReady}
               handleRef={buildingsRef}
             />

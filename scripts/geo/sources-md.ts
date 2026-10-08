@@ -5,10 +5,14 @@
  * here is a proposal.
  */
 import { QUALITY_TIERS, type GeoConfig } from '../../src/lib/data/schemas/config.ts'
-import { LION_SOURCE_IDS, buildingSourceId } from '../../src/lib/geo/sources.ts'
+import { BUILDING_SOURCE_IDS, LION_SOURCE_IDS } from '../../src/lib/geo/sources.ts'
+import { STREET_SOURCE_IDS, streetSourceId } from '../../src/lib/geo/streetSources.ts'
 import {
   BUILDING_OUT_FIELDS,
+  STREET_OUT_FIELDS,
+  STREET_WHERE,
   pageFile,
+  streetZoneCircles,
   type Lock,
   type LockEntry,
   type PagedLockEntry,
@@ -97,6 +101,38 @@ function lionSection(lock: Lock): string[] {
   ]
 }
 
+function streetPropsSection(lock: Lock, config: GeoConfig): string[] {
+  const sources = lock.pagedSources.filter(isStreetSource)
+  if (sources.length === 0) return []
+  const streets = config.streets
+  return [
+    '### LION street centerlines (street props)',
+    '',
+    'One paged envelope query per prop zone (each building district, plus the circles around',
+    'homes, venues and landmarks in `data/config/geo.json` `streets.zones`), reduced to the',
+    `fields used (\`outFields=${STREET_OUT_FIELDS}\`) and ordered by segment id so the bytes are stable.`,
+    '',
+    `- Filter: \`${STREET_WHERE}\` (ordinary public streets, single centerline; no highways,`,
+    '  bridges, tunnels, ramps, paths, private or paper streets, and no roadbeds of divided streets).',
+    '- Used for: `geo/streets.derived.json` (the chains street props stand on, mid and high tiers',
+    '  only) and to carve the procedural blocks that would cover a real street in a prop zone',
+    `  outside the districts (\`geo/blocks.<tier>.derived.json\`, tiers ${streets.carveTiers.join(', ')}).`,
+    '- Transformations: segments de-duplicated by `SegmentID` and kept when their midpoint lies in',
+    `  a prop zone circle; cut wherever they come within ${streets.lookOnlyClearM} m of a memorial, or within a`,
+    `  landmark's exclusion rectangle grown by ${streets.exclusionMarginM} m, both grown by the street's half-width plus`,
+    `  ${streets.reachM} m; joined into chains by street name, width and continuity; Douglas-Peucker`,
+    `  (${streets.simplifyM} m) between junctions, rounded to whole metres. \`StreetWidth_Min\` (feet, curb to`,
+    `  curb; ${streets.defaultWidthFt} ft when missing) becomes each chain's half-width to 0.5 m; chains at least`,
+    `  ${streets.wideMinFt} ft wide are flagged wide; a side whose point ${streets.parkProbeM} m beyond the curb lies in a park`,
+    '  (`geo/parks.derived.json`) is flagged a park edge. No street name is kept.',
+    `- The item's own notice: "${LION_DISCLAIMER}"`,
+    '',
+    'Zones:',
+    '',
+    ...sources.flatMap((source) => pagedFacts(source, config)),
+  ]
+}
+
 function entry(lock: Lock, id: string): LockEntry {
   const found = lock.sources.find((source) => source.id === id)
   if (found === undefined) throw new Error(`SOURCES.md: lock has no source ${id}`)
@@ -119,11 +155,14 @@ function sourceFacts(source: LockEntry): string[] {
 }
 
 function pagedFacts(source: PagedLockEntry, config: GeoConfig): string[] {
-  const district = config.districts.find((d) => buildingSourceId(d.id) === source.id)
+  // A district's building query and its street query share the district's circle.
+  const circle = streetZoneCircles(config).find(
+    (zone) => source.id === streetSourceId(zone.id) || source.id === `oti-buildings-${zone.id}`,
+  )
   const where =
-    district === undefined
+    circle === undefined
       ? ''
-      : ` (centre ${district.center.lat}, ${district.center.lng}; radius ${district.radiusM} m)`
+      : ` (centre ${circle.center.lat}, ${circle.center.lng}; radius ${circle.radiusM} m)`
   return [
     `#### ${source.title}`,
     '',
@@ -140,9 +179,15 @@ function pagedFacts(source: PagedLockEntry, config: GeoConfig): string[] {
   ]
 }
 
+const isBuildingSource = (source: PagedLockEntry) =>
+  (BUILDING_SOURCE_IDS as readonly string[]).includes(source.id)
+const isStreetSource = (source: PagedLockEntry) =>
+  (STREET_SOURCE_IDS as readonly string[]).includes(source.id)
+
 function buildingsSection(lock: Lock, config: GeoConfig): string[] {
-  if (lock.pagedSources.length === 0) return []
-  const [first] = lock.pagedSources
+  const buildings = lock.pagedSources.filter(isBuildingSource)
+  if (buildings.length === 0) return []
+  const [first] = buildings
   const tiers = config.buildingTiers
   const tierLines = QUALITY_TIERS.map((tier) => {
     const t = tiers.tiers[tier]
@@ -179,7 +224,7 @@ function buildingsSection(lock: Lock, config: GeoConfig): string[] {
     '',
     'Districts:',
     '',
-    ...lock.pagedSources.flatMap((source) => pagedFacts(source, config)),
+    ...buildings.flatMap((source) => pagedFacts(source, config)),
     'Required attribution: data from NYC Open Data, provided by the NYC Office of Technology and',
     'Innovation, with the NYC Open Data disclaimer quoted under the Department of City Planning.',
     '',
@@ -276,6 +321,7 @@ export function renderSourcesMd(
     '',
     ...buildingsSection(lock, config),
     ...lionSection(lock),
+    ...streetPropsSection(lock, config),
     '## MTA',
     '',
     `### ${mta.title}`,

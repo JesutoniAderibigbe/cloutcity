@@ -6,8 +6,9 @@
  * What the worker may keep:
  *  - the precache: the build's static JS/CSS/SVG/fonts, the icons, `/`, `/offline`, the legal
  *    pages, the manifest and the versioned base geo and fallback map (src/app/serwist/[path]);
- *  - `cc-geo-<version>`: other versioned geo (`/geo/...?v=`), cache-first, only at a content
- *    version this build knows ({@link geoVersionsOf}), so junk `v` values cannot grow it;
+ *  - `cc-geo-<version>`: other versioned geo (`/geo/...?v=`: districts, blocks, the street props'
+ *    chains), cache-first, only at a content version this build knows ({@link geoVersionsOf}),
+ *    so junk `v` values cannot grow it;
  *  - `cc-audio-<version>`: our own audio files, cache-first, only once the runtime fetches them
  *    (after the player's audio choice); never precached;
  *  - `cc-models-<version>`: the hand-made 3D models (S04h), cache-first, only once the scene
@@ -56,14 +57,15 @@ export interface RequestFacts {
 export const GEO_VERSION = /^[0-9a-f]{12}$/
 
 /**
- * The geo content versions this build serves: the base geo's and every district and block file's
- * (the `?v=` of each baked-in district URL). The geo route caches nothing else (F4).
+ * The geo content versions this build serves: the base geo's, every district and block file's
+ * (the `?v=` of each baked-in district URL) and the street props' chains (S04i). The geo route
+ * caches nothing else (F4).
  */
 export function geoVersionsOf(
-  config: Pick<ServiceWorkerConfig, 'geoVersion' | 'districtUrls'>,
+  config: Pick<ServiceWorkerConfig, 'geoVersion' | 'districtUrls' | 'streetsUrl'>,
 ): ReadonlySet<string> {
   const versions = new Set([config.geoVersion])
-  for (const url of Object.values(config.districtUrls).flat()) {
+  for (const url of [...Object.values(config.districtUrls).flat(), config.streetsUrl]) {
     const version = new URL(url, 'https://x.invalid').searchParams.get('v')
     if (version !== null) versions.add(version)
   }
@@ -262,6 +264,11 @@ export interface ServiceWorkerConfig {
    * loads, so a warm entry is exactly what the next load asks for.
    */
   readonly districtUrls: Readonly<Record<WarmTier, readonly string[]>>
+  /**
+   * /geo/streets?v=<hash> (S04i): cached at runtime once the props layer fetches it (mid and
+   * high, zoomed in), never precached and never warmed.
+   */
+  readonly streetsUrl: string
 }
 
 /**

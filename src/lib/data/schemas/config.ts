@@ -13,6 +13,7 @@ import {
   PRESTIGE_PARTS,
 } from '../goalFacts.ts'
 import { BUILDING_DISTRICT_IDS } from '../../geo/sources.ts'
+import { STREET_EXTRA_ZONE_IDS } from '../../geo/streetSources.ts'
 import { distanceM, project } from '../../geo/projection.ts'
 import { HOME_IDS, lowestRentHome } from '../homes.ts'
 import {
@@ -33,6 +34,49 @@ const positiveInt = z.int().positive()
 function perTier<T extends z.ZodType>(value: T) {
   return z.strictObject({ low: value, mid: value, high: value })
 }
+
+/**
+ * The hand-made models street dressing places (S04i), by catalog id: perf.json
+ * `streetProps.instancesMax` caps each one per tier and data/config/props.json places them.
+ */
+export const STREET_PROP_MODELS = [
+  'streetlight',
+  'tree-round',
+  'tree-oak',
+  'hydrant',
+  'bench',
+  'taxi',
+  'sedan',
+  'hatchback',
+  'traffic-light',
+  'water-tower',
+] as const
+export type StreetPropModel = (typeof STREET_PROP_MODELS)[number]
+
+/**
+ * Street props drawn at once around the camera focus (S04i), per tier: merged 200 m chunks on
+ * the district material, so every chunk is one draw call and no new shader program. Set from a
+ * measurement plus 15-25% (TUNE-12); low is 0 everywhere (props off).
+ */
+const StreetPropsBudgetSchema = z
+  .strictObject({
+    instancesMax: z.strictObject(
+      Object.fromEntries(
+        STREET_PROP_MODELS.map((model) => [model, perTier(z.int().nonnegative())]),
+      ) as Record<StreetPropModel, ReturnType<typeof perTier<z.ZodInt>>>,
+    ),
+    /** Part of `trianglesMax`, not on top of it. */
+    trianglesMax: perTier(z.int().nonnegative()),
+    /** Drawn chunks; part of `drawCallsMax`. */
+    drawCallsMax: perTier(z.int().nonnegative()),
+  })
+  .refine(
+    (props) =>
+      props.trianglesMax.low === 0 &&
+      props.drawCallsMax.low === 0 &&
+      STREET_PROP_MODELS.every((model) => props.instancesMax[model].low === 0),
+    { error: 'street props are off on the low tier: every low cap must be 0' },
+  )
 
 /** Throttle profile for `npm run e2e:perf`. */
 export const ThrottleProfileSchema = z.strictObject({
@@ -240,6 +284,13 @@ export const PerfConfigSchema = z
      * geo build counts them (TUNE-7 placeholders). Part of `trianglesMax`, not on top of it.
      */
     buildingTrianglesMax: perTier(positiveInt),
+    /** Street props (S04i): instances per model, triangles and draw calls, per tier. */
+    streetProps: StreetPropsBudgetSchema,
+    /**
+     * The LION street chains street props are placed on (/geo/streets, S04i), gzipped. Fetched
+     * only once the camera zooms in, never on the low tier (0), so outside every to-playable sum.
+     */
+    streetsGzKB: perTier(z.number().nonnegative()),
     /**
      * Triangles of one landmark model's finest level per tier (outline and windows included), by
      * landmark category (S07a). Each coarser level may have at most `landmarkLodRatioMax` of the
@@ -1636,6 +1687,58 @@ export const BlocksConfigSchema = z.strictObject({
 })
 export type BlocksConfig = z.infer<typeof BlocksConfigSchema>
 
+/** A prop zone outside the districts (S04i): a circle whose LION streets get street props. */
+export const GeoStreetZoneSchema = z.strictObject({
+  id: z.enum(STREET_EXTRA_ZONE_IDS),
+  /** Names the zone in SOURCES.md and build logs only. */
+  label: z.string().min(1),
+  center: z.strictObject({
+    lat: z.number().min(40.4).max(41),
+    lng: z.number().min(-74.3).max(-73.6),
+  }),
+  radiusM: metres,
+})
+export type GeoStreetZone = z.infer<typeof GeoStreetZoneSchema>
+
+/** The street chains street props stand on (S04i, geo/streets.derived.json). */
+export const StreetsGeoConfigSchema = z
+  .strictObject({
+    /** Extra prop zones, in STREET_EXTRA_ZONE_IDS order; the districts are prop zones too. */
+    zones: z.array(GeoStreetZoneSchema),
+    /** No street part (and so no prop) within this distance of a memorial's ground. */
+    lookOnlyClearM: metres,
+    /** Clear ground kept around every landmark's exclusion rectangle. */
+    exclusionMarginM: z.number().nonnegative(),
+    /** Douglas-Peucker tolerance for the chains (junctions are always kept). */
+    simplifyM: metres,
+    /**
+     * In a prop zone outside the districts, a fill block is carved out when it comes this close
+     * to a street's curb, so real-street props never stand inside a procedural block (D9).
+     */
+    carveMarginM: z.number().nonnegative(),
+    /** Tiers whose blocks are carved: those that draw street props (perf.json streetProps). */
+    carveTiers: z.array(QualityTierSchema),
+    /** Curb-to-curb width (feet) when LION has no StreetWidth_Min. */
+    defaultWidthFt: metres,
+    /** Chains at least this wide (curb to curb, feet) are flagged wide. */
+    wideMinFt: metres,
+    /**
+     * How far beyond a chain's curb a prop may stand (sidewalk offset plus the prop's own
+     * size): clearances grow by the half-width plus this, so no prop reaches into them.
+     */
+    reachM: metres,
+    /** A side of a chain is a park edge when the point this far beyond its curb is in a park. */
+    parkProbeM: metres,
+  })
+  .refine(
+    (streets) => {
+      const order = streets.zones.map((zone) => STREET_EXTRA_ZONE_IDS.indexOf(zone.id))
+      return order.every((index, i) => i === 0 || index > (order[i - 1] ?? -1))
+    },
+    { error: 'zones must be unique and in STREET_EXTRA_ZONE_IDS order', path: ['zones'] },
+  )
+export type StreetsGeoConfig = z.infer<typeof StreetsGeoConfigSchema>
+
 /**
  * Parameters of `npm run geo:build` (scripts/geo). Distances in metres, weights and areas in
  * square metres. Changing any of them changes the committed geo outputs: rebuild them.
@@ -1674,6 +1777,7 @@ export const GeoConfigSchema = z
     landmarkFrontMaxM: metres,
     /** Clear ground kept around a landmark model's footprint (its exclusion rectangle). */
     landmarkExclusionMarginM: z.number().nonnegative(),
+    streets: StreetsGeoConfigSchema,
   })
   .refine((geo) => new Set(geo.districts.map((d) => d.id)).size === geo.districts.length, {
     error: 'district ids must be unique',

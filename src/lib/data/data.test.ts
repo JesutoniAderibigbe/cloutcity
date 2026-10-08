@@ -44,7 +44,7 @@ import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './sche
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
 import { BlenderLockSchema, LandmarkMeasurementsSchema } from './schemas/landmarkBlender'
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
-import { SceneConfigSchema } from './schemas/scene'
+import { SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
@@ -56,6 +56,7 @@ import {
   LandFileSchema,
   LandmarkFramesFileSchema,
   ParksFileSchema,
+  StreetsFileSchema,
   SubwayFileSchema,
   WaterFileSchema,
   ZoneShapesFileSchema,
@@ -112,6 +113,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/perf.json': PerfConfigSchema,
   'config/profile.json': ProfileConfigSchema,
   'config/progression.json': createProgressionConfigSchema(balance.clout.levels),
+  'config/props.json': StreetPropsConfigSchema,
   'config/realtime.json': RealtimeConfigSchema,
   'config/scene.json': SceneConfigSchema,
   'config/sync.json': SyncConfigSchema,
@@ -124,6 +126,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/land.derived.json': LandFileSchema,
   'geo/manifest.derived.json': GeoManifestSchema,
   'geo/parks.derived.json': ParksFileSchema,
+  'geo/streets.derived.json': StreetsFileSchema,
   'geo/subway.derived.json': SubwayFileSchema,
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
@@ -317,6 +320,25 @@ describe('config/perf.json', () => {
       serviceWorkerGzKB: 15,
       precacheGzKB: 1000,
       buildingTrianglesMax: { low: 160_000, mid: 300_000, high: 480_000 },
+      // S04i: street props, merged per chunk on the district material; off on low (user-approved
+      // caps, instances set from measurement + 15-25%, TUNE-12).
+      streetProps: {
+        instancesMax: {
+          streetlight: { low: 0, mid: 79, high: 170 },
+          'tree-round': { low: 0, mid: 30, high: 87 },
+          'tree-oak': { low: 0, mid: 36, high: 83 },
+          hydrant: { low: 0, mid: 17, high: 22 },
+          bench: { low: 0, mid: 9, high: 10 },
+          taxi: { low: 0, mid: 4, high: 5 },
+          sedan: { low: 0, mid: 5, high: 5 },
+          hatchback: { low: 0, mid: 0, high: 6 },
+          'traffic-light': { low: 0, mid: 7, high: 11 },
+          'water-tower': { low: 0, mid: 10, high: 18 },
+        },
+        trianglesMax: { low: 0, mid: 45_000, high: 100_000 },
+        drawCallsMax: { low: 0, mid: 6, high: 9 },
+      },
+      streetsGzKB: { low: 0, mid: 60, high: 60 },
       landmarkTrianglesMax: {
         bridge: { low: 1200, mid: 3500, high: 7000 },
         building: { low: 600, mid: 1800, high: 3500 },

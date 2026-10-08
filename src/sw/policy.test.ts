@@ -111,7 +111,7 @@ describe('isVersionedGeo', () => {
     expect(geo('/geo/base?v=57ef63e13a99', { mode: 'navigate' })).toBe(false)
   })
 
-  it("knows the base geo's version and every baked-in district file's", () => {
+  it("knows the base geo's version, every baked-in district file's and the streets'", () => {
     const versions = geoVersionsOf({
       geoVersion: '57ef63e13a99',
       districtUrls: {
@@ -119,8 +119,14 @@ describe('isVersionedGeo', () => {
         mid: ['/geo/blocks/mid?v=not-a-version'],
         high: [],
       },
+      streetsUrl: '/geo/streets?v=5717ee75aaaa',
     })
-    expect([...versions].sort()).toEqual(['0000aaaa1111', '57ef63e13a99', 'abc123def456'])
+    expect([...versions].sort()).toEqual([
+      '0000aaaa1111',
+      '5717ee75aaaa',
+      '57ef63e13a99',
+      'abc123def456',
+    ])
   })
 })
 
@@ -261,15 +267,19 @@ describe('warmTierUrls', () => {
       mid: ['/geo/blocks/mid?v=111122223333'],
       high: [],
     },
+    streetsUrl: '/geo/streets?v=5717ee75aaaa',
   }
 
-  it("keeps only the tier's same-origin versioned geo", () => {
+  it("keeps only the tier's same-origin versioned geo, never the streets (S04i)", () => {
     expect(warmTierUrls(config, 'low', ORIGIN)).toEqual([
       '/geo/districts/low/queens?v=abc123def456',
       '/geo/blocks/low?v=0000aaaa1111',
     ])
     expect(warmTierUrls(config, 'mid', ORIGIN)).toEqual(['/geo/blocks/mid?v=111122223333'])
     expect(warmTierUrls(config, 'high', ORIGIN)).toEqual([])
+    for (const tier of ['low', 'mid', 'high'] as const) {
+      expect(warmTierUrls(config, tier, ORIGIN)).not.toContain(config.streetsUrl)
+    }
   })
 })
 
