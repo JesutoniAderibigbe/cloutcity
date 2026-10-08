@@ -46,6 +46,7 @@ import {
 import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer'
 import { MODEL_TIERS, type ModelTier } from '../../src/lib/data/schemas/assets.ts'
 import { TextureCache, triangleColours, triangleIndices } from './bake.ts'
+import { recessedPanes } from './recess.ts'
 import { externalUris, readGltfContainer, resolveUri, type Pack } from './fetch.ts'
 import {
   harmoniseAll,
@@ -339,6 +340,22 @@ function addPrimitive(
   }
 }
 
+/**
+ * GLOW-1: of the emissive-token triangles, only those in recessed panes keep their glow
+ * (recess.ts); frames and trim painted with the same colour go dark. `emissive` holds three
+ * corners of three bytes per triangle, in the same order as `positions`.
+ */
+function keepRecessedGlow(emissive: number[], positions: Float32Array) {
+  const triangles = positions.length / 9
+  const candidate = Array.from({ length: triangles }, (_, t) =>
+    emissive.slice(t * 9, t * 9 + 9).some((v) => v > 0),
+  )
+  const panes = recessedPanes(positions, candidate)
+  for (let t = 0; t < triangles; t++) {
+    if (!panes[t]) emissive.fill(0, t * 9, t * 9 + 9)
+  }
+}
+
 type Vec3 = [number, number, number]
 interface Box {
   readonly min: Vec3
@@ -424,6 +441,7 @@ async function buildStatic(
   ]
   const shift = model.pivot === 'source' ? [0, 0, 0] : centre
   const positions = Float32Array.from(soup.positions, (v, i) => (v - (shift[i % 3] ?? 0)) * scale)
+  if (model.glowRule === 'recessed') keepRecessedGlow(soup.emissive, positions)
 
   const doc = new Document().setLogger(logger)
   const buffer = doc.createBuffer()

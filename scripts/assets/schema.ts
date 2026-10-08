@@ -175,6 +175,11 @@ export const ModelSchema = z
      * an emissive token without an entry glows in its own colour.
      */
     glow: z.record(token, token).optional(),
+    /**
+     * Which emissive-token triangles glow: all of them (default) or, with `recessed`, only
+     * window panes set back into the facade (GLOW-1: one pack colour paints glass and frames).
+     */
+    glowRule: z.enum(['recessed']).optional(),
     /** Recolourable regions (`_SLOT` = index + 1), matched by token. */
     slots: z.array(SlotSchema),
     /** Rig only: animation clips kept (everything else is dropped). */
@@ -202,6 +207,14 @@ export const ModelSchema = z
     {
       error: 'only skinned models may limit slots by joint',
       path: ['slots'],
+    },
+  )
+  .refine(
+    (model) =>
+      model.glowRule === undefined || (model.kind === 'static' && model.emissive.length > 0),
+    {
+      error: 'a glow rule needs a static model with emissive tokens',
+      path: ['glowRule'],
     },
   )
   .refine((model) => model.kind === 'static' || model.entries.length === 1, {
