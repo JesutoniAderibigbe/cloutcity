@@ -207,6 +207,17 @@
       "attempts": 0
     },
     {
+      "id": "S04m",
+      "phase": 1,
+      "title": "Lagos-style clear map, opening on Home",
+      "acceptance": "Per user ruling DEC-59 (2026-10-08, 'Lagos-style, keep NYC'): (1) the game opens on Home — the furnished room with the player's Sims-like character as the hero view, Home first in the tabs, the map one tap away (S40/S16b); (2) the map reads clear and game-like like Lagos Life (competitor shots lagos-21-map.png, lagos-05-ingame.png): every playable place is a distinct chunky, colourful hand-made CC0 building on its own ground plot (grass/plaza/parking tile) with a large icon bubble and name label; the background city is softened and simplified (lower, lighter, less saturated, less dense) so places and landmarks stand out; brighter greens and blue water with area labels; camera closer with a game-like pitch; real NYC streets, subway lines, the 27 Blender landmarks, living city and street props stay; zero new shader programs, within per-tier perf caps (new caps go to the user); side-by-side screenshots against Lagos Life for user review before tests.",
+      "requires": [],
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
       "id": "S58",
       "phase": 1,
       "title": "Phone apps hub and Shop directory",
