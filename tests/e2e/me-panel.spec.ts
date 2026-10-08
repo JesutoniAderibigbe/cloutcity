@@ -8,7 +8,7 @@ import { waitForMapSettled } from './helpers/scene'
 // me-panel.supabase.spec.ts.)
 
 const meTab = (page: Page) =>
-  page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Me' })
+  page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Me', exact: true })
 const panel = (page: Page) => page.getByRole('dialog', { name: 'Me' })
 
 async function boot(page: Page) {

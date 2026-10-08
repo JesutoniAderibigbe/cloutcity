@@ -188,11 +188,12 @@ export function WelcomeGate() {
     view === 'locked'
       ? { title: 'age-gate-title', description: 'age-gate-body' }
       : { title: 'welcome-title', description: 'welcome-intro' }
-  // The landing sits low over the city like Lagos Life's; the forms take the screen.
+  // The landing sits low over the city like Lagos Life's; the lock and the welcome card stay
+  // centred as before; the forms take the screen.
   const frame =
-    view === 'landing' || view === 'locked'
+    view === 'landing'
       ? 'self-end mb-2 max-w-[var(--overlay-sheet-max-w)] rounded-3xl border border-line glass p-5 shadow-2xl'
-      : view === 'welcome'
+      : view === 'welcome' || view === 'locked'
         ? 'self-center max-w-[var(--overlay-sheet-max-w)] rounded-3xl border border-line glass p-5 shadow-2xl'
         : 'h-full self-stretch bg-canvas'
 
