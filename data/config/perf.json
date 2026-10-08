@@ -182,6 +182,11 @@
     "mid": 300000,
     "high": 480000
   },
+  "fillTreesMax": {
+    "low": 0,
+    "mid": 4000,
+    "high": 8000
+  },
   "landmarkTrianglesMax": {
     "bridge": {
       "low": 1200,

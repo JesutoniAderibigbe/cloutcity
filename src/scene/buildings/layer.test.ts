@@ -4,7 +4,8 @@ import { MeshBasicMaterial, PerspectiveCamera } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { scene } from '@/lib/data/config'
 import { districtAssets } from '@/lib/data/districts'
-import { createBuildingsLayer } from './layer'
+import type { DistrictMass } from './buildDistrict'
+import { createBuildingsLayer, type BuildingsLayerOptions } from './layer'
 
 const DATA = join(import.meta.dirname, '../../../data')
 const assets = districtAssets('low')
@@ -38,9 +39,14 @@ function cameraOver(id: string): PerspectiveCamera {
   return camera
 }
 
-function layerWith(fetchJson: (url: string) => Promise<unknown>, onError = vi.fn()) {
+function layerWith(
+  fetchJson: (url: string) => Promise<unknown>,
+  onError = vi.fn(),
+  extra: Partial<BuildingsLayerOptions> = {},
+) {
   const material = new MeshBasicMaterial()
   return createBuildingsLayer({
+    ...extra,
     assets,
     groundY: GROUND,
     config: scene.buildings,
@@ -116,6 +122,69 @@ describe('buildings layer', () => {
     expect(layer.view().blocks.status).toBe('failed')
     expect(onError).toHaveBeenCalledWith(assets.blocksUrl, 'invalid blocks file')
     expect(layer.view().districts.find((d) => d.id === 'jamaica')?.status).toBe('ready')
+    layer.dispose()
+  })
+
+  it('tells a listener when a district is built, with its masses most prominent first', async () => {
+    const { fetchJson } = fakeFetch()
+    const ready: { id: string; masses: readonly DistrictMass[] }[] = []
+    const layer = layerWith(fetchJson, vi.fn(), {
+      onDistrictReady: (id, masses) => ready.push({ id, masses }),
+    })
+    layer.setView(cameraOver('jamaica'))
+    layer.start()
+    for (let i = 0; i < 20 && layer.view().busy; i++) await settle()
+    const loaded = layer.view().districts.filter((d) => d.status === 'ready')
+    expect(ready.map((r) => r.id).sort()).toEqual(loaded.map((d) => d.id).sort())
+    const masses = ready.find((r) => r.id === 'jamaica')?.masses ?? []
+    expect(masses.length).toBe(layer.view().districts.find((d) => d.id === 'jamaica')?.masses)
+    for (let i = 1; i < masses.length; i++) {
+      expect(masses[i - 1]?.prominence ?? 0).toBeGreaterThanOrEqual(masses[i]?.prominence ?? 0)
+    }
+    layer.dispose()
+  })
+
+  it("a listener's failure never marks a built district failed", async () => {
+    const { fetchJson } = fakeFetch()
+    const onError = vi.fn()
+    const layer = layerWith(fetchJson, onError, {
+      onDistrictReady: () => {
+        throw new Error('listener broke')
+      },
+    })
+    layer.setView(cameraOver('jamaica'))
+    layer.start()
+    for (let i = 0; i < 20 && layer.view().busy; i++) await settle()
+    expect(layer.view().districts.find((d) => d.id === 'jamaica')?.status).toBe('ready')
+    expect(onError).toHaveBeenCalledWith(expect.stringContaining('jamaica'), 'listener broke')
+    layer.dispose()
+  })
+
+  it('dresses the blocks with the fill it is given and reports lots, plates and trees', async () => {
+    const { fetchJson } = fakeFetch()
+    const layer = layerWith(fetchJson, vi.fn(), {
+      blockFill: {
+        lots: 3,
+        plate: true,
+        plateHeightM: 0.4,
+        lotGapM: 2,
+        lotHeightJitter: 0.45,
+        treesPerBlock: 2,
+        treesMax: 4000,
+        treeViewM: 100_000,
+        treeSizeM: 7,
+        treeWidthRatio: 0.8,
+      },
+    })
+    layer.setView(cameraOver('jamaica'))
+    layer.start()
+    for (let i = 0; i < 20 && layer.view().busy; i++) await settle()
+    const { blocks } = layer.view()
+    expect(blocks.drawn).toBeGreaterThan(0)
+    expect(blocks.plates).toBe(blocks.drawn)
+    expect(blocks.lots).toBe(blocks.drawn * 3)
+    expect(blocks.trees).toBeGreaterThan(0)
+    expect(blocks.trees).toBeLessThanOrEqual(4000)
     layer.dispose()
   })
 })

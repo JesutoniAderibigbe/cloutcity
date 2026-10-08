@@ -123,10 +123,27 @@
   "blocks": {
     "seed": 4104,
     "floorM": 3.3,
-    "jitter": 0.25,
+    "jitter": {
+      "low": 0.25,
+      "mid": 0.06,
+      "high": 0.06
+    },
     "heightJitter": 0.4,
-    "fullFar": 3,
-    "footprintFraction": 0.55,
+    "fullFar": {
+      "low": 3,
+      "mid": 1.5,
+      "high": 1.5
+    },
+    "footprintFraction": {
+      "low": 0.55,
+      "mid": 0.72,
+      "high": 0.72
+    },
+    "minFloors": {
+      "low": 1,
+      "mid": 2,
+      "high": 2
+    },
     "spacingM": {
       "low": 250,
       "mid": 160,
@@ -134,8 +151,8 @@
     },
     "maxInstances": {
       "low": 8000,
-      "mid": 20000,
-      "high": 40000
+      "mid": 40000,
+      "high": 80000
     },
     "gridAngleDeg": {
       "manhattan": 29,

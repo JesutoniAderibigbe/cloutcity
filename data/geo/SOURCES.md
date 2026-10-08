@@ -58,10 +58,11 @@ Parameters live in `data/config/geo.json`.
 - Used for: `geo/blocks.<tier>.derived.json` (procedural low blocks outside the districts).
 - Transformations: `CD` mapped to its CDTA zone (borough digit to MN/BX/BK/QN/SI); joint
   interest areas skipped; floor-area ratio = building area ÷ lot area. Blocks sit on a
-  jittered grid per tier (spacing low 250 m, mid 160 m, high 110 m; jitter 0.25 of the spacing)
+  jittered grid per tier (spacing low 250 m, mid 160 m, high 110 m; jitter low 0.25, mid 0.06, high 0.06 of the spacing)
   rotated per borough (manhattan 29°, bronx 0°, brooklyn 0°, queens 0°, staten-island 0°), seeded with `src/engine/rng.ts` (seed 4104). A point
-  gets a block with chance min(1, FAR ÷ 3), 3.3 m per floor around the district's
-  mean floors (±40%). Points in a district circle, a park or cemetery, a joint
+  gets a block with chance min(1, FAR ÷ fullFar) (fullFar low 3, mid 1.5, high 1.5),
+  3.3 m per floor around the district's mean floors (±40%, at least
+  low 1, mid 2, high 2 floors). Points in a district circle, a park or cemetery, a joint
   interest area or the water get none, nor does a block that would touch a landmark exclusion
   rectangle.
 

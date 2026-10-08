@@ -50,6 +50,10 @@ export interface ScenePalette {
     readonly blocks: readonly string[]
     /** The one colour blocks on "expanding soon" land are dimmed from. */
     readonly dimmedBlock: string
+    /** Fill-lite plates under the blocks' lots (S04i). */
+    readonly lot: string
+    /** Fill-lite street tree crowns (S04i). */
+    readonly tree: string
   }
   /** The landmark kit's role colours (S07a). */
   readonly landmarks: LandmarkPalette
@@ -89,6 +93,8 @@ export interface TierRenderSettings {
   readonly buildingDensity: number
   /** Multiplies detail-level switch distances (S04d, S07a). */
   readonly lodDistanceScale: number
+  /** Most fill-lite street trees drawn at once; 0 turns them off (S04i). */
+  readonly fillTreesMax: number
 }
 
 /** The quality tier rules and per-tier settings the client scene needs (S04b). */

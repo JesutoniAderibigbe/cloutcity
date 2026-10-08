@@ -38,11 +38,7 @@ function fixture() {
   )
   // Trim painted with the glass colour: flush with the wall, and a bar standing 0.1 m proud.
   add('flush trim', true, quad([-1, 3, 0], [2, 3, 0], [2, 3.3, 0], [-1, 3.3, 0]))
-  add(
-    'proud bar',
-    true,
-    quad([-1, 0.5, 0.1], [2, 0.5, 0.1], [2, 0.7, 0.1], [-1, 0.7, 0.1]),
-  )
+  add('proud bar', true, quad([-1, 0.5, 0.1], [2, 0.5, 0.1], [2, 0.7, 0.1], [-1, 0.7, 0.1]))
   add(
     'proud bar sides',
     false,

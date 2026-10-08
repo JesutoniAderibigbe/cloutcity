@@ -117,7 +117,7 @@ describe('blocks on the fixture', () => {
       expect(file.sizeM).toBe(
         Math.round(
           FIXTURE_PARAMS.config.blocks.spacingM[tier] *
-            FIXTURE_PARAMS.config.blocks.footprintFraction,
+            FIXTURE_PARAMS.config.blocks.footprintFraction[tier],
         ),
       )
       expect(again.files.get(blocksFilePath(tier))).toBe(result.files.get(blocksFilePath(tier)))
@@ -199,6 +199,37 @@ describe('blocks on the fixture', () => {
       })
     }
     expect(counts[0]).toEqual([0, 0, 0])
+  })
+
+  it('fullFar is per tier: a lower fullFar fills that tier denser and leaves the others (S04i)', () => {
+    const blocks = FIXTURE_PARAMS.config.blocks
+    const denser = buildGeoOutputs(fixtureInputs(), {
+      ...FIXTURE_PARAMS,
+      config: {
+        ...FIXTURE_PARAMS.config,
+        blocks: { ...blocks, fullFar: { ...blocks.fullFar, mid: blocks.fullFar.mid / 2 } },
+      },
+    })
+    expect(countOf(blocksOf(denser, 'mid'))).toBeGreaterThan(countOf(blocksOf(result, 'mid')))
+    for (const tier of ['low', 'high'] as const) {
+      expect(denser.files.get(blocksFilePath(tier))).toBe(result.files.get(blocksFilePath(tier)))
+    }
+  })
+
+  it('no block is lower than minFloors storeys (S04i)', () => {
+    const blocks = FIXTURE_PARAMS.config.blocks
+    const tall = buildGeoOutputs(fixtureInputs(), {
+      ...FIXTURE_PARAMS,
+      config: {
+        ...FIXTURE_PARAMS.config,
+        blocks: { ...blocks, minFloors: { low: 5, mid: 5, high: 5 } },
+      },
+    })
+    for (const tier of QUALITY_TIERS) {
+      for (const group of blocksOf(tall, tier).groups) {
+        for (const h of group.h) expect(h).toBeGreaterThanOrEqual(Math.round(5 * blocks.floorM))
+      }
+    }
   })
 
   it('a different seed moves the blocks', () => {

@@ -207,7 +207,9 @@ Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scri
 - **Catalog.** `data/assets/catalog.json` lists the packs (licence, licence-file phrases, pin,
   colour grade) and the models (entries, category, real-world fit, pivot, per-tier
   simplification, palette swatches and anchors (`remap`, with an optional tight
-  `remapMaxDeltaE` to pin one exact pack colour), night-glow tokens, recolour slots, rig clips,
+  `remapMaxDeltaE` to pin one exact pack colour), night-glow tokens (with `glowRule: recessed`,
+  only glass-token panes set back into the facade glow: `scripts/assets/recess.ts`, GLOW-1),
+  recolour slots, rig clips,
   load phase, copy name key). The schema allows only CC0/MIT packs and project-original Blender
   sources.
 - **Build.** `npm run assets:build` downloads into `.cache/assets/` (sha256-checked against
@@ -572,8 +574,11 @@ subway static GTFS, MapPLUTO density statistics per community district, and NYC 
 footprints for each district in `geo.json` `districts`, paged and hashed page by page) into
 `.cache/geo/`, then writes simplified, integer-metre layers to `data/geo` and `data/zones`. District
 building masses go to `data/geo/districts/<district>.<tier>.derived.json` and the procedural low
-blocks elsewhere to `data/geo/blocks.<tier>.derived.json`; the build fails if a tier's total
-exceeds `perf.json` `districtBuildingsGzKB` or `buildingTrianglesMax`. The same build derives the
+blocks elsewhere to `data/geo/blocks.<tier>.derived.json` (per-tier `fullFar`, `jitter`,
+`footprintFraction` and `minFloors` in `geo.json` `blocks`); the build fails if a tier's bytes
+exceed `perf.json` `districtBuildingsGzKB`, its district masses exceed `buildingTrianglesMax`
+(blocks are culled per view, so they count in `trianglesMax` instead), or its blocks exceed
+`geo.json` `blocks.maxInstances`. The same build derives the
 landmark frames (`data/landmarks/frames.derived.json`, from DCP LION street centerlines) first,
 and drops every footprint whose centroid lies in a landmark's `landmarks[].exclusion` rectangle
 and every block that would touch one.
@@ -696,13 +701,17 @@ camera starts over it).
   (`src/scene/geo/schema.ts`, kept in step with the classic schemas by its tests). Format v3
   carries the `landmarks` layer (model parameters and frames, `src/lib/world/landmarksLayer.ts`).
 - **Buildings (S04d).** After the city's first frame, `src/scene/buildings/Buildings.tsx` loads
-  the active tier's districts near the view from `/geo/districts/<tier>/<id>?v=<hash>` and the
+  the layer and its builders as a lazy chunk (kept off the playable path, PERF-6), then the
+  active tier's districts near the view from `/geo/districts/<tier>/<id>?v=<hash>` and the
   blocks from `/geo/blocks/<tier>?v=<hash>` (prerendered; URLs from
   `src/lib/data/districts.ts` `districtAssets(tier)` / `districtAssetUrls(tier)`), builds each
   district as one merged mesh in time slices, and draws only what is within the tier's distance
   (`scene.json` `buildings.viewM` times `lodDistanceScale`), at its `buildingDensity` (the most
   prominent masses first). Blocks are one instanced mesh per borough with only the in-view
-  instances drawn. District walls carry a window mask that glows with the shared night-glow
+  instances drawn; on mid and high each block is a plate plus a row of lots, with street trees
+  beside it in two more instanced meshes (fill-lite, S04i: `scene.json` `buildings.fill`,
+  `perf.json` `fillTreesMax`), all on the blocks' materials. `onDistrictReady(id, masses)` tells
+  listeners (street props) when a district is built. District walls carry a window mask that glows with the shared night-glow
   uniform (`src/scene/lighting/nightGlow.ts`).
 - **Landmarks (S07a).** `src/scene/landmarks/Landmarks.tsx` builds the code-built kit models
   (`buildLandmark`) after the first frame, nearest first, each in a drei `Detailed` with the

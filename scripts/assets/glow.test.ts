@@ -67,8 +67,7 @@ async function trianglesOf(file: string) {
       const area = cross.length() / 2
       if (area === 0) continue
       const glows =
-        glow !== undefined &&
-        corners.some((i) => glow.getX(i) + glow.getY(i) + glow.getZ(i) > 0)
+        glow !== undefined && corners.some((i) => glow.getX(i) + glow.getY(i) + glow.getZ(i) > 0)
       out.push({ v, normal: cross.normalize(), area, glows })
     }
   })

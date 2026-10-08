@@ -3,7 +3,9 @@
  * TUNE-7): a district is fetched and built (time-sliced) once the camera comes within its draw
  * distance plus a margin, drawn only while within that distance, and the blocks draw only the
  * instances in view. Nothing loads until the city is on screen (`start`). three only, no React:
- * Buildings.tsx owns one per tier and feeds it the camera.
+ * Buildings.tsx owns one per tier and feeds it the camera, and loads this module (with the
+ * district and block builders) only once the city has drawn, so none of it weighs on the
+ * playable path (PERF-6).
  */
 import { Group, Mesh, Vector3, type Camera, type Material } from 'three'
 import type { DistrictAssets } from '@/lib/data/districts'
@@ -11,7 +13,13 @@ import type { SceneConfig } from '@/lib/data/schemas/scene'
 import { toLocal } from '../geo/coords'
 import type { BoroughId } from '../geo/schema'
 import { createSlicer } from '../schedule'
-import { buildBlocks, type BlockColors, type BlocksObjects } from './buildBlocks'
+import {
+  NO_FILL,
+  buildBlocks,
+  type BlockColors,
+  type BlockFill,
+  type BlocksObjects,
+} from './buildBlocks'
 import {
   buildDistrictGeometry,
   districtMasses,
@@ -19,6 +27,7 @@ import {
   massesFor,
   type DistrictColors,
   type DistrictGeometry,
+  type DistrictMass,
 } from './buildDistrict'
 import { BlocksMiniSchema, DistrictBuildingsMiniSchema } from './schema'
 import { distanceToDistrict, drawDistances, type ViewPoint } from './view'
@@ -49,6 +58,10 @@ export interface BuildingsLayerView {
     readonly total: number
     readonly drawn: number
     readonly triangles: number
+    /** Fill-lite instances drawn (S04i). */
+    readonly lots: number
+    readonly plates: number
+    readonly trees: number
   }
 }
 
@@ -58,6 +71,8 @@ export interface BuildingsLayerOptions {
   readonly config: SceneConfig['buildings']
   readonly districtColors: DistrictColors
   readonly blockColors: BlockColors
+  /** How the tier dresses its blocks (S04i fill-lite); default: one box per block, no trees. */
+  readonly blockFill?: BlockFill
   readonly dimmedBoroughs: ReadonlySet<BoroughId>
   readonly materials: {
     readonly district: Material
@@ -70,6 +85,12 @@ export interface BuildingsLayerOptions {
   readonly onChange: () => void
   /** A file failed to load or validate (the rest of the city carries on without it). */
   readonly onError: (url: string, reason: string) => void
+  /**
+   * A district's masses are built and in the scene (S04i: street props put water towers on
+   * them). Masses come most prominent first; the tier draws the first
+   * `massesFor(density, masses.length)` of them (buildDistrict.ts).
+   */
+  readonly onDistrictReady?: (id: string, masses: readonly DistrictMass[]) => void
   readonly fetchJson?: (url: string) => Promise<unknown>
   readonly yieldFn?: () => Promise<void>
 }
@@ -155,7 +176,7 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
       const db = options.assets.districts.find((d) => d.id === b)
       return (da ? distanceToDistrict(point, da) : 0) - (db ? distanceToDistrict(point, db) : 0)
     })
-    blocks?.cull(camera, blockRange)
+    blocks?.cull(camera, blockRange, (options.blockFill ?? NO_FILL).treeViewM * scale)
     void pump()
   }
 
@@ -175,6 +196,7 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
         options.blockColors,
         options.dimmedBoroughs,
         { normal: options.materials.blocks, dimmed: options.materials.blocksDimmed },
+        options.blockFill,
       )
       await options.prepare(built.group)
       if (disposed) {
@@ -199,13 +221,15 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
     const entry = entries.get(id)
     if (asset === undefined || entry === undefined) return
     busy++
+    let ready: readonly DistrictMass[] | null = null
     try {
       const parsed = DistrictBuildingsMiniSchema.safeParse(await fetchJson(asset.url))
       if (!parsed.success || parsed.data.district !== id) throw new Error('invalid district file')
       if (disposed) return
       const step = createSlicer(options.config.buildSliceMs, options.yieldFn)
+      const masses = districtMasses(parsed.data)
       const built = await buildDistrictGeometry(
-        districtMasses(parsed.data),
+        masses,
         options.groundY,
         options.districtColors,
         step,
@@ -227,11 +251,20 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
       group.add(mesh)
       applyView()
       options.onChange()
+      ready = masses
     } catch (error) {
       entry.status = 'failed'
       fail(asset.url, error)
     } finally {
       busy--
+    }
+    // Apart from the build: a listener's failure is reported, but the district stays drawn.
+    if (ready !== null) {
+      try {
+        options.onDistrictReady?.(id, ready)
+      } catch (error) {
+        fail(asset.url, error)
+      }
     }
   }
 
@@ -296,6 +329,9 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
           total: blockView?.total ?? 0,
           drawn: blockView?.drawn ?? 0,
           triangles: blockView?.triangles ?? 0,
+          lots: blockView?.lots ?? 0,
+          plates: blockView?.plates ?? 0,
+          trees: blockView?.trees ?? 0,
         },
       }
     },

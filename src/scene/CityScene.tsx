@@ -39,6 +39,7 @@ function tierSettings(tier: QualityTier): TierRenderSettings {
     outlines: perf.outlines[tier],
     buildingDensity: perf.buildingDensity[tier],
     lodDistanceScale: perf.lodDistanceScale[tier],
+    fillTreesMax: perf.fillTreesMax[tier],
   }
 }
 

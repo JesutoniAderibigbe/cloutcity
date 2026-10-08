@@ -79,12 +79,12 @@ for (const tier of QUALITY_TIERS) {
     expect(result.gl.outlines).toBe(perf.outlines[tier])
     expect.soft(result.calls, `${tier}: draw calls`).toBeLessThanOrEqual(perf.drawCallsMax[tier])
     expect(result.triangles, `${tier}: triangles`).toBeLessThanOrEqual(perf.trianglesMax[tier])
-    // The buildings alone stay inside the geo build's per-tier building cap (TUNE-7), and the
-    // Queens start view loads its own district (Astoria) without loading the whole city.
-    expect(
-      result.buildings.districts + result.buildings.blocks,
-      `${tier}: building triangles`,
-    ).toBeLessThanOrEqual(perf.buildingTrianglesMax[tier])
+    // The district masses stay inside the geo build's per-tier cap (TUNE-7; S04i: districts
+    // only, the culled blocks count in `trianglesMax` above), and the Queens start view loads its
+    // own district (Astoria) without loading the whole city.
+    expect(result.buildings.districts, `${tier}: district triangles`).toBeLessThanOrEqual(
+      perf.buildingTrianglesMax[tier],
+    )
     expect(result.buildings.loaded, `${tier}: loaded districts`).toContain('astoria')
     expect(result.buildings.loaded.length, `${tier}: loaded districts`).toBeLessThan(8)
   })
