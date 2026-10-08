@@ -33,11 +33,21 @@ describe('landmark name chip layout (UX-14)', () => {
     }
   })
 
-  it('moves the 42nd St terminal chip off the Deco spire chip', () => {
-    const shifted = landmarksLayer.models.filter((entry) => entry.chipShiftM !== undefined)
-    expect(shifted.map((entry) => entry.id)).toEqual(
-      expect.arrayContaining([expect.stringMatching(/deco-spire|midtown-terminal/)]),
+  it('moves the 42nd St terminal chip off the Deco spire chip when the two would overlap', () => {
+    // At the S04l chip size (scaled for the 1100 m default view) the two clear each other; the
+    // layout shifts one only when their unshifted chips would collide.
+    const lifts = landmarkPinLifts()
+    const pair = landmarksLayer.models.filter((entry) =>
+      /deco-spire|midtown-terminal/.test(entry.id),
     )
+    const [a, b] = pair.map((entry) => ({
+      x: entry.frame.anchor.x,
+      y: entry.frame.anchor.y + (lifts.get(entry.id) ?? 0) * rise,
+    }))
+    if (a === undefined || b === undefined) throw new Error('both landmarks are in the layer')
+    const overlap = Math.abs(a.x - b.x) < chips.widthM && Math.abs(a.y - b.y) < chips.heightM
+    const shifted = pair.some((entry) => entry.chipShiftM !== undefined)
+    expect(shifted).toBe(overlap)
   })
 
   it('leaves lone chips where they were, and moves an overlapping one south below it', () => {

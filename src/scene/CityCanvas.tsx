@@ -34,6 +34,7 @@ import { CameraRig } from './camera/CameraRig'
 import { FreeRowFraming } from './camera/FreeRowFraming'
 import { nearFar } from './camera/limits'
 import { Buildings, type BuildingsHandle } from './buildings/Buildings'
+import { createBuildingMaterial } from './buildings/materials'
 import { buildCity, City, type CityObjects } from './City'
 import { landTopY } from './geo/buildLand'
 import type { GeoLoadFailure } from './geo/load'
@@ -406,7 +407,9 @@ function CityScene3D({
                   geo={parsed.geo}
                   subwayPalette={palette.subwayLines}
                   homes={homeList}
-                  gradientMap={built.gradientMap}
+                  createMaterial={() =>
+                    createBuildingMaterial({ gradientMap: built.gradientMap, colors: 'instance' })
+                  }
                   groundY={groundY}
                   config={config}
                   hidden={hidden}

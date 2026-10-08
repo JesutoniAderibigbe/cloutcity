@@ -18,6 +18,8 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'street-props', marker: 'street props: ' },
   // The living city (S04l, src/scene/ambient/AmbientLife.tsx): after the map is playable.
   { id: 'ambient-life', marker: 'ambient life: ' },
+  // Its pedestrian kit bakers (src/scene/ambient/pedestrianKits.ts), loaded by it on demand.
+  { id: 'ambient-pedestrians', marker: 'pedestrian part has no skinned mesh' },
   // The street chains' loader and placement (src/scene/streets/loadStreets.ts), which the bundler
   // may split into a chunk the street props and the living city share.
   { id: 'streets', marker: 'invalid streets file' },

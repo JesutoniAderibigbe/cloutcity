@@ -42,7 +42,6 @@ import { beginContinuous, endContinuous } from '../quality/continuity'
 import { loadStreets } from '../streets/loadStreets'
 import type { AmbientAssets, AmbientModelAsset } from './assets'
 import { createAmbientLayer, type AmbientCaps, type AmbientLayer, type AmbientView } from './layer'
-import { PEDESTRIAN_KIT_SOURCES } from './pedestrianKits'
 import {
   AMBIENT_TEST_KEY,
   ambientHook,
@@ -198,9 +197,10 @@ export default function AmbientLife({
       const releases: (() => void)[] = []
       const loader: AmbientModelLoader = async (ids) => {
         const entries = ids.map((id) => {
-          const entry = list.find((asset) => asset.id === id)
+          const entry = list.find((asset) => asset[0] === id)
           if (entry === undefined) throw new Error(`no ambient asset "${id}"`)
-          return entry
+          const [, kind, file, slots] = entry
+          return { id, kind, file, slots: slots === '' ? [] : slots.split(',') }
         })
         const acquired = acquireModels(
           entries.map((entry) => ({
@@ -251,7 +251,7 @@ export default function AmbientLife({
         try {
           return await catalogVehicleKits(config.vehicleKit)(
             tier,
-            assets.vehicles.map((asset) => asset.id),
+            assets.vehicles.map((asset) => asset[0]),
             loader,
           )
         } finally {
@@ -259,8 +259,11 @@ export default function AmbientLife({
         }
       },
       pedestrianKits: async () => {
+        if (assets.pedestrians.length === 0) return []
+        // The bakers (skeleton cloning, posing) load only when a tier draws pedestrians.
+        const { PEDESTRIAN_KIT_SOURCES } = await import('./pedestrianKits')
         const source = PEDESTRIAN_KIT_SOURCES[config.pedestrians.source]
-        if (source === undefined || assets.pedestrians.length === 0) return []
+        if (source === undefined) return []
         const { loader, release } = loaderFor(assets.pedestrians)
         try {
           return await source(tier, loader)

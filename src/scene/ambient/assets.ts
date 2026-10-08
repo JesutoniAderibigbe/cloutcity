@@ -6,10 +6,16 @@
  */
 import type { ModelRef } from '../models/types'
 
-/** One model a kit is baked from: its catalog id, kind, slots and the tier's served file. */
-export interface AmbientModelAsset extends Pick<ModelRef, 'id' | 'kind' | 'slots'> {
-  readonly file: string
-}
+/**
+ * One model a kit is baked from, as a tuple to keep the payload small: catalog id, kind, the
+ * tier's served file and its `_SLOT` names joined by commas.
+ */
+export type AmbientModelAsset = readonly [
+  id: string,
+  kind: ModelRef['kind'],
+  file: string,
+  slots: string,
+]
 
 export interface AmbientAssets {
   /** /geo/streets?v=<hash> (shared with the street props). */

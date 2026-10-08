@@ -104,7 +104,7 @@ export function ambientAssets(tier: QualityTier): AmbientAssets {
   const caps = perf.ambient.instancesMax
   const asset = (id: string): AmbientModelAsset => {
     const ref = modelRef(id)
-    return { id: ref.id, kind: ref.kind, slots: ref.slots, file: ref.files[tier] }
+    return [ref.id, ref.kind, ref.files[tier], ref.slots.join(',')]
   }
   const vehicles = ambientConfig.vehicles.models[tier].filter((id) =>
     id.startsWith('bus') ? caps.bus[tier] > 0 : caps.vehicle[tier] > 0,

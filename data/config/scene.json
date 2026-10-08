@@ -1,7 +1,7 @@
 {
   "camera": {
     "fovDeg": 45,
-    "distanceM": 4500,
+    "distanceM": 1100,
     "minDistanceM": 250,
     "maxDistanceM": 40000,
     "polarDeg": {
@@ -57,9 +57,9 @@
   },
   "labels": {
     "maxDistanceM": 12000,
-    "chipSizeM": 150,
-    "chipGapM": 20,
-    "offsetM": 160,
+    "chipSizeM": 48,
+    "chipGapM": 7,
+    "offsetM": 52,
     "liftM": 6,
     "atlasCellPx": 64,
     "alphaTest": 0.5,
@@ -386,9 +386,9 @@
     }
   },
   "landmarkChips": {
-    "widthM": 1000,
-    "heightM": 200,
-    "offsetM": 260,
+    "widthM": 320,
+    "heightM": 64,
+    "offsetM": 90,
     "liftM": 12,
     "atlasWidthPx": 512,
     "cellHeightPx": 96,

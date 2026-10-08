@@ -40,9 +40,9 @@
     "busShare": 0.25,
     "busWideOnly": true,
     "perCell": {
-      "low": 1,
-      "mid": 2,
-      "high": 3
+      "low": 2,
+      "mid": 4,
+      "high": 6
     },
     "speedMps": {
       "min": 7,
@@ -61,18 +61,18 @@
       "high": 8000
     },
     "scale": {
-      "perDistance": 0.0015,
+      "perDistance": 0.004,
       "max": 8
     },
     "paint": [
-      "#b8bcc2",
-      "#2f3237",
-      "#e9e7e2",
-      "#7d2a2a",
-      "#2c4a6e",
-      "#5a6b52",
-      "#8a8f96",
-      "#3d3a4f"
+      "#f2f2ef",
+      "#1f2226",
+      "#a9aeb5",
+      "#b3262b",
+      "#2457a6",
+      "#3f6b4a",
+      "#6d7178",
+      "#d9d3c4"
     ]
   },
   "pedestrians": {
@@ -80,9 +80,9 @@
     "anchors": ["place", "home", "landmark"],
     "anchorRadiusM": 140,
     "perAnchor": {
-      "low": 1,
-      "mid": 2,
-      "high": 3
+      "low": 2,
+      "mid": 3,
+      "high": 4
     },
     "speedMps": {
       "min": 1.1,
@@ -93,13 +93,13 @@
     "epochS": 120,
     "fadeS": 0.5,
     "showBelowDistanceM": {
-      "low": 500,
-      "mid": 700,
-      "high": 900
+      "low": 1300,
+      "mid": 1400,
+      "high": 1500
     },
     "scale": {
-      "perDistance": 0.002,
-      "max": 2
+      "perDistance": 0.004,
+      "max": 5
     },
     "bobM": 0.06,
     "bobHz": 1.8,
