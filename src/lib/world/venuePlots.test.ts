@@ -104,9 +104,25 @@ describe('place plots (S04m)', () => {
     expect(lifts.get('a')).toBe(
       Math.round(plots.slabM + 30 * scale * plots.buildingHeightScale + plots.bubbleClearM),
     )
-    // No building (a station's square): the pin stays on the ground.
+    // No building (a station's square) and no building anywhere: the pin stays on the ground.
     expect(
       plotPinLifts(plotPlaces([pin('s', 'subway-station')], []), plots, () => bounds).size,
     ).toBe(0)
+  })
+
+  it('floats a plot without a building at the mean building lift (S41)', () => {
+    const tall = { min: [-5, 0, -10] as const, max: [5, 30, 10] as const }
+    const short = { min: [-5, 0, -10] as const, max: [5, 10, 10] as const }
+    const places = plotPlaces(
+      [pin('a', 'bodega'), pin('b', 'food-spot', 200), pin('c', 'food-cart', 400)],
+      [],
+    )
+    const lifts = plotPinLifts(places, plots, (model) =>
+      model === plots.styles.bodega?.model ? tall : short,
+    )
+    const a = lifts.get('a') ?? 0
+    const b = lifts.get('b') ?? 0
+    expect(a).toBeGreaterThan(b)
+    expect(lifts.get('c')).toBe(Math.round((a + b) / 2))
   })
 })

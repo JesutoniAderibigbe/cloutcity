@@ -4,7 +4,7 @@ import { project } from '@/lib/geo/projection'
 import { landmarkPinLifts, landmarksLayer } from './landmarksLayer'
 import { boroughRenderState, boroughs, findPlace, mapPlaces } from './places'
 import { buildPlacesLayer, placesLayer } from './placesLayer'
-import { plots } from '@/lib/data/config'
+import { compactLayout, plots } from '@/lib/data/config'
 import { modelRef } from '@/lib/data/models'
 import { buildingScale } from './venuePlots'
 
@@ -78,7 +78,12 @@ describe('places layer (S04c)', () => {
     for (const pin of placesLayer.pins.filter((p) => p.kind === 'venue')) {
       const style = plots.styles[pin.category]
       if (style?.model == null) {
-        expect(pin.liftM, pin.id).toBeUndefined()
+        // A fixed one (a station) stays on the ground; a packed one floats with the roofs (S41).
+        if (compactLayout.fixedCategories.includes(pin.category)) {
+          expect(pin.liftM, pin.id).toBeUndefined()
+        } else {
+          expect(pin.liftM ?? 0, pin.id).toBeGreaterThan(plots.bubbleClearM)
+        }
         continue
       }
       const bounds = modelRef(style.model).bounds

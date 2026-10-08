@@ -134,6 +134,7 @@ export function buildPlacesLayer(): PlacesLayer {
       .map((place) => ({ ...place, kind: 'venue' as const, style: 'normal' })),
     plots,
     (id) => modelRef(id).bounds,
+    compactLayout.fixedCategories,
   )
   const styleOf = (place: MapPlace): PinStyle => {
     const render = renderOf.get(place.borough)

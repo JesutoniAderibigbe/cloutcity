@@ -192,10 +192,16 @@ export function plotPinLifts(
   places: readonly PlotPlace[],
   config: PlotsConfig,
   bounds: (model: string) => ModelBounds | undefined,
+  groundCategories: readonly string[] = [],
 ): Map<string, number> {
   const lifts = new Map<string, number>()
+  const open: string[] = []
+  const category = new Map(places.map((place) => [place.id, place.category]))
   for (const plan of planPlots(places, config)) {
-    if (plan.building === null) continue
+    if (plan.building === null) {
+      if (!groundCategories.includes(category.get(plan.id) ?? '')) open.push(plan.id)
+      continue
+    }
     const box = bounds(plan.building.model)
     if (box === undefined) continue
     const height =
@@ -203,6 +209,14 @@ export function plotPinLifts(
       buildingScale(box, plan.building.footprintM) *
       config.buildingHeightScale
     lifts.set(plan.id, Math.round(config.slabM + height + config.bubbleClearM))
+  }
+  // S41: a packed plot without a building (a park, a food cart) floats its bubble at the
+  // buildings' mean height, so it never sits under the raised bubble of the plot south of it.
+  // `groundCategories` (the layout's fixed ones: a station at its real station) stay down.
+  const raised = [...lifts.values()]
+  if (raised.length > 0) {
+    const mean = Math.round(raised.reduce((sum, lift) => sum + lift, 0) / raised.length)
+    for (const id of open) lifts.set(id, mean)
   }
   return lifts
 }
