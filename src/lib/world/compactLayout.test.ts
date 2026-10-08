@@ -151,3 +151,18 @@ describe('the game map camera on a wide screen (S04p)', () => {
     expect(scene.mapStyles.real.camera.wideStartOffsetM).toBeUndefined()
   })
 })
+
+describe('the game map camera on a phone (S41b)', () => {
+  const game = scene.mapStyles.game
+  it('stands farther back than on a wide screen, so the whole cluster fits a portrait width', () => {
+    expect(game.camera.portraitDistanceM).toBeGreaterThan(game.camera.distanceM)
+  })
+  it('starts north of the cluster centre: the phone frames the target in its upper free row', () => {
+    expect(game.camera.portraitStartOffsetM?.y).toBeGreaterThan(compactLayout.centreOffsetM.y)
+    expect(scene.mapStyles.real.camera.portraitStartOffsetM).toBeUndefined()
+  })
+  it('shrinks the bubbles and labels to fit the denser view', () => {
+    expect(game.marks.portrait?.iconPx).toBeLessThan(game.marks.iconPx)
+    expect(game.marks.portrait?.labelPx).toBeLessThan(game.marks.labelPx)
+  })
+})

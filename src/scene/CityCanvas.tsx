@@ -298,17 +298,17 @@ function CityScene3D({
   const style = useMapStyle(config.mapStyles.default)
   useEffect(() => registerMapStyleDefault(config.mapStyles.default), [config.mapStyles.default])
   const look = config.mapStyles[style]
-  const camera = useMemo(
-    () => ({
+  const camera = useMemo(() => {
+    const portrait = window.innerWidth < window.innerHeight
+    const polar = portrait
+      ? (look.camera.portraitPolarDeg ?? look.camera.polarDeg)
+      : look.camera.polarDeg
+    return {
       ...config.camera,
-      distanceM:
-        window.innerWidth < window.innerHeight
-          ? look.camera.portraitDistanceM
-          : look.camera.distanceM,
-      polarDeg: { ...config.camera.polarDeg, default: look.camera.polarDeg },
-    }),
-    [config.camera, look],
-  )
+      distanceM: portrait ? look.camera.portraitDistanceM : look.camera.distanceM,
+      polarDeg: { ...config.camera.polarDeg, default: polar },
+    }
+  }, [config.camera, look])
   // The game map style stands venues at their compact points (S04n): the pins, plots, props,
   // the living city, trips and the avatar's rest all follow; travel maths keeps the real ones.
   const compact = look.plots
@@ -341,9 +341,14 @@ function CityScene3D({
   }, [placeId, stylePins, home])
   // S04p: on a wide screen the game map opens over the home's cluster, not the home itself, so
   // the home and its venues fill the free area below the HUD instead of the home hugging it.
+  // S41b: a phone does the same with its own offset, as its free row sits higher on the screen.
   const cameraStart = useMemo(() => {
-    const offset = look.camera.wideStartOffsetM
-    if (rest !== home || offset === undefined || !wideFraming(window.innerWidth)) return rest
+    const offset = wideFraming(window.innerWidth)
+      ? look.camera.wideStartOffsetM
+      : window.innerWidth < window.innerHeight
+        ? look.camera.portraitStartOffsetM
+        : undefined
+    if (rest !== home || offset === undefined) return rest
     return { x: home.x + offset.x, y: home.y + offset.y }
   }, [rest, home, look])
   if (built instanceof Error) throw built
