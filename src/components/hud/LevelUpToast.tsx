@@ -5,13 +5,17 @@ import { useEffect, useRef, useState } from 'react'
 // loader in src/lib/data/config.ts must stay out of client chunks.
 import layoutJson from '@data/config/layout.json'
 import { lazyIsland } from '@/components/overlay/lazyIsland'
-import type { LevelUp } from '@/engine/clout'
 import type { RentEvent } from '@/engine/rent'
-import { copy } from '@/lib/copy'
-import { levelUpCloseLabel, levelUpMessage, levelUpTitle, levelUpUnlocked } from '@/lib/levelUpCopy'
-import { gameStore, useGameStore } from '@/state/store'
-// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
-import '@/lib/copy/ns/clout'
+import { useGameStore } from '@/state/store'
+
+// S41: the level-up text names what a level unlocked (boroughs, jobs, clubs), so it reads the
+// places module and every venue and landmark name. It loads on the first level-up instead of
+// with this boot island, keeping that copy off the path to playable (perf.json
+// totalJsToPlayableGzKB). The store's level-up waits for it, so nothing is missed.
+const LevelUpNotice = lazyIsland(
+  () => import('./LevelUpNotice').then((module) => module.LevelUpNotice),
+  { zone: 'toast', labelKey: 'loading.levelUp', quiet: true },
+)
 
 const RentToast = lazyIsland(() => import('./RentToast').then((module) => module.RentToast), {
   zone: 'toast',
@@ -28,15 +32,18 @@ function isRentAlarm(event: RentEvent | null): event is RentEvent {
  * The toast zone's host (S13): the level-up toast, else one rent notice when rent was just
  * missed or the player evicted, whether that happened during an action or on the passive clock.
  * One toast at a time; a rent notice shows once per rent event (its Close or timer retires it),
- * and a level-up arriving meanwhile takes the zone first. The rent toast loads lazily, the first
- * time rent is missed, so the boot island gains only this check.
+ * and a level-up arriving meanwhile takes the zone first. Both toasts load lazily (the rent toast
+ * the first time rent is missed, the level-up toast on the first level-up), so the boot island
+ * holds only these checks and the shared toast timer.
  */
 export function LevelUpToast() {
   const levelUp = useGameStore((state) => state.lastLevelUp)
   const rent = useGameStore((state) => state.lastRentEvent)
   const [retired, setRetired] = useState<RentEvent | null>(null)
   // Keyed per level-up, so a new one starts with a fresh timer and no stale hover or focus.
-  if (levelUp !== null) return <Toast key={`${levelUp.to}@${levelUp.at}`} levelUp={levelUp} />
+  if (levelUp !== null) {
+    return <LevelUpNotice key={`${levelUp.to}@${levelUp.at}`} levelUp={levelUp} />
+  }
   if (!isRentAlarm(rent) || rent === retired) return null
   return (
     <RentToast key={`${rent.kind}@${rent.day}`} event={rent} onClose={() => setRetired(rent)} />
@@ -89,44 +96,4 @@ export function useToastTimer(onTimeout: () => void) {
   }, [paused])
 
   return { ref, paused }
-}
-
-/**
- * The level-up toast (S13), in the overlay toast zone, whose live region announces it. It
- * never takes focus (play carries on under it), closes itself after `overlay.toastMs`, and has
- * a Close button, with the pause rules of {@link useToastTimer}. Its one pop animation is off
- * under reduced motion (globals.css).
- */
-function Toast({ levelUp }: { readonly levelUp: LevelUp }) {
-  const { ref, paused } = useToastTimer(() => gameStore.getState().dismissLevelUp())
-
-  const unlocked = levelUpUnlocked(levelUp)
-  return (
-    <div
-      ref={ref}
-      data-level-up={levelUp.to}
-      data-cc-feature="cc-feature:level-up"
-      data-cc-notice="level-up"
-      data-paused={paused ? '' : undefined}
-      className="level-up-pop mx-2 flex items-center gap-2 rounded-2xl border border-taxi glass px-3 py-1 shadow-lg"
-    >
-      {/* Title and message share one flow so the longest level-up (every unlock on the way to
-          Icon) still fits the 72 px toast zone at 390 px (UX-1). */}
-      <div className="min-w-0 flex-1 text-xs leading-tight">
-        <p>
-          <strong className="font-extrabold text-taxi-ink">{levelUpTitle(levelUp)}</strong>{' '}
-          <span className="text-fg">{levelUpMessage(levelUp)}</span>
-        </p>
-        {unlocked === null ? null : <p className="text-taxi-ink">{unlocked}</p>}
-      </div>
-      <button
-        type="button"
-        onClick={() => gameStore.getState().dismissLevelUp()}
-        aria-label={levelUpCloseLabel(levelUp)}
-        className="min-h-11 min-w-11 shrink-0 rounded-xl bg-raised px-3 text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-      >
-        {copy('clout.levelUp.close')}
-      </button>
-    </div>
-  )
 }

@@ -55,6 +55,20 @@ describe('place plots (S04m)', () => {
     }
   })
 
+  it('plans trees, bushes and awnings only on the tiers in dressingTiers (S41: none on low)', () => {
+    const places = plotPlaces([pin('a', 'coffee-shop')], [])
+    const style = plots.styles['coffee-shop']
+    if (style === undefined) throw new Error('no coffee-shop style')
+    expect(plots.dressingTiers).not.toContain('low')
+    expect(planPlots(places, plots, 'low')[0]?.dressing).toEqual([])
+    expect(planPlots(places, plots, 'low')[0]?.awning).toBeNull()
+    expect(planPlots(places, plots, 'mid')[0]?.awning).not.toBeNull()
+    for (const tier of plots.dressingTiers) {
+      expect(planPlots(places, plots, tier)[0]?.dressing).toHaveLength(style.trees + style.bushes)
+    }
+    expect(planPlots(places, plots)[0]?.dressing).toHaveLength(style.trees + style.bushes)
+  })
+
   it('clears a square of plot plus clearance around each plot', () => {
     const clearings = plotClearings([{ x: 0, y: 0 }], plots)
     const edge = plots.plotM / 2 + plots.clearM
@@ -90,9 +104,25 @@ describe('place plots (S04m)', () => {
     expect(lifts.get('a')).toBe(
       Math.round(plots.slabM + 30 * scale * plots.buildingHeightScale + plots.bubbleClearM),
     )
-    // No building (a station's square): the pin stays on the ground.
+    // No building (a station's square) and no building anywhere: the pin stays on the ground.
     expect(
       plotPinLifts(plotPlaces([pin('s', 'subway-station')], []), plots, () => bounds).size,
     ).toBe(0)
+  })
+
+  it('floats a plot without a building at the mean building lift (S41)', () => {
+    const tall = { min: [-5, 0, -10] as const, max: [5, 30, 10] as const }
+    const short = { min: [-5, 0, -10] as const, max: [5, 10, 10] as const }
+    const places = plotPlaces(
+      [pin('a', 'bodega'), pin('b', 'food-spot', 200), pin('c', 'food-cart', 400)],
+      [],
+    )
+    const lifts = plotPinLifts(places, plots, (model) =>
+      model === plots.styles.bodega?.model ? tall : short,
+    )
+    const a = lifts.get('a') ?? 0
+    const b = lifts.get('b') ?? 0
+    expect(a).toBeGreaterThan(b)
+    expect(lifts.get('c')).toBe(Math.round((a + b) / 2))
   })
 })

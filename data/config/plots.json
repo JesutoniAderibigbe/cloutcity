@@ -1,9 +1,9 @@
 {
-  "plotM": 84,
+  "plotM": 70,
   "slabM": 0.6,
   "kerbM": 3,
-  "clearM": 8,
-  "buildingBackM": 17,
+  "clearM": 10,
+  "buildingBackM": 14,
   "buildingHeightScale": 0.75,
   "bubbleClearM": 40,
   "chunkM": 1600,
@@ -25,7 +25,7 @@
   },
   "trees": {
     "models": ["tree-round", "tree-oak"],
-    "insetM": 7,
+    "insetM": 6,
     "scale": 1.8
   },
   "bush": {
@@ -33,10 +33,11 @@
     "scale": 5,
     "spacingM": 7
   },
+  "dressingTiers": ["mid", "high"],
   "styles": {
     "bodega": {
       "model": "building-c",
-      "footprintM": 44,
+      "footprintM": 38,
       "facade": "mustard-300",
       "apron": "plaza",
       "awning": {
@@ -48,7 +49,7 @@
     },
     "food-spot": {
       "model": "building-a",
-      "footprintM": 44,
+      "footprintM": 38,
       "facade": "tomato-400",
       "apron": "plaza",
       "awning": {
@@ -60,7 +61,7 @@
     },
     "coffee-shop": {
       "model": "building-c",
-      "footprintM": 44,
+      "footprintM": 38,
       "facade": "latte-300",
       "apron": "plaza",
       "awning": {
@@ -72,7 +73,7 @@
     },
     "club": {
       "model": "building-b",
-      "footprintM": 48,
+      "footprintM": 40,
       "facade": "grape-400",
       "apron": "parking",
       "awning": null,
@@ -81,7 +82,7 @@
     },
     "boutique": {
       "model": "building-d",
-      "footprintM": 44,
+      "footprintM": 38,
       "facade": "bubblegum-300",
       "apron": "plaza",
       "awning": {
@@ -93,7 +94,7 @@
     },
     "thrift": {
       "model": "building-a",
-      "footprintM": 44,
+      "footprintM": 38,
       "facade": "lagoon-400",
       "apron": "plaza",
       "awning": {
@@ -105,7 +106,7 @@
     },
     "gym": {
       "model": "building-b",
-      "footprintM": 48,
+      "footprintM": 40,
       "facade": "cobalt-400",
       "apron": "parking",
       "awning": null,
@@ -114,7 +115,7 @@
     },
     "job-site": {
       "model": "building-d",
-      "footprintM": 48,
+      "footprintM": 40,
       "facade": "denim-500",
       "apron": "parking",
       "awning": null,
@@ -130,9 +131,123 @@
       "trees": 4,
       "bushes": 4
     },
+    "barber": {
+      "model": "building-c",
+      "footprintM": 38,
+      "facade": "cobalt-400",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningred-500"
+      },
+      "trees": 2,
+      "bushes": 0
+    },
+    "salon": {
+      "model": "building-c",
+      "footprintM": 38,
+      "facade": "gamelilac-200",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningcream-100"
+      },
+      "trees": 2,
+      "bushes": 2
+    },
+    "food-cart": {
+      "model": null,
+      "footprintM": 0,
+      "facade": null,
+      "apron": "plaza",
+      "awning": null,
+      "trees": 2,
+      "bushes": 2
+    },
+    "mall": {
+      "model": "building-d",
+      "footprintM": 40,
+      "facade": "gamecoral-300",
+      "apron": "parking",
+      "awning": null,
+      "trees": 2,
+      "bushes": 2
+    },
+    "bank": {
+      "model": "building-d",
+      "footprintM": 38,
+      "facade": "softstone-200",
+      "apron": "plaza",
+      "awning": null,
+      "trees": 2,
+      "bushes": 2
+    },
+    "pharmacy": {
+      "model": "building-c",
+      "footprintM": 38,
+      "facade": "gamemint-200",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awninggreen-500"
+      },
+      "trees": 2,
+      "bushes": 0
+    },
+    "laundromat": {
+      "model": "building-c",
+      "footprintM": 38,
+      "facade": "lagoon-500",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningcream-100"
+      },
+      "trees": 2,
+      "bushes": 0
+    },
+    "community-center": {
+      "model": "building-d",
+      "footprintM": 40,
+      "facade": "butter-200",
+      "apron": "plaza",
+      "awning": null,
+      "trees": 4,
+      "bushes": 4
+    },
+    "park": {
+      "model": null,
+      "footprintM": 0,
+      "facade": null,
+      "apron": "none",
+      "awning": null,
+      "trees": 4,
+      "bushes": 6
+    },
+    "lounge": {
+      "model": "building-d",
+      "footprintM": 40,
+      "facade": "terra-400",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningorange-400"
+      },
+      "trees": 2,
+      "bushes": 2
+    },
+    "studio": {
+      "model": "building-c",
+      "footprintM": 38,
+      "facade": "grape-400",
+      "apron": "parking",
+      "awning": null,
+      "trees": 0,
+      "bushes": 2
+    },
     "home": {
       "model": "building-c",
-      "footprintM": 44,
+      "footprintM": 38,
       "facade": "brickhome-400",
       "apron": "none",
       "awning": null,

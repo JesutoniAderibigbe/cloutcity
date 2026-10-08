@@ -1,7 +1,7 @@
 /**
  * Content checks for S07 places: the required landmarks are present and safe (categories,
  * name modes, generic labels for brands, look-only memorials), every playable borough has its
- * eight invented venues with original names, place copy never asserts an uncomputed
+ * core invented venues (Queens more, S41) with original names, place copy never asserts an uncomputed
  * superlative, and every place agrees with the S04 geo layers. A geo mismatch prints the
  * value the data should hold.
  */
@@ -192,6 +192,16 @@ const REAL_NYC_BUSINESSES = [
   'Retro Fitness',
   'Blink Fitness',
   'Chelsea Piers',
+  'Sharp Cuts',
+  'Corner Cuts',
+  'Taper Barber Lounge',
+  '10 Nails Bar',
+  'Halal Guys',
+  'Queens Center',
+  'Queens Place',
+  'Flushing Commons',
+  'Z Roof',
+  'Take Space',
 ]
 
 /** GR-11 words a place or borough string may only carry through a computed {rank}. */
@@ -316,16 +326,42 @@ const SLOTS: readonly (readonly string[])[] = [
   ['job-site'],
 ]
 
+/**
+ * S41: Queens, the start borough, fills out like a Lagos Life neighbourhood (barber, salon, food
+ * spots, errands, hangouts, a creator space) on top of its eight core venues, so the game map's
+ * default view shows about 20 to 25 places.
+ */
+const QUEENS_EXTRAS = 17
+
 describe('venues', () => {
-  it.each(PLAYABLE)('%s has exactly 8 venues, one per required kind', (borough) => {
+  it.each(PLAYABLE)('%s has every required kind', (borough) => {
     const own = venues.filter((entry) => entry.borough === borough)
-    expect(own).toHaveLength(8)
     for (const slot of SLOTS) {
       expect(
-        own.filter((entry) => slot.includes(entry.type)),
+        own.filter((entry) => slot.includes(entry.type)).length,
         slot.join('|'),
-      ).toHaveLength(1)
+      ).toBeGreaterThanOrEqual(1)
     }
+  })
+
+  it.each(['brooklyn', 'manhattan'] as const)(
+    '%s has exactly 8 venues, one per kind',
+    (borough) => {
+      const own = venues.filter((entry) => entry.borough === borough)
+      expect(own).toHaveLength(8)
+      for (const slot of SLOTS) {
+        expect(
+          own.filter((entry) => slot.includes(entry.type)),
+          slot.join('|'),
+        ).toHaveLength(1)
+      }
+    },
+  )
+
+  it('Queens has its 8 core venues plus the S41 neighbourhood extras, one station', () => {
+    const own = venues.filter((entry) => entry.borough === 'queens')
+    expect(own).toHaveLength(8 + QUEENS_EXTRAS)
+    expect(own.filter((entry) => entry.type === 'subway-station')).toHaveLength(1)
   })
 
   it('the Bronx and Staten Island have no venues yet', () => {

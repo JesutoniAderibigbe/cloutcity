@@ -47,6 +47,14 @@
     "place.blocked.awayHome": "You're not home. Head home first.",
     "place.blocked.energyShift": "You need {required} energy. You have {available}. Head home and sleep to get it back.",
     "place.blocked.energyAtHome": "You need {required} energy. You have {available}. Sleep or nap to get it back.",
-    "place.club.door": "Door: {level} clout and up. You're at {current}."
+    "place.club.door": "Door: {level} clout and up. You're at {current}.",
+    "place.actions.freshCut.name": "Get a fresh cut",
+    "place.actions.salonSession.name": "Get your hair or nails done",
+    "place.actions.budgetCheck.name": "Check your balance",
+    "place.actions.pharmacyRun.name": "Grab essentials",
+    "place.actions.laundry.name": "Do laundry",
+    "place.actions.communityHang.name": "Volunteer and hang out",
+    "place.actions.rooftopHang.name": "Catch the view",
+    "place.actions.studioSession.name": "Studio session"
   }
 }

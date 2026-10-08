@@ -79,9 +79,10 @@ describe('compact game-map layout (S04n)', () => {
 
   it("packs the start cluster (the home's borough or zone) around the home", () => {
     const home = project(homes['queens-room'].location)
+    // S41: Queens' ~24 plot venues fill a block about six plots wide south of the home.
     const near = moved.filter(
       (pin) =>
-        Math.hypot((pin.gx ?? 0) - home.x, (pin.gy ?? 0) - home.y) <= 5 * compactLayout.pitchM,
+        Math.hypot((pin.gx ?? 0) - home.x, (pin.gy ?? 0) - home.y) <= 6 * compactLayout.pitchM,
     )
     expect(near.length).toBe(
       moved.filter((pin) => zoneOf.get(pin.id) === (byBorough ? 'queens' : 'qn01')).length,

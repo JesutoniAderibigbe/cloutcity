@@ -578,7 +578,7 @@ function withVisit(snapshot: GameSnapshot, placeId: string): GameSnapshot {
 }
 
 /** Venue types that run a shop (S10a): they sell every item in `shopItems`. */
-export const SHOP_VENUE_TYPES = ['boutique', 'thrift'] as const
+export const SHOP_VENUE_TYPES = ['boutique', 'thrift', 'mall'] as const
 
 /** True when `place` is a venue with a shop. */
 export function hasShop(place: Place): place is Venue {

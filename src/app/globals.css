@@ -301,7 +301,7 @@ body {
   }
 }
 
-/* The level-up toast's single pop (src/components/hud/LevelUpToast.tsx). Only when motion is
+/* The level-up toast's single pop (src/components/hud/LevelUpNotice.tsx). Only when motion is
    welcome: under reduced motion the toast simply appears. */
 @media (prefers-reduced-motion: no-preference) {
   .level-up-pop {

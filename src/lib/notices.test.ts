@@ -67,12 +67,16 @@ describe('first-session notices (GR-9)', () => {
         source.includes(`export function ${toast}`),
       )
       const island = /import\('\.\/(\w+)'\)/.exec(mount?.[1] ?? '')?.[1]
-      const source = [...code.entries()].find(([file]) => file.endsWith(`/${island ?? ''}.tsx`))
-      const tagged = kindsIn(source?.[1] ?? '')
+      const sourceOf = (name: string) =>
+        [...code.entries()].find(([file]) => file.endsWith(`/${name}.tsx`))?.[1] ?? ''
+      const source = sourceOf(island ?? '')
+      // The island's own toasts and the ones it loads lazily (`import('./RentToast')`).
+      const nested = [...source.matchAll(/import\('\.\/(\w+)'\)/g)].map((match) => match[1] ?? '')
+      const tagged = [source, ...nested.map(sourceOf)].flatMap(kindsIn)
       expect(tagged, `${toast} is a tagged notice or a named exception`).not.toEqual([])
       return tagged
     })
-    expect(kinds).toEqual(['level-up'])
+    expect(kinds.sort()).toEqual(['level-up', 'rent'])
   })
 
   it('the limit leaves room for the tour and two more', () => {
