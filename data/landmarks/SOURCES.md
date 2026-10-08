@@ -270,7 +270,8 @@ Dimensions:
 - `centralTowerFloors`: 25 (wikidata): One Times Square floors (P1101)
 - `squareLengthM`: 420 m (estimate): the bowtie's length along Broadway and Seventh Avenue, 42nd to 47th Street (five blocks of about 80 m)
 - `plazaWidthM`: 70 × 26 m (estimate): the square's width at its ends (widthM) and at its waist (depthM), proportioned by eye
-- `flankHeightsM`: 230 × 60 m (estimate): the flanking towers' tallest (widthM) and lowest (depthM) heights; the blocks between are interpolated, generic
+- `heightM`: 230 m (estimate): the tallest flanking tower: the model's top
+- `flankLowM`: 60 m (estimate): the lowest flanking tower; the others are interpolated, generic
 
 Readability scale (drawn width ÷ true width): .
 

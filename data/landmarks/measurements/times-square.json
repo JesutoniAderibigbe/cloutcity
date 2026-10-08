@@ -32,11 +32,15 @@
       "source": "estimate",
       "note": "the square's width at its ends (widthM) and at its waist (depthM), proportioned by eye"
     },
-    "flankHeightsM": {
-      "widthM": 230,
-      "depthM": 60,
+    "heightM": {
+      "valueM": 230,
       "source": "estimate",
-      "note": "the flanking towers' tallest (widthM) and lowest (depthM) heights; the blocks between are interpolated, generic"
+      "note": "the tallest flanking tower: the model's top"
+    },
+    "flankLowM": {
+      "valueM": 60,
+      "source": "estimate",
+      "note": "the lowest flanking tower; the others are interpolated, generic"
     }
   },
   "readabilityScale": {

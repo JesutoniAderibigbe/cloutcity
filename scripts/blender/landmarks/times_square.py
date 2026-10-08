@@ -24,7 +24,7 @@ def spec(data, true_scale=False):
     w = 1.0 if true_scale else game["plan"]
     length = m["squareLengthM"]["valueM"] * w
     end_w, waist = m["plazaWidthM"]["widthM"] * w, m["plazaWidthM"]["depthM"] * w
-    tall, low = m["flankHeightsM"]["widthM"], m["flankHeightsM"]["depthM"]
+    tall, low = m["heightM"]["valueM"], m["flankLowM"]["valueM"]
     half = length / 2
     # Two triangles meeting at the waist: the bowtie.
     plazas = [
@@ -88,7 +88,7 @@ def spec(data, true_scale=False):
 
 def expected_height(data, true_scale=False):
     m = data["measurements"]
-    return m["dimensions"]["flankHeightsM"]["widthM"] * (1.0 if true_scale else m["gameScale"]["height"])
+    return m["dimensions"]["heightM"]["valueM"] * (1.0 if true_scale else m["gameScale"]["height"])
 
 
 def context(spec):
