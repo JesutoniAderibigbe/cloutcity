@@ -113,7 +113,16 @@ def context(data, heading_rad, report):
     box_object("water", -20000, 20000, -20000, 20000, -1.0, 0.0, water)
     top = inputs.land_top_y(data["scene"])
     if data["frame"]["base"] != "water":
-        box_object("land", -3000, 3000, -3000, 3000, 0.0, top, land)
+        box_object("land", -6000, 6000, -6000, 6000, 0.0, top, land)
+        # The map's park green under a park model (report.json `context.green`: outer rings).
+        green = solid_material("preview-green", theme_colour(theme, theme["scene"]["park"]))
+        for i, ring in enumerate(report["context"].get("green", [])):
+            mesh = bpy.data.meshes.new("land-green-%d" % i)
+            mesh.from_pydata([(x, y, top + 0.05) for x, y in ring], [], [list(range(len(ring)))])
+            mesh.materials.append(green)
+            obj = bpy.data.objects.new("land-green-%d" % i, mesh)
+            bpy.context.scene.collection.objects.link(obj)
+            obj.rotation_euler = (0.0, 0.0, heading_rad)
         return
     for i, (y0, y1) in enumerate(report["context"]["land"]):
         obj = box_object("land-%d" % i, -2500, 2500, max(y0, -6000.0), min(y1, 6000.0), 0.0, top, land)
