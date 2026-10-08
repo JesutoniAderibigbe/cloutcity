@@ -11,7 +11,6 @@ import { waitForMapSettled } from './helpers/scene'
 // on phones). The flow is Look, Traits, Dream, the neighborhood roll and Home, on native radios
 // and checkboxes; every name and number on screen comes from the data (GR-10).
 
-test.use({ creatorOffer: 'on' })
 test.setTimeout(120_000)
 
 const STORE_KEY = 'cloutcity:game'
@@ -45,7 +44,6 @@ async function firstAction(page: Page) {
   })
 }
 
-const offer = (page: Page): Locator => page.locator('[data-creator-offer]')
 const creator = (page: Page): Locator =>
   page.getByRole('dialog', { name: copyText('creator.title') })
 const step = (page: Page, id: string): Locator => page.locator(`[data-creator-step="${id}"]`)
@@ -97,25 +95,12 @@ async function next(page: Page) {
   await page.keyboard.press('Enter')
 }
 
-test('no offer before the first action; after it, Not now; the HUD always opens it', async ({
+test('the HUD opens the creator; Close and Escape leave it (no offer toast, DEC-62)', async ({
   page,
 }) => {
   await boot(page)
-  await expect(offer(page)).toHaveCount(0)
   await firstAction(page)
-  await expect(offer(page)).toBeVisible()
-  await expect(offer(page)).toHaveAttribute('data-cc-notice', 'creator-offer')
-
-  await offer(page)
-    .getByRole('button', { name: copyText('creatorOffer.skip') })
-    .click()
-  await expect(offer(page)).toHaveCount(0)
-  await expect.poll(async () => (await saved(page))?.creator.dismissedAt).not.toBeNull()
-  // Put off for good: a reload does not bring it back.
-  await page.reload()
-  await waitForWelcomeGate(page)
-  await expect(offer(page)).toHaveCount(0)
-
+  await expect(page.locator('[data-creator-offer]')).toHaveCount(0)
   await openFromHud(page)
   await expect(step(page, 'look')).toBeVisible()
   await creator(page)
@@ -132,10 +117,7 @@ test('Look, Traits, Dream, the roll and Home on native controls, saved as it goe
   page,
 }) => {
   await boot(page)
-  await firstAction(page)
-  await offer(page)
-    .getByRole('button', { name: copyText('creatorOffer.label') })
-    .click()
+  await openFromHud(page)
   await expect(creator(page)).toBeVisible()
   await expect(creator(page).locator('[data-creator-progress]')).toHaveText(
     copyText('creator.progress', { step: '1', count: '5', name: copyText('creator.step.look') }),
@@ -216,7 +198,7 @@ test('Look, Traits, Dream, the roll and Home on native controls, saved as it goe
   await next(page)
   await expect(creator(page)).toHaveCount(0)
   await expect.poll(async () => (await saved(page))?.creator.completedAt).not.toBeNull()
-  await expect(offer(page)).toHaveCount(0)
+  await expect(page.locator('[data-creator-offer]')).toHaveCount(0)
 
   // One roll per save: back on the roll step, the same neighborhood and no dice to roll.
   await openFromHud(page)

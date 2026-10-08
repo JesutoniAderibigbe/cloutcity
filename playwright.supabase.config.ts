@@ -67,9 +67,6 @@ export default defineConfig({
       MODERATOR_EMAILS: E2E_MODERATOR_EMAIL,
       // Where /mod sign-in links land (never the request's Host header).
       SITE_URL: BASE_URL,
-      // Where account links land (S19): <site>/auth/callback, allowlisted in supabase/config.toml
-      // for every lane port.
-      NEXT_PUBLIC_SITE_URL: BASE_URL,
     },
   },
 })

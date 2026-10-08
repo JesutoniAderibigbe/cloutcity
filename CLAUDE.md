@@ -65,7 +65,7 @@ tests/e2e/        Playwright specs, one per flow.
 tests/integration/  Vitest suites against local Supabase.
 Unit tests sit next to the code as *.test.ts.
 ```
-- **Auth model:** a Supabase anonymous session starts after the 18+ attestation. It can be upgraded to email magic link or Google with progress kept.
+- **Auth model:** players sign up with a username, email and password (DEC-61, DEC-62: no guest play, no confirmation email, no password reset); the 18+ attestation and consent are recorded with the account at sign-up, and log in (username or email + password) restores the cloud save on any device.
 - **Data model:** local-first game state that syncs to the server.
 - **Shared presence:** server-authored broadcasts on private zone channels.
 
@@ -169,11 +169,11 @@ Further rules:
 - Headless CI cannot measure real FPS (it runs SwiftShader). Automated tests assert bytes, timings, draw calls and triangles. Real-device FPS is a "Needs human review" item for every 3D task.
 
 ## Non-negotiable product principles
-1. **Instant map start.**
-   - A link lands the player on the 3D map within the budgets above. No signup, no login wall.
-   - The map loads behind a single **welcome card** with three parts: an 18+ year-of-birth check, a Terms/Privacy consent checkbox, and the audio choice.
-   - The guest session starts automatically after that card.
-   - The "Save your progress" prompt appears only after the first milestone. Guest progress must carry over to the account.
+1. **Onboarding exactly like Lagos Life** (user ruling 2026-10-08, DEC-62, replaces "instant map start, no login wall").
+   - A link lands on a landing screen with the live 3D city behind it and "Sign up" / "Log in". Playing requires an account; there is no guest play.
+   - Sign up asks for username, email and password (no confirmation email, no password reset, DEC-61), plus the 18+ year-of-birth check and the Terms/Privacy consent; the audio choice follows (never autoplay, GR-13).
+   - Then the character creator (Look, Traits, Dream, origin, neighbourhood roll, Home), then the player lands in their furnished room; a short tour then leads to the first purchase.
+   - Log in (username or email + password) on any device restores the cloud save.
 2. **Goal: Make it in New York.** Four career paths (influencer, streamer, artist/DJ, founder/hustler) share one clout ladder: Nobody, Local, Scene Regular, Known, Famous, Icon. The career path is chosen as the "Dream" in the avatar creator. Icon triggers a milestone moment and a prestige option.
 3. **Young-adult NYC voice.** Playful, confident, grown NYC attitude. Slang goes in flavour text, NPC dialogue, events, notifications and share cards. Buttons, stat names and prices stay plain and clear.
 4. **Friends early and often, with an advantage.** Friend prompts appear after wins, never before. Persistent "Add friends" in the HUD.

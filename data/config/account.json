@@ -1,9 +1,10 @@
 {
-  "resendCooldownMs": 45000,
-  "upgradePollMs": 30000,
-  "pendingUpgradeMaxAgeMs": 3600000,
   "signOutFlushTimeoutMs": 5000,
   "emailCheck": { "max": 10, "windowMs": 3600000 },
   "emailMaxLength": 320,
-  "codeLength": 6
+  "password": { "minLength": 8, "maxLength": 72 },
+  "login": {
+    "perIp": { "max": 20, "windowMs": 900000 },
+    "perIdentifier": { "max": 8, "windowMs": 900000 }
+  }
 }

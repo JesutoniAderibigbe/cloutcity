@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import * as z from 'zod/mini'
-import { parseCallback } from '@/lib/account/callback'
 import { copy } from '@/lib/copy'
 import { snakeToCamel } from '@/lib/copy/camel'
 import { reportReasonKey } from '@/lib/safety/errorCopy'
@@ -23,6 +22,7 @@ import {
   type ModResult,
   type Queue,
 } from './modApi'
+import { parseModLink } from './modLink'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/mod'
 import '@/lib/copy/ns/safety'
@@ -63,12 +63,10 @@ async function loadSession(): Promise<Session> {
  */
 function takeLink(): Extract<Session, { state: 'link' }> | null {
   if (!window.location.hash.includes('token_hash=')) return null
-  const parsed = parseCallback('', window.location.hash)
+  const link = parseModLink(window.location.hash)
   // Only the token goes: a linked case (`?case=`) stays for after sign-in.
   window.history.replaceState(null, '', `/mod${window.location.search}`)
-  if (parsed.kind !== 'finish' || parsed.params.kind !== 'token') return null
-  const { tokenHash, type } = parsed.params
-  return type === 'email_change' ? null : { state: 'link', tokenHash, type }
+  return link === null ? null : { state: 'link', ...link }
 }
 
 async function finishLink(link: Extract<Session, { state: 'link' }>): Promise<Session> {

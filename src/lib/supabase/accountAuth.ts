@@ -1,27 +1,24 @@
 /**
- * Saving progress and logging in (S19), on the guest's own client (supabaseAuth.ts), so an
- * upgrade keeps the same `auth.users.id`: the profile with its attestation and consent, the
- * handle and the cloud save stay where they are. Loaded only through `import()`, with
- * supabase-js, by the account sheet, the welcome card's log-in view and /auth/callback.
+ * Signing up and logging in (S19, DEC-61, DEC-62: username + email + password, no email
+ * service, no guest play), on the game's own client (supabaseAuth.ts). Loaded only through
+ * `import()`, with supabase-js, by the sign-up and log-in screens.
  *
- * No passwords (GR-3 does not arise):
- *  - save with email: `updateUser({ email })` on the anonymous user; the confirmation link comes
- *    back to /auth/callback (`token_hash`, finished by a tap). Before sending, the friendly
- *    `check_account_email` pre-check turns a banned email into a plain answer; the database
- *    triggers refuse it anyway (supabase/migrations/*_s19_accounts.sql);
- *  - save with Google: `linkIdentity` (manual linking), back to /auth/callback with a PKCE code;
- *  - log in: `signInWithOtp({ shouldCreateUser: false })` sends a link and a 6-digit code, or
- *    `signInWithOAuth` for Google.
+ *  - Sign up: `signUp({ email, password })` ("Confirm email" is off in the project, so the
+ *    session is immediate), then the welcome card's 18+ attestation and consent are recorded
+ *    (`attest_and_consent`), then the username is checked and saved (`check_handle`,
+ *    `set_handle`). A device still holding a guest session from before DEC-62 signs up on that
+ *    same user instead (`updateUser({ email, password })`), so its game and cloud save carry
+ *    over. A banned email is refused by the database triggers (supabase/migrations/*_s19_*.sql).
+ *  - Log in with an email: `signInWithPassword` here. With a username: POST /api/auth/login (the
+ *    server looks the email up and signs in), then `setSession` with the tokens it hands back.
+ *    Every wrong combination is one answer.
  *
- * Every link points at `<NEXT_PUBLIC_SITE_URL>/auth/callback` (env.ts `authCallbackUrl`): the
- * caller passes it, and without one nothing is sent. Every function answers with a result and
- * never throws. Nothing here logs; callers log the outcome code only, never an email, a code or
- * a token.
+ * Every function answers with a result and never throws. Nothing here logs; callers log the
+ * outcome code only, never an email, a username or a password.
  */
-import { createClient, type Session, type SupabaseClient, type User } from '@supabase/supabase-js'
+import type { SupabaseClient, User } from '@supabase/supabase-js'
 import * as z from 'zod/mini'
-import { markLoginRequested, type CallbackParams } from '@/lib/account/callback'
-import { emailHash } from '@/lib/account/emailHash'
+import { looksLikeEmail, usernameOf } from '@/lib/account/identifier'
 import { maskEmail } from '@/lib/account/mask'
 import { parseRpcError } from './attestation'
 import type { Database } from './database.types'
@@ -32,23 +29,22 @@ export const ACCOUNT_CODES = [
   'invalid-email',
   'email-exists',
   'not-allowed',
+  'weak-password',
+  'handle-taken',
+  'handle-not-allowed',
+  'handle-invalid',
+  'invalid-credentials',
   'rate-limited',
   'offline',
-  'code-invalid',
-  'no-account',
-  'google-unavailable',
-  'identity-exists',
   'not-configured',
   'no-session',
-  'wrong-account',
   'error',
 ] as const
 export type AccountCode = (typeof ACCOUNT_CODES)[number]
 
-export type AccountResult =
-  { readonly ok: true } | { readonly ok: false; readonly code: AccountCode }
-
 type Failed = { readonly ok: false; readonly code: AccountCode }
+export type AccountResult = { readonly ok: true } | Failed
+
 const fail = (code: AccountCode): Failed => ({ ok: false, code })
 const OK: AccountResult = { ok: true }
 
@@ -70,8 +66,8 @@ export interface ServerAttestation {
 }
 
 /**
- * Turnstile (SEC-7): when the project turns captcha on, log-in requests must carry a token. The
- * widget is not built yet, so the provider answers undefined until it is wired in.
+ * Turnstile (SEC-7): when the project turns captcha on, password sign-ins must carry a token.
+ * The widget is not built yet, so the provider answers undefined until it is wired in.
  */
 let captchaProvider: () => Promise<string | undefined> = () => Promise.resolve(undefined)
 
@@ -83,7 +79,7 @@ export function setCaptchaProvider(provider: () => Promise<string | undefined>):
 export function classifyAuthFailure(
   failure: AuthFailure,
   online: boolean,
-  context: 'save' | 'login' | 'code' | 'google' | 'callback',
+  context: 'create' | 'login',
 ): AccountCode {
   const { code, status, name } = failure
   if (!online || name === 'TypeError' || (name === 'AuthRetryableFetchError' && !status)) {
@@ -93,32 +89,24 @@ export function classifyAuthFailure(
     case 'email_exists':
     case 'user_already_exists':
       return 'email-exists'
-    case 'identity_already_exists':
-      return 'identity-exists'
+    case 'weak_password':
+      return 'weak-password'
+    case 'invalid_credentials':
+    case 'user_not_found':
+    case 'email_not_confirmed':
+      return 'invalid-credentials'
     case 'over_email_send_rate_limit':
     case 'over_request_rate_limit':
       return 'rate-limited'
-    case 'otp_expired':
-    case 'flow_state_expired':
-    case 'flow_state_not_found':
-    case 'bad_code_verifier':
-      return 'code-invalid'
-    case 'otp_disabled':
-    case 'signup_disabled':
-      return 'no-account'
     case 'email_address_invalid':
       return 'invalid-email'
-    case 'provider_disabled':
-    case 'manual_linking_disabled':
-    case 'oauth_provider_not_supported':
-      return 'google-unavailable'
     case 'validation_failed':
-      return context === 'google' ? 'google-unavailable' : 'invalid-email'
+      return 'invalid-email'
     default:
       break
   }
   if (status === 429) return 'rate-limited'
-  if (context === 'code' && (status === 401 || status === 403)) return 'code-invalid'
+  if (context === 'login' && (status === 400 || status === 401)) return 'invalid-credentials'
   return 'error'
 }
 
@@ -152,307 +140,195 @@ function client(env: SupabaseEnv): SupabaseClient<Database> {
   return supabaseClient(env)
 }
 
-const CheckSchema = z.enum(['ok', 'not_allowed'])
+const CheckHandleSchema = z.enum(['available', 'current', 'taken', 'invalid', 'not_allowed'])
+
+/** An RPC refusal in account terms (the handle and email checks). */
+function rpcFailure(error: unknown): Failed {
+  const code = parseRpcError(error)
+  switch (code) {
+    case 'rate_limited':
+      return fail('rate-limited')
+    case 'invalid_argument':
+      return fail('invalid-email')
+    case 'handle_taken':
+      return fail('handle-taken')
+    case 'handle_not_allowed':
+      return fail('handle-not-allowed')
+    case 'handle_invalid':
+      return fail('handle-invalid')
+    case 'unknown':
+      return fail(isOnline() ? 'error' : 'offline')
+    default:
+      return fail('error')
+  }
+}
+
+/** The welcome card's answers the server records with the account (attest_and_consent). */
+export type AttestationInput = Readonly<{
+  p_adult: true
+  p_attested_at: string
+  p_consent_version: string
+  p_consented_at: string
+  p_audio_choice: 'ours' | 'own'
+}>
 
 /**
- * Saves a guest's progress with an email: the pre-check, then the confirmation link to
- * `redirectTo`. The same user id stays; the account becomes permanent once the link is opened.
+ * A refused sign-up. The only failure the database adds to creating (or upgrading) a user is the
+ * banned-email trigger, which GoTrue reports as a server error: shown as "can't be used here".
  */
-export async function upgradeWithEmail(
+function signUpFailure(error: unknown): Failed {
+  const failure = failureOf(error)
+  const code = classifyAuthFailure(failure, isOnline(), 'create')
+  return fail(code === 'error' && failure.status === 500 ? 'not-allowed' : code)
+}
+
+/** How signing up went. */
+export type SignUpResult =
+  | { readonly ok: true }
+  /**
+   * The account exists (and is signed in here), but the username was refused (taken, or not
+   * allowed): the player picks another and `saveUsername` tries again.
+   */
+  | { readonly ok: false; readonly code: AccountCode; readonly accountCreated: true }
+  | Failed
+
+/**
+ * Creates the account and signs it in on this device: `signUp`, or, on a device still holding a
+ * guest session from before DEC-62, `updateUser` on that same guest (keeping its game); then the
+ * attestation and consent, then the username.
+ */
+export async function signUpAccount(
   env: SupabaseEnv,
-  email: string,
-  redirectTo: string,
+  values: { readonly username: string; readonly email: string; readonly password: string },
+  attestation: AttestationInput,
+): Promise<SignUpResult> {
+  try {
+    const supabase = client(env)
+    const { data: existing } = await supabase.auth.getSession()
+    const guest = existing.session?.user
+    if (guest !== undefined && guest.is_anonymous === true) {
+      const { error } = await supabase.auth.updateUser({
+        email: values.email,
+        password: values.password,
+      })
+      if (error !== null) return signUpFailure(error)
+      // The JWT says is_anonymous until it is refreshed; the server reads auth.users anyway.
+      await supabase.auth.refreshSession()
+    } else {
+      // Someone else's account left signed in here (a shared device) is not this player's.
+      if (guest !== undefined) await supabase.auth.signOut({ scope: 'local' })
+      const captchaToken = await captchaProvider()
+      const { data, error } = await supabase.auth.signUp({
+        email: values.email,
+        password: values.password,
+        ...(captchaToken === undefined ? {} : { options: { captchaToken } }),
+      })
+      if (error !== null) return signUpFailure(error)
+      // With email confirmations on (a misconfigured project) there is no session: fail closed.
+      if (data.session === null) return fail('not-configured')
+    }
+    const attested = await supabase.rpc('attest_and_consent', { ...attestation })
+    if (attested.error !== null) return { ...rpcFailure(attested.error), accountCreated: true }
+    const handle = await saveUsername(env, values.username)
+    return handle.ok ? handle : { ...handle, accountCreated: true }
+  } catch (error) {
+    return failed(error, 'create')
+  }
+}
+
+/** Checks and saves the signed-in player's username (their generated handle otherwise stays). */
+export async function saveUsername(env: SupabaseEnv, username: string): Promise<AccountResult> {
+  try {
+    const supabase = client(env)
+    const check = await supabase.rpc('check_handle', { p_handle: username })
+    if (check.error !== null) return rpcFailure(check.error)
+    const status = CheckHandleSchema.safeParse(check.data)
+    if (!status.success) return fail('error')
+    if (status.data === 'current') return OK
+    if (status.data === 'taken') return fail('handle-taken')
+    if (status.data === 'not_allowed') return fail('handle-not-allowed')
+    if (status.data === 'invalid') return fail('handle-invalid')
+    const saved = await supabase.rpc('set_handle', { p_handle: username })
+    return saved.error === null ? OK : rpcFailure(saved.error)
+  } catch (error) {
+    return failed(error, 'create')
+  }
+}
+
+/**
+ * Records the welcome card's answers for an account that has none yet (an account signed up
+ * before its 18+ check reached the server). Idempotent: the first attestation wins.
+ */
+export async function recordAttestation(
+  env: SupabaseEnv,
+  attestation: AttestationInput,
+): Promise<AccountResult> {
+  try {
+    const { error } = await client(env).rpc('attest_and_consent', { ...attestation })
+    return error === null ? OK : rpcFailure(error)
+  } catch (error) {
+    return failed(error, 'create')
+  }
+}
+
+/** Records the sound choice on the account (best effort: this device's choice already holds). */
+export async function recordAudioChoice(env: SupabaseEnv, choice: 'ours' | 'own'): Promise<void> {
+  try {
+    await client(env).rpc('set_audio_choice', { p_choice: choice })
+  } catch {
+    // The choice lives on this device; the account copy catches up with the next attestation.
+  }
+}
+
+const LoginReplySchema = z.union([
+  z.object({ ok: z.literal(true), access_token: z.string(), refresh_token: z.string() }),
+  z.object({ ok: z.literal(false), code: z.string() }),
+])
+
+/** Where the username log-in route lives (src/app/api/auth/login). */
+export const LOGIN_ROUTE = '/api/auth/login'
+
+/**
+ * Logs this device in with a username or an email and a password. An email signs in here; a
+ * username goes through the server (which never tells the browser the email) and the session
+ * it hands back is adopted. Every wrong combination is `invalid-credentials`.
+ */
+export async function logIn(
+  env: SupabaseEnv,
+  identifier: string,
+  password: string,
+  fetcher: typeof fetch = (input, init) => fetch(input, init),
 ): Promise<AccountResult> {
   try {
     const supabase = client(env)
-    const { data: session } = await supabase.auth.getSession()
-    if (session.session === null) return fail('no-session')
-    const check = await supabase.rpc('check_account_email', { p_email: email })
-    if (check.error !== null) {
-      const code = parseRpcError(check.error)
-      if (code === 'rate_limited') return fail('rate-limited')
-      if (code === 'invalid_argument') return fail('invalid-email')
-      if (code === 'unknown' && !isOnline()) return fail('offline')
-      return fail('error')
+    if (looksLikeEmail(identifier)) {
+      const captchaToken = await captchaProvider()
+      const { error } = await supabase.auth.signInWithPassword({
+        email: identifier.trim(),
+        password,
+        ...(captchaToken === undefined ? {} : { options: { captchaToken } }),
+      })
+      return error === null ? OK : failed(error, 'login')
     }
-    const verdict = CheckSchema.safeParse(check.data)
-    if (!verdict.success) return fail('error')
-    if (verdict.data === 'not_allowed') return fail('not-allowed')
-    const { error } = await supabase.auth.updateUser({ email }, { emailRedirectTo: redirectTo })
-    return error === null ? OK : failed(error, 'save')
-  } catch (error) {
-    return failed(error, 'save')
-  }
-}
-
-/** Saves a guest's progress with Google: leaves the page for Google, back to `redirectTo`. */
-export async function linkGoogle(env: SupabaseEnv, redirectTo: string): Promise<AccountResult> {
-  try {
-    const { error } = await client(env).auth.linkIdentity({
-      provider: 'google',
-      options: { redirectTo },
+    const response = await fetcher(LOGIN_ROUTE, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ identifier: usernameOf(identifier), password }),
+      cache: 'no-store',
+      credentials: 'omit',
     })
-    return error === null ? OK : failed(error, 'google')
-  } catch (error) {
-    return failed(error, 'google')
-  }
-}
-
-/** Sends a log-in link and code to an existing account's email (never creates one). */
-export async function sendLoginLink(
-  env: SupabaseEnv,
-  email: string,
-  redirectTo: string,
-): Promise<AccountResult> {
-  try {
-    const captchaToken = await captchaProvider()
-    const { error } = await client(env).auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: false,
-        emailRedirectTo: redirectTo,
-        ...(captchaToken === undefined ? {} : { captchaToken }),
-      },
+    if (response.status === 429) return fail('rate-limited')
+    if (response.status === 401) return fail('invalid-credentials')
+    const reply = LoginReplySchema.safeParse(await response.json().catch(() => null))
+    if (!reply.success || !reply.data.ok)
+      return fail(response.status === 400 ? 'invalid-credentials' : 'error')
+    const { error } = await supabase.auth.setSession({
+      access_token: reply.data.access_token,
+      refresh_token: reply.data.refresh_token,
     })
-    if (error !== null) return failed(error, 'login')
-    // Only a link that was really sent is this browser's own request (see finishCallback).
-    markLoginRequested(Date.now(), await emailHash(email))
-    return OK
+    return error === null ? OK : failed(error, 'login')
   } catch (error) {
     return failed(error, 'login')
-  }
-}
-
-/** Logs in with the 6-digit code from the email. */
-export async function verifyLoginCode(
-  env: SupabaseEnv,
-  email: string,
-  code: string,
-): Promise<AccountResult> {
-  try {
-    const { data, error } = await client(env).auth.verifyOtp({ email, token: code, type: 'email' })
-    if (error !== null) return failed(error, 'code')
-    return data.session === null ? fail('code-invalid') : OK
-  } catch (error) {
-    return failed(error, 'code')
-  }
-}
-
-/** Logs in with Google: leaves the page for Google, back to `redirectTo`. */
-export async function signInWithGoogle(
-  env: SupabaseEnv,
-  redirectTo: string,
-): Promise<AccountResult> {
-  try {
-    const { error } = await client(env).auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo },
-    })
-    return error === null ? OK : failed(error, 'google')
-  } catch (error) {
-    return failed(error, 'google')
-  }
-}
-
-/** How a link finished on this device. */
-export type CallbackOutcome =
-  /** This browser's own guest was saved (its session refreshed). */
-  | { readonly ok: true; readonly outcome: 'saved' }
-  /**
-   * A save confirmation for an address this browser did not ask to save with (pre-hijack
-   * defence): the token is left unused, and the player is told to finish on the device that
-   * asked, by link there or by typing the emailed code there.
-   */
-  | { readonly ok: true; readonly outcome: 'open-elsewhere' }
-  /**
-   * This browser asked, but the link turned out to be for another account (another game asked
-   * to save with the same address at the same time): nothing is taken here (review F1).
-   */
-  | { readonly ok: true; readonly outcome: 'saved-elsewhere' }
-  /** This browser is now signed in to the account (a log-in it asked for, or Google). */
-  | { readonly ok: true; readonly outcome: 'login' }
-  /**
-   * A log-in link for an address this browser did not ask about (review F2, N1): verified, but
-   * not taken yet. The page asks "Log in as <the server's address, masked>?" and calls
-   * confirmPendingLogin or declinePendingLogin.
-   */
-  | { readonly ok: true; readonly outcome: 'confirm-login'; readonly maskedEmail: string | null }
-  | Failed
-
-/** What this browser knows about the links it asked for (marks hold hashes, never addresses). */
-export interface CallbackContext {
-  /** Hash of the address a recent log-in link was requested for here, or null. */
-  readonly loginHash: string | null
-  /** Hash of the address a waiting save-progress link was requested for here, or null. */
-  readonly pendingHash: string | null
-  /** The address the link's fragment names (untrusted: only compared, never shown or trusted). */
-  readonly linkEmail: string | null
-}
-
-/**
- * A client that keeps nothing: a link is verified on it, so the session that comes back is
- * never adopted by this browser's guest client unless it is this browser's own account.
- */
-function throwawayClient(env: SupabaseEnv): SupabaseClient<Database> {
-  const memory = new Map<string, string>()
-  return createClient<Database>(env.url, env.anonKey, {
-    auth: {
-      // Its own key and memory storage: it never shares (or touches) the guest client's session.
-      storageKey: 'cloutcity-link-check',
-      storage: {
-        getItem: (key) => memory.get(key) ?? null,
-        setItem: (key, value) => void memory.set(key, value),
-        removeItem: (key) => void memory.delete(key),
-      },
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  })
-}
-
-/** A verified log-in waiting for the player's yes (see `confirm-login`); memory only. */
-let pendingLogin: { readonly client: SupabaseClient<Database>; readonly session: Session } | null =
-  null
-
-function linkFailure(error: unknown): Failed {
-  const code = classifyAuthFailure(failureOf(error), isOnline(), 'callback')
-  // A used or expired hash answers 403 with otp_expired; anything else from verify that is not
-  // the network is the same to the player: the link no longer works.
-  return { ok: false, code: code === 'offline' || code === 'not-allowed' ? code : 'code-invalid' }
-}
-
-const sameAddress = async (email: string | null | undefined, hash: string | null) =>
-  hash !== null && email != null && email !== '' && (await emailHash(email)) === hash
-
-/**
- * Finishes a link.
- *  - Google's PKCE code is exchanged on the guest client (only the browser that started the
- *    round trip holds its verifier).
- *  - A save confirmation (`email_change`) is used only by the guest that asked: this browser
- *    must hold an anonymous session with a waiting upgrade for the very address the link names.
- *    Anywhere else the token is not consumed (`open-elsewhere`), so a link someone else asked
- *    for cannot attach this address to their account (pre-hijack). It is verified on a
- *    throwaway client, and only this browser's own account is refreshed (review F1).
- *  - A log-in link is always verified on a throwaway client; it is taken at once only when the
- *    account it verifies as has the address this browser asked a link for (review N1);
- *    otherwise it is held for the player's "Log in as …?" (review F2).
- */
-export async function finishCallback(
-  env: SupabaseEnv,
-  params: CallbackParams,
-  context: CallbackContext,
-): Promise<CallbackOutcome> {
-  try {
-    const guest = client(env)
-    if (params.kind === 'code') {
-      const { error } = await guest.auth.exchangeCodeForSession(params.code)
-      return error === null ? { ok: true, outcome: 'login' } : failed(error, 'callback')
-    }
-    if (params.type === 'email_change') {
-      const here = (await guest.auth.getSession()).data.session?.user
-      const askedHere =
-        here !== undefined &&
-        here.is_anonymous === true &&
-        (await sameAddress(context.linkEmail, context.pendingHash))
-      if (!askedHere) return { ok: true, outcome: 'open-elsewhere' }
-      const throwaway = throwawayClient(env)
-      const { data, error } = await throwaway.auth.verifyOtp({
-        token_hash: params.tokenHash,
-        type: 'email_change',
-      })
-      if (error !== null) return linkFailure(error)
-      if (data.user === null) return fail('code-invalid')
-      // The session the confirmation handed out is not this device's to keep.
-      if (data.session !== null) await throwaway.auth.signOut({ scope: 'local' })
-      if (data.user.id !== here.id) return { ok: true, outcome: 'saved-elsewhere' }
-      await guest.auth.refreshSession()
-      return { ok: true, outcome: 'saved' }
-    }
-    const throwaway = throwawayClient(env)
-    const { data, error } = await throwaway.auth.verifyOtp({
-      token_hash: params.tokenHash,
-      type: params.type,
-    })
-    if (error !== null) return linkFailure(error)
-    const verified = data.user
-    if (verified === null || data.session === null) return fail('code-invalid')
-    if (await sameAddress(verified.email, context.loginHash)) {
-      const taken = await guest.auth.setSession({
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      })
-      return taken.error === null ? { ok: true, outcome: 'login' } : failed(taken.error, 'callback')
-    }
-    pendingLogin = { client: throwaway, session: data.session }
-    return {
-      ok: true,
-      outcome: 'confirm-login',
-      maskedEmail:
-        verified.email === undefined || verified.email === '' ? null : maskEmail(verified.email),
-    }
-  } catch (error) {
-    return failed(error, 'callback')
-  }
-}
-
-/**
- * Saves the guest's progress with the 6-digit code from the save email, typed on the device
- * that asked. Verified on a throwaway client: only when the code confirmed this browser's own
- * guest is it refreshed here; a code for another game (someone else asked to save with the same
- * address) is refused and nothing is taken.
- */
-export async function verifySaveCode(
-  env: SupabaseEnv,
-  email: string,
-  code: string,
-): Promise<AccountResult> {
-  try {
-    const guest = client(env)
-    const here = (await guest.auth.getSession()).data.session?.user.id
-    if (here === undefined) return fail('no-session')
-    const throwaway = throwawayClient(env)
-    const { data, error } = await throwaway.auth.verifyOtp({
-      email,
-      token: code,
-      type: 'email_change',
-    })
-    if (error !== null) return failed(error, 'code')
-    if (data.session !== null) await throwaway.auth.signOut({ scope: 'local' })
-    if (data.user === null) return fail('code-invalid')
-    if (data.user.id !== here) return fail('wrong-account')
-    await guest.auth.refreshSession()
-    return OK
-  } catch (error) {
-    return failed(error, 'code')
-  }
-}
-
-/** The player said yes to a log-in link they did not ask for here: this browser takes it. */
-export async function confirmPendingLogin(env: SupabaseEnv): Promise<AccountResult> {
-  const pending = pendingLogin
-  pendingLogin = null
-  if (pending === null) return fail('code-invalid')
-  try {
-    const { error } = await client(env).auth.setSession({
-      access_token: pending.session.access_token,
-      refresh_token: pending.session.refresh_token,
-    })
-    return error === null ? OK : failed(error, 'callback')
-  } catch (error) {
-    return failed(error, 'callback')
-  }
-}
-
-/** "Not me": the held log-in is signed out (its refresh token revoked) and never used here. */
-export async function declinePendingLogin(): Promise<void> {
-  const pending = pendingLogin
-  pendingLogin = null
-  if (pending === null) return
-  try {
-    await pending.client.auth.signOut({ scope: 'local' })
-  } catch {
-    // Unused anyway: it was never stored on this device.
   }
 }
 
@@ -461,22 +337,6 @@ export async function currentIdentity(env: SupabaseEnv): Promise<AccountIdentity
   try {
     const { data, error } = await client(env).auth.getUser()
     if (error !== null || data.user === null) return null
-    return identityOf(data.user)
-  } catch {
-    return null
-  }
-}
-
-/**
- * Whether a waiting email upgrade was confirmed, perhaps on another device: refreshes the
- * session (its JWT says is_anonymous until then) and reads the user from the server.
- */
-export async function pollUpgraded(env: SupabaseEnv): Promise<AccountIdentity | null> {
-  try {
-    const supabase = client(env)
-    const { data, error } = await supabase.auth.getUser()
-    if (error !== null || data.user === null || data.user.is_anonymous === true) return null
-    await supabase.auth.refreshSession()
     return identityOf(data.user)
   } catch {
     return null
@@ -518,20 +378,6 @@ export async function readServerAttestation(env: SupabaseEnv): Promise<ServerAtt
   } catch {
     return null
   }
-}
-
-/**
- * Calls `listener` when this browser signs in to a saved account (here, or in another tab:
- * supabase-js shares sign-ins across tabs). Returns a way to stop.
- */
-export function onSignedIn(env: SupabaseEnv, listener: () => void): () => void {
-  const { data } = client(env).auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session !== null && session.user.is_anonymous !== true) {
-      // Out of the auth callback: supabase-js must not be called back from inside it.
-      setTimeout(listener, 0)
-    }
-  })
-  return () => data.subscription.unsubscribe()
 }
 
 /** Signs this device out of the account (other devices stay signed in). */

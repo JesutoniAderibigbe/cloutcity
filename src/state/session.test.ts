@@ -1,7 +1,8 @@
 /**
- * The guest session (S05): synchronous and local at once, then an anonymous Supabase session in
- * the background, only after the 18+ attestation, only with a configuration, only once the map
- * is playable, and at most once per page. Every failure degrades to local play.
+ * The player's session (S05, DEC-62): synchronous and local at once, then this device's account
+ * session reused in the background, only after the 18+ attestation, only with a configuration,
+ * only once the map is playable, and at most once per page. No session is ever created here.
+ * Every failure degrades to local play.
  */
 import { describe, expect, it, vi } from 'vitest'
 import onboardingJson from '@data/config/onboarding.json'
@@ -21,7 +22,7 @@ const USER_ID = '6f1c2a7e-0000-4000-8000-000000000001'
 /** Lets every pending promise callback run. */
 const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-function setup(options: { env?: SupabaseEnv | null; online?: boolean; signedOut?: boolean } = {}) {
+function setup(options: { env?: SupabaseEnv | null; online?: boolean } = {}) {
   const records: LogRecord[] = []
   const logger = createLogger({ level: 'debug', sink: (record) => records.push(record) })
   const onboarding = createOnboardingStore(
@@ -33,14 +34,10 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean; signedOut?
   let markPlayable: () => void = () => {}
   const playable = new Promise<void>((resolve) => (markPlayable = resolve))
   const results: ConnectResult[] = []
-  const connectAnonymous = vi.fn<
-    (
-      env: SupabaseEnv,
-      args: AttestationArgs,
-      connectOptions: { readonly signedOut: boolean },
-    ) => Promise<ConnectResult>
-  >(async () => results.shift() ?? { ok: true, reused: false, permanent: false })
-  const loadAuth = vi.fn(async () => ({ connectAnonymous }))
+  const connectSession = vi.fn<(env: SupabaseEnv, args: AttestationArgs) => Promise<ConnectResult>>(
+    async () => results.shift() ?? { ok: true, reused: false, permanent: false },
+  )
+  const loadAuth = vi.fn(async () => ({ connectSession }))
   const startSync = vi.fn(async () => {})
   let online = options.online ?? true
   let onlineListener: (() => void) | undefined
@@ -56,7 +53,6 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean; signedOut?
     },
     status,
     onConnected: vi.fn(),
-    signedOut: async () => options.signedOut ?? false,
     onSignedOut: vi.fn(),
   }
   const start = createGuestSessionStarter(onboarding, logger, deps)
@@ -66,7 +62,7 @@ function setup(options: { env?: SupabaseEnv | null; online?: boolean; signedOut?
     status,
     start,
     results,
-    connectAnonymous,
+    connectSession,
     startSync,
     loadAuth,
     onConnected: deps.onConnected,
@@ -129,7 +125,7 @@ describe('guest session (S05)', () => {
     s.start()
     s.markPlayable()
     await flush()
-    const [env, args] = s.connectAnonymous.mock.calls[0] ?? []
+    const [env, args] = s.connectSession.mock.calls[0] ?? []
     expect(env).toEqual(ENV)
     expect(args).toEqual({
       p_adult: true,
@@ -186,7 +182,7 @@ describe('guest session (S05)', () => {
     expect(s.start()).toBe(first)
     s.markPlayable()
     await flush()
-    expect(s.connectAnonymous).toHaveBeenCalledTimes(1)
+    expect(s.connectSession).toHaveBeenCalledTimes(1)
   })
 
   it('a rate limit (429) plays local at info and does not retry', async () => {
@@ -204,7 +200,7 @@ describe('guest session (S05)', () => {
     expect(s.levels(/rate limited/)).toEqual(['info'])
     s.goOnline()
     await flush()
-    expect(s.connectAnonymous).toHaveBeenCalledTimes(1)
+    expect(s.connectSession).toHaveBeenCalledTimes(1)
   })
 
   it('no network plays local at info and retries once when the browser is back online', async () => {
@@ -224,11 +220,11 @@ describe('guest session (S05)', () => {
 
     s.goOnline()
     await flush()
-    expect(s.connectAnonymous).toHaveBeenCalledTimes(2)
+    expect(s.connectSession).toHaveBeenCalledTimes(2)
     // The retry failed too: no further retry.
     s.goOnline()
     await flush()
-    expect(s.connectAnonymous).toHaveBeenCalledTimes(2)
+    expect(s.connectSession).toHaveBeenCalledTimes(2)
   })
 
   it('the retry after coming back online can connect', async () => {
@@ -382,26 +378,17 @@ describe('guest session: accounts (S19)', () => {
     expect(s.startSync).toHaveBeenCalledTimes(1)
   })
 
-  it('after a sign-out, asks for no new guest and stays local with the reason', async () => {
-    const s = setup({ signedOut: true })
+  it('with no account signed in here, stays local with the reason and creates no one', async () => {
+    const s = setup()
     s.results.push({ ok: false, stage: 'signed-out' })
     s.complete()
     s.start()
     s.markPlayable()
     await flush()
-    expect(s.connectAnonymous).toHaveBeenCalledWith(ENV, expect.anything(), { signedOut: true })
+    expect(s.connectSession).toHaveBeenCalledWith(ENV, expect.anything())
     expect(s.status.getState()).toEqual({ status: 'local', reason: 'signed-out', reused: false })
     expect(s.onSignedOut).toHaveBeenCalledTimes(1)
     expect(s.startSync).not.toHaveBeenCalled()
     expect(s.onConnected).not.toHaveBeenCalled()
-  })
-
-  it('passes signedOut false for a device that never signed out', async () => {
-    const s = setup()
-    s.complete()
-    s.start()
-    s.markPlayable()
-    await flush()
-    expect(s.connectAnonymous).toHaveBeenCalledWith(ENV, expect.anything(), { signedOut: false })
   })
 })

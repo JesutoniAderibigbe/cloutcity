@@ -1,6 +1,7 @@
 /**
- * The guest session. A Supabase anonymous session may start only after a passing 18+
- * attestation (CLAUDE.md "Auth model", "Age"); under-age and locked players never get one.
+ * The player's session (S05, DEC-62). It connects only after a passing 18+ attestation
+ * (CLAUDE.md "Age"); under-age and locked players never get one, and no session is ever created
+ * here: the account is signed in by the sign-up or log-in screen.
  *
  * `startGuestSession()` stays synchronous (the welcome card calls it inside the submit gesture):
  * it checks the attestation and reports a local session at once, so play never waits on the
@@ -9,10 +10,9 @@
  *  1. no Supabase configuration in this build → stays local (`no-config`), nothing is imported;
  *  2. waits until the map is playable, so the sign-in never competes with the map for bandwidth;
  *  3. imports src/lib/supabase/supabaseAuth.ts (and with it @supabase/supabase-js) lazily;
- *  4. reuses this device's session (a guest's or, S19, a saved account's) or signs in
- *     anonymously, then records the attestation. After the player signed out of an account here
- *     (src/state/account.ts `signedOut`) no guest is created: play stays local ("signed-out")
- *     until they log in or start a new guest game;
+ *  4. reuses this device's account session and records the attestation. With none (signed
+ *     out), play stays local ("signed-out") and the landing asks them to log in; no guest is
+ *     ever created (DEC-62);
  *  5. once connected, loads any moderator notices waiting for the player (S18b) and starts the
  *     account coordinator (src/lib/supabase/accountSession.ts, lazily, with the same session), which
  *     starts cloud save sync (S18c) and follows upgrades, log-ins and sign-outs (S19).
@@ -42,10 +42,9 @@ export interface GuestSessionDeps {
   readonly whenMapPlayable: () => Promise<void>
   /** Loads the Supabase session module (the lazy chunk with supabase-js). */
   readonly loadAuth: () => Promise<{
-    connectAnonymous: (
+    connectSession: (
       env: SupabaseEnv,
       attestation: ReturnType<typeof toAttestationArgs>,
-      options: { readonly signedOut: boolean },
     ) => Promise<ConnectResult>
   }>
   /**
@@ -53,9 +52,7 @@ export interface GuestSessionDeps {
    * session is connected.
    */
   readonly startSync: () => Promise<void>
-  /** Whether the player signed out of an account on this device (S19), read lazily. */
-  readonly signedOut: () => Promise<boolean>
-  /** The session is local because the player signed out (S19): the cloud chip says so. */
+  /** The session is local because no account is signed in here: the cloud chip says so. */
   readonly onSignedOut?: () => void
   readonly isOnline: () => boolean
   /** Calls `listener` once when the browser is next online; returns a way to cancel. */
@@ -78,7 +75,7 @@ export function browserSessionDeps(): GuestSessionDeps {
         import('@/lib/supabase/supabaseAuth'),
         import('@/lib/supabase/accountSession'),
       ]).then(async ([auth, account]) => {
-        // The client connectAnonymous signed in with: the same session (supabaseAuth.ts).
+        // The client connectSession reused: the same session (supabaseAuth.ts).
         const env = supabaseEnv()
         if (env === null) return
         // The device's own 18+ check and consent, for an account first created by a log-in.
@@ -88,7 +85,6 @@ export function browserSessionDeps(): GuestSessionDeps {
         }
         await account.startAccountSession(auth.supabaseClient(env), env, attestation)
       }),
-    signedOut: () => import('./account').then((module) => module.accountStore.getState().signedOut),
     onSignedOut: () => {
       void import('./syncStatus').then((module) =>
         module.syncStatusStore.setState({ status: 'signedOut' }),
@@ -161,8 +157,7 @@ export function createGuestSessionStarter(
 
     let result: ConnectResult
     try {
-      const signedOut = await deps.signedOut().catch(() => false)
-      result = await (await deps.loadAuth()).connectAnonymous(env, attestation, { signedOut })
+      result = await (await deps.loadAuth()).connectSession(env, attestation)
     } catch (error) {
       // The session chunk itself failed to load: the same as no network.
       result = {
@@ -195,7 +190,7 @@ export function createGuestSessionStarter(
     if (result.stage === 'signed-out') {
       setLocal('signed-out')
       deps.onSignedOut?.()
-      logger.info('Signed out of the account on this device; playing local')
+      logger.info('No account is signed in on this device; playing local')
       return
     }
     if (result.stage === 'attest') {

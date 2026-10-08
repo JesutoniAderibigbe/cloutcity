@@ -1,18 +1,15 @@
 /**
- * The account coordinator (S19) against a fake client: a guest's upgrade (same user), a log-in
- * to another account (sync restarts), a sign-out (sync stops, no new guest next boot), the
- * confirmation poll, and no email or user id in any log line.
+ * The account coordinator (S19, DEC-62) against a fake client: a pre-DEC-62 guest signing up on
+ * their own user (same user), a log-in to another account (sync restarts), a sign-out (sync stops,
+ * the landing comes back), and no email or user id in any log line.
  */
 import type { AuthChangeEvent, Session, SupabaseClient, User } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import accountJson from '@data/config/account.json'
 import { createLogger, type LogRecord } from '@/lib/log'
-import { createAccountStore, type PersistedAccount } from '@/state/account'
 import { accountIdentityStore } from '@/state/account'
 import { createGuestSessionStore } from '@/state/guestSession'
-import { createSafeJsonStorage } from '@/state/storage'
 import { createSyncStatusStore } from '@/state/syncStatus'
-import type { AccountIdentity } from './accountAuth'
 import { createAccountSession, type AccountSessionDeps } from './accountSession'
 import type { Database } from './database.types'
 
@@ -31,7 +28,7 @@ const user = (id: string, anonymous: boolean): User =>
     created_at: '',
   }) as User
 
-function setup(options: { pendingAt?: number | null; flushed?: boolean } = {}) {
+function setup(options: { flushed?: boolean } = {}) {
   const records: LogRecord[] = []
   const logger = createLogger({ level: 'debug', sink: (record) => records.push(record) })
   let listener: ((event: AuthChangeEvent, session: Session | null) => void) | null = null
@@ -44,11 +41,6 @@ function setup(options: { pendingAt?: number | null; flushed?: boolean } = {}) {
     },
     rpc: vi.fn(async () => ({ data: null, error: null })),
   } as unknown as SupabaseClient<Database>
-  const account = createAccountStore(
-    createSafeJsonStorage<PersistedAccount>(() => undefined, logger),
-    logger,
-  )
-  if (options.pendingAt !== undefined) account.getState().setPendingUpgrade(options.pendingAt)
   const session = createGuestSessionStore()
   session.setState({ status: 'anonymous', reason: null, reused: true })
   const sync = createSyncStatusStore()
@@ -59,31 +51,18 @@ function setup(options: { pendingAt?: number | null; flushed?: boolean } = {}) {
     markPermanent: vi.fn(),
     flushNow: vi.fn(async () => options.flushed ?? true),
   }
-  let focus: (() => void) | null = null
-  let tick: (() => void) | null = null
-  let now = 1_000_000
-  const polled: (AccountIdentity | null)[] = []
+  const signedIn: boolean[] = []
   const deps: AccountSessionDeps = {
     client,
     env: { url: 'http://127.0.0.1:54321', anonKey: 'anon' },
     session,
     sync,
-    account,
     identity: accountIdentityStore,
+    setSignedIn: (value) => signedIn.push(value),
     cloud,
     loadNotices: vi.fn(),
     attestation: () => null,
-    pollUpgraded: vi.fn(async () => polled.shift() ?? null),
     signOutLocal: vi.fn(async () => ({ ok: true as const })),
-    now: () => now,
-    onFocus: (cb) => {
-      focus = cb
-      return () => (focus = null)
-    },
-    every: (_ms, cb) => {
-      tick = cb
-      return () => (tick = null)
-    },
     defer: (task) => task(),
     logger,
   }
@@ -91,20 +70,13 @@ function setup(options: { pendingAt?: number | null; flushed?: boolean } = {}) {
     deps,
     records,
     cloud,
-    account,
     session,
     sync,
-    polled,
+    signedIn,
     emit: (event: AuthChangeEvent, next: User | null) =>
       listener?.(event, next === null ? null : ({ user: next } as Session)),
-    focus: () => focus?.(),
-    tick: () => tick?.(),
-    hasPoll: () => focus !== null && tick !== null,
-    setNow: (value: number) => (now = value),
   }
 }
-
-const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 describe('account coordinator (S19)', () => {
   it('starts sync for the guest and shows them as a guest', () => {
@@ -114,16 +86,24 @@ describe('account coordinator (S19)', () => {
     expect(s.session.getState().status).toBe('anonymous')
     expect(s.sync.getState().identity).toBe('guest')
     expect(accountIdentityStore.getState().identity).toMatchObject({ permanent: false })
+    expect(s.signedIn).toEqual([])
   })
 
-  it("a guest's confirmed email keeps the same account: permanent, nothing restarts", () => {
-    const s = setup({ pendingAt: 1_000_000 })
+  it('an account session marks the device signed in, so the landing stays away', () => {
+    const s = setup()
+    createAccountSession(s.deps, user(OTHER_ID, false))
+    expect(s.session.getState().status).toBe('permanent')
+    expect(s.signedIn).toEqual([true])
+  })
+
+  it('a guest who signs up on their own user keeps the same account: permanent, nothing restarts', () => {
+    const s = setup()
     createAccountSession(s.deps, user(GUEST_ID, true))
     s.emit('USER_UPDATED', user(GUEST_ID, false))
     expect(s.session.getState().status).toBe('permanent')
     expect(s.cloud.markPermanent).toHaveBeenCalledTimes(1)
     expect(s.cloud.restart).not.toHaveBeenCalled()
-    expect(s.account.getState().pendingUpgradeAt).toBeNull()
+    expect(s.signedIn).toEqual([true])
     expect(s.sync.getState().identity).toBe('account')
     expect(accountIdentityStore.getState().identity).toEqual({
       userId: GUEST_ID,
@@ -151,15 +131,28 @@ describe('account coordinator (S19)', () => {
     expect(s.cloud.markPermanent).not.toHaveBeenCalled()
   })
 
-  it('signing out (here or in another tab) stops sync and remembers it, so no guest is made', () => {
+  it('signing out (here or in another tab) stops sync and brings the landing back', () => {
     const s = setup()
     createAccountSession(s.deps, user(OTHER_ID, false))
     s.emit('SIGNED_OUT', null)
     expect(s.cloud.stop).toHaveBeenCalledTimes(1)
-    expect(s.account.getState().signedOut).toBe(true)
+    expect(s.signedIn.at(-1)).toBe(false)
     expect(s.session.getState()).toEqual({ status: 'local', reason: 'signed-out', reused: false })
     expect(s.sync.getState()).toMatchObject({ status: 'signedOut', controls: null })
     expect(accountIdentityStore.getState().identity).toBeNull()
+  })
+
+  it('logging back in after a sign-out, even to the same account, restarts sync for it', () => {
+    const s = setup()
+    createAccountSession(s.deps, user(OTHER_ID, false))
+    s.emit('SIGNED_OUT', null)
+    s.emit('SIGNED_IN', user(OTHER_ID, false))
+    expect(s.cloud.restart).toHaveBeenCalledTimes(1)
+    expect(s.session.getState().status).toBe('permanent')
+    expect(s.signedIn.at(-1)).toBe(true)
+    // A token refresh after that changes nothing more.
+    s.emit('TOKEN_REFRESHED', user(OTHER_ID, false))
+    expect(s.cloud.restart).toHaveBeenCalledTimes(1)
   })
 
   it('sign-out waits for unsent progress, and asks before leaving it behind', async () => {
@@ -170,38 +163,11 @@ describe('account coordinator (S19)', () => {
     expect(s.deps.signOutLocal).not.toHaveBeenCalled()
     expect(await coordinator.signOut(true)).toEqual({ ok: true })
     expect(s.deps.signOutLocal).toHaveBeenCalledTimes(1)
-    expect(s.account.getState().signedOut).toBe(true)
-  })
-
-  it('a link out: asks the server on focus and on a timer, and takes the upgrade', async () => {
-    const s = setup({ pendingAt: 1_000_000 })
-    createAccountSession(s.deps, user(GUEST_ID, true))
-    expect(s.hasPoll()).toBe(true)
-    s.focus()
-    await flush()
-    expect(s.session.getState().status).toBe('anonymous')
-    s.polled.push({
-      userId: GUEST_ID,
-      permanent: true,
-      maskedEmail: 'j•••@example.com',
-      provider: 'email',
-    })
-    s.tick()
-    await flush()
-    expect(s.session.getState().status).toBe('permanent')
-    expect(s.hasPoll()).toBe(false)
-  })
-
-  it('a link older than it lives is forgotten', () => {
-    const s = setup({ pendingAt: 1_000_000 })
-    s.setNow(1_000_000 + accountJson.pendingUpgradeMaxAgeMs + 1)
-    createAccountSession(s.deps, user(GUEST_ID, true))
-    expect(s.account.getState().pendingUpgradeAt).toBeNull()
-    expect(s.hasPoll()).toBe(false)
+    expect(s.signedIn.at(-1)).toBe(false)
   })
 
   it('never logs the email or a user id', async () => {
-    const s = setup({ pendingAt: 1_000_000 })
+    const s = setup()
     const coordinator = createAccountSession(s.deps, user(GUEST_ID, true))
     s.emit('USER_UPDATED', user(GUEST_ID, false))
     s.emit('SIGNED_IN', user(OTHER_ID, false))

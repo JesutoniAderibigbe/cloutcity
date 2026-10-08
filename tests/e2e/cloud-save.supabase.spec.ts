@@ -1,14 +1,13 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from './fixtures/test'
-import { answerWelcomeCard, YEAR } from './fixtures/welcome'
-import { holdGameTime } from './helpers/hud'
+import { bootAccount } from './helpers/account'
 import { waitForMapSettled } from './helpers/scene'
 
 // S18c, opt-in (`npm run e2e:supabase`, playwright.supabase.config.ts): against the local stack
-// and the real POST /api/save, the guest's save syncs to the account, offline play queues and
+// and the real POST /api/save, a new account's save syncs to it, offline play queues and
 // syncs when the network returns, a reload keeps the synced save, and a save tampered in
 // localStorage is refused by the server: sync pauses, play goes on. The stack is shared by
-// every checkout: this only creates anonymous users and never resets it.
+// every checkout: this only creates its own users and never resets it.
 
 test.use({
   onboarding: 'fresh',
@@ -35,10 +34,7 @@ test('syncs, queues offline, survives a reload, and pauses on a tampered save', 
   page,
   context,
 }) => {
-  await holdGameTime(page)
-  await page.addInitScript(() => {
-    window.__CLOUTCITY_E2E__ = true
-  })
+  test.setTimeout(150_000)
   const uploads: number[] = []
   page.on('response', (response) => {
     const url = new URL(response.url())
@@ -47,10 +43,8 @@ test('syncs, queues offline, survives a reload, and pauses on a tampered save', 
     }
   })
 
-  await page.goto('/')
-  await answerWelcomeCard(page, { birthYear: YEAR - 30, consent: true, audio: "I'll bring my own" })
-  await waitForMapSettled(page)
-  // The HUD panel buttons (with the hook) load after the welcome card.
+  await bootAccount(page)
+  // The HUD panel buttons (with the hook) load after the entry gate.
   await page.locator('[data-hud-panel="cloud"]').waitFor({ state: 'attached' })
 
   // 1. The first upload lands.

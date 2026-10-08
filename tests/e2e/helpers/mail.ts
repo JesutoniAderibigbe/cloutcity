@@ -4,9 +4,9 @@ import { localStack } from './stack'
 
 /**
  * The local mail catcher (Mailpit, `supabase status` MAILPIT_URL) for `*.supabase.spec.ts`: the
- * newest email to an address, the link in it (our templates link to `/auth/callback` or `/mod`
- * with a `token_hash`; a first sign-up's confirmation links to GoTrue's `/auth/v1/verify`) and
- * the 6-digit log-in code (S19).
+ * newest email to an address and the link in it (the moderator log-in template links to `/mod`
+ * with a `token_hash`; a first sign-up's confirmation links to GoTrue's `/auth/v1/verify`). Only
+ * the /mod console sends email: players get none (DEC-61).
  */
 interface MailpitSearch {
   readonly messages: readonly { readonly ID: string }[]
@@ -47,13 +47,6 @@ export function linkIn(mail: Mail): string {
   return link
 }
 
-/** The 6-digit code in a log-in email. */
-export function codeIn(mail: Mail): string {
-  const code = /<strong>(\d{6})<\/strong>/.exec(mail.html)?.[1]
-  if (code === undefined) throw new Error('no code in the email')
-  return code
-}
-
 /** Deletes every email to `email`, so the next one found is new. */
 export async function clearMail(email: string): Promise<void> {
   const query = encodeURIComponent(`to:"${email}"`)
@@ -73,16 +66,11 @@ export const STACK_SITE_URL = (() => {
  * fragment and never the query) and turned into the same path on the server under test (whose
  * port differs per lane): what the player's tap would open in production.
  */
-export function ourLink(link: string, path: '/auth/callback' | '/mod'): string {
+export function ourLink(link: string, path: '/mod'): string {
   const url = new URL(link)
   if (`${url.origin}${url.pathname}` !== `${STACK_SITE_URL}${path}` || url.search !== '') {
     throw new Error(`not our ${path} link: ${url.origin}${url.pathname}${url.search ? '?…' : ''}`)
   }
   if (!url.hash.includes('token_hash=')) throw new Error('no token in the link fragment')
   return `${path}${url.hash}`
-}
-
-/** The fragment parameters of one of our links. */
-export function linkFragment(link: string): URLSearchParams {
-  return new URLSearchParams(new URL(link).hash.slice(1))
 }

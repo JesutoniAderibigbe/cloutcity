@@ -1,11 +1,10 @@
-<!-- S19: the log-in email. The link goes to our own page, never to a redirect the request named
-     (review F4): {{ .SiteURL }}/mod for the moderator console's own sign-in, else
-     {{ .SiteURL }}/auth/callback. The one-time token rides in the URL fragment, so it never
-     reaches a server or CDN log (review F5), and the page finishes only on a tap, so a mail
-     scanner that opens the link uses nothing up. The 6-digit code works on any device. Paste into
-     the hosted dashboard too (Auth > Email Templates > Magic Link). -->
-<h2>Log in to Clout City</h2>
+<!-- S19, DEC-61: the log-in email, used only by the moderator console (/mod); players log in with
+     a password and get no email. The link always goes to our own {{ .SiteURL }}/mod, never to a
+     redirect the request named (review F4). The one-time token rides in the URL fragment, so it
+     never reaches a server or CDN log (review F5), and the page finishes only on a tap, so a mail
+     scanner that opens the link uses nothing up. Paste into the hosted dashboard too
+     (Auth > Email Templates > Magic Link). -->
+<h2>Log in to the Clout City moderator console</h2>
 <p>Tap the button to log in on this device:</p>
-<p><a href="{{ if eq .RedirectTo (printf "%s/mod" .SiteURL) }}{{ .SiteURL }}/mod{{ else }}{{ .SiteURL }}/auth/callback{{ end }}#token_hash={{ .TokenHash }}&type=email&email={{ .Email }}">Log me in</a></p>
-<p>Or type this code in the game: <strong>{{ .Token }}</strong></p>
-<p>The link and the code work once and run out in an hour. Didn't ask to log in? Ignore this email.</p>
+<p><a href="{{ .SiteURL }}/mod#token_hash={{ .TokenHash }}&type=email&email={{ .Email }}">Log me in</a></p>
+<p>The link works once and runs out in an hour. Didn't ask to log in? Ignore this email.</p>

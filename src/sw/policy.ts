@@ -168,12 +168,11 @@ export function isBuildChunk({ url, method, sameOrigin }: RequestFacts): boolean
 }
 
 /**
- * Navigations the worker never touches: server endpoints, account links (S19: /auth/callback
- * carries a one-time token), the moderator area, the worker
+ * Navigations the worker never touches: server endpoints, the moderator area, the worker
  * itself, data routes and share images. They always go straight to the network, with no
  * offline page in their place.
  */
-export const NAVIGATION_DENYLIST: readonly RegExp[] = [/^\/(?:api|auth|mod|serwist|geo|og)(?:\/|$)/]
+export const NAVIGATION_DENYLIST: readonly RegExp[] = [/^\/(?:api|mod|serwist|geo|og)(?:\/|$)/]
 
 /** A page navigation the worker handles: network only, with `/offline` when that fails. */
 export function isPageNavigation({ url, method, mode, sameOrigin }: RequestFacts): boolean {

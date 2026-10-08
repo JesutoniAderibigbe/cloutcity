@@ -1,7 +1,7 @@
 import { request as httpRequest } from 'node:http'
 import { createClient } from '@supabase/supabase-js'
 import { expect, test } from './fixtures/test'
-import { waitForMapSettled } from './helpers/scene'
+import { bootAccount } from './helpers/account'
 import { database, newGuest, newPermanentUser } from './helpers/seed'
 import { STACK_SITE_URL, clearMail, linkIn, newestMail, ourLink } from './helpers/mail'
 import { E2E_MODERATOR_EMAIL, localStack } from './helpers/stack'
@@ -10,7 +10,7 @@ import { E2E_MODERATOR_EMAIL, localStack } from './helpers/stack'
 // test moderator (MODERATOR_EMAILS in playwright.supabase.config.ts) signs in through the link
 // Mailpit caught, sees a seeded case with its note, suspends, and exactly one audit row exists;
 // a confirmed non-moderator and a guest get 403; the /mod session never replaces the game's
-// guest session on the same device.
+// account session on the same device.
 
 // One project only: the test moderator's mailbox and the per-IP sign-in limit are shared.
 test.skip(({ isMobile }) => !isMobile, 'runs once, on mobile-390')
@@ -156,23 +156,14 @@ test('a moderator signs in by email link, opens a seeded case and suspends; one 
   })
   if (error !== null) throw error
 
-  // A guest session in the game first, to prove /mod never replaces it.
-  await page.addInitScript(() => {
-    window.__CLOUTCITY_E2E__ = true
-  })
-  await page.goto('/')
-  await waitForMapSettled(page)
-  await expect
-    .poll(() => page.evaluate(() => window.__cloutcityTest?.session?.state().status ?? null), {
-      timeout: 20_000,
-    })
-    .toBe('anonymous')
-  const guestKey = () =>
+  // A player's account in the game first, to prove /mod never replaces it.
+  await bootAccount(page)
+  const gameKey = () =>
     page.evaluate(() => {
       const key = Object.keys(localStorage).find((name) => /^sb-.+-auth-token$/.test(name))
       return key === undefined ? null : [key, localStorage.getItem(key)]
     })
-  const before = await guestKey()
+  const before = await gameKey()
   expect(before).not.toBeNull()
 
   await clearMail(E2E_MODERATOR_EMAIL)
@@ -187,11 +178,11 @@ test('a moderator signs in by email link, opens a seeded case and suspends; one 
   // is carried to /mod here).
   const link = linkIn(await newestMail(E2E_MODERATOR_EMAIL))
   if (new URL(link).pathname !== '/auth/v1/verify') {
-    // Locally the stack's site URL is not this server's, so the template sends the link to its
-    // /auth/callback; in production SITE_URL is the site URL and it lands on /mod. The token is
-    // carried to this server's /mod the way it rides there: in the fragment.
+    // The template always links to the site's own /mod (locally the stack's site URL, not this
+    // server's); the token is carried to this server's /mod the way it rides there: in the
+    // fragment.
     const { hash } = new URL(link)
-    expect(ourLink(link, '/auth/callback')).toContain('#token_hash=')
+    expect(ourLink(link, '/mod')).toContain('#token_hash=')
     await page.goto(`/mod?case=${target.id}${hash}`)
     // The token never stays in the address bar; the linked case does.
     await expect.poll(() => page.url()).not.toContain('token_hash')
@@ -234,8 +225,8 @@ test('a moderator signs in by email link, opens a seeded case and suspends; one 
     'Someone already resolved this case. Reload the queue to see what changed.',
   )
 
-  // The console keeps its own session; the game's guest session is untouched.
+  // The console keeps its own session; the game's account session is untouched.
   const storage = await page.evaluate(() => Object.keys(localStorage))
   expect(storage).toContain('cloutcity-mod-auth')
-  expect(await guestKey()).toEqual(before)
+  expect(await gameKey()).toEqual(before)
 })

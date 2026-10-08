@@ -20,7 +20,6 @@ export const HUD_PANELS = [
   'home',
   'me',
   'cloud',
-  'account',
   'phone',
   'shop',
 ] as const

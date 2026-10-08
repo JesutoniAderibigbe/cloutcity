@@ -5,7 +5,6 @@ import { HudFrame } from '@/components/hud/HudFrame'
 import { HudPanelMount } from '@/components/hud/HudPanelMount'
 import { LevelUpToastMount } from '@/components/hud/LevelUpToastMount'
 import { CreatorMount } from '@/components/creator/CreatorMount'
-import { CreatorOfferMount } from '@/components/creator/CreatorOfferMount'
 import { BottomTabs } from '@/components/nav/BottomTabs'
 import { CleanScreenExit } from '@/components/nav/CleanScreenExit'
 import { OfflineSupportMount } from '@/components/offline/OfflineSupportMount'
@@ -13,7 +12,6 @@ import { OverlayLayout } from '@/components/overlay/OverlayLayout'
 import { PlaceSheetMount } from '@/components/places/PlaceSheetMount'
 import { PlacesButton } from '@/components/places/PlacesButton'
 import { PlacesPanelMount } from '@/components/places/PlacesPanelMount'
-import { SaveProgressMount } from '@/components/account/SaveProgressMount'
 import { AccountNoticesMount } from '@/components/safety/AccountNoticesMount'
 import { SafetyToastMount } from '@/components/safety/SafetyToastMount'
 import { TourMount } from '@/components/tour/TourMount'
@@ -24,7 +22,7 @@ import { CityScene } from '@/scene/CityScene'
 export default function HomePage() {
   return (
     <>
-      {/* Without JavaScript the shell stays dimmed behind the 18+ gate's boot hold (UI-12): say
+      {/* Without JavaScript the shell stays dimmed behind the entry gate's boot hold (UI-12): say
           why instead of showing a loading city forever. Above every overlay layer. */}
       <noscript>
         <p className="fixed inset-x-4 top-[max(1rem,env(safe-area-inset-top))] z-[1000] mx-auto max-w-prose rounded-2xl border border-taxi glass px-4 py-3 text-center text-sm font-semibold text-fg shadow-lg">
@@ -45,7 +43,6 @@ export default function HomePage() {
             <>
               <TourMount />
               <OfflineSupportMount />
-              <SaveProgressMount />
             </>
           ),
           hud: (
@@ -57,7 +54,6 @@ export default function HomePage() {
           toast: (
             <>
               <LevelUpToastMount />
-              <CreatorOfferMount />
               <SafetyToastMount />
             </>
           ),
