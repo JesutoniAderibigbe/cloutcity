@@ -682,34 +682,10 @@ function homeCloutGone(save: SaveState, base: SaveState | null, config: EngineCo
     .filter((entry) => !isPrestigeKept(entry) && !owned.has(entry.itemId))
     .reduce((sum, entry) => sum + score(entry.itemId), 0)
   const lost = Math.max(0, homeClout(base.player, config) - homeClout(save.player, config))
-  const shown = lost + unplaced + sold
-  // Decor bought, placed and sold inside one window leaves no trace (no ledger entry): the window
-  // may have held the home up to the cap, but only when it shows home activity (S-1), else this
-  // would be slack in every window.
-  const active =
-    shown > 0 ||
-    save.player.home !== base.player.home ||
-    save.player.apartment.moveLog.length !== base.player.apartment.moveLog.length ||
-    decorSpending(save, base, config)
-  return Math.min(cap, active ? Math.max(shown, cap - homeClout(save.player, config)) : shown)
-}
-
-/**
- * True when the window spent at least what buying and selling back the cheapest decor loses,
- * beyond everything the save explains (a decor buy-and-sell leaves only this trace).
- */
-function decorSpending(save: SaveState, base: SaveState, config: EngineConfig): boolean {
-  const losses = config.items.catalog
-    .filter((item) => isDecor(item))
-    .map((item) => item.price - item.sellValue)
-  if (losses.length === 0) return false
-  const known = new Set(base.grants.log.map((record) => record.key))
-  const grantCash = save.grants.log
-    .filter((record) => !known.has(record.key))
-    .reduce((sum, record) => sum + record.applied.cash, 0)
-  const trade = itemTrade(base.player.inventory, save.player.inventory, config)
-  const spent = base.player.cash + grantCash + trade.sold - trade.bought - save.player.cash
-  return spent >= Math.min(...losses)
+  // Decor bought, placed and sold inside one window leaves no trace (no ledger entry): the
+  // window may always have held the home up to the cap. This is slack of at most
+  // `home.maxClout` in every window (SEC-18, accepted: private checks only, goals pay once).
+  return Math.min(cap, Math.max(lost + unplaced + sold, cap - homeClout(save.player, config)))
 }
 
 /**

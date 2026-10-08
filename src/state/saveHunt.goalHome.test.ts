@@ -216,8 +216,14 @@ it('H-2c decor bought, placed, claimed against and sold within one upload window
   expect(verdict.findings).not.toContain('goal-without-fact')
 })
 
-it.each([40, 41, 45, 60])(
-  'S-1 a forged reach-local with %s goal clout and no home activity is refused',
+// SEC-18 (accepted LOW): items bought, placed and sold inside one window leave no trace, so the
+// goal check allows up to `home.maxClout` of home clout the window may have held. The slack is
+// bounded by that cap: a forged reach-local with goal clout below `threshold - home.maxClout`
+// is still refused.
+const localThreshold = config.clout.levels.find((level) => level.id === 'local')!.minClout
+const slackFloor = localThreshold - config.home.maxClout
+it.each([0, Math.floor(slackFloor / 2), slackFloor - 1])(
+  'SEC-18 a forged reach-local with %s goal clout (below threshold minus home.maxClout) is refused',
   (flex) => {
     const fresh = initialSave(config)
     const prev: SaveState = {
