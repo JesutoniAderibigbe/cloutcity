@@ -7,6 +7,7 @@
  * with the building `buildingBackM` north of it, so the front yard faces the camera (which looks
  * north). Trees stand at the yard's corners, front corners first; bushes line the front edge.
  */
+import type { QualityTier } from '@/lib/data/schemas/config'
 import type { PlotApron, PlotsConfig } from '@/lib/data/schemas/scene'
 import type { LocalPoint } from '@/lib/geo/projection'
 
@@ -57,7 +58,14 @@ export interface PlotClearing {
  * The plots: one per venue whose category has a style (normal style only: teasers and memorials
  * keep their pins) and one per home. Landmarks never get one: they have their own models.
  */
-export function planPlots(places: readonly PlotPlace[], config: PlotsConfig): PlotPlan[] {
+export function planPlots(
+  places: readonly PlotPlace[],
+  config: PlotsConfig,
+  tier?: QualityTier,
+): PlotPlan[] {
+  // Dressing (trees, bushes, awnings) only on the tiers that draw it (`dressingTiers`); no tier
+  // plans it all.
+  const dressed = tier === undefined || config.dressingTiers.includes(tier)
   const plans: PlotPlan[] = []
   for (const place of places) {
     if (place.kind === 'landmark') continue
@@ -72,7 +80,7 @@ export function planPlots(places: readonly PlotPlace[], config: PlotsConfig): Pl
       [-inset, inset],
       [inset, inset],
     ]
-    const dressing: PlotPart[] = corners.slice(0, style.trees).map(([dx, dy], i) => ({
+    const dressing: PlotPart[] = corners.slice(0, dressed ? style.trees : 0).map(([dx, dy], i) => ({
       model: config.trees.models[i % config.trees.models.length] ?? config.trees.models[0] ?? '',
       x: place.x + dx,
       y: place.y + dy,
@@ -82,7 +90,7 @@ export function planPlots(places: readonly PlotPlace[], config: PlotsConfig): Pl
     }))
     // Bushes along the front edge, centred, between the front trees.
     const row = -(half - config.kerbM - 2)
-    for (let i = 0; i < style.bushes; i++) {
+    for (let i = 0; i < (dressed ? style.bushes : 0); i++) {
       const dx = (i - (style.bushes - 1) / 2) * config.bush.spacingM
       dressing.push({
         model: config.bush.model,
@@ -112,7 +120,7 @@ export function planPlots(places: readonly PlotPlace[], config: PlotsConfig): Pl
               slots: style.facade === null ? {} : { facade: style.facade },
             },
       awning:
-        style.awning === null || style.model === null
+        !dressed || style.awning === null || style.model === null
           ? null
           : {
               model: style.awning.model,

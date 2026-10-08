@@ -4,7 +4,7 @@
  * here: they are palette tokens in data/config/theme.json (`scene`).
  */
 import { z } from 'zod'
-import { STREET_PROP_MODELS } from './config'
+import { QualityTierSchema, STREET_PROP_MODELS } from './config'
 import { VehicleKitConfigSchema } from './ambientKit'
 import { LandmarkSceneConfigSchema } from './landmarkModels'
 import { MAP_STYLES } from '@/lib/world/mapStyleIds'
@@ -1020,6 +1020,16 @@ export const PlotsConfigSchema = z.strictObject({
   roof: z.strictObject({ from: TOKEN, to: TOKEN }),
   trees: z.strictObject({ models: z.array(MODEL_ID).min(1), insetM: metres, scale: metres }),
   bush: z.strictObject({ model: MODEL_ID, scale: metres, spacingM: metres }),
+  /**
+   * The quality tiers that draw the plots' dressing: trees, bushes, awnings and parking-bay lines
+   * (S41). Low leaves them out, like its
+   * street props (perf.json `streetProps` caps trees at 0 on low), so a borough full of plots
+   * stays inside the default view's `trianglesMax`.
+   */
+  dressingTiers: z
+    .array(QualityTierSchema)
+    .min(1)
+    .refine((tiers) => new Set(tiers).size === tiers.length, { error: 'tiers must be unique' }),
   /** Per place category (a venue's type), plus `home`. */
   styles: z.record(MODEL_ID, PlotStyleSchema),
   /**

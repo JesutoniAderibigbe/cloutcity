@@ -348,6 +348,7 @@
       "club": [],
       "job-site": [],
       "barber": ["fresh-cut"],
+      "food-cart": ["street-meal"],
       "salon": ["salon-session"],
       "mall": [],
       "bank": ["budget-check"],

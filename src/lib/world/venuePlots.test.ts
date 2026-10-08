@@ -55,6 +55,20 @@ describe('place plots (S04m)', () => {
     }
   })
 
+  it('plans trees, bushes and awnings only on the tiers in dressingTiers (S41: none on low)', () => {
+    const places = plotPlaces([pin('a', 'coffee-shop')], [])
+    const style = plots.styles['coffee-shop']
+    if (style === undefined) throw new Error('no coffee-shop style')
+    expect(plots.dressingTiers).not.toContain('low')
+    expect(planPlots(places, plots, 'low')[0]?.dressing).toEqual([])
+    expect(planPlots(places, plots, 'low')[0]?.awning).toBeNull()
+    expect(planPlots(places, plots, 'mid')[0]?.awning).not.toBeNull()
+    for (const tier of plots.dressingTiers) {
+      expect(planPlots(places, plots, tier)[0]?.dressing).toHaveLength(style.trees + style.bushes)
+    }
+    expect(planPlots(places, plots)[0]?.dressing).toHaveLength(style.trees + style.bushes)
+  })
+
   it('clears a square of plot plus clearance around each plot', () => {
     const clearings = plotClearings([{ x: 0, y: 0 }], plots)
     const edge = plots.plotM / 2 + plots.clearM

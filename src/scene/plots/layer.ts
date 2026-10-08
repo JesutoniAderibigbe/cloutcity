@@ -163,7 +163,8 @@ export function createPlotsLayer(options: PlotsLayerOptions): PlotsLayer {
   const group = new Group()
   group.name = 'plots'
   group.userData.feature = PLOTS_FEATURE
-  const plans = planPlots(plotPlaces(options.pins, homePoints()), config)
+  const plans = planPlots(plotPlaces(options.pins, homePoints()), config, options.tier)
+  const dressed = config.dressingTiers.includes(options.tier)
   let status: PlotsStatus = 'loading'
   let disposed = false
   const meshes: Mesh[] = []
@@ -276,7 +277,8 @@ export function createPlotsLayer(options: PlotsLayerOptions): PlotsLayer {
           hex(colour),
         )
         add(plan, { model: apron, x: plan.x, y: yard + depth / 2, rotation: 0, lift: 0 })
-        if (plan.apron === 'parking') {
+        // Bay lines are dressing too: only on the tiers that draw it (plots.json dressingTiers).
+        if (plan.apron === 'parking' && dressed) {
           const { widthM, lengthM, gapM, color } = config.stripe
           const stripe = box('stripe', widthM, 0.04, lengthM, hex(color))
           const bays = Math.floor((inner - 2 * gapM) / gapM)

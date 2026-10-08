@@ -423,7 +423,7 @@ them through `src/lib/world/places.ts` (`mapPlaces()`, `placeAccess()`,
   station venue is within 25 m of its station, and that landmarks off land have an `approach`.
   `scripts/geo/streets.test.ts` and `src/lib/world/streetProps.test.ts` need every venue inside
   a prop zone (a district or a `geo.json` streets zone) with street-prop chunks around it.
-- **A new venue type** (S41 added barber, salon, mall, bank, pharmacy, laundromat,
+- **A new venue type** (S41 added barber, salon, food-cart, mall, bank, pharmacy, laundromat,
   community-center, lounge, studio) needs an entry in `VENUE_TYPES`
   (`src/lib/data/schemas/content.ts`), its actions in `balance.json` `place.venueActions` (and
   `place.actions`, with a `place.actions.<camelId>.name` copy key), an icon group in
@@ -876,7 +876,9 @@ camera starts over it).
   camera, background height and density, plots on or off, pin and bubble style, subway lift and
   colour tokens. **Game map** (default, Lagos-style): every venue and home stands on a plot
   (`data/config/plots.json`: lawn, plaza or parking yard and a recoloured CC0 building, merged per
-  square onto the district material by the lazy `src/scene/plots/layer.ts`), district masses and
+  square onto the district material by the lazy `src/scene/plots/layer.ts`; trees, bushes, awnings
+  and parking lines only on `dressingTiers`, so low keeps the default view under its triangle cap,
+  S41), district masses and
   fill blocks keep clear of plots and are drawn lower in bright pastel colours on green land with
   bright blue water (the `game*` world tokens in `theme.json`), venue pins float over their
   roofs as big icon bubbles, and big area names (`data/places/areaLabels.json`, `map.area.*`

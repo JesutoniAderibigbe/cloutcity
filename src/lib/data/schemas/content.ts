@@ -273,6 +273,7 @@ export const VENUE_TYPES = [
   // S41: the rest of a Lagos Life-style neighbourhood (errands, care, hangouts, creator spots).
   'barber',
   'salon',
+  'food-cart',
   'mall',
   'bank',
   'pharmacy',

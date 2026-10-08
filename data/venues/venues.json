@@ -118,7 +118,7 @@
       "id": "steam-tray-halal",
       "nameKey": "venues.steamTrayHalal.name",
       "blurbKey": "venues.steamTrayHalal.blurb",
-      "type": "food-spot",
+      "type": "food-cart",
       "borough": "queens",
       "zoneId": "qn01",
       "location": { "lat": 40.769, "lng": -73.916 },
