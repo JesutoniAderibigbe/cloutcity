@@ -7,7 +7,9 @@
  * files, the share of buildings drawn (`buildingDensity`), the draw distances
  * (`lodDistanceScale`) and whether walls get windows, which glow with the shared night-glow
  * uniform (src/scene/lighting/nightGlow.ts; S04f's day/night rig drives it). Nothing here is
- * pickable.
+ * pickable. The layer and its builders load as their own chunk once the city has drawn, so they
+ * stay off the playable path (PERF-6); the tier also sets how the procedural blocks are dressed
+ * (S04i fill-lite: lots, plates, street trees).
  */
 import { useEffect, useMemo, useRef, type RefObject } from 'react'
 import { useThree } from '@react-three/fiber'
@@ -21,7 +23,8 @@ import type { BoroughId } from '../geo/schema'
 import { dimmedColor } from '../materials'
 import { useTierSettings } from '../quality/tierSettings'
 import type { ScenePalette } from '../types'
-import { createBuildingsLayer, type BuildingsLayer, type BuildingsLayerView } from './layer'
+import type { BlockFill } from './buildBlocks'
+import type { BuildingsLayer, BuildingsLayerView, createBuildingsLayer } from './layer'
 import { useNightGlow } from '../lighting/nightGlow'
 import { createBuildingMaterial, createWindowMask, windowTile } from './materials'
 
@@ -112,55 +115,94 @@ export function Buildings({
     layerRef.current?.setDistanceScale(settings.lodDistanceScale)
   }, [settings.buildingDensity, settings.lodDistanceScale])
 
-  // Nothing loads before the city's first frame. Then one layer per tier's files (and material
-  // set), following the camera; a tier change replaces it.
+  const fill = config.buildings.fill
+  const blockFill = useMemo<BlockFill>(
+    () => ({
+      lots: fill.lots[settings.tier],
+      plate: fill.plate[settings.tier],
+      plateHeightM: fill.plateHeightM,
+      lotGapM: fill.lotGapM,
+      lotHeightJitter: fill.lotHeightJitter,
+      treesPerBlock: fill.streetTreesPerBlock[settings.tier],
+      treesMax: settings.fillTreesMax,
+      treeViewM: fill.treeViewM[settings.tier],
+      treeSizeM: fill.treeSizeM,
+      treeWidthRatio: fill.treeWidthRatio,
+    }),
+    [fill, settings.tier, settings.fillTreesMax],
+  )
+
+  // Nothing loads before the city's first frame. Then the layer's chunk, and one layer per
+  // tier's files (and material set), following the camera; a tier change replaces it.
   useEffect(() => {
     if (!active) return
-    const layer = createBuildingsLayer({
-      assets: tierAssets,
-      groundY,
-      config: config.buildings,
-      districtColors: {
-        walls: palette.buildings.walls,
-        roof: palette.buildings.roof,
-        jitter: config.buildings.wallJitter,
-        windowTile: windowTile(config.buildings),
-      },
-      blockColors: {
-        blocks: palette.buildings.blocks,
-        dimmed: `#${dimmedColor(palette.buildings.dimmedBlock, palette.haze, config.dimmed.towardBackground).getHexString()}`,
-        jitter: config.buildings.wallJitter,
-      },
-      dimmedBoroughs,
-      materials: {
-        district: materials.district,
-        blocks: materials.blocks,
-        blocksDimmed: materials.blocksDimmed,
-      },
-      prepare: async (object) => {
-        if (gl.extensions.has('KHR_parallel_shader_compile')) {
-          await gl.compileAsync(object, camera, scene)
-        }
-      },
-      onChange: invalidate,
-      onError: (url, reason) => log.warn('District buildings failed to load', { url, reason }),
-    })
-    layerRef.current = layer
-    root.add(layer.group)
-    layer.setDensity(tierView.current.density)
-    layer.setDistanceScale(tierView.current.scale)
-    layer.setView(camera)
-    layer.start()
-    const update = () => layer.setView(camera)
-    const rig = controls instanceof MapControls ? controls : null
-    rig?.addEventListener('change', update)
+    const mountLayer = (create: typeof createBuildingsLayer) => {
+      const layer = create({
+        assets: tierAssets,
+        groundY,
+        config: config.buildings,
+        districtColors: {
+          walls: palette.buildings.walls,
+          roof: palette.buildings.roof,
+          jitter: config.buildings.wallJitter,
+          windowTile: windowTile(config.buildings),
+        },
+        blockColors: {
+          blocks: palette.buildings.blocks,
+          dimmed: `#${dimmedColor(palette.buildings.dimmedBlock, palette.haze, config.dimmed.towardBackground).getHexString()}`,
+          jitter: config.buildings.wallJitter,
+          lot: palette.buildings.lot,
+          tree: palette.buildings.tree,
+        },
+        blockFill,
+        dimmedBoroughs,
+        materials: {
+          district: materials.district,
+          blocks: materials.blocks,
+          blocksDimmed: materials.blocksDimmed,
+        },
+        prepare: async (object) => {
+          if (gl.extensions.has('KHR_parallel_shader_compile')) {
+            await gl.compileAsync(object, camera, scene)
+          }
+        },
+        onChange: invalidate,
+        onError: (url, reason) => log.warn('District buildings failed to load', { url, reason }),
+      })
+      layerRef.current = layer
+      root.add(layer.group)
+      layer.setDensity(tierView.current.density)
+      layer.setDistanceScale(tierView.current.scale)
+      layer.setView(camera)
+      layer.start()
+      const update = () => layer.setView(camera)
+      const rig = controls instanceof MapControls ? controls : null
+      rig?.addEventListener('change', update)
+      return () => {
+        rig?.removeEventListener('change', update)
+        layer.dispose()
+        if (layerRef.current === layer) layerRef.current = null
+      }
+    }
+    let cancelled = false
+    let release = () => {}
+    import('./layer')
+      .then((module) => {
+        if (!cancelled) release = mountLayer(module.createBuildingsLayer)
+      })
+      .catch((error: unknown) =>
+        log.warn('District buildings failed to load', {
+          url: 'buildings layer chunk',
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+      )
     return () => {
-      rig?.removeEventListener('change', update)
-      layer.dispose()
-      if (layerRef.current === layer) layerRef.current = null
+      cancelled = true
+      release()
     }
   }, [
     active,
+    blockFill,
     tierAssets,
     groundY,
     config,

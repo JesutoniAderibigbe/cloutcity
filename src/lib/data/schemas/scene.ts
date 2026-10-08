@@ -435,6 +435,41 @@ export const SceneConfigSchema = z.strictObject({
     loadMarginM: z.number().nonnegative(),
     /** The longest a build slice runs before it gives the browser a turn. */
     buildSliceMs: z.number().positive(),
+    /**
+     * Fill-lite (S04i): each procedural block becomes a low plate split into lots of seeded
+     * heights, with street trees in the gaps between blocks, all in the blocks' instanced meshes
+     * and materials (no new shader program). Low keeps one box per block and no trees.
+     */
+    fill: z.strictObject({
+      /** Lots per block; 0 draws the block as one box. */
+      lots: z.strictObject({
+        low: z.int().min(0).max(8),
+        mid: z.int().min(0).max(8),
+        high: z.int().min(0).max(8),
+      }),
+      /** A plate under the lots (sidewalk and lot ground), in the theme's lot colour. */
+      plate: z.strictObject({ low: z.boolean(), mid: z.boolean(), high: z.boolean() }),
+      plateHeightM: metres,
+      /** Gap between neighbouring lots, and the lots' inset from the plate's edge. */
+      lotGapM: z.number().nonnegative(),
+      /** Seeded spread of a lot's height around its block's (0.45 = plus or minus 45%). */
+      lotHeightJitter: z.number().min(0).max(0.9),
+      /** Street trees per block, set in the street gap beside it. */
+      streetTreesPerBlock: z.strictObject({
+        low: z.int().min(0).max(8),
+        mid: z.int().min(0).max(8),
+        high: z.int().min(0).max(8),
+      }),
+      /** Trees draw only within this distance of the camera (before lodDistanceScale). */
+      treeViewM: z.strictObject({
+        low: z.number().nonnegative(),
+        mid: z.number().nonnegative(),
+        high: z.number().nonnegative(),
+      }),
+      /** Height of a tree crown; its width is `treeWidthRatio` of that. */
+      treeSizeM: metres,
+      treeWidthRatio: ratio.max(2),
+    }),
   }),
   /**
    * Name chips of the modelled landmarks (S07a): one flat rounded plate per landmark, floating

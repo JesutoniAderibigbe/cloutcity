@@ -189,12 +189,19 @@ export async function buildFromSources(
 export interface TierTotal {
   readonly tier: QualityTier
   readonly gzBytes: number
+  /** District masses only (what `buildingTrianglesMax` caps). */
   readonly triangles: number
+  /** Every procedural block in the tier's file, before per-view culling. */
+  readonly blockTriangles: number
 }
 
 const gzBytes = (text: string) => gzipSync(text, { level: 9 }).byteLength
 
-/** gzip -9 bytes and triangles per tier: every district file plus the tier's blocks. */
+/**
+ * Per tier: gzip -9 bytes of every district file plus the tier's blocks, and the district
+ * masses' triangles (S04i: blocks are culled per view, so `buildingTrianglesMax` counts the
+ * districts only; `blockTriangles` is reported, never capped here).
+ */
 export function tierTotals(result: GeoBuildResult): TierTotal[] {
   return QUALITY_TIERS.map((tier) => {
     const paths = [
@@ -204,9 +211,12 @@ export function tierTotals(result: GeoBuildResult): TierTotal[] {
     return {
       tier,
       gzBytes: paths.reduce((sum, path) => sum + gzBytes(result.files.get(path) ?? ''), 0),
-      triangles:
-        result.districtStats.filter((s) => s.tier === tier).reduce((n, s) => n + s.triangles, 0) +
-        result.blockStats.filter((s) => s.tier === tier).reduce((n, s) => n + s.triangles, 0),
+      triangles: result.districtStats
+        .filter((s) => s.tier === tier)
+        .reduce((n, s) => n + s.triangles, 0),
+      blockTriangles: result.blockStats
+        .filter((s) => s.tier === tier)
+        .reduce((n, s) => n + s.triangles, 0),
     }
   })
 }
@@ -221,7 +231,7 @@ export function budgetErrors(totals: readonly TierTotal[], perf: PerfConfig): st
       : []),
     ...(triangles > perf.buildingTrianglesMax[tier]
       ? [
-          `${tier}: ${triangles} building triangles exceed buildingTrianglesMax ${perf.buildingTrianglesMax[tier]}`,
+          `${tier}: ${triangles} district triangles exceed buildingTrianglesMax ${perf.buildingTrianglesMax[tier]}`,
         ]
       : []),
   ])
@@ -299,9 +309,9 @@ async function main(): Promise<void> {
     )
   }
   const totals = tierTotals(result)
-  for (const { tier, gzBytes: bytes, triangles } of totals) {
+  for (const { tier, gzBytes: bytes, triangles, blockTriangles } of totals) {
     write(
-      `${tier} buildings total: ${kb(bytes)} gz of ${perf.districtBuildingsGzKB[tier]} KB, ${triangles} of ${perf.buildingTrianglesMax[tier]} triangles`,
+      `${tier} buildings total: ${kb(bytes)} gz of ${perf.districtBuildingsGzKB[tier]} KB, ${triangles} of ${perf.buildingTrianglesMax[tier]} district triangles (+ ${blockTriangles} block triangles, culled per view)`,
     )
   }
   const overBudget = budgetErrors(totals, perf)

@@ -144,6 +144,8 @@ export function scenePalette(): ScenePalette {
       window: tokenHex(scene.buildings.window),
       blocks: scene.buildings.blocks.map(tokenHex),
       dimmedBlock: tokenHex(scene.buildings.dimmedBlock),
+      lot: tokenHex(scene.buildings.lot),
+      tree: tokenHex(scene.buildings.tree),
     },
     landmarks: Object.fromEntries(
       Object.entries(scene.landmarks).map(([role, token]) => [role, tokenHex(token)]),

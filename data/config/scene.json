@@ -355,7 +355,34 @@
     },
     "loadMarginM": 1500,
     "buildSliceMs": 8,
-    "windowTileCells": 4
+    "windowTileCells": 4,
+    "fill": {
+      "lots": {
+        "low": 0,
+        "mid": 3,
+        "high": 4
+      },
+      "plate": {
+        "low": false,
+        "mid": true,
+        "high": true
+      },
+      "plateHeightM": 0.4,
+      "lotGapM": 2,
+      "lotHeightJitter": 0.45,
+      "streetTreesPerBlock": {
+        "low": 0,
+        "mid": 2,
+        "high": 4
+      },
+      "treeViewM": {
+        "low": 0,
+        "mid": 3600,
+        "high": 4500
+      },
+      "treeSizeM": 12,
+      "treeWidthRatio": 1
+    }
   },
   "landmarkChips": {
     "widthM": 1000,

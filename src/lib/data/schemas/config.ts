@@ -236,10 +236,17 @@ export const PerfConfigSchema = z
      */
     precacheGzKB: positive,
     /**
-     * Triangles of every district's building masses plus the procedural blocks, per tier, as the
-     * geo build counts them (TUNE-7 placeholders). Part of `trianglesMax`, not on top of it.
+     * Triangles of every district's building masses per tier, as the geo build counts them
+     * (TUNE-7; S04i: district masses only). The procedural blocks are culled per view, so they
+     * are held by `trianglesMax` at the default view and by geo.json `blocks.maxInstances`, not
+     * by their citywide total. Part of `trianglesMax`, not on top of it.
      */
     buildingTrianglesMax: perTier(positiveInt),
+    /**
+     * Most fill trees (S04i fill-lite: street trees between the procedural blocks) drawn at once
+     * per tier; 0 turns them off.
+     */
+    fillTreesMax: perTier(z.int().nonnegative()),
     /**
      * Triangles of one landmark model's finest level per tier (outline and windows included), by
      * landmark category (S07a). Each coarser level may have at most `landmarkLodRatioMax` of the
@@ -375,6 +382,10 @@ export const ScenePaletteRefsSchema = z.strictObject({
     window: tokenRef,
     blocks: z.array(tokenRef).min(1),
     dimmedBlock: tokenRef,
+    /** Fill-lite plates under the procedural blocks' lots (S04i). */
+    lot: tokenRef,
+    /** Fill-lite street tree crowns (S04i). */
+    tree: tokenRef,
   }),
 })
 export type ScenePaletteRefs = z.infer<typeof ScenePaletteRefsSchema>
@@ -402,6 +413,8 @@ export function scenePaletteTokens(scene: ScenePaletteRefs): string[] {
     scene.buildings.window,
     ...scene.buildings.blocks,
     scene.buildings.dimmedBlock,
+    scene.buildings.lot,
+    scene.buildings.tree,
   ]
 }
 
@@ -1614,14 +1627,22 @@ export const BlocksConfigSchema = z.strictObject({
   seed: z.int().nonnegative(),
   /** Storey height: a block is its zone's average floors times this. */
   floorM: metres,
-  /** Random offset of a block from its grid point, as a fraction of the spacing. */
-  jitter: z.number().min(0).max(0.5),
+  /**
+   * Random offset of a block from its grid point, as a fraction of the spacing, per tier (S04i:
+   * small on mid and high so the gaps line up as streets; low keeps its S04d layout).
+   */
+  jitter: perTier(z.number().min(0).max(0.5)),
   /** Random spread of the floor count around the zone average (0.4 = plus or minus 40%). */
   heightJitter: z.number().min(0).max(0.9),
-  /** Floor-area ratio at which every grid point gets a block; lower FAR fills proportionally. */
-  fullFar: positive,
-  /** Block side as a fraction of the grid spacing. */
-  footprintFraction: z.number().gt(0).max(1),
+  /**
+   * Floor-area ratio at which every grid point gets a block, per tier; lower FAR fills
+   * proportionally (S04i: mid and high fill denser, low keeps its block count).
+   */
+  fullFar: perTier(positive),
+  /** Block side as a fraction of the grid spacing (the rest is street), per tier. */
+  footprintFraction: perTier(z.number().gt(0).max(1)),
+  /** Fewest floors a block gets per tier, so the fill reads as buildings, not flat tiles. */
+  minFloors: perTier(positiveInt),
   spacingM: perTier(metres),
   /** The build fails when a tier places more blocks than this. */
   maxInstances: perTier(positiveInt),

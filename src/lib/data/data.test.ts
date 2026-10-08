@@ -317,6 +317,8 @@ describe('config/perf.json', () => {
       serviceWorkerGzKB: 15,
       precacheGzKB: 1000,
       buildingTrianglesMax: { low: 160_000, mid: 300_000, high: 480_000 },
+      // S04i fill-lite street trees drawn at once (user-approved cap).
+      fillTreesMax: { low: 0, mid: 4000, high: 8000 },
       landmarkTrianglesMax: {
         bridge: { low: 1200, mid: 3500, high: 7000 },
         building: { low: 600, mid: 1800, high: 3500 },

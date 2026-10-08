@@ -4,7 +4,13 @@
  * with a chance set by its community district's floor-area ratio (MapPLUTO), and a height from
  * the district's average floors. Points in a district circle, a park or cemetery, the water, or
  * a joint interest area (airports, big parks) get none, and neither does a block that would touch
- * a landmark's exclusion rectangle (INT-7).
+ * a landmark's exclusion rectangle (INT-7). The client splits each block into lots on a plate
+ * (S04i fill-lite, src/scene/buildings/buildBlocks.ts); the small jitter keeps the gaps between
+ * blocks lined up as streets.
+ *
+ * TODO(S04i Part E, D9): carve out fill blocks whose footprint crosses a LION street buffer
+ * (half-width + `carveMarginM`) inside the street-prop zones, once lane G's streets layer
+ * (data/geo/streets.derived.json) lands, so real-street props never stand inside a block.
  *
  * Randomness comes only from src/engine/rng.ts, seeded per tier, borough and grid cell, so a
  * block never moves when an unrelated part of the city changes.
@@ -146,8 +152,8 @@ export interface TierBlocks {
 type BoroughId = keyof BlocksConfig['gridAngleDeg']
 const isBoroughId = (id: string, config: BlocksConfig): id is BoroughId => id in config.gridAngleDeg
 
-const blockSize = (spacing: number, config: BlocksConfig) =>
-  Math.max(1, Math.round(spacing * config.footprintFraction))
+const blockSize = (spacing: number, config: BlocksConfig, tier: QualityTier) =>
+  Math.max(1, Math.round(spacing * config.footprintFraction[tier]))
 
 export function buildBlocks(
   inputs: BlocksInputs,
@@ -161,7 +167,8 @@ export function buildBlocks(
   const circles = inputs.districts.map((d) => ({ centre: project(d.center), radiusM: d.radiusM }))
   const inDistrict = (point: LocalPoint) =>
     circles.some((circle) => distanceM(point, circle.centre) <= circle.radiusM)
-  const sizeM = blockSize(spacing, config)
+  const sizeM = blockSize(spacing, config, tier)
+  const jitter = config.jitter[tier]
   // A block touches a rectangle when its centre lies within the rectangle grown by the block's
   // half diagonal (conservative for every rotation of the block).
   const reach = (sizeM * Math.SQRT2) / 2
@@ -207,8 +214,8 @@ export function buildBlocks(
           mixSeed(mixSeed(mixSeed(config.seed, borough.boroCode * 3 + tierIndex), i), j),
         )
         // Every cell draws all four numbers so the stream never depends on earlier outcomes.
-        const jitterU = (rng.next() - 0.5) * 2 * config.jitter * spacing
-        const jitterV = (rng.next() - 0.5) * 2 * config.jitter * spacing
+        const jitterU = (rng.next() - 0.5) * 2 * jitter * spacing
+        const jitterV = (rng.next() - 0.5) * 2 * jitter * spacing
         const fill = rng.next()
         const spread = rng.next()
         const u = minU + (i + 0.5) * spacing + jitterU
@@ -222,9 +229,9 @@ export function buildBlocks(
         if (zone === undefined || !inputs.districtZoneIds.has(zone)) continue
         const density = inputs.density.get(zone)
         if (density === undefined) continue
-        if (fill >= fillChance(density.far, config.fullFar)) continue
+        if (fill >= fillChance(density.far, config.fullFar[tier])) continue
         const floors = Math.max(
-          1,
+          config.minFloors[tier],
           Math.round(density.avgFloors * (1 + config.heightJitter * (2 * spread - 1))),
         )
         points.push(point)

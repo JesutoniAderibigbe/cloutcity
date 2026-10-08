@@ -160,7 +160,9 @@
     "siding-50": "#f3f1ec",
     "siding-300": "#b3bcc6",
     "redbrick-400": "#c27c62",
-    "siding-200": "#d9bf9a"
+    "siding-200": "#d9bf9a",
+    "lot-200": "#cbc6bb",
+    "tree-500": "#5f9446"
   },
   "sky": {
     "dawn": {
@@ -313,7 +315,9 @@
         "siding-300",
         "siding-50"
       ],
-      "dimmedBlock": "concrete-400"
+      "dimmedBlock": "concrete-400",
+      "lot": "lot-200",
+      "tree": "tree-500"
     }
   },
   "models": {

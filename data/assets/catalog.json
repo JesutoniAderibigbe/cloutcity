@@ -1142,7 +1142,11 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": [],
+      "emissive": ["glass-600"],
+      "glow": {
+        "glass-600": "window-200"
+      },
+      "glowRule": "recessed",
       "slots": [
         {
           "name": "facade",
@@ -1189,7 +1193,11 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": [],
+      "emissive": ["glass-600"],
+      "glow": {
+        "glass-600": "window-200"
+      },
+      "glowRule": "recessed",
       "slots": [
         {
           "name": "facade",
@@ -1236,7 +1244,11 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": [],
+      "emissive": ["glass-600"],
+      "glow": {
+        "glass-600": "window-200"
+      },
+      "glowRule": "recessed",
       "slots": [
         {
           "name": "facade",
@@ -1283,7 +1295,11 @@
         "#3d3f4b": "iron-900"
       },
       "maxDeltaE": 30,
-      "emissive": [],
+      "emissive": ["glass-600"],
+      "glow": {
+        "glass-600": "window-200"
+      },
+      "glowRule": "recessed",
       "slots": [
         {
           "name": "facade",

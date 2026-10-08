@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "158ef5de7b6552b2",
+  "assetVersion": "f8e7ad0ffbf92207",
   "models": [
     {
       "id": "taxi",
@@ -711,28 +711,28 @@
       "nameKey": "models.name.buildingA",
       "bounds": { "min": [-5.3015, 0, -5.64], "max": [5.3015, 15.516, 5.64] },
       "slots": ["facade"],
-      "emissive": false,
+      "emissive": true,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-a.low.a9812087.glb",
-          "sha256": "a9812087a60ca59de74045fb38aa7b7c217fd11bdbf65bf6f6ef90568717b0a8",
-          "bytes": 19712,
-          "gzBytes": 10797,
+          "file": "/models/building-a.low.25f4f298.glb",
+          "sha256": "25f4f298c98d332e5c1530b14d0ae4454707a5660ab546c736be0b5e8954310e",
+          "bytes": 20232,
+          "gzBytes": 10852,
           "triangles": 877
         },
         "mid": {
-          "file": "/models/building-a.mid.e619c04c.glb",
-          "sha256": "e619c04cd5767eb87a3bebc05676d44b445bfcc4296df86e1c057bb7af20be3b",
-          "bytes": 20808,
-          "gzBytes": 12076,
+          "file": "/models/building-a.mid.47ef8221.glb",
+          "sha256": "47ef8221332518a89985d17140ce186105791bd616411d98b2e3955b789f6de1",
+          "bytes": 21332,
+          "gzBytes": 12134,
           "triangles": 938
         },
         "high": {
-          "file": "/models/building-a.high.f01b65f0.glb",
-          "sha256": "f01b65f09ae11901e341907feeeab18c4ac33c06f1a191626b6da9dd52162d70",
-          "bytes": 24588,
-          "gzBytes": 13681,
+          "file": "/models/building-a.high.1a79ac2a.glb",
+          "sha256": "1a79ac2ab01c1848e1d68f185dcc9d6b539c9ae8b2c340debcf45b64485b74b9",
+          "bytes": 25140,
+          "gzBytes": 13736,
           "triangles": 1252
         }
       }
@@ -746,28 +746,28 @@
       "nameKey": "models.name.buildingB",
       "bounds": { "min": [-5.82, 0, -5.64], "max": [5.82, 15.516, 5.64] },
       "slots": ["facade"],
-      "emissive": false,
+      "emissive": true,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-b.low.2567ba3b.glb",
-          "sha256": "2567ba3b42be81d9e6bb6f3f0294f4ea1e23e15785231312eb980fa1d75244d2",
-          "bytes": 22940,
-          "gzBytes": 13039,
+          "file": "/models/building-b.low.a2a81e47.glb",
+          "sha256": "a2a81e47d854091cefe39df4fedb7fa986b2a66ea7e9bc46f920ac2b2a33c14e",
+          "bytes": 23488,
+          "gzBytes": 13096,
           "triangles": 991
         },
         "mid": {
-          "file": "/models/building-b.mid.3d58ca6e.glb",
-          "sha256": "3d58ca6e2557fdcb125e4526b8f587230693ae632e9449ce2cc3979fc307c288",
-          "bytes": 22964,
-          "gzBytes": 13086,
+          "file": "/models/building-b.mid.e6c178eb.glb",
+          "sha256": "e6c178eb71881e9c5f6747c09a16234155a39b127fab8f3057062c5fe3ac36a4",
+          "bytes": 23512,
+          "gzBytes": 13145,
           "triangles": 991
         },
         "high": {
-          "file": "/models/building-b.high.fb24e69d.glb",
-          "sha256": "fb24e69d74c93ae73d15b9a92f16b048f2bb9a00f5aa8d985b2852ac07f0f5a2",
-          "bytes": 26148,
-          "gzBytes": 14067,
+          "file": "/models/building-b.high.bda90e05.glb",
+          "sha256": "bda90e0547495a235b015a9406883d584af00f633cc26e4404c0dd2ada2d1db6",
+          "bytes": 26716,
+          "gzBytes": 14122,
           "triangles": 1276
         }
       }
@@ -781,28 +781,28 @@
       "nameKey": "models.name.buildingC",
       "bounds": { "min": [-5.3015, 0, -6.54], "max": [5.3015, 10.716, 6.54] },
       "slots": ["facade"],
-      "emissive": false,
+      "emissive": true,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-c.low.55053605.glb",
-          "sha256": "55053605014d5fe980beaa258a6c9d699ec39b594583781879f9d14ead032134",
-          "bytes": 18676,
-          "gzBytes": 11097,
+          "file": "/models/building-c.low.d79a406b.glb",
+          "sha256": "d79a406b75afc228e3a5222c3b024ed2a85995ee318c51c59bbdde32ee75bece",
+          "bytes": 19184,
+          "gzBytes": 11159,
           "triangles": 786
         },
         "mid": {
-          "file": "/models/building-c.mid.a47c8db5.glb",
-          "sha256": "a47c8db54fb7268d6307262ee4f66747beb3b7f165246cf6cdc9276dd128420b",
-          "bytes": 20516,
-          "gzBytes": 12547,
+          "file": "/models/building-c.mid.59a54528.glb",
+          "sha256": "59a5452840db280c4b4f98ca693c407a3e565dace29a42be42c5155d2081733c",
+          "bytes": 21020,
+          "gzBytes": 12603,
           "triangles": 896
         },
         "high": {
-          "file": "/models/building-c.high.ddc043f4.glb",
-          "sha256": "ddc043f466dc1a6da1214862bbdf38a17397d4b54d056d7d310650f469148405",
-          "bytes": 24200,
-          "gzBytes": 14094,
+          "file": "/models/building-c.high.d89c438f.glb",
+          "sha256": "d89c438f381f2f312521218cd66fd2b0eda396c7b59971863834e43bcfea85ef",
+          "bytes": 24732,
+          "gzBytes": 14150,
           "triangles": 1195
         }
       }
@@ -816,28 +816,28 @@
       "nameKey": "models.name.buildingD",
       "bounds": { "min": [-5.04, 0, -5.4], "max": [5.04, 15.516, 5.4] },
       "slots": ["facade"],
-      "emissive": false,
+      "emissive": true,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/building-d.low.f6aadfdd.glb",
-          "sha256": "f6aadfdd8528b046f42c03bb2c5e0eb8dbdd165126677eb74628f268bcbc765a",
-          "bytes": 17508,
-          "gzBytes": 11098,
+          "file": "/models/building-d.low.efcac416.glb",
+          "sha256": "efcac416bf87191c811f3a0dfba2e61800a6990f2279d506edb799d5c9bead86",
+          "bytes": 18008,
+          "gzBytes": 11156,
           "triangles": 786
         },
         "mid": {
-          "file": "/models/building-d.mid.257213d3.glb",
-          "sha256": "257213d39caccb281b0dd4f8e523edfa6b0fb035ff0e5cda1c094e67b7bc3b47",
-          "bytes": 18408,
-          "gzBytes": 11626,
+          "file": "/models/building-d.mid.c5ff739e.glb",
+          "sha256": "c5ff739ebc8322a73cc2d77201443aa83c9bdc01851366900aad5e192132559b",
+          "bytes": 18916,
+          "gzBytes": 11687,
           "triangles": 824
         },
         "high": {
-          "file": "/models/building-d.high.ad7a0b8e.glb",
-          "sha256": "ad7a0b8e8bce6a1684781939fd3690389f651ab7f2c0fb7a3db5a3686371e139",
-          "bytes": 22212,
-          "gzBytes": 13428,
+          "file": "/models/building-d.high.160665c4.glb",
+          "sha256": "160665c476503629a688295293cbb8993407a8c2ceb3de4bbb24c4e478951d9f",
+          "bytes": 22748,
+          "gzBytes": 13495,
           "triangles": 1100
         }
       }
