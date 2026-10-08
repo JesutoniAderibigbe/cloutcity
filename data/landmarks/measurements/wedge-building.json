@@ -1,0 +1,52 @@
+{
+  "id": "wedge-building",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q220728 (the Fifth Avenue wedge building)",
+      "url": "https://www.wikidata.org/wiki/Q220728",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 94,
+      "source": "wikidata",
+      "note": "height (P2048) above the street"
+    },
+    "floors": {
+      "count": 22,
+      "source": "wikidata",
+      "note": "floors above ground (P1101): one window band per storey"
+    },
+    "lengthM": {
+      "valueM": 58,
+      "source": "estimate",
+      "note": "length of the wedge along its axis (the S07a kit's stylised plan)"
+    },
+    "baseWidthM": {
+      "valueM": 26,
+      "source": "estimate",
+      "note": "width of the wide back"
+    },
+    "prowWidthM": {
+      "valueM": 2,
+      "source": "estimate",
+      "note": "width of the truncated prow"
+    },
+    "podiumM": {
+      "valueM": 8,
+      "source": "estimate",
+      "note": "the low podium's height, set out 0.6 m"
+    }
+  },
+  "readabilityScale": {
+    "note": "Plain massing (LEGAL-1): no thin members, no ornament; windows are bands of glass."
+  },
+  "gameScale": {
+    "height": 1.12,
+    "plan": 1.2,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.12 and widths x1.2, so the wedge reads beside the real-scale district without leaving the frame's exclusion."
+  }
+}

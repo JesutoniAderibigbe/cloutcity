@@ -25,7 +25,9 @@ type Dimension = LandmarkMeasurements['dimensions'][string]
 function value(dimension: Dimension): string {
   if ('valueM' in dimension) return `${dimension.valueM} m`
   if ('widthM' in dimension) return `${dimension.widthM} × ${dimension.depthM} m`
-  return `${dimension.count} × ${dimension.diameterM} m diameter`
+  if ('diameterM' in dimension) return `${dimension.count} × ${dimension.diameterM} m diameter`
+  if ('lat' in dimension) return `${dimension.lat}, ${dimension.lng}`
+  return `${dimension.count}`
 }
 
 function landmarkSection({ measurements, lock }: MeasuredLandmark): string[] {

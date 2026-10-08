@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "statue-of-liberty",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "47c72695a1887352369b0c364bdee2eed37af43ed62e899f07eb869c239b09f8",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/statue-of-liberty/lod0.glb",
+      "sha256": "c4e23e81aceb18db97474e51c6e80dd4acfd3b5b8d63a84f373d2d2a9a38fff4",
+      "bytes": 18888,
+      "triangles": 1070,
+      "uncompressedBytes": 96916
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/statue-of-liberty/lod1.glb",
+      "sha256": "a60d917f863cdca2c8eefdbd6a37c0a0b16ad8c0272fcf5816a3c8581c9422f5",
+      "bytes": 10544,
+      "triangles": 476,
+      "uncompressedBytes": 43756
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/statue-of-liberty/lod2.glb",
+      "sha256": "f5b96079c13c82c24d39a717811299d801d87bf41a5be514c157f4f34285d040",
+      "bytes": 6704,
+      "triangles": 218,
+      "uncompressedBytes": 21732
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/statue-of-liberty/lod3.glb",
+      "sha256": "66bc9e1018c814922510f8383a336e4110db77f183e3c784273c76cc17f66243",
+      "bytes": 4264,
+      "triangles": 100,
+      "uncompressedBytes": 9724
+    }
+  ]
+}

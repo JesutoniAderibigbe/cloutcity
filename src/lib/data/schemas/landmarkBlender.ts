@@ -44,6 +44,14 @@ const DimensionSchema = z.union([
     source: SourceRefSchema,
     note: z.string().min(1),
   }),
+  z.strictObject({ count: z.int().positive(), source: SourceRefSchema, note: z.string().min(1) }),
+  /** A point a model places a feature at (e.g. Wikidata P625 coordinates, CC0). */
+  z.strictObject({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    source: SourceRefSchema,
+    note: z.string().min(1),
+  }),
 ])
 
 /** Thin members are drawn this many times their true width so they read in game (3-5x). */
@@ -52,9 +60,20 @@ const readability = z.number().min(1).max(5)
 export const LandmarkMeasurementsSchema = z
   .strictObject({
     id: IdSchema,
+    /**
+     * What the model stands on when the landmark has no frame in frames.derived.json yet
+     * (monuments, neighbourhoods, the memorial: S07b); a frame's own base wins.
+     */
+    base: z.enum(['land', 'water']).optional(),
+    /**
+     * A park model's map area: the id of its polygon in data/geo/parks.derived.json. The build
+     * fills that outline (around the landmark's landmarks.json location, map-oriented: north up),
+     * so the model matches the green the map draws.
+     */
+    park: IdSchema.optional(),
     retrieved: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD'),
     sources: z.array(MeasurementSourceSchema).min(1),
-    dimensions: z.record(z.string().regex(/^[a-z][A-Za-z]*$/), DimensionSchema),
+    dimensions: z.record(z.string().regex(/^[a-z][A-Za-z0-9]*$/), DimensionSchema),
     readabilityScale: z.record(z.string(), z.union([readability, z.string()])),
     /**
      * Game scale: heights and widths drawn this many times the real numbers so the model reads

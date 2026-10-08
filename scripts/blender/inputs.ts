@@ -41,15 +41,28 @@ function pythonFiles(dir: string): string[] {
     .map((entry) => relative(BLENDER_DIR, join(entry.parentPath, entry.name)))
 }
 
-/** The build scripts a landmark's output depends on (relative to scripts/blender), sorted. */
+/** The archetypes a module imports (`from archetypes import a, b`), followed transitively. */
+function archetypesOf(file: string, seen: Set<string> = new Set()): Set<string> {
+  const source = readFileSync(join(BLENDER_DIR, file), 'utf8')
+  for (const match of source.matchAll(/^from archetypes import ([\w, ]+)$/gm)) {
+    for (const name of (match[1] ?? '').split(',').map((part) => part.trim())) {
+      const path = `archetypes/${name}.py`
+      if (name === '' || seen.has(path)) continue
+      seen.add(path)
+      archetypesOf(path, seen)
+    }
+  }
+  return seen
+}
+
+/**
+ * The build scripts a landmark's output depends on (relative to scripts/blender), sorted: the
+ * runner, the PIN, the shared library, the landmark's module and the archetypes it uses (so a
+ * new archetype for another landmark leaves this one's lock fresh).
+ */
 export function scriptFiles(id: string): string[] {
-  return [
-    'build.py',
-    'PIN',
-    landmarkModule(id),
-    ...pythonFiles('cclib'),
-    ...pythonFiles('archetypes'),
-  ]
+  const entry = landmarkModule(id)
+  return ['build.py', 'PIN', entry, ...pythonFiles('cclib'), ...archetypesOf(entry)]
     .map((file) => file.split('\\').join('/'))
     .sort()
 }
@@ -58,10 +71,9 @@ interface Entry {
   readonly id: string
 }
 
-function entryOf<T extends Entry>(list: readonly T[], id: string, file: string): T {
-  const found = list.find((item) => item.id === id)
-  if (found === undefined) throw new Error(`${file} has no entry "${id}"`)
-  return found
+/** The entry for `id`, or null when the file has none (no S07a model or frame yet). */
+function entryOf<T extends Entry>(list: readonly T[], id: string): T | null {
+  return list.find((item) => item.id === id) ?? null
 }
 
 /** Every input of a landmark's build, as one plain object. */
@@ -78,14 +90,21 @@ export function buildInputs(id: string): Record<string, unknown> {
   // A scene role names a models or world token (DEC-26); same lookup order as cclib/inputs.py.
   const colours = { ...theme.colors, ...theme.world, ...theme.models }
   const perf = readJson('data/config/perf.json') as Record<string, unknown>
+  const measurements = JSON.parse(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`), 'utf8')) as {
+    park?: string
+    dimensions: Record<string, object>
+  }
+  const mapped =
+    measurements.park !== undefined ||
+    Object.values(measurements.dimensions).some((dimension) => 'lat' in dimension)
   const scripts = Object.fromEntries(
     scriptFiles(id).map((file) => [file, sha256(readFileSync(join(BLENDER_DIR, file)))]),
   )
   return {
     scripts,
     measurements: sha256(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`))),
-    model: entryOf(models.models, id, 'models.json'),
-    frame: entryOf(frames.landmarks, id, 'frames.derived.json'),
+    model: entryOf(models.models, id),
+    frame: entryOf(frames.landmarks, id),
     scene: { land: scene.land, camera: scene.camera, landmarks: scene.landmarks },
     palette: Object.fromEntries(
       Object.entries(theme.scene.landmarks).map(([role, token]) => [role, colours[token]]),
@@ -94,6 +113,21 @@ export function buildInputs(id: string): Record<string, unknown> {
       landmarkTrianglesMax: perf.landmarkTrianglesMax,
       landmarkLodRatioMax: perf.landmarkLodRatioMax,
     },
+    // Only map-placed models (a park area or lat/lng points) read the projection and the
+    // landmark's location, and only park models the map's park area (archetypes/park.py).
+    ...(mapped ? { map: mapInputs(id, measurements.park) } : {}),
+  }
+}
+
+function mapInputs(id: string, parkId: string | undefined): Record<string, unknown> {
+  const parks = readJson('data/geo/parks.derived.json') as { projection: unknown; parks: Entry[] }
+  const places = readJson('data/landmarks/landmarks.json') as {
+    landmarks: (Entry & { location: unknown })[]
+  }
+  return {
+    projection: parks.projection,
+    area: parkId === undefined ? null : entryOf(parks.parks, parkId),
+    location: entryOf(places.landmarks, id)?.location ?? null,
   }
 }
 

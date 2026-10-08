@@ -13,30 +13,26 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { describe, expect, it } from 'vitest'
 import framesJson from '../../data/landmarks/frames.derived.json'
 import modelsJson from '../../data/landmarks/models.json'
+import placesJson from '../../data/landmarks/landmarks.json'
 import perfJson from '../../data/config/perf.json'
+import sceneJson from '../../data/config/scene.json'
 import { LandmarkMeasurementsSchema } from '../../src/lib/data/schemas/landmarkBlender.ts'
+import {
+  ARCHETYPE_CATEGORY,
+  CAP_CATEGORIES,
+  type Archetype,
+} from '../../src/lib/data/schemas/landmarkModels.ts'
 import { BLENDER_DIR, MEASUREMENTS_DIR, ROOT, measuredIds } from './inputs.ts'
 import { prepareGltf } from '../../src/scene/models/prepare.ts'
 import { checkLandmark, readLock, sourcesProblems } from './run.ts'
 
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 
-/** Landmarks still on the code-built kit, waiting for their Blender model (S07c chunks A-C). */
-const PENDING = new Set([
-  'manhattan-bridge',
-  'queensboro-bridge',
-  'wedge-building',
-  'deco-spire',
-  'city-hall',
-  'brooklyn-borough-hall',
-  'queens-borough-hall',
-  'midtown-terminal',
-  'penn-station',
-  'jamaica-station',
-  'staten-island-ferry',
-])
+/** Landmarks still waiting for their Blender model (S07c): every other landmark is built. */
+const PENDING = new Set(['flushing-meadows', 'queens-ballpark', 'brooklyn-arena', 'bronx-ballpark'])
 
 const TIER_FINEST = { high: 0, mid: 1, low: 2 } as const
+const landTop = sceneJson.land.heightM - sceneJson.land.baseM
 const ALLOWED_EXTENSIONS = new Set(['EXT_meshopt_compression', 'KHR_mesh_quantization'])
 const BBOX_TOLERANCE = 0.02
 
@@ -87,22 +83,22 @@ function triangles(gltf: Gltf): number {
   return total
 }
 
-const modelIds = modelsJson.models.map((model) => model.id)
+const placeIds = placesJson.landmarks.map((place) => place.id)
 const built = measuredIds()
 
 describe('Blender landmark coverage', () => {
-  it('builds every modelled landmark or lists it as pending', () => {
-    for (const id of modelIds) {
+  it('builds every landmark or lists it as pending', () => {
+    for (const id of placeIds) {
       expect(built.includes(id) || PENDING.has(id), `${id} is neither built nor pending`).toBe(true)
     }
   })
 
   it('keeps the pending list honest: nothing built is pending, nothing unknown is listed', () => {
     for (const id of PENDING) {
-      expect(modelIds).toContain(id)
+      expect(placeIds).toContain(id)
       expect(built).not.toContain(id)
     }
-    for (const id of built) expect(modelIds).toContain(id)
+    for (const id of built) expect(placeIds).toContain(id)
   })
 
   it('has a measurements file, a lock and a build script for each built landmark', () => {
@@ -138,7 +134,12 @@ describe.each(built)('%s shipped GLBs', (id) => {
     JSON.parse(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`), 'utf8')),
   )
   const model = modelsJson.models.find((entry) => entry.id === id)
-  const category = model?.archetype.endsWith('Bridge') ? 'bridge' : 'building'
+  // The perf.json cap category: the S07a model's, or for a landmark without one the place's
+  // own when perf.json has caps for it, else building (the memorial).
+  const place = placesJson.landmarks.find((entry) => entry.id === id)
+  const placeCategory = CAP_CATEGORIES.find((c) => c === place?.category) ?? 'building'
+  const category =
+    model === undefined ? placeCategory : ARCHETYPE_CATEGORY[model.archetype as Archetype]
 
   it('matches the lock triangle counts', () => {
     expect(counts).toEqual(lock.levels.map((level) => level.triangles))
@@ -208,21 +209,27 @@ describe.each(built)('%s shipped GLBs', (id) => {
       )
       box.applyMatrix4(model.matrix)
       const height = expectedHeight()
-      expect(Math.abs(box.max.y - height)).toBeLessThanOrEqual(BBOX_TOLERANCE * height)
+      const base = (frame?.base ?? measurements.base ?? 'land') === 'land' ? landTop : 0
+      expect(Math.abs(box.max.y - base - height)).toBeLessThanOrEqual(BBOX_TOLERANCE * height)
       expect(box.min.y).toBeGreaterThanOrEqual(-0.05)
       if (frame?.spanM !== undefined) {
         const length = box.max.z - box.min.z
         expect(Math.abs(length - frame.spanM)).toBeLessThanOrEqual(BBOX_TOLERANCE * frame.spanM)
       }
-      // The lamps glow through the S04f night-glow contract on the levels that draw them.
-      if (level < 3) expect(model.geometry.getAttribute('_emissive')).toBeDefined()
+      if (place?.category === 'memorial') {
+        // Memorials are muted and still (CLAUDE.md): nothing glows.
+        expect(model.geometry.getAttribute('_emissive')).toBeUndefined()
+      } else if (level < 3 && place?.category !== 'park') {
+        // The lamps and windows glow through the S04f night-glow contract (parks may have none).
+        expect(model.geometry.getAttribute('_emissive')).toBeDefined()
+      }
     },
   )
 
   /** The tower top above the water, at the measurements' game scale. */
   function expectedHeight(): number {
-    const height = measurements.dimensions.towerHeightM
-    if (height === undefined || !('valueM' in height)) throw new Error('no towerHeightM')
+    const height = measurements.dimensions.towerHeightM ?? measurements.dimensions.heightM
+    if (height === undefined || !('valueM' in height)) throw new Error('no towerHeightM or heightM')
     return height.valueM * (measurements.gameScale?.height ?? 1)
   }
 })

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "deco-spire",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "b67cbaf8e170e1be76282778da2fd7b34f9fe8c1042cda431347ee345cdc0159",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/deco-spire/lod0.glb",
+      "sha256": "50663a750e9c08c8b3609a247658c132b6c31a17c53e4f50f52ec0bc20ed7fc0",
+      "bytes": 43752,
+      "triangles": 3018,
+      "uncompressedBytes": 285312
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/deco-spire/lod1.glb",
+      "sha256": "408da9f6f8d4e9f4f2c6ff0fa2ca0ddea6167b35486344e9b9671063825acd8e",
+      "bytes": 20972,
+      "triangles": 1346,
+      "uncompressedBytes": 124972
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/deco-spire/lod2.glb",
+      "sha256": "5933b0e1d7e32d50f30723dc90af848781448b93808916b3c4ba728b132dacb5",
+      "bytes": 11748,
+      "triangles": 594,
+      "uncompressedBytes": 54284
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/deco-spire/lod3.glb",
+      "sha256": "646bd62d8173590388201373458dea0b2d43c09593dc4c6ddd5fc277daba7149",
+      "bytes": 7184,
+      "triangles": 290,
+      "uncompressedBytes": 26732
+    }
+  ]
+}

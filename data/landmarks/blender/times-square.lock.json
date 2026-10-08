@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "times-square",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "fd45a554b0ef6a7b49b627805b1064bfa63e9d68e4b47efc9929e3c80be8ce47",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/times-square/lod0.glb",
+      "sha256": "262a1d195185aa4d4f6263be627493f938e23954b409b3f44419dc97595ab4c1",
+      "bytes": 49404,
+      "triangles": 3712,
+      "uncompressedBytes": 350160
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/times-square/lod1.glb",
+      "sha256": "e57490a1e7721640d7ee87b816ae5a7dd885cfc355cfa0352d4d2cef7ed12298",
+      "bytes": 29720,
+      "triangles": 1840,
+      "uncompressedBytes": 174192
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/times-square/lod2.glb",
+      "sha256": "1edb0db41d8b22b7e1227e7eb4266218c5e6eb700da827245140ad6245202a20",
+      "bytes": 18016,
+      "triangles": 900,
+      "uncompressedBytes": 85820
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/times-square/lod3.glb",
+      "sha256": "08e40ab3ac8cb4f074e69ea16fbe924a88976180a42efa400a19ddfbcd542f25",
+      "bytes": 10632,
+      "triangles": 434,
+      "uncompressedBytes": 42024
+    }
+  ]
+}
