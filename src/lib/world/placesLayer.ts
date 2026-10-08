@@ -4,6 +4,7 @@
  * (src/lib/world/places.ts), so the 3D chunk needs no place data, copy or engine config.
  */
 import homesJson from '@data/homes/homes.json'
+import landJson from '@data/geo/land.derived.json'
 import parksJson from '@data/geo/parks.derived.json'
 import subwayJson from '@data/geo/subway.derived.json'
 import zoneShapesJson from '@data/zones/zone-shapes.derived.json'
@@ -80,11 +81,18 @@ function compactPositions(
   places: readonly MapPlace[],
   styleOf: (place: MapPlace) => PinStyle,
 ): Map<string, LocalPoint> {
+  // Clusters gather per borough (the whole borough's venues around its home, S04n2) or per
+  // neighbourhood zone; a plot always stays inside the area it was gathered in.
+  const byBorough = compactLayout.clusterBy === 'borough'
   const homes = Object.entries(
-    homesJson.homes as Record<string, { zoneId: string; location: { lat: number; lng: number } }>,
+    homesJson.homes as Record<
+      string,
+      { zoneId: string; borough: string; location: { lat: number; lng: number } }
+    >,
   ).map(([id, home]) => {
     const point = project(home.location)
-    return { id, zoneId: home.zoneId, x: Math.round(point.x), y: Math.round(point.y) }
+    const zoneId = byBorough ? home.borough : home.zoneId
+    return { id, zoneId, x: Math.round(point.x), y: Math.round(point.y) }
   })
   return planCompactLayout(
     {
@@ -98,13 +106,13 @@ function compactPositions(
         .map((place) => ({
           id: place.id,
           category: place.category,
-          zoneId: place.zoneId,
+          zoneId: byBorough ? place.borough : place.zoneId,
           x: Math.round(place.x),
           y: Math.round(place.y),
         })),
       homes,
       landmarks: places.filter((place) => place.kind === 'landmark'),
-      zones: prepareAreas(zoneShapesJson.zones),
+      zones: prepareAreas(byBorough ? landJson.boroughs : zoneShapesJson.zones),
       parks: prepareAreas(parksJson.parks),
       lines: subwayJson.lines.flatMap((line) => line.paths.map((path) => decodePath(path))),
       plotM: plots.plotM,

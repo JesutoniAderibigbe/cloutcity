@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { compactLayout, plots } from '@/lib/data/config'
 import { homes } from '@/lib/data/content'
-import { parks, subway, zoneShapes } from '@/lib/data/geo'
+import { land, parks, subway, zoneShapes } from '@/lib/data/geo'
 import { decodePath } from '@/lib/geo/codec'
 import { prepareAreas, zoneAt } from '@/lib/geo/lookup'
 import { distanceToPolyline } from '@/lib/geo/polygon'
@@ -10,14 +10,17 @@ import { planCompactLayout, type LayoutInput } from './compactLayout'
 import { mapPlaces } from './places'
 import { placesLayer } from './placesLayer'
 
-const zones = prepareAreas(zoneShapes.zones)
+const byBorough = compactLayout.clusterBy === 'borough'
+const zones = prepareAreas(byBorough ? land.boroughs : zoneShapes.zones)
 const parkAreas = prepareAreas(parks.parks)
 const lines = subway.lines.flatMap((line) => line.paths.map((path) => decodePath(path)))
 const homePoints = Object.values(homes).map((home) => {
   const point = project(home.location)
   return { x: Math.round(point.x), y: Math.round(point.y) }
 })
-const zoneOf = new Map(mapPlaces().map((place) => [place.id, place.zoneId]))
+const zoneOf = new Map(
+  mapPlaces().map((place) => [place.id, byBorough ? place.borough : place.zoneId]),
+)
 const half = plots.plotM / 2
 const corners = (p: { x: number; y: number }) => [
   p,
@@ -42,7 +45,7 @@ describe('compact game-map layout (S04n)', () => {
     ).toEqual([])
   })
 
-  it('keeps each plot wholly inside its own neighbourhood, off parks and the subway', () => {
+  it('keeps each plot wholly inside its own cluster area, off parks and the subway', () => {
     for (const pin of moved) {
       const at = { x: pin.gx ?? 0, y: pin.gy ?? 0 }
       for (const point of corners(at)) {
@@ -74,13 +77,15 @@ describe('compact game-map layout (S04n)', () => {
     }
   })
 
-  it('packs the start neighbourhood around the home', () => {
+  it("packs the start cluster (the home's borough or zone) around the home", () => {
     const home = project(homes['queens-room'].location)
     const near = moved.filter(
       (pin) =>
-        Math.hypot((pin.gx ?? 0) - home.x, (pin.gy ?? 0) - home.y) <= 4 * compactLayout.pitchM,
+        Math.hypot((pin.gx ?? 0) - home.x, (pin.gy ?? 0) - home.y) <= 5 * compactLayout.pitchM,
     )
-    expect(near.length).toBe(moved.filter((pin) => zoneOf.get(pin.id) === 'qn01').length)
+    expect(near.length).toBe(
+      moved.filter((pin) => zoneOf.get(pin.id) === (byBorough ? 'queens' : 'qn01')).length,
+    )
   })
 
   it('is deterministic', () => {

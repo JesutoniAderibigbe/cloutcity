@@ -873,8 +873,9 @@ camera starts over it).
   roofs as big icon bubbles, and big area names (`data/places/areaLabels.json`, `map.area.*`
   copy) lie on the water and over the neighbourhoods. Venues stand packed (S04n,
   `data/config/compactLayout.json`, planned on the server by `src/lib/world/compactLayout.ts`
-  into the places layer's `gx`/`gy`): each neighbourhood's venues on a road-separated grid around
-  its home, subway station or the point of the zone nearest a home, wholly inside their own zone,
+  into the places layer's `gx`/`gy`): each borough's venues (`clusterBy: "borough"`, S04n2; or each
+  neighbourhood zone's with `"zone"`) on a road-separated grid around its home, subway station
+  or the point of the area nearest a home, wholly inside that area,
   off parks, the subway ribbons and landmarks; homes, landmarks and stations never move. Pins,
   bubbles, plots, clearings, props, pedestrians, camera focus and trip animations use those
   points; travel time, fares and distances always use real positions on both styles.
