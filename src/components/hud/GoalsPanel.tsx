@@ -4,7 +4,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useActionGuard } from '@/components/overlay/useActionGuard'
 import { engineConfig } from '@/engine/config'
 import { goalsView, type GoalView } from '@/engine/goals'
+import { prestigeBadge } from '@/engine/grants'
+import { canPrestige } from '@/engine/prestige'
 import { copy } from '@/lib/copy'
+import { cloutLevelName } from '@/lib/economyCopy'
 import { formatCount } from '@/lib/format'
 import {
   badgeName,
@@ -18,6 +21,7 @@ import {
 } from '@/lib/goalsCopy'
 import { log } from '@/lib/log'
 import { closeHudPanel } from '@/state/hudPanel'
+import { openPrestigeConfirm } from '@/state/iconMoment'
 import { gameStore, useGameStore } from '@/state/store'
 import { PANEL_BUTTON, PanelDialog, PanelStatus } from './PanelDialog'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -53,6 +57,14 @@ export function GoalsPanel() {
     null,
   )
   const { guard: act, onKeyDown, coolingDown } = useActionGuard()
+  // Prestige stays open from here once the run reached Icon (the rule the Icon moment and the
+  // engine use), so "Keep playing" on the moment never gives it up. An open event still blocks
+  // the prestige itself; the confirm says so.
+  const prestigeReady =
+    canPrestige({ clock, player, goals, grants, prestige, events }, engineConfig)?.code !==
+    'NOT_YET'
+  const startLevel = cloutLevelName(engineConfig.clout.levels[0]?.id ?? '')
+  const nextBadge = badgeName(prestigeBadge(goals.run, engineConfig))
 
   // A claim replaces its button with the claimed status, which would drop focus on the body;
   // keep it in the panel instead.
@@ -86,6 +98,30 @@ export function GoalsPanel() {
       <p data-goals-note="" className="text-xs text-muted">
         {copy('goals.note')}
       </p>
+      {prestigeReady ? (
+        <section
+          aria-label={copy('goals.prestige.heading')}
+          data-goals-prestige-section=""
+          className="flex flex-col gap-1.5 rounded-xl border border-taxi bg-canvas/60 p-2"
+        >
+          <h3 className="text-xs font-bold text-muted uppercase">
+            {copy('goals.prestige.heading')}
+          </h3>
+          <p className="text-sm text-fg">
+            {copy('goals.prestige.ready', { level: startLevel, badge: nextBadge })}
+          </p>
+          <button
+            type="button"
+            data-goals-prestige=""
+            aria-label={copy('goals.prestige.openLabel', { level: startLevel, badge: nextBadge })}
+            onKeyDown={onKeyDown}
+            onClick={(event) => act(event, 'prestige', openPrestigeConfirm)}
+            className={`${PANEL_BUTTON} self-start bg-taxi text-sm text-on-taxi`}
+          >
+            {copy('goals.prestige.open')}
+          </button>
+        </section>
+      ) : null}
       {prestige.badges.length === 0 ? null : (
         <section aria-label={copy('goals.badges.heading')} className="flex flex-col gap-1">
           <h3 className="text-xs font-bold text-muted uppercase">

@@ -1,7 +1,14 @@
 import { join } from 'node:path'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
-import { formatCount, formatDate, formatGameTime, formatMoney, formatPercent } from './format'
+import {
+  formatCount,
+  formatDate,
+  formatGameTime,
+  formatMoney,
+  formatPercent,
+  formatProgressCount,
+} from './format'
 
 const ROOT = join(import.meta.dirname, '../..')
 
@@ -214,5 +221,30 @@ describe('formatDate', () => {
   it('refuses an instant that is not a date', () => {
     expect(() => formatDate('not a date')).toThrow(RangeError)
     expect(() => formatDate(Number.NaN)).toThrow(RangeError)
+  })
+})
+
+describe('formatProgressCount (the clout meter: never rounded up to the target)', () => {
+  it.each([
+    [0, '0'],
+    [304, '304'],
+    [4996, '4,996'],
+    [4999.9, '4,999'],
+    [5000, '5,000'],
+    [9999, '9,999'],
+    [10_000, '10K'],
+    [15_274, '15K'],
+    [19_990, '19K'],
+    [1_999_999, '1.9M'],
+  ])('%d reads %s', (count, text) => {
+    expect(formatProgressCount(count)).toBe(text)
+  })
+
+  it('4,996 of 5,000 never reads as the target', () => {
+    expect(formatProgressCount(4996)).not.toBe(formatProgressCount(5000))
+  })
+
+  it('rejects a non-finite count', () => {
+    expect(() => formatProgressCount(Number.NaN)).toThrow(RangeError)
   })
 })

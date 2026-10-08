@@ -950,6 +950,11 @@ export const PlaceConfigSchema = z.strictObject({
    * below. Shifts come from a venue's `jobIds` and the club night from `clubs`, not from here.
    */
   venueActions: z.record(z.string().regex(KEBAB_ID), z.array(z.string().regex(KEBAB_ID))),
+  /**
+   * What the player can do at home (sleep, a nap, a home-cooked meal), by `actions.catalog` id,
+   * in display order. Only at home (DEC-22): away, the home card offers the trip back.
+   */
+  homeActions: z.array(z.string().regex(KEBAB_ID)).min(1),
   /** Actions only places offer (a coffee, a meal out), shaped like `actions.catalog`. */
   actions: z.record(z.string().regex(KEBAB_ID), ActionDefSchema),
   /** Door and night rules for every club venue, by venue id. */
@@ -1294,6 +1299,15 @@ export const BalanceConfigSchema = z
   )
   .refine(
     ({ actions, place }) =>
+      place.homeActions.every((id) => Object.hasOwn(actions.catalog, id)) &&
+      new Set(place.homeActions).size === place.homeActions.length,
+    {
+      error: 'place.homeActions must name distinct actions in actions.catalog',
+      path: ['place', 'homeActions'],
+    },
+  )
+  .refine(
+    ({ actions, place }) =>
       Object.keys(place.actions).every((id) => !Object.hasOwn(actions.catalog, id)),
     { error: 'place.actions must not reuse an actions.catalog id', path: ['place', 'actions'] },
   )
@@ -1441,7 +1455,15 @@ export const OnboardingConfigSchema = z
 export type OnboardingConfig = z.infer<typeof OnboardingConfigSchema>
 
 /** The kinds of notice a new player may see (GR-9): each surface tags itself `data-cc-notice`. */
-export const NOTICE_KINDS = ['tour', 'level-up', 'goals-ready', 'event', 'icon', 'update'] as const
+export const NOTICE_KINDS = [
+  'tour',
+  'level-up',
+  'goals-ready',
+  'event',
+  'icon',
+  'update',
+  'rent',
+] as const
 
 /**
  * The first-run tour (S06): coach marks over the live map that walk a new player through one

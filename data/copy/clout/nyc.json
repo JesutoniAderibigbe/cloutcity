@@ -1,7 +1,7 @@
 {
   "id": "nyc",
   "strings": {
-    "clout.flex.normal": "{place} at golden hour. The algorithm is about to eat. +{count} clout",
+    "clout.flex.normal": "{place} {time}. The algorithm is about to eat. +{count} clout",
     "clout.flex.viral": "Gone viral. The whole city's reposting. +{count} clout",
     "clout.levelUp.local": "Your name's starting to ring. Brooklyn noticed.",
     "clout.levelUp.sceneRegular": "Scene Regular. The doors know your face, and Manhattan's calling.",

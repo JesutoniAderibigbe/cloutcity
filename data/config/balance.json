@@ -326,6 +326,7 @@
       "club": [],
       "job-site": []
     },
+    "homeActions": ["sleep", "nap", "home-meal"],
     "actions": {
       "coffee": {
         "durationMin": 15,

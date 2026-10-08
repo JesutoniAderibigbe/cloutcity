@@ -55,6 +55,7 @@
     "home.error.unknownSlot": "That spot isn't in this home.",
     "home.error.wrongKind": "{item} needs a {fits} spot, not a {kind} spot.",
     "home.error.unknownVariant": "That colour isn't available.",
-    "home.error.unknownHome": "That home isn't on the market."
+    "home.error.unknownHome": "That home isn't on the market.",
+    "home.rest.headHome": "Head home to sleep"
   }
 }

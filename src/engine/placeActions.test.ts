@@ -81,6 +81,7 @@ const config: EngineConfig = {
       club: [],
       'job-site': [],
     },
+    homeActions: ['sleep', 'nap', 'home-meal'],
     actions: {
       coffee: { durationMin: 15, cashCost: 5, energyCost: 0, statEffects: { energy: 10 } },
       'street-meal': { durationMin: 30, cashCost: 9, energyCost: 0, statEffects: { hunger: 45 } },
