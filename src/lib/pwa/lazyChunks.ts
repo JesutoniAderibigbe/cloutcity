@@ -19,6 +19,13 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'apartment-decor-models', marker: 'apartment decor models: ' },
   // Street props (S04i, src/scene/props/layer.ts): mid and high only, once the camera zooms in.
   { id: 'street-props', marker: 'street props: ' },
+  // The living city (S04l, src/scene/ambient/AmbientLife.tsx): after the map is playable.
+  { id: 'ambient-life', marker: 'ambient life: ' },
+  // Its pedestrian kit bakers (src/scene/ambient/pedestrianKits.ts), loaded by it on demand.
+  { id: 'ambient-pedestrians', marker: 'pedestrian part has no skinned mesh' },
+  // The street chains' loader and placement (src/scene/streets/loadStreets.ts), which the bundler
+  // may split into a chunk the street props and the living city share.
+  { id: 'streets', marker: 'invalid streets file' },
   // The look runtime (S16a): the full look options and derived avatar refs (resolveLook.ts), with
   // the map avatar's model chunk, the room avatar and the creator preview.
   { id: 'avatar-look', marker: 'resolveLook: unknown option' },

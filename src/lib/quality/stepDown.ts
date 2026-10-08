@@ -43,6 +43,8 @@ export type StepIgnoreReason =
 
 export type StepDecision =
   | { readonly action: 'step-down'; readonly to: QualityTier }
+  /** The living city's density stepped down instead (S04l, src/scene/quality/decline.ts). */
+  | { readonly action: 'ambient-down'; readonly level: number }
   | { readonly action: 'ignore'; readonly reason: StepIgnoreReason }
 
 /** Whether a PerformanceMonitor event steps the tier down. Never steps up (no auto-upgrade). */

@@ -24,8 +24,8 @@ export function canonicalMinute(minute: number, model: DayNightModel, step: bool
 /**
  * `unknownMinute` stands in until the HUD has read the save. The caller subscribes to the
  * canonical minute, not the clock's: the clock ticks every game minute, and a re-render of the
- * canvas's React tree makes react-three-fiber draw a frame, so an idle map would draw one per
- * game minute.
+ * canvas's React tree makes react-three-fiber draw a frame, so the map would draw one per
+ * game minute even when paused.
  */
 export function useDayNightLighting(model: DayNightModel, unknownMinute: number): Lighting {
   const step = useReducedMotion()

@@ -11,7 +11,7 @@
  * the shadow is never toggled for the night: the time of day changes colours, intensities and
  * uniforms only, so no shader recompiles and the program count stays constant. The scene is
  * redrawn only when the lighting key changes (a new keyframe, or the next quantised minute of a
- * blend): the frameloop stays on demand and an idle map draws nothing.
+ * blend): the frameloop stays on demand and the rig adds no frames between.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useThree } from '@react-three/fiber'

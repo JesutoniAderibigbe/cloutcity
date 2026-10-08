@@ -4,7 +4,7 @@
  * The map camera: three's MapControls (one-finger / left-drag pan anchored to the ground,
  * pinch / wheel zoom towards the pointer, two-finger / right-drag rotate and tilt), limited to
  * the configured zoom, tilt and turn ranges, with the target kept inside the NYC extent. Every
- * change requests one frame (frameloop "demand"), so an idle map renders nothing.
+ * change requests one frame (frameloop "demand"): the rig adds no frames while it is still.
  *
  * The keyboard and DOM path to every place is the Places panel (S04c, A11Y-3); a place picked
  * there brings the camera to it (pins/PlacePins.tsx).

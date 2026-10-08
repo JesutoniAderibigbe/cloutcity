@@ -67,6 +67,23 @@ describe('three r182 GLTFLoader + bundled MeshoptDecoder', () => {
     },
   )
 
+  it.each(manifest.models.filter((model) => model.kind === 'static' && model.slots.length > 0))(
+    '$id paints every recolour slot it declares on every tier',
+    async (model) => {
+      for (const tier of ['low', 'mid', 'high'] as const) {
+        const used = new Set<number>()
+        const gltf = await load(model.tiers[tier].file)
+        gltf.scene.traverse((object) => {
+          const slot = object instanceof Mesh ? object.geometry.attributes._slot : undefined
+          if (slot !== undefined)
+            for (const value of Array.from(slot.array as ArrayLike<number>)) used.add(value)
+        })
+        // A slot whose token no baked colour snaps to recolours nothing (the S04l sedan bug).
+        model.slots.forEach((name, i) => expect(used.has(i + 1), `${tier} ${name}`).toBe(true))
+      }
+    },
+  )
+
   it('stands every avatar part upright at a person’s height in its bind pose', async () => {
     const body = manifest.models.find((model) => model.id === 'body-female-a')
     const head = manifest.models.find((model) => model.id === 'head-female-a')

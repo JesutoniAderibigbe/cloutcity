@@ -1,0 +1,161 @@
+{
+  "seed": 5209,
+  "cellM": 250,
+  "fpsCap": {
+    "low": 30,
+    "mid": 30,
+    "high": 60
+  },
+  "focusRadiusM": {
+    "low": 600,
+    "mid": 900,
+    "high": 1200
+  },
+  "density": {
+    "steps": [1, 0.6, 0.3],
+    "night": 0.5
+  },
+  "stepDown": {
+    "belowFps": {
+      "low": 24,
+      "mid": 24,
+      "high": 28
+    }
+  },
+  "lights": {
+    "cycleS": 40,
+    "greenShare": 0.45,
+    "stopGapM": 2,
+    "queueGapM": 1.5,
+    "axisCos": 0.7071,
+    "minEnds": 3
+  },
+  "vehicles": {
+    "models": {
+      "low": ["sedan-ambient"],
+      "mid": ["taxi-ambient", "sedan-ambient", "bus-ambient"],
+      "high": ["taxi-ambient", "sedan-ambient", "hatchback-ambient", "bus-ambient"]
+    },
+    "taxiShare": 0.35,
+    "busShare": 0.25,
+    "busWideOnly": true,
+    "perCell": {
+      "low": 2,
+      "mid": 4,
+      "high": 6
+    },
+    "speedMps": {
+      "min": 7,
+      "max": 11
+    },
+    "laneOffsetRatio": 0.5,
+    "minLaneOffsetM": 1.6,
+    "epochS": 180,
+    "cohorts": 4,
+    "fadeS": 0.6,
+    "brakeS": 2,
+    "lengthM": 4.5,
+    "showBelowDistanceM": {
+      "low": 6000,
+      "mid": 7000,
+      "high": 8000
+    },
+    "scale": {
+      "perDistance": 0.004,
+      "max": 8
+    },
+    "paint": [
+      "#f2f2ef",
+      "#1f2226",
+      "#a9aeb5",
+      "#b3262b",
+      "#2457a6",
+      "#3f6b4a",
+      "#6d7178",
+      "#d9d3c4"
+    ]
+  },
+  "pedestrians": {
+    "source": "kenney-temp",
+    "anchors": ["place", "home", "landmark"],
+    "anchorRadiusM": 140,
+    "perAnchor": {
+      "low": 2,
+      "mid": 3,
+      "high": 4
+    },
+    "speedMps": {
+      "min": 1.1,
+      "max": 1.5
+    },
+    "sidewalkOffsetM": 1.6,
+    "sidewalkJitterM": 0.5,
+    "epochS": 120,
+    "fadeS": 0.5,
+    "showBelowDistanceM": {
+      "low": 1300,
+      "mid": 1400,
+      "high": 1500
+    },
+    "scale": {
+      "perDistance": 0.004,
+      "max": 5
+    },
+    "bobM": 0.06,
+    "bobHz": 1.8,
+    "lookOnlyMarginM": 120,
+    "palette": {
+      "skin": [
+        "#f3d3b9",
+        "#e8bd98",
+        "#d9a47c",
+        "#c48a62",
+        "#a8704c",
+        "#8d5a3b",
+        "#71462e",
+        "#5a3624",
+        "#f0c9a8",
+        "#b9805a",
+        "#9b6544",
+        "#4a2d1f"
+      ],
+      "tops": [
+        "#4a5361",
+        "#7b4b3a",
+        "#3f5a4b",
+        "#9a9184",
+        "#2e3440",
+        "#6b5b7b",
+        "#a3683c",
+        "#556b78"
+      ],
+      "bottoms": ["#2b2f36", "#3c4654", "#5a5147", "#1f2328", "#6e6a63", "#34404a"]
+    }
+  },
+  "trains": {
+    "speedMps": 28,
+    "dwellS": 8,
+    "headwayS": 300,
+    "cars": {
+      "low": 3,
+      "mid": 3,
+      "high": 4
+    },
+    "carLengthM": 18,
+    "carWidthM": 3,
+    "carHeightM": 3.5,
+    "gapRatio": 0.08,
+    "stationSnapM": 40,
+    "minStopGapM": 150,
+    "lookOnlyMarginM": 300,
+    "lookOnlyFadeM": 60
+  },
+  "vehicleKit": {
+    "light": {
+      "warmMinRed": 0.5,
+      "warmMaxBlueShare": 0.6,
+      "tailMinRed": 0.3,
+      "tailMaxGreenShare": 0.25
+    }
+  }
+}

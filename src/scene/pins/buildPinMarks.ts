@@ -7,7 +7,7 @@
  *
  * The quads are rewritten on the CPU for each rendered frame whose view changed (PinMarks.tsx
  * calls {@link PinMarksObjects.update} from `useFrame`, which never requests a frame itself, so
- * an idle map still renders nothing). Icons keep a constant size on screen. Labels go to the
+ * the marks add no frames of their own). Icons keep a constant size on screen. Labels go to the
  * pins nearest the camera target, in that order, and a label that would cover an icon, a
  * landmark name chip or a label already placed is left out (UX-14). Memorial and teaser pins
  * stay plain: no icon, no label. three only, no React; the atlas needs a 2D canvas (browser).

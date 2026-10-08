@@ -155,7 +155,7 @@ export const OUTPUT_FILES = {
   zones: 'zones/zones.derived.json',
   zoneShapes: 'zones/zone-shapes.derived.json',
   landmarkFrames: 'landmarks/frames.derived.json',
-  /** Street chains for street props (S04i): lazy, mid and high only (perf.json streetsGzKB). */
+  /** Street chains for street props (S04i) and the living city (S04l): lazy (perf.json streetsGzKB). */
   streets: 'geo/streets.derived.json',
   manifest: 'geo/manifest.derived.json',
   sources: 'geo/SOURCES.md',

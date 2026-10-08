@@ -54,7 +54,12 @@ import {
   LandmarkMeasurementsSchema,
 } from './schemas/landmarkBlender'
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
-import { PinMarksConfigSchema, SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
+import {
+  AmbientConfigSchema,
+  PinMarksConfigSchema,
+  SceneConfigSchema,
+  StreetPropsConfigSchema,
+} from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
   AudioManifestSchema,
@@ -125,6 +130,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'avatar/traits.json': TraitsFileSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
   'config/account.json': AccountConfigSchema,
+  'config/ambient.json': AmbientConfigSchema,
   'config/audio.json': AudioConfigSchema,
   'config/balance.json': BalanceConfigSchema,
   'config/copy.json': CopyConfigSchema,
@@ -318,7 +324,8 @@ describe('config/perf.json', () => {
       otherPlayersMax: { low: 8, mid: 16, high: 24 },
       otherPlayersStyle: { low: 'billboard', mid: 'model', high: 'model' },
       medianFpsMin: { low: 30, mid: 45, high: 55 },
-      idleFramesMax: 0,
+      // DEC-52: the map animates while visible; paused (hidden, apartment, creator) it draws none.
+      pausedFramesMax: 0,
       fpsStepDown: {
         belowFps: 28,
         sustainMs: 3000,
@@ -373,7 +380,20 @@ describe('config/perf.json', () => {
         trianglesMax: { low: 0, mid: 45_000, high: 100_000 },
         drawCallsMax: { low: 0, mid: 6, high: 9 },
       },
-      streetsGzKB: { low: 0, mid: 60, high: 60 },
+      // S04l (user-approved): low fetches the streets after playable for the living city.
+      streetsGzKB: { low: 30, mid: 60, high: 60 },
+      // S04l living city caps (user-approved 2026-10-08).
+      ambient: {
+        instancesMax: {
+          vehicle: { low: 10, mid: 28, high: 56 },
+          bus: { low: 0, mid: 4, high: 8 },
+          pedestrian: { low: 8, mid: 32, high: 64 },
+          trainCar: { low: 72, mid: 120, high: 240 },
+        },
+        trianglesMax: { low: 10_000, mid: 40_000, high: 80_000 },
+        drawCallsMax: { low: 8, mid: 16, high: 24 },
+        lazyGzKB: { low: 70, mid: 60, high: 70 },
+      },
       landmarkTrianglesMax: {
         bridge: { low: 1200, mid: 3500, high: 7000 },
         building: { low: 600, mid: 1800, high: 3500 },

@@ -281,8 +281,9 @@ export const GeoManifestSchema = z.strictObject({
             ),
           /**
            * `base` ships with the map (perf.json baseGeoGzKB); `district` and `blocks` load per
-           * quality tier (perf.json districtBuildingsGzKB); `streets` loads only when the camera
-           * zooms in on mid and high (perf.json streetsGzKB); `docs` never ships.
+           * quality tier (perf.json districtBuildingsGzKB); `streets` loads after playable (street
+           * props once the camera zooms in, the living city on every tier; perf.json
+           * streetsGzKB); `docs` never ships.
            */
           group: z.enum(['base', 'docs', 'district', 'blocks', 'streets']),
           /** Set exactly for `district` and `blocks` files. */
