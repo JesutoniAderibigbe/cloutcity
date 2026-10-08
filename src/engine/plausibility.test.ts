@@ -11,6 +11,7 @@ import { EconomyBaselineSchema } from '@/lib/data/schemas/sim'
 import { realMsPerGameMinute } from './clock'
 import { cloutCeilings, cloutLevel, findCloutLevel, playerLevel } from './clout'
 import { engineConfig as config, transitBalance } from './config'
+import { jobIds, shiftWage } from './jobs'
 import { initialEventsState } from './events'
 import { syncGoals } from './goals'
 import { goalGrantKey, grant, grantCeilings, prestigeBadge, type GrantRecord } from './grants'
@@ -704,8 +705,12 @@ describe('ceilings', () => {
       publicCloutPerRealMinute,
       maxActionGameMinutes: maxActionGameMinutes(config),
       pacePerTap: {
-        cash: baseline.pace.cashPerTap * margin,
-        clout: baseline.pace.cloutPerTap * margin,
+        cash: Math.max(cashCeilings(config).shift.perAction, cashCeilings(config).event.perAction),
+        clout: Math.max(
+          ...(['paycheck', 'flex', 'club', 'event'] as const).map(
+            (source) => theory.bySource[source]?.perAction ?? 0,
+          ),
+        ),
       },
       passiveGameMinutesPerRealMinute:
         config.time.gameMinutesPerRealMinute * Math.max(...config.time.speeds),
@@ -1045,16 +1050,27 @@ describe('review probes (S18c bug-hunter)', () => {
 })
 
 describe('honest pace (DEC-19, H1)', () => {
-  const prev = lateRun()
-  const keys = serverKeys(prev)
   const empty = { cash: 0, clout: 0 }
 
-  it("per-tap ceilings come from the bots' whole-run pace x margin, not the per-action maximum", () => {
-    const { margin } = sync.plausibility
-    expect(ceilings.pacePerTap.cash).toBeCloseTo(baseline.pace.cashPerTap * margin)
-    expect(ceilings.pacePerTap.clout).toBeCloseTo(baseline.pace.cloutPerTap * margin)
-    expect(ceilings.pacePerTap.cash).toBeLessThan(ceilings.cash.perAction)
-    expect(ceilings.pacePerTap.clout).toBeLessThan(ceilings.clout.flex.perAction)
+  it('per-tap ceilings come from config (H-1R): the most one counted tap can earn', () => {
+    const wage = (id: Parameters<typeof shiftWage>[0]) => shiftWage(id, config)
+    const event = cashCeilings(config).event.perAction
+    // Below Local, only the entry jobs: the best entry wage. From Local, junior dev too.
+    expect(ceilings.cashPerTapByLevel[0]).toBe(
+      Math.max(
+        event,
+        ...jobIds(config)
+          .filter((id) => id !== 'junior-dev')
+          .map(wage),
+      ),
+    )
+    expect(ceilings.cashPerTapByLevel[1]).toBe(Math.max(event, ...jobIds(config).map(wage)))
+    expect(ceilings.pacePerTap.cash).toBe(Math.max(...ceilings.cashPerTapByLevel))
+  })
+
+  it("the economy fixture's measured pace sits below the derived bound (regression guard)", () => {
+    expect(baseline.pace.cashPerTap).toBeLessThanOrEqual(ceilings.pacePerTap.cash)
+    expect(baseline.pace.cloutPerTap).toBeLessThanOrEqual(ceilings.pacePerTap.clout)
   })
 
   it('the longest action comes from config, at the worst stat penalties', () => {
@@ -1071,18 +1087,23 @@ describe('honest pace (DEC-19, H1)', () => {
     )
   })
 
-  it('one shift on an empty pace credit is more than a tap earns at honest pace: rejected', () => {
-    const next = later(prev)
+  it('below Local, a tap earning the junior-dev wage on an empty credit is refused', () => {
+    const low = economySteps.at(-1)?.save
+    if (low === undefined) throw new Error('no steps')
+    expect(low.player.clout.peakLevel).toBe(0)
+    const next = later(low)
     next.actions += 1
-    next.player.cash += 72
-    const verdict = check(prev, next, { serverGrantKeys: keys, paceCredit: empty })
+    next.player.cash += ceilings.cashPerTapByLevel[0]! + 1
+    const verdict = check(low, next, { serverGrantKeys: serverKeys(low), paceCredit: empty })
     expect(verdict.findings).toEqual(['honest-pace'])
-    // With the credit a player carries, the same shift is fine.
-    expect(check(prev, next, { serverGrantKeys: keys }).findings).toEqual([])
+    // With the credit a player carries, the same tap is fine.
+    expect(check(low, next, { serverGrantKeys: serverKeys(low) }).findings).toEqual([])
   })
 
   it('the credit refills only by taps, and what one upload spends the next does not get back', () => {
-    let base: SaveState = prev
+    const low = economySteps.at(-1)?.save
+    if (low === undefined) throw new Error('no steps')
+    let base: SaveState = low
     let credit = ceilings.paceCreditCap
     const outcomes: string[] = []
     // A shift's top wage every tap: far above the honest pace, so the credit runs out.
@@ -1092,7 +1113,7 @@ describe('honest pace (DEC-19, H1)', () => {
       next.actions += 1
       next.player.cash += cashCeilings(config).shift.perAction
       const verdict = check(base, next, {
-        serverGrantKeys: keys,
+        serverGrantKeys: serverKeys(low),
         realMinutesSinceAccept: 1,
         paceCredit: credit,
       })
@@ -1103,7 +1124,7 @@ describe('honest pace (DEC-19, H1)', () => {
     }
     expect(outcomes.at(-1)).toBe('reject')
     // A full credit lasts a game day's worth of top wages at most.
-    const perTap = cashCeilings(config).shift.perAction - ceilings.pacePerTap.cash
+    const perTap = cashCeilings(config).shift.perAction - ceilings.cashPerTapByLevel[0]!
     expect(outcomes.length).toBeLessThanOrEqual(Math.ceil(ceilings.paceCreditCap.cash / perTap) + 1)
   })
 
@@ -1177,7 +1198,7 @@ describe('honest-pace credit across prestige (probe)', () => {
     next.clock.minute += 10
     const verdict = check(before, next, windowCtx(empty))
     expect(verdict.findings).toEqual([])
-    expect(verdict.paceCredit?.cash).toBeCloseTo(3 * ceilings.pacePerTap.cash)
+    expect(verdict.paceCredit?.cash).toBeCloseTo(3 * ceilings.cashPerTapByLevel[0]!)
     expect(verdict.paceCredit?.cash).toBeLessThan(ceilings.paceCreditCap.cash)
   })
 
@@ -1208,11 +1229,11 @@ describe('honest-pace credit across prestige (probe)', () => {
       credit = verdict.paceCredit
       save = later(base, 10)
       save.actions += 1
-      save.player.cash += Math.floor(ceilings.pacePerTap.cash * 1.5)
+      save.player.cash += Math.floor(ceilings.cashPerTapByLevel[0]! * 1.5)
     }
     // The probe ran: the prestige window and several same-run windows were accepted first.
     expect(taps).toBeGreaterThan(2)
-    expect(gained).toBeLessThanOrEqual(ceilings.pacePerTap.cash * taps + 1)
+    expect(gained).toBeLessThanOrEqual(ceilings.cashPerTapByLevel[0]! * taps + 1)
   })
 })
 

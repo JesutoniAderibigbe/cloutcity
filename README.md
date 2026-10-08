@@ -489,8 +489,14 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   margin, theoretical ceilings from config). Real time bounds the taps the save counts
   (`SaveState.actions`, v9) and passive clock time (each tap moves the clock at most
   `maxActionGameMinutes`, derived from config: the longest action at the worst stat penalties);
-  earnings must fit the counted taps at the bots' honest pace (`pace` in the economy baseline x
-  margin) plus a pace credit of one game day. The public level an account's age allows is a
+  earnings must fit the counted taps at a per-tap bound derived from config, with no margin
+  (H-1R): cash per tap is the most cash any single counted action can pay (the best shift wage
+  the level the save reached unlocks, or the biggest event cash; sales and decor resale go
+  through the trade path, so they are not counted twice), clout per tap the most clout any
+  single rated action can give (viral flex at the top multiplier, club night, event). Today that
+  is $72 a tap below Local, $140 from Local on (junior dev) and 60 clout a tap. The bots' measured
+  pace (`pace` in the economy baseline) and the cadence sweep are regression guards that must
+  stay below this bound. Earnings also get a pace credit of one game day. The public level an account's age allows is a
   separate display pace, `sync.plausibility.publicCloutPerRealMinute` (80: a public Icon takes at
   least an hour); a public level behind the save's is a delay, never a refusal. The real-time
   slack and the pace credit are per-player token buckets the server carries between uploads, and
@@ -542,8 +548,8 @@ sleep; the fewest taps per dollar); junior dev is taken the morning the player's
 The test also writes the result to `data/sim/economy-baseline.derived.json` (per-job results
 and the highest cash, clout and action counts per action, game hour and game day, plus the
 honest pace: the highest cash and clout per tap of every job and routine, over the whole run or
-its best week,
-which S18c uses as save-plausibility ceilings) and fails if a later change to the balance moves
+its best week; S18c uses the per-action and per-hour figures as save-plausibility ceilings and
+checks that the measured pace stays below the config-derived per-tap bound) and fails if a later change to the balance moves
 it. After
 tuning `balance.json` on purpose, run `npm run econ:update`, check the target tests still pass,
 and log the change in the progress.md Tuning log.

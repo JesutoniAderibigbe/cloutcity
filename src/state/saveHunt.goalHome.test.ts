@@ -6,6 +6,7 @@
 import { expect, it } from 'vitest'
 import { engineConfig as config } from '@/engine/config'
 import { goalClout } from '@/engine/clout'
+import { grant } from '@/engine/grants'
 import { placeActions } from '@/engine/placeActions'
 import { checkUpload } from '@/engine/plausibility'
 import { initialSave, SAVE_VERSION, type SaveState } from '@/engine/save'
@@ -214,3 +215,71 @@ it('H-2c decor bought, placed, claimed against and sold within one upload window
   expect(verdict.outcome).not.toBe('reject')
   expect(verdict.findings).not.toContain('goal-without-fact')
 })
+
+it.each([40, 41, 45, 60])(
+  'S-1 a forged reach-local with %s goal clout and no home activity is refused',
+  (flex) => {
+    const fresh = initialSave(config)
+    const prev: SaveState = {
+      ...fresh,
+      clock: { minute: 2 * 1440 + 14 * 60, remainderMs: 0 },
+      player: {
+        ...fresh.player,
+        cash: 100,
+        clout: {
+          ...fresh.player.clout,
+          compacted: { entries: 10, bySource: { flex } },
+          nextSeq: 11,
+          firstPaycheckPaid: true,
+        },
+      },
+      goals: { ...fresh.goals, achieved: { 'first-paycheck': 100 } },
+      actions: 40,
+    }
+    const ctx = {
+      realMinutesSinceAccept: 0,
+      burstCreditMinutes: 0,
+      accountAgeMinutes: 600,
+      serverGrantKeys: [],
+      entitledItemIds: [],
+      firstUpload: true,
+    }
+    const accepted = checkUpload(null, prev, ctx, ceilings, config)
+    expect(accepted.outcome).toBe('accept')
+    const base = accepted.save!
+    const forged0: SaveState = {
+      ...base,
+      clock: { ...base.clock, minute: base.clock.minute + 5 },
+      actions: 42,
+      player: { ...base.player, clout: { ...base.player.clout, peakLevel: 1 } },
+      goals: {
+        ...base.goals,
+        achieved: { ...base.goals.achieved, 'reach-local': base.clock.minute + 5 },
+      },
+    }
+    const reward = config.goals.find((goal) => goal.id === 'reach-local')!.reward
+    const claimed = grant(
+      forged0,
+      { kind: 'goal_reward', goalId: 'reach-local', reward },
+      1,
+      config,
+    )
+    if (!claimed.ok) throw new Error(claimed.error.code)
+    const verdict = checkUpload(
+      base,
+      JSON.parse(JSON.stringify({ ...claimed.save, actions: 43 })),
+      {
+        ...ctx,
+        realMinutesSinceAccept: 1,
+        burstCreditMinutes: 5,
+        accountAgeMinutes: 601,
+        firstUpload: false,
+        paceCredit: accepted.paceCredit,
+      },
+      ceilings,
+      config,
+    )
+    expect(verdict.outcome).toBe('reject')
+    expect(verdict.grantsToInsert).toEqual([])
+  },
+)

@@ -36,7 +36,8 @@
  * 12. public level: the level others see is capped by what the account's age allows at
  *    `publicCloutPerRealMinute`. A public level behind the save's is only a delay.
  * 13. honest pace: what play brought in since the last accept (cash and clout) fits the counted
- *    taps at the bots' whole-run pace x margin, plus a small per-player credit the server carries
+ *    taps at the most one tap can earn under config (the best wage the reached level unlocks or
+ *    event cash; the best single-action clout), plus a per-player credit the server carries
  *    (`checkHonestPace`); else reject.
  *
  * Real time only ever tightens a check of an upload that has a previous save: the first upload
@@ -47,7 +48,8 @@
  * all the next one gets, so uploading often never adds slack.
  *
  * Ceilings are `max(fixture x margin, theoretical)` (`plausibilityCeilings`); the honest-pace
- * terms are the fixture's whole-run pace x margin alone. The economy bot's
+ * terms are derived from config alone (H-1R), with the fixture's measured pace as a regression
+ * guard that must sit below them. The economy bot's
  * fixture (data/sim, passed in as data) shows what normal play reaches, the theoretical ceilings
  * (src/engine/clout.ts `cloutCeilings`, `cashCeilings` below) bound what any play can. Ledger
  * detail older than the ledger keeps is folded into sums (ECON-2), so the checks work from sums
@@ -108,6 +110,14 @@ export interface CashCeilings {
   readonly event: { readonly perAction: number; readonly perGameDay: number }
   /** The most cash one grant can pay. */
   readonly grant: { readonly perGrant: number }
+}
+
+/** The clout level index a job needs (0 for an entry job). */
+function jobLevelIndex(jobId: string, config: EngineConfig): number {
+  const required = (config.jobs.requiredCloutLevel as Readonly<Record<string, string>>)[jobId]
+  if (required === undefined) return 0
+  const index = config.clout.levels.findIndex((level) => level.id === required)
+  return index < 0 ? 0 : index
 }
 
 /**
@@ -180,10 +190,19 @@ export interface PlausibilityCeilings {
   /** The most game minutes one counted tap can move the clock (`maxActionGameMinutes`). */
   readonly maxActionGameMinutes: number
   /**
-   * Honest pace (DEC-19): what a counted tap earns, the economy bots' whole-run average x margin.
-   * Earnings since the last accept must fit the taps at this pace plus the pace credit.
+   * Honest pace (DEC-19, H-1R): the most one counted tap can earn, derived from config so honest
+   * play cannot exceed it by construction: cash, the best shift wage of any job or the best event
+   * cash; clout, the best single action of any rated source (a viral flex at the top multiplier, a
+   * club night, an event). Earnings since the last accept must fit the taps at this pace plus the
+   * pace credit. Sales and grants are accounted apart (the cash-flow trade path, grant records).
+   * The economy fixture's measured pace (`PlausibilityFixture.pace`) must sit below it.
    */
   readonly pacePerTap: CashClout
+  /**
+   * The cash part of `pacePerTap` at each clout level (by index): only the jobs that level has
+   * unlocked count, so a player below a job's gate is held to the jobs it can work.
+   */
+  readonly cashPerTapByLevel: readonly number[]
   /**
    * The most pace credit a player can carry (a token bucket per player, kept by the server): one
    * game day's worth at the per-game-day ceilings, so a lucky day (viral flexes, a club night)
@@ -287,9 +306,17 @@ export function plausibilityCeilings(
       config.time.gameMinutesPerRealMinute * Math.max(...config.time.speeds),
     maxActionGameMinutes: maxActionGameMinutes(config),
     pacePerTap: {
-      cash: fixture.pace.cashPerTap * margin,
-      clout: fixture.pace.cloutPerTap * margin,
+      cash: Math.max(cash.shift.perAction, cash.event.perAction),
+      clout: Math.max(...RATED_SOURCES.map((source) => theory.bySource[source]?.perAction ?? 0)),
     },
+    cashPerTapByLevel: config.clout.levels.map((_level, index) =>
+      Math.max(
+        cash.event.perAction,
+        ...jobIds(config)
+          .filter((id) => jobLevelIndex(id, config) <= index)
+          .map((id) => shiftWage(id, config)),
+      ),
+    ),
     paceCreditCap: {
       cash: cashPerGameDay,
       clout: RATED_SOURCES.reduce((sum, source) => sum + clout[source].perGameDay, 0),
@@ -524,10 +551,16 @@ export function checkUpload(
   for (const finding of checkCloutRate(save, window, ceilings, config)) find(finding)
   const cashFlow = cashFlows(save, window, grants.cash, ceilings, config)
   if (!cashFlow.ok) find('cash-flow')
+  // The jobs the window can have worked: those unlocked at the highest level it reached.
+  const reached = Math.max(save.player.clout.peakLevel, window.base?.player.clout.peakLevel ?? 0)
   const honest = checkHonestPace(
     { cash: cashFlow.income, clout: ratedGain(save, window.base) },
     window,
     ctx.paceCredit ?? ceilings.paceCreditCap,
+    {
+      cash: ceilings.cashPerTapByLevel[reached] ?? ceilings.pacePerTap.cash,
+      clout: ceilings.pacePerTap.clout,
+    },
     ceilings,
   )
   if (!honest.ok) find('honest-pace')
@@ -649,9 +682,34 @@ function homeCloutGone(save: SaveState, base: SaveState | null, config: EngineCo
     .filter((entry) => !isPrestigeKept(entry) && !owned.has(entry.itemId))
     .reduce((sum, entry) => sum + score(entry.itemId), 0)
   const lost = Math.max(0, homeClout(base.player, config) - homeClout(save.player, config))
-  // Decor bought, placed and sold inside one window leaves no trace (no ledger entry): the
-  // window may always have held the home up to the cap.
-  return Math.min(cap, Math.max(lost + unplaced + sold, cap - homeClout(save.player, config)))
+  const shown = lost + unplaced + sold
+  // Decor bought, placed and sold inside one window leaves no trace (no ledger entry): the window
+  // may have held the home up to the cap, but only when it shows home activity (S-1), else this
+  // would be slack in every window.
+  const active =
+    shown > 0 ||
+    save.player.home !== base.player.home ||
+    save.player.apartment.moveLog.length !== base.player.apartment.moveLog.length ||
+    decorSpending(save, base, config)
+  return Math.min(cap, active ? Math.max(shown, cap - homeClout(save.player, config)) : shown)
+}
+
+/**
+ * True when the window spent at least what buying and selling back the cheapest decor loses,
+ * beyond everything the save explains (a decor buy-and-sell leaves only this trace).
+ */
+function decorSpending(save: SaveState, base: SaveState, config: EngineConfig): boolean {
+  const losses = config.items.catalog
+    .filter((item) => isDecor(item))
+    .map((item) => item.price - item.sellValue)
+  if (losses.length === 0) return false
+  const known = new Set(base.grants.log.map((record) => record.key))
+  const grantCash = save.grants.log
+    .filter((record) => !known.has(record.key))
+    .reduce((sum, record) => sum + record.applied.cash, 0)
+  const trade = itemTrade(base.player.inventory, save.player.inventory, config)
+  const spent = base.player.cash + grantCash + trade.sold - trade.bought - save.player.cash
+  return spent >= Math.min(...losses)
 }
 
 /**
@@ -1199,7 +1257,8 @@ function ratedGain(save: SaveState, base: SaveState | null): number {
 
 /**
  * Check 13 (DEC-19): honest pace. The cash play brought in and the clout it earned since the
- * last accept must fit the counted taps at the bots' pace (`pacePerTap`) plus the credit carried
+ * last accept must fit the counted taps at `perTap` (`pacePerTap`, cash at the reached level's
+ * jobs) plus the credit carried
  * (a token bucket up to `paceCreditCap`, refilled only by taps). Without per-tap counting (the
  * first upload) the bucket starts full and nothing is checked.
  */
@@ -1207,13 +1266,14 @@ function checkHonestPace(
   gained: CashClout,
   window: Window,
   credit: CashClout,
+  perTap: CashClout,
   ceilings: PlausibilityCeilings,
 ): { readonly ok: boolean; readonly credit: CashClout } {
   if (window.earningTaps === null) return { ok: true, credit: ceilings.paceCreditCap }
   const taps = Math.max(0, window.earningTaps)
   const left = (key: keyof CashClout) =>
     Math.min(ceilings.paceCreditCap[key], Math.max(0, credit[key])) +
-    ceilings.pacePerTap[key] * taps -
+    perTap[key] * taps -
     gained[key]
   const cash = left('cash')
   const clout = left('clout')
