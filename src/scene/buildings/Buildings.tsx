@@ -30,6 +30,7 @@ import { useTierSettings } from '../quality/tierSettings'
 import type { ScenePalette } from '../types'
 import type { BlockFill } from './buildBlocks'
 import type { DistrictMass } from './buildDistrict'
+import type { Blocks } from './schema'
 import type { BuildingsLayer, BuildingsLayerView, createBuildingsLayer } from './layer'
 import { useNightGlow } from '../lighting/nightGlow'
 import { createBuildingMaterial, createWindowMask, windowTile } from './materials'
@@ -90,6 +91,8 @@ export function Buildings({
   // Roof water tower candidates per district (drawn masses of a tower's height), kept for the
   // props layer, which may load after the districts.
   const towersRef = useRef(new Map<string, readonly DistrictMass[]>())
+  // The tier's fill blocks, kept for the props layer: props keep out of their footprints.
+  const blocksRef = useRef<Blocks | null>(null)
 
   const tierAssets = assets[settings.tier]
   const shadowKey = `${settings.shadows}:${settings.shadowMapSizePx}`
@@ -152,6 +155,7 @@ export function Buildings({
   useEffect(() => {
     if (!active) return
     towersRef.current = new Map()
+    blocksRef.current = null
     const mountLayer = (create: typeof createBuildingsLayer) => {
       const layer = create({
         assets: tierAssets,
@@ -193,6 +197,11 @@ export function Buildings({
           const candidates = masses.filter((mass, i) => i < drawn && mass.h >= min && mass.h <= max)
           towersRef.current.set(id, candidates)
           propsRef.current?.addTowers(id, candidates)
+        },
+        onBlocksReady: (blocks) => {
+          if (tierAssets.props === null) return
+          blocksRef.current = blocks
+          propsRef.current?.setBlocks(blocks)
         },
       })
       layerRef.current = layer
@@ -266,6 +275,7 @@ export function Buildings({
             groundY,
             pins,
             towers: towersRef.current,
+            blocks: blocksRef.current,
             layerRef: propsRef,
             three: { gl, camera, scene },
             onChange: invalidate,

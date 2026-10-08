@@ -397,6 +397,74 @@ export function placeWaterTowers(
   return out
 }
 
+/** The procedural blocks of a tier, as data/geo/blocks.<tier>.derived.json holds them. */
+export interface FillBlocks {
+  /** Side of every block's square footprint (its plate and lots stay inside it), metres. */
+  readonly sizeM: number
+  readonly groups: readonly {
+    /** Degrees counter-clockwise from east. */
+    readonly angleDeg: number
+    /** Block centres, one delta-encoded path. */
+    readonly p: readonly number[]
+  }[]
+}
+
+const BLOCK_CELL_M = 100
+
+/**
+ * A lookup of whether a point stands inside a fill block's footprint grown by `marginM`: each
+ * block sits under every grid cell its bounding circle touches, and a point is tested only
+ * against the blocks of its own cell. Pure: the same blocks always answer the same.
+ */
+export function fillBlockLookup(
+  blocks: FillBlocks,
+  marginM: number,
+): (point: LocalPoint) => boolean {
+  const half = blocks.sizeM / 2 + marginM
+  const reach = half * Math.SQRT2
+  const grid = new Map<string, { x: number; y: number; cos: number; sin: number }[]>()
+  for (const group of blocks.groups) {
+    const angle = (group.angleDeg * Math.PI) / 180
+    const cos = Math.cos(angle)
+    const sin = Math.sin(angle)
+    for (const centre of decodePath(group.p)) {
+      const block = { x: centre.x, y: centre.y, cos, sin }
+      const minX = Math.floor((centre.x - reach) / BLOCK_CELL_M)
+      const maxX = Math.floor((centre.x + reach) / BLOCK_CELL_M)
+      const minY = Math.floor((centre.y - reach) / BLOCK_CELL_M)
+      const maxY = Math.floor((centre.y + reach) / BLOCK_CELL_M)
+      for (let cx = minX; cx <= maxX; cx++) {
+        for (let cy = minY; cy <= maxY; cy++) {
+          const key = `${cx},${cy}`
+          const list = grid.get(key)
+          if (list === undefined) grid.set(key, [block])
+          else list.push(block)
+        }
+      }
+    }
+  }
+  return (point) => {
+    const key = `${Math.floor(point.x / BLOCK_CELL_M)},${Math.floor(point.y / BLOCK_CELL_M)}`
+    for (const b of grid.get(key) ?? []) {
+      const dx = point.x - b.x
+      const dy = point.y - b.y
+      const u = dx * b.cos + dy * b.sin
+      const v = -dx * b.sin + dy * b.cos
+      if (Math.abs(u) <= half && Math.abs(v) <= half) return true
+    }
+    return false
+  }
+}
+
+/** Placements outside every fill block; roof water towers stand on buildings and are kept. */
+export function outsideFillBlocks(
+  placements: readonly Placement[],
+  insideBlock: ((point: LocalPoint) => boolean) | null,
+): Placement[] {
+  if (insideBlock === null) return [...placements]
+  return placements.filter((p) => p.rule === 'waterTower' || !insideBlock(p))
+}
+
 export interface Chunk {
   readonly key: string
   /** Chunk centre, local metres. */

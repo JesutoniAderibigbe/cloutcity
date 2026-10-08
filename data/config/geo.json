@@ -252,7 +252,7 @@
     "exclusionMarginM": 10,
     "simplifyM": 1,
     "carveMarginM": 2,
-    "carveTiers": ["mid", "high"],
+    "carveTiers": [],
     "defaultWidthFt": 30,
     "wideMinFt": 60,
     "reachM": 6,

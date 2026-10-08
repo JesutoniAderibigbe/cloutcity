@@ -29,7 +29,7 @@ import {
   type DistrictGeometry,
   type DistrictMass,
 } from './buildDistrict'
-import { BlocksMiniSchema, DistrictBuildingsMiniSchema } from './schema'
+import { BlocksMiniSchema, DistrictBuildingsMiniSchema, type Blocks } from './schema'
 import { distanceToDistrict, drawDistances, type ViewPoint } from './view'
 
 export type DistrictStatus = 'idle' | 'loading' | 'ready' | 'failed'
@@ -91,6 +91,8 @@ export interface BuildingsLayerOptions {
    * `massesFor(density, masses.length)` of them (buildDistrict.ts).
    */
   readonly onDistrictReady?: (id: string, masses: readonly DistrictMass[]) => void
+  /** The tier's procedural blocks are drawn: street props keep out of them (S04i). */
+  readonly onBlocksReady?: (blocks: Blocks) => void
   readonly fetchJson?: (url: string) => Promise<unknown>
   readonly yieldFn?: () => Promise<void>
 }
@@ -208,6 +210,12 @@ export function createBuildingsLayer(options: BuildingsLayerOptions): BuildingsL
       group.add(built.group)
       applyView()
       options.onChange()
+      // Apart from the build: a listener's failure is reported, but the blocks stay drawn.
+      try {
+        options.onBlocksReady?.(parsed.data)
+      } catch (error) {
+        fail(options.assets.blocksUrl, error)
+      }
     } catch (error) {
       blocksStatus = 'failed'
       fail(options.assets.blocksUrl, error)

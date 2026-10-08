@@ -584,8 +584,9 @@ and drops every footprint whose centroid lies in a landmark's `landmarks[].exclu
 and every block that would touch one. For street props (S04i) it pages the LION street
 centerlines of every prop zone (each district plus `geo.json` `streets.zones`) into
 `data/geo/streets.derived.json`: ordinary streets only, cut clear of memorials and landmark
-grounds, joined into chains with their junctions; on the tiers in `streets.carveTiers` it also
-carves out the fill blocks a real street crosses in an extra zone. The build fails if the file
+grounds, joined into chains with their junctions. `streets.carveTiers` can carve out the fill blocks
+a real street crosses in an extra zone; it is empty (the blocks stay whole, and the props layer
+keeps street props out of their footprints instead, `props.json` `blockClearM`). The build fails if the file
 exceeds `perf.json` `streetsGzKB`. `--add` downloads and pins only sources the lock lacks (a new
 prop zone) and leaves every pinned source as it is.
 The output is deterministic: `npm run geo:build -- --check` rebuilds
@@ -728,7 +729,8 @@ camera starts over it).
   streetlights, trees, benches, hydrants, traffic lights, parked cars and roof water towers along
   the real streets (`src/lib/world/streetProps.ts`, seeded per chain, never within `pinClearM` of
   a pin or near a memorial), and below `showBelowDistanceM` draws the 200 m chunks nearest the
-  target within `perf.json` `streetProps` (instances per model, triangles, draw calls). Each chunk
+  target within `perf.json` `streetProps` (instances per model, triangles, draw calls), leaving
+  out any street prop inside a procedural fill block's footprint (roof water towers excepted). Each chunk
   is one merged mesh on the district material, so props add no shader program; streetlight lamps
   and taxi signs glow by sampling a lit window of the district window mask. Nothing is pickable,
   and nothing loads or draws at the default view or on low.

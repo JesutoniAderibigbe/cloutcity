@@ -30,6 +30,8 @@ import { log } from '@/lib/log'
 import {
   applyQuotas,
   bucket,
+  fillBlockLookup,
+  outsideFillBlocks,
   decodeStreets,
   placeChain,
   placeJunctions,
@@ -37,6 +39,7 @@ import {
   selectChunks,
   type Chunk,
   type ChunkCaps,
+  type FillBlocks,
   type Placement,
   type PlacementContext,
   type PropsConfig,
@@ -145,6 +148,8 @@ export interface StreetPropsLayer {
   setView(distance: number, target: LocalPoint): void
   /** A district's drawn masses arrived: roof water towers may stand on them. */
   addTowers(districtId: string, masses: readonly TowerCandidate[]): void
+  /** The tier's fill blocks arrived: props keep out of their footprints. */
+  setBlocks(blocks: FillBlocks): void
   view(): StreetPropsView
   /** The chunk meshes built so far (drawn or not). */
   meshes(): readonly Mesh[]
@@ -191,7 +196,9 @@ export function createStreetPropsLayer(options: StreetPropsLayerOptions): Street
   let models = new Map<string, PropModel>()
   let triangles = new Map<string, number>()
   let context: PlacementContext | null = null
-  /** Street props per chunk (trimmed to the quotas), fixed once placed. */
+  /** Fill block footprints (Buildings.tsx onBlocksReady), or null before they arrive. */
+  let insideBlock: ((point: LocalPoint) => boolean) | null = null
+  /** Street props per chunk, every one placed (filtered and trimmed in combine). */
   let streetChunks = new Map<string, Chunk>()
   /** Every chunk to choose from: street props plus the current water towers. */
   let chunks = new Map<string, Chunk>()
@@ -207,31 +214,32 @@ export function createStreetPropsLayer(options: StreetPropsLayerOptions): Street
   const step = () => createSlicer(options.buildings.buildSliceMs, options.yieldFn)
 
   /** Rebuilds `chunks` from the street props and every district's towers. */
+  /** A cheap identity of a placement list: a changed chunk is rebuilt when next drawn. */
+  const signature = (list: readonly Placement[]) =>
+    `${list.length}:${list.reduce((sum, p) => sum + p.x * 3 + p.y, 0).toFixed(1)}`
+
+  /**
+   * Rebuilds `chunks`: the street props outside every fill block, plus the current water
+   * towers, each chunk then trimmed to the rule quotas (after the filter, so a quota is never
+   * spent on a prop the blocks would hide).
+   */
   const combine = () => {
     if (context === null) return
-    const towerChunks = new Map<string, Chunk>()
-    for (const masses of towers.values()) {
-      bucket(towerChunks, placeWaterTowers(masses, context), config.chunkM)
-    }
-    applyQuotas(towerChunks, config, tier)
     const next = new Map<string, Chunk>()
-    for (const key of new Set([...streetChunks.keys(), ...towerChunks.keys()])) {
-      const street = streetChunks.get(key)
-      const tower = towerChunks.get(key)
-      const base = street ?? tower
-      if (base === undefined) continue
-      next.set(key, {
-        key,
-        x: base.x,
-        y: base.y,
-        placements: [...(street?.placements ?? []), ...(tower?.placements ?? [])],
+    for (const chunk of streetChunks.values()) {
+      next.set(chunk.key, {
+        ...chunk,
+        placements: outsideFillBlocks(chunk.placements, insideBlock),
       })
     }
+    for (const masses of towers.values()) {
+      bucket(next, placeWaterTowers(masses, context), config.chunkM)
+    }
+    applyQuotas(next, config, tier)
     chunks = next
-    // A chunk whose props changed is rebuilt the next time it is drawn.
     for (const [key, entry] of built) {
       const now = chunks.get(key)?.placements ?? []
-      if (now.length !== entry.placements.length) drop(key)
+      if (signature(now) !== signature(entry.placements)) drop(key)
     }
   }
 
@@ -346,7 +354,6 @@ export function createStreetPropsLayer(options: StreetPropsLayerOptions): Street
         if (disposed) return
       }
       bucket(street, placeJunctions(data, ctx), config.chunkM)
-      applyQuotas(street, config, tier)
       streetChunks = street
       context = ctx
       combine()
@@ -372,6 +379,12 @@ export function createStreetPropsLayer(options: StreetPropsLayerOptions): Street
       distance = nextDistance
       target = nextTarget
       if (status === 'idle' && distance <= config.prefetchBelowDistanceM[tier]) void load()
+      applyView()
+    },
+    setBlocks(blocks) {
+      insideBlock = fillBlockLookup(blocks, config.blockClearM)
+      if (status !== 'ready') return
+      combine()
       applyView()
     },
     addTowers(districtId, masses) {
@@ -441,6 +454,8 @@ export interface MountStreetPropsOptions {
   readonly pins: readonly LocalPoint[]
   /** Each loaded district's water tower candidates, kept by Buildings.tsx; read once here. */
   readonly towers: ReadonlyMap<string, readonly TowerCandidate[]>
+  /** The tier's fill blocks if the buildings already drew them (later: `setBlocks`). */
+  readonly blocks: FillBlocks | null
   /** Set to the layer for its life: later districts reach it through `addTowers`. */
   readonly layerRef: { current: StreetPropsLayer | null }
   readonly three: { readonly gl: WebGLRenderer; readonly camera: Camera; readonly scene: Scene }
@@ -471,6 +486,7 @@ export function mountStreetProps(options: MountStreetPropsOptions): () => void {
     },
   })
   for (const [id, masses] of options.towers) layer.addTowers(id, masses)
+  if (options.blocks !== null) layer.setBlocks(options.blocks)
   options.layerRef.current = layer
   options.root.add(layer.group)
   const update = () => layer.setView(rig.getDistance(), { x: rig.target.x, y: -rig.target.z })

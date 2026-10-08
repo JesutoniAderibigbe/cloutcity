@@ -322,8 +322,7 @@ fields used (`outFields=SegmentID,Street,StreetWidth_Min`) and ordered by segmen
 - Filter: `RW_TYPE=' 1' AND FeatureTyp='0' AND RB_Layer IN ('B','G')` (ordinary public streets, single centerline; no highways,
   bridges, tunnels, ramps, paths, private or paper streets, and no roadbeds of divided streets).
 - Used for: `geo/streets.derived.json` (the chains street props stand on, mid and high tiers
-  only) and to carve the procedural blocks that would cover a real street in a prop zone
-  outside the districts (`geo/blocks.<tier>.derived.json`, tiers mid, high).
+  only).
 - Transformations: segments de-duplicated by `SegmentID` and kept when their midpoint lies in
   a prop zone circle; cut wherever they come within 150 m of a memorial, or within a
   landmark's exclusion rectangle grown by 10 m, both grown by the street's half-width plus

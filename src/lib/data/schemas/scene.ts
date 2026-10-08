@@ -119,6 +119,11 @@ export const StreetPropsConfigSchema = z
     parkingOffsetM: metres,
     /** No prop within this distance of a pin's ground point. */
     pinClearM: metres,
+    /**
+     * No street prop inside a procedural fill block's footprint grown by this much (S04i):
+     * the blocks are not cut back for real streets, so props keep out of them instead.
+     */
+    blockClearM: z.number().nonnegative(),
     /** No prop along a chain within its half-width plus this of a junction. */
     junctionClearM: z.number().nonnegative(),
     /** Their `_emissive` vertices glow in the window colour at night (window-mask lit cell). */

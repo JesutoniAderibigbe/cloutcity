@@ -115,8 +115,12 @@ function streetPropsSection(lock: Lock, config: GeoConfig): string[] {
     `- Filter: \`${STREET_WHERE}\` (ordinary public streets, single centerline; no highways,`,
     '  bridges, tunnels, ramps, paths, private or paper streets, and no roadbeds of divided streets).',
     '- Used for: `geo/streets.derived.json` (the chains street props stand on, mid and high tiers',
-    '  only) and to carve the procedural blocks that would cover a real street in a prop zone',
-    `  outside the districts (\`geo/blocks.<tier>.derived.json\`, tiers ${streets.carveTiers.join(', ')}).`,
+    ...(streets.carveTiers.length === 0
+      ? ['  only).']
+      : [
+          '  only) and to carve the procedural blocks that would cover a real street in a prop zone',
+          `  outside the districts (\`geo/blocks.<tier>.derived.json\`, tiers ${streets.carveTiers.join(', ')}).`,
+        ]),
     '- Transformations: segments de-duplicated by `SegmentID` and kept when their midpoint lies in',
     `  a prop zone circle; cut wherever they come within ${streets.lookOnlyClearM} m of a memorial, or within a`,
     `  landmark's exclusion rectangle grown by ${streets.exclusionMarginM} m, both grown by the street's half-width plus`,

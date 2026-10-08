@@ -109,6 +109,23 @@ describe('street props layer', () => {
     layer.dispose()
   })
 
+  it('drops street props inside fill blocks that arrive after the props drew (S04i)', async () => {
+    const { layer, onChange } = layerWith()
+    layer.setView(props.showBelowDistanceM.mid, home)
+    await settle(layer)
+    expect(Object.keys(layer.view().instances).length).toBeGreaterThan(0)
+    onChange.mockClear()
+    // One 4 km block over the whole focus area.
+    layer.setBlocks({
+      sizeM: 4000,
+      groups: [{ angleDeg: 0, p: [Math.round(home.x), Math.round(home.y)] }],
+    })
+    await settle(layer)
+    expect(layer.view().instances).toEqual({})
+    expect(onChange).toHaveBeenCalled()
+    layer.dispose()
+  })
+
   it('adds roof water towers from district masses, on the tower rule', async () => {
     const { layer } = layerWith()
     const ring = (x: number, y: number) => [

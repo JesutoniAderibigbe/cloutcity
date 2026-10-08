@@ -9,7 +9,7 @@ import { encodePath } from '@/lib/geo/codec'
 import { pointInPolygon } from '@/lib/geo/polygon'
 import { project } from '@/lib/geo/projection'
 import { districtMasses, massesFor } from '@/scene/buildings/buildDistrict'
-import { DistrictBuildingsMiniSchema } from '@/scene/buildings/schema'
+import { BlocksMiniSchema, DistrictBuildingsMiniSchema } from '@/scene/buildings/schema'
 import * as engineRng from '@/engine/rng'
 import {
   STREET_FLAGS,
@@ -17,6 +17,8 @@ import {
   mixSeed,
   applyQuotas,
   bucket,
+  fillBlockLookup,
+  outsideFillBlocks,
   chainAt,
   decodeStreets,
   placeChain,
@@ -277,6 +279,46 @@ describe('chunks', () => {
   })
 })
 
+describe('fill blocks', () => {
+  const place = (rule: Placement['rule'], x: number, y: number): Placement => ({
+    rule,
+    model: rule === 'waterTower' ? 'water-tower' : 'streetlight',
+    x,
+    y,
+    rotation: 0,
+    lift: 0,
+  })
+  // One 20 m block at (100, 100) turned 45°, one axis-aligned at (300, 100).
+  const blocks = {
+    sizeM: 20,
+    groups: [
+      { angleDeg: 45, p: [...encodePath([{ x: 100, y: 100 }])] },
+      { angleDeg: 0, p: [...encodePath([{ x: 300, y: 100 }])] },
+    ],
+  }
+
+  it('finds points inside a turned footprint grown by the margin, and nowhere else', () => {
+    const inside = fillBlockLookup(blocks, 1)
+    expect(inside({ x: 100, y: 100 })).toBe(true)
+    // Along the turned block's axis: 10.9 m out is inside half (10) + margin (1).
+    expect(inside({ x: 100 + 10.9 / Math.SQRT2, y: 100 + 10.9 / Math.SQRT2 })).toBe(true)
+    expect(inside({ x: 100 + 12 / Math.SQRT2, y: 100 + 12 / Math.SQRT2 })).toBe(false)
+    // The corner of an unturned square lies outside the turned one.
+    expect(inside({ x: 109, y: 109 })).toBe(false)
+    expect(inside({ x: 310.9, y: 110.9 })).toBe(true)
+    expect(inside({ x: 312, y: 100 })).toBe(false)
+  })
+
+  it('drops street props inside a block, keeps roof water towers and everything outside', () => {
+    const kept = outsideFillBlocks(
+      [place('streetlight', 100, 100), place('waterTower', 300, 100), place('tree', 0, 0)],
+      fillBlockLookup(blocks, props.blockClearM),
+    )
+    expect(kept.map((p) => p.rule)).toEqual(['waterTower', 'tree'])
+    expect(outsideFillBlocks([place('streetlight', 100, 100)], null)).toHaveLength(1)
+  })
+})
+
 describe('the committed streets and data/config/props.json', () => {
   const file = StreetsFileSchema.parse(read('data/geo/streets.derived.json'))
   const landmarks = (
@@ -318,9 +360,13 @@ describe('the committed streets and data/config/props.json', () => {
   function buildCity(tier: PropsTier) {
     const data = decodeStreets(file, props.seed)
     const ctx = ctxFor(tier, { pins, clear: data.clear })
+    const blocks = BlocksMiniSchema.parse(read(`data/geo/blocks.${tier}.derived.json`))
+    const insideBlock = fillBlockLookup(blocks, props.blockClearM)
     const chunks = new Map<string, Chunk>()
-    for (const chain of data.chains) bucket(chunks, placeChain(chain, ctx), props.chunkM)
-    bucket(chunks, placeJunctions(data, ctx), props.chunkM)
+    for (const chain of data.chains) {
+      bucket(chunks, outsideFillBlocks(placeChain(chain, ctx), insideBlock), props.chunkM)
+    }
+    bucket(chunks, outsideFillBlocks(placeJunctions(data, ctx), insideBlock), props.chunkM)
     const masses = geo.districts.flatMap((district) => {
       const parsed = DistrictBuildingsMiniSchema.parse(
         read(`data/geo/districts/${district.id}.${tier}.derived.json`),
@@ -330,14 +376,16 @@ describe('the committed streets and data/config/props.json', () => {
     })
     bucket(chunks, placeWaterTowers(masses, ctx), props.chunkM)
     applyQuotas(chunks, props, tier)
-    return { chunks, masses }
+    return { chunks, masses, insideBlock }
   }
 
   it.each(['mid', 'high'] as const)(
     '%s: no prop within the memorial clearance or a pin, none inside a building',
     (tier) => {
-      const { chunks, masses } = cityChunks(tier)
+      const { chunks, masses, insideBlock } = cityChunks(tier)
       const all = [...chunks.values()].flatMap((c) => c.placements)
+      // None inside a fill block either (roof water towers stand on district masses).
+      expect(all.filter((p) => p.rule !== 'waterTower' && insideBlock(p))).toEqual([])
       expect(all.length).toBeGreaterThan(1000)
       for (const p of all) {
         for (const m of memorials) {

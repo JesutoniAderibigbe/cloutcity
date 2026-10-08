@@ -16,6 +16,7 @@
   "sidewalkOffsetM": 1.6,
   "parkingOffsetM": 2.2,
   "pinClearM": 14,
+  "blockClearM": 1,
   "junctionClearM": 4,
   "glowModels": ["streetlight", "taxi"],
   "rules": {
