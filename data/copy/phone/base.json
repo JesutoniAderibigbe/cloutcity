@@ -91,7 +91,7 @@
     "phone.help.faq.money.q": "How do I make money?",
     "phone.help.faq.money.a": "Work shifts. Jobs lists every job, what it pays and where to clock in. Junior dev pays more once your clout is up.",
     "phone.help.faq.rent.q": "When is rent due?",
-    "phone.help.faq.rent.a": "Every {days} game days. Bank shows the day and the amount. Miss it and you owe back rent plus fees; miss too many in a row and you're evicted.",
+    "phone.help.faq.rent.a": "Once a game week. Bank shows the due day and the amount. Miss it and you owe back rent plus fees; miss too many in a row and you're evicted.",
     "phone.help.faq.travel.q": "How do I get around?",
     "phone.help.faq.travel.a": "Open a place and pick Get there: walk, subway or taxi. Each shows its time and fare, and your day fast-forwards when you go.",
     "phone.help.faq.clout.q": "How do I get clout?",
@@ -112,18 +112,18 @@
     "phone.shop.sellsItems": "Clothes, gifts and decor",
     "phone.shop.sellsAction": "{item} {price}",
     "phone.shop.distance": "{distance} away",
-    "phone.shop.fastest": "{time} by {mode}",
     "phone.shop.planning": "Working out the trip…",
     "phone.shop.here": "You're here",
     "phone.shop.getThere": "Get there",
     "phone.shop.getThereLabel": "Get there: {place}",
     "phone.shop.openHere": "Shop here",
     "phone.shop.openHereLabel": "Shop here: open {place}",
-    "phone.shop.mode.walk": "walking",
-    "phone.shop.mode.subway": "subway",
-    "phone.shop.mode.taxi": "taxi",
     "phone.shop.premiumTitle": "Premium store coming later",
     "phone.shop.premiumBody": "A store for extra looks, paid in real money, opens later. It will never sell cash, energy, time or clout.",
-    "phone.bank.history.amount": "+{amount}"
+    "phone.bank.history.amount": "+{amount}",
+    "phone.shop.miles": "{miles} mi",
+    "phone.shop.fastest.walk": "{time} on foot",
+    "phone.shop.fastest.subway": "{time} by subway",
+    "phone.shop.fastest.taxi": "{time} by taxi"
   }
 }

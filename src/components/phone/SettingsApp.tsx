@@ -5,9 +5,7 @@ import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { setSoundSheetOpen } from '@/components/audio/soundSheet'
 import { CLEAN_SCREEN_ATTR } from '@/components/nav/CleanScreenExit'
 import { resumeTour } from '@/components/tour/tourControl'
-import { engineConfig } from '@/engine/config'
 import { copy, type CopyKey } from '@/lib/copy'
-import { formatCount } from '@/lib/format'
 import { SHORTCUTS_SCREEN, phoneConfig } from '@/lib/phone/phoneConfig'
 import { dismissHudPanel } from '@/state/hudPanel'
 import { PHONE_BUTTON } from './phoneUi'
@@ -25,10 +23,7 @@ const ROW = `${PHONE_BUTTON} flex w-full items-center justify-between gap-3 bg-s
 
 /** Copy ids name keys (`phone.keys.<id>.keys`): phone.json lists them, data.test checks them. */
 const keyText = (id: string, part: 'keys' | 'does') => copy(`phone.keys.${id}.${part}` as CopyKey)
-const faqText = (id: string, part: 'q' | 'a') =>
-  part === 'a' && id === 'rent'
-    ? copy('phone.help.faq.rent.a', { days: formatCount(engineConfig.time.rentPeriodGameDays) })
-    : copy(`phone.help.faq.${id}.${part}` as CopyKey)
+const faqText = (id: string, part: 'q' | 'a') => copy(`phone.help.faq.${id}.${part}` as CopyKey)
 
 /** Watches the root's clean-screen attribute (the HUD's Show the HUD button also clears it). */
 function subscribeCleanScreen(listener: () => void): () => void {

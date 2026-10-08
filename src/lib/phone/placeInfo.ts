@@ -10,6 +10,8 @@ import type { Borough } from '@/lib/data/schemas/content'
 import { distanceM } from '@/lib/geo/projection'
 import { boroughs } from '@/lib/world/places'
 import { tripEnd } from '@/lib/world/tripEnds'
+// Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/phone'
 
 /** Metres in a straight line from where the player stands to the place, or null if unknown. */
 export function straightDistanceM(
@@ -20,6 +22,20 @@ export function straightDistanceM(
   const to = tripEnd({ kind: 'place', placeId }, player.home)
   if (from === undefined || to === undefined) return null
   return distanceM(from.stop.point, to.stop.point)
+}
+
+const METRES_PER_TENTH_MILE = 160.9344
+
+/**
+ * A distance in miles to one decimal: `2414` → "1.5 mi", never "0 mi". Kept out of
+ * src/lib/format.ts on purpose: that module sits in every boot chunk, and the bundler does not
+ * drop an unused export from it, so a distance formatter there grows the path to playable.
+ * Plain arithmetic, no locale API: one decimal needs no grouping.
+ */
+export function formatMiles(metres: number): string {
+  if (!Number.isFinite(metres)) throw new RangeError(`Distance must be finite: ${metres}`)
+  const tenths = Math.max(1, Math.round(metres / METRES_PER_TENTH_MILE))
+  return copy('phone.shop.miles', { miles: String(tenths / 10) })
 }
 
 /** "Queens". */

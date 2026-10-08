@@ -275,32 +275,35 @@ function HomeScreen({ onOpen }: { readonly onOpen: (id: PhoneAppId) => void }) {
   return (
     <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-linear-to-b from-wall-top to-wall-bottom px-4 pb-3">
       <Skyline />
-      <div className="relative flex flex-col gap-0.5 pt-2 pb-3">
-        <p className="text-4xl leading-none font-extrabold tracking-tight text-fg">
-          {formatGameTime(minuteOfDay)}
-        </p>
-        <p className="text-sm font-semibold text-fg">
-          {copy('phone.home.date', { day: formatCount(day) })}
-        </p>
+      <div className="relative flex items-start justify-between gap-2 pt-1 pb-2">
+        <div className="flex flex-col gap-0.5">
+          <p className="text-3xl leading-none font-extrabold tracking-tight text-fg">
+            {formatGameTime(minuteOfDay)}
+          </p>
+          <p className="text-sm font-semibold text-fg">
+            {copy('phone.home.date', { day: formatCount(day) })}
+          </p>
+        </div>
+        <CloseButton />
       </div>
       <button
         type="button"
         data-phone-widget="bank"
         onClick={() => onOpen('bank')}
         aria-label={copy('phone.widget.label', { cash, rent })}
-        className="relative mb-4 flex items-center justify-between gap-3 rounded-2xl border border-line glass px-4 py-3 text-left shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+        className="relative mb-3 flex items-center justify-between gap-3 rounded-2xl border border-line glass px-4 py-2 text-left shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         <span className="flex flex-col">
           <span className="text-xs font-bold text-muted uppercase">
             {copy('phone.widget.cash')}
           </span>
-          <span className="text-2xl font-extrabold text-fg">{cash}</span>
+          <span className="text-xl font-extrabold text-fg">{cash}</span>
         </span>
         <span className="text-right text-xs font-semibold text-muted">{rent}</span>
       </button>
       <ul
         aria-label={copy('phone.home.apps')}
-        className="relative grid grid-cols-4 gap-x-2 gap-y-4"
+        className="relative grid grid-cols-4 gap-x-2 gap-y-2"
       >
         {phoneConfig.apps.map(({ id, icon }) => {
           const label = copy(APP_LABEL[id])
@@ -324,7 +327,7 @@ function HomeScreen({ onOpen }: { readonly onOpen: (id: PhoneAppId) => void }) {
               >
                 <span
                   aria-hidden="true"
-                  className="relative flex size-14 items-center justify-center rounded-2xl border border-line bg-surface text-3xl leading-none shadow-md transition-transform group-active:scale-95 motion-reduce:transition-none"
+                  className="relative flex size-13 items-center justify-center rounded-2xl border border-line bg-surface text-[1.75rem] leading-none shadow-md transition-transform group-active:scale-95 motion-reduce:transition-none"
                 >
                   {icon}
                   {count === null ? null : (
@@ -347,9 +350,6 @@ function HomeScreen({ onOpen }: { readonly onOpen: (id: PhoneAppId) => void }) {
           )
         })}
       </ul>
-      <div className="relative mt-auto flex justify-end pt-4">
-        <CloseButton />
-      </div>
     </div>
   )
 }

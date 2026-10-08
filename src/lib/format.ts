@@ -60,24 +60,6 @@ export function formatProgressCount(count: number): string {
     : COUNT_COMPACT_DOWN.format(whole)
 }
 
-const METRES_PER_MILE = 1609.344
-
-/**
- * A distance in miles to one decimal (S58, the store directory): `2414` → `"1.5 mi"`. Never
- * shows 0: anything nearer than a tenth of a mile reads `"0.1 mi"`. Built on use, so the
- * formatter costs nothing where no distance is shown.
- */
-export function formatMiles(metres: number): string {
-  assertFinite(metres, 'Distance')
-  const miles = new Intl.NumberFormat('en-US', {
-    style: 'unit',
-    unit: 'mile',
-    unitDisplay: 'short',
-    maximumFractionDigits: 1,
-  })
-  return miles.format(Math.max(0.1, metres / METRES_PER_MILE))
-}
-
 /** A whole-percent value (a volume slider, 0-100): `80` → `"80%"`. */
 export function formatPercent(percent: number): string {
   assertFinite(percent, 'Percent')

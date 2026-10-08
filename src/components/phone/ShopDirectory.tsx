@@ -8,10 +8,10 @@ import { hasShop, placeActions, type PlaceView } from '@/engine/placeActions'
 import type { TravelMode } from '@/engine/transit/plan'
 import { copy, type CopyKey } from '@/lib/copy'
 import type { PlaceIconGroup, Venue } from '@/lib/data/schemas/content'
-import { formatMiles, formatMoney } from '@/lib/format'
+import { formatMoney } from '@/lib/format'
 import { log } from '@/lib/log'
-import { boroughName, straightDistanceM } from '@/lib/phone/placeInfo'
-import { formatDuration, placeActionName, placeHoursLine } from '@/lib/world/placeActionCopy'
+import { boroughName, formatMiles, straightDistanceM } from '@/lib/phone/placeInfo'
+import { actionName, durationText, hoursText } from '@/lib/phone/placeFacts'
 import { placeIcon, placeIconGroup, placeIconGroups } from '@/lib/world/placeIcons'
 import { placeGroupLabel } from '@/lib/world/placeIconCopy'
 import {
@@ -32,9 +32,9 @@ import '@/lib/copy/ns/phone'
 type TripDriver = typeof import('@/state/tripDriver')
 
 const MODE_KEYS: Readonly<Record<TravelMode, CopyKey>> = {
-  walk: 'phone.shop.mode.walk',
-  subway: 'phone.shop.mode.subway',
-  taxi: 'phone.shop.mode.taxi',
+  walk: 'phone.shop.fastest.walk',
+  subway: 'phone.shop.fastest.subway',
+  taxi: 'phone.shop.fastest.taxi',
 }
 
 const MINUTES_PER_HOUR = 60
@@ -66,7 +66,7 @@ function stores(snapshot: Parameters<typeof placeActions>[1]): Store[] {
       : paid
           .map((action) =>
             copy('phone.shop.sellsAction', {
-              item: placeActionName(action),
+              item: actionName(action.id),
               price: formatMoney(action.def.cashCost),
             }),
           )
@@ -149,13 +149,7 @@ function useFastest(idKey: string): Fastest {
         .filter((option) => option.route !== null && option.block === null)
         .sort((a, b) => a.durationMin - b.durationMin)[0]
       if (best === undefined) continue
-      fastest.set(
-        id,
-        copy('phone.shop.fastest', {
-          time: formatDuration(best.durationMin),
-          mode: copy(MODE_KEYS[best.mode]),
-        }),
-      )
+      fastest.set(id, copy(MODE_KEYS[best.mode], { time: durationText(best.durationMin) }))
     }
     return { byId: fastest, plannedFor }
   }, [driver, idKey, location, home, hour, status])
@@ -228,7 +222,7 @@ export function ShopDirectory() {
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="font-bold text-fg">{name}</span>
                       <span className="text-xs text-muted">
-                        {boroughName(venue.borough)} · {placeHoursLine(view.hours)}
+                        {boroughName(venue.borough)} · {hoursText(view.hours)}
                       </span>
                       <span className="text-xs text-fg">{sells}</span>
                       <span className="text-xs font-semibold text-muted">{trip}</span>

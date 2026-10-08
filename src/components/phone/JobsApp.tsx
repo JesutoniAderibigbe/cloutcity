@@ -6,9 +6,9 @@ import { jobIds, jobLock, shiftWage } from '@/engine/jobs'
 import { placeActions } from '@/engine/placeActions'
 import { copy } from '@/lib/copy'
 import { cloutLevelName, jobName } from '@/lib/economyCopy'
-import { formatCount, formatMiles, formatMoney } from '@/lib/format'
-import { boroughName, straightDistanceM } from '@/lib/phone/placeInfo'
-import { formatDuration, placeHoursLine } from '@/lib/world/placeActionCopy'
+import { formatCount, formatMoney } from '@/lib/format'
+import { boroughName, formatMiles, straightDistanceM } from '@/lib/phone/placeInfo'
+import { durationText, hoursText } from '@/lib/phone/placeFacts'
 import {
   boroughAccessFor,
   boroughClosedReason,
@@ -68,7 +68,7 @@ export function JobsApp() {
                   <h4 className="text-base font-extrabold text-fg">{name}</h4>
                   <p className="text-xs text-muted">
                     {copy('phone.jobs.details', {
-                      hours: formatDuration(engineConfig.jobs.shiftHours * MINUTES_PER_HOUR),
+                      hours: durationText(engineConfig.jobs.shiftHours * MINUTES_PER_HOUR),
                       energy: formatCount(energy ?? engineConfig.jobs.energyCostPerShift[jobId]),
                     })}
                   </p>
@@ -114,7 +114,7 @@ export function JobsApp() {
                           </span>
                           <span className="text-xs text-muted">
                             {[
-                              view.kind === 'actions' ? placeHoursLine(view.hours) : null,
+                              view.kind === 'actions' ? hoursText(view.hours) : null,
                               here
                                 ? copy('phone.shop.here')
                                 : distance === null
