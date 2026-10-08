@@ -111,11 +111,11 @@ describe('accessible names explain the lock', () => {
   it('renders the why-locked copy with the level names, in voice', () => {
     const access = boroughAccess('manhattan', 0, engineConfig)
     expect(placeAccessibleName(place('times-square'), access, { copy: packs.nyc })).toBe(
-      "Times Square. Manhattan? On bodega money? Hit Scene Regular first. You're Nobody right now.",
+      "Times Square. Manhattan? On bodega money? Hit Scene Regular first. You're Newcomer right now.",
     )
     expect(
       placeAccessibleName(place('dumbo'), placeAccess(place('dumbo'), 0), { copy: packs.plain }),
-    ).toBe("DUMBO. Brooklyn is locked: reach Local clout to unlock it. You're at Nobody.")
+    ).toBe("DUMBO. Brooklyn is locked: reach Local clout to unlock it. You're at Newcomer.")
   })
 
   it('an open place is just its name', () => {

@@ -252,7 +252,7 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     for (const cell of ['money', 'clock', 'speed', 'clout', 'stats']) {
       expect(markup).toContain(`data-hud-cell="${cell}"`)
     }
-    for (const text of ['$150', 'Day 1', '8:00 AM', 'Make it in New York', 'Nobody']) {
+    for (const text of ['$150', 'Day 1', '8:00 AM', 'Make it in New York', 'Newcomer']) {
       expect(markup).toContain(text)
     }
     expect(markup).toContain('aria-valuetext="80 of 100"')
@@ -411,7 +411,7 @@ describe('feature copy renders with only its own namespaces loaded', () => {
       expect(copy('goals.icon.confirm.badge', { badge: goalsCopy.badgeName(badge) })).not.toBe('')
     }
     const level = cloutLevelName(engineConfig.clout.levels[0]?.id ?? '')
-    expect(copy('goals.icon.confirm.go', { level })).toBe('Start over at Nobody, keep your badges')
+    expect(copy('goals.icon.confirm.go', { level })).toBe('Start over at Newcomer, keep your badges')
     for (const key of [
       'goals.icon.title',
       'goals.icon.body',

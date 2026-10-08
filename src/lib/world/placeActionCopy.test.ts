@@ -100,7 +100,7 @@ describe('place action labels', () => {
     const reason = placeBlockReason(action.block, place('glowmatic'), nyc)
     expect(reason).toContain('Bouncer checked the list')
     expect(reason).toContain('Local')
-    expect(reason).toContain('Nobody')
+    expect(reason).toContain('Newcomer')
   })
 
   it('a locked borough reason comes from the borough copy', () => {
@@ -368,7 +368,7 @@ describe('club door line (before travel)', () => {
     if (view.kind !== 'actions' || view.door === null) throw new Error('no door')
     expect(view.door).toEqual({ requiredLevel: 'local', met: false })
     expect(clubDoorLine(view.door, snapshot, plain)).toBe(
-      "Door: Local clout and up. You're at Nobody.",
+      "Door: Local clout and up. You're at Newcomer.",
     )
     const local = snapshotAt('12:00', { clout: 100 })
     const open = placeActions(place('glowmatic'), local, engineConfig)
