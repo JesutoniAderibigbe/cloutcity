@@ -28,7 +28,11 @@
     "red-700": "#b42318",
     "red-300": "#ff8a80",
     "green-700": "#1a6e37",
-    "green-300": "#5fd38a"
+    "green-300": "#5fd38a",
+    "dawn-100": "#d3e8f6",
+    "linen-100": "#f5ead8",
+    "midnight-900": "#111b2d",
+    "dusk-900": "#2a2130"
   },
   "ui": {
     "day": {
@@ -49,7 +53,9 @@
       "danger": "red-700",
       "success": "green-700",
       "focus": "ink-900",
-      "meter": "green-700"
+      "meter": "green-700",
+      "wall-top": "dawn-100",
+      "wall-bottom": "linen-100"
     },
     "night": {
       "canvas": "coal-950",
@@ -69,7 +75,9 @@
       "danger": "red-300",
       "success": "green-300",
       "focus": "taxi-400",
-      "meter": "green-300"
+      "meter": "green-300",
+      "wall-top": "midnight-900",
+      "wall-bottom": "dusk-900"
     },
     "crossFadeMs": 400,
     "glassAlpha": {

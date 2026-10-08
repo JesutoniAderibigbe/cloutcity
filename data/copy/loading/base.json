@@ -25,6 +25,9 @@
     "loading.rentNotice": "Loading the rent notice",
     "loading.account": "Loading your account",
     "loading.creator": "Loading Make it you",
-    "loading.creatorOffer": "Loading the Make it you offer"
+    "loading.creatorOffer": "Loading the Make it you offer",
+    "loading.phone": "Loading your phone",
+    "loading.shop": "Loading the store directory",
+    "loading.phoneApp": "Opening the app"
   }
 }

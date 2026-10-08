@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { lazyIsland } from '@/components/overlay/lazyIsland'
-import { closeHudPanel, useHudPanel } from '@/state/hudPanel'
+import { dismissHudPanel, useHudPanel } from '@/state/hudPanel'
 import { onPlaceOpened } from '@/state/placeSheet'
 
 // DEC-11: the shell carries only this mount. Each panel, with the game store, engine and copy
@@ -46,9 +46,20 @@ const AccountSheet = lazyIsland(
   { zone: 'sheet', labelKey: 'loading.account' },
 )
 
+// S58: the Phone tab's app grid and the Shop tab's store directory, each its own island; every
+// Phone app is a further island inside the phone.
+const PhonePanel = lazyIsland(
+  () => import('@/components/phone/PhonePanel').then((module) => module.PhonePanel),
+  { zone: 'sheet', labelKey: 'loading.phone' },
+)
+const ShopDirectory = lazyIsland(
+  () => import('@/components/phone/ShopDirectory').then((module) => module.ShopDirectory),
+  { zone: 'sheet', labelKey: 'loading.shop' },
+)
+
 /**
  * The sheet zone's HUD-panel slot (S10a; goals S15; more S05; home S16; me S18a; cloud save
- * S18c; account S19): nothing until a HUD button (or the Me tab) opens a panel. A place opening closes the
+ * S18c; account S19; phone and shop S58): nothing until a HUD button (or the Me tab) opens a panel. A place opening closes the
  * panel, so only one sheet shows at a time. In builds with test hooks the
  * e2e hook is installed from its own chunk, so no test code ships in the shell (or at all in
  * production).
@@ -56,7 +67,7 @@ const AccountSheet = lazyIsland(
 export function HudPanelMount() {
   const panel = useHudPanel()
 
-  useEffect(() => onPlaceOpened(closeHudPanel), [])
+  useEffect(() => onPlaceOpened(dismissHudPanel), [])
 
   useEffect(() => {
     // Inlined at build time (next.config.ts): production builds drop the hook entirely.
@@ -71,5 +82,7 @@ export function HudPanelMount() {
   if (panel === 'me') return <MePanel />
   if (panel === 'cloud') return <CloudSavePanel />
   if (panel === 'account') return <AccountSheet />
+  if (panel === 'phone') return <PhonePanel />
+  if (panel === 'shop') return <ShopDirectory />
   return panel === 'inventory' ? <InventoryPanel /> : <RentPanel />
 }

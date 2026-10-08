@@ -75,7 +75,9 @@ describe('nothing overrides the sound choice (S05b)', () => {
   })
 
   it('no document- or window-level gesture listeners (only a deliberate tap on the sound choice unlocks)', () => {
-    expect(offenders(GLOBAL_GESTURE_LISTENER, [])).toEqual([])
+    // The `?` shortcut (S58) opens the phone's keyboard shortcuts and never touches audio: the
+    // checks above still hold for that file (it calls no unlock, choice or audio API).
+    expect(offenders(GLOBAL_GESTURE_LISTENER, ['src/components/nav/BottomTabs.tsx'])).toEqual([])
   })
 
   it('the only <audio> element is the detached canPlayType probe in runtime.ts, never attached or played', () => {

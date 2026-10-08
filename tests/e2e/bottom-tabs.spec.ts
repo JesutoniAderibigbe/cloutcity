@@ -1,6 +1,6 @@
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
 
-const TAB_NAMES = ['Map', 'Phone: coming soon', 'Shop: coming soon', 'Me']
+const TAB_NAMES = ['Map', 'Phone', 'Shop', 'Me']
 const MIN_TARGET_PX = 44
 
 test.describe('bottom tab bar', () => {
@@ -64,28 +64,25 @@ test.describe('bottom tab bar', () => {
     await checkA11y()
   })
 
-  test('Phone and Shop are disabled with a Soon badge, and a tap does nothing (UI-16)', async ({
-    page,
-  }) => {
+  test('Phone opens the app grid and Shop the store directory (S58)', async ({ page }) => {
     await page.goto('/')
-    // Until the welcome gate has decided, everything behind it is inert and takes no focus.
     await waitForWelcomeGate(page)
     const nav = page.getByRole('navigation', { name: 'Main' })
-    for (const name of ['Phone', 'Shop']) {
-      const tab = nav.getByRole('button', { name: `${name}: coming soon`, exact: true })
-      await expect(tab).toHaveAttribute('aria-disabled', 'true')
-      await expect(tab).toBeDisabled()
-      await expect(tab).toContainText('Soon')
-      // Still reachable by keyboard, so its name says why it does nothing.
-      await tab.focus()
-      await expect(tab).toBeFocused()
-      await page.keyboard.press('Enter')
-      await tab.click({ force: true })
-      await expect(tab).not.toHaveAttribute('aria-current')
-      await expect(nav.getByRole('button', { name: 'Map', exact: true })).toHaveAttribute(
-        'aria-current',
-        'page',
-      )
-    }
+    const phone = nav.getByRole('button', { name: 'Phone', exact: true })
+    await phone.click()
+    await expect(phone).toHaveAttribute('aria-current', 'page')
+    const dialog = page.getByRole('dialog', { name: 'Phone' })
+    await expect(dialog.getByRole('list', { name: 'Apps' })).toBeVisible()
+    await dialog.getByRole('button', { name: 'Bank', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Bank' })).toBeFocused()
+    await page.keyboard.press('Escape')
+    await expect(dialog.getByRole('button', { name: 'Bank', exact: true })).toBeFocused()
+
+    const shop = nav.getByRole('button', { name: 'Shop', exact: true })
+    await shop.click()
+    await expect(shop).toHaveAttribute('aria-current', 'page')
+    await expect(page.getByRole('dialog', { name: 'Shop' })).toBeVisible()
+    await nav.getByRole('button', { name: 'Map', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: 'Shop' })).toBeHidden()
   })
 })

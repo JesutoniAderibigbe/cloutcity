@@ -56,6 +56,17 @@ export const OPTIONAL_CHUNK_MARKERS = [
   // account, all server data. Opened offline before it was ever cached, the Me tab shows the
   // island's load-failure retry instead of its own offline line; play is untouched.
   { id: 'me-panel', marker: 'cc-feature:me-panel' },
+  // The Phone tab (S58): its home screen and every app screen (`cc-feature:phone-<app>`), opened
+  // by the player; the map plays without them.
+  { id: 'phone', marker: 'cc-feature:phone' },
+  // The `phone` copy namespace, which the bundler may split from the screens that render it (a
+  // key only data/copy/phone holds).
+  { id: 'phone-copy', marker: 'phone.shop.premiumTitle' },
+  // The Shop tab's store directory (S58).
+  { id: 'shop-directory', marker: 'cc-feature:shop-directory' },
+  // The Updates inbox's rules (src/lib/phone/updates.ts), shared by the home screen's badge and
+  // the Updates app (an item kind only that module names).
+  { id: 'phone-updates', marker: 'rent-owed' },
 ] as const
 
 /** The markers an optional chunk's text contains (empty: precache it). */
