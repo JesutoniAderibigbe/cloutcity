@@ -387,11 +387,11 @@ Readability scale (drawn width ÷ true width): .
 
 Game scale: heights ×1, widths ×1. Real scale: the square is a district of real-size blocks; its screens, not its size, make it read.
 
-Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
 
-- L0: 3472 triangles, 46940 bytes (`public/landmarks/times-square/lod0.glb`)
-- L1: 1688 triangles, 28492 bytes (`public/landmarks/times-square/lod1.glb`)
-- L2: 588 triangles, 13484 bytes (`public/landmarks/times-square/lod2.glb`)
+- L0: 3712 triangles, 49404 bytes (`public/landmarks/times-square/lod0.glb`)
+- L1: 1840 triangles, 29720 bytes (`public/landmarks/times-square/lod1.glb`)
+- L2: 900 triangles, 18016 bytes (`public/landmarks/times-square/lod2.glb`)
 - L3: 290 triangles, 8056 bytes (`public/landmarks/times-square/lod3.glb`)
 
 ### washington-square-arch

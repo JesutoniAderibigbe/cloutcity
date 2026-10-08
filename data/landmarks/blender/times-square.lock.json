@@ -5,36 +5,36 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "105c23f32cbd9e86e86fcd555df6aa11354ed067c0dc7744192a783e9627ac6d",
+  "inputsSha": "5aa48d996cdaca0a51ded3c458969d4dfa20fb9a012acc60a9161a08ec77957c",
   "caps": {
-    "low": 600,
-    "mid": 1800,
-    "high": 3500
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
   },
   "levels": [
     {
       "level": 0,
       "file": "public/landmarks/times-square/lod0.glb",
-      "sha256": "439277c579c1d5bcd9a92b58d8043858d05b3ea69b59cde8a2f577fe5351eb11",
-      "bytes": 46940,
-      "triangles": 3472,
-      "uncompressedBytes": 327600
+      "sha256": "262a1d195185aa4d4f6263be627493f938e23954b409b3f44419dc97595ab4c1",
+      "bytes": 49404,
+      "triangles": 3712,
+      "uncompressedBytes": 350160
     },
     {
       "level": 1,
       "file": "public/landmarks/times-square/lod1.glb",
-      "sha256": "1e9fd9849c0f10212eee48dfac65a6aace2f198f85feb730ba4b260d659f57ac",
-      "bytes": 28492,
-      "triangles": 1688,
-      "uncompressedBytes": 159904
+      "sha256": "e57490a1e7721640d7ee87b816ae5a7dd885cfc355cfa0352d4d2cef7ed12298",
+      "bytes": 29720,
+      "triangles": 1840,
+      "uncompressedBytes": 174192
     },
     {
       "level": 2,
       "file": "public/landmarks/times-square/lod2.glb",
-      "sha256": "64218118fb2671a8564b7e21d19ab6eeb70c7a72ef528e19097e4066b8752996",
-      "bytes": 13484,
-      "triangles": 588,
-      "uncompressedBytes": 56488
+      "sha256": "1edb0db41d8b22b7e1227e7eb4266218c5e6eb700da827245140ad6245202a20",
+      "bytes": 18016,
+      "triangles": 900,
+      "uncompressedBytes": 85820
     },
     {
       "level": 3,
