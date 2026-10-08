@@ -12,7 +12,7 @@ import { syncGoals } from '@/engine/goals'
 import { SAVE_VERSION, initialSave, type SaveState } from '@/engine/save'
 import { playerWithClout } from '@/engine/test-support'
 import type { Database } from '@/lib/supabase/database.types'
-import { createLogger } from '@/lib/log'
+import { createLogger, type LogRecord } from '@/lib/log'
 import type { CloudCopy, UploadBody, UploadReply } from '@/lib/sync/protocol'
 import { createAudioSettingsStore, type PersistedAudioSettings } from './audioSettings'
 import {
@@ -48,6 +48,8 @@ class MemoryStorage implements Storage {
   }
 }
 
+/** Where sync keeps the earliest time of the next upload (src/state/cloudSync.ts). */
+const NEXT_KEY = 'cloutcity:sync-next'
 const T0 = Date.parse('2026-10-07T12:00:00Z')
 const USER = 'user-1'
 const DEVICE = 'device-1'
@@ -72,7 +74,8 @@ function setup(
     user?: { readonly id: string; readonly anonymous: boolean }
   } = {},
 ) {
-  const logger = createLogger({ sink: () => {} })
+  const logs: LogRecord[] = []
+  const logger = createLogger({ level: 'debug', sink: (record) => logs.push(record) })
   const local = new MemoryStorage()
   const game = createGameStore(
     createSafeJsonStorage<PersistedState>(() => local, logger),
@@ -216,6 +219,8 @@ function setup(
     audio,
     status,
     local,
+    logs,
+    now: () => now,
     uploads,
     replies,
     audioCalls,
@@ -381,6 +386,7 @@ describe('cloud save sync: uploads', () => {
     const s = setup()
     const sync = createCloudSync(s.deps)
     await sync.ready
+    await s.advance(syncJson.minUploadIntervalMs)
     s.game.getState().performAction('nap')
     await s.leave()
     expect(s.uploads.at(-1)?.keepalive).toBe(true)
@@ -483,18 +489,54 @@ describe('cloud save sync: uploads', () => {
     const sync = createCloudSync(s.deps)
     await sync.ready
     s.game.getState().performAction('nap')
-    await s.leave()
-    // A keepalive flush is the page going away: it never waits.
-    expect(s.uploads).toHaveLength(2)
-    s.game.getState().performAction('nap')
     await s.goOnline()
-    expect(s.uploads).toHaveLength(2)
+    expect(s.uploads).toHaveLength(1)
     await s.advance(syncJson.minUploadIntervalMs)
-    expect(s.uploads).toHaveLength(3)
+    expect(s.uploads).toHaveLength(2)
     sync.stop()
   })
 
-  it('a rate limit waits and tries again', async () => {
+  it('a page being left inside the interval sends no keepalive; the change waits here', async () => {
+    const s = setup()
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.game.getState().performAction('nap')
+    await s.leave()
+    await s.leave()
+    expect(s.uploads).toHaveLength(1)
+    // The tab was only hidden: the change goes once the interval is over.
+    await s.advance(syncJson.minUploadIntervalMs)
+    expect(s.uploads).toHaveLength(2)
+    expect((s.uploads[1]?.body.save as SaveState).actions).toBe(s.game.getState().actions)
+    sync.stop()
+  })
+
+  it('hidden then left: one keepalive upload, not two', async () => {
+    const s = setup()
+    let slow = false
+    let release = () => {}
+    const sync = createCloudSync({
+      ...s.deps,
+      fetch: (async (url, init) => {
+        if (slow) await new Promise<void>((resolve) => (release = resolve))
+        return s.deps.fetch(url, init)
+      }) as typeof fetch,
+    })
+    await sync.ready
+    await s.advance(syncJson.minUploadIntervalMs)
+    slow = true
+    s.game.getState().performAction('nap')
+    // visibilitychange (hidden), then pagehide, while the first keepalive is still out.
+    await s.leave()
+    await s.leave()
+    release()
+    await s.advance(0)
+    expect(s.uploads).toHaveLength(2)
+    expect(s.uploads.filter((upload) => upload.keepalive)).toHaveLength(1)
+    sync.stop()
+  })
+
+  it('a rate limit is an expected wait: logged at info, retried, nothing lost', async () => {
     const s = setup()
     s.replies.push(() => ({
       status: 429,
@@ -502,9 +544,63 @@ describe('cloud save sync: uploads', () => {
     }))
     const sync = createCloudSync(s.deps)
     await sync.ready
+    expect(s.status.getState().status).not.toBe('paused')
+    expect(Number(s.local.getItem(NEXT_KEY))).toBe(T0 + 5000)
     await s.advance(5000)
     expect(s.uploads).toHaveLength(2)
     expect(s.status.getState().status).toBe('synced')
+    expect(s.logs.filter((r) => r.level === 'warn' || r.level === 'error')).toEqual([])
+    expect(s.logs.some((r) => r.level === 'info' && /rate-limited/.test(r.msg))).toBe(true)
+    sync.stop()
+  })
+
+  it('repeated rate limits back off exponentially, from at least the Retry-After', async () => {
+    const s = setup()
+    for (let i = 0; i < 3; i++) {
+      s.replies.push(() => ({
+        status: 429,
+        reply: { ok: false, code: 'rate-limited', retryAfterMs: 1000 },
+      }))
+    }
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    const sentAt = () => s.uploads.length
+    // Waits: max(1000, 2000), max(1000, 4000), max(1000, 8000).
+    await s.advance(syncJson.retry.baseMs - 1)
+    expect(sentAt()).toBe(1)
+    await s.advance(1)
+    expect(sentAt()).toBe(2)
+    await s.advance(2 * syncJson.retry.baseMs)
+    expect(sentAt()).toBe(3)
+    await s.advance(4 * syncJson.retry.baseMs - 1)
+    expect(sentAt()).toBe(3)
+    await s.advance(1)
+    expect(sentAt()).toBe(4)
+    expect(s.status.getState().status).toBe('synced')
+    expect((s.cloud()?.data as SaveState).actions).toBe(s.game.getState().actions)
+    sync.stop()
+  })
+
+  it('a refused upload does not hold the next one: the interval counts from the last accepted', async () => {
+    const s = setup()
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    await s.advance(syncJson.minUploadIntervalMs)
+    s.replies.push(() => ({ status: 409, reply: { ok: false, code: 'conflict', head: null } }))
+    s.game.getState().performAction('nap')
+    await s.leave()
+    await s.advance(0)
+    // The account had no save: the upload goes again at once, the server's interval long over.
+    expect(s.uploads).toHaveLength(3)
+    sync.stop()
+  })
+
+  it('ignores a stored wait further off than the server ever asks (a clock that moved)', async () => {
+    const s = setup()
+    s.local.setItem(NEXT_KEY, String(T0 + 365 * 86_400_000))
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    expect(s.uploads).toHaveLength(1)
     sync.stop()
   })
 })
@@ -636,6 +732,7 @@ describe('cloud save sync: review probes (S18c bug-hunter)', () => {
     serve(s, 1)
     const first = createCloudSync(s.deps)
     await first.ready
+    await s.advance(syncJson.minUploadIntervalMs)
     s.game.getState().performAction('nap')
     // The page goes away: the keepalive request lands, its reply is never read.
     s.replies.push((body) => {
@@ -649,6 +746,49 @@ describe('cloud save sync: review probes (S18c bug-hunter)', () => {
     const reloaded = secondTab(s)
     const second = createCloudSync(reloaded.deps)
     await second.ready
+    // It waits out the interval of the keepalive upload it never saw the reply to.
+    await s.advance(syncJson.minUploadIntervalMs + syncJson.retry.baseMs)
+    expect(reloaded.status.getState().status).toBe('synced')
+    second.stop()
+  })
+
+  it('a reload right after a keepalive upload waits out the server interval: no 429', async () => {
+    const s = setup()
+    const interval = syncJson.minUploadIntervalMs
+    let acceptedAt = Number.NEGATIVE_INFINITY
+    let refused = 0
+    // Like commit_save: one upload per interval, counted from the last one it accepted.
+    const server = (body: UploadBody): { status: number; reply: UploadReply } => {
+      if (s.now() - acceptedAt < interval) {
+        refused += 1
+        return { status: 429, reply: { ok: false, code: 'rate-limited', retryAfterMs: interval } }
+      }
+      const reply = cas(s)(body)
+      if (reply.status === 200) acceptedAt = s.now()
+      return reply
+    }
+    for (let i = 0; i < 10; i++) s.replies.push(server)
+    const first = createCloudSync(s.deps)
+    await first.ready
+    await s.advance(interval)
+    s.game.getState().performAction('nap')
+    // pagehide: the keepalive upload lands, the page is gone before its reply.
+    s.replies.unshift((body) => {
+      server(body)
+      throw new TypeError('Failed to fetch')
+    })
+    await s.leave()
+    first.stop()
+    expect(s.cloud()?.revision).toBe(2)
+    // The new page boots at once and plays on.
+    const reloaded = secondTab(s)
+    reloaded.game.getState().performAction('nap')
+    const second = createCloudSync(reloaded.deps)
+    await second.ready
+    await s.advance(interval + syncJson.retry.baseMs)
+    expect(refused).toBe(0)
+    expect(s.cloud()?.revision).toBe(3)
+    expect((s.cloud()?.data as SaveState).actions).toBe(reloaded.game.getState().actions)
     expect(reloaded.status.getState().status).toBe('synced')
     second.stop()
   })

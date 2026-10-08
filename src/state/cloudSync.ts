@@ -30,7 +30,11 @@
  * - Upload: a meaningful change (anything but the clock's minute) is uploaded after
  *   `sync.debounceMs` of quiet, and at most `sync.maxWaitMs` after the first change. A hidden tab
  *   or a page being left flushes at once with a keepalive request (if it fits
- *   `sync.keepaliveMaxBytes`). Offline, changes wait for the network (`offline`). Failures back
+ *   `sync.keepaliveMaxBytes`). No upload, a keepalive included, goes inside the server's
+ *   `sync.minUploadIntervalMs` (or its Retry-After): the time the next one may go is kept across
+ *   reloads (`cloutcity:sync-next`), so a fresh page waits out the upload of the page it replaced
+ *   (whose reply it never saw) instead of drawing a 429; the change stays saved on this device and
+ *   goes with the next upload. Offline, changes wait for the network (`offline`). Failures back
  *   off exponentially (`sync.retry`); a save the server refuses pauses sync (`paused`) for
  *   `sync.rejectedRetryMs`; a conflict (409, naming the head only: the save is read with this
  *   session) waits for the player's choice in the sheet. "Keep this device" uploads on top of the
@@ -63,6 +67,8 @@ import { syncStatusStore, type SyncStatus, type SyncStatusStore } from './syncSt
 const SYNC = syncJson as SyncConfig
 
 export const SYNC_META_KEY = 'cloutcity:sync'
+/** The earliest time (ms) this device may upload again; kept apart so the record's format stays. */
+const SYNC_NEXT_KEY = 'cloutcity:sync-next'
 const META_VERSION = 2
 /** How often `flushNow` looks again while an upload waits on the server's interval. */
 const FLUSH_POLL_MS = 250
@@ -343,8 +349,15 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
   let firstChangeAt: number | null = null
   let failures = 0
   let pausedUntil = 0
-  /** When the server last accepted an upload from this page (its rate limit counts from it). */
-  let acceptedAt = Number.NEGATIVE_INFINITY
+  /** The earliest time the server takes another upload (see the header; read with the record). */
+  let nextAt = 0
+  /** Storage refused (private mode, quota): the value lasts for this page only. */
+  const store = (key: string, value: string) => {
+    try {
+      deps.storage()?.setItem(key, value)
+    } catch {}
+  }
+  const holdUntil = (at: number) => store(SYNC_NEXT_KEY, String((nextAt = at)))
   let blocked: 'conflict' | 'update' | 'behind' | null = null
   let conflict: CloudCopy | null = null
   /** This device's game was last synced to another account (see the header). */
@@ -359,7 +372,11 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
   const readMeta = (userId: string, ownerKind: OwnerKind): Meta => {
     let stored: Meta | null = null
     try {
-      const raw = deps.storage()?.getItem(SYNC_META_KEY)
+      const storage = deps.storage()
+      // A wait further off than any the server asks for is a clock that moved: ignored.
+      const at = Number(storage?.getItem(SYNC_NEXT_KEY)) || 0
+      nextAt = at > deps.now() + SYNC.minUploadIntervalMs + SYNC.retry.maxMs ? 0 : at
+      const raw = storage?.getItem(SYNC_META_KEY)
       stored = raw == null ? null : parseSyncMeta(JSON.parse(raw))
     } catch {
       stored = null
@@ -384,13 +401,11 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
   const writeMeta = (patch: Partial<Meta>) => {
     if (meta === null) return
     meta = { ...meta, ...patch }
-    try {
-      deps.storage()?.setItem(SYNC_META_KEY, JSON.stringify(meta))
-    } catch {
-      // Storage refused (private mode, quota): the record lasts for this page only.
-    }
+    store(SYNC_META_KEY, JSON.stringify(meta))
   }
 
+  /** The account's save history starts over (it has no save). */
+  const forget = () => writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
   const changed = () => meta !== null && cloudSignature(current()) !== meta.cloudSignature
 
   /** True when `cloud` is an upload this device sent for this account (see the table above). */
@@ -451,15 +466,12 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       setStatus('offline')
       return
     }
-    const now = deps.now()
-    if (now < pausedUntil && !keepalive) {
-      retryIn(pausedUntil - now)
-      return
-    }
-    // The server refuses a second upload within minUploadIntervalMs (429): wait it out instead.
-    const allowedAt = acceptedAt + SYNC.minUploadIntervalMs
-    if (now < allowedAt && !keepalive) {
-      retryIn(allowedAt - now)
+    // A pause holds back all but a page being left. The server refuses a second upload within
+    // minUploadIntervalMs (429): that is waited out, a page being left too (its change stays here
+    // and goes with the next page's upload).
+    const wait = Math.max(keepalive ? 0 : pausedUntil, nextAt) - deps.now()
+    if (wait > 0) {
+      retryIn(wait)
       return
     }
     inflight = upload(keepalive).finally(() => {
@@ -487,15 +499,14 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       const session = await deps.client.auth.getSession()
       token = session.data.session?.access_token ?? null
     }
-    if (token === null) {
-      pausedUntil = deps.now() + backoff()
-      setStatus('paused')
-      retryIn(pausedUntil - deps.now())
-      return
-    }
+    if (token === null) return pause(backoff())
     firstChangeAt = null
     const mark = uploadMark(save)
     if (mark !== null) writeMeta({ sent: [...(meta.sent ?? []), mark].slice(-SENT_KEEP) })
+    // Held from the send: a reply may never come (a page being left). The server accepts a little
+    // after the send, so wait a retry step longer until the reply says when it did.
+    const held = nextAt
+    holdUntil(deps.now() + SYNC.minUploadIntervalMs + SYNC.retry.baseMs)
     let response: Response
     try {
       response = await deps.fetch(SAVE_ROUTE, {
@@ -507,7 +518,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       })
     } catch (error) {
       // No network, or the request was cut off: expected, retried.
-      logger.info('A cloud save upload did not reach the server; retrying', {
+      logger.info('Cloud save upload not sent', {
         error: error instanceof Error ? error.name : typeof error,
       })
       if (!deps.isOnline()) setStatus('offline')
@@ -520,12 +531,11 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       if (!parsed.success) throw new Error('unexpected reply')
       reply = parsed.data
     } catch {
-      logger.warn('The cloud save server sent an unexpected reply', { status: response.status })
-      pausedUntil = deps.now() + backoff()
-      setStatus('paused')
-      retryIn(pausedUntil - deps.now())
-      return
+      logger.warn('Unexpected cloud save reply', { status: response.status })
+      return pause(backoff())
     }
+    // Not accepted (quarantined, a conflict): the server's interval counts from the one before.
+    if (!reply.ok && reply.code !== 'rate-limited') holdUntil(held)
     await handleReply(reply, save)
   }
 
@@ -533,7 +543,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
     if (reply.ok) {
       failures = 0
       pausedUntil = 0
-      acceptedAt = deps.now()
+      holdUntil(deps.now() + SYNC.minUploadIntervalMs)
       writeMeta({
         revision: reply.revision,
         cloudSignature: cloudSignature(applyRepairs(sent, reply.repairs)),
@@ -553,7 +563,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       case 'conflict': {
         if (reply.head === null) {
           // The account has no save (it was removed): start its history over.
-          writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
+          forget()
           retryIn(0)
           return
         }
@@ -565,7 +575,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
         }
         const cloud = read.cloud
         if (cloud === null) {
-          writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
+          forget()
           retryIn(0)
         } else if (sentHere(cloud, null)) {
           // This device's own upload landed, but its reply never arrived.
@@ -585,12 +595,15 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
         }
         return
       case 'rate-limited':
-        retryIn(Math.max(reply.retryAfterMs, SYNC.retry.baseMs))
+        // Expected (another tab or page of this account uploaded just now): wait and retry.
+        logger.info('Cloud save rate-limited', { ms: reply.retryAfterMs })
+        holdUntil(deps.now() + reply.retryAfterMs)
+        retryIn(Math.max(reply.retryAfterMs, backoff()))
         return
       case 'rejected':
       case 'invalid':
       case 'too-large':
-        logger.info('The server did not accept the cloud save; sync is paused', {
+        logger.info('Cloud save refused; sync paused', {
           code: reply.code,
         })
         // The panel then offers the account's game as a way out (never taken on its own).
@@ -600,7 +613,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       case 'branch-behind':
         // This device's game is from before the account's last prestige: it cannot replace the
         // account's. No retry: the panel explains and offers the account's game (useCloud).
-        logger.info("Kept this device's game, but it is behind the account in prestige")
+        logger.info('Kept game is behind the account in prestige')
         blocked = 'behind'
         writeMeta({ overrideFrom: null })
         setStatus('behind')
@@ -656,7 +669,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       .select('revision, save_version, data, accepted_at, last_device_id')
       .maybeSingle()
     if (error !== null) {
-      logger.info('Could not read the cloud save; trying again later', { code: error.code })
+      logger.info('Cloud save read failed', { code: error.code })
       return { ok: false }
     }
     return {
@@ -685,12 +698,12 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
     const local = current()
     if (foreign && !untouched(local)) {
       // Another saved account's game: never moved into this account without the player.
-      logger.info("This device's game belongs to another account; asking which to keep")
+      logger.info("Device game is another account's; asking")
       enterConflict(cloud)
       return
     }
     if (cloud === null) {
-      if (meta.revision !== 0) writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
+      if (meta.revision !== 0) forget()
       return
     }
     if (cloud.saveVersion > SAVE_VERSION) {
@@ -734,7 +747,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
         if (cloud === null) {
           // The account has no save: keep this device's game there, or start fresh on it.
           if (choice === 'use-cloud') game.getState().startNewGame()
-          writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
+          forget()
           void flush()
           return
         }
@@ -755,7 +768,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
             conflict = null
             if (adopt(read.cloud)) return
           }
-          logger.info('Could not take the account save; sync stays paused')
+          logger.info('Could not take the account save')
         })()
       },
     },

@@ -42,10 +42,6 @@ const banner = (page: import('@playwright/test').Page) =>
   page.locator('[data-overlay-zone="banner"] [data-cc-notice="save-progress"]')
 
 test.describe('saving by email', () => {
-  // A reload right after an upload sends the page-leave keepalive upload inside the server's
-  // upload interval, which it refuses with a 429 (S18c; the next upload carries the change).
-  test.use({ injectedConsoleErrors: [/status of 429/] })
-
   test('after the first milestone a guest saves by email link and keeps their game', async ({
     page,
     context,
