@@ -382,6 +382,12 @@ export const SceneConfigSchema = z.strictObject({
       heightPerDistance: ratio,
       minHeightM: metres,
       maxHeightM: metres,
+      /**
+       * S16b: the player's own marker (capsule, ring and character) is drawn this many times the
+       * base size above, so the person reads clearly on the map at every zoom; trip vehicles and
+       * trains keep the base size.
+       */
+      playerScale: z.number().min(1).max(10),
       /** Capsule radius. */
       radiusRatio: z.number().gt(0).lt(0.5),
       ringOuterRatio: ratio,

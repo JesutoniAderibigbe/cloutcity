@@ -136,7 +136,7 @@ export function PlayerAvatar({
   useEffect(() => {
     if (!(controls instanceof MapControls)) return
     const update = () => {
-      built.setHeight(avatarSize(controls.getDistance(), avatar))
+      built.setHeight(avatarSize(controls.getDistance(), avatar) * avatar.playerScale)
       invalidate()
     }
     update()
