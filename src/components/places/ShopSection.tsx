@@ -124,7 +124,12 @@ export function ShopSection({
     if (result === null || section === null) return
     const lost = button !== null && (button.disabled || !button.isConnected)
     if (lost || !section.contains(document.activeElement)) {
-      section.querySelector<HTMLElement>('h3')?.focus()
+      // The item's own row first (S04k): it holds the result, so focus and the scroll stay where
+      // the player tapped instead of jumping to the shop's heading above a long list.
+      const row = section.querySelector<HTMLElement>(
+        `[data-shop-item="${CSS.escape(result.itemId)}"]`,
+      )
+      ;(row ?? section.querySelector<HTMLElement>('h3'))?.focus()
     }
   }, [result])
 
@@ -174,7 +179,8 @@ export function ShopSection({
             <li
               key={item.id}
               data-shop-item={item.id}
-              className="flex items-center justify-between gap-2 rounded-xl bg-canvas/60 p-2"
+              tabIndex={-1}
+              className="flex items-center justify-between gap-2 rounded-xl bg-canvas/60 p-2 focus:outline-none"
             >
               <ItemThumb item={item} />
               <div className="min-w-0 flex-1">

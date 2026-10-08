@@ -223,7 +223,7 @@ body {
 }
 
 /* The level-up moment (S04k): a burst of taxi-yellow sparkles inside the toast, a light sweep
-   across it and one glow ring, once, about a second in all. CSS only, on the toast's own
+   across it and one glow ring, once, about a second and a half in all. CSS only, on the toast's own
    attribute, so the boot island gains no byte; decorative (pseudo-elements, never announced);
    no sound (GR-13). It stays inside the toast, so the toast zone holds it (UX-1). Under reduced
    motion the sparkles sit still and faint and nothing moves. */
@@ -245,14 +245,17 @@ body {
 
 [data-level-up]::before {
   background:
-    radial-gradient(circle at 8% 30%, var(--color-taxi) 0 2px, transparent 3px),
-    radial-gradient(circle at 18% 78%, var(--color-taxi) 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 31% 18%, var(--color-taxi-ink) 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 46% 85%, var(--color-taxi) 0 2px, transparent 3px),
-    radial-gradient(circle at 58% 22%, var(--color-taxi) 0 1.5px, transparent 2.5px),
-    radial-gradient(circle at 70% 70%, var(--color-taxi-ink) 0 2px, transparent 3px),
-    radial-gradient(circle at 84% 26%, var(--color-taxi) 0 2px, transparent 3px),
-    radial-gradient(circle at 93% 74%, var(--color-taxi) 0 1.5px, transparent 2.5px);
+    radial-gradient(circle at 6% 28%, var(--color-taxi) 0 3px, transparent 4px),
+    radial-gradient(circle at 14% 80%, var(--color-taxi) 0 2px, transparent 3px),
+    radial-gradient(circle at 24% 14%, var(--color-taxi-ink) 0 2px, transparent 3px),
+    radial-gradient(circle at 33% 62%, var(--color-taxi) 0 3.5px, transparent 4.5px),
+    radial-gradient(circle at 42% 20%, var(--color-taxi) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 51% 86%, var(--color-taxi-ink) 0 2px, transparent 3px),
+    radial-gradient(circle at 60% 30%, var(--color-taxi) 0 3px, transparent 4px),
+    radial-gradient(circle at 68% 74%, var(--color-taxi) 0 2.5px, transparent 3.5px),
+    radial-gradient(circle at 77% 16%, var(--color-taxi-ink) 0 2px, transparent 3px),
+    radial-gradient(circle at 86% 58%, var(--color-taxi) 0 3.5px, transparent 4.5px),
+    radial-gradient(circle at 95% 22%, var(--color-taxi) 0 2.5px, transparent 3.5px);
   opacity: 0.35;
 }
 
@@ -260,23 +263,23 @@ body {
   [data-level-up] {
     animation:
       level-up-pop 320ms ease-out 1,
-      level-up-glow 900ms ease-out 120ms 1;
+      level-up-glow 1100ms ease-out 100ms 1;
   }
 
   [data-level-up]::before {
     opacity: 0;
-    animation: level-up-sparkle 1100ms ease-out 80ms 1;
+    animation: level-up-sparkle 1500ms ease-out 60ms 1;
   }
 
   [data-level-up]::after {
     background: linear-gradient(
       105deg,
       transparent 30%,
-      color-mix(in srgb, var(--color-taxi) 45%, transparent) 50%,
+      color-mix(in srgb, var(--color-taxi) 60%, transparent) 50%,
       transparent 70%
     );
     transform: translateX(-110%);
-    animation: level-up-sweep 760ms ease-in-out 200ms 1;
+    animation: level-up-sweep 900ms ease-in-out 150ms 1;
   }
 }
 
@@ -285,12 +288,15 @@ body {
     opacity: 0;
     transform: scale(0.7);
   }
-  35% {
+  25% {
     opacity: 1;
+  }
+  70% {
+    opacity: 0.9;
   }
   100% {
     opacity: 0;
-    transform: scale(1.18);
+    transform: scale(1.22);
   }
 }
 
@@ -305,7 +311,7 @@ body {
     box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-taxi) 70%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 10px transparent;
+    box-shadow: 0 0 0 14px transparent;
   }
 }
 
