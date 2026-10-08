@@ -41,6 +41,18 @@ export interface AmbientHookState {
     readonly kitsDrawn: number
     readonly points: readonly { readonly id: string; readonly x: number; readonly y: number }[]
   }
+  /** The sky (S04q): what the last frame drew, and whether it added a shader program. */
+  readonly planes: {
+    readonly status: 'off' | 'ready'
+    readonly planes: number
+    readonly helicopters: number
+    readonly drawCalls: number
+    readonly triangles: number
+    /** Bodies, livery and rotors draw with the blocks' program. */
+    readonly sameProgramAsBlocks: boolean
+    /** The lamps draw with the map pins' night-glow program. */
+    readonly lampsSameProgramAsPins: boolean
+  }
 }
 
 /** Set by AmbientLife for its life; read by the test hook. */

@@ -17,13 +17,23 @@
  * The FPS step-down lowers ambient density before it drops a tier: this chunk registers the
  * density levels and its own FPS floor with the quality store.
  *
+ * The sky (S04q, planes.ts) loads from here on demand, in its own chunk: airliners on the
+ * Queens airports' approach paths and a helicopter over Manhattan, on the same ticker and pauses.
+ *
  * The townsfolk (S04o, townsfolk.ts) live here too: Sims-like locals at the player's size around
  * the places, on the same material, ticker and pauses. A tap on one claims the map tap
  * (src/scene/pins/mapTaps.ts) and opens their card (src/state/townsfolk.ts, TownsfolkCard.tsx).
  */
 import { useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import { InstancedMesh, Mesh, type Material, type Object3D, type WebGLRenderer } from 'three'
+import {
+  InstancedMesh,
+  Mesh,
+  MeshToonMaterial,
+  type Material,
+  type Object3D,
+  type WebGLRenderer,
+} from 'three'
 import ambientJson from '@data/config/ambient.json'
 import perfJson from '@data/config/perf.json'
 import type { GeoBase } from '../geo/schema'
@@ -41,6 +51,7 @@ import type {
 } from '@/lib/world/ambient/types'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { AvatarConfig } from '../avatar/buildAvatar'
+import { useNightGlow } from '../lighting/nightGlow'
 import { acquireModels } from '../models/runtime'
 import { ambientSteps } from '../quality/ambientSteps'
 import { beginContinuous, endContinuous } from '../quality/continuity'
@@ -58,6 +69,7 @@ import {
 } from './registry'
 import type { AnimatedKit, ScenePedestrianKit } from './pedestrianKits'
 import { createTownsfolkLayer, type TownsfolkLayer, type TownsfolkView } from './townsfolk'
+import type { PlaneLayer, PlaneView } from './planes'
 import { catalogVehicleKits, type AmbientModelLoader } from './vehicleKits'
 
 const config = ambientJson as unknown as AmbientConfig
@@ -147,6 +159,8 @@ export default function AmbientLife({
   const sceneRoot = useThree((state) => state.scene)
   const invalidate = useThree((state) => state.invalidate)
   const get = useThree((state) => state.get)
+  // The rig's shared uniform: the aircraft's lamps glow with it (S04q).
+  const nightGlow = useNightGlow()
   const reducedMotion = useReducedMotion()
   const [test] = useState(testClock)
   // Under reduced motion the city stays as it was when it mounted.
@@ -181,6 +195,8 @@ export default function AmbientLife({
   const layerRef = useRef<AmbientLayer | null>(null)
   const townsfolkRef = useRef<TownsfolkLayer | null>(null)
   const townsfolkViewRef = useRef<TownsfolkView | null>(null)
+  const planesRef = useRef<PlaneLayer | null>(null)
+  const planesViewRef = useRef<PlaneView | null>(null)
   useEffect(() => {
     nightRef.current = night
     invalidate()
@@ -337,8 +353,40 @@ export default function AmbientLife({
     sceneRoot.add(townsfolk.group)
     layerRef.current = created
     townsfolkRef.current = townsfolk
+    // The sky, in a chunk of its own (planes.ts); every tier flies at least one plane (DEC-52).
+    let planesGone = false
+    let planes: PlaneLayer | null = null
+    import('./planes')
+      .then(({ createPlaneLayer }) => {
+        if (planesGone) return
+        const material = created.material
+        planes = createPlaneLayer({
+          tier,
+          config: config.planes,
+          seed: config.seed,
+          material,
+          gradientMap: material instanceof MeshToonMaterial ? material.gradientMap : null,
+          nightGlow,
+          groundY,
+        })
+        sceneRoot.add(planes.group)
+        planesRef.current = planes
+        invalidate()
+      })
+      .catch((error: unknown) => {
+        // Expected offline when the chunk was never cached: the sky stays empty.
+        log.info('ambient life: not loaded', {
+          reason: `planes: ${error instanceof Error ? error.message : String(error)}`,
+        })
+      })
     invalidate()
     return () => {
+      planesGone = true
+      if (planes !== null) {
+        planes.dispose()
+        if (planesRef.current === planes) planesRef.current = null
+      }
+      planesViewRef.current = null
       sceneRoot.remove(townsfolk.group)
       townsfolk.dispose()
       sceneRoot.remove(created.group)
@@ -359,6 +407,7 @@ export default function AmbientLife({
     groundY,
     scene,
     characterMaxM,
+    nightGlow,
     get,
     gl,
     sceneRoot,
@@ -468,6 +517,14 @@ export default function AmbientLife({
         targetY: -target.z,
         share: densityShare(config.density, levelRef.current, 0),
       }) ?? null
+    planesViewRef.current =
+      planesRef.current?.update({
+        tS: ms / 1000,
+        camera,
+        distance,
+        targetX: target.x,
+        targetY: -target.z,
+      }) ?? null
     return viewRef.current
   }
 
@@ -497,7 +554,8 @@ export default function AmbientLife({
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop)
       const drawing =
-        viewRef.current !== null && drawnTotal(viewRef.current, townsfolkViewRef.current) > 0
+        viewRef.current !== null &&
+        drawnTotal(viewRef.current, townsfolkViewRef.current, planesViewRef.current) > 0
       if (drawing) {
         // Half a display frame of tolerance, so a 60 Hz display hits a 30 fps cap exactly.
         if (now - lastTick >= minGap - 8) {
@@ -512,7 +570,12 @@ export default function AmbientLife({
       if (now - lastCheck >= 1000) {
         lastCheck = now
         const view = updateRef.current()
-        if (view !== null && drawnTotal(view, townsfolkViewRef.current) > 0) invalidate()
+        if (
+          view !== null &&
+          drawnTotal(view, townsfolkViewRef.current, planesViewRef.current) > 0
+        ) {
+          invalidate()
+        }
       }
     }
     raf = requestAnimationFrame(loop)
@@ -537,6 +600,29 @@ export default function AmbientLife({
         .map((p) => ({ id: p.id, x: p.x + rect.left, y: p.y + rect.top }))
       return { ...view, points }
     }
+    const planesState = (): AmbientHookState['planes'] => {
+      const layer = planesRef.current
+      const view = planesViewRef.current
+      if (layer === null || view === null) {
+        return {
+          status: 'off',
+          planes: 0,
+          helicopters: 0,
+          drawCalls: 0,
+          triangles: 0,
+          sameProgramAsBlocks: false,
+          lampsSameProgramAsPins: false,
+        }
+      }
+      const ambient = layerRef.current?.material ?? null
+      const bodies = layer.meshes().filter((mesh) => mesh.material !== layer.lampMaterial)
+      return {
+        status: 'ready',
+        ...view,
+        sameProgramAsBlocks: ambient !== null && sameProgram(gl, sceneRoot, ambient, bodies),
+        lampsSameProgramAsPins: lampsShareProgram(gl, sceneRoot, layer.lampMaterial),
+      }
+    }
     const read = (): AmbientHookState => {
       const layer = layerRef.current
       const view = viewRef.current ?? layer?.view() ?? null
@@ -557,6 +643,7 @@ export default function AmbientLife({
           positionsHash: '0',
           ticks: ticksRef.current,
           townsfolk: townsfolkState(),
+          planes: planesState(),
         }
       }
       return {
@@ -574,6 +661,7 @@ export default function AmbientLife({
         positionsHash: view.positionsHash,
         ticks: ticksRef.current,
         townsfolk: townsfolkState(),
+        planes: planesState(),
       }
     }
     ambientHook.current = read
@@ -598,12 +686,28 @@ export function trainLineColors(
   return new Map(ids.map((id, index) => [id, palette[index % palette.length] ?? palette[0] ?? '']))
 }
 
-const drawnTotal = (view: AmbientView, townsfolk: TownsfolkView | null) =>
+const drawnTotal = (view: AmbientView, townsfolk: TownsfolkView | null, planes: PlaneView | null) =>
   view.drawn.vehicles +
   view.drawn.buses +
   view.drawn.pedestrians +
   view.drawn.trainCars +
-  (townsfolk?.drawn ?? 0)
+  (townsfolk?.drawn ?? 0) +
+  (planes === null ? 0 : planes.planes + planes.helicopters)
+
+/** The aircraft lamps' material (S04q) compiled to the map pins' night-glow program. */
+function lampsShareProgram(gl: WebGLRenderer, root: Object3D, lamp: Material): boolean {
+  let pins: Material | null = null
+  root.traverse((object) => {
+    if (pins === null && object instanceof InstancedMesh && object.name === 'pins-venue') {
+      pins = Array.isArray(object.material) ? (object.material[0] ?? null) : object.material
+    }
+  })
+  if (pins === null) return false
+  const programOf = (m: Material) =>
+    (gl.properties.get(m) as { currentProgram?: unknown }).currentProgram
+  const ours = programOf(lamp)
+  return ours !== undefined && ours === programOf(pins)
+}
 
 /** Whether the ambient material compiled to the very program the blocks draw with. */
 function sameProgram(

@@ -35,6 +35,8 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'ambient-life', marker: 'ambient life: ' },
   // Its pedestrian kit bakers (src/scene/ambient/pedestrianKits.ts), loaded by it on demand.
   { id: 'ambient-pedestrians', marker: 'pedestrian part has no skinned mesh' },
+  // The sky (S04q, src/scene/ambient/planes.ts): airliners and a helicopter, loaded by it.
+  { id: 'ambient-planes', marker: 'cc-feature:ambient-planes' },
   // The street chains' loader and placement (src/scene/streets/loadStreets.ts), which the bundler
   // may split into a chunk the street props and the living city share.
   { id: 'streets', marker: 'invalid streets file' },

@@ -250,6 +250,64 @@ export interface TownsfolkConfig {
   readonly vibes: readonly string[]
 }
 
+/** One aircraft route of ambient.json `planes.routes` (S04q, schemas/scene.ts documents it). */
+export interface PlaneRouteConfig {
+  readonly id: string
+  readonly kind: 'arrival' | 'departure' | 'overflight' | 'helicopter'
+  /** Waypoints: [longitude, latitude, map altitude in metres]. */
+  readonly points: readonly (readonly [number, number, number])[]
+  readonly headwayS: number
+  readonly offsetS: number
+  readonly closed: boolean
+}
+
+/** ambient.json `planes` (S04q). */
+export interface PlanesConfig {
+  readonly maxShown: PerAmbientTier<number>
+  readonly helicopters: PerAmbientTier<number>
+  readonly speedMps: number
+  readonly lengthM: number
+  readonly scale: DistanceScale
+  readonly samplesPerSpan: number
+  readonly lookM: number
+  readonly bankGain: number
+  readonly maxBankRad: number
+  readonly fadeS: number
+  readonly helicopter: {
+    readonly speedMps: number
+    readonly lengthM: number
+    readonly rotorHz: number
+  }
+  readonly lights: {
+    readonly strobePeriodS: number
+    readonly strobeOnS: number
+    readonly beaconPeriodS: number
+    readonly navM: number
+  }
+  readonly colors: {
+    readonly body: string
+    readonly accent: string
+    readonly helicopter: string
+    readonly lamp: string
+    readonly red: string
+    readonly green: string
+    readonly white: string
+  }
+  readonly routes: readonly PlaneRouteConfig[]
+  readonly passing: {
+    readonly cellM: number
+    readonly headwayS: number
+    readonly lengthM: number
+    /** Lowest and highest map altitude over a passing line. */
+    readonly altM: readonly [number, number]
+    /** Share of a square the line's middle may stray from its centre. */
+    readonly jitter: number
+    readonly headingJitterRad: number
+    /** [longitude, latitude] of each airport the flows lead to. */
+    readonly airports: readonly (readonly [number, number])[]
+  }
+}
+
 export interface AmbientConfig {
   readonly seed: number
   readonly cellM: number
@@ -271,6 +329,7 @@ export interface AmbientConfig {
     }
   }
   readonly townsfolk: TownsfolkConfig
+  readonly planes: PlanesConfig
 }
 
 // ---- simulation inputs -----------------------------------------------------------------------
