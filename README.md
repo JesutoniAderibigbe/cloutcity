@@ -203,9 +203,15 @@ Four channels (music, sfx, ambience, voice) under a master, each with its own vo
 
 ## 3D models
 
-Hand-made low-poly models (S04h, DEC-24/25/26) come only from free CC0 packs pinned by commit or
-by zip sha256 (KayKit City Builder, Furniture and Restaurant Bits; Kenney Mini Characters,
-Furniture Kit, City Kit Commercial and Nature Kit) and from our own Blender scripts.
+Hand-made low-poly models (S04h, DEC-24/25/26) come only from free CC0 packs pinned by commit,
+zip, Drive file or itch upload plus sha256 (KayKit City Builder, Furniture and Restaurant Bits;
+Kenney Mini Characters, Furniture Kit, City Kit Commercial and Nature Kit; Quaternius Ultimate
+Modular Women and Men as single Google Drive files, and the Universal Animation Library as an
+itch.io upload) and from our own Blender scripts. Download kinds: `github-raw` (files at a
+commit), `zip`, `gdrive-files` (each pack path names its Drive file id; an HTML page in place of
+a file fails), `itch` (the page's CSRF token buys a short-lived signed URL; the lock records the
+upload endpoint) and `local` (Blender outputs). If an itch or Drive fetch breaks, put the
+sha-matching file into `.cache/assets/` by hand and build with `-- --offline`.
 
 - **Catalog.** `data/assets/catalog.json` lists the packs (licence, licence-file phrases, pin,
   colour grade) and the models (entries, category, real-world fit, pivot, per-tier

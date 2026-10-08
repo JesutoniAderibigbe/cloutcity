@@ -48,6 +48,41 @@ const DownloadSchema = z.discriminatedUnion('kind', [
     root: packPath,
   }),
   z.strictObject({
+    /**
+     * Single files in a public Google Drive folder (S16b: the Quaternius modular packs ship as
+     * Drive folders, not archives). Each pack path maps to the file's stable Drive id; the lock
+     * pins every file's sha256, so a re-upload (a new id or new bytes) fails the build.
+     */
+    kind: z.literal('gdrive-files'),
+    files: z
+      .array(
+        z.strictObject({
+          path: packPath,
+          id: z.string().regex(/^[A-Za-z0-9_-]{20,}$/),
+        }),
+      )
+      .min(1)
+      .refine((files) => new Set(files.map((file) => file.path)).size === files.length, {
+        error: 'paths repeat',
+      }),
+  }),
+  z.strictObject({
+    /**
+     * One upload of a free itch.io page (S16b: the Universal Animation Library). itch hands out a
+     * short-lived signed URL per download, so the lock pins the upload's sha256 and records the
+     * stable upload endpoint, never the signed URL.
+     */
+    kind: z.literal('itch'),
+    page: httpsUrl.refine((url) => /^https:\/\/[a-z0-9-]+\.itch\.io\/[a-z0-9-]+$/.test(url), {
+      error: 'must be an itch.io game page',
+    }),
+    uploadId: z.int().positive(),
+    /** File name in the cache (.cache/assets/). */
+    file: z.string().regex(/^[a-z0-9._-]+\.zip$/),
+    /** Folder inside the zip that model entries are relative to. */
+    root: packPath,
+  }),
+  z.strictObject({
     kind: z.literal('local'),
     /** Committed Blender outputs, verified against scripts/blender/lock.json. */
     root: z.literal('scripts/blender/out'),

@@ -60,14 +60,15 @@ describe('data/assets/catalog.json', () => {
     }
   })
 
-  it('pins the planned packs: three KayKit commits and four Kenney zips', () => {
-    const pins = catalog.sources.map((source) =>
-      source.download.kind === 'github-raw'
-        ? source.download.commit
-        : source.download.kind === 'zip'
-          ? source.download.url
-          : source.download.root,
-    )
+  it('pins the planned packs: KayKit commits, Kenney zips, Quaternius Drive files and itch upload', () => {
+    const pins = catalog.sources.map((source) => {
+      const { download } = source
+      if (download.kind === 'github-raw') return download.commit
+      if (download.kind === 'zip') return download.url
+      if (download.kind === 'gdrive-files') return download.files.map((file) => file.id).join(',')
+      if (download.kind === 'itch') return `${download.page}#${download.uploadId}`
+      return download.root
+    })
     expect(pins).toEqual([
       '63976910ca04d16f0fc531b9c614244be8128713',
       '96d5930a8dbdb363409bbc2d3341718b00e17c9c',
@@ -76,8 +77,46 @@ describe('data/assets/catalog.json', () => {
       'https://kenney.nl/media/pages/assets/furniture-kit/440e0608a4-1677580847/kenney_furniture-kit.zip',
       'https://kenney.nl/media/pages/assets/city-kit-commercial/a742d900eb-1753115042/kenney_city-kit-commercial_2.1.zip',
       'https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip',
+      [
+        '1lIFL16xEpoPbr0j_HUATgmcEnAmYoIK2',
+        '18b3WwlrwrFYWAM7BcnjWeIxKJyxAQiGh',
+        '1GjWtofxjmPku25cXJxHrzLLeUbXw7A_s',
+        '1iwF_fqDErPH9uyol6NmS-MnzGgsZ5ejV',
+        '1iayBzVv_zLjuPtaNPouw_auwKlQLLmes',
+        '1ITb_iFiroAsmjQI38z_p6nNXinwliVLA',
+        '1uxAFnDp73NO1c16LvHHjAYh1-deMNk5I',
+      ].join(','),
+      [
+        '1TTvylHa1CsiJuHFWWiv6PFGhLM-aAH5z',
+        '1Jn7kULNmrtqP8BUUL19h8MhbdOnwPFhv',
+        '1em1So1xwwQNfHJYMvzKcXkZllvtxpKP5',
+        '1NhXHnGU0zK9hBrT5FoZp8nTz_EmvTPg5',
+        '14d8n7IDnnlnGt_uiATnNg3uvi_4dyd9V',
+        '1IL1YJPJvNkuGnKI69-W-VMBIDCo-u49N',
+        '1yHWu5ezXq4dYBcn4sWiNd16YN9fMtXo0',
+        '1B9Dln-oR5Yk6sdsDR3yHCw86LobAN3Zd',
+        '1fzSq1Rr037f7QkfXPWEAzmbLMNx-FpPA',
+      ].join(','),
+      'https://quaternius.itch.io/universal-animation-library#17958403',
       'scripts/blender/out',
     ])
+  })
+
+  it('pins the Quaternius packs to the CC0 licence text (S16b)', () => {
+    const quaternius = catalog.sources.filter((source) => source.author === 'Quaternius')
+    expect(quaternius.map((source) => source.id)).toEqual([
+      'quaternius-modular-women',
+      'quaternius-modular-men',
+      'quaternius-ual',
+    ])
+    for (const source of quaternius) {
+      expect(source.licence).toBe('CC0-1.0')
+      expect(source.licenceEvidence.mustContain).toEqual([
+        'CC0 1.0 Universal (CC0 1.0)',
+        'https://creativecommons.org/publicdomain/zero/1.0/',
+      ])
+    }
+    expect(catalog.excluded.some((entry) => entry.item === 'Quaternius packs')).toBe(false)
   })
 
   it('has no cross-file problems: tokens, copy keys and Blender outputs all exist', () => {

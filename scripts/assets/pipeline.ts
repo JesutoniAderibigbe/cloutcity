@@ -47,7 +47,7 @@ import { MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer'
 import { MODEL_TIERS, type ModelTier } from '../../src/lib/data/schemas/assets.ts'
 import { TextureCache, triangleColours, triangleIndices } from './bake.ts'
 import { recessedPanes } from './recess.ts'
-import { externalUris, readGltfContainer, resolveUri, type Pack } from './fetch.ts'
+import { externalUris, packRoot, readGltfContainer, resolveUri, type Pack } from './fetch.ts'
 import {
   deltaE2000,
   harmoniseAll,
@@ -178,7 +178,7 @@ function readerIO(logger: ILogger): NodeIO {
 
 /** Reads one model entry (and the buffers and textures it names) from the pack, in memory. */
 export async function loadEntry(pack: Pack, path: string, logger: ILogger): Promise<Document> {
-  const full = posix.join(pack.source.download.root, path)
+  const full = posix.join(packRoot(pack.source), path)
   const bytes = pack.files.get(full)
   if (bytes === undefined) throw new Error(`${pack.source.id}: ${full} is not in the pack`)
   const { json, bin } = readGltfContainer(bytes)

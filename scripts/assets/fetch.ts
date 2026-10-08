@@ -12,7 +12,7 @@
 import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, posix } from 'node:path'
 import { unzipSync } from 'fflate'
-import { download, sha256Hex, type FetchLike } from '../geo/sources.ts'
+import { download, sha256Hex, USER_AGENT, type FetchLike } from '../geo/sources.ts'
 import type { Catalog, LockedFile, Source, SourcesLock } from './schema.ts'
 
 export type FetchMode = 'default' | 'update' | 'offline'
@@ -91,9 +91,29 @@ export function resolveUri(fromPath: string, uri: string): string {
   return resolved
 }
 
+/** The folder model entries are relative to ('' for Drive files, whose paths are the pack's). */
+export function packRoot(source: Source): string {
+  return source.download.kind === 'gdrive-files' ? '' : source.download.root
+}
+
+/** Drive's direct download for one file id (`confirm=t` skips the large-file warning page). */
+export const gdriveUrl = (id: string) =>
+  `https://drive.usercontent.google.com/download?id=${encodeURIComponent(id)}&export=download&confirm=t`
+
+/** The stable endpoint an itch upload is requested from (recorded in the lock). */
+export const itchUploadUrl = (page: string, uploadId: number) => `${page}/file/${uploadId}`
+
 export function remoteUrl(source: Source, path: string): string {
   const { download: dl } = source
   if (dl.kind === 'zip') return dl.url
+  if (dl.kind === 'itch') return itchUploadUrl(dl.page, dl.uploadId)
+  if (dl.kind === 'gdrive-files') {
+    const file = dl.files.find((entry) => entry.path === path)
+    if (file === undefined) {
+      throw new Error(`${source.id}: ${path} has no Drive id in data/assets/catalog.json`)
+    }
+    return gdriveUrl(file.id)
+  }
   if (dl.kind === 'github-raw') {
     return `https://raw.githubusercontent.com/${dl.repo}/${dl.commit}/${path.split('/').map(encodeURIComponent).join('/')}`
   }
@@ -102,7 +122,7 @@ export function remoteUrl(source: Source, path: string): string {
 
 /** Pack paths (relative to the zip or repository root) of every model entry from a source. */
 export function entryPaths(catalog: Catalog, source: Source): string[] {
-  const root = source.download.root
+  const root = packRoot(source)
   return catalog.models
     .filter((model) => model.source === source.id)
     .flatMap((model) => model.entries.map((entry) => posix.join(root, entry.path)))
@@ -128,7 +148,7 @@ async function writeCache(path: string, bytes: Uint8Array): Promise<void> {
 }
 
 const cachePath = (cacheDir: string, source: Source, path: string) =>
-  source.download.kind === 'zip'
+  source.download.kind === 'zip' || source.download.kind === 'itch'
     ? join(cacheDir, source.download.file)
     : join(cacheDir, source.id, ...path.split('/'))
 
@@ -138,6 +158,73 @@ interface Fetcher {
   readonly fetchImpl: FetchLike
   readonly sleep: (ms: number) => Promise<void>
   readonly log: (line: string) => void
+}
+
+const TIMEOUT_MS = 120_000
+
+/**
+ * An itch.io upload: the game page sets a session cookie and a CSRF token, a POST to the upload
+ * endpoint answers with a signed URL valid for about a minute, and that URL serves the file.
+ */
+async function itchDownload(f: Fetcher, source: Source): Promise<Uint8Array> {
+  const { download: dl } = source
+  if (dl.kind !== 'itch') throw new Error(`${source.id}: not an itch source`)
+  const page = await f.fetchImpl(dl.page, {
+    headers: { 'user-agent': USER_AGENT },
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    redirect: 'follow',
+  })
+  if (!page.ok) throw new Error(`${source.id}: ${dl.page}: HTTP ${page.status}`)
+  const html = await page.text()
+  const token = /<meta name="csrf_token" value="([^"]+)"/.exec(html)?.[1]
+  if (token === undefined) throw new Error(`${source.id}: ${dl.page} has no csrf_token`)
+  const cookie = page.headers
+    .getSetCookie()
+    .map((line) => line.split(';')[0] ?? '')
+    .filter((pair) => pair !== '')
+    .join('; ')
+  const endpoint = `${itchUploadUrl(dl.page, dl.uploadId)}?source=game_download`
+  const answer = await f.fetchImpl(endpoint, {
+    method: 'POST',
+    headers: {
+      'user-agent': USER_AGENT,
+      'content-type': 'application/x-www-form-urlencoded',
+      ...(cookie === '' ? {} : { cookie }),
+    },
+    body: new URLSearchParams({ csrf_token: token }).toString(),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    redirect: 'follow',
+  })
+  if (!answer.ok) throw new Error(`${source.id}: ${endpoint}: HTTP ${answer.status}`)
+  const body: unknown = await answer.json().catch(() => undefined)
+  const url =
+    typeof body === 'object' && body !== null && 'url' in body && typeof body.url === 'string'
+      ? body.url
+      : undefined
+  if (url === undefined) throw new Error(`${source.id}: itch gave no download URL`)
+  return download(url, f.fetchImpl, f.sleep, f.log)
+}
+
+/**
+ * Downloads one pack file. Drive answers a throttled or withdrawn file with an HTML page (HTTP
+ * 200), which must never be mistaken for the file.
+ */
+async function fetchPackFile(f: Fetcher, source: Source, url: string): Promise<Uint8Array> {
+  f.log(`download ${url}`)
+  const bytes =
+    source.download.kind === 'itch'
+      ? await itchDownload(f, source)
+      : await download(url, f.fetchImpl, f.sleep, f.log)
+  if (source.download.kind === 'gdrive-files' && looksLikeHtml(bytes)) {
+    throw new Error(`${source.id}: ${url} answered with an HTML page, not the file`)
+  }
+  return bytes
+}
+
+/** Whether bytes start (after whitespace) like an HTML document. */
+export function looksLikeHtml(bytes: Uint8Array): boolean {
+  const head = new TextDecoder().decode(bytes.subarray(0, 256)).trimStart().toLowerCase()
+  return head.startsWith('<!doctype html') || head.startsWith('<html')
 }
 
 /** One pinned file: from the cache when it matches, else downloaded and checked. */
@@ -150,8 +237,7 @@ async function ensureFile(f: Fetcher, source: Source, pinned: LockedFile): Promi
       `${source.id}: ${pinned.path} has no cached copy matching the lock (offline); run npm run assets:build once with network`,
     )
   }
-  f.log(`download ${pinned.url}`)
-  const bytes = await download(pinned.url, f.fetchImpl, f.sleep, f.log)
+  const bytes = await fetchPackFile(f, source, pinned.url)
   const sha256 = sha256Hex(bytes)
   if (sha256 !== pinned.sha256 || bytes.byteLength !== pinned.bytes) {
     throw new Error(
@@ -165,8 +251,7 @@ async function ensureFile(f: Fetcher, source: Source, pinned: LockedFile): Promi
 /** Update mode: downloads a file and records whatever arrives. */
 async function pinFile(f: Fetcher, source: Source, path: string) {
   const url = remoteUrl(source, path)
-  f.log(`download ${url}`)
-  const bytes = await download(url, f.fetchImpl, f.sleep, f.log)
+  const bytes = await fetchPackFile(f, source, url)
   await writeCache(cachePath(f.cacheDir, source, path), bytes)
   const file: LockedFile = { path, url, sha256: sha256Hex(bytes), bytes: bytes.byteLength }
   return { bytes, file }
@@ -193,7 +278,8 @@ async function ensureRemotePack(
     if (previous === undefined) {
       throw new Error(`${source.id}: not in scripts/assets/sources.lock.json; rerun with --update`)
     }
-    const expectedUrl = dl.kind === 'zip' ? dl.url : undefined
+    const expectedUrl =
+      dl.kind === 'zip' || dl.kind === 'itch' ? remoteUrl(source, dl.file) : undefined
     if (expectedUrl !== undefined && previous.files[0]?.url !== expectedUrl) {
       throw new Error(`${source.id}: the catalog URL differs from the lock; rerun with --update`)
     }
@@ -204,14 +290,20 @@ async function ensureRemotePack(
           `${source.id}: ${pinned.path} is pinned to another commit; rerun with --update`,
         )
       }
+      if (dl.kind === 'gdrive-files' && pinned.url !== remoteUrl(source, pinned.path)) {
+        throw new Error(
+          `${source.id}: ${pinned.path} is pinned to another Drive id; rerun with --update`,
+        )
+      }
       files.set(pinned.path, await ensureFile(f, source, pinned))
     }
-    if (dl.kind === 'zip') {
+    if (dl.kind === 'zip' || dl.kind === 'itch') {
       const zip = files.get(previous.files[0]?.path ?? '')
       if (zip === undefined) throw new Error(`${source.id}: the lock names no zip`)
       return { source, files: unzip(source, zip), lock: previous }
     }
-    for (const path of [source.licenceEvidence.entry, ...entryPaths(catalog, source)]) {
+    const listed = dl.kind === 'gdrive-files' ? dl.files.map((file) => file.path) : []
+    for (const path of [source.licenceEvidence.entry, ...listed, ...entryPaths(catalog, source)]) {
       if (!files.has(path)) {
         throw new Error(`${source.id}: ${path} is not pinned in the lock; rerun with --update`)
       }
@@ -221,7 +313,7 @@ async function ensureRemotePack(
 
   let lockFiles: LockedFile[]
   let files: Map<string, Uint8Array>
-  if (dl.kind === 'zip') {
+  if (dl.kind === 'zip' || dl.kind === 'itch') {
     const { bytes, file } = await pinFile(f, source, dl.file)
     lockFiles = [file]
     files = unzip(source, bytes)
@@ -229,7 +321,9 @@ async function ensureRemotePack(
     // Each glTF names its buffers and textures; follow them so the lock holds the full closure.
     files = new Map()
     const pinned = new Map<string, LockedFile>()
-    const queue = [source.licenceEvidence.entry, ...entryPaths(catalog, source)]
+    // Drive files are listed one by one in the catalog: pin every one, used or not yet.
+    const listed = dl.kind === 'gdrive-files' ? dl.files.map((file) => file.path) : []
+    const queue = [source.licenceEvidence.entry, ...listed, ...entryPaths(catalog, source)]
     while (queue.length > 0) {
       const path = queue.shift() ?? ''
       if (pinned.has(path)) continue

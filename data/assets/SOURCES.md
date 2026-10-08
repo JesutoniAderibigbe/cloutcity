@@ -19,8 +19,8 @@ refuses any other licence and checks each pack’s licence file on every run.
 
 ## Attribution
 
-Not required by CC0; credited on /credits as thanks: Kenney (www.kenney.nl) and Kay Lousberg
-(www.kaylousberg.com).
+Not required by CC0; credited on /credits as thanks: Kenney (www.kenney.nl), Kay Lousberg
+(www.kaylousberg.com) and Quaternius (quaternius.com).
 
 ## Packs
 
@@ -188,6 +188,71 @@ Models: `block-a`, `block-b`, `block-c`, `block-d`, `block-e`, `block-f`, `build
 
 Models: `tree-oak`, `tree-round`, `tree-tall`.
 
+### Quaternius Ultimate Modular Women 2022-02
+
+- Id: `quaternius-modular-women`
+- Author: Quaternius
+- Page: <https://quaternius.com/packs/ultimatemodularwomen.html>
+- Licence: CC0 1.0 Universal (public domain dedication) <https://creativecommons.org/publicdomain/zero/1.0/>
+- Licence evidence: `License.txt` contains "CC0 1.0 Universal (CC0 1.0)" and "https://creativecommons.org/publicdomain/zero/1.0/"
+- Download: single files of a public Google Drive folder, by file id (`License.txt` = `1lIFL16xEpoPbr0j_HUATgmcEnAmYoIK2`, `glTF/Casual.gltf` = `18b3WwlrwrFYWAM7BcnjWeIxKJyxAQiGh`, `glTF/Suit.gltf` = `1GjWtofxjmPku25cXJxHrzLLeUbXw7A_s`, `glTF/Worker.gltf` = `1iwF_fqDErPH9uyol6NmS-MnzGgsZ5ejV`, `glTF/Formal.gltf` = `1iayBzVv_zLjuPtaNPouw_auwKlQLLmes`, `glTF/Punk.gltf` = `1ITb_iFiroAsmjQI38z_p6nNXinwliVLA`, `glTF/Adventurer.gltf` = `1uxAFnDp73NO1c16LvHHjAYh1-deMNk5I`)
+- Colour grade (OKLCH): lightness × 1, chroma × 1
+- Retrieved: 2026-10-08
+
+| File                   |   Bytes | sha256                                                             |
+| ---------------------- | ------: | ------------------------------------------------------------------ |
+| `License.txt`          |     372 | `e8dbf915a2b82229913e301a0787696611241bdefec4832bc084f54161db1efe` |
+| `glTF/Adventurer.gltf` | 3205962 | `65094211e53b49f6a834c617cc056834686fe794a0b515a6b97faa3e1130cc95` |
+| `glTF/Casual.gltf`     | 3131788 | `b0fe6e92219cd71808844a20a1a8b960fd1cf640a6546dc6362b5add6604e87c` |
+| `glTF/Formal.gltf`     | 3082953 | `fdfcf454c4de037d31973eb28d8591bd7763035d49f46b380e63b1c832dc7ddf` |
+| `glTF/Punk.gltf`       | 3063914 | `61cc7f85a8e9b700cdb92ae8ebd6e3bdd1e8a510b57027f6c7d8c2b6ff3b0e0f` |
+| `glTF/Suit.gltf`       | 3142156 | `937d5c8d08fb5570f6a4e1dd79a3878335444d175aae3b0e9e2babdac36a17f7` |
+| `glTF/Worker.gltf`     | 3095030 | `e2bfc1039f429e870a0119e274c2dd45f6304f00c39f4570dfeb9ed4d97a063d` |
+
+Models: none yet.
+
+### Quaternius Ultimate Modular Men 2022-02
+
+- Id: `quaternius-modular-men`
+- Author: Quaternius
+- Page: <https://quaternius.com/packs/ultimatemodularcharacters.html>
+- Licence: CC0 1.0 Universal (public domain dedication) <https://creativecommons.org/publicdomain/zero/1.0/>
+- Licence evidence: `License.txt` contains "CC0 1.0 Universal (CC0 1.0)" and "https://creativecommons.org/publicdomain/zero/1.0/"
+- Download: single files of a public Google Drive folder, by file id (`License.txt` = `1TTvylHa1CsiJuHFWWiv6PFGhLM-aAH5z`, `glTF/Casual_2.gltf` = `1Jn7kULNmrtqP8BUUL19h8MhbdOnwPFhv`, `glTF/Casual_Hoodie.gltf` = `1em1So1xwwQNfHJYMvzKcXkZllvtxpKP5`, `glTF/Suit.gltf` = `1NhXHnGU0zK9hBrT5FoZp8nTz_EmvTPg5`, `glTF/Worker.gltf` = `14d8n7IDnnlnGt_uiATnNg3uvi_4dyd9V`, `glTF/Beach.gltf` = `1IL1YJPJvNkuGnKI69-W-VMBIDCo-u49N`, `glTF/Punk.gltf` = `1yHWu5ezXq4dYBcn4sWiNd16YN9fMtXo0`, `glTF/Farmer.gltf` = `1B9Dln-oR5Yk6sdsDR3yHCw86LobAN3Zd`, `glTF/Adventurer.gltf` = `1fzSq1Rr037f7QkfXPWEAzmbLMNx-FpPA`)
+- Colour grade (OKLCH): lightness × 1, chroma × 1
+- Retrieved: 2026-10-08
+
+| File                      |   Bytes | sha256                                                             |
+| ------------------------- | ------: | ------------------------------------------------------------------ |
+| `License.txt`             |     372 | `e8dbf915a2b82229913e301a0787696611241bdefec4832bc084f54161db1efe` |
+| `glTF/Adventurer.gltf`    | 3671456 | `21f7a61afb6bd6cef6961490c367594e3c2fc01ec1f041662131172ce763063e` |
+| `glTF/Beach.gltf`         | 3166143 | `76e001ea131fd76a1bd938a7862606cb8037f7049b632783580b9bf4da2371a8` |
+| `glTF/Casual_2.gltf`      | 3058092 | `55c654d09a2a5ff6e3bd6158d4a1b462f181cd6f1e12a0f5e9d959f9c3abc438` |
+| `glTF/Casual_Hoodie.gltf` | 3104001 | `dd74886c26998a0fa888b4ce557a0932d7d97b0265dd4c763154d081b7a6cb98` |
+| `glTF/Farmer.gltf`        | 2998119 | `46d3e85fa8d848ee479ab8e4672c16724ee4ea51f3af5733705a153937f93555` |
+| `glTF/Punk.gltf`          | 3003321 | `f9224072f5e6cbb207eca250faa7f1868614a1a984074fe79c7b2862df4feb42` |
+| `glTF/Suit.gltf`          | 3315342 | `6c89fbb31b96c1a63ad94e3dee0942bd7b34bc789a5d39fd6a6a1738a9214fb3` |
+| `glTF/Worker.gltf`        | 2967023 | `e49f8ec0f8a7de72dd26b1c01e6413c9a87a9116eeee21f9364ccd36bc286335` |
+
+Models: none yet.
+
+### Quaternius Universal Animation Library Standard 1.0
+
+- Id: `quaternius-ual`
+- Author: Quaternius
+- Page: <https://quaternius.itch.io/universal-animation-library>
+- Licence: CC0 1.0 Universal (public domain dedication) <https://creativecommons.org/publicdomain/zero/1.0/>
+- Licence evidence: `Universal Animation Library[Standard]/License.txt` contains "CC0 1.0 Universal (CC0 1.0)" and "https://creativecommons.org/publicdomain/zero/1.0/"
+- Download: <https://quaternius.itch.io/universal-animation-library> upload 17958403, cached as `quaternius-ual-standard.zip` (models under `Universal Animation Library[Standard]/Unreal-Godot/`)
+- Colour grade (OKLCH): lightness × 1, chroma × 1
+- Retrieved: 2026-10-08
+
+| File                          |    Bytes | sha256                                                             |
+| ----------------------------- | -------: | ------------------------------------------------------------------ |
+| `quaternius-ual-standard.zip` | 15904933 | `cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724` |
+
+Models: none yet.
+
 ### Clout City Blender models 1
 
 - Id: `clout-city-blender`
@@ -316,11 +381,13 @@ Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-bear
 
 ## Left out
 
-| Item                                             | Why                                                                             |
-| ------------------------------------------------ | ------------------------------------------------------------------------------- |
-| KayKit City Builder Bits `car_police.gltf`       | Police livery (LEGAL): no law-enforcement markings in the city.                 |
-| KayKit City Builder Bits `car_stationwagon.gltf` | Not needed yet (three cars cover traffic variety).                              |
-| Pack textures, previews and source files         | Only geometry and baked colours ship (no images, no pack artwork as files).     |
-| Quaternius packs                                 | Rejected at planning: per-item downloads with no pinnable archive.              |
-| Poly Pizza models                                | Rejected at planning: per-model licences and authors, not pinnable as one pack. |
-| Kenney Mini Characters wheelchairs and canes     | Deferred (A11Y-5): they need pose, travel and animation work first.             |
+| Item                                                                                                                | Why                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| KayKit City Builder Bits `car_police.gltf`                                                                          | Police livery (LEGAL): no law-enforcement markings in the city.                                                                                     |
+| KayKit City Builder Bits `car_stationwagon.gltf`                                                                    | Not needed yet (three cars cover traffic variety).                                                                                                  |
+| Pack textures, previews and source files                                                                            | Only geometry and baked colours ship (no images, no pack artwork as files).                                                                         |
+| Poly Pizza models                                                                                                   | Rejected at planning: per-model licences and authors, not pinnable as one pack.                                                                     |
+| Kenney Mini Characters wheelchairs and canes                                                                        | Deferred (A11Y-5): they need pose, travel and animation work first.                                                                                 |
+| Quaternius Ultimate Modular Women/Men: Soldier, Swat, SciFi, Spacesuit, Medieval, Witch and King outfits            | LEGAL/tone (S16b): nothing military, police, weapon, fantasy or sci-fi ships.                                                                       |
+| Quaternius Ultimate Modular Men: Pistol and Sword meshes; every pack's gun, sword, punch, kick, hit and death clips | LEGAL (S16b): no weapons or combat.                                                                                                                 |
+| Quaternius Universal Base Characters                                                                                | Rejected (S16b): the free Standard zip holds only nude Superhero bodies; regular bodies and outfits are in the paid Source zip (DEC-24: free only). |
