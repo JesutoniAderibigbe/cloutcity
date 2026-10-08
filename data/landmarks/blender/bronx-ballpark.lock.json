@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "bronx-ballpark",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "34ae748a5147779fa3d948ec447de1e0c8dbbfba3ee232ee461066c434b2e1ca",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/bronx-ballpark/lod0.glb",
+      "sha256": "09ca2dd0c42085e5387e4dcd2c7e8cb090d818e1064e241afe6702e3e74fd065",
+      "bytes": 44140,
+      "triangles": 2948,
+      "uncompressedBytes": 282176
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/bronx-ballpark/lod1.glb",
+      "sha256": "1194c503253f65902f83644b1753e9493acd0a891d5b31d957b83ddbb747f61b",
+      "bytes": 21716,
+      "triangles": 1274,
+      "uncompressedBytes": 121956
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/bronx-ballpark/lod2.glb",
+      "sha256": "c1be713dab65edad5f5f914e1ee22fed877812b8b9bd4f2107d7b324c0597097",
+      "bytes": 12996,
+      "triangles": 582,
+      "uncompressedBytes": 57084
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/bronx-ballpark/lod3.glb",
+      "sha256": "88c4424d23891ea23bcaca532bced11c6bbac639c68442d32c7543041e4d9ca9",
+      "bytes": 6784,
+      "triangles": 224,
+      "uncompressedBytes": 22892
+    }
+  ]
+}

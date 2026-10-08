@@ -300,7 +300,8 @@
       "signal": "signal-500",
       "foliage": "leaf-700",
       "lawn": "grass-500",
-      "sand": "sand-300"
+      "sand": "sand-300",
+      "water": "lake-400"
     },
     "buildings": {
       "walls": [
@@ -351,6 +352,7 @@
     "grass-500": "#79a04e",
     "bark-700": "#5b4334",
     "signal-500": "#c8362b",
+    "lake-400": "#5f8fa3",
     "amber-400": "#e9a23b",
     "go-500": "#2f9e5b",
     "lamp-200": "#ffe2a8",

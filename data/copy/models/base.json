@@ -93,6 +93,7 @@
     "models.color.grass500": "Park green",
     "models.color.bark700": "Bark brown",
     "models.color.signal500": "Signal red",
+    "models.color.lake400": "Lake blue",
     "models.color.amber400": "Signal amber",
     "models.color.go500": "Signal green",
     "models.color.lamp200": "Warm lamplight",

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "flushing-meadows",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "7f3aa6f3fc454fb92876db2283e237456329a5224a11eaca4b6dc094ed938155",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/flushing-meadows/lod0.glb",
+      "sha256": "fd69c56626647ec00175f56053b895beab1a3b085b8765023d32d2dea951a95f",
+      "bytes": 164828,
+      "triangles": 6716,
+      "uncompressedBytes": 863156
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/flushing-meadows/lod1.glb",
+      "sha256": "d9884e0aebbb094e2f49a57d5d3a97a1e3223e27628395bfbd6afc363e0379b4",
+      "bytes": 78660,
+      "triangles": 3250,
+      "uncompressedBytes": 402616
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/flushing-meadows/lod2.glb",
+      "sha256": "4455497fd9291d5023d4e4c72c5a31249395e0da1d7faa907eb6bb64a33ae218",
+      "bytes": 27128,
+      "triangles": 1094,
+      "uncompressedBytes": 131128
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/flushing-meadows/lod3.glb",
+      "sha256": "2abf1d1078fbf391078b4965c633af3ecf964ea327622ce5a8d03496bbb7475e",
+      "bytes": 11984,
+      "triangles": 522,
+      "uncompressedBytes": 54304
+    }
+  ]
+}
