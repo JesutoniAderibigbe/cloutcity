@@ -25,6 +25,7 @@ import { join, relative } from 'node:path'
 import { z } from 'zod'
 import {
   BlenderLockSchema,
+  BlenderModelsFileSchema,
   LandmarkMeasurementsSchema,
   type BlenderLock,
 } from '../../src/lib/data/schemas/landmarkBlender.ts'
@@ -170,7 +171,37 @@ function measured(ids: readonly string[]): MeasuredLandmark[] {
   }))
 }
 
+const MODELS_INDEX = join(ROOT, 'data/landmarks/blender.derived.json')
+
+/** data/landmarks/blender.derived.json from every lock and measurements file (sorted by id). */
+export function modelsIndex(): string {
+  const landmarks = measured(measuredIds()).flatMap(({ measurements, lock }) => {
+    if (lock === undefined) return []
+    return [
+      {
+        id: measurements.id,
+        files: lock.levels.map(
+          (level) => `/${level.file.replace(/^public\//, '')}?v=${level.sha256.slice(0, 8)}`,
+        ),
+        triangles: lock.levels.map((level) => level.triangles),
+        topM: lock.placement.topM,
+        gameScale: {
+          height: measurements.gameScale?.height ?? 1,
+          plan: measurements.gameScale?.plan ?? 1,
+        },
+      },
+    ]
+  })
+  const file = BlenderModelsFileSchema.parse({
+    format: 'cc-landmark-glb-v1',
+    derived: true,
+    landmarks,
+  })
+  return `${JSON.stringify(file, null, 2)}\n`
+}
+
 function writeSources(): void {
+  writeFileSync(MODELS_INDEX, modelsIndex())
   const markdown = readFileSync(SOURCES_MD, 'utf8')
   writeFileSync(SOURCES_MD, withSection(markdown, renderSection(measured(measuredIds()))))
 }
@@ -283,7 +314,11 @@ export function checkLandmark(id: string): string[] {
 export function sourcesProblems(): string[] {
   const markdown = readFileSync(SOURCES_MD, 'utf8')
   const expected = withSection(markdown, renderSection(measured(measuredIds())))
-  return markdown === expected ? [] : ['data/landmarks/SOURCES.md measurements section is stale']
+  const problems =
+    markdown === expected ? [] : ['data/landmarks/SOURCES.md measurements section is stale']
+  const index = existsSync(MODELS_INDEX) ? readFileSync(MODELS_INDEX, 'utf8') : ''
+  if (index !== modelsIndex()) problems.push('data/landmarks/blender.derived.json is stale')
+  return problems
 }
 
 async function verify(id: string): Promise<string[]> {

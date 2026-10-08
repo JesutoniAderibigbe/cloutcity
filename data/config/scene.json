@@ -335,7 +335,8 @@
       "high": true
     },
     "labelMaxDistanceM": 6000,
-    "outlineWidthM": 1.5
+    "outlineWidthM": 1.5,
+    "teaserDim": 0.8
   },
   "buildings": {
     "floorM": 3.3,

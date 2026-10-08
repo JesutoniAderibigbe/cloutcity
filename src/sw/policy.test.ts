@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import modelManifestJson from '@data/assets/manifest.json'
+import blenderModelsJson from '@data/landmarks/blender.derived.json'
 import { SAME_ORIGIN_AUDIO, audioManifest } from '@/lib/audio/manifest'
+import { BlenderModelsFileSchema } from '@/lib/data/schemas/landmarkBlender'
 import { ModelManifestSchema } from '@/lib/data/schemas/assets'
 import {
   AUDIO_PATH,
@@ -181,6 +183,30 @@ describe('isVersionedModel', () => {
     expect(isVersionedModel(facts(file, { sameOrigin: false }))).toBe(false)
     expect(isVersionedModel(facts(file, { method: 'POST' }))).toBe(false)
     expect(isVersionedModel(facts(file, { method: 'PUT' }))).toBe(false)
+  })
+
+  it('matches every Blender landmark level (S07c), versioned by its query only', () => {
+    const levels = BlenderModelsFileSchema.parse(blenderModelsJson).landmarks.flatMap(
+      (l) => l.files,
+    )
+    expect(levels.length).toBeGreaterThan(0)
+    for (const file of levels) expect(isVersionedModel(facts(file)), file).toBe(true)
+    const file = levels[0] ?? ''
+    const path = file.split('?')[0] ?? ''
+    for (const url of [
+      path,
+      `${path}?v=1`,
+      `${path}?v=0123456789`,
+      `${path}?v=ABCDEF12`,
+      `${file}&x=1`,
+      file.replace('/lod', '/lod9').replace('lod90', 'lod9'),
+      file.replace('/landmarks/', '/landmark/'),
+      file.replace('.glb', '.gltf'),
+    ]) {
+      expect(isVersionedModel(facts(url)), url).toBe(false)
+    }
+    expect(isVersionedModel(facts(file, { sameOrigin: false }))).toBe(false)
+    expect(isVersionedModel(facts(file, { method: 'POST' }))).toBe(false)
   })
 
   it('never overlaps the geo, audio or navigation rules', () => {

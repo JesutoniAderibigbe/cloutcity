@@ -33,7 +33,7 @@ describe('places layer (S04c)', () => {
       const entry = landmarksLayer.models.find((m) => m.id === pin.id)
       if (entry === undefined) throw new Error(`no model ${pin.id}`)
       // The pin's base sits at or above the model's top.
-      const base = entry.model.archetype.endsWith('Bridge') ? 0 : landTop
+      const base = entry.frame.base === 'water' ? 0 : landTop
       const top = base + entry.frame.pinLiftM * scene.landmarks.heightScale
       expect(landTop + (pin.liftM ?? 0), pin.id).toBeGreaterThanOrEqual(top)
     }

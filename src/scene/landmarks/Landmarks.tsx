@@ -10,27 +10,44 @@
  * The tier sets the levels built (low skips L0), the switch and cull distances
  * (lodDistanceScale), and whether outlines show. Landmarks on "expanding soon" land draw in the
  * dimmed teaser material. Models are not pickable: their pins are (S04c, Q5). Name chips show
- * the server's copy only. Each landmark's model comes from landmarkSource(id): the kit today,
- * Blender glTF later (DEC-25).
+ * the server's copy only.
+ *
+ * Blender models (S07c, DEC-25): a landmark with `glb` loads its tier's levels (high L0-L2,
+ * mid L1-L3, low L2-L3) through the model runtime after the kit has built, nearest first, and
+ * replaces its kit model once they arrive (src/scene/models/landmarkLevels.ts). They draw with a
+ * district material (the program the buildings compiled: no new shader program) at the same
+ * LOD distances; the kit, drawn at the Blender model's game scale, is the fallback while they
+ * load or if they fail. A landmark with no kit model draws nothing until its GLB arrives.
  */
-import { useContext, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
 import { useThree } from '@react-three/fiber'
 import { Detailed } from '@react-three/drei/core/Detailed'
-import { Mesh, MeshBasicMaterial, Vector3, type LOD, type Texture } from 'three'
+import { Color, Mesh, MeshBasicMaterial, Vector3, type LOD, type Texture } from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { CitySceneConfig } from '@/lib/data/schemas/scene'
 import { log } from '@/lib/log'
 import type { GeoLandmark } from '../geo/schema'
 import { DayNightContext, isNightGlowExcluded, useNightGlow } from '../lighting/nightGlow'
+import { createBuildingMaterial, createWindowMask } from '../buildings/materials'
+import { litWindowUv } from '../props/mergeChunk'
 import { useTierSettings } from '../quality/tierSettings'
 import { createSlicer } from '../schedule'
 import type { ScenePalette } from '../types'
 import { buildLandmark, disposeLandmark, type BuiltLandmark } from './buildLandmark'
-import { landmarkLod, type LandmarkLod } from './lod'
+import type { GlbLevel } from '../models/landmarkLevels'
+import { GLB_TIER_LEVELS, landmarkLod, type LandmarkLod } from './lod'
 import { createLandmarkMaterials } from './materials'
 import { buildNameChipGeometry, createNameAtlas, type NameChip } from './nameChips'
-import { landmarkSource, type LandmarkSource } from './source'
+import type { LandmarkSource } from './source'
 
 /** One landmark as the e2e hook reads it (src/scene/testHooks.tsx). */
 export interface LandmarkState {
@@ -53,6 +70,9 @@ export interface LandmarksState {
   /** Every landmark is built (or failed and was skipped). */
   readonly done: boolean
   readonly failed: readonly string[]
+  /** Blender models (S07c): every one of this tier is loaded (or failed and kept its kit). */
+  readonly glbDone: boolean
+  readonly glbFailed: readonly string[]
   readonly chips: { readonly visible: boolean; readonly texts: readonly string[] }
   readonly landmarks: readonly LandmarkState[]
 }
@@ -119,6 +139,30 @@ export function Landmarks({
     [needsPlain, gradientMap, palette.landmarks],
   )
   useEffect(() => () => materials.dispose(), [materials])
+
+  // Blender models draw on a district material, built exactly as Buildings.tsx builds its own,
+  // so they share the program the buildings compiled (S07c: no new shader program). Their
+  // glowing vertices sample a lit window of the same mask.
+  const windowsOn = config.buildings.windows[tier]
+  const glbMaterial = useMemo(() => {
+    const mask = windowsOn ? createWindowMask(config.buildings) : null
+    const material = createBuildingMaterial({
+      gradientMap,
+      colors: 'vertex',
+      ...(mask === null
+        ? {}
+        : { windows: { uniform: glow, mask, color: palette.buildings.window } }),
+    })
+    const litUv = mask === null ? null : litWindowUv(mask, config.buildings.windowTileCells)
+    return { material, mask, litUv }
+  }, [windowsOn, config.buildings, gradientMap, glow, palette.buildings.window])
+  useEffect(
+    () => () => {
+      glbMaterial.material.dispose()
+      glbMaterial.mask?.dispose()
+    },
+    [glbMaterial],
+  )
   useEffect(() => () => plainMaterials?.dispose(), [plainMaterials])
 
   // Built once the city is on screen, nearest first, one landmark per slice; rebuilt per tier.
@@ -145,9 +189,19 @@ export function Landmarks({
       for (const entry of order) {
         await step()
         if (cancelled) break
-        if (landmarkSource(entry.id) !== 'kit') continue
+        // The kit: the fallback while a Blender model loads, at that model's game scale.
+        if (entry.model === undefined) continue
         try {
-          done.push(buildLandmark(entry.model, entry.frame, tier, palette.landmarks, settingsFor))
+          done.push(
+            buildLandmark(
+              entry.model,
+              entry.frame,
+              tier,
+              palette.landmarks,
+              settingsFor,
+              entry.glb?.gameScale,
+            ),
+          )
         } catch (error) {
           // A model that fails to build is left out; the rest of the map carries on.
           failures.push(entry.id)
@@ -178,20 +232,107 @@ export function Landmarks({
     [built],
   )
 
-  const entries = useMemo(() => new Map(landmarks.map((entry) => [entry.id, entry])), [landmarks])
+  // Blender models, once the kit is up: nearest first, one landmark per slice, each swapped in
+  // as soon as its levels arrive. A failed load keeps the kit (or nothing, without one).
+  const kitDone = built !== null && built.tier === tier
+  const [glbs, setGlbs] = useState<{
+    readonly tier: QualityTier
+    readonly byId: ReadonlyMap<string, readonly GlbLevel[]>
+    readonly failed: readonly string[]
+    readonly done: boolean
+  } | null>(null)
+  useEffect(() => {
+    if (!active || !kitDone) return
+    let cancelled = false
+    const loaded = new Map<string, readonly GlbLevel[]>()
+    const failures: string[] = []
+    camera.getWorldPosition(_anchor)
+    const order = landmarks
+      .filter((entry) => entry.glb !== undefined)
+      .sort(
+        (a, b) =>
+          Math.hypot(a.frame.anchor.x - _anchor.x, a.frame.anchor.y + _anchor.z) -
+          Math.hypot(b.frame.anchor.x - _anchor.x, b.frame.anchor.y + _anchor.z),
+      )
+    const step = createSlicer(config.buildings.buildSliceMs)
+    const dimColor = new Color(palette.landmarks.dimmed)
+    const publish = (done: boolean) => {
+      if (cancelled) return
+      setGlbs({ tier, byId: new Map(loaded), failed: [...failures], done })
+      invalidate()
+    }
+    void (async () => {
+      const { loadGlbLevels } = await import('../models/landmarkLevels')
+      for (const entry of order) {
+        await step()
+        if (cancelled) break
+        const glb = entry.glb
+        if (glb === undefined) continue
+        const teaser = entry.style === 'teaser'
+        try {
+          const levels = await loadGlbLevels({
+            id: entry.id,
+            versions: glb.v,
+            levels: GLB_TIER_LEVELS[tier],
+            tier,
+            cacheMaxEntries: config.models.cacheMaxEntries,
+            // A memorial never glows; a teaser is dimmed and dark (S04f contract).
+            litUv: teaser || isNightGlowExcluded(entry.category) ? null : glbMaterial.litUv,
+            dim: teaser ? { color: dimColor, mix: config.landmarks.teaserDim } : null,
+            step,
+          })
+          if (cancelled) {
+            for (const level of levels) level.geometry.dispose()
+            break
+          }
+          loaded.set(entry.id, levels)
+          publish(false)
+        } catch (error) {
+          // Expected offline (model files are never precached): the kit stays.
+          failures.push(entry.id)
+          log.info('Landmark Blender model did not load; the kit stays', {
+            id: entry.id,
+            reason: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
+      publish(true)
+    })()
+    return () => {
+      cancelled = true
+      for (const levels of loaded.values()) for (const level of levels) level.geometry.dispose()
+    }
+  }, [
+    active,
+    kitDone,
+    landmarks,
+    tier,
+    camera,
+    invalidate,
+    config.buildings.buildSliceMs,
+    config.models.cacheMaxEntries,
+    palette.landmarks.dimmed,
+    config.landmarks.teaserDim,
+    glbMaterial.litUv,
+  ])
+  const glbOf = useCallback(
+    (id: string): readonly GlbLevel[] | undefined =>
+      glbs !== null && glbs.tier === tier ? glbs.byId.get(id) : undefined,
+    [glbs, tier],
+  )
 
   // Name chips: one mesh, one atlas, built with the models.
   const chips = useMemo(() => {
     if (built === null) return null
-    const list: NameChip[] = built.models.flatMap((model) => {
-      const entry = entries.get(model.id)
-      const text = names[model.id]
-      if (entry === undefined || text === undefined) return []
+    // Every landmark's chip, kit or Blender model, once the kit has built.
+    const list: NameChip[] = landmarks.flatMap((entry) => {
+      const text = names[entry.id]
+      if (text === undefined) return []
       return [
         {
           x: entry.frame.anchor.x,
           y: entry.frame.anchor.y - config.landmarkChips.offsetM,
-          height: groundY + (pinLifts.get(model.id) ?? 0) + config.landmarkChips.liftM,
+          height: groundY + (pinLifts.get(entry.id) ?? 0) + config.landmarkChips.liftM,
           text,
         },
       ]
@@ -212,7 +353,7 @@ export function Landmarks({
     mesh.name = 'landmark-name-chips'
     mesh.raycast = noRaycast
     return { mesh, texture, material, texts: list.map((chip) => chip.text) }
-  }, [built, entries, names, pinLifts, groundY, config.landmarkChips, palette.chip, unlitTint])
+  }, [built, landmarks, names, pinLifts, groundY, config.landmarkChips, palette.chip, unlitTint])
   useEffect(
     () => () => {
       chips?.mesh.geometry.dispose()
@@ -240,24 +381,32 @@ export function Landmarks({
           tier,
           done: built !== null && built.tier === tier,
           failed: [...failed],
+          glbDone: glbs !== null && glbs.tier === tier && glbs.done,
+          glbFailed: glbs !== null && glbs.tier === tier ? [...glbs.failed] : [],
           chips: { visible: chips !== null && chipsVisible, texts: chips?.texts ?? [] },
           landmarks: landmarks.map((entry): LandmarkState => {
             const model = built?.models.find((m) => m.id === entry.id)
+            const glbLevels = glbOf(entry.id)
             const lod = lods.current.get(entry.id)
             const current = lod?.getCurrentLevel()
-            const levels = model?.levels.length ?? 0
+            const drawn = glbLevels ?? model?.levels
+            const levels = drawn?.length ?? 0
+            const source: LandmarkSource = glbLevels === undefined ? 'kit' : 'glb'
             _anchor.set(entry.frame.anchor.x, groundY, -entry.frame.anchor.y).project(camera)
             const onScreen = _anchor.z >= -1 && _anchor.z <= 1
             return {
               id: entry.id,
-              source: landmarkSource(entry.id),
+              source,
               style: entry.style,
               level:
-                model === undefined || current === undefined || current >= levels
+                drawn === undefined || current === undefined || current >= levels
                   ? null
-                  : (model.levels[current]?.level ?? null),
-              built: model !== undefined,
-              triangles: model?.triangles ?? [],
+                  : (drawn[current]?.level ?? null),
+              built: drawn !== undefined,
+              triangles:
+                glbLevels === undefined
+                  ? (model?.triangles ?? [])
+                  : glbLevels.map((level) => level.triangles),
               lod: landmarkLod(config.landmarks, tier, settings.lodDistanceScale, isBridge(entry)),
               screen: onScreen
                 ? {
@@ -266,6 +415,7 @@ export function Landmarks({
                   }
                 : null,
               outlineVisible:
+                source === 'kit' &&
                 settings.outlines &&
                 entry.style === 'normal' &&
                 model?.levels[0]?.outline !== undefined,
@@ -283,6 +433,8 @@ export function Landmarks({
     camera,
     tier,
     built,
+    glbs,
+    glbOf,
     failed,
     chips,
     chipsVisible,
@@ -295,10 +447,40 @@ export function Landmarks({
   if (built === null) return null
   return (
     <group name="landmarks">
-      {built.models.map((model) => {
-        const entry = entries.get(model.id)
-        if (entry === undefined) return null
+      {landmarks.map((entry) => {
         const lod = landmarkLod(config.landmarks, tier, settings.lodDistanceScale, isBridge(entry))
+        const glbLevels = glbOf(entry.id)
+        if (glbLevels !== undefined) {
+          return (
+            <Detailed
+              key={entry.id}
+              ref={(object: LOD | null) => {
+                if (object === null) lods.current.delete(entry.id)
+                else lods.current.set(entry.id, object)
+              }}
+              name={`landmark-${entry.id}`}
+              position={[entry.frame.anchor.x, 0, -entry.frame.anchor.y]}
+              rotation={[0, (-entry.frame.headingDeg * Math.PI) / 180, 0]}
+              distances={[...lod.distances.slice(0, glbLevels.length), lod.cullM]}
+              hysteresis={config.landmarks.hysteresis}
+            >
+              {[
+                ...glbLevels.map((level) => (
+                  <mesh
+                    key={level.level}
+                    name={`landmark-${entry.id}-glb${level.level}`}
+                    geometry={level.geometry}
+                    material={glbMaterial.material}
+                    raycast={noRaycast}
+                  />
+                )),
+                <group key="culled" name={`landmark-${entry.id}-culled`} />,
+              ]}
+            </Detailed>
+          )
+        }
+        const model = built.models.find((m) => m.id === entry.id)
+        if (model === undefined) return null
         const teaser = entry.style === 'teaser'
         const set =
           isNightGlowExcluded(entry.category) && plainMaterials !== null

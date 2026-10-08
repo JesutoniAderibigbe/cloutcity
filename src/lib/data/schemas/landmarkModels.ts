@@ -628,6 +628,8 @@ export const LandmarkSceneConfigSchema = z
     windows: z.strictObject({ low: z.literal(false), mid: z.boolean(), high: z.boolean() }),
     labelMaxDistanceM: metres,
     outlineWidthM: metres,
+    /** Blender models (S07c): a teaser's colours are mixed this far toward the teaser colour. */
+    teaserDim: z.number().min(0).max(1),
   })
   .refine(
     (config) => Object.values(config.lod).every((tier) => tier.cullM > LANDMARK_FOCUS_DISTANCE_M),

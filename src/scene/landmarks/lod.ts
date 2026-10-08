@@ -6,6 +6,17 @@
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 
+/**
+ * The Blender models' four levels per tier (S07c), finest first: each tier draws its levels at
+ * the switch distances below, as the kit draws its own (scripts/blender/cclib/lod.py
+ * TIER_LEVELS builds them to these tiers' caps).
+ */
+export const GLB_TIER_LEVELS: Readonly<Record<QualityTier, readonly number[]>> = {
+  high: [0, 1, 2],
+  mid: [1, 2, 3],
+  low: [2, 3],
+}
+
 export interface LandmarkLod {
   /** Where each built level starts, nearest first (the first is 0). */
   readonly distances: readonly number[]

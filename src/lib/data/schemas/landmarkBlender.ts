@@ -161,3 +161,33 @@ export const BlenderLockSchema = z.strictObject({
     }),
 })
 export type BlenderLock = z.infer<typeof BlenderLockSchema>
+
+/**
+ * data/landmarks/blender.derived.json: what the client needs to draw every Blender landmark,
+ * written by `npm run landmarks:blender` from the locks and measurements (so the server loads
+ * one validated file, not a lock per landmark): each level's served URL (versioned by its
+ * sha256, so the service worker may cache it forever), its triangles, the model's game-scale
+ * top and the scale its kit fallback is drawn at while the GLB loads.
+ */
+export const BlenderModelsFileSchema = z.strictObject({
+  format: z.literal('cc-landmark-glb-v1'),
+  derived: z.literal(true),
+  landmarks: z
+    .array(
+      z.strictObject({
+        id: IdSchema,
+        /** L0..L3, finest first: `/landmarks/<id>/lod<n>.glb?v=<sha8>`. */
+        files: z
+          .array(z.string().regex(/^\/landmarks\/[a-z0-9-]+\/lod[0-3]\.glb\?v=[0-9a-f]{8}$/))
+          .length(4),
+        triangles: z.array(z.int().positive()).length(4),
+        topM: metres,
+        /** The measurements' game scale (1 where none): the kit fallback's height and plan. */
+        gameScale: z.strictObject({ height: z.number().positive(), plan: z.number().positive() }),
+      }),
+    )
+    .refine((list) => list.every((entry, i) => i === 0 || entry.id > (list[i - 1]?.id ?? '')), {
+      error: 'landmarks must be sorted by id',
+    }),
+})
+export type BlenderModelsFile = z.infer<typeof BlenderModelsFileSchema>

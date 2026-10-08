@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { perf, scene } from '@/lib/data/config'
 import { LANDMARK_FOCUS_DISTANCE_M } from '@/lib/data/schemas/landmarkModels'
 import { QUALITY_TIERS } from '@/lib/data/schemas/config'
-import { landmarkLod } from './lod'
+import { GLB_TIER_LEVELS, landmarkLod } from './lod'
 import { TIER_LEVELS } from './buildLandmark'
-import { landmarkSource } from './source'
 
 describe('landmarkLod', () => {
   it('has one distance per built level of the tier', () => {
@@ -34,8 +33,18 @@ describe('landmarkLod', () => {
   })
 })
 
-describe('landmarkSource (DEC-25)', () => {
-  it('is the code-built kit until a Blender model lands', () => {
-    expect(landmarkSource('brooklyn-bridge')).toBe('kit')
+describe('GLB_TIER_LEVELS (S07c)', () => {
+  it('draws as many Blender levels as the kit has distances, finest first', () => {
+    for (const tier of QUALITY_TIERS) {
+      const levels = GLB_TIER_LEVELS[tier]
+      expect(levels, tier).toHaveLength(TIER_LEVELS[tier].length)
+      expect(
+        [...levels].sort((a, b) => a - b),
+        tier,
+      ).toEqual(levels)
+      for (const level of levels) expect(level).toBeGreaterThanOrEqual(0)
+      for (const level of levels) expect(level).toBeLessThanOrEqual(3)
+    }
+    expect(GLB_TIER_LEVELS.low.at(-1)).toBe(3)
   })
 })

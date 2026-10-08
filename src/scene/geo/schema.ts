@@ -154,6 +154,8 @@ export const PlacesMiniSchema = z.strictObject({
 })
 
 const point = z.strictObject({ x: z.number(), y: z.number() })
+/** A Blender landmark level's version: the first 8 hex digits of its file's sha256. */
+const GLB_VERSION = /^[0-9a-f]{8}$/
 
 /**
  * The landmarks layer (src/lib/world/landmarksLayer.ts). The frame is checked in full; a model's
@@ -169,12 +171,24 @@ export const LandmarksMiniSchema = z.strictObject({
         borough,
         category: id,
         style: z.enum(['normal', 'teaser']),
-        model: z.looseObject({
-          id,
-          archetype: z.enum(LANDMARK_ARCHETYPES),
-          depiction: z.enum(['massing', 'stylised']),
-          params: z.looseObject({ roles: z.record(z.string(), z.string()) }),
-        }),
+        model: z.optional(
+          z.looseObject({
+            id,
+            archetype: z.enum(LANDMARK_ARCHETYPES),
+            depiction: z.enum(['massing', 'stylised']),
+            params: z.looseObject({ roles: z.record(z.string(), z.string()) }),
+          }),
+        ),
+        /** The Blender model (S07c): its four levels' versions, finest first, and kit scale. */
+        glb: z.optional(
+          z.strictObject({
+            v: z.array(z.string().check(z.regex(GLB_VERSION))).check(z.length(4)),
+            gameScale: z.strictObject({
+              height: z.number().check(z.gt(0)),
+              plan: z.number().check(z.gt(0)),
+            }),
+          }),
+        ),
         frame: z.looseObject({
           id,
           base: z.enum(['land', 'water']),
@@ -182,19 +196,16 @@ export const LandmarksMiniSchema = z.strictObject({
           headingDeg: z.number().check(z.gte(0), z.lt(360)),
           ends: z.optional(z.tuple([point, point])),
           spanM: z.optional(z.number().check(z.gt(0))),
-          exclusion: z.looseObject({
-            x: z.number(),
-            y: z.number(),
-            halfLengthM: z.number().check(z.gt(0)),
-            halfWidthM: z.number().check(z.gt(0)),
-          }),
           pinLiftM: z.number().check(z.gt(0)),
         }),
       })
       .check(
         z.refine(
-          (entry) => entry.model.id === entry.id && entry.frame.id === entry.id,
-          'model and frame must carry the entry id',
+          (entry) =>
+            (entry.model === undefined || entry.model.id === entry.id) &&
+            entry.frame.id === entry.id &&
+            (entry.model !== undefined || entry.glb !== undefined),
+          'model and frame must carry the entry id, and a landmark needs a kit or a Blender model',
         ),
       ),
   ),
@@ -207,8 +218,21 @@ export interface GeoLandmark {
   /** landmarks.json category: decides whether the night glow may touch it. */
   readonly category: string
   readonly style: 'normal' | 'teaser'
-  readonly model: LandmarkModel
+  /** The code-built kit model (S07a): drawn until (or instead of) the Blender model. */
+  readonly model?: LandmarkModel
+  /** The Blender model (S07c): src/scene/models/landmarkLevels.ts. */
+  readonly glb?: GeoLandmarkGlb
   readonly frame: LandmarkFrame
+}
+
+export interface GeoLandmarkGlb {
+  /**
+   * L0..L3's versions, finest first: the first 8 hex digits of each file's sha256, the `v` of
+   * its URL (landmarkLevelUrl in src/scene/models/landmarkLevels.ts).
+   */
+  readonly v: readonly string[]
+  /** The kit fallback is drawn at this scale while the Blender model loads. */
+  readonly gameScale: { readonly height: number; readonly plan: number }
 }
 
 /** The body of GET /geo/base (src/app/geo/base/route.ts). */

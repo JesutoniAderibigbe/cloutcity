@@ -88,6 +88,16 @@ function buildFrame(frame: Entry | null): unknown {
   )
 }
 
+/** Display-only landmark settings the build never reads (the teaser dim is applied at load). */
+const RUNTIME_ONLY_LANDMARK_KEYS: ReadonlySet<string> = new Set(['teaserDim'])
+
+function buildLandmarkConfig(config: unknown): unknown {
+  if (typeof config !== 'object' || config === null) return config
+  return Object.fromEntries(
+    Object.entries(config).filter(([key]) => !RUNTIME_ONLY_LANDMARK_KEYS.has(key)),
+  )
+}
+
 /** Every input of a landmark's build, as one plain object. */
 export function buildInputs(id: string): Record<string, unknown> {
   const models = readJson('data/landmarks/models.json') as { models: Entry[] }
@@ -117,7 +127,11 @@ export function buildInputs(id: string): Record<string, unknown> {
     measurements: sha256(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`))),
     model: entryOf(models.models, id),
     frame: buildFrame(entryOf(frames.landmarks, id)),
-    scene: { land: scene.land, camera: scene.camera, landmarks: scene.landmarks },
+    scene: {
+      land: scene.land,
+      camera: scene.camera,
+      landmarks: buildLandmarkConfig(scene.landmarks),
+    },
     palette: Object.fromEntries(
       Object.entries(theme.scene.landmarks).map(([role, token]) => [role, colours[token]]),
     ),

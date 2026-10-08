@@ -105,9 +105,22 @@ export function isOwnAudio({ url, method, sameOrigin }: RequestFacts): boolean {
  */
 export const MODEL_PATH = /^\/models\/[a-z0-9-]+\.(?:low|mid|high)\.[0-9a-f]{8}\.glb$/
 
-/** A versioned model file: same-origin GET, no query (the name is the version). */
+/**
+ * A Blender landmark level (S07c): `/landmarks/<id>/lod<n>.glb?v=<sha8>`, the same rule as the
+ * `files` of data/landmarks/blender.derived.json (policy.test.ts checks they agree). The query
+ * carries the first 8 hex digits of the file's sha256, so a URL never changes content.
+ */
+export const LANDMARK_MODEL_PATH = /^\/landmarks\/[a-z0-9-]+\/lod[0-3]\.glb$/
+export const LANDMARK_MODEL_QUERY = /^\?v=[0-9a-f]{8}$/
+
+/**
+ * A versioned model file: same-origin GET, and either a hand-made model (no query: the name is
+ * the version) or a Blender landmark level (its only query is the version).
+ */
 export function isVersionedModel({ url, method, sameOrigin }: RequestFacts): boolean {
-  return sameOrigin && method === 'GET' && url.search === '' && MODEL_PATH.test(url.pathname)
+  if (!sameOrigin || method !== 'GET') return false
+  if (url.search === '') return MODEL_PATH.test(url.pathname)
+  return LANDMARK_MODEL_PATH.test(url.pathname) && LANDMARK_MODEL_QUERY.test(url.search)
 }
 
 /**
