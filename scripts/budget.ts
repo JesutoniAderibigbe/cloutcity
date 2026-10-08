@@ -181,7 +181,11 @@ export const BOOT_ISLAND_FEATURES: readonly BootIsland[] = [
   { marker: 'cc-feature:sound-control', module: 'src/components/audio/SoundControl.tsx' },
   { marker: 'cc-feature:clout-hud', module: 'src/components/hud/HudLive.tsx' },
   { marker: 'cc-feature:hud-panel-buttons', module: 'src/components/hud/HudPanelButtons.tsx' },
-  { marker: 'cc-feature:level-up', module: 'src/components/hud/LevelUpToast.tsx' },
+  {
+    marker: 'cc-feature:level-up',
+    module: 'src/components/hud/LevelUpToast.tsx',
+    nested: true,
+  },
   {
     marker: 'cc-feature:event-sheet',
     module: 'src/components/events/EventSheetHost.tsx',

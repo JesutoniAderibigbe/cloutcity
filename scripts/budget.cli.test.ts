@@ -122,7 +122,6 @@ function fakeProject(perf: Record<string, unknown> = {}, files: Record<string, s
     [`.next/${chunk('scene')}`]: noisyChunk(7, `${THREE};x="${SCENE_FEATURE}"`),
     [`.next/${chunk('shared')}`]: noisyChunk(3),
     [`.next/${chunk('room')}`]: noisyChunk(13, 'var f="cc-feature:apartment-scene";'),
-    [`.next/${chunk('sheet')}`]: 'x="cc-feature:event-sheet"',
     // PERF-7: one chunk per optional marker, none of them precached.
     ...Object.fromEntries(
       OPTIONAL_CHUNK_MARKERS.map(({ id, marker }) => [
@@ -133,10 +132,14 @@ function fakeProject(perf: Record<string, unknown> = {}, files: Record<string, s
     ),
   }
   for (const island of islands) {
-    build[`.next/${chunk(island.name)}`] =
-      island.nested === true
-        ? `push([0${loader([chunk('sheet')], 99)}])`
-        : noisyChunk(11, `x="${island.marker}"`)
+    if (island.nested === true) {
+      // A nested island's host loads the chunk that renders its marker.
+      build[`.next/${chunk(island.name)}`] =
+        `push([0${loader([chunk(`${island.name}-marked`)], 99)}])`
+      build[`.next/${chunk(`${island.name}-marked`)}`] = `x="${island.marker}"`
+    } else {
+      build[`.next/${chunk(island.name)}`] = noisyChunk(11, `x="${island.marker}"`)
+    }
   }
   for (const [path, content] of Object.entries({ ...build, ...files })) {
     mkdirSync(dirname(join(root, path)), { recursive: true })
@@ -191,7 +194,7 @@ describe('budget CLI', () => {
 
   it('counts a file shared by the shell, the islands and the 3D chunk once in the total', () => {
     const result = runBudget(fakeProject())
-    // main + scene + shared + 5 boot island chunks + the nested host: 9 distinct files.
+    // main + scene + shared + 4 boot island chunks + the 2 nested hosts: 9 distinct files.
     expect(result.stdout).toMatch(/; 9 files$/m)
   })
 
