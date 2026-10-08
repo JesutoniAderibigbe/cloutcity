@@ -390,6 +390,12 @@ const MapStyleSchema = z.strictObject({
     /** The distance on a portrait screen (a phone), which shows far less of the map across. */
     portraitDistanceM: metres,
     polarDeg: z.number().min(0).lt(90),
+    /**
+     * On a wide screen (camera/FreeRowFraming.tsx `wideFraming`) the camera starts this far from
+     * the home, local metres (+y north), so the home and its venues fill the free area: the game
+     * map's cluster centre (compactLayout.json `centreOffsetM`, S04p). None: over the home.
+     */
+    wideStartOffsetM: z.strictObject({ x: z.number(), y: z.number() }).optional(),
   }),
   buildings: z.strictObject({
     /** District masses and fill blocks are drawn at this share of their real height. */

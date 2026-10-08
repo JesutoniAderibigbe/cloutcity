@@ -32,7 +32,7 @@ import { useActiveTier } from '@/state/quality'
 import { registerMapStyleDefault, useMapStyle } from '@/state/mapStyle'
 import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
-import { FreeRowFraming } from './camera/FreeRowFraming'
+import { FreeRowFraming, wideFraming } from './camera/FreeRowFraming'
 import { nearFar } from './camera/limits'
 import { Buildings, type BuildingsHandle } from './buildings/Buildings'
 import { pinPoint } from './pins/buildPins'
@@ -339,6 +339,13 @@ function CityScene3D({
       placeId === null ? undefined : stylePins.find((candidate) => candidate.id === placeId)
     return pin === undefined ? home : { x: pin.x, y: pin.y }
   }, [placeId, stylePins, home])
+  // S04p: on a wide screen the game map opens over the home's cluster, not the home itself, so
+  // the home and its venues fill the free area below the HUD instead of the home hugging it.
+  const cameraStart = useMemo(() => {
+    const offset = look.camera.wideStartOffsetM
+    if (rest !== home || offset === undefined || !wideFraming(window.innerWidth)) return rest
+    return { x: home.x + offset.x, y: home.y + offset.y }
+  }, [rest, home, look])
   if (built instanceof Error) throw built
 
   const groundY = landTopY(config.land)
@@ -375,7 +382,7 @@ function CityScene3D({
             distanceM={camera.distanceM}
             shadowMapSizePx={shadows ? settings.shadowMapSizePx : 0}
           >
-            <CameraRig camera={camera} start={rest} bounds={boundsLocal} groundY={groundY} />
+            <CameraRig camera={camera} start={cameraStart} bounds={boundsLocal} groundY={groundY} />
             <FreeRowFraming />
             <City
               city={built}

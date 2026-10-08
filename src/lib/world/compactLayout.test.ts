@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compactLayout, plots } from '@/lib/data/config'
+import { compactLayout, plots, scene } from '@/lib/data/config'
 import { homes } from '@/lib/data/content'
 import { land, parks, subway, zoneShapes } from '@/lib/data/geo'
 import { decodePath } from '@/lib/geo/codec'
@@ -142,3 +142,11 @@ function square(r: number) {
 function box(r: number) {
   return { minX: -r, minY: -r, maxX: r, maxY: r }
 }
+
+describe('the game map camera on a wide screen (S04p)', () => {
+  it('starts over the cluster centre the layout gathers venues around', () => {
+    expect(scene.mapStyles.game.camera.wideStartOffsetM).toEqual(compactLayout.centreOffsetM)
+    // The real style has no cluster: it starts over the home.
+    expect(scene.mapStyles.real.camera.wideStartOffsetM).toBeUndefined()
+  })
+})

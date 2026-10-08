@@ -541,7 +541,8 @@
       "camera": {
         "distanceM": 700,
         "polarDeg": 38,
-        "portraitDistanceM": 1050
+        "portraitDistanceM": 1050,
+        "wideStartOffsetM": { "x": 0, "y": -216 }
       },
       "buildings": {
         "heightScale": 0.32,
