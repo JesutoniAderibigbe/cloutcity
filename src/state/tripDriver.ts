@@ -109,7 +109,9 @@ function animatedRoute(route: Route, plan: TripPlan): Route {
     if (last) points.push(plan.to.rest)
     return { ...leg, polyline: points }
   })
-  return { ...route, legs }
+  // The animation ends (and a cut or Skip lands the avatar) where it rests, not on the route's
+  // end point (a landmark's approach).
+  return { ...route, from: plan.from.rest, to: plan.to.rest, legs }
 }
 
 let tripCount = 0

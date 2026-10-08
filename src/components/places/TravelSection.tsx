@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { ignoreKeyRepeat } from '@/components/overlay/useActionGuard'
 import type { PlayerLocation } from '@/engine/game'
 import type { TravelMode } from '@/engine/transit/plan'
 import { copy } from '@/lib/copy'
@@ -176,6 +177,8 @@ function TravelRows({
                 data-trip-mode={option.mode}
                 aria-label={tripOptionAccessibleName(shown, place)}
                 onClick={() => take(option.mode)}
+                // A held Enter starts one trip; its repeats must not press what replaces the row.
+                onKeyDown={ignoreKeyRepeat}
                 className={`${BUTTON} flex w-full flex-col bg-raised text-fg enabled:hover:bg-pressed disabled:opacity-70`}
               >
                 <span>{tripModeAction(option.mode)}</span>

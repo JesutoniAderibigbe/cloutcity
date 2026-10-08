@@ -136,14 +136,27 @@ function useTitleFocus(ref: React.RefObject<HTMLDivElement | null>) {
 
 /** The arrival line with its Dismiss button, in the card's status. */
 function ArrivalNote({ arrival }: { readonly arrival: TripArrival }) {
+  const dismissButton = useRef<HTMLButtonElement>(null)
+  // A trip ends with focus here (TRV-3): the button the player pressed went with the trip, and
+  // when the trip cut straight to the arrival (reduced motion, no 3D map) the sheet never closed,
+  // so nothing else would take it. A sheet that mounts on arrival then focuses its title.
+  useEffect(() => {
+    dismissButton.current?.focus()
+  }, [arrival.id])
+  const dismiss = () => {
+    // The button goes with the note: focus moves to the sheet's title, not the page.
+    dismissButton.current?.closest('[role="dialog"]')?.querySelector<HTMLElement>('h2')?.focus()
+    dismissArrival(arrival.id)
+  }
   return (
     <div className="flex items-center justify-between gap-2" data-trip-arrival="">
       <p role="status" className="text-sm font-semibold text-taxi-ink">
         {arrivalText(arrival)}
       </p>
       <button
+        ref={dismissButton}
         type="button"
-        onClick={() => dismissArrival(arrival.id)}
+        onClick={dismiss}
         className={`${BUTTON} min-w-11 shrink-0 bg-raised text-center text-fg`}
       >
         {copy('place.result.dismiss')}

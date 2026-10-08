@@ -127,7 +127,8 @@
       "pickupMin": 5,
       "baseFare": 3,
       "perKm": 2,
-      "maxWaterM": 50
+      "maxWaterM": 50,
+      "estimateDetourFactor": 3
     },
     "subway": {
       "speedKmh": 32,

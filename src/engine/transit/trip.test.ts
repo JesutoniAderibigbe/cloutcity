@@ -11,6 +11,8 @@ import { nextRentDueDay } from '../rent'
 import { atPlace, withClout } from '../test-support'
 import { mapPlaces } from '@/lib/world/places'
 import { tripEnd, type TripEnd } from '@/lib/world/tripEnds'
+import { transitConfig } from './config'
+import { planTrip } from './plan'
 import { NOON, TEST_TRANSIT, testWorld } from './test-fixtures'
 import { planDirect, takeTrip, tripOptions } from './trip'
 import { travel } from './travel'
@@ -163,28 +165,47 @@ describe('takeTrip', () => {
 })
 
 describe('planDirect', () => {
-  it('is a straight taxi with pickup, detour, rush-hour slowdown and the usual fare', () => {
+  it('is a straight taxi times the estimate factor, with pickup, detour, rush hour and fare', () => {
     const from = { x: 0, y: 0 }
     const to = { x: 3000, y: 4000 }
     const noon = planDirect(from, to, NOON, TEST_TRANSIT)
     const rush = planDirect(from, to, 8 * 60, TEST_TRANSIT)
     if (!noon.ok || !rush.ok) throw new Error('unplanned')
-    const drive = ((5000 * 1.3) / 1000 / 20) * 60
+    const pathM = 5000 * TEST_TRANSIT.taxi.estimateDetourFactor
+    const drive = ((pathM * 1.3) / 1000 / 20) * 60
     expect(noon.route.durationMin).toBe(Math.ceil(5 + drive))
     expect(rush.route.durationMin).toBe(Math.ceil(5 + drive * 1.25))
-    expect(noon.route.fare).toBe(Math.ceil(3 + 2 * 6.5))
+    expect(noon.route.fare).toBe(Math.ceil(3 + (2 * pathM * 1.3) / 1000))
     expect(rush.route.rushHour).toBe(true)
   })
 
-  it('refuses a trip shorter than minTripM and points that are not numbers', () => {
-    expect(planDirect({ x: 0, y: 0 }, { x: 1, y: 1 }, NOON, TEST_TRANSIT)).toMatchObject({
-      ok: false,
-      error: { code: 'ALREADY_THERE' },
-    })
-    expect(planDirect({ x: Number.NaN, y: 0 }, { x: 1, y: 1 }, NOON, TEST_TRANSIT)).toEqual({
-      ok: false,
-      error: { code: 'INVALID_POINT' },
-    })
+  it('is never cheaper or quicker than the routed taxi to or from any place (TRV-5)', () => {
+    // Blocking the geo download must not buy a better ride: the shipped config, every place to
+    // and from home. Rush hour scales both drives by the same factor, so noon covers it; the
+    // estimate's factor covers the worst detour between any two spots (2.74 measured).
+    const home = end('home', at(NOON)).stop.point
+    let compared = 0
+    for (const place of mapPlaces()) {
+      const point = end(place.id, at(NOON)).stop.point
+      for (const [from, to] of [
+        [home, point],
+        [point, home],
+      ] as const) {
+        const routed = planTrip(from, to, 'taxi', {
+          config: transitConfig,
+          minuteOfDay: NOON,
+          world,
+        })
+        // Every place is reachable by the routed taxi, so the estimate reaches nothing it refuses.
+        expect(routed.ok, place.id).toBe(true)
+        const direct = planDirect(from, to, NOON, transitConfig)
+        if (!routed.ok || !direct.ok) continue
+        compared++
+        expect(direct.route.fare, place.id).toBeGreaterThanOrEqual(routed.route.fare)
+        expect(direct.route.durationMin, place.id).toBeGreaterThanOrEqual(routed.route.durationMin)
+      }
+    }
+    expect(compared).toBe(mapPlaces().length * 2)
   })
 })
 

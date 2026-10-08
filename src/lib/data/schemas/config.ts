@@ -850,6 +850,12 @@ export const TransitConfigSchema = z.strictObject({
     perKm: z.number().nonnegative(),
     /** A drive leaving land for longer than this in one stretch must use a crossing instead. */
     maxWaterM: z.number().nonnegative(),
+    /**
+     * The straight-line taxi estimate (used only when the geo layers cannot load) multiplies the
+     * straight distance by this, so it is never cheaper or quicker than the routed taxi via the
+     * crossings (TRV-5; checked against every place pair in src/engine/transit/trip.test.ts).
+     */
+    estimateDetourFactor: z.number().min(1),
   }),
   /**
    * Bridges and vehicle tunnels the taxi may use across water: one point on land at each end.
