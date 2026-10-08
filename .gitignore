@@ -24,6 +24,8 @@ node_modules/
 .next-e2e-supabase/
 .next-e2e-dpl/
 out/
+# ...but the committed Blender outputs (npm run blender:build) are source for the asset build.
+!scripts/blender/out/
 build/
 next-env.d.ts
 *.tsbuildinfo

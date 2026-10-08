@@ -105,12 +105,12 @@
     },
     {
       "id": "pink",
-      "token": "hair-pink-400",
+      "token": "rose-400",
       "nameKey": "colors.hair.pink"
     },
     {
       "id": "blue",
-      "token": "hair-blue-500",
+      "token": "cobalt-500",
       "nameKey": "colors.hair.blue"
     }
   ],
@@ -149,16 +149,6 @@
       "id": "style-07",
       "head": "head-male-a",
       "nameKey": "avatar.hairStyle.style07"
-    },
-    {
-      "id": "style-08",
-      "head": "head-male-b",
-      "nameKey": "avatar.hairStyle.style08"
-    },
-    {
-      "id": "style-09",
-      "head": "head-male-c",
-      "nameKey": "avatar.hairStyle.style09"
     },
     {
       "id": "style-10",

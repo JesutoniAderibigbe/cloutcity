@@ -23,11 +23,8 @@ import { SceneConfigSchema } from './scene'
 
 export { ATTACHMENT_KINDS, LOOK_FIELDS, TRAIT_EFFECT_KINDS, lookIssue }
 
-/**
- * A model palette token. Wider than theme.json's `<family>-<n>` because the dyed hair colours
- * (`hair-pink-400`, `hair-blue-500`, DEC-28/D6) name a family and a shade.
- */
-export const AvatarTokenSchema = z.string().regex(/^[a-z]+(?:-[a-z]+)*-\d{2,3}$/)
+/** A model palette token (theme.json `models`). */
+export const AvatarTokenSchema = z.string().regex(/^[a-z]+-\d{2,3}$/)
 
 /** A colour name lives in the shared `colors` namespace (A11Y-1): one place to review them. */
 const ColorNameKeySchema = CopyKeyRefSchema.refine((key) => key.startsWith('colors.'), {

@@ -55,6 +55,8 @@ export const ModelManifestEntrySchema = z
     bounds: z.strictObject({ min: vec3, max: vec3 }).optional(),
     /** Recolourable slots, in `_SLOT` order (attribute value = index + 1). */
     slots: z.array(id),
+    /** Avatar attachments (S16a): the rig joint the model follows, in the character's frame. */
+    attach: z.enum(['head', 'torso']).optional(),
     /** Whether any vertex carries `_EMISSIVE`. */
     emissive: z.boolean(),
     clips: z.array(z.string().min(1)),
@@ -175,6 +177,7 @@ export const ModelRefSchema = z.strictObject({
   kind: z.enum(['static', 'skinned', 'rig']),
   category: z.enum(MODEL_CATEGORIES),
   slots: z.array(id),
+  attach: z.enum(['head', 'torso']).optional(),
   emissive: z.boolean(),
   clips: z.array(z.string().min(1)),
   bounds: z.strictObject({ min: vec3, max: vec3 }).optional(),

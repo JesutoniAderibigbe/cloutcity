@@ -25,11 +25,66 @@
     }
   },
   "models": {
+    "acc-gold-hoops": {
+      "id": "acc-gold-hoops",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.5313,
+          0.757,
+          -0.083
+        ],
+        "max": [
+          0.5313,
+          0.923,
+          0.083
+        ]
+      },
+      "files": {
+        "low": "/models/acc-gold-hoops.high.df9a4071.glb",
+        "mid": "/models/acc-gold-hoops.high.df9a4071.glb",
+        "high": "/models/acc-gold-hoops.high.df9a4071.glb"
+      }
+    },
+    "acc-subway-tote": {
+      "id": "acc-subway-tote",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "torso",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          0.0301,
+          0.24,
+          -0.505
+        ],
+        "max": [
+          0.405,
+          0.8758,
+          0.359
+        ]
+      },
+      "files": {
+        "low": "/models/acc-subway-tote.high.0720672c.glb",
+        "mid": "/models/acc-subway-tote.high.0720672c.glb",
+        "high": "/models/acc-subway-tote.high.0720672c.glb"
+      }
+    },
     "body-female-a": {
       "id": "body-female-a",
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -49,9 +104,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-female-a.low.537ef321.glb",
-        "mid": "/models/body-female-a.high.79b08f26.glb",
-        "high": "/models/body-female-a.high.79b08f26.glb"
+        "low": "/models/body-female-a.low.74dccb6b.glb",
+        "mid": "/models/body-female-a.high.a553bb09.glb",
+        "high": "/models/body-female-a.high.a553bb09.glb"
       }
     },
     "body-female-b": {
@@ -59,6 +114,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -78,9 +134,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-female-b.low.5a002959.glb",
-        "mid": "/models/body-female-b.high.68bc0018.glb",
-        "high": "/models/body-female-b.high.68bc0018.glb"
+        "low": "/models/body-female-b.low.710f2f4b.glb",
+        "mid": "/models/body-female-b.high.9f4419b5.glb",
+        "high": "/models/body-female-b.high.9f4419b5.glb"
       }
     },
     "body-female-c": {
@@ -88,6 +144,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -107,9 +164,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-female-c.low.0b3f9145.glb",
-        "mid": "/models/body-female-c.high.15081142.glb",
-        "high": "/models/body-female-c.high.15081142.glb"
+        "low": "/models/body-female-c.low.27539eb9.glb",
+        "mid": "/models/body-female-c.high.a7d3b13d.glb",
+        "high": "/models/body-female-c.high.a7d3b13d.glb"
       }
     },
     "body-female-d": {
@@ -117,6 +174,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -136,9 +194,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-female-d.low.f4b21da2.glb",
-        "mid": "/models/body-female-d.high.16f4f540.glb",
-        "high": "/models/body-female-d.high.16f4f540.glb"
+        "low": "/models/body-female-d.low.b5a34fe3.glb",
+        "mid": "/models/body-female-d.high.a367a93d.glb",
+        "high": "/models/body-female-d.high.a367a93d.glb"
       }
     },
     "body-female-e": {
@@ -146,6 +204,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -165,9 +224,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-female-e.low.8fdf3bb3.glb",
-        "mid": "/models/body-female-e.high.a7cd7b96.glb",
-        "high": "/models/body-female-e.high.a7cd7b96.glb"
+        "low": "/models/body-female-e.low.af59290c.glb",
+        "mid": "/models/body-female-e.high.08db60df.glb",
+        "high": "/models/body-female-e.high.08db60df.glb"
       }
     },
     "body-female-f": {
@@ -175,6 +234,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -194,9 +254,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-female-f.low.54c9676b.glb",
-        "mid": "/models/body-female-f.high.8ba2e8da.glb",
-        "high": "/models/body-female-f.high.8ba2e8da.glb"
+        "low": "/models/body-female-f.low.e92bd9bc.glb",
+        "mid": "/models/body-female-f.high.a0ebc18a.glb",
+        "high": "/models/body-female-f.high.a0ebc18a.glb"
       }
     },
     "body-male-a": {
@@ -204,6 +264,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -223,9 +284,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-male-a.low.63790596.glb",
-        "mid": "/models/body-male-a.high.3416b7c2.glb",
-        "high": "/models/body-male-a.high.3416b7c2.glb"
+        "low": "/models/body-male-a.low.271e9e8e.glb",
+        "mid": "/models/body-male-a.high.6acf5a98.glb",
+        "high": "/models/body-male-a.high.6acf5a98.glb"
       }
     },
     "body-male-b": {
@@ -233,6 +294,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -252,9 +314,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-male-b.low.7bb3ac58.glb",
-        "mid": "/models/body-male-b.high.2cb94609.glb",
-        "high": "/models/body-male-b.high.2cb94609.glb"
+        "low": "/models/body-male-b.low.66aa142e.glb",
+        "mid": "/models/body-male-b.high.832559d1.glb",
+        "high": "/models/body-male-b.high.832559d1.glb"
       }
     },
     "body-male-c": {
@@ -262,6 +324,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -281,9 +344,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-male-c.low.06bc9a9c.glb",
-        "mid": "/models/body-male-c.high.a29049b4.glb",
-        "high": "/models/body-male-c.high.a29049b4.glb"
+        "low": "/models/body-male-c.low.712d2d6f.glb",
+        "mid": "/models/body-male-c.high.25576441.glb",
+        "high": "/models/body-male-c.high.25576441.glb"
       }
     },
     "body-male-d": {
@@ -291,6 +354,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -310,9 +374,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-male-d.low.1451caf3.glb",
-        "mid": "/models/body-male-d.high.dd292187.glb",
-        "high": "/models/body-male-d.high.dd292187.glb"
+        "low": "/models/body-male-d.low.a42e4230.glb",
+        "mid": "/models/body-male-d.high.e82216ab.glb",
+        "high": "/models/body-male-d.high.e82216ab.glb"
       }
     },
     "body-male-e": {
@@ -320,6 +384,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -339,9 +404,9 @@
         ]
       },
       "files": {
-        "low": "/models/body-male-e.low.3cd12f75.glb",
-        "mid": "/models/body-male-e.high.4234119e.glb",
-        "high": "/models/body-male-e.high.4234119e.glb"
+        "low": "/models/body-male-e.low.5fe7b592.glb",
+        "mid": "/models/body-male-e.high.d49e21f2.glb",
+        "high": "/models/body-male-e.high.d49e21f2.glb"
       }
     },
     "body-male-f": {
@@ -349,6 +414,7 @@
       "kind": "skinned",
       "category": "avatar-body",
       "slots": [
+        "shoes",
         "skin",
         "top",
         "bottom"
@@ -368,9 +434,121 @@
         ]
       },
       "files": {
-        "low": "/models/body-male-f.low.22cf9748.glb",
-        "mid": "/models/body-male-f.high.b3ef5dc0.glb",
-        "high": "/models/body-male-f.high.b3ef5dc0.glb"
+        "low": "/models/body-male-f.low.574b7ce2.glb",
+        "mid": "/models/body-male-f.high.9dbacd6a.glb",
+        "high": "/models/body-male-f.high.9dbacd6a.glb"
+      }
+    },
+    "facial-full-beard": {
+      "id": "facial-full-beard",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.485,
+          0.68,
+          -0.06
+        ],
+        "max": [
+          0.485,
+          1.02,
+          0.42
+        ]
+      },
+      "files": {
+        "low": "/models/facial-full-beard.high.d7983720.glb",
+        "mid": "/models/facial-full-beard.high.d7983720.glb",
+        "high": "/models/facial-full-beard.high.d7983720.glb"
+      }
+    },
+    "facial-goatee": {
+      "id": "facial-goatee",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.16,
+          0.74,
+          0.348
+        ],
+        "max": [
+          0.16,
+          0.975,
+          0.41
+        ]
+      },
+      "files": {
+        "low": "/models/facial-goatee.high.5b6450c7.glb",
+        "mid": "/models/facial-goatee.high.5b6450c7.glb",
+        "high": "/models/facial-goatee.high.5b6450c7.glb"
+      }
+    },
+    "facial-moustache": {
+      "id": "facial-moustache",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.19,
+          0.87,
+          0.348
+        ],
+        "max": [
+          0.19,
+          0.98,
+          0.39
+        ]
+      },
+      "files": {
+        "low": "/models/facial-moustache.high.cc8b4279.glb",
+        "mid": "/models/facial-moustache.high.cc8b4279.glb",
+        "high": "/models/facial-moustache.high.cc8b4279.glb"
+      }
+    },
+    "facial-stubble": {
+      "id": "facial-stubble",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.44,
+          0.755,
+          0.348
+        ],
+        "max": [
+          0.44,
+          0.97,
+          0.362
+        ]
+      },
+      "files": {
+        "low": "/models/facial-stubble.high.cbb9d3a9.glb",
+        "mid": "/models/facial-stubble.high.cbb9d3a9.glb",
+        "high": "/models/facial-stubble.high.cbb9d3a9.glb"
       }
     },
     "glasses": {
@@ -398,6 +576,33 @@
         "high": "/models/glasses.high.7efd38b7.glb"
       }
     },
+    "head-base": {
+      "id": "head-base",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "slots": [
+        "skin"
+      ],
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.4989,
+          0.7551,
+          -0.3572
+        ],
+        "max": [
+          0.4989,
+          1.4549,
+          0.4139
+        ]
+      },
+      "files": {
+        "low": "/models/head-base.low.0e62d98b.glb",
+        "mid": "/models/head-base.high.43a68a71.glb",
+        "high": "/models/head-base.high.43a68a71.glb"
+      }
+    },
     "head-female-a": {
       "id": "head-female-a",
       "kind": "skinned",
@@ -421,9 +626,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-female-a.low.3206d5e9.glb",
-        "mid": "/models/head-female-a.high.e7c06f36.glb",
-        "high": "/models/head-female-a.high.e7c06f36.glb"
+        "low": "/models/head-female-a.low.af2fd2fa.glb",
+        "mid": "/models/head-female-a.high.59a96e52.glb",
+        "high": "/models/head-female-a.high.59a96e52.glb"
       }
     },
     "head-female-b": {
@@ -449,9 +654,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-female-b.low.77794cda.glb",
-        "mid": "/models/head-female-b.high.aba1bf29.glb",
-        "high": "/models/head-female-b.high.aba1bf29.glb"
+        "low": "/models/head-female-b.low.0873a80f.glb",
+        "mid": "/models/head-female-b.high.a299bf74.glb",
+        "high": "/models/head-female-b.high.a299bf74.glb"
       }
     },
     "head-female-c": {
@@ -477,9 +682,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-female-c.low.a6d0ef4e.glb",
-        "mid": "/models/head-female-c.high.961adfe4.glb",
-        "high": "/models/head-female-c.high.961adfe4.glb"
+        "low": "/models/head-female-c.low.c74f4bb8.glb",
+        "mid": "/models/head-female-c.high.b57a1179.glb",
+        "high": "/models/head-female-c.high.b57a1179.glb"
       }
     },
     "head-female-d": {
@@ -505,9 +710,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-female-d.low.394e04b7.glb",
-        "mid": "/models/head-female-d.high.96c10713.glb",
-        "high": "/models/head-female-d.high.96c10713.glb"
+        "low": "/models/head-female-d.low.bf522b70.glb",
+        "mid": "/models/head-female-d.high.553dad2c.glb",
+        "high": "/models/head-female-d.high.553dad2c.glb"
       }
     },
     "head-female-e": {
@@ -533,9 +738,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-female-e.low.bb7e6115.glb",
-        "mid": "/models/head-female-e.high.56752f3e.glb",
-        "high": "/models/head-female-e.high.56752f3e.glb"
+        "low": "/models/head-female-e.low.3110d78c.glb",
+        "mid": "/models/head-female-e.high.d675dafb.glb",
+        "high": "/models/head-female-e.high.d675dafb.glb"
       }
     },
     "head-female-f": {
@@ -561,9 +766,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-female-f.low.c86b62df.glb",
-        "mid": "/models/head-female-f.high.df3a6c04.glb",
-        "high": "/models/head-female-f.high.df3a6c04.glb"
+        "low": "/models/head-female-f.low.879c6c45.glb",
+        "mid": "/models/head-female-f.high.15ff2f3f.glb",
+        "high": "/models/head-female-f.high.15ff2f3f.glb"
       }
     },
     "head-male-a": {
@@ -589,65 +794,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-male-a.low.4e68a11c.glb",
-        "mid": "/models/head-male-a.high.4bb7b1ba.glb",
-        "high": "/models/head-male-a.high.4bb7b1ba.glb"
-      }
-    },
-    "head-male-b": {
-      "id": "head-male-b",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "slots": [
-        "skin",
-        "hair"
-      ],
-      "emissive": false,
-      "clips": [],
-      "bounds": {
-        "min": [
-          -0.4989,
-          0.5791,
-          -0.3572
-        ],
-        "max": [
-          0.4989,
-          1.4549,
-          0.4985
-        ]
-      },
-      "files": {
-        "low": "/models/head-male-b.low.77a1b9af.glb",
-        "mid": "/models/head-male-b.high.17faa50d.glb",
-        "high": "/models/head-male-b.high.17faa50d.glb"
-      }
-    },
-    "head-male-c": {
-      "id": "head-male-c",
-      "kind": "skinned",
-      "category": "avatar-head",
-      "slots": [
-        "skin",
-        "hair"
-      ],
-      "emissive": false,
-      "clips": [],
-      "bounds": {
-        "min": [
-          -0.4989,
-          0.7551,
-          -0.4136
-        ],
-        "max": [
-          0.4989,
-          1.7441,
-          0.5998
-        ]
-      },
-      "files": {
-        "low": "/models/head-male-c.low.6889b319.glb",
-        "mid": "/models/head-male-c.high.33a1efd9.glb",
-        "high": "/models/head-male-c.high.33a1efd9.glb"
+        "low": "/models/head-male-a.low.28b8c004.glb",
+        "mid": "/models/head-male-a.high.e5cfcc8d.glb",
+        "high": "/models/head-male-a.high.e5cfcc8d.glb"
       }
     },
     "head-male-d": {
@@ -673,9 +822,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-male-d.low.00c4fbe8.glb",
-        "mid": "/models/head-male-d.high.99409d92.glb",
-        "high": "/models/head-male-d.high.99409d92.glb"
+        "low": "/models/head-male-d.low.944f9008.glb",
+        "mid": "/models/head-male-d.high.190544c9.glb",
+        "high": "/models/head-male-d.high.190544c9.glb"
       }
     },
     "head-male-e": {
@@ -701,9 +850,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-male-e.low.0c394814.glb",
-        "mid": "/models/head-male-e.high.02bbcfe3.glb",
-        "high": "/models/head-male-e.high.02bbcfe3.glb"
+        "low": "/models/head-male-e.low.25460f8a.glb",
+        "mid": "/models/head-male-e.high.827f8d51.glb",
+        "high": "/models/head-male-e.high.827f8d51.glb"
       }
     },
     "head-male-f": {
@@ -729,9 +878,9 @@
         ]
       },
       "files": {
-        "low": "/models/head-male-f.low.da184364.glb",
-        "mid": "/models/head-male-f.high.31e517ab.glb",
-        "high": "/models/head-male-f.high.31e517ab.glb"
+        "low": "/models/head-male-f.low.e6537e60.glb",
+        "mid": "/models/head-male-f.high.5c3ad492.glb",
+        "high": "/models/head-male-f.high.5c3ad492.glb"
       }
     },
     "hearing-aid": {
@@ -790,11 +939,14 @@
   "colors": {
     "blush-300": "#e3a9a2",
     "charcoal-800": "#2f3133",
+    "cobalt-500": "#3f63c9",
     "cream-100": "#efe6d2",
     "denim-600": "#3c5a7d",
+    "hair-050": "#d9d9dc",
     "hair-100": "#e8d3a2",
     "hair-200": "#b9b6b2",
     "hair-300": "#c08f4f",
+    "hair-400": "#b0603a",
     "hair-500": "#8a4b2a",
     "hair-700": "#4a2e1f",
     "hair-900": "#1d1714",
@@ -802,15 +954,20 @@
     "navy-800": "#222d45",
     "olive-600": "#59613a",
     "red-600": "#a8322d",
+    "rose-400": "#e07aa3",
     "rust-500": "#a24f2c",
+    "skin-050": "#fbe8dc",
     "skin-100": "#f6dccb",
     "skin-200": "#eac3a3",
     "skin-300": "#d9a77f",
     "skin-400": "#c18a5f",
+    "skin-450": "#b27b52",
     "skin-500": "#a26b45",
     "skin-600": "#84532f",
     "skin-700": "#643c22",
+    "skin-750": "#55321e",
     "skin-800": "#47291a",
+    "skin-900": "#2f1b12",
     "teal-600": "#2d6e6b",
     "white-50": "#f7f6f2"
   },

@@ -21,11 +21,15 @@ async function scratch(): Promise<string> {
 }
 
 describe('blender:build', () => {
-  it('pins Blender 5.2.2 and starts with no shipped models (S07c and DEC-28 add them)', async () => {
+  it('pins Blender 5.2.2 and ships the S16a avatar attachments (DEC-28), one script each', async () => {
     const lock = await readBlenderLock()
     expect(lock.blender.version).toBe('5.2.2')
     expect(lock.outDir).toBe('scripts/blender/out')
-    expect(lock.models).toEqual([])
+    expect(lock.models.length).toBe(16)
+    for (const model of lock.models) {
+      expect(model.script).toBe(`scripts/blender/avatar/${model.id}.py`)
+    }
+    expect(await checkBlenderOutputs(lock)).toEqual([])
   })
 
   it('accepts the smoke fixture as built', async () => {

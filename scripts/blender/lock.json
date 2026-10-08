@@ -5,5 +5,166 @@
     "executable": "/Applications/Blender.app/Contents/MacOS/Blender"
   },
   "outDir": "scripts/blender/out",
-  "models": []
+  "models": [
+    {
+      "id": "hair-afro",
+      "script": "scripts/blender/avatar/hair-afro.py",
+      "inputs": {
+        "scripts/blender/avatar/hair-afro.py": "e84c328976a65677b1cc679deae6adb97f20bc6ad246745a57d0e4bb42e60213",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "e4f909e91b82767d7144d1d1be4937b6ebeed83a5850b35b24761617d348382e",
+      "bytes": 14180
+    },
+    {
+      "id": "hair-locs",
+      "script": "scripts/blender/avatar/hair-locs.py",
+      "inputs": {
+        "scripts/blender/avatar/hair-locs.py": "14e5f66f36e2a28ac5d2254eef11e01cebff97543f87cd025fd5fe5d54eb92c3",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "dca6433f8b721e9017bdbaa39292dc6603aa45eceb89ea3dc81d0092f6b70442",
+      "bytes": 14788
+    },
+    {
+      "id": "hair-box-braids",
+      "script": "scripts/blender/avatar/hair-box-braids.py",
+      "inputs": {
+        "scripts/blender/avatar/hair-box-braids.py": "d68b83c0a3441ccb0b4b3333ba0ba833bf32709a50d9883539b37214b06e48f2",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "b9ae6ba808450eec39ca395e7a9804c22306286f820143b0d5615095d887524c",
+      "bytes": 13884
+    },
+    {
+      "id": "hair-cornrows",
+      "script": "scripts/blender/avatar/hair-cornrows.py",
+      "inputs": {
+        "scripts/blender/avatar/hair-cornrows.py": "a87795e3f50b13b6e9fc12737b0cb3e1714e3149b6aeb6104169d9c6bed25637",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "c492654cb713311dae1fe47e443716d3cfd8ae6a2dc9385d505f8beb3a93ae9a",
+      "bytes": 17312
+    },
+    {
+      "id": "hair-buzz",
+      "script": "scripts/blender/avatar/hair-buzz.py",
+      "inputs": {
+        "scripts/blender/avatar/hair-buzz.py": "e24427e3aeec139a47b8ab85aedab8a9d7a394374966357abf7fd7a1b079999f",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "dc9c9b4f4f1c14daf0ab43a1acfe9fc2b37b6a2329c8c1c5b96c6242059333d2",
+      "bytes": 7924
+    },
+    {
+      "id": "headwear-hijab",
+      "script": "scripts/blender/avatar/headwear-hijab.py",
+      "inputs": {
+        "scripts/blender/avatar/headwear-hijab.py": "fe83d908b56332cb577aca35c68abac61579c54af33b773ba27742185caae6c0",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "2252cac89e7d0f7c4eb27ea6f5902c06bcd6965eb43717c21301f0ea860951aa",
+      "bytes": 18248
+    },
+    {
+      "id": "headwear-turban",
+      "script": "scripts/blender/avatar/headwear-turban.py",
+      "inputs": {
+        "scripts/blender/avatar/headwear-turban.py": "f55afabcaa5bdf04311ff20967e0b07a8116c1ac2fce6929ef1f8ae45793e1b9",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "8ed63945ec7c3603baaa74b7871863aad60ffc9e9f6c1572ce14c7ba6fbfaf57",
+      "bytes": 12320
+    },
+    {
+      "id": "headwear-durag",
+      "script": "scripts/blender/avatar/headwear-durag.py",
+      "inputs": {
+        "scripts/blender/avatar/headwear-durag.py": "5867027da9c18c96e2509b64c80e0bdbc98c5d9e4b1132d60ad798691070f74b",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "1357ccaf38aa757898a9d6bce351a0186032e88483e9603228b02539ab2516a4",
+      "bytes": 10760
+    },
+    {
+      "id": "headwear-beanie",
+      "script": "scripts/blender/avatar/headwear-beanie.py",
+      "inputs": {
+        "scripts/blender/avatar/headwear-beanie.py": "b99aea9f5608e1f7bc8d58a22f9ada9c4ad83907f8924ead842fa6792096f8bf",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "5cd685830a7f56adf867c20bc0e469f27e3876b5281e21f2b4e07763d7157cc5",
+      "bytes": 14196
+    },
+    {
+      "id": "headwear-ballcap",
+      "script": "scripts/blender/avatar/headwear-ballcap.py",
+      "inputs": {
+        "scripts/blender/avatar/headwear-ballcap.py": "7c6a8cd11d5073fe4259a2b78421e98677d27a31872f92fe4bcc6ffc76797d86",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "7d35745781483fe219c907887ccb6ec5c6552f72cfa2363a42c44f958e699362",
+      "bytes": 8892
+    },
+    {
+      "id": "facial-stubble",
+      "script": "scripts/blender/avatar/facial-stubble.py",
+      "inputs": {
+        "scripts/blender/avatar/facial-stubble.py": "a5a44f9994963bb7b8f951fe958102d997e143e76613916f9e79fdbae8d22be5",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "f835d297dc773ad8bb974505134d1cf45e30e96cd0350cf3a9a22155ef81c44f",
+      "bytes": 3892
+    },
+    {
+      "id": "facial-moustache",
+      "script": "scripts/blender/avatar/facial-moustache.py",
+      "inputs": {
+        "scripts/blender/avatar/facial-moustache.py": "646df65af32639825ec58c089cd57c9da2ed802c3a82c44471fcc5e5a1c586ed",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "47b460b78e0d94053fa37aa0073e5f9715353750cef6c66bbf13deb66de3477f",
+      "bytes": 3900
+    },
+    {
+      "id": "facial-goatee",
+      "script": "scripts/blender/avatar/facial-goatee.py",
+      "inputs": {
+        "scripts/blender/avatar/facial-goatee.py": "d0be1affe4c52aafff2f6aaf6be6d90bbeff151d7263f8232c3ecb8e9f6975c3",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "57ada8c39088c1893d23aa2b9ab20ab4760edd1c7dbf8e09f58fb6687a51a231",
+      "bytes": 4828
+    },
+    {
+      "id": "facial-full-beard",
+      "script": "scripts/blender/avatar/facial-full-beard.py",
+      "inputs": {
+        "scripts/blender/avatar/facial-full-beard.py": "abe9941c80efd23d2e97e9e12c916f1c7b4fd05d6563c964696dc8c0d4079119",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "0bfb923b559bb9cee770ce3aa9c091cadfc548a436e97c61bd838992f999dca8",
+      "bytes": 6716
+    },
+    {
+      "id": "acc-gold-hoops",
+      "script": "scripts/blender/avatar/acc-gold-hoops.py",
+      "inputs": {
+        "scripts/blender/avatar/acc-gold-hoops.py": "fa09110c4fecde37ab983fb668997af6b2393bbdda2f6821e9513b3cc9129421",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "a33256fdcdf6298dcd619f6d209289377a4f9146d6d47b07ad35eff87232bb8e",
+      "bytes": 8572
+    },
+    {
+      "id": "acc-subway-tote",
+      "script": "scripts/blender/avatar/acc-subway-tote.py",
+      "inputs": {
+        "scripts/blender/avatar/acc-subway-tote.py": "ae77358378b145541d1fa531dc200b9569759d559d07e401bfb61d47f06dfcd6",
+        "scripts/blender/run.py": "c9ba81adf7da1ba6e0959243782823cfa9be5e5d8541004ae3588c62df2336fa"
+      },
+      "sha256": "1e46d77559fe7f2a74fa96244dfb8c033f656c0f1afb35b6a40a598f7eee873c",
+      "bytes": 8384
+    }
+  ]
 }

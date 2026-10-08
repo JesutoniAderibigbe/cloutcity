@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "158ef5de7b6552b2",
+  "assetVersion": "8a24bf73581b2e30",
   "models": [
     {
       "id": "taxi",
@@ -1635,24 +1635,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-a.low.3206d5e9.glb",
-          "sha256": "3206d5e992074114d8c1effb99d7dabde70c70dcf5e6d6f61a5432f85f301f27",
-          "bytes": 9104,
-          "gzBytes": 5368,
+          "file": "/models/head-female-a.low.af2fd2fa.glb",
+          "sha256": "af2fd2fac424fd77e134e6fad6cf248d26e1a891bc0ebefb61af102567d337e9",
+          "bytes": 9108,
+          "gzBytes": 5371,
           "triangles": 256
         },
         "mid": {
-          "file": "/models/head-female-a.high.e7c06f36.glb",
-          "sha256": "e7c06f36f257b55ddc049476d777ba7a1dba88c4a8ff7a8148e676ab808168a9",
-          "bytes": 9556,
-          "gzBytes": 5769,
+          "file": "/models/head-female-a.high.59a96e52.glb",
+          "sha256": "59a96e5298b52b4bfc870baab0f0083836f13516f1b0f8d4b28a73810dd2102d",
+          "bytes": 9564,
+          "gzBytes": 5777,
           "triangles": 298
         },
         "high": {
-          "file": "/models/head-female-a.high.e7c06f36.glb",
-          "sha256": "e7c06f36f257b55ddc049476d777ba7a1dba88c4a8ff7a8148e676ab808168a9",
-          "bytes": 9556,
-          "gzBytes": 5769,
+          "file": "/models/head-female-a.high.59a96e52.glb",
+          "sha256": "59a96e5298b52b4bfc870baab0f0083836f13516f1b0f8d4b28a73810dd2102d",
+          "bytes": 9564,
+          "gzBytes": 5777,
           "triangles": 298
         }
       }
@@ -1665,29 +1665,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyFemaleA",
       "bounds": { "min": [-1.2087, 0, -0.3583], "max": [1.2087, 0.858, 0.3023] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-female-a.low.537ef321.glb",
-          "sha256": "537ef3214c99a1b0512bb243e87cbcb69b304c3116e365f726fa5de3d606477c",
-          "bytes": 13552,
-          "gzBytes": 8675,
+          "file": "/models/body-female-a.low.74dccb6b.glb",
+          "sha256": "74dccb6b5f71b3a9ebd84b506e21883d31fef1c47ea4196b41a59ca89c5d06a5",
+          "bytes": 13652,
+          "gzBytes": 8761,
           "triangles": 346
         },
         "mid": {
-          "file": "/models/body-female-a.high.79b08f26.glb",
-          "sha256": "79b08f265878d4c9ca4b43571c1837acc800b30a67988cf852dbc1a59ccc1c11",
-          "bytes": 18216,
-          "gzBytes": 11989,
+          "file": "/models/body-female-a.high.a553bb09.glb",
+          "sha256": "a553bb09f8068bd315564363ea5748fafedcb0a0978dc7f2a273679a6cfa1062",
+          "bytes": 18332,
+          "gzBytes": 12020,
           "triangles": 578
         },
         "high": {
-          "file": "/models/body-female-a.high.79b08f26.glb",
-          "sha256": "79b08f265878d4c9ca4b43571c1837acc800b30a67988cf852dbc1a59ccc1c11",
-          "bytes": 18216,
-          "gzBytes": 11989,
+          "file": "/models/body-female-a.high.a553bb09.glb",
+          "sha256": "a553bb09f8068bd315564363ea5748fafedcb0a0978dc7f2a273679a6cfa1062",
+          "bytes": 18332,
+          "gzBytes": 12020,
           "triangles": 578
         }
       }
@@ -1705,24 +1705,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-b.low.77794cda.glb",
-          "sha256": "77794cda3a45d01ba0f354bd5aab5255df713aaa9ff8ceb705897e2f2114fb9b",
-          "bytes": 12732,
-          "gzBytes": 8474,
+          "file": "/models/head-female-b.low.0873a80f.glb",
+          "sha256": "0873a80f0b6d23e5582a3759c70a33c8783ab8c7ba857993a5da31cb93eaaa9f",
+          "bytes": 12764,
+          "gzBytes": 8509,
           "triangles": 314
         },
         "mid": {
-          "file": "/models/head-female-b.high.aba1bf29.glb",
-          "sha256": "aba1bf297d3575e6e3d025bf72ce0ff9662153db856e0ea50db7786aa90985ea",
-          "bytes": 12968,
-          "gzBytes": 8626,
+          "file": "/models/head-female-b.high.a299bf74.glb",
+          "sha256": "a299bf746f4652aa079057d45e8b75ccf34d5a711c15ba4307055e82c8c8a3b0",
+          "bytes": 13028,
+          "gzBytes": 8676,
           "triangles": 340
         },
         "high": {
-          "file": "/models/head-female-b.high.aba1bf29.glb",
-          "sha256": "aba1bf297d3575e6e3d025bf72ce0ff9662153db856e0ea50db7786aa90985ea",
-          "bytes": 12968,
-          "gzBytes": 8626,
+          "file": "/models/head-female-b.high.a299bf74.glb",
+          "sha256": "a299bf746f4652aa079057d45e8b75ccf34d5a711c15ba4307055e82c8c8a3b0",
+          "bytes": 13028,
+          "gzBytes": 8676,
           "triangles": 340
         }
       }
@@ -1735,29 +1735,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyFemaleB",
       "bounds": { "min": [-0.8439, 0, -0.3376], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-female-b.low.5a002959.glb",
-          "sha256": "5a002959d057d5b61dd68563a3e3179f8960755992f5c31a529351639c4f07e4",
-          "bytes": 10976,
-          "gzBytes": 6232,
+          "file": "/models/body-female-b.low.710f2f4b.glb",
+          "sha256": "710f2f4b9c1d981ca22a51561fb695aa4c1f400263e1561a13377270b4033356",
+          "bytes": 11008,
+          "gzBytes": 6249,
           "triangles": 270
         },
         "mid": {
-          "file": "/models/body-female-b.high.68bc0018.glb",
-          "sha256": "68bc00186eb632232080a56dc7dde152ea767af24273da92cca99a6eb2f62cc9",
-          "bytes": 13400,
-          "gzBytes": 7922,
+          "file": "/models/body-female-b.high.9f4419b5.glb",
+          "sha256": "9f4419b582b9b6c5f3bd377be140d4e8b0015808936235af3cb8613051a3dc2b",
+          "bytes": 13436,
+          "gzBytes": 7944,
           "triangles": 402
         },
         "high": {
-          "file": "/models/body-female-b.high.68bc0018.glb",
-          "sha256": "68bc00186eb632232080a56dc7dde152ea767af24273da92cca99a6eb2f62cc9",
-          "bytes": 13400,
-          "gzBytes": 7922,
+          "file": "/models/body-female-b.high.9f4419b5.glb",
+          "sha256": "9f4419b582b9b6c5f3bd377be140d4e8b0015808936235af3cb8613051a3dc2b",
+          "bytes": 13436,
+          "gzBytes": 7944,
           "triangles": 402
         }
       }
@@ -1775,24 +1775,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-c.low.a6d0ef4e.glb",
-          "sha256": "a6d0ef4e8d4ff4c22d88e7222d73ebd2d163c672cb11bd0a077aa0ba9cb446c3",
-          "bytes": 10996,
-          "gzBytes": 6861,
+          "file": "/models/head-female-c.low.c74f4bb8.glb",
+          "sha256": "c74f4bb81ef452dde48f6ce236b5fdbf258bbf9cd1a50eee6b7d40a277b0cd6b",
+          "bytes": 11000,
+          "gzBytes": 6870,
           "triangles": 272
         },
         "mid": {
-          "file": "/models/head-female-c.high.961adfe4.glb",
-          "sha256": "961adfe46ee0df64338213ed0330fd96cf3c871ec72795bb7e44a345df33d8c6",
-          "bytes": 11636,
-          "gzBytes": 7423,
+          "file": "/models/head-female-c.high.b57a1179.glb",
+          "sha256": "b57a11795e203928ec5bdf55084c542e240eabd338940738983588d68597790d",
+          "bytes": 11640,
+          "gzBytes": 7426,
           "triangles": 312
         },
         "high": {
-          "file": "/models/head-female-c.high.961adfe4.glb",
-          "sha256": "961adfe46ee0df64338213ed0330fd96cf3c871ec72795bb7e44a345df33d8c6",
-          "bytes": 11636,
-          "gzBytes": 7423,
+          "file": "/models/head-female-c.high.b57a1179.glb",
+          "sha256": "b57a11795e203928ec5bdf55084c542e240eabd338940738983588d68597790d",
+          "bytes": 11640,
+          "gzBytes": 7426,
           "triangles": 312
         }
       }
@@ -1805,29 +1805,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyFemaleC",
       "bounds": { "min": [-0.8439, 0, -0.3952], "max": [0.8439, 0.8279, 0.2687] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-female-c.low.0b3f9145.glb",
-          "sha256": "0b3f9145e0b00c29d9ec139acd344f5b33e5a74fc038c974a5398cb1981f378b",
-          "bytes": 11104,
-          "gzBytes": 6634,
+          "file": "/models/body-female-c.low.27539eb9.glb",
+          "sha256": "27539eb9297be55d6c4e3dd5c225075c46d2623b533e0717c1d1af0492dc504a",
+          "bytes": 11136,
+          "gzBytes": 6652,
           "triangles": 272
         },
         "mid": {
-          "file": "/models/body-female-c.high.15081142.glb",
-          "sha256": "1508114272c2c01b087c95c630926e50f5593ee4d252e5ee027e4f66352faa70",
-          "bytes": 14220,
-          "gzBytes": 8848,
+          "file": "/models/body-female-c.high.a7d3b13d.glb",
+          "sha256": "a7d3b13d25cb1e6bb56035b971af55e9f2a4f668e3911abc90b1580b8fe7abb1",
+          "bytes": 14252,
+          "gzBytes": 8867,
           "triangles": 420
         },
         "high": {
-          "file": "/models/body-female-c.high.15081142.glb",
-          "sha256": "1508114272c2c01b087c95c630926e50f5593ee4d252e5ee027e4f66352faa70",
-          "bytes": 14220,
-          "gzBytes": 8848,
+          "file": "/models/body-female-c.high.a7d3b13d.glb",
+          "sha256": "a7d3b13d25cb1e6bb56035b971af55e9f2a4f668e3911abc90b1580b8fe7abb1",
+          "bytes": 14252,
+          "gzBytes": 8867,
           "triangles": 420
         }
       }
@@ -1845,24 +1845,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-d.low.394e04b7.glb",
-          "sha256": "394e04b7882b9fb2aead754d6b91936c4835385e8c6dca60768191d963391cca",
-          "bytes": 11340,
-          "gzBytes": 7062,
+          "file": "/models/head-female-d.low.bf522b70.glb",
+          "sha256": "bf522b702215676dd5732157d89691387dbcb2dcb6427602b85dddc31085ff89",
+          "bytes": 11380,
+          "gzBytes": 7082,
           "triangles": 282
         },
         "mid": {
-          "file": "/models/head-female-d.high.96c10713.glb",
-          "sha256": "96c1071366b9798c5e5be25d6fc82e786d7cc1ab583aecdbc6847d16b499a66c",
-          "bytes": 11800,
-          "gzBytes": 7428,
+          "file": "/models/head-female-d.high.553dad2c.glb",
+          "sha256": "553dad2c3079c989b99911e0e9183512f28900b45d3c501b52bd4e4de2fb6bf9",
+          "bytes": 11832,
+          "gzBytes": 7463,
           "triangles": 322
         },
         "high": {
-          "file": "/models/head-female-d.high.96c10713.glb",
-          "sha256": "96c1071366b9798c5e5be25d6fc82e786d7cc1ab583aecdbc6847d16b499a66c",
-          "bytes": 11800,
-          "gzBytes": 7428,
+          "file": "/models/head-female-d.high.553dad2c.glb",
+          "sha256": "553dad2c3079c989b99911e0e9183512f28900b45d3c501b52bd4e4de2fb6bf9",
+          "bytes": 11832,
+          "gzBytes": 7463,
           "triangles": 322
         }
       }
@@ -1875,29 +1875,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyFemaleD",
       "bounds": { "min": [-0.8439, 0, -0.389], "max": [0.8439, 0.8102, 0.2625] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-female-d.low.f4b21da2.glb",
-          "sha256": "f4b21da2ed36675eb90ac3233b2f2f48fb87f138116ef58eb4ed955a4e672ef0",
-          "bytes": 12384,
-          "gzBytes": 7857,
+          "file": "/models/body-female-d.low.b5a34fe3.glb",
+          "sha256": "b5a34fe3291b6ab5a65040558a6e73d033343c9843faf7f842c190519834cd7a",
+          "bytes": 12584,
+          "gzBytes": 8057,
           "triangles": 320
         },
         "mid": {
-          "file": "/models/body-female-d.high.16f4f540.glb",
-          "sha256": "16f4f540105fda69f85942d6ab605410a226754d02ed2dcc86ed38057cee3a7f",
-          "bytes": 15152,
-          "gzBytes": 9919,
+          "file": "/models/body-female-d.high.a367a93d.glb",
+          "sha256": "a367a93d98fceb852929cc82bbe4a3229397e5a7d12bbe9beba7339405122a5b",
+          "bytes": 15328,
+          "gzBytes": 10036,
           "triangles": 475
         },
         "high": {
-          "file": "/models/body-female-d.high.16f4f540.glb",
-          "sha256": "16f4f540105fda69f85942d6ab605410a226754d02ed2dcc86ed38057cee3a7f",
-          "bytes": 15152,
-          "gzBytes": 9919,
+          "file": "/models/body-female-d.high.a367a93d.glb",
+          "sha256": "a367a93d98fceb852929cc82bbe4a3229397e5a7d12bbe9beba7339405122a5b",
+          "bytes": 15328,
+          "gzBytes": 10036,
           "triangles": 475
         }
       }
@@ -1915,24 +1915,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-e.low.bb7e6115.glb",
-          "sha256": "bb7e6115ecdab5a32872f9287f58a8d002424cd42171a4fa2cf9e4a60a65c366",
-          "bytes": 9256,
-          "gzBytes": 5514,
+          "file": "/models/head-female-e.low.3110d78c.glb",
+          "sha256": "3110d78c7d60f3f12d28ba9a559c8001640f13dde4394911e994e6a379bb2101",
+          "bytes": 9260,
+          "gzBytes": 5517,
           "triangles": 274
         },
         "mid": {
-          "file": "/models/head-female-e.high.56752f3e.glb",
-          "sha256": "56752f3ec0b78148b26bf440928936536d21cda5bd3c8855168c47d65b57e56f",
-          "bytes": 9840,
-          "gzBytes": 5888,
+          "file": "/models/head-female-e.high.d675dafb.glb",
+          "sha256": "d675dafb11199039ce12da6837cacbf2b9bf5ca0f923185a45e1ac7a124f09d4",
+          "bytes": 9844,
+          "gzBytes": 5890,
           "triangles": 322
         },
         "high": {
-          "file": "/models/head-female-e.high.56752f3e.glb",
-          "sha256": "56752f3ec0b78148b26bf440928936536d21cda5bd3c8855168c47d65b57e56f",
-          "bytes": 9840,
-          "gzBytes": 5888,
+          "file": "/models/head-female-e.high.d675dafb.glb",
+          "sha256": "d675dafb11199039ce12da6837cacbf2b9bf5ca0f923185a45e1ac7a124f09d4",
+          "bytes": 9844,
+          "gzBytes": 5890,
           "triangles": 322
         }
       }
@@ -1945,29 +1945,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyFemaleE",
       "bounds": { "min": [-0.8439, 0, -0.3033], "max": [0.8439, 0.8102, 0.2455] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-female-e.low.8fdf3bb3.glb",
-          "sha256": "8fdf3bb37ac6c82429921cc814a16d240c81840ffbc3d753f7726d84b0e18f54",
-          "bytes": 11172,
-          "gzBytes": 6486,
+          "file": "/models/body-female-e.low.af59290c.glb",
+          "sha256": "af59290c1d26b2ac5cb9c37b2377b77e1a8067c414148162cb069c2339130560",
+          "bytes": 11292,
+          "gzBytes": 6563,
           "triangles": 286
         },
         "mid": {
-          "file": "/models/body-female-e.high.a7cd7b96.glb",
-          "sha256": "a7cd7b968dfe85f7d69b2ec5936263cec336b85fdbba76a8ab4e73ceacd7db73",
-          "bytes": 14096,
-          "gzBytes": 8282,
+          "file": "/models/body-female-e.high.08db60df.glb",
+          "sha256": "08db60df8fea54d08e4a16f3eaaff480a2c55300dcad334ea815f50c13fbb5b5",
+          "bytes": 14284,
+          "gzBytes": 8481,
           "triangles": 434
         },
         "high": {
-          "file": "/models/body-female-e.high.a7cd7b96.glb",
-          "sha256": "a7cd7b968dfe85f7d69b2ec5936263cec336b85fdbba76a8ab4e73ceacd7db73",
-          "bytes": 14096,
-          "gzBytes": 8282,
+          "file": "/models/body-female-e.high.08db60df.glb",
+          "sha256": "08db60df8fea54d08e4a16f3eaaff480a2c55300dcad334ea815f50c13fbb5b5",
+          "bytes": 14284,
+          "gzBytes": 8481,
           "triangles": 434
         }
       }
@@ -1985,24 +1985,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-female-f.low.c86b62df.glb",
-          "sha256": "c86b62df96e89cd2058b8b79a4769e47e064e66b09dc1d697bca1185c4b6d4ad",
-          "bytes": 9924,
-          "gzBytes": 6032,
+          "file": "/models/head-female-f.low.879c6c45.glb",
+          "sha256": "879c6c451004af25a4be1778f3ebd034aaeee57ea81d065019477a66787ea3d8",
+          "bytes": 9908,
+          "gzBytes": 6028,
           "triangles": 223
         },
         "mid": {
-          "file": "/models/head-female-f.high.df3a6c04.glb",
-          "sha256": "df3a6c04de6f3f1f18f591ed9c60a0b18b43fecccae0a4e25a4cba5c35407bda",
-          "bytes": 10876,
-          "gzBytes": 6687,
+          "file": "/models/head-female-f.high.15ff2f3f.glb",
+          "sha256": "15ff2f3fca0921bf80086774fc97a95a4da3f86eec0d0072b1144b38f6ffa8d9",
+          "bytes": 10856,
+          "gzBytes": 6673,
           "triangles": 288
         },
         "high": {
-          "file": "/models/head-female-f.high.df3a6c04.glb",
-          "sha256": "df3a6c04de6f3f1f18f591ed9c60a0b18b43fecccae0a4e25a4cba5c35407bda",
-          "bytes": 10876,
-          "gzBytes": 6687,
+          "file": "/models/head-female-f.high.15ff2f3f.glb",
+          "sha256": "15ff2f3fca0921bf80086774fc97a95a4da3f86eec0d0072b1144b38f6ffa8d9",
+          "bytes": 10856,
+          "gzBytes": 6673,
           "triangles": 288
         }
       }
@@ -2015,29 +2015,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyFemaleF",
       "bounds": { "min": [-0.8439, 0, -0.5136], "max": [0.8439, 0.8463, 0.2428] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-female-f.low.54c9676b.glb",
-          "sha256": "54c9676bfce97d39a3168fb5e47ae88971c50b2a8829273a694e5f5ad3baaaeb",
-          "bytes": 12368,
-          "gzBytes": 7417,
+          "file": "/models/body-female-f.low.e92bd9bc.glb",
+          "sha256": "e92bd9bce12e9ee3745c1d7589fc9a131aaf42430fde3cec80fe7e895c96c864",
+          "bytes": 12392,
+          "gzBytes": 7435,
           "triangles": 332
         },
         "mid": {
-          "file": "/models/body-female-f.high.8ba2e8da.glb",
-          "sha256": "8ba2e8dab68e0eb019b6e40c4f30391ed9fbbacfea4273160ca523c2e6d9a826",
-          "bytes": 15864,
-          "gzBytes": 9998,
+          "file": "/models/body-female-f.high.a0ebc18a.glb",
+          "sha256": "a0ebc18a46d87cf2cf2599796346c08f783ebd89d6c5db485df621d055100984",
+          "bytes": 15888,
+          "gzBytes": 10020,
           "triangles": 500
         },
         "high": {
-          "file": "/models/body-female-f.high.8ba2e8da.glb",
-          "sha256": "8ba2e8dab68e0eb019b6e40c4f30391ed9fbbacfea4273160ca523c2e6d9a826",
-          "bytes": 15864,
-          "gzBytes": 9998,
+          "file": "/models/body-female-f.high.a0ebc18a.glb",
+          "sha256": "a0ebc18a46d87cf2cf2599796346c08f783ebd89d6c5db485df621d055100984",
+          "bytes": 15888,
+          "gzBytes": 10020,
           "triangles": 500
         }
       }
@@ -2055,25 +2055,25 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-a.low.4e68a11c.glb",
-          "sha256": "4e68a11ce15cbc4747645066a9005735229bd31a37f79295325472df41c15d70",
-          "bytes": 9124,
-          "gzBytes": 5196,
-          "triangles": 232
+          "file": "/models/head-male-a.low.28b8c004.glb",
+          "sha256": "28b8c004245920cdef1e782a1ed105d752b23518c9101185630095b2e5b40b69",
+          "bytes": 8344,
+          "gzBytes": 4636,
+          "triangles": 199
         },
         "mid": {
-          "file": "/models/head-male-a.high.4bb7b1ba.glb",
-          "sha256": "4bb7b1ba951a3a93538280d1c06a5772718baf39d9b39e451c078ea4b99041f5",
-          "bytes": 9644,
-          "gzBytes": 5636,
-          "triangles": 273
+          "file": "/models/head-male-a.high.e5cfcc8d.glb",
+          "sha256": "e5cfcc8d5ed10bfb6b58c5f0f7fcb8c536caef3243710341689eb7da1878e0b4",
+          "bytes": 8640,
+          "gzBytes": 4869,
+          "triangles": 229
         },
         "high": {
-          "file": "/models/head-male-a.high.4bb7b1ba.glb",
-          "sha256": "4bb7b1ba951a3a93538280d1c06a5772718baf39d9b39e451c078ea4b99041f5",
-          "bytes": 9644,
-          "gzBytes": 5636,
-          "triangles": 273
+          "file": "/models/head-male-a.high.e5cfcc8d.glb",
+          "sha256": "e5cfcc8d5ed10bfb6b58c5f0f7fcb8c536caef3243710341689eb7da1878e0b4",
+          "bytes": 8640,
+          "gzBytes": 4869,
+          "triangles": 229
         }
       }
     },
@@ -2085,29 +2085,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyMaleA",
       "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-male-a.low.63790596.glb",
-          "sha256": "6379059649afcc8b1e07543d33e4a20fba7c46d65b08baf2bb459b1898a29f94",
-          "bytes": 11436,
-          "gzBytes": 6941,
+          "file": "/models/body-male-a.low.271e9e8e.glb",
+          "sha256": "271e9e8e409e51d3c89be1de2ecd0751b286f256870047646bbdf831cdc04623",
+          "bytes": 11688,
+          "gzBytes": 7085,
           "triangles": 310
         },
         "mid": {
-          "file": "/models/body-male-a.high.3416b7c2.glb",
-          "sha256": "3416b7c273541623c6b37354a7dea454df7c3b99f45cceab2c379891c7072c3b",
-          "bytes": 14052,
-          "gzBytes": 8648,
+          "file": "/models/body-male-a.high.6acf5a98.glb",
+          "sha256": "6acf5a98302314d09c018a937457789344cf17c1573b969e43dda0b183ae7a79",
+          "bytes": 14308,
+          "gzBytes": 8835,
           "triangles": 450
         },
         "high": {
-          "file": "/models/body-male-a.high.3416b7c2.glb",
-          "sha256": "3416b7c273541623c6b37354a7dea454df7c3b99f45cceab2c379891c7072c3b",
-          "bytes": 14052,
-          "gzBytes": 8648,
+          "file": "/models/body-male-a.high.6acf5a98.glb",
+          "sha256": "6acf5a98302314d09c018a937457789344cf17c1573b969e43dda0b183ae7a79",
+          "bytes": 14308,
+          "gzBytes": 8835,
           "triangles": 450
         }
       }
@@ -2125,24 +2125,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-b.low.77a1b9af.glb",
-          "sha256": "77a1b9afd56c7a06f27609a14b27007049234fb09c9321f821561ba15168cb5b",
+          "file": "/models/head-male-b.low.a4468ecd.glb",
+          "sha256": "a4468ecd8e179ce674d341a37a671732409848c6fbc138659f08968169710ede",
           "bytes": 10616,
-          "gzBytes": 6297,
+          "gzBytes": 6294,
           "triangles": 245
         },
         "mid": {
-          "file": "/models/head-male-b.high.17faa50d.glb",
-          "sha256": "17faa50d91a0cac4ac218d947a738e573d59351274c75f83c9837d1722ab27c0",
+          "file": "/models/head-male-b.high.2c024610.glb",
+          "sha256": "2c02461033cf6d24347b770135698705d018e29f1f20495d914695ea5fdd1225",
           "bytes": 10996,
-          "gzBytes": 6479,
+          "gzBytes": 6478,
           "triangles": 288
         },
         "high": {
-          "file": "/models/head-male-b.high.17faa50d.glb",
-          "sha256": "17faa50d91a0cac4ac218d947a738e573d59351274c75f83c9837d1722ab27c0",
+          "file": "/models/head-male-b.high.2c024610.glb",
+          "sha256": "2c02461033cf6d24347b770135698705d018e29f1f20495d914695ea5fdd1225",
           "bytes": 10996,
-          "gzBytes": 6479,
+          "gzBytes": 6478,
           "triangles": 288
         }
       }
@@ -2155,29 +2155,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyMaleB",
       "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-male-b.low.7bb3ac58.glb",
-          "sha256": "7bb3ac58ae400c8f9717827093b25852cbfd598ee3261bab952087f9bbee6b45",
-          "bytes": 10772,
-          "gzBytes": 6246,
+          "file": "/models/body-male-b.low.66aa142e.glb",
+          "sha256": "66aa142ec556078799336577fb6db7e61e6d629e3135f8daa8d7fc072db9cf4b",
+          "bytes": 10840,
+          "gzBytes": 6289,
           "triangles": 258
         },
         "mid": {
-          "file": "/models/body-male-b.high.2cb94609.glb",
-          "sha256": "2cb9460995542a0e888c5a31405cbc2e3e783ff49eb357b1316df5ec85935c3c",
-          "bytes": 13408,
-          "gzBytes": 8227,
+          "file": "/models/body-male-b.high.832559d1.glb",
+          "sha256": "832559d18cebbcba5340978426e2d6567a97aed17cdf017ddc156830ef7ad37f",
+          "bytes": 13452,
+          "gzBytes": 8250,
           "triangles": 402
         },
         "high": {
-          "file": "/models/body-male-b.high.2cb94609.glb",
-          "sha256": "2cb9460995542a0e888c5a31405cbc2e3e783ff49eb357b1316df5ec85935c3c",
-          "bytes": 13408,
-          "gzBytes": 8227,
+          "file": "/models/body-male-b.high.832559d1.glb",
+          "sha256": "832559d18cebbcba5340978426e2d6567a97aed17cdf017ddc156830ef7ad37f",
+          "bytes": 13452,
+          "gzBytes": 8250,
           "triangles": 402
         }
       }
@@ -2195,24 +2195,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-c.low.6889b319.glb",
-          "sha256": "6889b3192e51de84ac043264f18fa7be7362042a9c808e9674e447c29c652a26",
-          "bytes": 11068,
-          "gzBytes": 6979,
+          "file": "/models/head-male-c.low.8fbec18f.glb",
+          "sha256": "8fbec18f79963a638d55125f78a24a31476fc56fc1d539c7ee929490af145814",
+          "bytes": 11072,
+          "gzBytes": 6983,
           "triangles": 261
         },
         "mid": {
-          "file": "/models/head-male-c.high.33a1efd9.glb",
-          "sha256": "33a1efd90e2576043ceb46a4ebb4ae086c40c9b26b67f99b2f662fffa6d0e0b0",
-          "bytes": 11588,
-          "gzBytes": 7343,
+          "file": "/models/head-male-c.high.1628bcaf.glb",
+          "sha256": "1628bcaf8b73db3cc0f3e28bde6f234fcadd6f1824442189aa305b96150a6002",
+          "bytes": 11592,
+          "gzBytes": 7342,
           "triangles": 299
         },
         "high": {
-          "file": "/models/head-male-c.high.33a1efd9.glb",
-          "sha256": "33a1efd90e2576043ceb46a4ebb4ae086c40c9b26b67f99b2f662fffa6d0e0b0",
-          "bytes": 11588,
-          "gzBytes": 7343,
+          "file": "/models/head-male-c.high.1628bcaf.glb",
+          "sha256": "1628bcaf8b73db3cc0f3e28bde6f234fcadd6f1824442189aa305b96150a6002",
+          "bytes": 11592,
+          "gzBytes": 7342,
           "triangles": 299
         }
       }
@@ -2225,29 +2225,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyMaleC",
       "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8279, 0.2538] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-male-c.low.06bc9a9c.glb",
-          "sha256": "06bc9a9c548785e4aeff5f9865f0572abe0eea57481a9a6aab2b93ddc6786839",
-          "bytes": 11600,
-          "gzBytes": 7026,
+          "file": "/models/body-male-c.low.712d2d6f.glb",
+          "sha256": "712d2d6f39e3e5194a55be6ff49de2807964d237a6d05b1ab7949f5f957e62cd",
+          "bytes": 11736,
+          "gzBytes": 7140,
           "triangles": 314
         },
         "mid": {
-          "file": "/models/body-male-c.high.a29049b4.glb",
-          "sha256": "a29049b4a32bae54289738327b8422d82675ad293754664c28c6401346650561",
-          "bytes": 14964,
-          "gzBytes": 9623,
+          "file": "/models/body-male-c.high.25576441.glb",
+          "sha256": "25576441251a950f8e8bda326583658ca3ebc34ab53bae09951748ced756ce4b",
+          "bytes": 15156,
+          "gzBytes": 9750,
           "triangles": 494
         },
         "high": {
-          "file": "/models/body-male-c.high.a29049b4.glb",
-          "sha256": "a29049b4a32bae54289738327b8422d82675ad293754664c28c6401346650561",
-          "bytes": 14964,
-          "gzBytes": 9623,
+          "file": "/models/body-male-c.high.25576441.glb",
+          "sha256": "25576441251a950f8e8bda326583658ca3ebc34ab53bae09951748ced756ce4b",
+          "bytes": 15156,
+          "gzBytes": 9750,
           "triangles": 494
         }
       }
@@ -2265,24 +2265,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-d.low.00c4fbe8.glb",
-          "sha256": "00c4fbe89c6a975514f54891b16eba7a144f33a29ba869afc3cd7930145b683f",
-          "bytes": 8936,
-          "gzBytes": 5119,
+          "file": "/models/head-male-d.low.944f9008.glb",
+          "sha256": "944f90084d9d20b2589267afad18c8fc97348c1dd81a6e0525c1d4ed06fe3e3c",
+          "bytes": 8960,
+          "gzBytes": 5153,
           "triangles": 193
         },
         "mid": {
-          "file": "/models/head-male-d.high.99409d92.glb",
-          "sha256": "99409d921ff691a735f89ffbbc6b80bb14413af56094d11fff764bbf6e0eb52d",
-          "bytes": 9344,
-          "gzBytes": 5389,
+          "file": "/models/head-male-d.high.190544c9.glb",
+          "sha256": "190544c9ef6fbad827508a5362e0f0d277c85fe90280298e2554baca48b0dfce",
+          "bytes": 9372,
+          "gzBytes": 5411,
           "triangles": 221
         },
         "high": {
-          "file": "/models/head-male-d.high.99409d92.glb",
-          "sha256": "99409d921ff691a735f89ffbbc6b80bb14413af56094d11fff764bbf6e0eb52d",
-          "bytes": 9344,
-          "gzBytes": 5389,
+          "file": "/models/head-male-d.high.190544c9.glb",
+          "sha256": "190544c9ef6fbad827508a5362e0f0d277c85fe90280298e2554baca48b0dfce",
+          "bytes": 9372,
+          "gzBytes": 5411,
           "triangles": 221
         }
       }
@@ -2295,29 +2295,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyMaleD",
       "bounds": { "min": [-0.8439, 0, -0.3347], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-male-d.low.1451caf3.glb",
-          "sha256": "1451caf3b115ac9c511cd86d38579856f5ab5e889d74663394a3f37031bec493",
-          "bytes": 11776,
-          "gzBytes": 7217,
+          "file": "/models/body-male-d.low.a42e4230.glb",
+          "sha256": "a42e42300b36190c621458e174c141fe7c3486350359c83bbd2d941845f051fe",
+          "bytes": 11964,
+          "gzBytes": 7397,
           "triangles": 323
         },
         "mid": {
-          "file": "/models/body-male-d.high.dd292187.glb",
-          "sha256": "dd2921873d26d0983a8df016f8ef4324145ba558876602a5df161e02dbdf6888",
-          "bytes": 14752,
-          "gzBytes": 9547,
+          "file": "/models/body-male-d.high.e82216ab.glb",
+          "sha256": "e82216ab82c4aace0a059868d1e69951e9b04d6b90ab553c976c35d7e6a889de",
+          "bytes": 14980,
+          "gzBytes": 9755,
           "triangles": 490
         },
         "high": {
-          "file": "/models/body-male-d.high.dd292187.glb",
-          "sha256": "dd2921873d26d0983a8df016f8ef4324145ba558876602a5df161e02dbdf6888",
-          "bytes": 14752,
-          "gzBytes": 9547,
+          "file": "/models/body-male-d.high.e82216ab.glb",
+          "sha256": "e82216ab82c4aace0a059868d1e69951e9b04d6b90ab553c976c35d7e6a889de",
+          "bytes": 14980,
+          "gzBytes": 9755,
           "triangles": 490
         }
       }
@@ -2335,25 +2335,25 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-e.low.0c394814.glb",
-          "sha256": "0c39481418918cb85ced7c3e9e3e55fa49c53c63312329ffcadbe5adada5a12a",
-          "bytes": 10020,
-          "gzBytes": 5860,
-          "triangles": 237
+          "file": "/models/head-male-e.low.25460f8a.glb",
+          "sha256": "25460f8ab0889b2725ec8238a4d46b5e6d915edf6c34d7f04314654771d5fd4a",
+          "bytes": 9240,
+          "gzBytes": 5325,
+          "triangles": 204
         },
         "mid": {
-          "file": "/models/head-male-e.high.02bbcfe3.glb",
-          "sha256": "02bbcfe3e701d7638d083d69cd242ea97a72148fa72a7132f8bd9caea24a28a7",
-          "bytes": 10724,
-          "gzBytes": 6466,
-          "triangles": 288
+          "file": "/models/head-male-e.high.827f8d51.glb",
+          "sha256": "827f8d5123e98e48c898e96361e632e30d685e58ce13c1d322f89b23bb1f01d0",
+          "bytes": 9692,
+          "gzBytes": 5664,
+          "triangles": 244
         },
         "high": {
-          "file": "/models/head-male-e.high.02bbcfe3.glb",
-          "sha256": "02bbcfe3e701d7638d083d69cd242ea97a72148fa72a7132f8bd9caea24a28a7",
-          "bytes": 10724,
-          "gzBytes": 6466,
-          "triangles": 288
+          "file": "/models/head-male-e.high.827f8d51.glb",
+          "sha256": "827f8d5123e98e48c898e96361e632e30d685e58ce13c1d322f89b23bb1f01d0",
+          "bytes": 9692,
+          "gzBytes": 5664,
+          "triangles": 244
         }
       }
     },
@@ -2365,29 +2365,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyMaleE",
       "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8102, 0.2354] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-male-e.low.3cd12f75.glb",
-          "sha256": "3cd12f7567e377238b2b2d6a500cf0cbc613b08b1b6a7769106c664652bf92f8",
-          "bytes": 11256,
-          "gzBytes": 6469,
+          "file": "/models/body-male-e.low.5fe7b592.glb",
+          "sha256": "5fe7b592ed8bc03fe16b4857b2f27d44a972982794bf33766d082bdcdd0b6051",
+          "bytes": 11304,
+          "gzBytes": 6489,
           "triangles": 278
         },
         "mid": {
-          "file": "/models/body-male-e.high.4234119e.glb",
-          "sha256": "4234119ed2e6dd475991d688a2e9ba2e108688058fba5de8ee94a36ca972fd5f",
-          "bytes": 13776,
-          "gzBytes": 8254,
+          "file": "/models/body-male-e.high.d49e21f2.glb",
+          "sha256": "d49e21f2d115e6d5eedf3de42e4baed01313f7a656ca951b96818edfaa5c37fb",
+          "bytes": 13808,
+          "gzBytes": 8278,
           "triangles": 422
         },
         "high": {
-          "file": "/models/body-male-e.high.4234119e.glb",
-          "sha256": "4234119ed2e6dd475991d688a2e9ba2e108688058fba5de8ee94a36ca972fd5f",
-          "bytes": 13776,
-          "gzBytes": 8254,
+          "file": "/models/body-male-e.high.d49e21f2.glb",
+          "sha256": "d49e21f2d115e6d5eedf3de42e4baed01313f7a656ca951b96818edfaa5c37fb",
+          "bytes": 13808,
+          "gzBytes": 8278,
           "triangles": 422
         }
       }
@@ -2405,25 +2405,60 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/head-male-f.low.da184364.glb",
-          "sha256": "da1843648639dedd313574d527e87f17f06a14a2aaa296a8469bacbdc8907f2b",
-          "bytes": 8272,
-          "gzBytes": 4592,
+          "file": "/models/head-male-f.low.e6537e60.glb",
+          "sha256": "e6537e60e7299f07e7717e790b3f145b4ee292d12df266862dee5644f7dbf966",
+          "bytes": 8276,
+          "gzBytes": 4598,
           "triangles": 189
         },
         "mid": {
-          "file": "/models/head-male-f.high.31e517ab.glb",
-          "sha256": "31e517abc48b1ddcd34299284951bc1585d688704981ac7078373a089742b51b",
-          "bytes": 8544,
-          "gzBytes": 4829,
+          "file": "/models/head-male-f.high.5c3ad492.glb",
+          "sha256": "5c3ad492e4193beb89c6282a3dae41347010fa052dccf59b7dbc434c19169448",
+          "bytes": 8548,
+          "gzBytes": 4831,
           "triangles": 213
         },
         "high": {
-          "file": "/models/head-male-f.high.31e517ab.glb",
-          "sha256": "31e517abc48b1ddcd34299284951bc1585d688704981ac7078373a089742b51b",
-          "bytes": 8544,
-          "gzBytes": 4829,
+          "file": "/models/head-male-f.high.5c3ad492.glb",
+          "sha256": "5c3ad492e4193beb89c6282a3dae41347010fa052dccf59b7dbc434c19169448",
+          "bytes": 8548,
+          "gzBytes": 4831,
           "triangles": 213
+        }
+      }
+    },
+    {
+      "id": "head-base",
+      "kind": "skinned",
+      "category": "avatar-head",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headBase",
+      "bounds": { "min": [-0.4989, 0.7551, -0.3572], "max": [0.4989, 1.4549, 0.4139] },
+      "slots": ["skin"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/head-base.low.0e62d98b.glb",
+          "sha256": "0e62d98bd4c9b0243231d2793d0608868ea9254c071268b6d86396215d1fe2bd",
+          "bytes": 7988,
+          "gzBytes": 4266,
+          "triangles": 143
+        },
+        "mid": {
+          "file": "/models/head-base.high.43a68a71.glb",
+          "sha256": "43a68a71bd4ba894d444a3d042611611680002333d4949c64cf5ee0e631c5579",
+          "bytes": 8324,
+          "gzBytes": 4472,
+          "triangles": 183
+        },
+        "high": {
+          "file": "/models/head-base.high.43a68a71.glb",
+          "sha256": "43a68a71bd4ba894d444a3d042611611680002333d4949c64cf5ee0e631c5579",
+          "bytes": 8324,
+          "gzBytes": 4472,
+          "triangles": 183
         }
       }
     },
@@ -2435,29 +2470,29 @@
       "instanced": false,
       "nameKey": "models.name.bodyMaleF",
       "bounds": { "min": [-0.8439, 0, -0.3583], "max": [0.8439, 0.8102, 0.2758] },
-      "slots": ["skin", "top", "bottom"],
+      "slots": ["shoes", "skin", "top", "bottom"],
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/body-male-f.low.22cf9748.glb",
-          "sha256": "22cf974891ee91eb2dca114e036f39999037678de86ce61239101c6de35fa9d9",
-          "bytes": 12320,
-          "gzBytes": 7326,
+          "file": "/models/body-male-f.low.574b7ce2.glb",
+          "sha256": "574b7ce2980a635e0c0d786f6f062dcad7ae61db4c22896d8265e4438e77529e",
+          "bytes": 12360,
+          "gzBytes": 7354,
           "triangles": 326
         },
         "mid": {
-          "file": "/models/body-male-f.high.b3ef5dc0.glb",
-          "sha256": "b3ef5dc0b304e6b19adef04a6ac79d85146144bdcd8cc622977d22946a65d948",
-          "bytes": 15588,
-          "gzBytes": 9754,
+          "file": "/models/body-male-f.high.9dbacd6a.glb",
+          "sha256": "9dbacd6a4bda52d7d7515a916e828f508ef91b4361f9f4f31b5d64791dbe62a2",
+          "bytes": 15628,
+          "gzBytes": 9779,
           "triangles": 488
         },
         "high": {
-          "file": "/models/body-male-f.high.b3ef5dc0.glb",
-          "sha256": "b3ef5dc0b304e6b19adef04a6ac79d85146144bdcd8cc622977d22946a65d948",
-          "bytes": 15588,
-          "gzBytes": 9754,
+          "file": "/models/body-male-f.high.9dbacd6a.glb",
+          "sha256": "9dbacd6a4bda52d7d7515a916e828f508ef91b4361f9f4f31b5d64791dbe62a2",
+          "bytes": 15628,
+          "gzBytes": 9779,
           "triangles": 488
         }
       }
@@ -2564,6 +2599,222 @@
           "bytes": 3724,
           "gzBytes": 1672,
           "triangles": 48
+        }
+      }
+    },
+    {
+      "id": "facial-stubble",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.facialStubble",
+      "bounds": { "min": [-0.44, 0.755, 0.348], "max": [0.44, 0.97, 0.362] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/facial-stubble.high.cbb9d3a9.glb",
+          "sha256": "cbb9d3a977c63064f0278d809bf5fdd1cbe684c972c1f85ad3d4e5527dca6482",
+          "bytes": 3056,
+          "gzBytes": 1053,
+          "triangles": 36
+        },
+        "mid": {
+          "file": "/models/facial-stubble.high.cbb9d3a9.glb",
+          "sha256": "cbb9d3a977c63064f0278d809bf5fdd1cbe684c972c1f85ad3d4e5527dca6482",
+          "bytes": 3056,
+          "gzBytes": 1053,
+          "triangles": 36
+        },
+        "high": {
+          "file": "/models/facial-stubble.high.cbb9d3a9.glb",
+          "sha256": "cbb9d3a977c63064f0278d809bf5fdd1cbe684c972c1f85ad3d4e5527dca6482",
+          "bytes": 3056,
+          "gzBytes": 1053,
+          "triangles": 36
+        }
+      }
+    },
+    {
+      "id": "facial-moustache",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.facialMoustache",
+      "bounds": { "min": [-0.19, 0.87, 0.348], "max": [0.19, 0.98, 0.39] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/facial-moustache.high.cc8b4279.glb",
+          "sha256": "cc8b42793921b271c71067c7bca3400b5247bffbc69849f67460959a353254be",
+          "bytes": 3104,
+          "gzBytes": 1077,
+          "triangles": 36
+        },
+        "mid": {
+          "file": "/models/facial-moustache.high.cc8b4279.glb",
+          "sha256": "cc8b42793921b271c71067c7bca3400b5247bffbc69849f67460959a353254be",
+          "bytes": 3104,
+          "gzBytes": 1077,
+          "triangles": 36
+        },
+        "high": {
+          "file": "/models/facial-moustache.high.cc8b4279.glb",
+          "sha256": "cc8b42793921b271c71067c7bca3400b5247bffbc69849f67460959a353254be",
+          "bytes": 3104,
+          "gzBytes": 1077,
+          "triangles": 36
+        }
+      }
+    },
+    {
+      "id": "facial-goatee",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.facialGoatee",
+      "bounds": { "min": [-0.16, 0.74, 0.348], "max": [0.16, 0.975, 0.41] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/facial-goatee.high.5b6450c7.glb",
+          "sha256": "5b6450c79b6ba74f5f7754dce77b7da8b57bc55a0821127865b47352ec7af676",
+          "bytes": 3168,
+          "gzBytes": 1082,
+          "triangles": 48
+        },
+        "mid": {
+          "file": "/models/facial-goatee.high.5b6450c7.glb",
+          "sha256": "5b6450c79b6ba74f5f7754dce77b7da8b57bc55a0821127865b47352ec7af676",
+          "bytes": 3168,
+          "gzBytes": 1082,
+          "triangles": 48
+        },
+        "high": {
+          "file": "/models/facial-goatee.high.5b6450c7.glb",
+          "sha256": "5b6450c79b6ba74f5f7754dce77b7da8b57bc55a0821127865b47352ec7af676",
+          "bytes": 3168,
+          "gzBytes": 1082,
+          "triangles": 48
+        }
+      }
+    },
+    {
+      "id": "facial-full-beard",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.facialFullBeard",
+      "bounds": { "min": [-0.485, 0.68, -0.06], "max": [0.485, 1.02, 0.42] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/facial-full-beard.high.d7983720.glb",
+          "sha256": "d798372094b8eaf239f81857bf4653bac1a4d07aa6d502302aae4192b7207471",
+          "bytes": 3628,
+          "gzBytes": 1230,
+          "triangles": 72
+        },
+        "mid": {
+          "file": "/models/facial-full-beard.high.d7983720.glb",
+          "sha256": "d798372094b8eaf239f81857bf4653bac1a4d07aa6d502302aae4192b7207471",
+          "bytes": 3628,
+          "gzBytes": 1230,
+          "triangles": 72
+        },
+        "high": {
+          "file": "/models/facial-full-beard.high.d7983720.glb",
+          "sha256": "d798372094b8eaf239f81857bf4653bac1a4d07aa6d502302aae4192b7207471",
+          "bytes": 3628,
+          "gzBytes": 1230,
+          "triangles": 72
+        }
+      }
+    },
+    {
+      "id": "acc-gold-hoops",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.accGoldHoops",
+      "bounds": { "min": [-0.5313, 0.757, -0.083], "max": [0.5313, 0.923, 0.083] },
+      "slots": [],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/acc-gold-hoops.high.df9a4071.glb",
+          "sha256": "df9a4071c637dcf66f9a80ff9fa3554f99c7641376ae8f22a6b45880167608bd",
+          "bytes": 3748,
+          "gzBytes": 1319,
+          "triangles": 96
+        },
+        "mid": {
+          "file": "/models/acc-gold-hoops.high.df9a4071.glb",
+          "sha256": "df9a4071c637dcf66f9a80ff9fa3554f99c7641376ae8f22a6b45880167608bd",
+          "bytes": 3748,
+          "gzBytes": 1319,
+          "triangles": 96
+        },
+        "high": {
+          "file": "/models/acc-gold-hoops.high.df9a4071.glb",
+          "sha256": "df9a4071c637dcf66f9a80ff9fa3554f99c7641376ae8f22a6b45880167608bd",
+          "bytes": 3748,
+          "gzBytes": 1319,
+          "triangles": 96
+        }
+      }
+    },
+    {
+      "id": "acc-subway-tote",
+      "kind": "static",
+      "category": "avatar-accessory",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.accSubwayTote",
+      "bounds": { "min": [0.0301, 0.24, -0.505], "max": [0.405, 0.8758, 0.359] },
+      "slots": ["fabric"],
+      "attach": "torso",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/acc-subway-tote.high.0720672c.glb",
+          "sha256": "0720672c3d228a146dec76d6a22a4b4f2b5c6fa16afc669b49bd08f7f5b17a78",
+          "bytes": 4236,
+          "gzBytes": 2098,
+          "triangles": 88
+        },
+        "mid": {
+          "file": "/models/acc-subway-tote.high.0720672c.glb",
+          "sha256": "0720672c3d228a146dec76d6a22a4b4f2b5c6fa16afc669b49bd08f7f5b17a78",
+          "bytes": 4236,
+          "gzBytes": 2098,
+          "triangles": 88
+        },
+        "high": {
+          "file": "/models/acc-subway-tote.high.0720672c.glb",
+          "sha256": "0720672c3d228a146dec76d6a22a4b4f2b5c6fa16afc669b49bd08f7f5b17a78",
+          "bytes": 4236,
+          "gzBytes": 2098,
+          "triangles": 88
         }
       }
     }

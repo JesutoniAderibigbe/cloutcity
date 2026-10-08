@@ -4,13 +4,13 @@
  * (src/engine/avatarLook.ts `effectiveLook`: option ids and catalog model ids) and turns it into
  * ModelRefs from the derived avatar refs (types.ts) with every slot colour as hex.
  *
- * - Parts part A0 has not built yet (the bald `head-base`, Blender hair pieces, head coverings,
- *   facial hair, item attachments) are left out and listed in `missing`; a look that needs the
- *   bald head falls back to the default hairstyle's head, so every look draws today.
- * - A colour applies only to a slot the model has (a body has no `shoes` slot until A0), and
- *   only when the palette has the token (the A0 skin and hair tokens are pending too).
+ * - Parts not in the manifest (the Blender hair pieces and head coverings until their
+ *   `avatar-hair` cap lands) are left out and listed in `missing`; a missing head falls back to
+ *   the default hairstyle's head, so every look draws.
+ * - A colour applies only to a slot the model has, and only when the palette has the token.
  * - Attachments follow a rig joint: a Kenney accessory sits at its scene.json `avatarLook`
- *   offset; one without an entry (a Blender attachment, built in the head's frame) at the joint.
+ *   offset; one without an entry (a Blender attachment, built in the character's frame) at its
+ *   catalog `attach` joint (the head unless it says the torso), with no offset.
  */
 import type { EffectiveLook } from '@/engine/avatarLook'
 import type { AvatarOptions } from '@/lib/data/schemas/avatar'
@@ -106,7 +106,7 @@ export function resolveLook(
     attachments.push({
       ref,
       ...(colors === undefined ? {} : { colors }),
-      joint: place?.joint ?? 'head',
+      joint: place?.joint ?? ref.attach ?? 'head',
       offset: place?.offset ?? ORIGIN,
     })
   }

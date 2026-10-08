@@ -1,4 +1,4 @@
-/** resolveLook (S16a): the drawn look as ModelRefs and hex colours, with part A0 pending. */
+/** resolveLook (S16a): the drawn look as ModelRefs and hex colours. */
 import { describe, expect, it } from 'vitest'
 import { publicAvatar, type Look } from '@/engine/appearance'
 import { effectiveLook } from '@/engine/avatarLook'
@@ -27,8 +27,8 @@ describe('resolveLook', () => {
       skin: hexOf(options.skinTones, base.skin),
       hair: hexOf(options.hairColors, base.hairColor),
     })
-    // No shoes slot on the bodies until part A0: shoes are left out, never thrown on.
     expect(resolved.colors.body).toEqual({
+      shoes: hexOf(options.garmentColors, base.shoes),
       skin: hexOf(options.skinTones, base.skin),
       top: hexOf(options.garmentColors, base.top),
       bottom: hexOf(options.garmentColors, base.bottom),
@@ -49,23 +49,41 @@ describe('resolveLook', () => {
     })
   })
 
-  it('a look that needs part A0 still draws: the default head stands in and the rest is listed', () => {
+  it('a Blender piece on the bald head: facial hair takes the hair colour at the head joint', () => {
     const resolved = resolve({
       ...base,
       hairStyle: 'afro',
+      hairColor: 'pink',
       facialHair: 'stubble',
       eyewear: 'sunglasses',
     })
-    const fallback = options.hairStyles.find((s) => s.id === base.hairStyle)?.head
-    expect(resolved.parts.head.id).toBe(fallback)
-    expect(resolved.parts.attachments?.map((a) => a.ref.id)).toEqual(['sunglasses'])
-    expect(resolved.missing).toEqual(['head-base', 'hair-afro', 'facial-stubble'])
+    expect(resolved.parts.head.id).toBe('head-base')
+    expect(resolved.colors.head).toEqual({ skin: hexOf(options.skinTones, base.skin) })
+    const stubble = resolved.parts.attachments?.find((a) => a.ref.id === 'facial-stubble')
+    expect(stubble).toMatchObject({ joint: 'head', offset: [0, 0, 0] })
+    expect(stubble?.colors).toEqual({ hair: hexOf(options.hairColors, 'pink') })
+    // The hair pieces wait on their avatar-hair cap (A0.3): drawn bald until then.
+    expect(resolved.missing).toEqual(['hair-afro'])
   })
 
-  it('leaves out a colour whose token the palette lacks (the A0 skin tones)', () => {
-    const resolved = resolve({ ...base, skin: 'tone-01' })
-    expect(resolved.colors.head?.skin).toBeUndefined()
-    expect(resolved.colors.head?.hair).toBeDefined()
+  it('an item attachment follows its catalog joint: the tote rides the torso', () => {
+    const resolved = resolve({ ...base, top: 'navy' }, ['subway-tote', 'gold-hoops'])
+    const joints = resolved.parts.attachments?.map((a) => [a.ref.id, a.joint])
+    expect(joints).toEqual(
+      expect.arrayContaining([
+        ['acc-subway-tote', 'torso'],
+        ['acc-gold-hoops', 'head'],
+      ]),
+    )
+    const tote = resolved.parts.attachments?.find((a) => a.ref.id === 'acc-subway-tote')
+    expect(tote?.colors).toEqual({ fabric: hexOf(options.garmentColors, 'navy') })
+  })
+
+  it('colours every skin tone, the A0 tones included', () => {
+    for (const tone of options.skinTones) {
+      const resolved = resolve({ ...base, skin: tone.id })
+      expect(resolved.colors.head?.skin, tone.id).toMatch(/^#[0-9a-f]{6}$/)
+    }
   })
 
   it('worn items win: a top sets the body and the capsule tint', () => {

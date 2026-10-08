@@ -3,11 +3,10 @@
  * config, the career block and the items' `look`, against the S04h model manifest, the model
  * palette (theme.json `models`) and the copy.
  *
- * Part A0 (lane F, Blender) has not landed yet: the bald `head-base`, the hair pieces, head
- * coverings, facial hair and item attachments, and the new skin and hair tokens, are named by id
- * ahead of it. They are listed in PENDING_A0 below; every other id must resolve today. Each
- * pending id must still be missing from the manifest or palette, so when A0 lands this test fails
- * until the list is emptied (TODO(S16a A0): delete PENDING_A0 once part A0 merges).
+ * Part A0 has landed except the `avatar-hair` models (the Blender hair pieces and head
+ * coverings), which wait on their new perf.json cap. They are listed in PENDING_A0 below; every
+ * other id must resolve today. Each pending id must still be missing from the manifest, so when
+ * they land this test fails until the list is emptied (TODO(S16a A0): delete PENDING_A0 then).
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -47,10 +46,14 @@ const modelIds = new Set(manifest.models.map((model) => model.id))
 const tokens = new Set(Object.keys(theme.models))
 const strings = baseCopy.strings
 
-/** Ids part A0 adds (DEC-28 Blender attachments, D3 `head-base`, D5/D6 tokens). */
+/**
+ * Ids part A0 adds that wait on a new perf.json cap: the Blender hair pieces and head coverings
+ * are `avatar-hair` models, a category whose caps need the user's sign-off (A0.3). Their scripts
+ * and GLBs are built (scripts/blender/avatar/, scripts/blender/lock.json); the catalog entries
+ * land with the cap.
+ */
 const PENDING_A0 = {
-  models: new Set([
-    'head-base',
+  models: new Set<string>([
     'hair-afro',
     'hair-locs',
     'hair-box-braids',
@@ -61,22 +64,6 @@ const PENDING_A0 = {
     'headwear-durag',
     'headwear-beanie',
     'headwear-ballcap',
-    'facial-stubble',
-    'facial-moustache',
-    'facial-goatee',
-    'facial-full-beard',
-    'acc-gold-hoops',
-    'acc-subway-tote',
-  ]),
-  tokens: new Set([
-    'skin-050',
-    'skin-450',
-    'skin-750',
-    'skin-900',
-    'hair-050',
-    'hair-400',
-    'hair-pink-400',
-    'hair-blue-500',
   ]),
 }
 
@@ -109,16 +96,14 @@ describe('look options resolve (S04h catalog and palette)', () => {
     expect(missing).toEqual([])
   })
 
-  it('every palette token is in theme.json models, or pending part A0', () => {
-    const missing = referencedTokens().filter((t) => !tokens.has(t) && !PENDING_A0.tokens.has(t))
+  it('every palette token is in theme.json models', () => {
+    const missing = referencedTokens().filter((t) => !tokens.has(t))
     expect(missing).toEqual([])
   })
 
   it('the pending list holds only ids still missing (empty it when A0 lands)', () => {
     expect([...PENDING_A0.models].filter((id) => modelIds.has(id))).toEqual([])
-    expect([...PENDING_A0.tokens].filter((token) => tokens.has(token))).toEqual([])
     expect([...PENDING_A0.models].filter((id) => !referencedModels().includes(id))).toEqual([])
-    expect([...PENDING_A0.tokens].filter((t) => !referencedTokens().includes(t))).toEqual([])
   })
 
   it('heads, bodies and attachments sit in their own categories (GR-12)', () => {
