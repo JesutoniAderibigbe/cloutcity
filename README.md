@@ -552,7 +552,11 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   restores the account's save or uploads this device's to POST `/api/save`
   (`src/server/saves/handleUpload.ts`, Node, never cached), debounced (`sync.json`), queued
   offline, flushed with a keepalive request when the tab hides, and paused when the server
-  refuses a save. The server stores accepted saves with `commit_save` (service role only: a
+  refuses a save. No upload goes inside the server's `minUploadIntervalMs` (or a 429's
+  Retry-After): the time the next one may go is kept in `cloutcity:sync-next`, so a page loaded
+  right after another (a reload) waits out the previous page's upload instead of drawing a 429,
+  and a change made inside the interval stays on the device until the next upload. A 429 that
+  still happens (another tab) is logged at info and retried with backoff. The server stores accepted saves with `commit_save` (service role only: a
   compare-and-swap on the revision, the upload rate limit, grant rows, the public profile
   projection) and keeps refused ones aside with `quarantine_save`. The HUD's cloud chip (the More
   panel on phones) shows the status; a conflict asks the player which save to keep. Keeping this
