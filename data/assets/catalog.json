@@ -368,6 +368,172 @@
       "nameKey": "models.name.hatchback"
     },
     {
+      "id": "taxi-ambient",
+      "source": "kaykit-city-builder-bits",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "car_taxi.gltf"
+        }
+      ],
+      "category": "vehicle",
+      "fit": {
+        "length": 4.9
+      },
+      "pivot": "bottom-center",
+      "tiers": {
+        "low": {
+          "ratio": 0.22,
+          "error": 0.08,
+          "flags": ["Permissive"]
+        },
+        "mid": {
+          "ratio": 0.22,
+          "error": 0.08,
+          "flags": ["Permissive"]
+        },
+        "high": {
+          "ratio": 0.22,
+          "error": 0.08,
+          "flags": ["Permissive"]
+        }
+      },
+      "swatches": [
+        "taxi-400",
+        "rubber-900",
+        "steel-400",
+        "glass-600",
+        "signal-500",
+        "lamp-200",
+        "paint-100",
+        "asphalt-800"
+      ],
+      "maxDeltaE": 30,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "body",
+          "tokens": ["taxi-400"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "after-playable",
+      "instanced": true,
+      "nameKey": "models.name.taxiAmbient",
+      "remap": {
+        "#f1c55e": "taxi-400"
+      },
+      "remapMaxDeltaE": 1
+    },
+    {
+      "id": "sedan-ambient",
+      "source": "kaykit-city-builder-bits",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "car_sedan.gltf"
+        }
+      ],
+      "category": "vehicle",
+      "fit": {
+        "length": 4.8
+      },
+      "pivot": "bottom-center",
+      "tiers": {
+        "low": {
+          "ratio": 0.22,
+          "error": 0.08,
+          "flags": ["Permissive"]
+        },
+        "mid": {
+          "ratio": 0.22,
+          "error": 0.08,
+          "flags": ["Permissive"]
+        },
+        "high": {
+          "ratio": 0.22,
+          "error": 0.08,
+          "flags": ["Permissive"]
+        }
+      },
+      "swatches": [
+        "navy-700",
+        "rubber-900",
+        "steel-400",
+        "glass-600",
+        "signal-500",
+        "lamp-200",
+        "paint-100",
+        "asphalt-800"
+      ],
+      "maxDeltaE": 30,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "body",
+          "tokens": ["glass-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "after-playable",
+      "instanced": true,
+      "nameKey": "models.name.sedanAmbient"
+    },
+    {
+      "id": "hatchback-ambient",
+      "source": "kaykit-city-builder-bits",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "car_hatchback.gltf"
+        }
+      ],
+      "category": "vehicle",
+      "fit": {
+        "length": 4.2
+      },
+      "pivot": "bottom-center",
+      "tiers": {
+        "low": {
+          "ratio": 0.22,
+          "error": 0.08,
+          "flags": ["Permissive"]
+        },
+        "mid": {
+          "ratio": 0.22,
+          "error": 0.08,
+          "flags": ["Permissive"]
+        },
+        "high": {
+          "ratio": 0.22,
+          "error": 0.08,
+          "flags": ["Permissive"]
+        }
+      },
+      "swatches": [
+        "red-600",
+        "rubber-900",
+        "steel-400",
+        "glass-600",
+        "signal-500",
+        "lamp-200",
+        "paint-100",
+        "asphalt-800"
+      ],
+      "maxDeltaE": 30,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "body",
+          "tokens": ["red-600", "signal-500"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "after-playable",
+      "instanced": true,
+      "nameKey": "models.name.hatchbackAmbient"
+    },
+    {
       "id": "streetlight",
       "source": "kaykit-city-builder-bits",
       "kind": "static",

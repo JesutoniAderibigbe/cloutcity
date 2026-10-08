@@ -62,7 +62,7 @@ Not required by CC0; credited on /credits as thanks: Kenney (www.kenney.nl) and 
 | `addons/kaykit_city_builder_bits/Assets/gltf/watertower.bin`       |  8268 | `384bc04add6c6fb56202e16688e375e4ad22739d46f37cd427e81087ffc192f6` |
 | `addons/kaykit_city_builder_bits/Assets/gltf/watertower.gltf`      |  3065 | `55ae59f2a21ad38c64312a4c00d6808dc486bf4a8e8a8c969bc9e26cdc84d8f3` |
 
-Models: `taxi`, `sedan`, `hatchback`, `streetlight`, `hydrant`, `bench`, `bush`, `traffic-light`, `trash-bags`, `dumpster`, `water-tower`.
+Models: `taxi`, `sedan`, `hatchback`, `taxi-ambient`, `sedan-ambient`, `hatchback-ambient`, `streetlight`, `hydrant`, `bench`, `bush`, `traffic-light`, `trash-bags`, `dumpster`, `water-tower`.
 
 ### KayKit Furniture Bits 1.0
 
@@ -226,6 +226,9 @@ Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-bear
 | `taxi`              | `kaykit-city-builder-bits`   | `car_taxi.gltf`                | vehicle          |
 | `sedan`             | `kaykit-city-builder-bits`   | `car_sedan.gltf`               | vehicle          |
 | `hatchback`         | `kaykit-city-builder-bits`   | `car_hatchback.gltf`           | vehicle          |
+| `taxi-ambient`      | `kaykit-city-builder-bits`   | `car_taxi.gltf`                | vehicle          |
+| `sedan-ambient`     | `kaykit-city-builder-bits`   | `car_sedan.gltf`               | vehicle          |
+| `hatchback-ambient` | `kaykit-city-builder-bits`   | `car_hatchback.gltf`           | vehicle          |
 | `streetlight`       | `kaykit-city-builder-bits`   | `streetlight.gltf`             | street-prop      |
 | `hydrant`           | `kaykit-city-builder-bits`   | `firehydrant.gltf`             | street-prop      |
 | `bench`             | `kaykit-city-builder-bits`   | `bench.gltf`                   | street-prop      |
