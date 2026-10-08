@@ -26,6 +26,7 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 
 /** Landmarks still waiting for their Blender model (S07c): every other landmark is built. */
 const PENDING = new Set([
+  'staten-island-ferry',
   'central-park',
   'high-line',
   'prospect-park',
@@ -36,13 +37,11 @@ const PENDING = new Set([
   'city-hall',
   'brooklyn-borough-hall',
   'queens-borough-hall',
-  'jamaica-station',
   'dumbo',
   'coney-island-boardwalk',
   'flushing-main-street',
   'september-11-memorial',
   'bronx-ballpark',
-  'staten-island-ferry',
 ])
 
 const TIER_FINEST = { high: 0, mid: 1, low: 2 } as const

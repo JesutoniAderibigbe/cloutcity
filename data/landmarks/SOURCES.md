@@ -155,6 +155,34 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L2: 594 triangles, 11748 bytes (`public/landmarks/deco-spire/lod2.glb`)
 - L3: 290 triangles, 7184 bytes (`public/landmarks/deco-spire/lod3.glb`)
 
+### jamaica-station
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q11310077 (Jamaica), CC0-1.0, <https://www.wikidata.org/wiki/Q11310077>
+
+Dimensions:
+
+- `heightM`: 22 m (estimate): the station hall's roof above the street
+- `hall`: 60 × 32 m (estimate): the hall's front width and depth
+- `hallFloors`: 4 (estimate): storeys of windows on the hall
+- `pavilion`: 12 × 12 m (estimate): each entrance pavilion's plan
+- `pavilionM`: 11 m (estimate): the pavilions' height
+- `pavilionSpacingM`: 72 m (estimate): between the pavilions' centres
+- `canopy`: 70 × 16 m (estimate): the canopy's length and width
+- `canopyM`: 9 m (estimate): the canopy's height
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.4, widths ×1.1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.4 and widths x1.1, within the frame's exclusion, so the station reads at the game camera. Wikidata gives no dimensions, so every number is an estimate (the S07a kit's stylised proportions).
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1144 triangles, 17344 bytes (`public/landmarks/jamaica-station/lod0.glb`)
+- L1: 544 triangles, 10220 bytes (`public/landmarks/jamaica-station/lod1.glb`)
+- L2: 224 triangles, 6080 bytes (`public/landmarks/jamaica-station/lod2.glb`)
+- L3: 76 triangles, 3976 bytes (`public/landmarks/jamaica-station/lod3.glb`)
+
 ### manhattan-bridge
 
 Retrieved 2026-10-08. Sources:

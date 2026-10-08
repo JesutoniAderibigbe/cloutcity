@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "jamaica-station",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "31c33ebce5eb944ccd21e297aab50beae0a96fa8dcda454704691140eafdb0bf",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/jamaica-station/lod0.glb",
+      "sha256": "7a7899505b8a40c9744ad2c7d7988f48022d391825d1aa488a99881738597c62",
+      "bytes": 17344,
+      "triangles": 1144,
+      "uncompressedBytes": 109868
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/jamaica-station/lod1.glb",
+      "sha256": "ee2e2dabf4e3285e341882546b9eea95d1d1232ec9dfd7d0c343cc6aca3915af",
+      "bytes": 10220,
+      "triangles": 544,
+      "uncompressedBytes": 52408
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/jamaica-station/lod2.glb",
+      "sha256": "086a71c9a201aec842c55b27961fd0dc389fa61cf2f35211c2f407f7d0491073",
+      "bytes": 6080,
+      "triangles": 224,
+      "uncompressedBytes": 22320
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/jamaica-station/lod3.glb",
+      "sha256": "96f54abf505073fe06c3c6086d53e186c20215af80472e068f42439edd74ab49",
+      "bytes": 3976,
+      "triangles": 76,
+      "uncompressedBytes": 8404
+    }
+  ]
+}
