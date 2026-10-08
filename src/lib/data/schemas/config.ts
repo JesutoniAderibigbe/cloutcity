@@ -256,8 +256,12 @@ export const PerfConfigSchema = z
     otherPlayersStyle: perTier(z.enum(['billboard', 'model'])),
     /** Real reference device only (human/qa check); headless CI cannot measure FPS. */
     medianFpsMin: perTier(positive),
-    /** Idle renders zero frames (`frameloop="demand"`). */
-    idleFramesMax: z.literal(0),
+    /**
+     * Frames rendered while the map is paused (tab hidden, apartment or creator on screen,
+     * reduced motion with nothing else moving): none. While the map is visible the living city
+     * (S04l, DEC-52) animates it.
+     */
+    pausedFramesMax: z.literal(0),
     fpsStepDown: FpsStepDownSchema,
     tierPicker: TierPickerSchema,
     throttleProfiles: z.strictObject({ 'cc-mid-4g': ThrottleProfileSchema }),
@@ -290,10 +294,28 @@ export const PerfConfigSchema = z
     /** Street props (S04i): instances per model, triangles and draw calls, per tier. */
     streetProps: StreetPropsBudgetSchema,
     /**
-     * The LION street chains street props are placed on (/geo/streets, S04i), gzipped. Fetched
-     * only once the camera zooms in, never on the low tier (0), so outside every to-playable sum.
+     * The LION street chains street props and the living city use (/geo/streets, S04i, S04l),
+     * gzipped. Fetched only after playable (props once the camera zooms in; on low only by the
+     * living city), so outside every to-playable sum.
      */
     streetsGzKB: perTier(z.number().nonnegative()),
+    /**
+     * The living city (S04l, DEC-52): most ambient instances drawn at once per kind, their
+     * triangles and draw calls (part of `trianglesMax` and `drawCallsMax`, not on top), and the
+     * gzipped bytes it loads after playable (its chunk, the streets and its models; never
+     * precached).
+     */
+    ambient: z.strictObject({
+      instancesMax: z.strictObject({
+        vehicle: perTier(z.int().nonnegative()),
+        bus: perTier(z.int().nonnegative()),
+        pedestrian: perTier(z.int().nonnegative()),
+        trainCar: perTier(z.int().nonnegative()),
+      }),
+      trianglesMax: perTier(z.int().nonnegative()),
+      drawCallsMax: perTier(z.int().nonnegative()),
+      lazyGzKB: perTier(positive),
+    }),
     /**
      * Most fill trees (S04i fill-lite: street trees between the procedural blocks) drawn at once
      * per tier; 0 turns them off.

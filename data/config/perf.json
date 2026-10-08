@@ -104,7 +104,7 @@
     "mid": 45,
     "high": 55
   },
-  "idleFramesMax": 0,
+  "pausedFramesMax": 0,
   "fpsStepDown": {
     "belowFps": 28,
     "sustainMs": 3000,
@@ -252,9 +252,20 @@
     }
   },
   "streetsGzKB": {
-    "low": 0,
+    "low": 30,
     "mid": 60,
     "high": 60
+  },
+  "ambient": {
+    "instancesMax": {
+      "vehicle": { "low": 10, "mid": 28, "high": 56 },
+      "bus": { "low": 0, "mid": 4, "high": 8 },
+      "pedestrian": { "low": 8, "mid": 32, "high": 64 },
+      "trainCar": { "low": 72, "mid": 120, "high": 240 }
+    },
+    "trianglesMax": { "low": 10000, "mid": 40000, "high": 80000 },
+    "drawCallsMax": { "low": 8, "mid": 16, "high": 24 },
+    "lazyGzKB": { "low": 70, "mid": 60, "high": 70 }
   },
   "landmarkTrianglesMax": {
     "bridge": {

@@ -23,41 +23,25 @@ import {
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js'
 import {
   PEDESTRIAN_BUCKETS,
-  type AmbientTier,
   type PedestrianBucket,
   type PedestrianKit,
   type PedestrianKitSource,
-  type PerAmbientTier,
 } from '@/lib/world/ambient/types'
 import type { RigModel, SkinnedPartModel } from '../models/prepare'
 import { groundParts, partsBounds, splitIntoBuckets } from './buckets'
+import { AVATAR_RIG_ID, KENNEY_TEMP_PEDESTRIANS, WALK_CLIP, kenneyTempModelIds } from './kitIds'
 import type { AmbientLoadedModel, AmbientModelLoader } from './vehicleKits'
 
 export type ScenePedestrianKit = PedestrianKit<BufferGeometry>
 export type ScenePedestrianKitSource = PedestrianKitSource<BufferGeometry, AmbientModelLoader>
 
-export interface KenneyPedestrianParts {
-  readonly body: string
-  readonly head: string
-}
-
-/** The shared avatar rig (catalog id) and the clip the pose is taken from. */
-export const AVATAR_RIG_ID = 'avatar-rig'
-export const WALK_CLIP = 'walk'
-
-/**
- * Which Kenney parts each tier bakes (one kit = one InstancedMesh per bucket): the lightest
- * low-tier bodies and heads that are not the default player look (scene.json models.player).
- * Temporary until S16b; its source decides its own kits.
- */
-export const KENNEY_TEMP_PEDESTRIANS: PerAmbientTier<readonly KenneyPedestrianParts[]> = {
-  low: [{ body: 'body-male-b', head: 'head-male-f' }],
-  mid: [{ body: 'body-male-b', head: 'head-male-f' }],
-  high: [
-    { body: 'body-male-b', head: 'head-male-f' },
-    { body: 'body-female-b', head: 'head-female-f' },
-  ],
-}
+export {
+  AVATAR_RIG_ID,
+  KENNEY_TEMP_PEDESTRIANS,
+  WALK_CLIP,
+  kenneyTempModelIds,
+  type KenneyPedestrianParts,
+} from './kitIds'
 
 /** Walk-cycle phases tried when looking for the widest stride. */
 const STRIDE_SAMPLES = 16
@@ -255,14 +239,6 @@ export function bakeKenneyPedestrian(
       for (const mesh of posed.meshes) mesh.skeleton.dispose()
     }
   }
-}
-
-/** The model ids the `kenney-temp` source loads for a tier, rig first. */
-export function kenneyTempModelIds(tier: AmbientTier): string[] {
-  return [
-    AVATAR_RIG_ID,
-    ...KENNEY_TEMP_PEDESTRIANS[tier].flatMap((parts) => [parts.body, parts.head]),
-  ]
 }
 
 /** `pedestrians.source: 'kenney-temp'`. */
