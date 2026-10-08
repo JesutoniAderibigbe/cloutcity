@@ -552,33 +552,33 @@
       },
       "colors": {
         "walls": [
-          "softbrick-200",
-          "softstone-100",
-          "softstone-200",
-          "softconcrete-200",
-          "softstone-100",
-          "softbrick-300",
-          "softstone-100",
-          "softglass-200"
+          "gamecream-100",
+          "gamepeach-200",
+          "gamesky-200",
+          "gamewhite-100",
+          "gamemint-200",
+          "gamecoral-300",
+          "gamebutter-200",
+          "gamelilac-200"
         ],
-        "roof": "softroof-200",
+        "roof": "gameroof-100",
         "blocks": [
-          "softstone-100",
-          "softstone-200",
-          "softconcrete-200",
-          "softbrick-200",
-          "softstone-100",
-          "softglass-200",
-          "softstone-200",
-          "softstone-100"
+          "gamewhite-100",
+          "gamecream-100",
+          "gamemint-200",
+          "gamepeach-200",
+          "gamesky-200",
+          "gamebutter-200",
+          "gamecream-100",
+          "gamelilac-200"
         ],
         "land": {
-          "manhattan": "road-200",
-          "brooklyn": "road-300",
-          "queens": "road-300"
+          "manhattan": "gamegrass-200",
+          "brooklyn": "gamegrass-300",
+          "queens": "gamegrass-300"
         },
-        "park": "parkbright-400",
-        "water": "lagoon-500"
+        "park": "gamepark-400",
+        "water": "gamewater-400"
       },
       "subwayLiftM": 24
     },

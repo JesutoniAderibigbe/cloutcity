@@ -868,7 +868,8 @@ camera starts over it).
   colour tokens. **Game map** (default, Lagos-style): every venue and home stands on a plot
   (`data/config/plots.json`: lawn, plaza or parking yard and a recoloured CC0 building, merged per
   square onto the district material by the lazy `src/scene/plots/layer.ts`), district masses and
-  fill blocks keep clear of plots and are drawn lower and lighter, venue pins float over their
+  fill blocks keep clear of plots and are drawn lower in bright pastel colours on green land with
+  bright blue water (the `game*` world tokens in `theme.json`), venue pins float over their
   roofs as big icon bubbles, and big area names (`data/places/areaLabels.json`, `map.area.*`
   copy) lie on the water and over the neighbourhoods. Venues stand packed (S04n,
   `data/config/compactLayout.json`, planned on the server by `src/lib/world/compactLayout.ts`
