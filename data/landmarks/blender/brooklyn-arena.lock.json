@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "brooklyn-arena",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "ce5f5c414e9823fe5bcb10fb17c661aa2891d68d8706773bb2c4bbdf4540e26f",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/brooklyn-arena/lod0.glb",
+      "sha256": "629a8c3b3975d76b63c92f76b21a37446f83207084f8d4e354f77e11bbc7aeba",
+      "bytes": 18728,
+      "triangles": 1318,
+      "uncompressedBytes": 103080
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/brooklyn-arena/lod1.glb",
+      "sha256": "83837a3f3fa143c50e4409096cd5d0c998d7b8d11d88ea49ba5749b99a134c88",
+      "bytes": 9168,
+      "triangles": 486,
+      "uncompressedBytes": 39116
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/brooklyn-arena/lod2.glb",
+      "sha256": "833fbe701d85368990f3441b0a379e3b0f682edb6308b306acb11605a09c7ba0",
+      "bytes": 5276,
+      "triangles": 186,
+      "uncompressedBytes": 16368
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/brooklyn-arena/lod3.glb",
+      "sha256": "c4b725a112cd8165bb3f73b95a515322b6d6f051bdb07e0f13295fd2b32997cc",
+      "bytes": 3656,
+      "triangles": 74,
+      "uncompressedBytes": 7332
+    }
+  ]
+}

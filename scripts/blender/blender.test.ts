@@ -32,8 +32,6 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 const PENDING = new Set([
   'flushing-meadows',
   'astoria-park',
-  'queens-ballpark',
-  'brooklyn-arena',
   'midtown-terminal',
   'penn-station',
   'jamaica-station',
@@ -41,7 +39,6 @@ const PENDING = new Set([
   'coney-island-boardwalk',
   'flushing-main-street',
   'september-11-memorial',
-  'bronx-ballpark',
   'staten-island-ferry',
 ])
 

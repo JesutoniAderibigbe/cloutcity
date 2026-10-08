@@ -85,6 +85,79 @@ HAER/HABS, NPS, public-domain texts), never traced from photos. A value marked `
 wider than they are, by the readability scale, so they read at game distance. The models
 are ours: no third-party licence applies to them.
 
+### bronx-ballpark
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q753529 (the Bronx ballpark), CC0-1.0, <https://www.wikidata.org/wiki/Q753529>
+
+Dimensions:
+
+- `heightM`: 48 m (estimate): the light towers' tops above the street, proportioned by eye
+- `fenceLeftM`: 96.9 m (estimate): home plate to the left-field foul pole (318 ft)
+- `fenceCentreM`: 124.4 m (estimate): home plate to the centre-field fence
+- `fenceRightM`: 95.7 m (estimate): home plate to the right-field foul pole
+- `basePathM`: 27.43 m (derived): the 90 ft between bases (the rules of baseball)
+- `moundM`: 18.44 m (derived): home plate to the pitcher's plate, 60 ft 6 in (the rules of baseball)
+- `centreFieldHeadingDeg`: 60 m (estimate): compass heading from home plate to centre field, by eye
+- `homeOffsetM`: 55 m (estimate): how far home plate stands back from the landmark point (Wikidata P625), toward the stands
+- `foulM`: 16 m (estimate): foul ground from the foul lines and behind home plate to the stands
+- `lowerDepthM`: 30 m (estimate): the lower deck's depth
+- `lowerFrontM`: 2.5 m (estimate): the lower deck's front row above the field
+- `lowerTopM`: 14 m (estimate): the lower deck's back row above the field
+- `upperSetbackM`: 22 m (estimate): the upper deck's front row back from the lower deck's
+- `upperDepthM`: 34 m (estimate): the upper deck's depth
+- `upperFrontM`: 21 m (estimate): the upper deck's front above the field (the suites below it)
+- `upperTopM`: 40 m (estimate): the upper deck's back row above the field
+- `upperReachM`: 85 m (estimate): how far out along each foul line the upper deck runs
+- `bleacherDepthM`: 22 m (estimate): the outfield bleachers' depth
+- `bleacherTopM`: 10 m (estimate): the outfield bleachers' top
+- `scoreboardWidthM`: 40 m (estimate): the scoreboard panel's width (a plain screen, no text)
+- `scoreboardHeightM`: 16 m (estimate): the scoreboard panel's height
+- `scoreboardBaseM`: 14 m (estimate): the scoreboard panel's bottom above the street
+- `capacity`: 49642 (wikidata): maximum capacity (P1083), for scale
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.6, widths ×1.15. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.6 and plan x1.15, so the bowl reads at the 3,000-4,500 m game camera without its stands standing steeper than a real rake.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 2948 triangles, 44140 bytes (`public/landmarks/bronx-ballpark/lod0.glb`)
+- L1: 1274 triangles, 21716 bytes (`public/landmarks/bronx-ballpark/lod1.glb`)
+- L2: 582 triangles, 12996 bytes (`public/landmarks/bronx-ballpark/lod2.glb`)
+- L3: 224 triangles, 6784 bytes (`public/landmarks/bronx-ballpark/lod3.glb`)
+
+### brooklyn-arena
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q807966 (the Brooklyn arena), CC0-1.0, <https://www.wikidata.org/wiki/Q807966>
+
+Dimensions:
+
+- `heightM`: 36 m (estimate): the arena's roof edge above the street, proportioned by eye
+- `glazedBaseM`: 9 m (estimate): the glazed concourse level under the metal band
+- `length`: 175 × 125 m (estimate): the arena body's length and width (a rounded oblong)
+- `headingDeg`: 105 m (estimate): compass heading of the arena's long axis, along the avenue to its south (by eye)
+- `canopyHeadingDeg`: 305 m (estimate): compass heading from the arena's middle to the entrance canopy over the corner plaza
+- `canopyDistanceM`: 100 m (estimate): from the arena's middle to the canopy's middle
+- `canopyRadiusM`: 42 m (estimate): the canopy's radius
+- `canopyOpeningM`: 14 m (estimate): the round opening's radius
+- `canopyM`: 13 m (estimate): the canopy's height above the plaza
+- `capacity`: 17732 (wikidata): maximum capacity (P1083), for scale
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.6, widths ×1.15. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.6 and plan x1.15 like the ballparks, so the arena reads at the 3,000-4,500 m game camera.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1318 triangles, 18728 bytes (`public/landmarks/brooklyn-arena/lod0.glb`)
+- L1: 486 triangles, 9168 bytes (`public/landmarks/brooklyn-arena/lod1.glb`)
+- L2: 186 triangles, 5276 bytes (`public/landmarks/brooklyn-arena/lod2.glb`)
+- L3: 74 triangles, 3656 bytes (`public/landmarks/brooklyn-arena/lod3.glb`)
+
 ### brooklyn-borough-hall
 
 Retrieved 2026-10-08. Sources:
@@ -422,6 +495,49 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L1: 3002 triangles, 80532 bytes (`public/landmarks/prospect-park/lod1.glb`)
 - L2: 1173 triangles, 33020 bytes (`public/landmarks/prospect-park/lod2.glb`)
 - L3: 539 triangles, 16044 bytes (`public/landmarks/prospect-park/lod3.glb`)
+
+### queens-ballpark
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q1072882 (the Queens ballpark), CC0-1.0, <https://www.wikidata.org/wiki/Q1072882>
+
+Dimensions:
+
+- `heightM`: 48 m (estimate): the light towers' tops above the street, proportioned by eye
+- `fenceLeftM`: 102.1 m (estimate): home plate to the left-field foul pole (335 ft)
+- `fenceCentreM`: 124.4 m (estimate): home plate to the centre-field fence
+- `fenceRightM`: 100.6 m (estimate): home plate to the right-field foul pole
+- `basePathM`: 27.43 m (derived): the 90 ft between bases (the rules of baseball)
+- `moundM`: 18.44 m (derived): home plate to the pitcher's plate, 60 ft 6 in (the rules of baseball)
+- `centreFieldHeadingDeg`: 35 m (estimate): compass heading from home plate to centre field, by eye
+- `homeOffsetM`: 55 m (estimate): how far home plate stands back from the landmark point (Wikidata P625), toward the stands
+- `foulM`: 16 m (estimate): foul ground from the foul lines and behind home plate to the stands
+- `lowerDepthM`: 30 m (estimate): the lower deck's depth
+- `lowerFrontM`: 2.5 m (estimate): the lower deck's front row above the field
+- `lowerTopM`: 14 m (estimate): the lower deck's back row above the field
+- `upperSetbackM`: 22 m (estimate): the upper deck's front row back from the lower deck's
+- `upperDepthM`: 34 m (estimate): the upper deck's depth
+- `upperFrontM`: 21 m (estimate): the upper deck's front above the field (the suites below it)
+- `upperTopM`: 40 m (estimate): the upper deck's back row above the field
+- `upperReachM`: 85 m (estimate): how far out along each foul line the upper deck runs
+- `bleacherDepthM`: 22 m (estimate): the outfield bleachers' depth
+- `bleacherTopM`: 10 m (estimate): the outfield bleachers' top
+- `scoreboardWidthM`: 40 m (estimate): the scoreboard panel's width (a plain screen, no text)
+- `scoreboardHeightM`: 16 m (estimate): the scoreboard panel's height
+- `scoreboardBaseM`: 14 m (estimate): the scoreboard panel's bottom above the street
+- `capacity`: 41922 (wikidata): maximum capacity (P1083), for scale
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.6, widths ×1.15. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.6 and plan x1.15, so the bowl reads at the 3,000-4,500 m game camera without its stands standing steeper than a real rake.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 2948 triangles, 45476 bytes (`public/landmarks/queens-ballpark/lod0.glb`)
+- L1: 1274 triangles, 21864 bytes (`public/landmarks/queens-ballpark/lod1.glb`)
+- L2: 582 triangles, 12852 bytes (`public/landmarks/queens-ballpark/lod2.glb`)
+- L3: 224 triangles, 6736 bytes (`public/landmarks/queens-ballpark/lod3.glb`)
 
 ### queens-borough-hall
 
