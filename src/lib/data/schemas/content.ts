@@ -479,6 +479,22 @@ export const PLACE_ICON_GROUPS = [
 ] as const
 export type PlaceIconGroup = (typeof PLACE_ICON_GROUPS)[number]
 
+/**
+ * data/items/looks.json (S04k): the shop's thumbnail size for the offline renders (npm run
+ * thumbs) and each item's icon, shown when it has no rendered thumbnail. Every item has one
+ * (checked in src/lib/data/data.test.ts).
+ */
+export const ItemLooksFileSchema = z.strictObject({
+  thumbs: z.strictObject({ sizePx: z.int().min(32).max(512) }),
+  icons: z.record(IdSchema, z.string().min(1).max(16)),
+})
+
+/** data/items/thumbs.derived.json (npm run thumbs): item id → content-named thumbnail URL. */
+export const ItemThumbsFileSchema = z.record(
+  IdSchema,
+  z.string().regex(/^\/thumbs\/[a-z0-9-]+\.[0-9a-f]{8}\.webp$/),
+)
+
 export const PlaceIconsConfigSchema = z.strictObject({
   groups: z.record(
     z.enum(PLACE_ICON_GROUPS),

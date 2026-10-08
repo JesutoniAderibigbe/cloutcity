@@ -1,0 +1,26 @@
+{
+  "thumbs": { "sizePx": 160 },
+  "icons": {
+    "bodega-graphic-tee": "👕",
+    "thrifted-denim-jacket": "🧥",
+    "designer-puffer": "🧥",
+    "cargo-pants": "👖",
+    "pleated-trousers": "👖",
+    "canvas-sneakers": "👟",
+    "limited-drop-sneakers": "👟",
+    "subway-tote": "👜",
+    "gold-hoops": "💍",
+    "tinted-lip-balm": "💄",
+    "glitter-liner": "✨",
+    "editorial-glam-kit": "💅",
+    "bodega-flowers": "💐",
+    "cheesecake-box": "🍰",
+    "courtside-tickets": "🎟️",
+    "fairy-string-lights": "💡",
+    "windowsill-monstera": "🪴",
+    "thrift-flatweave-rug": "🧶",
+    "crate-record-player": "📻",
+    "custom-neon-sign": "🔆",
+    "cloud-lounge-chair": "🛋️"
+  }
+}

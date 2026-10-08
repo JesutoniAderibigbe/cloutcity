@@ -222,6 +222,15 @@ body {
   }
 }
 
+/* A shop purchase's result, in the bought item's row (src/components/places/ShopSection.tsx,
+   S04k): a quick pop where the tap was. Under reduced motion it simply appears. */
+@media (prefers-reduced-motion: no-preference) {
+  .shop-feedback {
+    animation: level-up-pop 220ms ease-out 1;
+    transform-origin: left center;
+  }
+}
+
 /* The Icon moment's celebration (src/components/goals/IconMoment.tsx): a few slow pulses of taxi
    yellow behind the text, decorative only. Off under reduced motion. */
 .icon-moment-burst {

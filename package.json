@@ -30,7 +30,8 @@
     "audio:build": "node scripts/audio/build.ts",
     "assets:build": "node scripts/assets/build.ts",
     "blender:build": "node scripts/blender/build.ts",
-    "econ:update": "vitest run src/engine/sim --update"
+    "econ:update": "vitest run src/engine/sim --update",
+    "thumbs": "node scripts/assets/thumbs.ts"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",

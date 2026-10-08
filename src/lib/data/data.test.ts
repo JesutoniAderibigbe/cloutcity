@@ -34,7 +34,9 @@ import {
   EventsFileSchema,
   HomesFileSchema,
   HomeInteriorsFileSchema,
+  ItemLooksFileSchema,
   ItemsFileSchema,
+  ItemThumbsFileSchema,
   JobsFileSchema,
   LandmarksFileSchema,
   PlaceIconsConfigSchema,
@@ -132,6 +134,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'homes/homes.json': HomesFileSchema,
   'homes/interiors.json': HomeInteriorsFileSchema,
   'items/items.json': ItemsFileSchema,
+  'items/looks.json': ItemLooksFileSchema,
+  'items/thumbs.derived.json': ItemThumbsFileSchema,
   'jobs/jobs.json': JobsFileSchema,
   'landmarks/frames.derived.json': LandmarkFramesFileSchema,
   'landmarks/landmarks.json': LandmarksFileSchema,
@@ -1057,5 +1061,23 @@ describe('economy baseline (S12, read by S18c)', () => {
     const cash = { maxGainPerAction: -1, maxGainPerGameDay: 0, maxGainPerGameHour: 0 }
     expect(EconomyBaselineSchema.safeParse({ ...file, cash }).success).toBe(false)
     expect(EconomyBaselineSchema.safeParse({ ...file, extra: 1 }).success).toBe(false)
+  })
+})
+
+describe('shop thumbnails and looks (S04k)', () => {
+  const looks = ItemLooksFileSchema.parse(readJson('items/looks.json'))
+  const thumbs = ItemThumbsFileSchema.parse(readJson('items/thumbs.derived.json'))
+  const ids = items.map((item) => item.id).sort()
+
+  it('gives every item an icon, and names no unknown item', () => {
+    expect(Object.keys(looks.icons).sort()).toEqual(ids)
+  })
+
+  it('renders a thumbnail for every decor item with a model, each file present', () => {
+    const decor = (readJson('config/scene.json') as { models: { decor: object } }).models.decor
+    expect(Object.keys(thumbs).sort()).toEqual(Object.keys(decor).sort())
+    for (const url of Object.values(thumbs)) {
+      expect(statSync(join(DATA, '../public', url)).size).toBeGreaterThan(200)
+    }
   })
 })
