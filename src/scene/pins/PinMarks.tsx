@@ -59,7 +59,12 @@ function colorOf(object: unknown): Color | null {
 export default function PinMarks({ pins, palette, look }: PinMarksProps) {
   const invalidate = useThree((state) => state.invalidate)
   const scene = useThree((state) => state.scene)
-  const settings = useMemo(() => ({ ...baseMarks, ...look.marks }), [look])
+  // A portrait screen (S41b) takes the style's smaller phone sizes; rebuilt only on a flip.
+  const portrait = useThree((state) => state.size.width < state.size.height)
+  const settings = useMemo(() => {
+    const { portrait: phone, ...marks } = look.marks
+    return { ...baseMarks, ...marks, ...(portrait ? phone : undefined) }
+  }, [look, portrait])
   const marks = useMemo(
     () => buildPinMarks(pins.pins, palette, settings),
     [pins, palette, settings],

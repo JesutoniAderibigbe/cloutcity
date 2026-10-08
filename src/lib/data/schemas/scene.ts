@@ -396,6 +396,13 @@ const MapStyleSchema = z.strictObject({
      * map's cluster centre (compactLayout.json `centreOffsetM`, S04p). None: over the home.
      */
     wideStartOffsetM: z.strictObject({ x: z.number(), y: z.number() }).optional(),
+    /** The pitch on a portrait screen (S41b). None: `polarDeg`. */
+    portraitPolarDeg: z.number().min(0).lt(90).optional(),
+    /**
+     * On a portrait screen the camera starts this far from the home (as `wideStartOffsetM`), so
+     * the home's cluster fills the phone's free scene row (S41b). None: over the home.
+     */
+    portraitStartOffsetM: z.strictObject({ x: z.number(), y: z.number() }).optional(),
   }),
   buildings: z.strictObject({
     /** District masses and fill blocks are drawn at this share of their real height. */
@@ -426,6 +433,13 @@ const MapStyleSchema = z.strictObject({
     maxLabels: z.int().min(0).max(32),
     ringWidth: ratio.max(0.3),
     pullToCamera: z.number().min(0).max(2),
+    /**
+     * On a portrait screen (S41b), whose default view packs about twice the places into each
+     * screen width, the bubbles and labels shrink to these sizes and fewer names show.
+     */
+    portrait: z
+      .strictObject({ iconPx: metres, labelPx: metres, maxLabels: z.int().min(0).max(32) })
+      .optional(),
   }),
   colors: z.strictObject({
     walls: z.array(TOKEN).min(1).optional(),

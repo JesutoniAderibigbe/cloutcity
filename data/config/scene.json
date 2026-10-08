@@ -541,8 +541,10 @@
       "camera": {
         "distanceM": 700,
         "polarDeg": 38,
-        "portraitDistanceM": 1050,
-        "wideStartOffsetM": { "x": 0, "y": -180 }
+        "portraitDistanceM": 1950,
+        "portraitPolarDeg": 34,
+        "wideStartOffsetM": { "x": 0, "y": -180 },
+        "portraitStartOffsetM": { "x": 0, "y": 150 }
       },
       "buildings": {
         "heightScale": 0.32,
@@ -562,7 +564,8 @@
         "labelPx": 30,
         "maxLabels": 8,
         "ringWidth": 0.05,
-        "pullToCamera": 0.2
+        "pullToCamera": 0.2,
+        "portrait": { "iconPx": 34, "labelPx": 22, "maxLabels": 6 }
       },
       "colors": {
         "walls": [
