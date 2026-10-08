@@ -216,7 +216,7 @@ export function createStreetPropsLayer(options: StreetPropsLayerOptions): Street
   /** Rebuilds `chunks` from the street props and every district's towers. */
   /** A cheap identity of a placement list: a changed chunk is rebuilt when next drawn. */
   const signature = (list: readonly Placement[]) =>
-    `${list.length}:${list.reduce((sum, p) => sum + p.x * 3 + p.y, 0).toFixed(1)}`
+    `${list.length}:${Math.round(list.reduce((sum, p) => sum + p.x * 3 + p.y, 0) * 10)}`
 
   /**
    * Rebuilds `chunks`: the street props outside every fill block, plus the current water
