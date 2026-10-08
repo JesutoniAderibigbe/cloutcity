@@ -78,7 +78,7 @@ describe('readLimits', () => {
   const valid = {
     shellJsGzKB: 180,
     sceneChunkJsGzKB: 350,
-    totalJsToPlayableGzKB: 550,
+    totalJsToPlayableGzKB: 560,
     baseGeoGzKB: 400,
     districtBuildingsGzKB: { low: 150, mid: 300, high: 400 },
   }
