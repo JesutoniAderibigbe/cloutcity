@@ -356,3 +356,9 @@ then phases 4–7. Slice PR "Playable slice" opens when all slice tasks pass.
   at 390x480/320; ChunkLoadError counts as offline. Gates: unit 2638, e2e 602 + 24 load timeouts (green
   on re-run), shell 148.9 KB, 3D 273.7 KB.
 
+
+## 2026-10-08 — Playable slice (v1) complete
+- Merged into dev via integration/slice: S04b, S04d, S04e, S04f, S04g, S04h, S06, S07a, S08, S16, S18a, S18b, S18c (+ colour polish, slice-end fixes, QA fixes: home sleep/nap/meal, memorials never locked, prestige from Goals).
+- Gates: unit 4750, e2e 866+146 rerun (only FLAKE-10 hud-live skeleton under load), e2e:dpl 30, integration 252, e2e:supabase 9; budgets boot 156.8/160, playable 542.1/550, precache 975.5/1000.
+- Five slice-end bug-hunters (travel, SW, 3D, UI, save/economy) + qa-mafia; all blocking findings fixed; accepted LOWs: SEC-17, SEC-18.
+- Learnings: build-first mode works but merges across many lanes need an integrator agent; anti-cheat pace must be derived from config (empirical bots keep missing routines); always cut lanes from the latest integration branch (lane F base mistake).

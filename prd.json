@@ -88,7 +88,7 @@
       ],
       "acceptance": "A pure tier picker chooses low, mid or high from WebGL2 support, MAX_TEXTURE_SIZE, deviceMemory, hardwareConcurrency, renderer string and Save-Data/prefers-reduced-data, with every threshold in perf.json (unit tests per signal); the runtime steps down one tier via drei PerformanceMonitor when average FPS stays below the config floor, with hysteresis, and never auto-upgrades above the detected tier; a settings override is persisted; per-tier settings (DPR cap, shadows, outlines, building density, max visible avatars) come from config; npm run budget fails when shell JS, 3D chunk JS, total JS, base geo or district assets exceed perf.json (gzipped); npm run e2e:perf runs a cold load under the cc-mid-4g profile (4 Mbps down, 1 Mbps up, 150 ms RTT, 4x CPU) on the low tier and asserts shell interactive within budget and playable within budget (median of 3 runs), a warm load within budget, and draw calls and triangles per tier; any shadow uses PCFShadowMap, never PCFSoftShadowMap.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -115,7 +115,7 @@
       ],
       "acceptance": "The geo script derives low-poly building masses from NYC Open Data building footprints (roof height field) for districts listed in config (Midtown, Lower Manhattan, Downtown Brooklyn and DUMBO, Williamsburg, Long Island City, Astoria, Flushing, Jamaica), simplified and merged per district per tier; elsewhere procedural low blocks by density; rendered as merged or instanced meshes with the shared scene shading (lit by default per DEC-24/28, toon optional) and flat emissive lit windows at night; no building carries a business name; each tier stays within its district-asset, draw-call and triangle budgets (npm run budget and e2e:perf); SOURCES.md updated.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -128,7 +128,7 @@
         "webgl"
       ],
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -139,7 +139,7 @@
       "acceptance": "Per DEC-26 (user decision 2026-10-07): the indigo/hot-pink palette is retired; the interface (HUD, tabs, sheets, panels, toasts, welcome card, legal pages) uses clean light frosted cards by day and dark glass by night with taxi yellow as the single brand accent, switching on the same personal game clock keyframes as S04f; both palettes are tokens in config/theme.json; the switch is driven by a data attribute on the root element set from a boot island, so the shell carries only CSS variables (shell budget holds), and pages render in the day palette until the game clock is known; every text and control colour pair meets WCAG 2.2 AA in both palettes (automated contrast test plus axe in both themes); the change cross-fades over config milliseconds and is instant under prefers-reduced-motion; no layout shift; darwin screenshot baselines for both palettes at 390 and 1280; the console guard passes.",
       "requires": [],
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -153,7 +153,7 @@
         "webgl"
       ],
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -191,7 +191,7 @@
       "requires": [],
       "acceptance": "A Serwist service worker precaches the shell, the 3D chunk, base geo and district assets for the detected tier, with versioned caches so updates replace old data; authenticated API responses are never cached; the service worker script is served with the no-cache headers from the Next.js PWA guide; Playwright loads the map, goes offline, reloads and completes a solo action; the warm-load budget passes.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -248,7 +248,7 @@
       "requires": [],
       "acceptance": "A coach-mark tour over the live map (at most 6 steps, no tutorial screens, skippable, resumable from Help) leads the player through a first bodega purchase near their Queens start in about 20 seconds; a new player starts with at most 3 notifications, each meaningful (GR-9); no further gate or age check appears; Playwright completes the guided purchase and, separately, the skip and resume-from-Help path.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -272,7 +272,7 @@
       ],
       "acceptance": "Code-built low-poly models (procedural primitives, no downloaded models) in the toon style for every S07 landmark in the bridge, building, station and government categories, placed at real coordinates and orientation; generic-labelled landmarks show only their generic label; per-tier LOD via drei Detailed; per-landmark triangle budget from perf.json; merged or instanced where repeated; npm run budget and e2e:perf pass for every tier; each model is reachable from the Places panel.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -309,7 +309,7 @@
       "requires": [],
       "acceptance": "Walk, subway, and taxi with time and cost computed from real distances between points, per-mode speeds and fares in config; subway trips route via the nearest stations on the real lines in /data/geo, with walking legs at each end; travel fast-forwards the personal clock while the avatar animates along the route in 3D (subway along its ribbon) for at most the config animation length, and users with prefers-reduced-motion get an instant cut; rush hour (7-10am, 4-7pm) slows subway and drains mood; random MTA delay event hook; no MTA logos or official line bullets; unit tests for distance, routing, and modifiers.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 1
     },
@@ -421,7 +421,7 @@
       ],
       "acceptance": "A low-poly toon 3D apartment interior for the Queens room and the Brooklyn 1BR upgrade (higher rent, more slots), within per-tier budgets; 6 decor items across rarity tiers placed in slots by tapping in 3D or through an equivalent DOM slot list (A11Y-3); colour variants have human-readable names (A11Y-1); locked upgrades show in-voice why-locked copy, also in the accessible name; home score feeds clout; Playwright places an item both ways.",
       "review": false,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -572,7 +572,7 @@
       ],
       "acceptance": "Guests get a generated safe handle from word lists in /data/copy; a handle form with live preview of the normalised handle, never a silent rewrite (GR-6), and the shared form pattern (GR-1, GR-2); server-side case-insensitive uniqueness, a filter for slurs, profanity, reserved and staff names and impersonation, and a rate limit on changes; the public profile exposes only handle, avatar, server-accepted level and career path, with no real-name field (GR-7); RLS and RPC tests including a filtered handle and a uniqueness race.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -585,7 +585,7 @@
       ],
       "acceptance": "Migrations and RPCs for blocks (hide both ways), mutes, reports (reason enum, optional filtered note of at most 280 characters, context snapshot) and audited moderation actions, all with RLS (a reporter cannot read other reports; targets never see who reported them); content auto-hides after moderation.autoHideReports distinct reporters pending review; a /mod queue restricted server-side to accounts in MODERATOR_EMAILS with dismiss, warn, reset handle, suspend and ban actions; a /conduct Code of Conduct page; one reusable player actions component (Add friend, Mute, Block, Report) that every later player surface must use; the report form follows the shared form pattern; tests.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
@@ -598,7 +598,7 @@
       ],
       "acceptance": "Whenever a session exists, saves sync to Supabase (debounced, versioned, offline queue, with conflict handling by version and a server check) and restore on load; the server validates each save delta against ceilings derived from the S12 bot fixture times a config margin (clout and cash per action and per real minute, owned cosmetics against cash-shop and entitlement rules) and rejects and flags implausible saves; only server-accepted level, career path and cosmetics are ever shown to other players; audio preference syncs; tests prove a tampered localStorage save cannot change the public level or show an unowned premium cosmetic, and offline play queues and later syncs.",
       "review": true,
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "attempts": 0
     },
