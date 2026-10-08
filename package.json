@@ -25,6 +25,8 @@
     "handles:sql": "node scripts/moderation/blocklist-sql.ts",
     "db:types": "supabase gen types --local --schema public > src/lib/supabase/database.types.ts",
     "geo:build": "node scripts/geo/build.ts",
+    "landmarks:blender": "node scripts/blender/run.ts",
+    "landmarks:check": "node scripts/blender/run.ts --check",
     "audio:build": "node scripts/audio/build.ts",
     "assets:build": "node scripts/assets/build.ts",
     "blender:build": "node scripts/blender/build.ts",

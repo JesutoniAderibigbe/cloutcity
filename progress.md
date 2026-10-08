@@ -155,6 +155,12 @@ Tasks whose `requires` includes an item marked no are blocked with these instruc
   DEC-26: real-world colours; indigo/pink retired; UI light by day, dark glass by night, taxi-yellow accent
   (S04f/S04g re-scoped).
 
+- Slice split (user decision 2026-10-07): **Playable slice v1** = everything passed so far + S06, S16, S04b,
+  S04e, S18a/b/c (security reviewed), S04h (pipeline + avatar swap + apartment furniture), S04d p2,
+  S07a p2 (code-built stand-ins on the map), S08 p2, S04f, S04g → end-of-slice tests → PR. **v2** right
+  after: S07c Blender landmarks (Brooklyn Bridge pilot first, user gate on look/caps/bytes, then waves),
+  S07b, S04i street dressing, S16a avatar creator.
+
 ## Lanes and slice plan (user decisions 2026-10-06)
 Goal: a **playable solo slice** first (welcome card, 3D map, travel, jobs, rent, shop, clout,
 events), then the rest. Up to six lanes, full testing on every task.

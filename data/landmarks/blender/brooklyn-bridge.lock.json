@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "brooklyn-bridge",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "645173480308ea7599d5b7253770875d2a7510f7098d124e494b0e9e9a5c4a26",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/brooklyn-bridge/lod0.glb",
+      "sha256": "a10a359d024769f13da47f1fc980e17e82296e9dc2cd2ed15b3c12170041e247",
+      "bytes": 110584,
+      "triangles": 6832,
+      "uncompressedBytes": 520488
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/brooklyn-bridge/lod1.glb",
+      "sha256": "efff1457f78687e0a21bae65b0623e9583e1cac5a3facd41d8abc833a02eaee9",
+      "bytes": 59864,
+      "triangles": 3308,
+      "uncompressedBytes": 254400
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/brooklyn-bridge/lod2.glb",
+      "sha256": "87964d047932b619cec6b704121e50ddcfbc0ad81b07e483ef723f09d850799a",
+      "bytes": 23660,
+      "triangles": 1200,
+      "uncompressedBytes": 92492
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/brooklyn-bridge/lod3.glb",
+      "sha256": "853e4f6a832a6550814e28b8280f687c18c0740ca23e356260988ff9443c63e1",
+      "bytes": 12708,
+      "triangles": 584,
+      "uncompressedBytes": 43224
+    }
+  ]
+}

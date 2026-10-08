@@ -282,7 +282,13 @@
       "accent": "taxi-400",
       "window": "lamp-200",
       "outline": "iron-900",
-      "dimmed": "haze-300"
+      "dimmed": "haze-300",
+      "granite": "granite-300",
+      "bridge-tan": "tan-300",
+      "steel-dark": "steel-700",
+      "asphalt": "asphalt-600",
+      "wood-plank": "wood-500",
+      "lamp": "lamp-200"
     },
     "buildings": {
       "walls": [
@@ -377,6 +383,8 @@
     "mustard-400": "#d4a137",
     "teal-600": "#2d6e6b",
     "blush-300": "#e3a9a2",
-    "white-50": "#f7f6f2"
+    "white-50": "#f7f6f2",
+    "granite-300": "#bab2a5",
+    "tan-300": "#c8b99a"
   }
 }
