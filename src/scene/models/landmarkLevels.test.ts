@@ -1,8 +1,15 @@
 import { BufferAttribute, BufferGeometry, Color, Matrix4 } from 'three'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import blenderModelsJson from '@data/landmarks/blender.derived.json'
 import { buildLandmarksLayer } from '@/lib/world/landmarksLayer'
-import { landmarkLevelUrl, toDistrictGeometry } from './landmarkLevels'
+import { litWindowUv } from '../props/mergeChunk'
+import { glbLitUv } from '../landmarks/lod'
+import { landmarkLevelFiles, toDistrictGeometry } from './landmarkLevels'
+
+vi.mock('../props/mergeChunk', async (actual) => {
+  const real = await actual<typeof import('../props/mergeChunk')>()
+  return { ...real, litWindowUv: vi.fn(real.litWindowUv) }
+})
 
 /** A two-triangle quad as the model runtime hands it over (u8 colour, `_emissive` on two). */
 function model() {
@@ -69,20 +76,16 @@ describe('toDistrictGeometry (S07c)', () => {
   })
 })
 
-describe('landmarkLevelUrl (S07c)', () => {
-  it('rebuilds every shipped level URL from the versions /geo/base serves', () => {
-    const served = new Map(
-      buildLandmarksLayer().models.flatMap((entry) =>
-        entry.glb === undefined ? [] : [[entry.id, entry.glb.v] as const],
-      ),
-    )
-    expect(served.size).toBe(blenderModelsJson.landmarks.length)
-    for (const landmark of blenderModelsJson.landmarks) {
-      const versions = served.get(landmark.id) ?? []
-      expect(versions.map((v, level) => landmarkLevelUrl(landmark.id, level, v))).toEqual(
-        landmark.files,
-      )
+describe('landmarkLevelFiles (S07c)', () => {
+  it('has the four shipped levels of every landmark /geo/base marks as a Blender model', () => {
+    const served = buildLandmarksLayer().models.filter((entry) => entry.glb !== undefined)
+    expect(served).toHaveLength(blenderModelsJson.landmarks.length)
+    for (const entry of served) {
+      const files = blenderModelsJson.landmarks.find((landmark) => landmark.id === entry.id)?.files
+      expect(landmarkLevelFiles(entry.id), entry.id).toEqual(files)
+      expect(landmarkLevelFiles(entry.id), entry.id).toHaveLength(4)
     }
+    expect(landmarkLevelFiles('no-such-landmark')).toBeUndefined()
   })
 
   it('serves no exclusions to the client (the geo build reads them)', () => {
@@ -90,5 +93,21 @@ describe('landmarkLevelUrl (S07c)', () => {
       expect(entry.frame, entry.id).not.toHaveProperty('exclusion')
       expect(entry.frame, entry.id).not.toHaveProperty('grounds')
     }
+  })
+})
+
+describe('the memorial on the district material (S07c, S04f)', () => {
+  it('converts with no lit uv: every vertex samples a wall texel, litWindowUv never called', () => {
+    const glowing = model()
+    // Even were every vertex marked to glow, a memorial lights none.
+    glowing.geometry.setAttribute(
+      '_emissive',
+      new BufferAttribute(new Uint8Array(12).fill(255), 3, true),
+    )
+    vi.mocked(litWindowUv).mockClear()
+    const litUv = glbLitUv({ category: 'memorial', style: 'normal' }, { u: 0.375, v: 0.125 })
+    const uv = toDistrictGeometry(glowing, litUv, null).getAttribute('uv')
+    expect(Array.from(uv.array).every((value) => value === 0)).toBe(true)
+    expect(litWindowUv).not.toHaveBeenCalled()
   })
 })

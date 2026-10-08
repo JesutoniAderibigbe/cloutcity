@@ -30,7 +30,15 @@ import {
 } from 'react'
 import { useThree } from '@react-three/fiber'
 import { Detailed } from '@react-three/drei/core/Detailed'
-import { Color, Mesh, MeshBasicMaterial, Vector3, type LOD, type Texture } from 'three'
+import {
+  BufferAttribute,
+  Color,
+  Mesh,
+  MeshBasicMaterial,
+  Vector3,
+  type LOD,
+  type Texture,
+} from 'three'
 import { MapControls } from 'three/addons/controls/MapControls.js'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { CitySceneConfig } from '@/lib/data/schemas/scene'
@@ -44,11 +52,13 @@ import { createSlicer } from '../schedule'
 import type { ScenePalette } from '../types'
 import { buildLandmark, disposeLandmark, type BuiltLandmark } from './buildLandmark'
 import type { GlbLevel } from '../models/landmarkLevels'
-import { GLB_TIER_LEVELS, landmarkLod, type LandmarkLod } from './lod'
+import { GLB_TIER_LEVELS, glbLitUv, landmarkLod, type LandmarkLod } from './lod'
 import { createLandmarkMaterials } from './materials'
 import {
   LANDMARK_CHIPS_NAME,
   buildNameChipGeometry,
+  chipScale,
+  writeChipPositions,
   createNameAtlas,
   type NameChip,
 } from './nameChips'
@@ -103,6 +113,8 @@ interface LandmarksProps {
 }
 
 const noRaycast = () => {}
+/** Chip size changes smaller than this are not redrawn (except reaching full or least size). */
+const CHIP_SCALE_STEP = 0.05
 const _anchor = new Vector3()
 
 const isBridge = (entry: GeoLandmark) => entry.frame.base === 'water'
@@ -275,40 +287,30 @@ export function Landmarks({
       invalidate()
     }
     void (async () => {
-      const { loadGlbLevels } = await import('../models/landmarkLevels')
-      for (const entry of order) {
-        await step()
-        if (cancelled) break
-        const glb = entry.glb
-        if (glb === undefined) continue
-        const teaser = entry.style === 'teaser'
-        try {
-          const levels = await loadGlbLevels({
-            id: entry.id,
-            versions: glb.v,
-            levels: GLB_TIER_LEVELS[tier],
-            tier,
-            cacheMaxEntries: config.models.cacheMaxEntries,
-            // A memorial never glows; a teaser is dimmed and dark (S04f contract).
-            litUv: teaser || isNightGlowExcluded(entry.category) ? null : glbMaterial.litUv,
-            dim: teaser ? { color: dimColor, mix: config.landmarks.teaserDim } : null,
-            step,
-          })
-          if (cancelled) {
-            for (const level of levels) level.geometry.dispose()
-            break
-          }
-          loaded.set(entry.id, levels)
-          publish(false)
-        } catch (error) {
-          // Expected offline (model files are never precached): the kit stays.
-          failures.push(entry.id)
-          log.info('Landmark Blender model did not load; the kit stays', {
-            id: entry.id,
-            reason: error instanceof Error ? error.message : String(error),
-          })
-        }
-      }
+      const { loadLandmarkLevels } = await import('../models/landmarkLevels')
+      await loadLandmarkLevels(
+        order.map((entry) => ({
+          id: entry.id,
+          // A memorial never glows; a teaser is dimmed and dark (S04f contract).
+          litUv: glbLitUv(entry, glbMaterial.litUv),
+          dim:
+            entry.style === 'teaser' ? { color: dimColor, mix: config.landmarks.teaserDim } : null,
+        })),
+        {
+          levels: GLB_TIER_LEVELS[tier],
+          tier,
+          cacheMaxEntries: config.models.cacheMaxEntries,
+          step,
+        },
+        {
+          cancelled: () => cancelled,
+          loaded: (id, levels) => {
+            loaded.set(id, levels)
+            publish(false)
+          },
+          failed: (id) => failures.push(id),
+        },
+      )
       publish(true)
     })()
     return () => {
@@ -369,7 +371,7 @@ export function Landmarks({
     mesh.renderOrder = 1
     mesh.name = LANDMARK_CHIPS_NAME
     mesh.raycast = noRaycast
-    return { mesh, texture, material, texts: list.map((chip) => chip.text) }
+    return { mesh, texture, material, list, texts: list.map((chip) => chip.text) }
   }, [built, landmarks, names, pinLifts, groundY, config.landmarkChips, palette.chip, unlitTint])
   useEffect(
     () => () => {
@@ -380,15 +382,31 @@ export function Landmarks({
     [chips],
   )
 
-  // Chips show near the camera target only, like the line letters.
+  // Chips show near the camera target only, like the line letters, and shrink in a focus view
+  // so one chip never covers the models around it (S07c). Resizing rewrites 4 vertices a chip,
+  // only when the size moves by a step, so an orbit at one zoom rewrites nothing.
   useEffect(() => {
     if (!(controls instanceof MapControls)) return
-    const update = () =>
-      setChipsVisible(controls.getDistance() <= config.landmarks.labelMaxDistanceM)
+    let drawnScale = 1
+    const update = () => {
+      const distance = controls.getDistance()
+      setChipsVisible(distance <= config.landmarks.labelMaxDistanceM)
+      if (chips === null) return
+      const scale = chipScale(distance, config.landmarkChips)
+      if (scale === drawnScale) return
+      const end = scale === 1 || scale === config.landmarkChips.minScale
+      if (!end && Math.abs(scale - drawnScale) < CHIP_SCALE_STEP) return
+      drawnScale = scale
+      const positions = chips.mesh.geometry.getAttribute('position')
+      if (!(positions instanceof BufferAttribute)) return
+      writeChipPositions(positions, chips.list, config.landmarkChips, scale)
+      chips.mesh.geometry.computeBoundingSphere()
+      invalidate()
+    }
     update()
     controls.addEventListener('change', update)
     return () => controls.removeEventListener('change', update)
-  }, [controls, config.landmarks.labelMaxDistanceM])
+  }, [controls, config.landmarks.labelMaxDistanceM, config.landmarkChips, chips, invalidate])
 
   useEffect(() => {
     handleRef.current = {
@@ -468,14 +486,10 @@ export function Landmarks({
         const lod = landmarkLod(config.landmarks, tier, settings.lodDistanceScale, isBridge(entry))
         const glbLevels = glbOf(entry.id)
         if (glbLevels !== undefined) {
-          // A teaser draws dimmed and flat, like its kit. A memorial never glows, so it never
-          // takes the window-masked material: the kit's plain body (vertex colours, no glow).
-          const glbMaterialOf =
-            entry.style === 'teaser'
-              ? materials.dimmed
-              : isNightGlowExcluded(entry.category)
-                ? materials.body
-                : glbMaterial.material
+          // A teaser draws dimmed and flat, like its kit. A memorial shares the district
+          // material and its program, but loaded with no lit uv (glbLitUv): every vertex samples
+          // a wall texel, so no window ever lights on it (S04f, src/scene/lighting/nightGlow.ts).
+          const glbMaterialOf = entry.style === 'teaser' ? materials.dimmed : glbMaterial.material
           return (
             <Detailed
               key={entry.id}

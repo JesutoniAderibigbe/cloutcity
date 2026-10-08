@@ -262,3 +262,13 @@ describe('pin night glow (S04f)', () => {
     pins.dispose()
   })
 })
+
+describe('pin looks with no pins (S07c)', () => {
+  it('never draw, so an empty look compiles no program variant', () => {
+    const { group } = build()
+    for (const look of ['venue', 'landmark', 'badge'] as const) {
+      const instanced = mesh(group, `pins-${look}`)
+      expect(instanced.visible, look).toBe(instanced.count > 0)
+    }
+  })
+})

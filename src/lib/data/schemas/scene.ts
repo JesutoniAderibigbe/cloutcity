@@ -590,6 +590,13 @@ export const SceneConfigSchema = z.strictObject({
     textMaxWidth: ratio.max(1),
     cornerRadius: z.number().min(0).max(0.5),
     alphaTest: z.number().gt(0).lt(1),
+    /**
+     * Chips are full size from this camera distance out; closer in (a focus view) each shrinks
+     * about its own centre in proportion, down to `minScale`, so a chip never covers the models
+     * around the one in focus (S07c).
+     */
+    fullSizeDistanceM: metres,
+    minScale: ratio.max(1),
   }),
   /** The look runtime (S16a): accessory placement and the creator preview's studio light. */
   avatarLook: z.strictObject({

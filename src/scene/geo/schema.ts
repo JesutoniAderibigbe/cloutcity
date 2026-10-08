@@ -155,8 +155,6 @@ export const PlacesMiniSchema = z.strictObject({
 })
 
 const point = z.strictObject({ x: z.number(), y: z.number() })
-/** A Blender landmark level's version: the first 8 hex digits of its file's sha256. */
-const GLB_VERSION = /^[0-9a-f]{8}$/
 
 /**
  * The landmarks layer (src/lib/world/landmarksLayer.ts). The frame is checked in full; a model's
@@ -180,14 +178,15 @@ export const LandmarksMiniSchema = z.strictObject({
             params: z.looseObject({ roles: z.record(z.string(), z.string()) }),
           }),
         ),
-        /** The Blender model (S07c): its four levels' versions, finest first, and kit scale. */
+        /** The Blender model (S07c): the kit fallback's scale (the level loader has the files). */
         glb: z.optional(
           z.strictObject({
-            v: z.array(z.string().check(z.regex(GLB_VERSION))).check(z.length(4)),
-            gameScale: z.strictObject({
-              height: z.number().check(z.gt(0)),
-              plan: z.number().check(z.gt(0)),
-            }),
+            gameScale: z.optional(
+              z.strictObject({
+                height: z.number().check(z.gt(0)),
+                plan: z.number().check(z.gt(0)),
+              }),
+            ),
           }),
         ),
         frame: z.looseObject({
@@ -230,13 +229,8 @@ export interface GeoLandmark {
 }
 
 export interface GeoLandmarkGlb {
-  /**
-   * L0..L3's versions, finest first: the first 8 hex digits of each file's sha256, the `v` of
-   * its URL (landmarkLevelUrl in src/scene/models/landmarkLevels.ts).
-   */
-  readonly v: readonly string[]
-  /** The kit fallback is drawn at this scale while the Blender model loads. */
-  readonly gameScale: { readonly height: number; readonly plan: number }
+  /** The kit fallback is drawn at this scale while the Blender model loads (absent: 1). */
+  readonly gameScale?: { readonly height: number; readonly plan: number }
 }
 
 /** The body of GET /geo/base (src/app/geo/base/route.ts). */

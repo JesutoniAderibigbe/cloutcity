@@ -396,7 +396,9 @@
     "fontScale": 0.5,
     "textMaxWidth": 0.9,
     "cornerRadius": 0.3,
-    "alphaTest": 0.5
+    "alphaTest": 0.5,
+    "fullSizeDistanceM": 4500,
+    "minScale": 0.35
   },
   "avatarLook": {
     "attachments": {

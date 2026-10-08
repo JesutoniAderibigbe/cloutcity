@@ -13,7 +13,9 @@
  * every other vertex (0, 0), a wall texel. A memorial (never glows) or a teaser (dimmed toward
  * the teaser colour) passes no lit uv.
  */
+import blenderModels from '@data/landmarks/blender.derived.json'
 import { BufferAttribute, BufferGeometry, Color, Matrix3, Vector3, type Matrix4 } from 'three'
+import { log } from '@/lib/log'
 import { acquireModels } from './runtime'
 import type { ModelRef, ModelTier } from './types'
 import type { StaticModel } from './prepare'
@@ -27,8 +29,6 @@ export interface GlbLevel {
 
 export interface GlbLevelOptions {
   readonly id: string
-  /** Every level's version, finest first (GeoLandmark `glb.v`). */
-  readonly versions: readonly string[]
   /** The levels this tier draws, finest first. */
   readonly levels: readonly number[]
   readonly tier: ModelTier
@@ -101,12 +101,18 @@ export function toDistrictGeometry(
 }
 
 /**
- * A level's URL: the file scripts/blender/ship.ts wrote, versioned by its sha256's first 8 hex
- * digits (the `files` of data/landmarks/blender.derived.json; the service worker caches exactly
- * this shape, src/sw/policy.ts).
+ * Every Blender landmark's level URLs, finest first, versioned by each file's sha256
+ * (data/landmarks/blender.derived.json, checked by the data tests; the service worker caches
+ * exactly this shape, src/sw/policy.ts). Bundled here, in the lazy loader, so the precached
+ * /geo/base and scene chunk carry none of them.
  */
-export function landmarkLevelUrl(id: string, level: number, version: string): string {
-  return `/landmarks/${id}/lod${level}.glb?v=${version}`
+const LEVEL_FILES: ReadonlyMap<string, readonly string[]> = new Map(
+  blenderModels.landmarks.map((landmark) => [landmark.id, landmark.files]),
+)
+
+/** A Blender landmark's level URLs, finest first (undefined: no Blender model). */
+export function landmarkLevelFiles(id: string): readonly string[] | undefined {
+  return LEVEL_FILES.get(id)
 }
 
 /** A level as a model reference the runtime loads (one file whatever the tier). */
@@ -128,10 +134,10 @@ function levelRef(id: string, level: number, file: string): ModelRef {
  */
 export async function loadGlbLevels(options: GlbLevelOptions): Promise<GlbLevel[]> {
   const refs = options.levels.map((level) => {
-    const version = options.versions[level]
-    if (version === undefined)
-      throw new Error(`landmark levels: ${options.id} has no version for L${level}`)
-    return levelRef(options.id, level, landmarkLevelUrl(options.id, level, version))
+    const file = landmarkLevelFiles(options.id)?.[level]
+    if (file === undefined)
+      throw new Error(`landmark levels: ${options.id} has no file for L${level}`)
+    return levelRef(options.id, level, file)
   })
   const acquired = acquireModels(refs, options.tier, options.cacheMaxEntries)
   try {
@@ -152,5 +158,47 @@ export async function loadGlbLevels(options: GlbLevelOptions): Promise<GlbLevel[
     return out
   } finally {
     acquired.release()
+  }
+}
+
+/** One landmark to load: its id and how its vertices light and dim. */
+export interface LandmarkLevelJob {
+  readonly id: string
+  readonly litUv: GlbLevelOptions['litUv']
+  readonly dim: GlbLevelOptions['dim']
+}
+
+/**
+ * Loads landmarks one after another, in the order given (nearest first), handing each one's
+ * levels over as they arrive. A landmark that fails is reported and skipped: its kit stays
+ * (expected offline, since model files are never precached). Stops once `cancelled()` holds,
+ * disposing any level converted after that.
+ */
+export async function loadLandmarkLevels(
+  jobs: readonly LandmarkLevelJob[],
+  common: Pick<GlbLevelOptions, 'levels' | 'tier' | 'cacheMaxEntries' | 'step'>,
+  hooks: {
+    cancelled(): boolean
+    loaded(id: string, levels: readonly GlbLevel[]): void
+    failed(id: string): void
+  },
+): Promise<void> {
+  for (const job of jobs) {
+    await common.step()
+    if (hooks.cancelled()) return
+    try {
+      const levels = await loadGlbLevels({ ...common, ...job })
+      if (hooks.cancelled()) {
+        for (const level of levels) level.geometry.dispose()
+        return
+      }
+      hooks.loaded(job.id, levels)
+    } catch (error) {
+      hooks.failed(job.id)
+      log.info('Landmark Blender model did not load; the kit stays', {
+        id: job.id,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    }
   }
 }

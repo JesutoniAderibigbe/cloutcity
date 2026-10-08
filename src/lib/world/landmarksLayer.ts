@@ -32,12 +32,12 @@ export interface LandmarkLayerEntry {
   /** The S07a code-built kit model: the fallback while the Blender model loads (if any). */
   readonly model?: LandmarkModel
   /**
-   * The Blender model (S07c): its four levels' versions (the `v` of each level's URL, which the
-   * client rebuilds: src/scene/models/landmarkLevels.ts) and the kit fallback's scale.
+   * The Blender model (S07c). `gameScale` is the kit fallback's scale, sent only for a landmark
+   * with a kit and a scale other than 1. The level files come with the lazy level loader
+   * (src/scene/models/landmarkLevels.ts), not with /geo/base, which is precached.
    */
   readonly glb?: {
-    readonly v: readonly string[]
-    readonly gameScale: BlenderModelsFile['landmarks'][number]['gameScale']
+    readonly gameScale?: BlenderModelsFile['landmarks'][number]['gameScale']
   }
   /** Its placement, without the exclusions only the geo build reads (the client never does). */
   readonly frame: LandmarkFrame
@@ -70,6 +70,14 @@ const blender = parseDataFile(
   blenderJson,
 ).landmarks
 
+/** The Blender entry the client gets: the kit's scale only where a kit draws at another scale. */
+function servedGlb(
+  gameScale: BlenderModelsFile['landmarks'][number]['gameScale'],
+  hasKit: boolean,
+): NonNullable<LandmarkLayerEntry['glb']> {
+  return hasKit && (gameScale.height !== 1 || gameScale.plan !== 1) ? { gameScale } : {}
+}
+
 /** The frame the client gets: the INT-7 exclusion and grounds stay with the geo build. */
 function servedFrame(frame: LandmarkFrame): LandmarkFrame {
   return Object.fromEntries(
@@ -79,12 +87,7 @@ function servedFrame(frame: LandmarkFrame): LandmarkFrame {
 
 export function buildLandmarksLayer(): LandmarksLayer {
   const modelOf = new Map(models.map((model) => [model.id, model]))
-  const glbOf = new Map(
-    blender.map(({ id, files, gameScale }) => [
-      id,
-      { v: files.map((file) => file.slice(file.indexOf('?v=') + 3)), gameScale },
-    ]),
-  )
+  const glbOf = new Map(blender.map(({ id, gameScale }) => [id, { gameScale }]))
   for (const model of models) {
     if (!frames.some((frame) => frame.id === model.id)) {
       throw new Error(`landmarks layer: no frame for ${model.id}`)
@@ -105,7 +108,7 @@ export function buildLandmarksLayer(): LandmarksLayer {
         category: place.category,
         style: dimmed ? 'teaser' : 'normal',
         ...(model === undefined ? {} : { model }),
-        ...(glb === undefined ? {} : { glb }),
+        ...(glb === undefined ? {} : { glb: servedGlb(glb.gameScale, model !== undefined) }),
         frame: servedFrame(frame),
       },
     ]

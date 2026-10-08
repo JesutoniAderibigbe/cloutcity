@@ -5,6 +5,7 @@
  */
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
+import { isNightGlowExcluded } from '../lighting/nightGlow'
 
 /**
  * The Blender models' four levels per tier (S07c), finest first: each tier draws its levels at
@@ -36,4 +37,16 @@ export function landmarkLod(
     distances: tierLod.distancesM.map((distance) => distance * factor),
     cullM: tierLod.cullM * factor,
   }
+}
+
+/**
+ * Where a Blender landmark's glowing vertices sample the window mask (S07c), or null: nothing on
+ * it ever lights. A memorial (an excluded category, S04f) and a teaser (dimmed, dark) never
+ * glow, so their levels are converted with no lit uv and every vertex reads a wall texel.
+ */
+export function glbLitUv<T>(
+  entry: { readonly category: string; readonly style: 'normal' | 'teaser' },
+  litUv: T | null,
+): T | null {
+  return entry.style === 'teaser' || isNightGlowExcluded(entry.category) ? null : litUv
 }

@@ -185,6 +185,10 @@ export function buildPins(
     const list = byLook[look]
     const mesh = new InstancedMesh(geometries[look], material, Math.max(1, list.length))
     mesh.count = list.length
+    // A look with no pins (every modelled landmark now wears a badge, S07c) never draws, so it
+    // never compiles a program variant of its own (instancing without instance colours, and its
+    // shadow depth pass on high).
+    mesh.visible = list.length > 0
     mesh.name = `pins-${look}`
     list.forEach((pin, i) => mesh.setColorAt(i, color.set(pinColor(pin, palette))))
     if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true

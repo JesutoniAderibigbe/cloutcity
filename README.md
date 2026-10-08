@@ -366,8 +366,10 @@ no schema or does not match it, if any other file type appears (only `SOURCES.md
   background, fog, hemisphere, ambient and sun (all mounted from the first frame, so no shader
   recompiles with the time), redraws only when the lighting key changes, and writes the shared
   `uNightGlow` uniform that lit windows, landmark windows, pins and model emissive read
-  (`src/scene/lighting/nightGlow.ts`; memorials never glow). `perf.json` `programsMax` caps the
-  shader programs per tier.
+  (`src/scene/lighting/nightGlow.ts`). Memorials never glow, judged by what is drawn: the Blender
+  memorial shares the district window-mask material (and its program) with every vertex at uv
+  (0, 0), a wall texel, so no window lights on it; e2e asserts zero lit-uv vertices for every
+  memorial (`maskLitVertices`). `perf.json` `programsMax` caps the shader programs per tier.
 
 ## Places: boroughs, venues and landmarks
 
@@ -786,9 +788,18 @@ camera starts over it).
 - **Landmarks (S07a).** `src/scene/landmarks/Landmarks.tsx` builds the code-built kit models
   (`buildLandmark`) after the first frame, nearest first, each in a drei `Detailed` with the
   tier's levels and distances (`scene.json` `landmarks.lod`); teaser landmarks on "expanding
-  soon" land use the dimmed material; name chips show copy names only. `landmarkSource(id)`
-  (`src/scene/landmarks/source.ts`) is where Blender models (DEC-25) take over per landmark.
-  Modelled landmarks' pins are badges lifted over the model (`liftM`). Name chips draw over the
+  soon" land use the dimmed material; name chips show copy names only. Kit bodies draw on the
+  district material, so a kit in view adds no shader program.
+- **Blender landmarks (S07c, DEC-25).** Every landmark in `data/landmarks/blender.derived.json`
+  (written by `npm run landmarks:blender`) loads its tier's levels once the kit has built (high
+  L0-L2, mid L1-L3, low L2-L3; `GLB_TIER_LEVELS`) through the model runtime, from
+  `/landmarks/<id>/lod<n>.glb?v=<sha8>` (the URLs ship inside the lazy level loader, not the precached
+  `/geo/base`; the service worker caches the files at runtime, never in the precache). `src/scene/models/landmarkLevels.ts` (an
+  optional chunk) rewrites each level in the district attribute layout and the levels draw on
+  the district material, so they add no shader program: `_EMISSIVE` vertices take the uv of a
+  lit window, all others (and every memorial or teaser vertex) a wall texel. Teasers draw dimmed.
+  The kit stays the fallback while a level loads or if it fails (offline), scaled by the model's
+  game scale. Modelled landmarks' pins are badges lifted over the model (`liftM`). Name chips draw over the
   buildings and are laid out on the server so none overlaps another (`chipShiftM`, UX-14).
 - **Pin marks (S04k).** `src/scene/pins/PinMarks.tsx` (a lazy chunk after the map is playable)
   puts each pin's category icon (`data/places/icons.json`) on its head and short name labels on
