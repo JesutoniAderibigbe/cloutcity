@@ -723,7 +723,10 @@ function repairClout(
   for (const value of Array.isArray(source.ledger) ? source.ledger : []) {
     const entry = CloutEntrySchema.safeParse(value)
     if (!entry.success || entry.data.at > nowMinute) continue
-    if (entry.data.seq <= (kept.at(-1)?.seq ?? 0)) continue
+    // T-1: a sequence number at the safe-integer limit leaves no room for the next one.
+    if (entry.data.seq <= (kept.at(-1)?.seq ?? 0) || entry.data.seq >= Number.MAX_SAFE_INTEGER) {
+      continue
+    }
     kept.push(entry.data as CloutEntry)
   }
   const overflow = Math.max(0, kept.length - config.clout.ledger.maxEntries)
@@ -748,7 +751,10 @@ function repairClout(
   const lastSeq = kept.at(-1)?.seq ?? 0
   const rawNext = source.nextSeq
   const nextSeq =
-    typeof rawNext === 'number' && Number.isSafeInteger(rawNext) && rawNext > lastSeq
+    typeof rawNext === 'number' &&
+    Number.isSafeInteger(rawNext) &&
+    rawNext > lastSeq &&
+    rawNext < Number.MAX_SAFE_INTEGER
       ? rawNext
       : lastSeq + 1
 
@@ -1065,7 +1071,10 @@ function repairGrants(
   for (const value of Array.isArray(source.log) ? source.log : []) {
     const record = GrantRecordSchema.safeParse(value)
     if (!record.success || record.data.at > nowMinute || keys.has(record.data.key)) continue
-    if (record.data.seq <= (kept.at(-1)?.seq ?? 0)) continue
+    // T-1: a sequence number at the safe-integer limit leaves no room for the next one.
+    if (record.data.seq <= (kept.at(-1)?.seq ?? 0) || record.data.seq >= Number.MAX_SAFE_INTEGER) {
+      continue
+    }
     keys.add(record.data.key)
     kept.push(record.data as GrantRecord)
   }
@@ -1073,7 +1082,10 @@ function repairGrants(
   const lastSeq = kept.at(-1)?.seq ?? 0
   const rawNext = source.nextSeq
   const nextSeq =
-    typeof rawNext === 'number' && Number.isSafeInteger(rawNext) && rawNext > lastSeq
+    typeof rawNext === 'number' &&
+    Number.isSafeInteger(rawNext) &&
+    rawNext > lastSeq &&
+    rawNext < Number.MAX_SAFE_INTEGER
       ? rawNext
       : lastSeq + 1
   return { grants: { log, nextSeq }, repaired: true }

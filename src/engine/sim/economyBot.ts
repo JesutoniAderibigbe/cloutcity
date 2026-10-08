@@ -48,6 +48,13 @@
  * club pays its configured clout once a night, DEC-12). Its pace sets the S18c honest-pace
  * ceiling with the other bots'.
  *
+ * Lean routine (S18c): with the `lean` option the bot skips the daily schedule and taps as little
+ * as an honest player can for the money: each tap is a shift when the engine allows one (energy
+ * permitting), otherwise sleep; with `maxClout` it first flexes at the best place that lets it and
+ * takes a club night when the door opens, and buys wearables for style. It plays until the last
+ * day ends. Its pace bounds the honest-pace ceiling from below the way a player who skips meals
+ * does.
+ *
  * Goals (S15): with the `claimAll` option the bot records goals after every step and claims
  * every reward it has reached at once, through the grant function (src/engine/grants.ts), so
  * the sim shows what goal rewards do to the economy. Claims are not steps: their cash and clout
@@ -112,6 +119,12 @@ export interface EconomyBotOptions {
     readonly flexPlaces: readonly Place[]
     readonly clubs: readonly Place[]
   }
+  /**
+   * The fewest taps per dollar (S18c honest pace): no meals, coffee, rides or naps; work a shift
+   * whenever the engine allows one, else sleep (see "Lean routine"). With `maxClout` it also
+   * flexes and takes club nights whenever it can.
+   */
+  readonly lean?: boolean
   /** Claim every goal reward as soon as it is reached (S15). Off by default. */
   readonly claimAll?: boolean
   /**
@@ -458,7 +471,44 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     shiftsWorked += 1
   }
 
-  for (let day = 1; day <= days; day++) {
+  /** One flex at the first place that allows it now (no coffee: the lean routine). */
+  function flexOnce(places: readonly Place[]): boolean {
+    const def = flexAction(config)
+    if (snapshot.player.stats.energy < def.energyCost) return false
+    for (const place of places) {
+      const before = flexes
+      flex(place)
+      if (flexes > before) return true
+    }
+    return false
+  }
+
+  if (options.lean === true) {
+    const end = days * perDay
+    while (now() < end) {
+      dayStart = (dayOf(now()) - 1) * perDay
+      if (jobId !== target && jobLock(snapshot.player, target, config) === null) jobId = target
+      if (options.maxClout !== undefined) {
+        if (flexOnce(options.maxClout.flexPlaces)) continue
+        const before = snapshot
+        clubNight(options.maxClout.clubs)
+        if (snapshot !== before) continue
+        const owned = snapshot.player.inventory.wearables.length
+        buyStyle()
+        if (snapshot.player.inventory.wearables.length > owned) continue
+      }
+      const result = workShift(snapshot, jobId, config)
+      if (result.ok) {
+        record(result, true)
+        shiftsWorked += 1
+        continue
+      }
+      cashByDay.push(snapshot.player.cash)
+      if (!act('sleep')) throw new Error('economy bot (lean): the engine refused sleep')
+    }
+  }
+
+  for (let day = 1; day <= (options.lean === true ? 0 : days); day++) {
     // A routine that overran a whole day would silently skip one: fail loudly instead.
     if (dayOf(snapshot.clock.minute) !== day) {
       throw new Error(

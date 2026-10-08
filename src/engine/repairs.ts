@@ -49,7 +49,16 @@ function applyRepair(save: SaveState, repair: Repair): SaveState {
           ? { ...owned, worn: true, prestigeKept: true as const }
           : owned,
       )
-      return { ...save, player: { ...player, inventory: { ...player.inventory, wearables } } }
+      // Decor kept through prestige is a look only too (H-4).
+      const decor = player.inventory.decor.map((owned) =>
+        owned.itemId === repair.itemId && !isPrestigeKept(owned)
+          ? { ...owned, prestigeKept: true as const }
+          : owned,
+      )
+      return {
+        ...save,
+        player: { ...player, inventory: { ...player.inventory, wearables, decor } },
+      }
     }
     case 'set-peak':
       return {

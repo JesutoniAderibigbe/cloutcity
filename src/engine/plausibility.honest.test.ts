@@ -64,7 +64,10 @@ interface Played {
  * `unlockJob` every job open from day 1, a stress case stricter than real play. The checks always
  * use the shipped config.
  */
-function play(jobId: JobId, opts: { maxClout?: boolean; unlockJob?: boolean } = {}): Played[] {
+function play(
+  jobId: JobId,
+  opts: { maxClout?: boolean; unlockJob?: boolean; lean?: boolean } = {},
+): Played[] {
   const simConfig =
     opts.unlockJob === true
       ? { ...config, jobs: { ...config.jobs, requiredCloutLevel: {} } }
@@ -79,6 +82,7 @@ function play(jobId: JobId, opts: { maxClout?: boolean; unlockJob?: boolean } = 
       days: 30,
       upgradeTo: 'brooklyn-1br',
       claimAll: true,
+      ...(opts.lean === true ? { lean: true } : {}),
       ...(opts.maxClout === true
         ? { maxClout: maxCloutPlaces([...landmarks, ...venues], config) }
         : {}),
@@ -148,22 +152,28 @@ const firstReject = (verdicts: ReturnType<typeof replay>) => {
 }
 
 const CADENCES = [1, 2, 3, 5, 8, 15, 40] as const
+/** Every routine the honest pace covers, the lean ones (skip meals: shift and sleep) included. */
 const ROUTINES = [
-  ['plain', false],
-  ['max-clout', true],
+  ['plain', { maxClout: false, lean: false }],
+  ['max-clout', { maxClout: true, lean: false }],
+  ['lean', { maxClout: false, lean: true }],
+  ['lean max-clout', { maxClout: true, lean: true }],
 ] as const
 const runs = jobIds(config).flatMap((jobId) =>
-  ROUTINES.map(([routine, maxClout]) => ({ jobId, routine, steps: play(jobId, { maxClout }) })),
+  ROUTINES.map(([routine, opts]) => ({ jobId, routine, steps: play(jobId, opts) })),
 )
 
 describe('honest play at every cadence is never refused (F3, F4)', () => {
-  it.each(CADENCES)('every job, both routines, uploading every %i steps', (every) => {
-    const label = (run: (typeof runs)[number]) => `${run.jobId} ${run.routine}`
-    const rejects = Object.fromEntries(
-      runs.map((run) => [label(run), firstReject(replay(run.steps, every))]),
-    )
-    expect(rejects).toEqual(Object.fromEntries(runs.map((run) => [label(run), null])))
-  })
+  it.each(CADENCES)(
+    'every job, every routine (lean included), uploading every %i steps',
+    (every) => {
+      const label = (run: (typeof runs)[number]) => `${run.jobId} ${run.routine}`
+      const rejects = Object.fromEntries(
+        runs.map((run) => [label(run), firstReject(replay(run.steps, every))]),
+      )
+      expect(rejects).toEqual(Object.fromEntries(runs.map((run) => [label(run), null])))
+    },
+  )
 
   it('the max-clout junior dev is accepted throughout; its public level only ever lags', () => {
     const run = runs.find((entry) => entry.jobId === 'junior-dev' && entry.routine === 'max-clout')

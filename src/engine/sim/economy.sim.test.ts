@@ -91,10 +91,19 @@ const maxCloutReport = runMaxClout(config)
  * Every job a player can hold, with both routines (S18c honest pace): a job behind a clout level
  * is taken when the player reaches it, working barista until then.
  */
+const maxCloutOption = (engine: EngineConfig) => maxCloutPlaces([...landmarks, ...venues], engine)
+/** The routines each job is played with for the honest pace (every job, at its real gate). */
+const PACE_ROUTINES = ['plain', 'max-clout', 'lean', 'lean max-clout'] as const
 const paceReports = (engine: EngineConfig) =>
   jobIds(engine).flatMap((jobId) => [
     runEconomyBot({ jobId, days: DAYS, upgradeTo }, engine),
     runMaxClout(engine, jobId),
+    // Skip meals: shift and sleep only, the fewest taps per dollar (S18c H-1).
+    runEconomyBot({ jobId, days: DAYS, upgradeTo, lean: true }, engine),
+    runEconomyBot(
+      { jobId, days: DAYS, upgradeTo, lean: true, maxClout: maxCloutOption(engine) },
+      engine,
+    ),
   ])
 const allJobPaceReports = paceReports(config)
 
@@ -396,9 +405,9 @@ describe('economy simulation: clout', () => {
     expect(perTap(maxCloutReport)).toBeGreaterThan(perTap(flexReport))
   })
 
-  it('the honest pace covers every job with both routines, junior dev from when it unlocks', () => {
+  it('the honest pace covers every job with every routine, junior dev from when it unlocks', () => {
     expect(allJobPaceReports.map((report) => report.jobId)).toEqual(
-      jobIds(config).flatMap((id) => [id, id]),
+      jobIds(config).flatMap((id) => PACE_ROUTINES.map(() => id)),
     )
     for (const report of allJobPaceReports) {
       expect(report.minCash, report.jobId).toBeGreaterThanOrEqual(0)
@@ -412,7 +421,8 @@ describe('economy simulation: clout', () => {
     }
     // The max-clout junior dev reaches Local and takes the job.
     const juniorMax = allJobPaceReports.find(
-      (report, i) => report.jobId === 'junior-dev' && i % 2 === 1,
+      (report, i) =>
+        report.jobId === 'junior-dev' && PACE_ROUTINES[i % PACE_ROUTINES.length] === 'max-clout',
     )
     expect(juniorMax?.levelReachedDay.local).toBeDefined()
   })
