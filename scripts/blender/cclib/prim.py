@@ -141,6 +141,13 @@ def prism_xz(outline, y0, y1, caps=True):
     return bm
 
 
+def from_faces(verts, faces):
+    """A closed solid from vertices and faces, its normals made consistent (pointing out)."""
+    bm = _bm_from(verts, faces)
+    ops.recalc_normals(bm)
+    return bm
+
+
 def _two_sided(verts, faces):
     """Faces plus their reverses on their own vertices. The runtime's shared model material
     culls back faces, so a sheet (a ribbon, a truss panel) must carry both sides."""

@@ -127,6 +127,34 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1200 triangles, 22852 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
 - L3: 584 triangles, 13288 bytes (`public/landmarks/brooklyn-bridge/lod3.glb`)
 
+### deco-spire
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q11274 (the Lexington Avenue Art Deco tower), CC0-1.0, <https://www.wikidata.org/wiki/Q11274>
+
+Dimensions:
+
+- `heightM`: 318.9 m (wikidata): height (P2048), architectural: the spire's tip above the street
+- `roofM`: 282 m (wikidata): height (P2048) to the roof: where the tiers end and the generic spire begins
+- `footprint`: 62 × 56 m (estimate): the lower block's plan (the S07a kit's stylised footprint)
+- `tier1M`: 75 m (estimate): the base block's height; tiers proportioned by eye from the S07a kit
+- `tier2M`: 80 m (estimate): second tier, inset 7 m
+- `tier3M`: 60 m (estimate): third tier, inset 6 m
+- `tier4M`: 67 m (derived): the top tier, inset 5 m, up to the Wikidata roof height (282 m less the tiers below)
+- `spireBaseM`: 12 m (estimate): the generic spire's base width (LEGAL-1: never a copy of the real crown)
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.12, widths ×1.2. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.12 and widths x1.2 against the numbers above (1.2 keeps the footprint inside the frame's exclusion), so the tower stands out from the real-scale district around it without dwarfing it.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 3018 triangles, 43752 bytes (`public/landmarks/deco-spire/lod0.glb`)
+- L1: 1346 triangles, 20972 bytes (`public/landmarks/deco-spire/lod1.glb`)
+- L2: 594 triangles, 11748 bytes (`public/landmarks/deco-spire/lod2.glb`)
+- L3: 290 triangles, 7184 bytes (`public/landmarks/deco-spire/lod3.glb`)
+
 ### manhattan-bridge
 
 Retrieved 2026-10-08. Sources:
@@ -196,5 +224,31 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L1: 3216 triangles, 57600 bytes (`public/landmarks/queensboro-bridge/lod1.glb`)
 - L2: 1184 triangles, 21116 bytes (`public/landmarks/queensboro-bridge/lod2.glb`)
 - L3: 424 triangles, 9192 bytes (`public/landmarks/queensboro-bridge/lod3.glb`)
+
+### wedge-building
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q220728 (the Fifth Avenue wedge building), CC0-1.0, <https://www.wikidata.org/wiki/Q220728>
+
+Dimensions:
+
+- `heightM`: 94 m (wikidata): height (P2048) above the street
+- `floors`: 22 (wikidata): floors above ground (P1101): one window band per storey
+- `lengthM`: 58 m (estimate): length of the wedge along its axis (the S07a kit's stylised plan)
+- `baseWidthM`: 26 m (estimate): width of the wide back
+- `prowWidthM`: 2 m (estimate): width of the truncated prow
+- `podiumM`: 8 m (estimate): the low podium's height, set out 0.6 m
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.12, widths ×1.2. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.12 and widths x1.2, so the wedge reads beside the real-scale district without leaving the frame's exclusion.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1332 triangles, 18952 bytes (`public/landmarks/wedge-building/lod0.glb`)
+- L1: 594 triangles, 10444 bytes (`public/landmarks/wedge-building/lod1.glb`)
+- L2: 264 triangles, 6176 bytes (`public/landmarks/wedge-building/lod2.glb`)
+- L3: 96 triangles, 3992 bytes (`public/landmarks/wedge-building/lod3.glb`)
 
 <!-- measurements:end -->
