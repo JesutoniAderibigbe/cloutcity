@@ -4,6 +4,7 @@
  * from each trait's `effects`, career lines from balance.json `career.paths` (keys `career.<camelId>.name|goal|bonus`) and neighborhood
  * names from data/homes/neighborhoods.json. No number is ever written into the copy itself.
  */
+import { minutesPerDay } from '@/engine/clock'
 import { engineConfig, type EngineConfig } from '@/engine/config'
 import { creatorConfig, type CreatorEngineConfig } from '@/engine/creatorConfig'
 import type { TraitEffectKind } from '@/lib/data/avatarIds'
@@ -96,4 +97,20 @@ export function careerBonusLine(path: CareerPathId, options: CreatorCopyOptions 
 /** "Jackson Heights". */
 export function neighborhoodName(id: string, { copy = activeCopy }: CreatorCopyOptions = {}) {
   return copy(requireKey(`neighborhoods.${camelSegment(id)}.name`, `neighborhood ${id}`))
+}
+
+/**
+ * When a changed trait pair or Dream can be saved again (the change cooldown): "You can change
+ * this again in 3 game days", in whole game days rounded up.
+ */
+export function cooldownLine(
+  availableAt: number,
+  nowMinute: number,
+  options: CreatorCopyOptions = {},
+): string {
+  const { copy = activeCopy, config = engineConfig } = options
+  const days = Math.max(1, Math.ceil((availableAt - nowMinute) / minutesPerDay(config)))
+  return copy(days === 1 ? 'creator.cooldownOne' : 'creator.cooldownMany', {
+    days: formatCount(days),
+  })
 }

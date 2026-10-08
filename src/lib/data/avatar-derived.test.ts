@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { deriveAvatarEngineTables } from './avatarDerive'
-import { deriveAvatarSceneRefs } from './avatarScene'
+import { deriveAvatarSceneRefs, deriveAvatarSwatches } from './avatarScene'
 import { scene, theme } from './config'
 import { items } from './content'
 import { modelManifest } from './models'
@@ -19,10 +19,11 @@ import { CreatorConfigSchema } from './schemas/creator'
 const DATA = join(import.meta.dirname, '../../../data')
 const DERIVED = '../../../data/avatar/engine.derived.json'
 const SCENE_DERIVED = '../../../data/avatar/scene.derived.json'
+const SWATCHES_DERIVED = '../../../data/avatar/swatches.derived.json'
 const readJson = (file: string): unknown => JSON.parse(readFileSync(join(DATA, file), 'utf8'))
 
 // toMatchFileSnapshot would quietly write a missing file, so a deleted one would pass.
-for (const file of [DERIVED, SCENE_DERIVED]) {
+for (const file of [DERIVED, SCENE_DERIVED, SWATCHES_DERIVED]) {
   if (!existsSync(new URL(file, import.meta.url))) {
     throw new Error(`${file} is missing: run \`npm run avatar:update\` and commit it`)
   }
@@ -56,6 +57,17 @@ describe('data/avatar/engine.derived.json', () => {
     await expect(`${JSON.stringify(refs, null, 2)}\n`).toMatchFileSnapshot(
       SCENE_DERIVED,
       'The avatar sources changed: run `npm run avatar:update` and commit the derived file.',
+    )
+  })
+
+  it('data/avatar/swatches.derived.json is the creator swatch colours (run `npm run avatar:update`)', async () => {
+    const swatches = deriveAvatarSwatches(
+      AvatarOptionsSchema.parse(readJson('avatar/options.json')),
+      theme.models,
+    )
+    await expect(`${JSON.stringify(swatches, null, 2)}\n`).toMatchFileSnapshot(
+      SWATCHES_DERIVED,
+      'The avatar swatches changed: run `npm run avatar:update` and commit the derived file.',
     )
   })
 })

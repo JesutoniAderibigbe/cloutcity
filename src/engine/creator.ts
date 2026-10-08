@@ -70,11 +70,16 @@ export function noteCreatorAction(
 export function creatorOfferShowing(
   creator: CreatorState,
   status: { readonly tourActive: boolean },
-  config: EngineConfig,
+  config: { readonly creator: Pick<EngineConfig['creator'], 'waitForTour'> },
 ): boolean {
   if (creator.offeredAt === null || creator.dismissedAt !== null) return false
   if (creator.completedAt !== null) return false
   return !(config.creator.waitForTour && status.tourActive)
+}
+
+/** The player closed the offer ("Not now") or opened the creator from it; the HUD still opens it. */
+export function dismissCreatorOffer(creator: CreatorState, minute: number): CreatorState {
+  return creator.dismissedAt === null ? { ...creator, dismissedAt: minute } : creator
 }
 
 /** What a roll draws from. `origin` has no pool until S44 adds one. */

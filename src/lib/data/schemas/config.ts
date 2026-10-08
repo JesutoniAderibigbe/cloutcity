@@ -1529,6 +1529,8 @@ export const NOTICE_KINDS = [
   'icon',
   'update',
   'rent',
+  // S16a: the creator offer, after the first action and the tour.
+  'creator-offer',
 ] as const
 
 /**

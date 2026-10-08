@@ -20,6 +20,7 @@ import { engineConfig } from '@/engine/config'
 import { claimableCount } from '@/engine/goals'
 import type { StatKey } from '@/engine/stats'
 import { copy, type CopyKey } from '@/lib/copy'
+import { goalLineKey } from '@/lib/careerGoal'
 import { cloutLevelName } from '@/lib/economyCopy'
 import { formatCount, formatMoney } from '@/lib/format'
 import { setMinuteOfDay } from '@/state/dayClock'
@@ -148,7 +149,7 @@ const TROPHY_ICON =
 
 /**
  * Clout with the goal line (S05): the whole cell is the Goals button (a 44 px target), its top
- * line the goal "Make it in New York"; the clout meter is drawn over its lower half but lets
+ * line the goal ("Make it in New York", or the Dream's goal once one is chosen, S16a); the clout meter is drawn over its lower half but lets
  * taps through, and keeps its own accessible progress bar. The button's name counts the
  * rewards ready to claim; no toast ever announces one (GR-9).
  */
@@ -165,7 +166,8 @@ function CloutCell() {
     () => claimableCount({ clock, player, goals, grants, prestige, events }, engineConfig),
     [clock, player, goals, grants, prestige, events],
   )
-  const goal = copy('hud.goalLine')
+  // The Dream sets the goal line (S16a); before one is chosen, the plain goal.
+  const goal = copy(goalLineKey(player.careerPath))
   const label =
     ready === 0
       ? copy('hud.goals', { goal })

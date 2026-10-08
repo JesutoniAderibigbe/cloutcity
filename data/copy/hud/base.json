@@ -22,6 +22,7 @@
     "hud.goals": "Goals: {goal}",
     "hud.goalsReady": "Goals: {goal}, {count} rewards ready",
     "hud.goalsReadyOne": "Goals: {goal}, 1 reward ready",
-    "hud.help": "Help: take the tour"
+    "hud.help": "Help: take the tour",
+    "hud.yourLook": "Your look"
   }
 }

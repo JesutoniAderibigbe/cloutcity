@@ -21,6 +21,33 @@ export function optionModelIds(options: AvatarOptions): string[] {
   return [...new Set(ids)]
 }
 
+/** Every swatch token the options use (skin, hair, garments) → its hex, sorted by token. */
+export function swatchHexes(
+  options: AvatarOptions,
+  palette: Readonly<Record<string, string>>,
+): Record<string, string> {
+  const tokens = [...options.skinTones, ...options.hairColors, ...options.garmentColors].map(
+    (swatch) => swatch.token,
+  )
+  const colors: Record<string, string> = {}
+  for (const token of [...new Set(tokens)].sort()) {
+    const hex = palette[token]
+    if (hex !== undefined) colors[token] = hex
+  }
+  return colors
+}
+
+/**
+ * data/avatar/swatches.derived.json: the creator's swatch colours (S16a A3), so its chunk paints
+ * every swatch without the look runtime's model refs or the whole palette.
+ */
+export function deriveAvatarSwatches(
+  options: AvatarOptions,
+  palette: Readonly<Record<string, string>>,
+): { readonly version: 1; readonly colors: Record<string, string> } {
+  return { version: 1, colors: swatchHexes(options, palette) }
+}
+
 export function deriveAvatarSceneRefs(sources: {
   readonly options: AvatarOptions
   readonly manifest: readonly ModelManifestEntry[]
@@ -38,16 +65,7 @@ export function deriveAvatarSceneRefs(sources: {
     const model = byId.get(id)
     if (model !== undefined) models[id] = toModelRef(model)
   }
-  const tokens = [
-    ...sources.options.skinTones,
-    ...sources.options.hairColors,
-    ...sources.options.garmentColors,
-  ].map((swatch) => swatch.token)
-  const colors: Record<string, string> = {}
-  for (const token of [...new Set(tokens)].sort()) {
-    const hex = sources.palette[token]
-    if (hex !== undefined) colors[token] = hex
-  }
+  const colors = swatchHexes(sources.options, sources.palette)
   return {
     version: 1,
     rig: toModelRef(rig),

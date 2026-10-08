@@ -1,6 +1,6 @@
 import { minutesPerDay } from '@/engine/clock'
 import { engineConfig } from '@/engine/config'
-import { shopItems } from '@/engine/items'
+import { shopItems, shopPrice } from '@/engine/items'
 import { nextRentDueDay, rentFor } from '@/engine/rent'
 import { gameStore } from '@/state/store'
 
@@ -100,7 +100,8 @@ function createHudTestHook(): HudTestHook {
     shop: () =>
       shopItems(engineConfig).map((item) => ({
         id: item.id,
-        price: item.price,
+        // What this player pays (GR-11: their shop-price trait), as the shop shows and charges.
+        price: shopPrice(item, gameStore.getState().player, engineConfig),
         gift: item.category === 'gift',
         decor: item.category === 'decor',
       })),

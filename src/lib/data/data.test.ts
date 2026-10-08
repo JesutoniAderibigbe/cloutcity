@@ -67,6 +67,7 @@ import {
   AvatarEngineTablesSchema,
   AvatarOptionsSchema,
   AvatarSceneFileSchema,
+  AvatarSwatchesFileSchema,
   TraitsFileSchema,
 } from './schemas/avatar'
 import { CreatorConfigSchema } from './schemas/creator'
@@ -110,6 +111,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'avatar/engine.derived.json': AvatarEngineTablesSchema,
   'avatar/options.json': AvatarOptionsSchema,
   'avatar/scene.derived.json': AvatarSceneFileSchema,
+  'avatar/swatches.derived.json': AvatarSwatchesFileSchema,
   'avatar/traits.json': TraitsFileSchema,
   'boroughs/boroughs.json': BoroughsFileSchema,
   'config/audio.json': AudioConfigSchema,

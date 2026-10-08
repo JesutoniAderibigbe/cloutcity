@@ -1,7 +1,6 @@
 {
   "id": "nyc",
   "strings": {
-    "creator.offer.body": "New city, new you. Pick your look, your traits and your dream.",
     "creator.roll.reveal": "The city picked {neighborhood}. Make it work."
   }
 }

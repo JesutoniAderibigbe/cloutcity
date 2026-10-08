@@ -14,6 +14,7 @@ export type CopyKey =
   | keyof (typeof import('@data/copy/club/base.json'))['strings']
   | keyof (typeof import('@data/copy/colors/base.json'))['strings']
   | keyof (typeof import('@data/copy/creator/base.json'))['strings']
+  | keyof (typeof import('@data/copy/creatorOffer/base.json'))['strings']
   | keyof (typeof import('@data/copy/credits/base.json'))['strings']
   | keyof (typeof import('@data/copy/events/base.json'))['strings']
   | keyof (typeof import('@data/copy/goals/base.json'))['strings']

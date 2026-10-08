@@ -50,6 +50,12 @@ export interface IslandOptions {
    * moves or flashes when it arrives. It must render the same on the server and the client.
    */
   readonly placeholder?: ReactNode
+  /**
+   * A failed load renders nothing instead of the retry: for a quiet island that only ever offers
+   * something (the creator offer, S16a), whose chunk is not precached (PERF-7), so offline before
+   * its first load the player sees no broken zone. It is tried again on the next page load.
+   */
+  readonly hideFailure?: boolean
 }
 
 const RetryContext = createContext<() => void>(() => {})
@@ -63,7 +69,7 @@ export function lazyIsland<P extends object>(
   load: () => Promise<ComponentType<P>>,
   options: IslandOptions,
 ): ComponentType<P> {
-  const { zone, labelKey, eager = false, quiet = false, placeholder } = options
+  const { zone, labelKey, eager = false, quiet = false, placeholder, hideFailure = false } = options
   let pending: Promise<ComponentType<P>> | undefined
 
   // One import in flight at a time; a failure is forgotten so the next attempt imports again.
@@ -88,7 +94,8 @@ export function lazyIsland<P extends object>(
   }
 
   function LoadFailed() {
-    return <ZoneLoadFailed zone={zone} onRetry={useContext(RetryContext)} />
+    const retry = useContext(RetryContext)
+    return hideFailure ? null : <ZoneLoadFailed zone={zone} onRetry={retry} />
   }
 
   // A failed import resolves to the retry view instead of throwing into React: the failure is

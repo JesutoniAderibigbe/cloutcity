@@ -27,6 +27,8 @@ import { changeAvailableAt, isCareerPath } from './career'
 import { settleLevel, type LevelUp } from './clout'
 import type { EngineConfig, HomeId } from './config'
 import { rollPool, rollScope, type CreatorState, type RollRecord, type Rolls } from './creator'
+
+export { dismissCreatorOffer } from './creator'
 import type { CreatorEngineConfig } from './creatorConfig'
 import type { GameSnapshot } from './game'
 import type { Rng } from './rng'
@@ -35,11 +37,6 @@ import { isTraitId, traitPickCount } from './traits'
 /** The creator's steps, in order, without the disabled ones. */
 export function creatorSteps(creator: CreatorEngineConfig): readonly CreatorStepId[] {
   return creator.creator.steps.filter((step) => step.enabled !== false).map((step) => step.id)
-}
-
-/** The player closed the offer ("Not now"); the HUD still opens the creator. */
-export function dismissCreatorOffer(creator: CreatorState, minute: number): CreatorState {
-  return creator.dismissedAt === null ? { ...creator, dismissedAt: minute } : creator
 }
 
 /** Records a step the player skipped (once). Unknown or disabled steps change nothing. */

@@ -13,7 +13,6 @@ import {
   chooseTraits,
   commitRoll,
   completeCreator,
-  dismissCreatorOffer,
   moveIntoNeighborhood,
   skipCreatorStep,
   type CareerResult,
@@ -24,6 +23,7 @@ import {
 } from '@/engine/creatorFlow'
 import { syncGoals } from '@/engine/goals'
 import { createRng } from '@/engine/rng'
+import { dismissOffer } from './creatorOffer'
 import { randomSeed } from './randomSeed'
 import { gameStore, levelUpPatch, persistedOf, type GameStore, type PersistedState } from './store'
 
@@ -90,10 +90,7 @@ export function creatorActions(store: GameStore = gameStore): CreatorActions {
       if (result.ok) store.setState({ player: result.save.player })
       return result
     },
-    dismissOffer: () => {
-      const { creator, clock } = store.getState()
-      store.setState({ creator: dismissCreatorOffer(creator, clock.minute) })
-    },
+    dismissOffer: () => dismissOffer(store),
     skipStep: (step) => {
       store.setState({ creator: skipCreatorStep(store.getState().creator, step, creatorConfig) })
     },

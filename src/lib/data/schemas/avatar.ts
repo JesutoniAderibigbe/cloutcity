@@ -253,3 +253,9 @@ export const AvatarSceneFileSchema = z.strictObject({
   attachments: SceneConfigSchema.shape.avatarLook.shape.attachments,
   preview: SceneConfigSchema.shape.avatarLook.shape.preview,
 })
+
+/** data/avatar/swatches.derived.json: the creator's swatch colours (src/lib/data/avatarScene.ts). */
+export const AvatarSwatchesFileSchema = z.strictObject({
+  version: z.literal(1),
+  colors: z.record(AvatarTokenSchema, z.string().regex(/^#[0-9a-f]{6}$/i)),
+})

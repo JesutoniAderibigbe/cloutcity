@@ -19,6 +19,8 @@ const NOT_NOTICES: Readonly<Record<string, string>> = {
   // A moderator's message about the player's account (S18b): it exists only after a moderation
   // action against a signed-in account, so a new player never sees it.
   'src/components/safety/AccountNotices.tsx': 'a moderator message about the account',
+  // The "Make it you" creator (S16a): the player opens it themselves (the offer, the HUD).
+  'src/components/creator/CreatorModal.tsx': 'the creator, opened by the player',
 }
 
 /** Toast-zone mounts that are not notices, and why. */
@@ -70,7 +72,7 @@ describe('first-session notices (GR-9)', () => {
       expect(tagged, `${toast} is a tagged notice or a named exception`).not.toEqual([])
       return tagged
     })
-    expect(kinds).toEqual(['level-up'])
+    expect(kinds).toEqual(['level-up', 'creator-offer'])
   })
 
   it('the limit leaves room for the tour and two more', () => {
