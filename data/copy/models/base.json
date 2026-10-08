@@ -96,6 +96,8 @@
     "models.color.amber400": "Signal amber",
     "models.color.go500": "Signal green",
     "models.color.lamp200": "Warm lamplight",
+    "models.color.granite300": "Granite",
+    "models.color.tan300": "Bridge tan",
     "models.color.window200": "Lit window",
     "models.color.paint100": "Off-white paint",
     "models.color.navy700": "Navy blue",

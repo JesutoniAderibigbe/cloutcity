@@ -19,7 +19,7 @@ const IdSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'kebab-case id')
 
 // ---- palette roles ----------------------------------------------------------------------
 
-/** Every colour role the kit paints with; theme.json maps each to a palette token. */
+/** Every colour role the kit and the Blender models paint with; theme.json maps each to a token. */
 export const LANDMARK_ROLES = [
   'stone',
   'brick',
@@ -30,6 +30,13 @@ export const LANDMARK_ROLES = [
   'window',
   'outline',
   'dimmed',
+  // Real-material roles of the Blender-built models (S07c, DEC-25/26).
+  'granite',
+  'bridge-tan',
+  'steel-dark',
+  'asphalt',
+  'wood-plank',
+  'lamp',
 ] as const
 export type LandmarkRole = (typeof LANDMARK_ROLES)[number]
 

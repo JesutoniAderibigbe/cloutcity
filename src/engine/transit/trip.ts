@@ -7,7 +7,7 @@
  *
  * The caller resolves both ends to points in local metres (src/lib/world/places.ts and the
  * homes data) and passes the destination's borough: a place in a borough the player cannot
- * enter yet cannot be travelled to. Home is always open.
+ * enter yet cannot be travelled to. Home is always open, and so is a memorial (DEC-46).
  *
  * Without the transit world (the geo layers failed to load) only a taxi can be planned, as a
  * straight drive (`planDirect`): no water test and no crossings, so it is an estimate. The
@@ -16,7 +16,7 @@
  */
 import { effectiveDuration } from '../actions'
 import { calendar } from '../clock'
-import { boroughAccess, type BoroughAccess } from '../boroughs'
+import { placeBoroughAccess, type BoroughAccess } from '../boroughs'
 import { levelClout } from '../clout'
 import type { EngineConfig } from '../config'
 import { sameLocation, type GameSnapshot, type PlayerLocation } from '../game'
@@ -152,7 +152,8 @@ function destinationBlock(snapshot: GameSnapshot, to: TripStop, config: EngineCo
     return { code: 'ALREADY_HERE' } as const
   }
   if (to.location.kind === 'home') return null
-  const access = boroughAccess(to.borough, levelClout(snapshot.player, config), config)
+  const clout = levelClout(snapshot.player, config)
+  const access = placeBoroughAccess(to.location.placeId, to.borough, clout, config)
   return access.status === 'open' ? null : ({ code: 'BOROUGH_LOCKED', access } as const)
 }
 

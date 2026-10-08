@@ -12,7 +12,6 @@
     "place.duration.minutes": "{count} min",
     "place.duration.hours": "{count} h",
     "place.duration.hoursMinutes": "{hours} h {minutes} min",
-    "place.cost.free": "free",
     "place.cost.cover": "{price} cover",
     "place.effect.energy": "+{count} energy",
     "place.effect.hunger": "+{count} fullness",
@@ -39,6 +38,15 @@
     "place.busy.reason": "Done. Dismiss the result to do this again.",
     "place.result.dismiss": "Dismiss",
     "place.blocked.boroughLocked": "This borough isn't open to you yet.",
-    "place.blocked.away": "You're not here yet. Get there first."
+    "place.blocked.away": "You're not here yet. Get there first.",
+    "place.cost.energy": "{count} energy",
+    "place.actions.sleep.name": "Sleep",
+    "place.actions.nap.name": "Nap",
+    "place.actions.homeMeal.name": "Cook at home",
+    "place.done.plain": "Done.",
+    "place.blocked.awayHome": "You're not home. Head home first.",
+    "place.blocked.energyShift": "You need {required} energy. You have {available}. Head home and sleep to get it back.",
+    "place.blocked.energyAtHome": "You need {required} energy. You have {available}. Sleep or nap to get it back.",
+    "place.club.door": "Door: {level} clout and up. You're at {current}."
   }
 }

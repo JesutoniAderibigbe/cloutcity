@@ -130,8 +130,19 @@ export type PlaceView =
       readonly kind: 'actions'
       readonly access: BoroughAccess
       readonly hours: PlaceHoursNow
+      /**
+       * A club's door rule, shown before the player travels there: the level it lets in and
+       * whether the player holds it now. Null at every other place.
+       */
+      readonly door: ClubDoor | null
       readonly actions: readonly PlaceAction[]
     }
+
+/** A club door: the lowest clout level it lets in, and whether the player is at it. */
+export interface ClubDoor {
+  readonly requiredLevel: string
+  readonly met: boolean
+}
 
 function isVenue(place: Place): place is Venue {
   return 'type' in place
@@ -200,6 +211,15 @@ function doorBlock(
     currentLevel: current.id,
     refusalKey: rule.refusalKey,
   }
+}
+
+/** The door rule of the club at `place`, or null when it is not a club. */
+function clubDoor(place: Place, snapshot: GameSnapshot, config: EngineConfig): ClubDoor | null {
+  if (!isVenue(place) || place.type !== 'club') return null
+  const block = doorBlock(place.id, snapshot, config)
+  return block?.code === 'door'
+    ? { requiredLevel: block.requiredLevel, met: false }
+    : { requiredLevel: clubRule(place.id, config).minCloutLevel, met: true }
 }
 
 type Unblocked<T> = T extends PlaceAction ? Omit<T, 'block'> : never
@@ -352,7 +372,7 @@ export function placeActions(
       block: blockFor(action, place, access, hours, snapshot, config),
     } as PlaceAction
   })
-  return { kind: 'actions', access, hours, actions }
+  return { kind: 'actions', access, hours, door: clubDoor(place, snapshot, config), actions }
 }
 
 export { flexMultiplier } from './flex'
@@ -463,7 +483,7 @@ export function performPlaceAction(
       cloutGained: 0,
       flex: null,
       levelUp: null,
-      statEffects: action.def.statEffects,
+      statEffects: result.applied,
     }
   }
   const { player } = result.snapshot
@@ -491,7 +511,56 @@ export function performPlaceAction(
     cloutGained: record.entry?.amount ?? 0,
     flex: null,
     levelUp: record.levelUp,
-    statEffects: action.def.statEffects,
+    statEffects: result.applied,
+  }
+}
+
+/**
+ * What the player can do at home (B1): sleep, a nap and a home-cooked meal (`place.homeActions`,
+ * in that order), each with why it cannot be done right now. Only at home (DEC-22): away, every
+ * one is blocked `away` and the home card offers the trip back. Then funds and energy, as at a
+ * place. Home has no hours and no borough gate: wherever the player lives is open to them.
+ */
+export function homeActions(snapshot: GameSnapshot, config: EngineConfig): readonly PlaceAction[] {
+  const { location, cash, stats } = snapshot.player
+  return config.place.homeActions.map((id): PlaceAction => {
+    // With the player's traits (S16a), so the sheet shows the energy and mood that will land.
+    const def = traitAdjustedAction(placeActionDef(id, config), snapshot.player, config)
+    const block: PlaceActionBlock | null =
+      location.kind !== 'home'
+        ? { code: 'away' }
+        : cash < def.cashCost
+          ? { code: 'funds', required: def.cashCost, available: cash }
+          : stats.energy < def.energyCost
+            ? { code: 'energy', required: def.energyCost, available: stats.energy }
+            : null
+    return { kind: 'consume', id, def, block }
+  })
+}
+
+/** Does home action `actionId`, after re-checking every rule `homeActions` reports. */
+export function performHomeAction(
+  snapshot: GameSnapshot,
+  actionId: string,
+  config: EngineConfig,
+): PlaceActionResult {
+  const action = homeActions(snapshot, config).find((candidate) => candidate.id === actionId)
+  if (action === undefined) return { ok: false, error: { code: 'UNKNOWN_PLACE_ACTION', actionId } }
+  if (action.block !== null) return { ok: false, error: { code: 'BLOCKED', block: action.block } }
+  const result = applyAction(snapshot, action.def, config)
+  if (!result.ok) return { ok: false, error: { code: 'ACTION_FAILED', cause: result.error } }
+  return {
+    ok: true,
+    snapshot: result.snapshot,
+    action,
+    durationMin: result.durationMin,
+    rollovers: result.rollovers,
+    rent: result.rent,
+    wage: 0,
+    cloutGained: 0,
+    flex: null,
+    levelUp: null,
+    statEffects: result.applied,
   }
 }
 

@@ -8,6 +8,8 @@
     "place.done.consume": "Done. {effects}.",
     "place.done.visit": "{place}: checked. {effects}.",
     "place.done.clubNight": "You're in. The room clocked your fit. {effects}.",
-    "place.done.clubNightRepeat": "Back again? You already made your name here tonight, so no extra clout. {effects}."
+    "place.done.clubNightRepeat": "Back again? You already made your name here tonight, so no extra clout. {effects}.",
+    "place.blocked.energyShift": "You're running on empty: {required} energy needed, you've got {available}. Head home and sleep it off.",
+    "place.blocked.energyAtHome": "You're running on empty: {required} energy needed, you've got {available}. Hit the bed first."
   }
 }

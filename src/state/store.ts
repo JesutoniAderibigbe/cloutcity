@@ -45,6 +45,7 @@ import {
 import { workShift, type ShiftResult } from '@/engine/jobs'
 import {
   buyAtShop,
+  performHomeAction,
   performPlaceAction,
   type PlaceActionResult,
   type ShopBuyResult,
@@ -127,6 +128,11 @@ export interface GameActions {
    * hours, club door, job lock, funds and energy; the state changes only when the result is ok.
    */
   performPlaceAction(place: Place, actionId: string): PlaceActionResult
+  /**
+   * Does one home action (sleep, nap, a home-cooked meal): the engine re-checks that the player
+   * is at home, then funds and energy; the clock fast-forwards like any action.
+   */
+  performHomeAction(actionId: string): PlaceActionResult
   /**
    * Takes a trip in one step (DEC-22): `compute` gets the current snapshot and returns the
    * engine's result; an ok result replaces the clock and player at once (fare paid, clock
@@ -522,6 +528,18 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
                 },
                 result.levelUp,
               )
+            }
+            return result
+          },
+          performHomeAction: (actionId) => {
+            const state = get()
+            const result = performHomeAction(state, actionId, engineConfig)
+            if (result.ok) {
+              commit({
+                clock: result.snapshot.clock,
+                player: result.snapshot.player,
+                lastRentEvent: latestRent(result.rent, state.lastRentEvent),
+              })
             }
             return result
           },

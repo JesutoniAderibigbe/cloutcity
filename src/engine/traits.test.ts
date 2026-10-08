@@ -10,7 +10,7 @@ import { initialSnapshot, type GameSnapshot } from './game'
 import { buyItem, shopPrice } from './items'
 import { shiftAction, workShift } from './jobs'
 import { chooseTraits } from './creatorFlow'
-import { placeActions } from './placeActions'
+import { homeActions, performHomeAction, placeActions } from './placeActions'
 import { atPlace } from './test-support'
 import {
   scaleByPct,
@@ -84,6 +84,23 @@ describe('applied where the engine charges', () => {
     )
     const drain = { durationMin: 10, cashCost: 0, energyCost: 0, statEffects: { mood: -4 } }
     expect(traitAdjustedAction(drain, { traits: ['easygoing'] }, config)).toBe(drain)
+  })
+
+  it('home actions (sleep, nap, a home meal) carry the traits too, shown as they land', () => {
+    const tired = {
+      ...start,
+      player: { ...start.player, stats: { energy: 10, hunger: 50, mood: 10 } },
+    }
+    const easy = withTraits(['easygoing'], tired)
+    const sleep = homeActions(easy, config).find((action) => action.id === 'sleep')
+    const raw = findAction('sleep', config)
+    if (sleep === undefined || raw === undefined) throw new Error('no home sleep')
+    expect(sleep.def).toEqual(traitAdjustedAction(raw, easy.player, config))
+    const plain = performHomeAction(tired, 'sleep', config)
+    const done = performHomeAction(easy, 'sleep', config)
+    if (!plain.ok || !done.ok) throw new Error('sleep failed')
+    expect(done.statEffects.mood).toBe(scaleByPct(raw.statEffects.mood ?? 0, 10))
+    expect(plain.statEffects.mood).toBe(raw.statEffects.mood)
   })
 
   it('the place sheet shows the energy that a shift will charge (GR-11)', () => {

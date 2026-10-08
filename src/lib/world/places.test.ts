@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { boroughAccess } from '@/engine/boroughs'
+import { appendClout, levelClout, totalClout } from '@/engine/clout'
 import { engineConfig, type EngineConfig } from '@/engine/config'
 import { placeAllows } from '@/engine/places'
+import { initialSave } from '@/engine/save'
+import { playerWithClout } from '@/engine/test-support'
 import { createCopy } from '@/lib/copy'
 import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { cloutLevelName } from '@/lib/economyCopy'
@@ -10,6 +13,7 @@ import { landmarks as loadedLandmarks, venues as loadedVenues } from '@/lib/data
 import {
   boroughClosedReason,
   boroughRenderState,
+  gateClout,
   landmarks,
   mapPlaces,
   placeAccess,
@@ -85,8 +89,11 @@ describe('gating places', () => {
 })
 
 describe('accessible names explain the lock', () => {
+  // Memorials are never locked (DEC-46), so they are left out here; see below.
   const locked = mapPlaces().filter(
-    (entry) => entry.borough === 'brooklyn' || entry.borough === 'manhattan',
+    (entry) =>
+      (entry.borough === 'brooklyn' || entry.borough === 'manhattan') &&
+      entry.category !== 'memorial',
   )
 
   it.each(Object.entries(packs))('in the %s pack, every locked place says why', (_pack, copy) => {
@@ -173,6 +180,7 @@ describe('accessible names at and around the unlock level', () => {
     (_pack, copy) => {
       for (const entry of mapPlaces()) {
         if (entry.borough !== 'brooklyn' && entry.borough !== 'manhattan') continue
+        if (entry.category === 'memorial') continue
         const threshold = minClout(unlock[entry.borough])
         const plain = placeName(entry, { copy })
         const open = placeAccessibleName(entry, placeAccess(entry, threshold), { copy })
@@ -196,4 +204,50 @@ describe('accessible names at and around the unlock level', () => {
       }
     },
   )
+})
+
+describe('the Places panel gates on levelClout, as the engine does (Icon boundary)', () => {
+  const ICON = engineConfig.clout.levels.at(-1)?.minClout ?? Number.NaN
+  // A borough opening at Icon makes the Icon rule visible: only earned clout reaches Icon.
+  const config: EngineConfig = {
+    ...engineConfig,
+    boroughs: { ...engineConfig.boroughs, brooklyn: { access: 'clout', level: 'icon' } },
+  }
+
+  function player(earned: number, granted: number) {
+    const base = initialSave(engineConfig).player
+    const withEarned = playerWithClout(base, earned, engineConfig)
+    if (granted === 0) return withEarned
+    const { state } = appendClout(
+      withEarned.clout,
+      { source: 'grant', amount: granted, ref: { grantKey: 'goal:reach-famous:r1' } },
+      9000,
+      engineConfig,
+    )
+    return { ...withEarned, clout: state }
+  }
+
+  it('one clout short of Icon in earned clout, topped up by a grant, stays locked', () => {
+    const p = player(ICON - 110, 110)
+    expect(totalClout(p, engineConfig)).toBe(ICON)
+    expect(gateClout(p, config)).toBe(levelClout(p, config))
+    expect(gateClout(p, config)).toBe(ICON - 1)
+    expect(placeAccess(place('dumbo'), gateClout(p, config), config).status).toBe('locked')
+    // What the engine itself says about a trip there agrees.
+    expect(boroughAccess('brooklyn', levelClout(p, config), config).status).toBe('locked')
+    // The raw total would have opened it: the bug this guards against.
+    expect(placeAccess(place('dumbo'), totalClout(p, engineConfig), config).status).toBe('open')
+  })
+
+  it('Icon reached on earned clout opens it', () => {
+    const p = player(ICON, 0)
+    expect(gateClout(p, config)).toBe(ICON)
+    expect(placeAccess(place('dumbo'), gateClout(p, config), config).status).toBe('open')
+  })
+
+  it('below Icon, levelClout is the total (grants count toward every other level)', () => {
+    const p = player(50, 60)
+    expect(gateClout(p, engineConfig)).toBe(totalClout(p, engineConfig))
+    expect(placeAccess(place('dumbo'), gateClout(p, engineConfig)).status).toBe('open')
+  })
 })

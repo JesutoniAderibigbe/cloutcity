@@ -90,7 +90,8 @@ test.describe('clout, flexing and levels', () => {
 
     await flex.click()
     await expect(card.getByRole('status')).toHaveText(
-      /^(Queens ballpark at golden hour\. The algorithm is about to eat\.|Gone viral\. The whole city's reposting\.) \+\d+ clout$/,
+      // Noon: the flex copy names the light it was posted in (S04f keyframe `day`).
+      /^(Queens ballpark in broad daylight\. The algorithm is about to eat\.|Gone viral\. The whole city's reposting\.) \+\d+ clout$/,
     )
     const after = await state(page)
     expect(after.clout).toBeGreaterThan(0)

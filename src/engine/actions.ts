@@ -16,7 +16,7 @@ import type { Rollovers } from './clock'
 import type { EngineConfig } from './config'
 import { advanceMinutes, type GameSnapshot } from './game'
 import type { RentEvent } from './rent'
-import { applyStatChanges, durationMultiplier, type StatChanges } from './stats'
+import { applyStatChanges, durationMultiplier, type StatChanges, type Stats } from './stats'
 import { traitAdjustedAction } from './traits'
 
 export interface ActionDef {
@@ -45,6 +45,11 @@ export type ActionResult =
       readonly rollovers: Rollovers
       /** Rent charged, missed or collected while the clock moved. */
       readonly rent: readonly RentEvent[]
+      /**
+       * The stat effects as they landed: `statEffects` after clamping to 0..stats.max, so a
+       * meal eaten nearly full reports the fullness it really added (GR-11).
+       */
+      readonly applied: StatChanges
     }
   | { readonly ok: false; readonly error: ActionError }
 
@@ -121,19 +126,25 @@ export function applyAction(
   }
   const advanced = advanceMinutes(paid, durationMin, config)
   const finished = advanced.snapshot
+  const before = finished.player.stats
+  const after = applyStatChanges(before, def.statEffects, config)
   return {
     ok: true,
-    snapshot: {
-      ...finished,
-      player: {
-        ...finished.player,
-        stats: applyStatChanges(finished.player.stats, def.statEffects, config),
-      },
-    },
+    snapshot: { ...finished, player: { ...finished.player, stats: after } },
     durationMin,
     rollovers: advanced.rollovers,
     rent: advanced.rent,
+    applied: appliedChanges(before, after, def.statEffects),
   }
+}
+
+/** What `changes` really did to `before` (only the stats it names). */
+function appliedChanges(before: Stats, after: Stats, changes: StatChanges): StatChanges {
+  const applied: Partial<Record<keyof Stats, number>> = {}
+  for (const key of Object.keys(changes) as (keyof Stats)[]) {
+    if (changes[key] !== undefined) applied[key] = after[key] - before[key]
+  }
+  return applied
 }
 
 /**

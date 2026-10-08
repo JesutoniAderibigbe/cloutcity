@@ -183,14 +183,20 @@ describe('feature copy renders with only its own namespaces loaded', () => {
 
   it('the places panel chunk: every borough and place, open, locked and expanding soon', async () => {
     const { PlacesPanel } = await import('@/components/places/PlacesPanel')
-    const { mapPlaces, placeAccess, placeAccessibleName, boroughs, boroughClosedReason } =
-      await import('@/lib/world/places')
+    const {
+      mapPlaces,
+      placeAccess,
+      placeAccessibleName,
+      boroughs,
+      boroughAccessFor,
+      boroughClosedReason,
+    } = await import('@/lib/world/places')
     const markup = renderToStaticMarkup(createElement(PlacesPanel))
     expect(markup).toContain('data-cc-feature="cc-feature:places-panel"')
     for (const place of mapPlaces()) expect(markup).toContain(`data-place-button="${place.id}"`)
     for (const clout of [0, 1_000_000]) {
       for (const borough of boroughs)
-        boroughClosedReason(borough.id, placeAccess({ borough: borough.id }, clout))
+        boroughClosedReason(borough.id, boroughAccessFor(borough.id, clout))
       for (const place of mapPlaces()) {
         expect(placeAccessibleName(place, placeAccess(place, clout))).not.toBe('')
       }

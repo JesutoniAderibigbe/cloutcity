@@ -675,7 +675,14 @@ async function buildSkinned(
   return { doc, bounds: box, emissive, counts }
 }
 
-async function finishTier(doc: Document, model: Model): Promise<BuiltTier> {
+/**
+ * dedup → prune → weld → quantize → reorder → meshopt (vertex codec v0): the runtime format.
+ * Exported for the Blender landmark levels (scripts/blender/ship.ts), which ship the same way.
+ */
+export async function finishTier(
+  doc: Document,
+  model: Pick<Model, 'id' | 'kind'>,
+): Promise<BuiltTier> {
   const keepLeaves = model.kind !== 'static'
   await doc.transform(
     dedup(),
