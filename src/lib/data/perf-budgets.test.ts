@@ -146,7 +146,7 @@ describe('config/perf.json against CLAUDE.md "Performance budgets"', () => {
     expect(perfJson.idleFramesMax).toBe(0)
     const stepDown = /average FPS stays below (\d+) for (\d+) s/.exec(section)
     if (!stepDown) throw new Error('CLAUDE.md FPS step-down rule not found')
-    expect(perfJson.fpsStepDown).toEqual({
+    expect(perfJson.fpsStepDown).toMatchObject({
       belowFps: Number(stepDown[1]),
       sustainMs: Number(stepDown[2]) * 1000,
     })

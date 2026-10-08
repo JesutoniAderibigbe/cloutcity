@@ -3,6 +3,10 @@ import type { PlaceTestHook } from '@/components/places/placeTestHook'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
 
+// S08 (DEC-22): these flows are about a place's own rules, so picking a place puts the
+// player there (travel itself is tests/e2e/travel.spec.ts).
+test.use({ location: 'follow' })
+
 // S09: the location action sheet. Places are opened through the test-only hook
 // (src/components/places/placeTestHook.ts), which calls the same `openPlace` the 3D pins and
 // Places panel use. Opening hours follow the personal game clock, which the hook sets; city

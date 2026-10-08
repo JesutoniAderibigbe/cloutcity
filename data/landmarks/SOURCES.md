@@ -121,7 +121,7 @@ Readability scale (drawn width ÷ true width): mainCable ×3, suspender ×5, sta
 Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
 
 - L0: 6720 triangles, 167808 bytes (`public/models/landmarks/brooklyn-bridge/lod0.glb`)
-- L1: 3200 triangles, 85144 bytes (`public/models/landmarks/brooklyn-bridge/lod1.glb`)
+- L1: 3200 triangles, 85140 bytes (`public/models/landmarks/brooklyn-bridge/lod1.glb`)
 - L2: 1200 triangles, 33548 bytes (`public/models/landmarks/brooklyn-bridge/lod2.glb`)
 - L3: 560 triangles, 16316 bytes (`public/models/landmarks/brooklyn-bridge/lod3.glb`)
 

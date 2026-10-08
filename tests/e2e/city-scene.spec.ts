@@ -4,6 +4,7 @@ import type { Page, Route } from '@playwright/test'
 import { E2E_DIST_DIR } from '../../playwright.config'
 import { project } from '../../src/lib/geo/projection'
 import { expect, test } from './fixtures/test'
+import { waitForCityModels } from './helpers/cityModels'
 import { touchGesture, type Point } from './helpers/touch'
 
 // S04a: the lazy 3D city. Reads camera state and renderer counters through the test-mode hook
@@ -178,11 +179,9 @@ test.describe('3D city scene', () => {
     await page.goto('/')
     await expect(page.locator('[data-scene-root]')).toHaveAttribute('data-scene-status', 'loading')
     await expect(page.getByRole('status').filter({ hasText: 'Loading the city' })).toBeVisible()
-    const shop = page
-      .getByRole('navigation', { name: 'Main' })
-      .getByRole('button', { name: 'Shop' })
-    await shop.click()
-    await expect(shop).toHaveAttribute('aria-current', 'page')
+    const me = page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Me' })
+    await me.click()
+    await expect(me).toHaveAttribute('aria-current', 'page')
     await expect.poll(() => held.length).toBeGreaterThan(0)
     expect(await page.locator('canvas').count()).toBe(0)
 
@@ -217,6 +216,8 @@ test.describe('3D city scene', () => {
   test('an idle map renders zero frames, before and after an interaction', async ({ page }) => {
     await page.goto('/')
     await waitForScene(page)
+    // District buildings and landmark models stream in after the first frame (S04d, S07a).
+    await waitForCityModels(page)
     const before = await frames(page)
     await page.waitForTimeout(IDLE_WINDOW_MS)
     expect(await frames(page)).toBe(before)

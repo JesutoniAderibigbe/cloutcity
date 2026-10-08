@@ -20,6 +20,7 @@ export const TEST_TRANSIT: TransitConfig = {
     baseFare: 3,
     perKm: 2,
     maxWaterM: 50,
+    estimateDetourFactor: 3,
   },
   /** The real bridge, tunnel and waypoint lists: tests check routes through them. */
   crossings: transitConfig.crossings,

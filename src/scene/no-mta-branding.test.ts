@@ -34,10 +34,24 @@ const SCANNED = [
 ]
 
 interface Theme {
-  colors: Record<string, string>
+  world: Record<string, string>
+  models: Record<string, string>
   scene: { subwayLines: string[]; labelInk: string; station: string }
 }
 const theme = JSON.parse(read('data/config/theme.json')) as Theme
+/** Scene colours name world or models tokens (theme.json, DEC-26). */
+const worldHex = (token: string): string | undefined => theme.world[token] ?? theme.models[token]
+
+/** Euclidean distance of two #rrggbb colours in 0–255 RGB. */
+function rgbDistance(a: string, b: string): number {
+  const channels = (hex: string) =>
+    [0, 2, 4].map((at) => parseInt(hex.replace('#', '').slice(at, at + 2), 16))
+  const [x, y] = [channels(a), channels(b)]
+  return Math.hypot(...x.map((value, i) => value - (y[i] ?? 0)))
+}
+
+/** A colour this close to an MTA trunk colour would read as that line. */
+const MIN_MTA_DISTANCE = 40
 const scene = JSON.parse(read('data/config/scene.json')) as {
   labels: { cornerRadius: number }
 }
@@ -51,6 +65,26 @@ function luminance(hex: string): number {
   return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4)
 }
 
+/** Travel copy (S08): plain line names only, no operator name, no claim of real-time data. */
+const TRAVEL_COPY = ['data/copy/travel/base.json', 'data/copy/tour/base.json']
+
+describe('no MTA branding in travel copy (S08)', () => {
+  for (const file of TRAVEL_COPY) {
+    it(`${file} names no transit operator and claims no real-time or official data`, () => {
+      const text = read(file)
+      expect(text).not.toMatch(/\bMTA\b|Metropolitan Transportation|\bNYCT\b/i)
+      expect(text).not.toMatch(/real[- ]time|official|live (?:train|subway|transit)|accurate/i)
+    })
+  }
+
+  it('the travel palette is not an MTA colour', () => {
+    const travel = (theme.scene as unknown as { travel: Record<string, string> }).travel
+    for (const token of Object.values(travel)) {
+      expect(MTA_TRUNK_HEXES).not.toContain(worldHex(token)?.slice(1).toLowerCase())
+    }
+  })
+})
+
 describe('no MTA branding in the scene (S04a)', () => {
   for (const file of SCANNED) {
     it(`${file} contains no MTA trunk-line colour`, () => {
@@ -63,16 +97,27 @@ describe('no MTA branding in the scene (S04a)', () => {
   it('every subway line colour is one of our palette tokens, not an MTA colour', () => {
     expect(theme.scene.subwayLines.length).toBeGreaterThan(0)
     for (const token of theme.scene.subwayLines) {
-      const hex = theme.colors[token]
+      const hex = worldHex(token)
       expect(hex, `token ${token}`).toMatch(/^#[0-9a-f]{6}$/i)
       expect(MTA_TRUNK_HEXES).not.toContain(hex?.slice(1).toLowerCase())
+    }
+  })
+
+  it('no subway line colour is near an MTA trunk colour either (S04f real-world palette)', () => {
+    for (const token of theme.scene.subwayLines) {
+      for (const mta of MTA_TRUNK_HEXES) {
+        expect(
+          rgbDistance(worldHex(token) ?? '#000000', mta),
+          `${token} vs #${mta}`,
+        ).toBeGreaterThan(MIN_MTA_DISTANCE)
+      }
     }
   })
 
   it('line chips are rounded squares with dark letters, not white-letter circles', () => {
     // A corner radius of half the chip would make a circle (the MTA bullet shape).
     expect(scene.labels.cornerRadius).toBeLessThan(0.5)
-    const ink = theme.colors[theme.scene.labelInk]
+    const ink = worldHex(theme.scene.labelInk)
     expect(ink, `labelInk token ${theme.scene.labelInk}`).toBeDefined()
     // Dark ink: far from the MTA's white lettering.
     expect(luminance(ink ?? '#ffffff')).toBeLessThan(0.2)

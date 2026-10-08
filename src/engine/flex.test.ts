@@ -9,10 +9,14 @@ import { engineConfig as config } from './config'
 import { flexMultiplier, flexPlaceMultiplier, performFlex, viralChance } from './flex'
 import { initialSnapshot, type GameSnapshot } from './game'
 import { buyItem, equipItem, isWearable, shopItems } from './items'
-import { performPlaceAction, placeActions, type PlaceAction } from './placeActions'
+import type { PlaceAction } from './placeActions'
 import type { Place } from './places'
 import { createRng, mixSeed } from './rng'
-import { withClout } from './test-support'
+import {
+  performPlaceActionHere as performPlaceAction,
+  placeActionsHere as placeActions,
+  withClout,
+} from './test-support'
 
 const DAY = 24 * 60
 const { flex } = config.clout

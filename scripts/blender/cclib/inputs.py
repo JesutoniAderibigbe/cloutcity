@@ -67,7 +67,10 @@ def landmark_inputs(landmark_id):
 
 def palette(theme):
     """Role -> linear-ready sRGB (r, g, b) floats in 0..1, from theme.json scene.landmarks."""
-    colours = theme["colors"]
+    colours = {}
+    # A scene role names a models or world token (DEC-26); colors holds the DOM palette.
+    for group in ("colors", "world", "models"):
+        colours.update(theme.get(group, {}))
     out = {}
     for role, token in theme["scene"]["landmarks"].items():
         hex_colour = colours[token]

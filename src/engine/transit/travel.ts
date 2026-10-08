@@ -9,18 +9,30 @@
  *   `delay.moodDrain` when the train is delayed.
  * Energy is not an up-front cost, so an exhausted player can always walk home.
  *
- * The delay roll uses the injected random source (one draw per subway trip, a second for the
- * length when delayed), so a seed replays it. A delay emits a `transit.mta-delay` event for the
- * event engine (S14) to pick up; this module only reports it.
+ * The delay roll uses the injected random source (src/engine/rng.ts: one draw per subway trip, a
+ * second for the length when delayed), so a seed replays it. A delay emits a `transit.mta-delay`
+ * event for the caller to report; this module only returns it.
+ *
+ * Rent that falls due while the clock fast-forwards is charged by the action system and
+ * returned in `rent`, so the caller can show it (the BUG-1 pattern: an advance never drops its
+ * rent events).
  */
 import { applyAction, effectiveDuration, type ActionDef, type ActionError } from '../actions'
 import { calendar, type Rollovers } from '../clock'
 import type { EngineConfig } from '../config'
 import type { GameSnapshot } from '../game'
-import { rollInt, type Rng } from '../random'
+import type { RentEvent } from '../rent'
+import { rollInt, type Rng } from '../rng'
 import type { LocalPoint } from '@/lib/geo/projection'
 import type { TransitConfig } from './config'
-import { planTrip, type PlanError, type Route, type SubwayLeg, type TravelMode } from './plan'
+import {
+  planTrip,
+  type PlanError,
+  type PlanResult,
+  type Route,
+  type SubwayLeg,
+  type TravelMode,
+} from './plan'
 import type { TransitWorld } from './world'
 
 export const MTA_DELAY_EVENT = 'transit.mta-delay'
@@ -57,6 +69,8 @@ export type TravelResult =
       readonly route: Route
       readonly durationMin: number
       readonly rollovers: Rollovers
+      /** Rent charged, missed or collected while the clock moved. */
+      readonly rent: readonly RentEvent[]
       readonly events: readonly TransitEvent[]
     }
   | { readonly ok: false; readonly error: TravelError }
@@ -74,7 +88,7 @@ export function rollSubwayDelay(
   const leg = route.legs[firstTrain]
   if (leg === undefined || leg.mode !== 'subway') return { route }
   const chance = route.rushHour ? config.delay.rushProbability : config.delay.probability
-  if (rng() >= chance) return { route }
+  if (rng.next() >= chance) return { route }
 
   const extraMin = rollInt(rng, config.delay.minutes.min, config.delay.minutes.max)
   const delayed: SubwayLeg = {
@@ -125,6 +139,20 @@ export function travel(
     minuteOfDay,
     world: deps.world,
   })
+  return travelPlanned(snapshot, planned, deps.rng, engine, transit)
+}
+
+/**
+ * Takes a trip already planned (by `planTrip`, or `planDirect` when the transit world is not
+ * available): checks the fare and the length, rolls for a delay, then applies it as an action.
+ */
+export function travelPlanned(
+  snapshot: GameSnapshot,
+  planned: PlanResult,
+  rng: Rng,
+  engine: EngineConfig,
+  transit: TransitConfig,
+): TravelResult {
   if (!planned.ok) return planned
 
   // Refuse before rolling, so an unaffordable attempt does not consume a random draw.
@@ -136,18 +164,17 @@ export function travel(
     }
   }
 
-  const tooLong = (def: ActionDef): TravelError | undefined => {
-    const durationMin = effectiveDuration(def, snapshot, engine)
-    const maxMin = engine.actions.maxDurationMin
-    return durationMin > maxMin ? { code: 'TRIP_TOO_LONG', durationMin, maxMin } : undefined
-  }
   // Checked before the delay roll too, so a refused trip draws nothing.
-  const plannedTooLong = tooLong(travelActionDef(planned.route, false, engine, transit))
+  const plannedTooLong = tripTooLong(
+    travelActionDef(planned.route, false, engine, transit),
+    snapshot,
+    engine,
+  )
   if (plannedTooLong !== undefined) return { ok: false, error: plannedTooLong }
 
-  const { route, event } = rollSubwayDelay(planned.route, deps.rng, transit)
+  const { route, event } = rollSubwayDelay(planned.route, rng, transit)
   const def = travelActionDef(route, event !== undefined, engine, transit)
-  const delayedTooLong = tooLong(def)
+  const delayedTooLong = tripTooLong(def, snapshot, engine)
   if (delayedTooLong !== undefined) return { ok: false, error: delayedTooLong }
   const result = applyAction(snapshot, def, engine)
   if (!result.ok) return result
@@ -157,6 +184,18 @@ export function travel(
     route: { ...route, durationMin: result.durationMin },
     durationMin: result.durationMin,
     rollovers: result.rollovers,
+    rent: result.rent,
     events: event === undefined ? [] : [event],
   }
+}
+
+/** The TRIP_TOO_LONG error when `def` would take longer than any one action may. */
+export function tripTooLong(
+  def: ActionDef,
+  snapshot: GameSnapshot,
+  engine: EngineConfig,
+): TravelError | undefined {
+  const durationMin = effectiveDuration(def, snapshot, engine)
+  const maxMin = engine.actions.maxDurationMin
+  return durationMin > maxMin ? { code: 'TRIP_TOO_LONG', durationMin, maxMin } : undefined
 }

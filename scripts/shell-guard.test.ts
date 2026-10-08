@@ -32,6 +32,16 @@ describe('shellGuardFailures', () => {
     ])
   })
 
+  it('fails on a server-only name in any chunk, lazy ones included (S18b)', () => {
+    const lazy = { name: 'chunks/mod.js', text: 'process.env.MODERATOR_EMAILS' }
+    expect(shellGuardFailures({ ...passing, others: [...passing.others, lazy] })).toEqual([
+      'chunks/mod.js: server-only name MODERATOR_EMAILS',
+    ])
+    expect(shellGuardFailures(withShell('"SUPABASE_SERVICE_ROLE_KEY"'))).toEqual([
+      'chunks/shell.js: server-only name SUPABASE_SERVICE_ROLE_KEY',
+    ])
+  })
+
   it('fails on the Supabase anonymous sign-in in the shell (S05)', () => {
     expect(shellGuardFailures(withShell('a.auth.signInAnonymously()'))).toEqual([
       'chunks/shell.js: Supabase auth (signInAnonymously)',

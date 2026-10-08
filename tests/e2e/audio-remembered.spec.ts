@@ -27,7 +27,7 @@ test('stays silent until the sound control is tapped, and remembers "My own musi
   await page.mouse.click(viewport.width / 2, viewport.height / 2)
   await page
     .getByRole('navigation', { name: 'Main' })
-    .getByRole('button', { name: 'Phone' })
+    .getByRole('button', { name: 'Map', exact: true })
     .click()
   await page.locator('[data-hud-cell="money"]').click()
   await page.keyboard.press('Space')
@@ -42,9 +42,9 @@ test('stays silent until the sound control is tapped, and remembers "My own musi
   const toggle = page.getByRole('button', { name: 'My own music' })
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
 
-  await openFromHud(page, 'Sound settings')
+  await openFromHud(page, 'Settings')
   await expect(
-    page.getByRole('region', { name: 'Sound' }).getByRole('checkbox', { name: 'My own music' }),
+    page.getByRole('region', { name: 'Settings' }).getByRole('checkbox', { name: 'My own music' }),
   ).toBeChecked()
 
   await page.reload()

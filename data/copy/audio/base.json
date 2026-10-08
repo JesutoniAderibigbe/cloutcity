@@ -11,8 +11,8 @@
     "audio.hud.musicUnavailable": "Music unavailable · Tap to retry",
     "audio.hud.soundUnavailable": "Sound unavailable · Tap to retry",
     "audio.hud.unsupported": "Sound isn't available in this browser",
-    "audio.hud.settings": "Sound settings",
-    "audio.settings.title": "Sound",
+    "audio.settings.title": "Settings",
+    "audio.settings.sound": "Sound",
     "audio.settings.ownMusic": "My own music",
     "audio.settings.ownMusicHint": "Mutes our music. Sound effects and city sounds keep playing.",
     "audio.settings.master": "Master",
@@ -20,7 +20,7 @@
     "audio.settings.sfx": "Sound effects",
     "audio.settings.ambience": "City sounds",
     "audio.settings.voice": "Voice",
-    "audio.settings.close": "Close sound settings",
+    "audio.settings.close": "Close settings",
     "audio.track.lofiLoop": "Lofi Hip Hop Loop by omfgdude",
     "audio.track.lofiAgain": "Lofi Again by Omfgdude"
   }

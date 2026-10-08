@@ -4,6 +4,7 @@ import { engineConfig } from '@/engine/config'
 import { initialCloutState, legacyCloutState } from '@/engine/clout'
 import { playerWithClout } from '@/engine/test-support'
 import { initialFlexState } from '@/engine/game'
+import { initialApartment } from '@/engine/home'
 import type { EventContext } from '@/engine/events'
 import { nextRentDueDay } from '@/engine/rent'
 import { createLogger, type LogRecord } from '@/lib/log'
@@ -77,9 +78,12 @@ describe('game store persistence', () => {
       flex: initialFlexState,
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
-      inventory: { wearables: [], gifts: [], outfit: {} },
+      inventory: { wearables: [], gifts: [], outfit: {}, decor: [] },
       clubNights: {},
       visited: {},
+      apartment: initialApartment,
+      location: { kind: 'home' },
+      transit: { rngState: 0 },
     })
     expect(state.lastLevelUp).toBeNull()
     expect(state.clock).toEqual({ minute: 480, remainderMs: 0 })
@@ -95,6 +99,7 @@ describe('game store persistence', () => {
     expect(after.state.player.cash).toBe(START_CASH - BODEGA)
     expect(after.state.clock.minute).toBe(500)
     expect(Object.keys(after.state).sort()).toEqual([
+      'actions',
       'clock',
       'events',
       'goals',
@@ -189,7 +194,7 @@ describe('game store persistence', () => {
         clout: legacyCloutState(12, 0),
         home: 'penthouse',
         rent: { owed: 280, missed: 1.4 },
-        inventory: { wearables: [], gifts: [], outfit: {} },
+        inventory: { wearables: [], gifts: [], outfit: {}, decor: [] },
       },
       speed: 3,
     }
@@ -205,9 +210,12 @@ describe('game store persistence', () => {
         flex: initialFlexState,
         home: 'queens-room',
         rent: { owed: 280, missed: 1 },
-        inventory: { wearables: [], gifts: [], outfit: {} },
+        inventory: { wearables: [], gifts: [], outfit: {}, decor: [] },
         clubNights: {},
         visited: {},
+        apartment: initialApartment,
+        location: { kind: 'home' },
+        transit: { rngState: 0 },
       },
       speed: 1,
     })
@@ -292,9 +300,9 @@ describe('storage unavailable', () => {
     const game = createGameStore(storage, logger)
     game.getState().performAction('bodega-breakfast')
     expect(game.getState().player.cash).toBe(START_CASH - BODEGA)
-    const { clock, player, speed, events, goals, grants, prestige } = game.getState()
+    const { clock, player, speed, events, goals, grants, prestige, actions } = game.getState()
     expect(storage.getItem(STORE_KEY)).toEqual({
-      state: { clock, player, speed, events, goals, grants, prestige },
+      state: { clock, player, speed, events, goals, grants, prestige, actions },
       version: STORE_VERSION,
     })
   })
@@ -494,9 +502,12 @@ describe('jobs and rent in the store', () => {
       flex: initialFlexState,
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
-      inventory: { wearables: [], gifts: [], outfit: {} },
+      inventory: { wearables: [], gifts: [], outfit: {}, decor: [] },
       clubNights: {},
       visited: {},
+      apartment: initialApartment,
+      location: { kind: 'home' },
+      transit: { rngState: 0 },
     })
     expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
@@ -618,6 +629,7 @@ describe('items in the store', () => {
       wearables: [{ itemId: 'cargo-pants', acquiredMinute: 480, worn: true }],
       gifts: [],
       outfit: { bottom: 'cargo-pants' },
+      decor: [],
     })
     expect(game.getState().unequipSlot('bottom').ok).toBe(true)
     const sold = game.getState().sellItem('cargo-pants')
@@ -648,15 +660,24 @@ describe('items in the store', () => {
     delete v3player.clubNights
     delete v3player.flex
     delete v3player.visited
+    delete v3player.apartment
+    delete v3player.location
+    delete v3player.transit
     const v3: Record<string, unknown> = { ...fresh, player: v3player }
     delete v3.events
     delete v3.goals
     delete v3.grants
     delete v3.prestige
+    delete v3.actions
     local.setItem(STORE_KEY, JSON.stringify({ state: v3, version: 3 }))
     const game = setup(local).store()
     expect(game.getState().player.cash).toBe(321)
-    expect(game.getState().player.inventory).toEqual({ wearables: [], gifts: [], outfit: {} })
+    expect(game.getState().player.inventory).toEqual({
+      wearables: [],
+      gifts: [],
+      outfit: {},
+      decor: [],
+    })
     game.getState().buyItem('subway-tote')
     expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
@@ -675,6 +696,7 @@ describe('items in the store: guards', () => {
           wearables: [{ itemId: 'bodega-graphic-tee', acquiredMinute: 480, worn: true }],
           gifts: [{ itemId: 'bodega-flowers', count: 1 }],
           outfit: { top: 'bodega-graphic-tee' },
+          decor: [],
         },
       },
     }
@@ -903,5 +925,18 @@ describe('level-ups in the store', () => {
     game.getState().dismissLevelUp()
     expect(game.getState().lastLevelUp).toBeNull()
     expect(setup(local).store().getState().lastLevelUp).toBeNull()
+  })
+})
+
+describe('the action count (S18c)', () => {
+  it('counts each state-changing tap, not passive time or a refused action', () => {
+    const game = setup().store()
+    expect(game.getState().actions).toBe(0)
+    game.getState().performAction('bodega-breakfast')
+    expect(game.getState().actions).toBe(1)
+    game.getState().tick(60_000, true)
+    expect(game.getState().actions).toBe(1)
+    game.getState().performAction('no-such-action')
+    expect(game.getState().actions).toBe(1)
   })
 })

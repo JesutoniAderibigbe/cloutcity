@@ -7,36 +7,32 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { GeoConfigSchema } from '../../src/lib/data/schemas/config'
 import { GeoManifestSchema } from '../../src/lib/data/schemas/world'
-import { CACHE_DIR, buildFromSources, readLock } from './build'
-import { SOURCE_DEFINITIONS } from './lock'
-import { OUTPUT_FILES } from './transform'
+import { buildFromSources, readCache, readLock } from './build'
+import { OUTPUT_FILES, tieredOutputPaths } from './transform'
 
 const DATA = join(import.meta.dirname, '../../data')
 const sha256 = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).digest('hex')
 const manifest = GeoManifestSchema.parse(
   JSON.parse(readFileSync(join(DATA, OUTPUT_FILES.manifest), 'utf8')),
 )
+const config = GeoConfigSchema.parse(
+  JSON.parse(readFileSync(join(DATA, 'config/geo.json'), 'utf8')),
+)
 
 const lock = await readLock()
-const cached = new Map<string, Uint8Array>()
-for (const definition of SOURCE_DEFINITIONS) {
-  const path = join(CACHE_DIR, definition.file)
-  if (existsSync(path)) cached.set(definition.id, new Uint8Array(readFileSync(path)))
-}
-const cacheValid =
-  lock !== undefined &&
-  lock.sources.every((entry) => {
-    const bytes = cached.get(entry.id)
-    return bytes !== undefined && sha256(bytes) === entry.sha256
-  })
+const cache = lock === undefined ? undefined : await readCache(lock)
+const cached = cache?.files ?? new Map<string, Uint8Array>()
+const cacheValid = cache?.valid === true
 
 describe('committed geo files', () => {
   it('hash to the committed manifest, which lists every output', () => {
     expect(manifest.files.map((f) => f.path)).toEqual(
-      Object.values(OUTPUT_FILES)
-        .filter((path) => path !== OUTPUT_FILES.manifest)
-        .sort(),
+      [
+        ...Object.values(OUTPUT_FILES).filter((path) => path !== OUTPUT_FILES.manifest),
+        ...tieredOutputPaths(config).map(({ path }) => path),
+      ].sort(),
     )
     for (const file of manifest.files) {
       const bytes = readFileSync(join(DATA, file.path))
@@ -63,11 +59,25 @@ describe('committed geo files', () => {
     }
   })
 
+  it.skipIf((cache?.pages.size ?? 0) === 0)(
+    'cached building pages are unmodified: they match the lock',
+    () => {
+      for (const entry of lock?.pagedSources ?? []) {
+        const pages = cache?.pages.get(entry.id) ?? []
+        expect(
+          pages.map((bytes) => ({ sha256: sha256(bytes), bytes: bytes.byteLength })),
+          entry.id,
+        ).toEqual(entry.pages.slice(0, pages.length))
+      }
+    },
+  )
+
   it.skipIf(!cacheValid)(
     'rebuild from the real download cache is byte-identical to the committed files',
     async () => {
       if (lock === undefined) throw new Error('no lock')
-      const result = await buildFromSources(lock, cached)
+      if (cache === undefined) throw new Error('no cache')
+      const result = await buildFromSources(lock, cache)
       for (const [path, text] of result.files) {
         expect(sha256(text), path).toBe(sha256(readFileSync(join(DATA, path))))
       }

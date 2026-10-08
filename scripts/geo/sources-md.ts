@@ -4,9 +4,15 @@
  * actually used. Player-facing attribution becomes copy keys later (S04a); the in-app wording
  * here is a proposal.
  */
-import type { GeoConfig } from '../../src/lib/data/schemas/config.ts'
-import { LION_SOURCE_IDS } from '../../src/lib/geo/sources.ts'
-import type { Lock, LockEntry } from './lock.ts'
+import { QUALITY_TIERS, type GeoConfig } from '../../src/lib/data/schemas/config.ts'
+import { LION_SOURCE_IDS, buildingSourceId } from '../../src/lib/geo/sources.ts'
+import {
+  BUILDING_OUT_FIELDS,
+  pageFile,
+  type Lock,
+  type LockEntry,
+  type PagedLockEntry,
+} from './lock.ts'
 
 export interface TerminalExtension {
   readonly lineId: string
@@ -19,7 +25,31 @@ export interface TerminalExtension {
 const ARCGIS_ITEMS: Readonly<Record<string, string>> = {
   'dcp-borough-boundaries': 'e740addebac54632a5f216fd778af06d',
   'dcp-nta-2020': 'f262ae2935a04f1e83d5e58e0a834785',
+  'dcp-mappluto-density': '1564ace0b4f44318ac39920737f9bd07',
 }
+
+/** The OTI BUILDING_view layer every district query reads. */
+const OTI_BUILDINGS_ITEM = '870bf69e8a8044aea4488e564c0b4010'
+const OTI_BUILDINGS_METADATA =
+  'https://github.com/CityOfNewYork/nyc-geo-metadata/blob/master/Metadata/Metadata_BuildingFootprints.md'
+
+/** Catalogue pages the build machine could not open (NYC Open Data and nyc.gov return 403). */
+const UNVERIFIED_CATALOGUES = new Set(['dcp-mappluto-density'])
+const REVERIFY = '(to re-verify from a US network; it refused requests from the build machine)'
+
+/** The licence text DCP attaches to MapPLUTO (ArcGIS item licenseInfo, retrieved with the data). */
+export const MAPPLUTO_DISCLAIMER =
+  "MapPLUTO is being provided by the Department of City Planning (DCP) on DCP's website for " +
+  'informational purposes only. DCP does not warranty the completeness, accuracy, content, or ' +
+  'fitness for any particular purpose or use of MapPLUTO, nor are any such warranties to be ' +
+  'implied or inferred with respect to MapPLUTO as furnished on the website. DCP and the City ' +
+  'are not liable for any deficiencies in the completeness, accuracy, content, or fitness for ' +
+  'any particular purpose or use of MapPLUTO, or applications utilizing MapPLUTO, provided by ' +
+  'any third party.'
+
+export const NAME_NOT_DOWNLOADED =
+  'NAME field not downloaded: the queries request `outFields=HEIGHT_ROOF` only, so no building ' +
+  'name or other attribute ever reaches the cache, the derived files or the game.'
 
 const NYC_DISCLAIMER =
   'The City of New York can not vouch for the accuracy or completeness of data provided by this ' +
@@ -81,10 +111,109 @@ function sourceFacts(source: LockEntry): string[] {
     ...(item === undefined
       ? []
       : [`- ArcGIS item: <https://www.arcgis.com/home/item.html?id=${item}>`]),
-    `- Catalogue page: <${source.catalogUrl}>`,
+    `- Catalogue page: <${source.catalogUrl}>${UNVERIFIED_CATALOGUES.has(source.id) ? ` ${REVERIFY}` : ''}`,
     `- Retrieved: ${source.retrieved}`,
     `- File: \`.cache/geo/${source.file}\` (${source.bytes} bytes, sha256 \`${source.sha256}\`)`,
     `- Terms: ${source.terms.name} <${source.terms.url}>`,
+  ]
+}
+
+function pagedFacts(source: PagedLockEntry, config: GeoConfig): string[] {
+  const district = config.districts.find((d) => buildingSourceId(d.id) === source.id)
+  const where =
+    district === undefined
+      ? ''
+      : ` (centre ${district.center.lat}, ${district.center.lng}; radius ${district.radiusM} m)`
+  return [
+    `#### ${source.title}`,
+    '',
+    `- Source id: \`${source.id}\`${where}`,
+    `- Query: <${source.url}>`,
+    `- Count query: <${source.countUrl}> (${source.count} features)`,
+    `- Retrieved: ${source.retrieved}`,
+    `- Pages of ${source.pageSize} (\`resultOffset\`/\`resultRecordCount\`):`,
+    ...source.pages.map(
+      (page, index) =>
+        `  - \`.cache/geo/${pageFile(source.id, index)}\` (${page.bytes} bytes, sha256 \`${page.sha256}\`)`,
+    ),
+    '',
+  ]
+}
+
+function buildingsSection(lock: Lock, config: GeoConfig): string[] {
+  if (lock.pagedSources.length === 0) return []
+  const [first] = lock.pagedSources
+  const tiers = config.buildingTiers
+  const tierLines = QUALITY_TIERS.map((tier) => {
+    const t = tiers.tiers[tier]
+    return (
+      `  - ${tier}: Douglas-Peucker ${t.simplifyM} m, footprints under ${t.minAreaM2} m² dropped` +
+      `${t.minHeightM > 0 ? `, lower than ${t.minHeightM} m dropped` : ''}, heights in ${t.heightBinM} m bins` +
+      `${t.merge ? ', touching footprints of one bin merged (holes kept; the area filter applies to the merged mass)' : ', no merging'}`
+    )
+  })
+  return [
+    '## NYC Office of Technology and Innovation (NYC Open Data)',
+    '',
+    '### Building Footprints',
+    '',
+    `- Publisher: ${first?.publisher ?? ''}`,
+    `- Layer: <${first?.url.split('?')[0] ?? ''}> (the public BUILDING_view)`,
+    `- ArcGIS item: <https://www.arcgis.com/home/item.html?id=${OTI_BUILDINGS_ITEM}>`,
+    `- Catalogue page: <${first?.catalogUrl ?? ''}> ${REVERIFY}`,
+    `- Field documentation: <${OTI_BUILDINGS_METADATA}>`,
+    `- Terms: ${first?.terms.name ?? ''} <${first?.terms.url ?? ''}>`,
+    `- ${NAME_NOT_DOWNLOADED.replace('`outFields=HEIGHT_ROOF`', `\`outFields=${BUILDING_OUT_FIELDS}\``)}`,
+    '- Filter: `FEATURE_CODE IN (2100,5100,1006) AND Shape__Area>=40` (buildings, buildings under',
+    "  construction, cantilevered buildings; no sheds or slivers), within each district circle's",
+    '  bounding box. Pages are kept byte for byte; their total must equal the count query.',
+    '- Used for: `geo/districts/<district>.<tier>.derived.json` (building masses per district and',
+    '  quality tier).',
+    '- Transformations: a footprint is kept when its centroid lies inside the district circle and',
+    '  outside every landmark exclusion rectangle in `landmarks/frames.derived.json` (derived in',
+    `  the same build); \`HEIGHT_ROOF\` feet × 0.3048, rounded to whole metres (missing or zero: ${tiers.defaultHeightM} m);`,
+    `  snapped to ${tiers.quantumM} m; then per tier:`,
+    ...tierLines,
+    '- Rings are stored relative to the district centre, delta-encoded, with heights as a separate',
+    '  column; the files hold numbers only past their header.',
+    '',
+    'Districts:',
+    '',
+    ...lock.pagedSources.flatMap((source) => pagedFacts(source, config)),
+    'Required attribution: data from NYC Open Data, provided by the NYC Office of Technology and',
+    'Innovation, with the NYC Open Data disclaimer quoted under the Department of City Planning.',
+    '',
+  ]
+}
+
+function plutoSection(lock: Lock, config: GeoConfig): string[] {
+  const pluto = entry(lock, 'dcp-mappluto-density')
+  const blocks = config.blocks
+  const angles = Object.entries(blocks.gridAngleDeg)
+    .map(([borough, angle]) => `${borough} ${angle}°`)
+    .join(', ')
+  return [
+    `### ${pluto.title}`,
+    '',
+    ...sourceFacts(pluto),
+    '- Downloaded: per community district (`CD`), the lot count, the sums of `BldgArea` and',
+    '  `LotArea` and the mean `NumFloors` (ArcGIS `outStatistics`). No lot geometry, address, owner',
+    '  or other lot attribute is downloaded.',
+    '- Used for: `geo/blocks.<tier>.derived.json` (procedural low blocks outside the districts).',
+    '- Transformations: `CD` mapped to its CDTA zone (borough digit to MN/BX/BK/QN/SI); joint',
+    '  interest areas skipped; floor-area ratio = building area ÷ lot area. Blocks sit on a',
+    `  jittered grid per tier (spacing ${QUALITY_TIERS.map((t) => `${t} ${blocks.spacingM[t]} m`).join(', ')}; jitter ${blocks.jitter} of the spacing)`,
+    `  rotated per borough (${angles}), seeded with \`src/engine/rng.ts\` (seed ${blocks.seed}). A point`,
+    `  gets a block with chance min(1, FAR ÷ ${blocks.fullFar}), ${blocks.floorM} m per floor around the district's`,
+    `  mean floors (±${Math.round(blocks.heightJitter * 100)}%). Points in a district circle, a park or cemetery, a joint`,
+    '  interest area or the water get none, nor does a block that would touch a landmark exclusion',
+    '  rectangle.',
+    '',
+    'Required attribution: data from NYC Open Data, provided by the NYC Department of City',
+    'Planning (MapPLUTO). DCP disclaimer:',
+    '',
+    `> ${MAPPLUTO_DISCLAIMER}`,
+    '',
   ]
 }
 
@@ -109,7 +238,7 @@ export function renderSourcesMd(
     '',
     'Generated by `npm run geo:build` from `scripts/geo/sources.lock.json`. Do not edit by hand.',
     '',
-    'Every `*.derived.json` file in `data/geo` and `data/zones` is derived data: simplified',
+    'Every `*.derived.json` file in `data/geo` (including `data/geo/districts`) and `data/zones` is derived data: simplified',
     'artwork built from the sources below, not the original data. Each file says so in its',
     '`derived` and `notice` fields. The raw downloads are kept unmodified in the gitignored cache',
     '(`.cache/geo/`) and re-verified against the sha256 below on every build.',
@@ -138,12 +267,14 @@ export function renderSourcesMd(
     `  NTAs merged per CDTA, rings smaller than ${config.zoneMinRingAreaM2} m² (zones) or ${config.parkMinRingAreaM2} m²`,
     '  (parks) dropped, zone names taken from the CDTA name without its code and CD/JIA suffix.',
     '',
+    ...plutoSection(lock, config),
     'Required attribution: data from NYC Open Data, provided by the NYC Department of City',
     'Planning. NYC Open Data disclaimer (to re-verify from a US network before launch; nyc.gov',
     'refused requests from the build machine):',
     '',
     `> ${NYC_DISCLAIMER}`,
     '',
+    ...buildingsSection(lock, config),
     ...lionSection(lock),
     '## MTA',
     '',

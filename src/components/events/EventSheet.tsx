@@ -67,14 +67,15 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
       aria-describedby={bodyId}
       data-event={event.id}
       data-cc-feature="cc-feature:event-sheet"
-      className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur"
+      data-cc-notice="event"
+      className="m-2 flex flex-col gap-2 rounded-2xl border border-line glass p-3 shadow-lg"
     >
-      <h2 id={titleId} className="text-base leading-tight font-extrabold text-pink-400">
+      <h2 id={titleId} className="text-base leading-tight font-extrabold text-fg">
         {eventText(event.titleKey)}
       </h2>
       {resolved === null ? (
         <>
-          <p id={bodyId} className="text-sm text-ink-50">
+          <p id={bodyId} className="text-sm text-fg">
             {eventText(event.bodyKey)}
           </p>
           <ul className="flex flex-col gap-1.5">
@@ -90,7 +91,7 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
                   >
                     <span className="block text-sm font-bold">{eventText(choice.labelKey)}</span>
                     {effects === '' && affordable ? null : (
-                      <span className="block text-xs text-ink-300">
+                      <span className="block text-xs text-muted">
                         {affordable ? effects : copy('events.ui.cantAfford')}
                       </span>
                     )}
@@ -102,11 +103,9 @@ function EventDialog({ event }: { readonly event: GameEvent }) {
         </>
       ) : (
         <>
-          <p id={bodyId} className="text-sm text-ink-50">
+          <p id={bodyId} className="text-sm text-fg">
             {eventText(resolved.resultKey)}
-            {landed === '' ? null : (
-              <span className="mt-1 block text-xs text-ink-300">{landed}</span>
-            )}
+            {landed === '' ? null : <span className="mt-1 block text-xs text-muted">{landed}</span>}
           </p>
           <ChoiceButton
             choiceId="continue"
@@ -137,7 +136,7 @@ function ChoiceButton({
       data-choice={choiceId}
       disabled={disabled}
       onClick={onChoose}
-      className="min-h-11 w-full rounded-xl bg-night-800 px-3 py-1.5 text-left text-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400 enabled:active:scale-[0.98] disabled:opacity-60"
+      className="min-h-11 w-full rounded-xl bg-raised px-3 py-1.5 text-left text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus enabled:active:scale-[0.98] disabled:opacity-60"
     >
       {children}
     </button>

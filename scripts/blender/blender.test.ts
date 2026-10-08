@@ -224,10 +224,14 @@ describe.each(built)('%s shipped GLBs', (id) => {
   })
 })
 
+const S04H_FILES = new Set(['run.py', 'fixtures/smoke-crate.py'])
+
 describe('Blender Python lint', () => {
   const files = readdirSync(BLENDER_DIR, { withFileTypes: true, recursive: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith('.py'))
     .map((entry) => join(entry.parentPath, entry.name))
+    // S04h's runner and its smoke fixture belong to `npm run blender:build` (scripts/blender/build.ts).
+    .filter((file) => !S04H_FILES.has(relative(BLENDER_DIR, file).split('\\').join('/')))
   const ALLOWED = new Set([
     'argparse',
     'hashlib',

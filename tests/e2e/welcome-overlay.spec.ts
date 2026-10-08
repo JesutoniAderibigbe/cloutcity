@@ -280,20 +280,21 @@ test('the inert background cannot be focused or clicked while the card is open',
 }) => {
   await page.goto('/')
   await expect(welcomeDialog(page)).toBeVisible()
-  const shop = page.locator('[data-overlay-zone="tabs"] button', { hasText: 'Shop' })
-  await expect(shop).toBeAttached()
-  expect(await shop.evaluate((el) => el.closest('[inert]') !== null)).toBe(true)
+  // Me: a tab that acts (Phone and Shop are disabled until they have a screen, UI-16).
+  const tab = page.locator('[data-overlay-zone="tabs"] [data-tab="me"]')
+  await expect(tab).toBeAttached()
+  expect(await tab.evaluate((el) => el.closest('[inert]') !== null)).toBe(true)
 
-  await shop.evaluate((el) => (el as HTMLElement).focus())
-  await expect(shop).not.toBeFocused()
+  await tab.evaluate((el) => (el as HTMLElement).focus())
+  await expect(tab).not.toBeFocused()
 
-  const target = await shop.boundingBox()
-  if (target === null) throw new Error('Shop tab is not rendered')
+  const target = await tab.boundingBox()
+  if (target === null) throw new Error('Me tab is not rendered')
   await page.mouse.click(target.x + target.width / 2, target.y + target.height / 2)
-  await expect(shop).not.toHaveAttribute('aria-current', 'page')
+  await expect(tab).not.toHaveAttribute('aria-current', 'page')
   await expect(welcomeDialog(page)).toBeVisible()
 
   await passWelcomeCard(page)
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Shop' }).click()
-  await expect(shop).toHaveAttribute('aria-current', 'page')
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Me' }).click()
+  await expect(tab).toHaveAttribute('aria-current', 'page')
 })

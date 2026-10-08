@@ -16,7 +16,7 @@ import '@/lib/copy/ns/goals'
 import '@/lib/copy/ns/share'
 
 const BUTTON =
-  'min-h-11 min-w-11 rounded-xl px-4 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
+  'min-h-11 min-w-11 rounded-xl px-4 py-2 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 /** Where focus goes when the moment closes: the HUD's Goals button, else the map. */
 function returnFocus() {
@@ -98,7 +98,8 @@ export function IconMoment() {
       aria-describedby={bodyId}
       data-icon-moment={step}
       data-cc-feature="cc-feature:icon-moment"
-      className="pointer-events-auto relative max-h-full w-full max-w-[var(--overlay-sheet-max-w)] self-center overflow-y-auto overscroll-contain rounded-3xl border border-pink-400 bg-night-900 p-5 shadow-2xl"
+      data-cc-notice="icon"
+      className="pointer-events-auto relative max-h-full w-full max-w-[var(--overlay-sheet-max-w)] self-center overflow-y-auto overscroll-contain rounded-3xl border border-taxi glass p-5 shadow-2xl"
     >
       <div aria-hidden="true" className="icon-moment-burst pointer-events-none absolute inset-0" />
       {step === 'moment' ? (
@@ -106,14 +107,14 @@ export function IconMoment() {
           <h2
             id={titleId}
             tabIndex={-1}
-            className="text-2xl font-extrabold text-pink-400 focus:outline-none"
+            className="text-2xl font-extrabold text-fg focus:outline-none"
           >
             {copy('goals.icon.title')}
           </h2>
-          <p id={bodyId} className="text-base text-ink-50">
+          <p id={bodyId} className="text-base text-fg">
             {copy('goals.icon.body')}
           </p>
-          <p role="status" className="min-h-5 text-sm font-semibold text-taxi-400">
+          <p role="status" className="min-h-5 text-sm font-semibold text-taxi-ink">
             {shared === null || shared.kind === 'cancelled'
               ? null
               : shared.kind === 'shared'
@@ -123,32 +124,25 @@ export function IconMoment() {
                   : copy('goals.icon.copyThis')}
           </p>
           {shared?.kind === 'shown' ? (
-            <p
-              data-share-text=""
-              className="rounded-xl bg-night-950 p-2 text-sm text-ink-50 select-all"
-            >
+            <p data-share-text="" className="rounded-xl bg-canvas p-2 text-sm text-fg select-all">
               {shared.text}
             </p>
           ) : null}
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={share}
-              className={`${BUTTON} bg-pink-400 text-night-950`}
-            >
+            <button type="button" onClick={share} className={`${BUTTON} bg-taxi text-on-taxi`}>
               {copy('goals.icon.share')}
             </button>
             <button
               type="button"
               onClick={() => setStep('confirm')}
-              className={`${BUTTON} bg-taxi-400 text-night-950`}
+              className={`${BUTTON} bg-taxi text-on-taxi`}
             >
               {copy('goals.icon.prestige')}
             </button>
             <button
               type="button"
               onClick={() => gameStore.getState().acknowledgeIconMoment()}
-              className={`${BUTTON} bg-night-800 text-ink-50`}
+              className={`${BUTTON} bg-raised text-fg`}
             >
               {copy('goals.icon.keepPlaying')}
             </button>
@@ -159,53 +153,53 @@ export function IconMoment() {
           <h2
             id={titleId}
             tabIndex={-1}
-            className="text-2xl font-extrabold text-pink-400 focus:outline-none"
+            className="text-2xl font-extrabold text-fg focus:outline-none"
           >
             {copy('goals.icon.confirm.title')}
           </h2>
-          <div id={bodyId} className="flex flex-col gap-2 text-sm text-ink-50">
+          <div id={bodyId} className="flex flex-col gap-2 text-sm text-fg">
             <p>{copy('goals.icon.confirm.body')}</p>
-            <p className="font-semibold text-taxi-400">
+            <p className="font-semibold text-taxi-ink">
               {copy('goals.icon.confirm.badge', { badge })}
             </p>
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <section aria-label={copy('goals.icon.confirm.resets')}>
-              <h3 className="text-xs font-bold text-ink-300 uppercase">
+              <h3 className="text-xs font-bold text-muted uppercase">
                 {copy('goals.icon.confirm.resets')}
               </h3>
-              <ul data-prestige-resets="" className="list-inside list-disc text-sm text-ink-50">
+              <ul data-prestige-resets="" className="list-inside list-disc text-sm text-fg">
                 {engineConfig.prestige.resets.map((part) => (
                   <li key={part}>{prestigePartName(part)}</li>
                 ))}
               </ul>
             </section>
             <section aria-label={copy('goals.icon.confirm.keeps')}>
-              <h3 className="text-xs font-bold text-ink-300 uppercase">
+              <h3 className="text-xs font-bold text-muted uppercase">
                 {copy('goals.icon.confirm.keeps')}
               </h3>
-              <ul data-prestige-keeps="" className="list-inside list-disc text-sm text-ink-50">
+              <ul data-prestige-keeps="" className="list-inside list-disc text-sm text-fg">
                 {engineConfig.prestige.keeps.map((part) => (
                   <li key={part}>{prestigePartName(part)}</li>
                 ))}
               </ul>
             </section>
           </div>
-          <p role="status" className="min-h-5 text-sm font-semibold text-taxi-400">
+          <p role="status" className="min-h-5 text-sm font-semibold text-taxi-ink">
             {refused ? copy('goals.icon.confirm.refused') : null}
           </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={confirmPrestige}
-              className={`${BUTTON} bg-taxi-400 text-night-950`}
+              className={`${BUTTON} bg-taxi text-on-taxi`}
             >
               {copy('goals.icon.confirm.go', { level: startLevel })}
             </button>
             <button
               type="button"
               onClick={() => setStep('moment')}
-              className={`${BUTTON} bg-night-800 text-ink-50`}
+              className={`${BUTTON} bg-raised text-fg`}
             >
               {copy('goals.icon.confirm.back')}
             </button>

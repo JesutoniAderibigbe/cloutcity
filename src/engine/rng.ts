@@ -39,3 +39,8 @@ export function mixSeed(a: number, b: number): number {
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35)
   return (h ^ (h >>> 16)) >>> 0
 }
+
+/** A whole number in [min, max], from one draw. */
+export function rollInt(rng: Rng, min: number, max: number): number {
+  return min + Math.floor(rng.next() * (max - min + 1))
+}

@@ -11,6 +11,7 @@
 import balanceJson from '@data/config/balance.json'
 import progressionJson from '@data/config/progression.json'
 import eventsJson from '@data/events/events.json'
+import interiorsJson from '@data/homes/interiors.json'
 import itemsJson from '@data/items/items.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
@@ -18,12 +19,18 @@ import { STYLED_SOURCES, type StyledSourceId } from '@/lib/data/cloutSources'
 import { GOAL_FACTS, PRESTIGE_PARTS, type GoalFact, type PrestigePart } from '@/lib/data/goalFacts'
 import type { BalanceConfig, BoroughAccessRule, ProgressionConfig } from '@/lib/data/schemas/config'
 import type { Borough, GameEvent, LocationCategory } from '@/lib/data/schemas/content'
-import { catalogFromJson, type ItemDef } from './itemCatalog'
+import { DECOR_FITS, catalogFromJson, type DecorFit, type ItemDef } from './itemCatalog'
 
 /** A housing tier: a key of `rentPerWeek`. */
 export type HomeId = keyof BalanceConfig['rentPerWeek']
 /** A job: a key of `jobs.hourlyWage`. */
 export type JobId = keyof BalanceConfig['jobs']['hourlyWage']
+
+/** A decor slot as the engine sees it (data/homes/interiors.json; the rest is for the scene). */
+export interface SlotDef {
+  readonly id: string
+  readonly kind: DecorFit
+}
 
 /** A goal (data/config/progression.json, src/engine/goals.ts). */
 export type GoalDef = ProgressionConfig['goals'][number]
@@ -38,6 +45,13 @@ export interface EngineConfig {
   readonly rent: BalanceConfig['rent']
   /** Move-in costs (src/engine/housing.ts). */
   readonly housing: BalanceConfig['housing']
+  /**
+   * Home scores, the home clout cap and the move log's length (src/engine/home.ts), plus each
+   * home's decor slots, in data/homes/interiors.json order.
+   */
+  readonly home: BalanceConfig['home'] & {
+    readonly slots: Readonly<Record<HomeId, readonly SlotDef[]>>
+  }
   /** Food range and the subway fare, in whole dollars. */
   readonly costs: BalanceConfig['costs']
   /** Levels, flex, style, the ledger and the premium cap (src/engine/clout.ts). */
@@ -190,6 +204,36 @@ function progressionRules(json: typeof progressionJson) {
 
 const progression = progressionRules(progressionJson)
 
+/**
+ * Each home's decor slots from data/homes/interiors.json (validated by HomeInteriorsFileSchema in
+ * data.test.ts). JSON imports widen `kind` to string, so it is narrowed here; anything else
+ * throws at load (fail fast).
+ */
+function homeSlots(json: typeof interiorsJson): Readonly<Record<HomeId, readonly SlotDef[]>> {
+  const slots = (id: HomeId): SlotDef[] =>
+    json.homes[id].slots.map((slot) => {
+      if (!(DECOR_FITS as readonly string[]).includes(slot.kind)) {
+        throw new Error(`homes/interiors.json: ${id} slot "${slot.id}" has an unknown kind`)
+      }
+      return { id: slot.id, kind: slot.kind as DecorFit }
+    })
+  return {
+    'queens-room': slots('queens-room'),
+    'brooklyn-1br': slots('brooklyn-1br'),
+    'manhattan-loft': slots('manhattan-loft'),
+  }
+}
+
+/**
+ * balance.json `transit` plus the subway fare, for src/engine/transit/config.ts. Built here so
+ * the balance file has one importer in the client graph: the bundler then keeps one copy of it
+ * instead of copying the JSON into the lazy travel chunk and the boot islands (PERF-3).
+ */
+export const transitBalance = {
+  ...balanceJson.transit,
+  subwayFare: balanceJson.costs.subwayFare,
+}
+
 export const engineConfig: EngineConfig = {
   time: balanceJson.time,
   stats: balanceJson.stats,
@@ -198,6 +242,7 @@ export const engineConfig: EngineConfig = {
   rentPerWeek,
   rent: balanceJson.rent,
   housing: balanceJson.housing,
+  home: { ...balanceJson.home, slots: homeSlots(interiorsJson) },
   costs: balanceJson.costs,
   clout: cloutRules(balanceJson.clout),
   items: { ...balanceJson.items, catalog: catalogFromJson(itemsJson.items) },

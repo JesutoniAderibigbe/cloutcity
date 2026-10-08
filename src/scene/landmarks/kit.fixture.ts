@@ -29,7 +29,8 @@ export const SCENE = LandmarkSceneConfigSchema.parse(sceneJson.landmarks)
 
 export const PALETTE: LandmarkPalette = Object.fromEntries(
   LANDMARK_ROLES.map((role) => {
-    const hex = theme.colors[theme.scene.landmarks[role]]
+    const token = theme.scene.landmarks[role]
+    const hex = theme.world[token] ?? theme.models[token]
     if (hex === undefined) throw new Error(`no colour for ${role}`)
     return [role, hex]
   }),

@@ -6,7 +6,8 @@
  * Polygons go through one TopoJSON topology per source with no quantization, so neighbours
  * share exact arcs; arcs are simplified (Visvalingam, square metres) and then rounded to whole
  * metres while still shared, so adjacent boroughs and zones never open gaps between them.
- * Subway paths use Douglas-Peucker for a hard error bound.
+ * Subway paths use Douglas-Peucker for a hard error bound. District buildings (buildings.ts)
+ * and procedural blocks (blocks.ts) are built from the same pass, per quality tier.
  */
 import { createHash } from 'node:crypto'
 import type * as GeoJSON from 'geojson'
@@ -20,7 +21,11 @@ import type {
   Topology,
 } from 'topojson-specification'
 import { z } from 'zod'
-import type { GeoConfig } from '../../src/lib/data/schemas/config.ts'
+import {
+  QUALITY_TIERS,
+  type GeoConfig,
+  type QualityTier,
+} from '../../src/lib/data/schemas/config.ts'
 import type { LandmarkModel } from '../../src/lib/data/schemas/landmarkModels.ts'
 import { encodePath, encodeRing, type DeltaPolygon } from '../../src/lib/geo/codec.ts'
 import { areaAt, nearestArea, prepareAreas, type PreparedArea } from '../../src/lib/geo/lookup.ts'
@@ -37,9 +42,12 @@ import {
   project,
   type LocalPoint,
 } from '../../src/lib/geo/projection.ts'
-import type { GeoSourceId, LionSourceId } from '../../src/lib/geo/sources.ts'
+import { buildingSourceId, type GeoSourceId, type LionSourceId } from '../../src/lib/geo/sources.ts'
+import { blocksFileText, buildBlocks, readDensity } from './blocks.ts'
+import { buildingsFileText, districtTier, readDistrictFootprints } from './buildings.ts'
 import { douglasPeucker } from './douglas-peucker.ts'
 import { readGtfsSubway } from './gtfs.ts'
+import { readLandmarkExclusions } from './landmark-exclusions.ts'
 import { buildLandmarkFrames, type FramePlace } from './landmarks.ts'
 import type { Lock } from './lock.ts'
 import { renderSourcesMd, type TerminalExtension } from './sources-md.ts'
@@ -58,6 +66,10 @@ export interface RawGeoInputs {
   readonly ntas: unknown
   /** The MTA subway GTFS zip, byte for byte as downloaded. */
   readonly gtfsZip: Uint8Array
+  /** Parsed JSON of the MapPLUTO per-community-district statistics. */
+  readonly density: unknown
+  /** Paged source id (`oti-buildings-<district>`) → parsed JSON of each page, in order. */
+  readonly buildings: ReadonlyMap<string, readonly unknown[]>
   /** Parsed NYC DCP LION GeoJSON, one exact-street query per source. */
   readonly lion: ReadonlyMap<LionSourceId, unknown>
 }
@@ -67,12 +79,41 @@ export interface GeoBuildParams {
   readonly bounds: GeoBoundsInput
   readonly lock: Lock
   /** Sanity counts for the upstream files: a partial download must fail the build. */
-  readonly expected: { readonly boroughs: number; readonly ntas: number }
+  readonly expected: {
+    readonly boroughs: number
+    readonly ntas: number
+    /** Community districts with lot area in the MapPLUTO statistics. */
+    readonly communityDistricts: number
+  }
   /** data/landmarks/models.json and the landmarks.json places they model. */
   readonly landmarks: {
     readonly models: readonly LandmarkModel[]
     readonly places: readonly FramePlace[]
   }
+}
+
+/** One district at one tier, for the build log and the budget check. */
+export interface DistrictStat {
+  readonly district: string
+  readonly tier: QualityTier
+  readonly path: string
+  /** Features downloaded for the district's bounding box. */
+  readonly downloaded: number
+  /** Footprint parts inside the circle and outside every landmark exclusion. */
+  readonly inCircle: number
+  /** Footprint parts dropped by a landmark exclusion (INT-7). */
+  readonly excluded: number
+  /** Footprints that passed the tier's area and height filters. */
+  readonly footprints: number
+  readonly masses: number
+  readonly triangles: number
+}
+
+export interface BlockStat {
+  readonly tier: QualityTier
+  readonly path: string
+  readonly instances: number
+  readonly triangles: number
 }
 
 export interface GeoBuildResult {
@@ -83,6 +124,8 @@ export interface GeoBuildResult {
   readonly stationFallbacks: readonly string[]
   /** Parks whose every ring was smaller than parkMinRingAreaM2. */
   readonly droppedParks: readonly string[]
+  readonly districtStats: readonly DistrictStat[]
+  readonly blockStats: readonly BlockStat[]
 }
 
 export const OUTPUT_FILES = {
@@ -96,6 +139,22 @@ export const OUTPUT_FILES = {
   manifest: 'geo/manifest.derived.json',
   sources: 'geo/SOURCES.md',
 } as const
+
+/** Per district and tier: counted against perf.json districtBuildingsGzKB (manifest group `district`). */
+export const districtFilePath = (districtId: string, tier: QualityTier) =>
+  `geo/districts/${districtId}.${tier}.derived.json`
+/** Per tier: counted with the districts (manifest group `blocks`). */
+export const blocksFilePath = (tier: QualityTier) => `geo/blocks.${tier}.derived.json`
+
+/** Every per-tier output the config asks for, district files first. */
+export function tieredOutputPaths(config: GeoConfig): { path: string; tier: QualityTier }[] {
+  return [
+    ...config.districts.flatMap((district) =>
+      QUALITY_TIERS.map((tier) => ({ path: districtFilePath(district.id, tier), tier })),
+    ),
+    ...QUALITY_TIERS.map((tier) => ({ path: blocksFilePath(tier), tier })),
+  ]
+}
 
 /** Shipped with the map (counted against perf.json baseGeoGzKB). Everything else is docs. */
 const BASE_FILES: readonly string[] = [
@@ -564,16 +623,81 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     paths: (routePaths.get(route.routeId) ?? []).map(encodePath),
   }))
 
+  const dcpBoroughs: GeoSourceId[] = ['dcp-borough-boundaries']
+  const dcpNtas: GeoSourceId[] = ['dcp-nta-2020']
+
   // 6. Landmark frames, oriented by LION streets and checked against the land just built.
   const landmarkFrames = buildLandmarkFrames(
     { lion: raw.lion, ...params.landmarks },
     landAreas,
     config,
   )
+  const landmarkFramesFile = {
+    ...header([...dcpBoroughs, ...landmarkFrames.sources], LION_NOTICE),
+    landmarks: landmarkFrames.frames,
+  }
 
-  // 7. Files, manifest and SOURCES.md.
-  const dcpBoroughs: GeoSourceId[] = ['dcp-borough-boundaries']
-  const dcpNtas: GeoSourceId[] = ['dcp-nta-2020']
+  // 7. District buildings, per district and tier, clear of every landmark's ground (INT-7).
+  const exclusions = readLandmarkExclusions(landmarkFramesFile)
+  const tiered = new Map<string, { group: 'district' | 'blocks'; tier: QualityTier }>()
+  const tieredFiles = new Map<string, string>()
+  const districtStats: DistrictStat[] = []
+  for (const district of config.districts) {
+    const sourceId = buildingSourceId(district.id)
+    const entry = lock.pagedSources.find((source) => source.id === sourceId)
+    const pages = raw.buildings.get(sourceId)
+    if (entry === undefined || pages === undefined) {
+      throw new Error(`geo build: no building footprints for district ${district.id}`)
+    }
+    const read = readDistrictFootprints(district, pages, entry.count, {
+      tiers: config.buildingTiers,
+      exclusions,
+    })
+    for (const tier of QUALITY_TIERS) {
+      const buildings = districtTier(district, read.footprints, config.buildingTiers.tiers[tier])
+      const path = districtFilePath(district.id, tier)
+      tieredFiles.set(path, buildingsFileText(district, tier, buildings))
+      tiered.set(path, { group: 'district', tier })
+      districtStats.push({
+        district: district.id,
+        tier,
+        path,
+        downloaded: read.downloaded,
+        inCircle: read.footprints.length,
+        excluded: read.excluded,
+        footprints: buildings.footprints,
+        masses: buildings.h.length,
+        triangles: buildings.triangles,
+      })
+    }
+  }
+
+  // 8. Procedural blocks everywhere else, per tier.
+  const density = readDensity(raw.density, expected.communityDistricts)
+  const blockInputs = {
+    land,
+    parks,
+    zoneShapes,
+    districtZoneIds: new Set(zoneMeta.filter((z) => z.kind === 'district').map((z) => z.id)),
+    density,
+    districts: config.districts,
+    exclusions,
+  }
+  const blockStats: BlockStat[] = []
+  for (const tier of QUALITY_TIERS) {
+    const blocks = buildBlocks(blockInputs, config.blocks, tier)
+    if (blocks.instances > config.blocks.maxInstances[tier]) {
+      throw new Error(
+        `geo build: ${blocks.instances} ${tier} blocks exceed blocks.maxInstances.${tier} (${config.blocks.maxInstances[tier]})`,
+      )
+    }
+    const path = blocksFilePath(tier)
+    tieredFiles.set(path, blocksFileText(tier, blocks))
+    tiered.set(path, { group: 'blocks', tier })
+    blockStats.push({ tier, path, instances: blocks.instances, triangles: blocks.triangles })
+  }
+
+  // 9. Files, manifest and SOURCES.md.
   const files = new Map<string, string>([
     [OUTPUT_FILES.land, toText({ ...header(dcpBoroughs, DCP_NOTICE), boroughs: land })],
     [OUTPUT_FILES.water, toText({ ...header(dcpBoroughs, DCP_NOTICE), sea })],
@@ -584,23 +708,22 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     ],
     [OUTPUT_FILES.zones, toText({ ...header(dcpNtas, DCP_NOTICE), zones: zoneMeta })],
     [OUTPUT_FILES.zoneShapes, toText({ ...header(dcpNtas, DCP_NOTICE), zones: zoneShapes })],
-    [
-      OUTPUT_FILES.landmarkFrames,
-      toText({
-        ...header([...dcpBoroughs, ...landmarkFrames.sources], LION_NOTICE),
-        landmarks: landmarkFrames.frames,
-      }),
-    ],
+    [OUTPUT_FILES.landmarkFrames, toText(landmarkFramesFile)],
     [OUTPUT_FILES.sources, renderSourcesMd(lock, config, terminalExtensions)],
+    ...tieredFiles,
   ])
   const manifestFiles = [...files.entries()]
     .sort(([a], [b]) => byString(a, b))
-    .map(([path, text]) => ({
-      path,
-      group: BASE_FILES.includes(path) ? 'base' : 'docs',
-      bytes: Buffer.byteLength(text),
-      sha256: sha256(text),
-    }))
+    .map(([path, text]) => {
+      const tier = tiered.get(path)
+      return {
+        path,
+        group: tier?.group ?? (BASE_FILES.includes(path) ? 'base' : 'docs'),
+        ...(tier === undefined ? {} : { tier: tier.tier }),
+        bytes: Buffer.byteLength(text),
+        sha256: sha256(text),
+      }
+    })
   files.set(OUTPUT_FILES.manifest, toText({ format: 'cc-geo-manifest-v1', files: manifestFiles }))
 
   return {
@@ -608,6 +731,8 @@ export function buildGeoOutputs(raw: RawGeoInputs, params: GeoBuildParams): GeoB
     terminalExtensions,
     stationFallbacks,
     droppedParks,
+    districtStats,
+    blockStats,
   }
 }
 

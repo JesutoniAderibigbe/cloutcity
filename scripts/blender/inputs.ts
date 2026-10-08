@@ -70,9 +70,13 @@ export function buildInputs(id: string): Record<string, unknown> {
   const frames = readJson('data/landmarks/frames.derived.json') as { landmarks: Entry[] }
   const scene = readJson('data/config/scene.json') as Record<string, unknown>
   const theme = readJson('data/config/theme.json') as {
-    colors: Record<string, string>
+    colors?: Record<string, string>
+    world?: Record<string, string>
+    models?: Record<string, string>
     scene: { landmarks: Record<string, string> }
   }
+  // A scene role names a models or world token (DEC-26); same lookup order as cclib/inputs.py.
+  const colours = { ...theme.colors, ...theme.world, ...theme.models }
   const perf = readJson('data/config/perf.json') as Record<string, unknown>
   const scripts = Object.fromEntries(
     scriptFiles(id).map((file) => [file, sha256(readFileSync(join(BLENDER_DIR, file)))]),
@@ -84,7 +88,7 @@ export function buildInputs(id: string): Record<string, unknown> {
     frame: entryOf(frames.landmarks, id, 'frames.derived.json'),
     scene: { land: scene.land, camera: scene.camera, landmarks: scene.landmarks },
     palette: Object.fromEntries(
-      Object.entries(theme.scene.landmarks).map(([role, token]) => [role, theme.colors[token]]),
+      Object.entries(theme.scene.landmarks).map(([role, token]) => [role, colours[token]]),
     ),
     perf: {
       landmarkTrianglesMax: perf.landmarkTrianglesMax,

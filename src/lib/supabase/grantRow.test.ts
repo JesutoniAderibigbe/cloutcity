@@ -42,6 +42,7 @@ describe('toServerGrantRow vs the S18 grants columns', () => {
       'clout_amount',
       'item_id',
       'cap_amount',
+      'clout_cap',
       'eligibility',
       'reason',
       'issued_by',
@@ -52,6 +53,8 @@ describe('toServerGrantRow vs the S18 grants columns', () => {
     expect(row.cash_amount).toBeLessThanOrEqual(row.cap_amount)
     expect(row.clout_amount).toBeGreaterThanOrEqual(0)
     expect(row.reason).not.toBe('')
-    expect(row.eligibility.cloutCap).toBe(result.record.cap.clout)
+    expect(row.clout_amount).toBeLessThanOrEqual(row.clout_cap)
+    expect(row.clout_cap).toBe(result.record.cap.clout)
+    expect(row.idempotency_key).toBe('goal:reach-local:r1')
   })
 })

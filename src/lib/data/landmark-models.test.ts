@@ -242,10 +242,10 @@ describe('config/perf.json landmark budgets', () => {
 })
 
 describe('config/theme.json scene.landmarks', () => {
-  it('names a palette token for every role', () => {
+  it('names a world token for every role', () => {
     const theme = ThemeConfigSchema.parse(themeJson)
     for (const token of Object.values(theme.scene.landmarks)) {
-      expect(theme.colors[token]).toMatch(/^#[0-9a-f]{6}$/i)
+      expect(theme.world[token] ?? theme.models[token]).toMatch(/^#[0-9a-f]{6}$/i)
     }
   })
 

@@ -3,7 +3,9 @@
 import { useEffect, useId, useRef } from 'react'
 import { totalClout } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
+import { isAtPlace } from '@/engine/game'
 import { copy } from '@/lib/copy'
+import { homeName } from '@/lib/economyCopy'
 import {
   boroughClosedReason,
   boroughs,
@@ -22,12 +24,14 @@ import {
   usePlacesPanelShown,
 } from '@/state/placesPanel'
 import { useGameStore } from '@/state/store'
+import { HOME_SPOT_ID } from '@/state/trip'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk; places.ts
 // registers boroughs, landmarks, places and venues).
 import '@/lib/copy/ns/places'
+import '@/lib/copy/ns/travel'
 
 const BUTTON =
-  'min-h-11 w-full rounded-xl px-3 py-2 text-left font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400'
+  'min-h-11 w-full rounded-xl px-3 py-2 text-left font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus'
 
 /** Gives focus back to the HUD's Places button (or the scene when it is gone). */
 function focusPlacesButton() {
@@ -55,6 +59,8 @@ export function PlacesPanel() {
   const panel = usePlacesPanel()
   const openId = useOpenPlaceId()
   const clout = useGameStore((state) => totalClout(state.player, engineConfig))
+  const location = useGameStore((state) => state.player.location)
+  const home = useGameStore((state) => state.player.home)
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
   const lastOpened = useRef<string | null>(null)
@@ -101,18 +107,59 @@ export function PlacesPanel() {
     openPlace(place.id, { origin: 'panel' })
   }
 
-  const placeButton = (place: MapPlace) => (
-    <li key={place.id}>
-      <button
-        type="button"
-        data-place-button={place.id}
-        aria-label={placeAccessibleName(place, placeAccess(place, clout))}
-        onClick={() => pick(place)}
-        className={`${BUTTON} bg-night-800 text-ink-50`}
-      >
-        {placeName(place)}
-      </button>
-    </li>
+  /** A row's name, with "You're here" where the player stands (S08). */
+  const rowLabel = (name: string, here: boolean) =>
+    here ? copy('travel.panel.hereLabel', { name }) : name
+  const hereBadge = (
+    <span
+      aria-hidden="true"
+      className="shrink-0 rounded-full bg-taxi px-2 text-xs leading-5 font-bold text-on-taxi"
+    >
+      {copy('travel.hereBadge')}
+    </span>
+  )
+
+  const placeButton = (place: MapPlace) => {
+    const here = isAtPlace({ location }, place.id)
+    return (
+      <li key={place.id}>
+        <button
+          type="button"
+          data-place-button={place.id}
+          data-player-here={here ? '' : undefined}
+          aria-label={rowLabel(placeAccessibleName(place, placeAccess(place, clout)), here)}
+          onClick={() => pick(place)}
+          className={`${BUTTON} flex items-center justify-between gap-2 bg-raised text-fg`}
+        >
+          <span className="min-w-0">{placeName(place)}</span>
+          {here ? hereBadge : null}
+        </button>
+      </li>
+    )
+  }
+
+  // Home (S08): the way back from anywhere, first in the list.
+  const atHome = location.kind === 'home'
+  const homeLabel = copy('travel.panel.home', { home: homeName(home) })
+  const homeRow = (
+    <ul className="flex flex-col gap-1.5">
+      <li>
+        <button
+          type="button"
+          data-place-button={HOME_SPOT_ID}
+          data-player-here={atHome ? '' : undefined}
+          aria-label={rowLabel(homeLabel, atHome)}
+          onClick={() => {
+            keepPlacesPanel()
+            openPlace(HOME_SPOT_ID, { origin: 'panel' })
+          }}
+          className={`${BUTTON} flex items-center justify-between gap-2 bg-raised text-fg`}
+        >
+          <span className="min-w-0">{homeLabel}</span>
+          {atHome ? hereBadge : null}
+        </button>
+      </li>
+    </ul>
   )
 
   const places = mapPlaces()
@@ -128,13 +175,13 @@ export function PlacesPanel() {
       hidden={hidden}
       data-places-panel={panel.mode}
       data-cc-feature="cc-feature:places-panel"
-      className="m-2 flex flex-col gap-2 rounded-2xl border border-night-700 bg-night-900/95 p-3 shadow-lg backdrop-blur"
+      className="m-2 flex flex-col gap-2 rounded-2xl border border-line glass p-3 shadow-lg"
     >
       <div className="flex items-start justify-between gap-2">
         <h2
           id={titleId}
           tabIndex={-1}
-          className="text-base leading-tight font-extrabold text-pink-400 focus:outline-none"
+          className="text-base leading-tight font-extrabold text-fg focus:outline-none"
         >
           {copy(chooser ? 'places.panel.chooserTitle' : 'places.panel.title')}
         </h2>
@@ -145,42 +192,49 @@ export function PlacesPanel() {
             focusPlacesButton()
           }}
           aria-label={copy('places.panel.closeLabel')}
-          className="min-h-11 min-w-11 shrink-0 rounded-xl bg-night-800 px-3 py-2 text-center font-semibold text-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400"
+          className="min-h-11 min-w-11 shrink-0 rounded-xl bg-raised px-3 py-2 text-center font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
         >
           {copy('places.panel.close')}
         </button>
       </div>
       {chooser ? (
         <>
-          <p className="text-sm text-ink-300">{copy('places.panel.chooserHint')}</p>
+          <p className="text-sm text-muted">{copy('places.panel.chooserHint')}</p>
           <ul className="flex flex-col gap-1.5">{chosen.map(placeButton)}</ul>
           <button
             type="button"
             onClick={openPlacesPanel}
-            className={`${BUTTON} border border-night-700 text-ink-300`}
+            className={`${BUTTON} border border-line text-muted`}
           >
             {copy('places.panel.showAll')}
           </button>
         </>
       ) : (
-        boroughs.map((borough) => {
-          const inBorough = places.filter((place) => place.borough === borough.id)
-          if (inBorough.length === 0) return null
-          const headingId = `${titleId}-${borough.id}`
-          const reason = boroughClosedReason(
-            borough.id,
-            placeAccess({ borough: borough.id }, clout),
-          )
-          return (
-            <section key={borough.id} aria-labelledby={headingId} className="flex flex-col gap-1.5">
-              <h3 id={headingId} className="text-sm font-bold text-ink-50">
-                {placeName({ id: borough.id, nameKey: borough.nameKey })}
-              </h3>
-              {reason === null ? null : <p className="text-xs text-ink-300">{reason}</p>}
-              <ul className="flex flex-col gap-1.5">{inBorough.map(placeButton)}</ul>
-            </section>
-          )
-        })
+        <>
+          {homeRow}
+          {boroughs.map((borough) => {
+            const inBorough = places.filter((place) => place.borough === borough.id)
+            if (inBorough.length === 0) return null
+            const headingId = `${titleId}-${borough.id}`
+            const reason = boroughClosedReason(
+              borough.id,
+              placeAccess({ borough: borough.id }, clout),
+            )
+            return (
+              <section
+                key={borough.id}
+                aria-labelledby={headingId}
+                className="flex flex-col gap-1.5"
+              >
+                <h3 id={headingId} className="text-sm font-bold text-fg">
+                  {placeName({ id: borough.id, nameKey: borough.nameKey })}
+                </h3>
+                {reason === null ? null : <p className="text-xs text-muted">{reason}</p>}
+                <ul className="flex flex-col gap-1.5">{inBorough.map(placeButton)}</ul>
+              </section>
+            )
+          })}
+        </>
       )}
     </div>
   )

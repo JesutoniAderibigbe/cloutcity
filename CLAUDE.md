@@ -298,6 +298,7 @@ Further rules:
 | Integration tests | `npm run test:integration` | Needs local Supabase |
 | E2E tests | `npm run e2e` | Specs in `tests/e2e` |
 | Perf e2e | `npm run e2e:perf` | Throttled cc-mid-4g profile |
+| Deployment-id e2e | `npm run e2e:dpl` | Offline and service-worker specs on a build with `NEXT_DEPLOYMENT_ID` (Vercel Skew Protection `?dpl=`) |
 | Budgets | `npm run budget` | JS and asset gzip sizes vs perf.json |
 | Geo data | `npm run geo:build` | Needs network |
 | Local Supabase | `npx supabase start` · `npx supabase db reset` · `npx supabase status` | |

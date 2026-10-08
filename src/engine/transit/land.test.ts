@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { encodeRing } from '@/lib/geo/codec'
 import type { LocalPoint } from '@/lib/geo/projection'
-import { createSeededRng } from '../random'
+import { createRng } from '../rng'
 import {
   buildLandMask,
   crossesWater,
@@ -82,10 +82,10 @@ describe('land mask', () => {
 
   it('matches dense sampling on random segments across the real land layer', () => {
     const { land } = testWorld()
-    const rng = createSeededRng(8)
+    const rng = createRng(8)
     for (let i = 0; i < 60; i++) {
-      const a = { x: -15_000 + rng() * 30_000, y: -15_000 + rng() * 35_000 }
-      const b = { x: a.x + (rng() - 0.5) * 8000, y: a.y + (rng() - 0.5) * 8000 }
+      const a = { x: -15_000 + rng.next() * 30_000, y: -15_000 + rng.next() * 35_000 }
+      const b = { x: a.x + (rng.next() - 0.5) * 8000, y: a.y + (rng.next() - 0.5) * 8000 }
       const exact = longestWaterRunM(a, b, land)
       const sampled = sampledWaterRunM(a, b, land, 5)
       expect(Math.abs(exact - sampled), `segment ${i}`).toBeLessThan(15)

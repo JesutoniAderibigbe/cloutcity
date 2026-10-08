@@ -1,7 +1,7 @@
 /**
- * Place pins (S04c): one InstancedMesh per kind (a venue pin, a landmark obelisk placeholder
- * until S07a/S07b models), so every place costs two draw calls in all, plus a selection ring
- * under the open place. Per-instance colours carry the style (by kind, teaser on "expanding
+ * Place pins (S04c): one InstancedMesh per look (a venue pin, a landmark obelisk placeholder
+ * until S07b's models, and a compact badge floating over each landmark that has a model, S07a),
+ * so every place costs three draw calls in all, plus a selection ring under the open place. Per-instance colours carry the style (by kind, teaser on "expanding
  * soon" land, muted memorial). Pin height follows the camera distance, clamped, like the station
  * markers, so pins stay findable from street level to the whole-city view. three only, no React.
  */
@@ -10,6 +10,7 @@ import {
   ConeGeometry,
   CylinderGeometry,
   Group,
+  InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
   Mesh,
@@ -20,16 +21,28 @@ import {
   RingGeometry,
   Vector3,
 } from 'three'
-import type { BufferGeometry, Camera, Texture } from 'three'
+import type { BufferGeometry, Camera, IUniform, Texture } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
 import { LAY_FLAT_X } from '../geo/coords'
 import type { GeoPin, PinKind } from '../geo/schema'
+import { NIGHT_GLOW_ATTRIBUTE, patchNightGlow } from '../lighting/nightGlow'
 import type { ScenePalette } from '../types'
 import type { ScreenPin } from './pick'
 
+/** How a pin is drawn: by kind, and as a badge over a modelled landmark (S07a). */
+export type PinLook = PinKind | 'badge'
+export const PIN_LOOKS = ['venue', 'landmark', 'badge'] as const satisfies readonly PinLook[]
+
+export function pinLook(pin: Pick<GeoPin, 'kind' | 'badge'>): PinLook {
+  return pin.kind === 'landmark' && pin.badge === true ? 'badge' : pin.kind
+}
+
 /** Where on a unit-height pin its head sits: the point taps aim at. */
-export const PIN_HEAD = { venue: 0.8, landmark: 0.85 } as const satisfies Record<PinKind, number>
+export const PIN_HEAD = { venue: 0.8, landmark: 0.85, badge: 0.78 } as const satisfies Record<
+  PinLook,
+  number
+>
 
 /** Position, normal only, non-indexed: the shape every merged pin part must share. */
 function part(geometry: BufferGeometry): BufferGeometry {
@@ -63,6 +76,19 @@ export function buildLandmarkPinGeometry(): BufferGeometry {
   cap.rotateY(Math.PI / 4)
   cap.translate(0, 0.89, 0)
   return merged([shaft, cap], 'landmark')
+}
+
+/**
+ * A landmark badge of unit height (S07a): a slim stem with a six-sided medallion facing
+ * the camera's side of the map, so it reads as a tap target over a model without hiding it.
+ */
+export function buildBadgePinGeometry(): BufferGeometry {
+  const stem = new CylinderGeometry(0.03, 0.05, 0.56, 4, 1)
+  stem.translate(0, 0.28, 0)
+  const medallion = new CylinderGeometry(0.22, 0.22, 0.07, 6, 1)
+  medallion.rotateX(Math.PI / 2)
+  medallion.translate(0, PIN_HEAD.badge, 0)
+  return merged([stem, medallion], 'badge')
 }
 
 /** Pin height for a camera distance, clamped. */
@@ -101,39 +127,71 @@ const _scale = new Vector3()
 const _identity = new Quaternion()
 const _head = new Vector3()
 
+/**
+ * How much a pin glows at full night (S04f): a share of its own colour, so it stays readable
+ * and tappable in the dark. Memorial (muted) and teaser pins never glow.
+ */
+export function pinGlow(
+  pin: Pick<GeoPin, 'kind' | 'style'>,
+  palette: ScenePalette,
+  lift: number,
+  out: Color,
+): Color {
+  if (pin.style !== 'normal') return out.setScalar(0)
+  return out.set(pinColor(pin, palette)).multiplyScalar(lift)
+}
+
+/**
+ * `nightGlow`: the shared night-glow uniform (src/scene/lighting/nightGlow.ts). Each pin's glow
+ * is a per-instance `_emissive` attribute, so a muted pin in the same draw call stays unlit.
+ */
 export function buildPins(
   pins: readonly GeoPin[],
   palette: ScenePalette,
   config: Pick<SceneConfig, 'pins'>,
   groundY: number,
   gradientMap: Texture,
+  nightGlow?: IUniform<number>,
 ): PinObjects {
   const settings = config.pins
   const group = new Group()
   group.name = 'pins'
-  const byKind = {
-    venue: pins.filter((pin) => pin.kind === 'venue'),
-    landmark: pins.filter((pin) => pin.kind === 'landmark'),
-  } as const satisfies Record<PinKind, GeoPin[]>
-  const ordered = [...byKind.venue, ...byKind.landmark]
+  const byLook = {
+    venue: pins.filter((pin) => pinLook(pin) === 'venue'),
+    landmark: pins.filter((pin) => pinLook(pin) === 'landmark'),
+    badge: pins.filter((pin) => pinLook(pin) === 'badge'),
+  } as const satisfies Record<PinLook, GeoPin[]>
+  const ordered = [
+    ...pins.filter((pin) => pin.kind === 'venue'),
+    ...pins.filter((pin) => pin.kind === 'landmark'),
+  ]
   const baseY = (pin: GeoPin) => groundY + settings.liftM + (pin.liftM ?? 0)
 
   // White base colour: the instance colour carries each pin's style.
   const material = new MeshToonMaterial({ color: new Color(1, 1, 1), gradientMap })
+  if (nightGlow !== undefined) patchNightGlow(material, 'attribute', { uniform: nightGlow })
   const geometries = {
     venue: buildVenuePinGeometry(settings.radialSegments),
     landmark: buildLandmarkPinGeometry(),
+    badge: buildBadgePinGeometry(),
   }
-  const meshes = {} as Record<PinKind, InstancedMesh>
+  const meshes = {} as Record<PinLook, InstancedMesh>
   const color = new Color()
-  for (const kind of ['venue', 'landmark'] as const) {
-    const list = byKind[kind]
-    const mesh = new InstancedMesh(geometries[kind], material, Math.max(1, list.length))
+  for (const look of PIN_LOOKS) {
+    const list = byLook[look]
+    const mesh = new InstancedMesh(geometries[look], material, Math.max(1, list.length))
     mesh.count = list.length
-    mesh.name = `pins-${kind}`
+    mesh.name = `pins-${look}`
     list.forEach((pin, i) => mesh.setColorAt(i, color.set(pinColor(pin, palette))))
     if (mesh.instanceColor !== null) mesh.instanceColor.needsUpdate = true
-    meshes[kind] = mesh
+    if (nightGlow !== undefined) {
+      const glow = new Float32Array(Math.max(1, list.length) * 3)
+      list.forEach((pin, i) =>
+        pinGlow(pin, palette, settings.nightGlow, color).toArray(glow, i * 3),
+      )
+      geometries[look].setAttribute(NIGHT_GLOW_ATTRIBUTE, new InstancedBufferAttribute(glow, 3))
+    }
+    meshes[look] = mesh
     group.add(mesh)
   }
 
@@ -165,9 +223,9 @@ export function buildPins(
 
   const writeMatrices = () => {
     _scale.setScalar(height)
-    for (const kind of ['venue', 'landmark'] as const) {
-      const mesh = meshes[kind]
-      byKind[kind].forEach((pin, i) => {
+    for (const look of PIN_LOOKS) {
+      const mesh = meshes[look]
+      byLook[look].forEach((pin, i) => {
         _position.set(pin.x, baseY(pin), -pin.y)
         mesh.setMatrixAt(i, _matrix.compose(_position, _identity, _scale))
       })
@@ -203,7 +261,7 @@ export function buildPins(
       // A tap can land before the frame that follows a camera move has rendered.
       camera.updateMatrixWorld()
       for (const pin of ordered) {
-        _head.set(pin.x, baseY(pin) + PIN_HEAD[pin.kind] * height, -pin.y).project(camera)
+        _head.set(pin.x, baseY(pin) + PIN_HEAD[pinLook(pin)] * height, -pin.y).project(camera)
         // Behind the camera or beyond the far plane: not on screen.
         if (_head.z < -1 || _head.z > 1) continue
         out.push({
@@ -215,8 +273,7 @@ export function buildPins(
       return out
     },
     dispose() {
-      geometries.venue.dispose()
-      geometries.landmark.dispose()
+      for (const geometry of Object.values(geometries)) geometry.dispose()
       for (const mesh of Object.values(meshes)) mesh.dispose()
       material.dispose()
       ringGeometry.dispose()

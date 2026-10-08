@@ -5,8 +5,8 @@
  * and city sounds keep playing), and the second line says what is playing. Before audio is
  * unlocked it reads "Tap for sound" with the remembered choice, and that first tap only turns
  * sound on (GR-13). If music (or the whole runtime) failed to load, it says so and a tap retries.
- * The gear opens the sound settings (on wide screens; on phones they open from the HUD's More
- * panel).
+ * The sound settings open from the HUD's More panel at every width (S06: More replaced the gear
+ * that wide screens had).
  *
  * A boot island (SoundControlMount): it and the zod-backed stores it reads load in their own
  * chunk right after the shell (DEC-11).
@@ -20,19 +20,12 @@ import { retryAudio } from '@/lib/audio/loadRuntime'
 import { unlockAudioFromGesture } from '@/lib/audio/unlock'
 import { INITIAL_AUDIO_STATUS, audioStatusStore } from '@/state/audioStatus'
 import { onboardingStore } from '@/state/onboarding'
-import {
-  SOUND_SETTINGS_BUTTON_ID,
-  SOUND_SETTINGS_SHEET_ID,
-  setSoundSheetOpen,
-  soundSheetStore,
-} from './soundSheet'
 import '@/lib/copy/ns/audio'
 
 const LINE_2_ID = 'sound-control-now-playing'
 
 const ownMusicNow = () => isOwnMusic(onboardingStore.getState().record)
 const statusNow = () => audioStatusStore.getState()
-const sheetOpenNow = () => soundSheetStore.getState().open
 const never = () => false
 const initialStatus = () => INITIAL_AUDIO_STATUS
 
@@ -57,12 +50,11 @@ function secondLine(view: NowPlaying, ownMusic: boolean, titleKey: string | null
 }
 
 const BUTTON =
-  'flex min-h-11 min-w-11 items-center rounded-full border border-night-700 bg-night-800 text-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400 disabled:opacity-60'
+  'flex min-h-11 min-w-11 items-center rounded-full border border-line bg-raised text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:opacity-60'
 
 export function SoundControl() {
   const ownMusic = useSyncExternalStore(onboardingStore.subscribe, ownMusicNow, never)
   const status = useSyncExternalStore(audioStatusStore.subscribe, statusNow, initialStatus)
-  const sheetOpen = useSyncExternalStore(soundSheetStore.subscribe, sheetOpenNow, never)
 
   const view = nowPlaying({
     status: status.status,
@@ -123,37 +115,33 @@ export function SoundControl() {
         type="button"
         onClick={onMain}
         data-sound-main=""
-        className={`${BUTTON} max-w-44 min-w-[110px] flex-col items-start justify-center px-3 text-left aria-pressed:border-taxi-400 ${view.kind === 'locked' ? 'border-taxi-400' : ''}`}
+        className={`${BUTTON} max-w-44 min-w-[110px] flex-col items-start justify-center px-3 text-left aria-pressed:border-taxi-ink hud-tiny:min-w-11 hud-tiny:items-center hud-tiny:px-0 ${view.kind === 'locked' ? 'border-taxi' : ''}`}
         {...main}
       >
-        {/* Two visible lines at every width (S05 restored them on phones, UX-7): what a tap
-            does, and what is playing. */}
-        <span className="block max-w-full truncate text-xs font-bold">{line1}</span>
-        {line2 === '' ? null : (
-          <span id={LINE_2_ID} className="block max-w-full truncate text-[0.6875rem] text-ink-300">
-            {line2}
-          </span>
-        )}
-      </button>
-      <button
-        type="button"
-        id={SOUND_SETTINGS_BUTTON_ID}
-        aria-label={copy('audio.hud.settings')}
-        aria-expanded={sheetOpen}
-        aria-controls={sheetOpen ? SOUND_SETTINGS_SHEET_ID : undefined}
-        onClick={() => setSoundSheetOpen(!sheetOpen)}
-        // On phones and landscape phones the gear lives in the HUD's More panel (S05, Q3).
-        className={`${BUTTON} hidden shrink-0 justify-center hud-wide:flex hud-short:hidden`}
-      >
+        {/* A speaker icon only on the narrowest phones (hud-tiny, UI-1), where the two lines
+            would push the HUD past the screen edge; the lines stay as the name and description. */}
         <svg
           aria-hidden="true"
           viewBox="0 0 24 24"
-          className="h-5 w-5 fill-none stroke-current stroke-2"
+          className="hidden h-5 w-5 fill-none stroke-current stroke-2 hud-tiny:block"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          <path d="M4 7h10M18 7h2M4 17h4M12 17h8" strokeLinecap="round" />
-          <circle cx="16" cy="7" r="2" />
-          <circle cx="10" cy="17" r="2" />
+          <path d="M4 9h4l5-4v14l-5-4H4V9Zm12 0a4 4 0 0 1 0 6m2.5-9a8 8 0 0 1 0 12" />
         </svg>
+        {/* Two visible lines at every other width (S05 restored them on phones, UX-7): what a
+            tap does, and what is playing. */}
+        <span className="block max-w-full truncate text-xs font-bold hud-tiny:sr-only">
+          {line1}
+        </span>
+        {line2 === '' ? null : (
+          <span
+            id={LINE_2_ID}
+            className="block max-w-full truncate text-[0.6875rem] text-muted hud-tiny:sr-only"
+          >
+            {line2}
+          </span>
+        )}
       </button>
     </div>
   )

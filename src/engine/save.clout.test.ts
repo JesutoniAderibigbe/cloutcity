@@ -20,14 +20,22 @@ const eventSource = (eventId: string) => ({ type: 'event', eventId, choiceId: 'a
 
 /** A v6 save: clout is one number, no flex state, pending effects may hold clout. */
 function v6Save(clout: number, extra: { inventory?: unknown; events?: unknown } = {}) {
-  const player: Record<string, unknown> = { ...base.player, clout }
+  const player: Record<string, unknown> = {
+    ...base.player,
+    clout,
+    inventory: { wearables: [], gifts: [], outfit: {} },
+  }
   delete player.flex
   delete player.visited
+  delete player.apartment
+  delete player.location
+  delete player.transit
   if (extra.inventory !== undefined) player.inventory = extra.inventory
   const v6: Record<string, unknown> = { ...base, player, events: extra.events ?? base.events }
   delete v6.goals
   delete v6.grants
   delete v6.prestige
+  delete v6.actions
   return v6
 }
 
@@ -35,8 +43,8 @@ const level = (id: string) => config.clout.levels.findIndex((entry) => entry.id 
 const minOf = (id: string) => config.clout.levels[level(id)]?.minClout ?? Number.NaN
 
 describe('save v7', () => {
-  it('is version 8 (S15 after S13) and a fresh save has an empty ledger and no flexes', () => {
-    expect(SAVE_VERSION).toBe(8)
+  it('is version 11 (S18c after S08 and S16) and a fresh save has an empty ledger and no flexes', () => {
+    expect(SAVE_VERSION).toBe(11)
     expect(initialSave(config).player.clout).toEqual(initialCloutState)
     expect(initialSave(config).player.flex).toEqual(initialFlexState)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)

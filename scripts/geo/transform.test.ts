@@ -13,10 +13,10 @@ import { decodePath, decodeRing } from '../../src/lib/geo/codec'
 import { distanceToPolyline, pointInPolygon, signedArea } from '../../src/lib/geo/polygon'
 import { project } from '../../src/lib/geo/projection'
 import { FIXTURE_BOROUGHS, FIXTURE_NTAS, FIXTURE_PARAMS, fixtureInputs } from './fixtures/synthetic'
-import { OUTPUT_FILES, buildGeoOutputs, type GeoBuildResult } from './transform'
+import { OUTPUT_FILES, buildGeoOutputs, tieredOutputPaths, type GeoBuildResult } from './transform'
 
 /** sha256 over every output (path, newline, text) in path order. Update only on purpose. */
-const FIXTURE_GOLDEN = '136b90ecd9946a889a04a7043734d3a50c4ba1385987d553f01db6afa1a579ae'
+const FIXTURE_GOLDEN = 'a48fbad71e939f8635dcf16cae1d24a3f67e3f40df73dd2c33e2cf4cf8316dc8'
 
 function digest(result: GeoBuildResult): string {
   const hash = createHash('sha256')
@@ -37,7 +37,16 @@ describe('buildGeoOutputs on the synthetic fixture', () => {
   })
 
   it('writes every output, each derived file valid against its schema', () => {
-    expect([...result.files.keys()]).toEqual(Object.values(OUTPUT_FILES).sort())
+    const tiered = tieredOutputPaths(FIXTURE_PARAMS.config).map(({ path }) => path)
+    expect(tiered).toEqual([
+      'geo/districts/midtown.low.derived.json',
+      'geo/districts/midtown.mid.derived.json',
+      'geo/districts/midtown.high.derived.json',
+      'geo/blocks.low.derived.json',
+      'geo/blocks.mid.derived.json',
+      'geo/blocks.high.derived.json',
+    ])
+    expect([...result.files.keys()]).toEqual([...Object.values(OUTPUT_FILES), ...tiered].sort())
     // Land is checked below: its schema requires all five real boroughs.
     expect(json(result, OUTPUT_FILES.land)).toMatchObject({ derived: true, format: 'cc-geo-v1' })
     expect(WaterFileSchema.parse(json(result, OUTPUT_FILES.water)).derived).toBe(true)
@@ -45,7 +54,20 @@ describe('buildGeoOutputs on the synthetic fixture', () => {
     expect(SubwayFileSchema.parse(json(result, OUTPUT_FILES.subway)).derived).toBe(true)
     expect(ZonesFileSchema.parse(json(result, OUTPUT_FILES.zones)).derived).toBe(true)
     expect(ZoneShapesFileSchema.parse(json(result, OUTPUT_FILES.zoneShapes)).derived).toBe(true)
-    expect(GeoManifestSchema.parse(json(result, OUTPUT_FILES.manifest)).files).toHaveLength(8)
+    const manifest = GeoManifestSchema.parse(json(result, OUTPUT_FILES.manifest))
+    expect(manifest.files).toHaveLength(14)
+    expect(
+      manifest.files.filter((f) => f.group === 'district').map((f) => [f.path, f.tier]),
+    ).toEqual([
+      ['geo/districts/midtown.high.derived.json', 'high'],
+      ['geo/districts/midtown.low.derived.json', 'low'],
+      ['geo/districts/midtown.mid.derived.json', 'mid'],
+    ])
+    expect(manifest.files.filter((f) => f.group === 'blocks').map((f) => f.tier)).toEqual([
+      'high',
+      'low',
+      'mid',
+    ])
     expect(LandmarkFramesFileSchema.parse(json(result, OUTPUT_FILES.landmarkFrames)).derived).toBe(
       true,
     )
@@ -125,7 +147,7 @@ describe('buildGeoOutputs on the synthetic fixture', () => {
   })
 
   it('fails on a partial upstream file', () => {
-    const params = { ...FIXTURE_PARAMS, expected: { boroughs: 5, ntas: 3 } }
+    const params = { ...FIXTURE_PARAMS, expected: { ...FIXTURE_PARAMS.expected, boroughs: 5 } }
     expect(() => buildGeoOutputs(fixtureInputs(), params)).toThrow(/Expected 5 boroughs, got 2/)
     const truncated = { ...fixtureInputs(), ntas: { ...FIXTURE_NTAS, exceededTransferLimit: true } }
     expect(() => buildGeoOutputs(truncated, FIXTURE_PARAMS)).toThrow(/Invalid NTA 2020/)

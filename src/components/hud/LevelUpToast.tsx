@@ -70,23 +70,24 @@ function Toast({ levelUp }: { readonly levelUp: LevelUp }) {
       ref={ref}
       data-level-up={levelUp.to}
       data-cc-feature="cc-feature:level-up"
+      data-cc-notice="level-up"
       data-paused={paused ? '' : undefined}
-      className="level-up-pop mx-2 flex items-center gap-2 rounded-2xl border border-pink-400 bg-night-900/95 px-3 py-1 shadow-lg backdrop-blur"
+      className="level-up-pop mx-2 flex items-center gap-2 rounded-2xl border border-taxi glass px-3 py-1 shadow-lg"
     >
       {/* Title and message share one flow so the longest level-up (every unlock on the way to
           Icon) still fits the 72 px toast zone at 390 px (UX-1). */}
       <div className="min-w-0 flex-1 text-xs leading-tight">
         <p>
-          <strong className="font-extrabold text-pink-400">{levelUpTitle(levelUp)}</strong>{' '}
-          <span className="text-ink-50">{levelUpMessage(levelUp)}</span>
+          <strong className="font-extrabold text-taxi-ink">{levelUpTitle(levelUp)}</strong>{' '}
+          <span className="text-fg">{levelUpMessage(levelUp)}</span>
         </p>
-        {unlocked === null ? null : <p className="text-taxi-400">{unlocked}</p>}
+        {unlocked === null ? null : <p className="text-taxi-ink">{unlocked}</p>}
       </div>
       <button
         type="button"
         onClick={() => gameStore.getState().dismissLevelUp()}
         aria-label={levelUpCloseLabel(levelUp)}
-        className="min-h-11 min-w-11 shrink-0 rounded-xl bg-night-800 px-3 text-sm font-semibold text-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-taxi-400"
+        className="min-h-11 min-w-11 shrink-0 rounded-xl bg-raised px-3 text-sm font-semibold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         {copy('clout.levelUp.close')}
       </button>

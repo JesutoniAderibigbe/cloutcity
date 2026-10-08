@@ -7,7 +7,8 @@
  * - **Audited.** Every grant appends one record to `grants.log`: what was asked for, the cap,
  *   what was applied, the eligibility rule it passed, the personal-clock minute and the real
  *   time it was issued (injected by the caller), and `sync: 'local'`. Without a session grants
- *   are local only; S18c re-validates each record (`toServerGrantRow`) once a session exists.
+ *   are local only; S18c re-validates each record (`toServerGrantRow`) once a session exists,
+ *   and the device then marks it `synced` (`markGrantsSynced`).
  * - **Eligibility-targeted.** A goal reward needs the goal reached this run, available (not
  *   coming soon), unclaimed, and no event open.
  * - **Capped** relative to the next progression goal (ECON-1), from config: clout at most
@@ -69,8 +70,11 @@ export interface GrantRecord {
   readonly issuedAtMs: number
   readonly issuedBy: 'system'
   readonly campaignId: null
-  /** `local` until S18c re-validates it on the server. */
-  readonly sync: 'local'
+  /**
+   * `local` until the server accepts it (S18c), then `synced`. Device bookkeeping only: the
+   * server's checks ignore it.
+   */
+  readonly sync: 'local' | 'synced'
 }
 
 export interface GrantsState {
@@ -351,6 +355,21 @@ export function grant<S extends GrantSnapshot>(
   }
 }
 
+/**
+ * Marks the records the server holds (`keys`) as `synced`. Pure; records already synced, or not
+ * named, are left as they are, and an unchanged log returns the same state.
+ */
+export function markGrantsSynced(grants: GrantsState, keys: Iterable<string>): GrantsState {
+  const held = new Set(keys)
+  if (!grants.log.some((record) => record.sync === 'local' && held.has(record.key))) return grants
+  return {
+    ...grants,
+    log: grants.log.map((record) =>
+      record.sync === 'local' && held.has(record.key) ? { ...record, sync: 'synced' } : record,
+    ),
+  }
+}
+
 /** A JSON value (the `eligibility` column is jsonb). */
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 
@@ -366,7 +385,10 @@ export interface ServerGrantRow {
   readonly cash_amount: number
   readonly clout_amount: number
   readonly item_id: string | null
+  /** The cash cap. */
   readonly cap_amount: number
+  /** The clout cap (SEC-8: the table checks clout_amount <= clout_cap). */
+  readonly clout_cap: number
   readonly eligibility: { readonly [key: string]: JsonValue }
   readonly reason: string
   readonly issued_by: 'system'
@@ -374,25 +396,24 @@ export interface ServerGrantRow {
 }
 
 /**
- * The server row S18c inserts when it re-validates a local grant. The table's key is unique
- * across all users, so it is scoped as `<userId>:<key>`; it has no clout cap column yet, so the
- * clout cap travels in `eligibility.cloutCap` (SEC-8 follow-up migration). `applied_at` is left
- * for the server to set when it accepts the grant.
+ * The server row S18c inserts when it re-validates a local grant. SEC-8: the key is the engine's
+ * own (`goal:<id>:r<run>`), unique per user (`unique(user_id, idempotency_key)`), and the clout
+ * cap has its own column. `applied_at` is left for the server to set when it accepts the grant.
  */
 export function toServerGrantRow(record: GrantRecord, userId: string): ServerGrantRow {
   return {
     user_id: userId,
     kind: record.kind,
-    idempotency_key: `${userId}:${record.key}`,
+    idempotency_key: record.key,
     cash_amount: record.applied.cash,
     clout_amount: record.applied.clout,
     item_id: record.applied.badge,
     cap_amount: record.cap.cash,
+    clout_cap: record.cap.clout,
     eligibility: {
       rule: record.eligibility.rule,
       goalId: record.eligibility.goalId,
       run: record.eligibility.run,
-      cloutCap: record.cap.clout,
       requested: {
         cash: record.requested.cash,
         clout: record.requested.clout,

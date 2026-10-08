@@ -1,7 +1,8 @@
 /**
  * The landmark kit is code-built geometry on three alone: no React, no config loaders, no model
- * loaders. The only model files in public/ are our Blender-built landmark GLBs (DEC-25, S07c),
- * each pinned by its lock; never downloaded models.
+ * loaders. The only model files in public/ are the pinned CC0 pack builds listed in
+ * data/assets/manifest.json (S04h, DEC-24) and our Blender-built landmark GLBs, each pinned by
+ * its lock in data/landmarks/blender (DEC-25, S07c); nothing else may ship there.
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, relative } from 'node:path'
@@ -26,7 +27,7 @@ const ALLOWED = [
   /^three\/addons\/utils\/BufferGeometryUtils\.js$/,
   /^\.\.?\//,
   /^@\/lib\/landmarks\/metrics$/,
-  /^@\/lib\/data\/schemas\/(?:landmarkModels|config)$/,
+  /^@\/lib\/data\/schemas\/(?:landmarkModels|config|scene)$/,
 ]
 
 describe('src/scene/landmarks', () => {
@@ -59,18 +60,34 @@ describe('src/scene/landmarks', () => {
     }
   })
 
-  it('public/ ships no 3D model files but the Blender-built landmark GLBs (S07c)', () => {
-    const models = readdirSync(join(ROOT, 'public'), { recursive: true, withFileTypes: true })
-      .filter((entry) => entry.isFile())
-      .map((entry) => relative(ROOT, join(entry.parentPath, entry.name)).split('\\').join('/'))
-      .filter((name) => /\.(?:glb|gltf|obj|fbx|stl|ply|dae|3ds|usdz|drc|ktx2)$/i.test(name))
-    // Our own models, built by scripts/blender and pinned by a lock in data/landmarks/blender.
-    const ours = /^public\/models\/landmarks\/([a-z0-9-]+)\/lod[0-3]\.glb$/
-    for (const model of models) {
-      const id = ours.exec(model)?.[1]
-      expect(id, model).toBeDefined()
-      const lock = readFileSync(join(ROOT, 'data/landmarks/blender', `${id}.lock.json`), 'utf8')
-      expect(lock).toContain(`"${model}"`)
+  it('public/ ships only the manifest-listed models and the lock-pinned Blender landmarks', () => {
+    const manifest = JSON.parse(readFileSync(join(ROOT, 'data/assets/manifest.json'), 'utf8')) as {
+      models: { tiers: Record<string, { file: string }> }[]
     }
+    const listed = new Set(
+      manifest.models.flatMap((model) => Object.values(model.tiers).map((tier) => tier.file)),
+    )
+    // Our own landmark models, built by scripts/blender and pinned by data/landmarks/blender locks.
+    const blender = /^\/models\/landmarks\/([a-z0-9-]+)\/lod[0-3]\.glb$/
+    const lockListed = (file: string) => {
+      const id = blender.exec(file)?.[1]
+      if (id === undefined) return false
+      const lock = join(ROOT, 'data/landmarks/blender', `${id}.lock.json`)
+      try {
+        return readFileSync(lock, 'utf8').includes(`"public${file}"`)
+      } catch {
+        return false
+      }
+    }
+    const publicDir = join(ROOT, 'public')
+    const unlisted = readdirSync(publicDir, { recursive: true, withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .filter((entry) => /\.(?:glb|gltf|obj|fbx|stl|ply|dae|3ds|usdz|drc|ktx2)$/i.test(entry.name))
+      .map(
+        (entry) =>
+          '/' + relative(publicDir, join(entry.parentPath, entry.name)).split('\\').join('/'),
+      )
+      .filter((file) => !listed.has(file) && !lockListed(file))
+    expect(unlisted).toEqual([])
   })
 })

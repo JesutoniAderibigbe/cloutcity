@@ -7,7 +7,7 @@
  * src/lib/data/data.test.ts.
  */
 import { z } from 'zod'
-import { HOME_IDS, JOB_IDS, RarityTierSchema } from './config'
+import { HOME_IDS, JOB_IDS, PaletteTokenRefSchema, RarityTierSchema } from './config'
 
 export const IdSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'kebab-case id')
 export const CopyKeyRefSchema = z.string().regex(/^[a-z][a-zA-Z0-9]*(?:\.[a-zA-Z0-9]+)+$/)
@@ -54,6 +54,33 @@ const CATEGORY_SLOTS: Readonly<Record<string, readonly ItemSlot[]>> = {
   makeup: ['face'],
 }
 
+/** Where a decor item goes in an apartment: a wall, the floor, or a surface (a sill, a shelf). */
+export const DECOR_FITS = ['wall', 'floor', 'surface'] as const
+export const DecorFitSchema = z.enum(DECOR_FITS)
+export type DecorFit = z.infer<typeof DecorFitSchema>
+
+/**
+ * A decor item's colour variant (S16): a palette token (never a hex value; theme.json must hold
+ * it) and a human colour name in the shared `colors` copy namespace (A11Y-1).
+ */
+export const DecorVariantSchema = z.strictObject({
+  id: IdSchema,
+  token: PaletteTokenRefSchema,
+  nameKey: CopyKeyRefSchema.refine((key) => key.startsWith('colors.'), {
+    error: 'a colour name lives in the colors copy namespace',
+  }),
+})
+
+/**
+ * What a decor item adds to an apartment (S16): the slot kind it fits, the home score it adds
+ * while placed (src/engine/home.ts), and at least two colour variants.
+ */
+export const DecorSchema = z.strictObject({
+  fits: DecorFitSchema,
+  homeScore: z.int().min(1),
+  variants: listOf(DecorVariantSchema).min(2),
+})
+
 /**
  * An in-game cash item (CLAUDE.md "Two kinds of purchases"). `sellValue` is what the item sells
  * back for on the day it is bought; worn items lose more value per game day owned
@@ -77,6 +104,8 @@ export const ItemSchema = z
     /** Style points while worn (S13): the outfit's score multiplies clout gains. Gifts: 0. */
     styleValue: z.int().nonnegative(),
     statEffects: z.partialRecord(StatSchema, z.int()),
+    /** Decor only (S16): the slot kind, home score and colour variants. */
+    decor: DecorSchema.optional(),
   })
   .refine((item) => item.category !== 'gift' || item.styleValue === 0, {
     error: 'a gift is never worn, so its styleValue must be 0',
@@ -96,6 +125,23 @@ export const ItemSchema = z
     {
       error: 'clothing needs a clothing slot, makeup the face slot, others no slot',
       path: ['slot'],
+    },
+  )
+  .refine((item) => (item.category === 'decor') === (item.decor !== undefined), {
+    error: 'decor needs a decor block, and only decor has one',
+    path: ['decor'],
+  })
+  .refine(
+    (item) =>
+      item.category !== 'decor' ||
+      (item.cloutValue === 0 &&
+        item.styleValue === 0 &&
+        Object.keys(item.statEffects).length === 0),
+    {
+      // Decor adds clout only through the home score (src/engine/home.ts), never as item clout,
+      // style or a stat effect.
+      error: 'decor has cloutValue 0, styleValue 0 and no stat effects',
+      path: ['category'],
     },
   )
 export const ItemsFileSchema = z.strictObject({ items: listOf(ItemSchema) })
@@ -181,6 +227,119 @@ export const HomeSchema = z.strictObject({
 })
 export const HomesFileSchema = z.strictObject({ homes: z.record(z.enum(HOME_IDS), HomeSchema) })
 export type HomesFile = z.infer<typeof HomesFileSchema>
+
+/** A point in an apartment, in metres: x right, y up, z toward the camera; 0,0,0 is the floor's centre. */
+const RoomPointSchema = z.tuple([z.number(), z.number(), z.number()])
+const metres = z.number().positive()
+/** A wall of the room: the camera looks in through the open front. */
+const RoomWallSchema = z.enum(['back', 'left', 'right'])
+
+/** An opening in a wall; `centerM` runs along the wall from its middle. */
+const OpeningSchema = z.strictObject({
+  wall: RoomWallSchema,
+  centerM: z.number(),
+  widthM: metres,
+  heightM: metres,
+  /** Height of the bottom edge above the floor (0 for a door). */
+  sillM: z.number().nonnegative(),
+})
+
+/** A decor slot: where one decor item of its kind can be placed (src/engine/home.ts). */
+export const DecorSlotSchema = z.strictObject({
+  id: z.string().regex(/^(?:wall|floor|surface)-\d+$/, 'slot ids are <kind>-<n>'),
+  kind: DecorFitSchema,
+  position: RoomPointSchema,
+  /** Turn about the vertical axis, degrees. */
+  rotationDeg: z.number().min(-180).max(180),
+  nameKey: CopyKeyRefSchema,
+})
+export type DecorSlot = z.infer<typeof DecorSlotSchema>
+
+const EPSILON_M = 1e-6
+
+/** Whether `slot` sits where its kind says: on a wall, on the floor, or on a raised surface. */
+function slotFitsRoom(
+  slot: DecorSlot,
+  room: { readonly widthM: number; readonly depthM: number; readonly heightM: number },
+) {
+  const [x, y, z] = slot.position
+  const halfW = room.widthM / 2
+  const halfD = room.depthM / 2
+  const inside = Math.abs(x) <= halfW && z >= -halfD && z <= halfD && y >= 0 && y < room.heightM
+  if (!inside) return false
+  const onWall = Math.abs(Math.abs(x) - halfW) < EPSILON_M || Math.abs(z + halfD) < EPSILON_M
+  switch (slot.kind) {
+    case 'wall':
+      return onWall && y > 0
+    case 'floor':
+      return y === 0 && !onWall
+    case 'surface':
+      return y > 0 && !onWall
+  }
+}
+
+/** Whether an opening fits inside its wall. */
+function openingFits(
+  opening: z.infer<typeof OpeningSchema>,
+  room: { readonly widthM: number; readonly depthM: number; readonly heightM: number },
+) {
+  const length = opening.wall === 'back' ? room.widthM : room.depthM
+  return (
+    Math.abs(opening.centerM) + opening.widthM / 2 <= length / 2 &&
+    opening.sillM + opening.heightM <= room.heightM
+  )
+}
+
+/**
+ * One home's interior (S16): the room, its window and door, the camera pose, where the avatar
+ * stands, and its decor slots. Slot ids are shared between homes (`wall-1` is the main wall in
+ * every home), so moving keeps what fits (src/engine/home.ts `placementsAfterMove`).
+ */
+export const HomeInteriorSchema = z
+  .strictObject({
+    room: z.strictObject({ widthM: metres, depthM: metres, heightM: metres }),
+    window: OpeningSchema,
+    door: OpeningSchema.refine((door) => door.sillM === 0, { error: 'a door starts at the floor' }),
+    /**
+     * The camera looks from `position` towards `target` through the open front. The scene keeps
+     * that direction and target and moves along it until the room fits the free scene row
+     * (src/scene/apartment/fit.ts), so `position` sets the angle, not the distance.
+     */
+    camera: z.strictObject({
+      position: RoomPointSchema,
+      target: RoomPointSchema,
+      fovDeg: z.number().gt(0).lt(180),
+    }),
+    avatarAnchor: z.strictObject({
+      position: RoomPointSchema,
+      rotationDeg: z.number().min(-180).max(180),
+    }),
+    slots: listOf(DecorSlotSchema).min(1),
+  })
+  .refine((home) => home.slots.every((slot) => slot.id.startsWith(`${slot.kind}-`)), {
+    error: "a slot's id starts with its kind",
+    path: ['slots'],
+  })
+  .refine((home) => home.slots.every((slot) => slotFitsRoom(slot, home.room)), {
+    error: 'a slot sits outside the room or off the wall, floor or surface its kind needs',
+    path: ['slots'],
+  })
+  .refine((home) => openingFits(home.window, home.room) && openingFits(home.door, home.room), {
+    error: 'the window or door does not fit its wall',
+    path: ['window'],
+  })
+export type HomeInterior = z.infer<typeof HomeInteriorSchema>
+
+/** data/homes/interiors.json: every home's interior, keyed by home id (none can be missing). */
+export const HomeInteriorsFileSchema = z.strictObject({
+  homes: z.strictObject(
+    Object.fromEntries(HOME_IDS.map((id) => [id, HomeInteriorSchema])) as Record<
+      (typeof HOME_IDS)[number],
+      typeof HomeInteriorSchema
+    >,
+  ),
+})
+export type HomeInteriorsFile = z.infer<typeof HomeInteriorsFileSchema>
 
 /** Station venues are deliberately unbranded and point at an S04 subway station. */
 const StationVenueSchema = z.strictObject({

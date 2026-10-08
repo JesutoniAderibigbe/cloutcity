@@ -151,6 +151,8 @@ export function placeBlockReason(
       return copy('clout.flex.blocked.here')
     case 'flex-daily-limit':
       return copy('clout.flex.blocked.daily', { count: formatCount(block.max) })
+    case 'away':
+      return copy('place.blocked.away')
     case 'funds':
       return copy('place.blocked.funds', {
         required: formatMoney(block.required),

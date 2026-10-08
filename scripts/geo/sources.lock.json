@@ -47,6 +47,21 @@
       "bytes": 5615228
     },
     {
+      "id": "dcp-mappluto-density",
+      "title": "MapPLUTO: building density by community district",
+      "publisher": "NYC Department of City Planning",
+      "catalogUrl": "https://www.nyc.gov/site/planning/data-maps/open-data/dwn-pluto-mappluto.page",
+      "url": "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/MAPPLUTO/FeatureServer/0/query?where=1%3D1&outStatistics=%5B%7B%22statisticType%22%3A%22count%22%2C%22onStatisticField%22%3A%22CD%22%2C%22outStatisticFieldName%22%3A%22lots%22%7D%2C%7B%22statisticType%22%3A%22sum%22%2C%22onStatisticField%22%3A%22BldgArea%22%2C%22outStatisticFieldName%22%3A%22bldgArea%22%7D%2C%7B%22statisticType%22%3A%22sum%22%2C%22onStatisticField%22%3A%22LotArea%22%2C%22outStatisticFieldName%22%3A%22lotArea%22%7D%2C%7B%22statisticType%22%3A%22avg%22%2C%22onStatisticField%22%3A%22NumFloors%22%2C%22outStatisticFieldName%22%3A%22avgFloors%22%7D%5D&groupByFieldsForStatistics=CD&orderByFields=CD&f=json",
+      "file": "dcp-mappluto-density.json",
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "sha256": "4a5d6e01f5df7a6a0e9c423a6ecec98bd4634bc0b858bc9b941bd44fdcd2a4b0",
+      "bytes": 8597
+    },
+    {
       "id": "dcp-lion-5-avenue",
       "title": "LION street centerline: 5 AVENUE",
       "publisher": "NYC Department of City Planning",
@@ -225,6 +240,204 @@
       "retrieved": "2026-10-07",
       "sha256": "24a1c143a0d8925f97ce04894472ca57dda0777507c76fffac93d55290063ec6",
       "bytes": 17610
+    }
+  ],
+  "pagedSources": [
+    {
+      "id": "oti-buildings-midtown",
+      "title": "Building Footprints (Midtown)",
+      "publisher": "NYC Office of Technology and Innovation (OTI)",
+      "catalogUrl": "https://data.cityofnewyork.us/d/5zhs-2jue",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.999382%2C40.743193%2C-73.968618%2C40.766607&geometryType=esriGeometryEnvelope&inSR=4326&outFields=HEIGHT_ROOF&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&f=geojson",
+      "countUrl": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.999382%2C40.743193%2C-73.968618%2C40.766607&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "count": 5731,
+      "pages": [
+        {
+          "sha256": "fe31f02d69d9b248ba128f64b529beafc53636acfa327f044f5391769cde3b11",
+          "bytes": 773921
+        },
+        {
+          "sha256": "8458854ea5559008ecbfe83255102f23b9e0693b99e59b91b9e1e9fbfadbbe5b",
+          "bytes": 755791
+        },
+        {
+          "sha256": "3f6a2f3bcae327c790432f5f1ae1565eb900a3a7e69f123c21eebaab5423b472",
+          "bytes": 670455
+        }
+      ]
+    },
+    {
+      "id": "oti-buildings-lower-manhattan",
+      "title": "Building Footprints (Lower Manhattan)",
+      "publisher": "NYC Office of Technology and Innovation (OTI)",
+      "catalogUrl": "https://data.cityofnewyork.us/d/5zhs-2jue",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-74.020833%2C40.698494%2C-73.997167%2C40.716506&geometryType=esriGeometryEnvelope&inSR=4326&outFields=HEIGHT_ROOF&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&f=geojson",
+      "countUrl": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-74.020833%2C40.698494%2C-73.997167%2C40.716506&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "count": 1166,
+      "pages": [
+        {
+          "sha256": "c030e7ff8664c8a887c5abd5bbff126491c88a5ecef92b0a872b7b8f84e7f71d",
+          "bytes": 518487
+        }
+      ]
+    },
+    {
+      "id": "oti-buildings-downtown-brooklyn-dumbo",
+      "title": "Building Footprints (Downtown Brooklyn and DUMBO)",
+      "publisher": "NYC Office of Technology and Innovation (OTI)",
+      "catalogUrl": "https://data.cityofnewyork.us/d/5zhs-2jue",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.998649%2C40.688895%2C-73.977351%2C40.705105&geometryType=esriGeometryEnvelope&inSR=4326&outFields=HEIGHT_ROOF&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&f=geojson",
+      "countUrl": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.998649%2C40.688895%2C-73.977351%2C40.705105&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "count": 2426,
+      "pages": [
+        {
+          "sha256": "0e4100ddd322be3754d954636d634e970b7a3baddd0d51e71e0016e9209e3f79",
+          "bytes": 778358
+        },
+        {
+          "sha256": "7510cd6afb1d8c4c45009984d2f6a2a450f456b3df4c60e2cf74d62b1bba684d",
+          "bytes": 146016
+        }
+      ]
+    },
+    {
+      "id": "oti-buildings-williamsburg",
+      "title": "Building Footprints (Williamsburg)",
+      "publisher": "NYC Office of Technology and Innovation (OTI)",
+      "catalogUrl": "https://data.cityofnewyork.us/d/5zhs-2jue",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.968649%2C40.705895%2C-73.947351%2C40.722105&geometryType=esriGeometryEnvelope&inSR=4326&outFields=HEIGHT_ROOF&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&f=geojson",
+      "countUrl": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.968649%2C40.705895%2C-73.947351%2C40.722105&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "count": 4695,
+      "pages": [
+        {
+          "sha256": "8b8871100b6464f789588a25597b43bef2413925881113d491d47cc8155598ac",
+          "bytes": 630618
+        },
+        {
+          "sha256": "b1bf74e20ee32b1eb278c581cc9de9dd9fbf3086fc7763a18ca313c6ac452b95",
+          "bytes": 633898
+        },
+        {
+          "sha256": "87d1e4ca5f97fe58414f426dfbe9dc836379dc6953dcab0bec80fb317b86fe80",
+          "bytes": 205760
+        }
+      ]
+    },
+    {
+      "id": "oti-buildings-long-island-city",
+      "title": "Building Footprints (Long Island City)",
+      "publisher": "NYC Office of Technology and Innovation (OTI)",
+      "catalogUrl": "https://data.cityofnewyork.us/d/5zhs-2jue",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.955833%2C40.737994%2C-73.932167%2C40.756006&geometryType=esriGeometryEnvelope&inSR=4326&outFields=HEIGHT_ROOF&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&f=geojson",
+      "countUrl": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.955833%2C40.737994%2C-73.932167%2C40.756006&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "count": 1978,
+      "pages": [
+        {
+          "sha256": "fb19dd7c1a6586139babbbc4af330d5e36c647e55009aeb58d5cf6314260fecc",
+          "bytes": 692172
+        }
+      ]
+    },
+    {
+      "id": "oti-buildings-astoria",
+      "title": "Building Footprints (Astoria)",
+      "publisher": "NYC Office of Technology and Innovation (OTI)",
+      "catalogUrl": "https://data.cityofnewyork.us/d/5zhs-2jue",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.931283%2C40.757696%2C-73.914717%2C40.770304&geometryType=esriGeometryEnvelope&inSR=4326&outFields=HEIGHT_ROOF&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&f=geojson",
+      "countUrl": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.931283%2C40.757696%2C-73.914717%2C40.770304&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "count": 4454,
+      "pages": [
+        {
+          "sha256": "f6f4aebbd0fcb5371fda45a050b0db7a3b2fe1c3d68f95a92da037248321d333",
+          "bytes": 645660
+        },
+        {
+          "sha256": "6484beaeeab621dcf2416443c67dc0a9b54333f0cafab08cd3776696379d27dc",
+          "bytes": 638370
+        },
+        {
+          "sha256": "7a9bca95b78ff2a967f409cbeb49204b6d9af9601e6e5a7922ce89b8e34afc9a",
+          "bytes": 139116
+        }
+      ]
+    },
+    {
+      "id": "oti-buildings-flushing",
+      "title": "Building Footprints (Flushing)",
+      "publisher": "NYC Office of Technology and Innovation (OTI)",
+      "catalogUrl": "https://data.cityofnewyork.us/d/5zhs-2jue",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.8371%2C40.753596%2C-73.8229%2C40.764404&geometryType=esriGeometryEnvelope&inSR=4326&outFields=HEIGHT_ROOF&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&f=geojson",
+      "countUrl": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.8371%2C40.753596%2C-73.8229%2C40.764404&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "count": 1168,
+      "pages": [
+        {
+          "sha256": "fcbb1f88eb72a55cdd47b71472287023f4adfd97a87a09578dc3fc9df8a9dc8c",
+          "bytes": 447271
+        }
+      ]
+    },
+    {
+      "id": "oti-buildings-jamaica",
+      "title": "Building Footprints (Jamaica)",
+      "publisher": "NYC Office of Technology and Innovation (OTI)",
+      "catalogUrl": "https://data.cityofnewyork.us/d/5zhs-2jue",
+      "url": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.8071%2C40.696596%2C-73.7929%2C40.707404&geometryType=esriGeometryEnvelope&inSR=4326&outFields=HEIGHT_ROOF&outSR=4326&geometryPrecision=6&orderByFields=OBJECTID&f=geojson",
+      "countUrl": "https://services6.arcgis.com/yG5s3afENB5iO9fj/arcgis/rest/services/BUILDING_view/FeatureServer/0/query?where=FEATURE_CODE%20IN%20(2100%2C5100%2C1006)%20AND%20Shape__Area%3E%3D40&geometry=-73.8071%2C40.696596%2C-73.7929%2C40.707404&geometryType=esriGeometryEnvelope&inSR=4326&returnCountOnly=true&f=json",
+      "pageSize": 2000,
+      "terms": {
+        "name": "NYC Open Data Terms of Use",
+        "url": "https://www.nyc.gov/html/data/terms.html"
+      },
+      "retrieved": "2026-10-07",
+      "count": 953,
+      "pages": [
+        {
+          "sha256": "064257bb9ed258187d4c03177dd778902700851848d86674c99472ef8d67f510",
+          "bytes": 339253
+        }
+      ]
     }
   ]
 }

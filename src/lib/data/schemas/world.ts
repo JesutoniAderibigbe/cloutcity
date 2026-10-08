@@ -2,7 +2,8 @@
 import { z } from 'zod'
 import { AUDIO_CHANNELS, AUDIO_SOURCE_TYPES } from '../../audio/channels'
 import { ORIGIN, PROJECTION_ID } from '../../geo/projection'
-import { GEO_SOURCE_IDS } from '../../geo/sources'
+import { BUILDING_DISTRICT_IDS, DERIVED_SOURCE_IDS, GEO_SOURCE_IDS } from '../../geo/sources'
+import { QUALITY_TIERS } from './config'
 import { BOROUGHS, BoroughSchema, CopyKeyRefSchema, IdSchema, listOf } from './content'
 import { LandmarkFrameSchema } from './landmarkModels'
 
@@ -132,6 +133,73 @@ export const ZoneShapesFileSchema = z.strictObject({
 })
 
 /**
+ * Header of the per-tier building files (`cc-buildings-v1`, `cc-blocks-v1`): derived artwork like
+ * the base layers, but may name the paged building-footprint sources too.
+ */
+const tieredHeader = {
+  derived: z.literal(true),
+  notice: z.string().min(1),
+  sources: z.array(z.enum(DERIVED_SOURCE_IDS)).min(1),
+  projection: ProjectionRefSchema,
+  tier: z.enum(QUALITY_TIERS),
+}
+
+/**
+ * data/geo/districts/<district>.<tier>.derived.json: one district's building masses for one
+ * quality tier, as columns. Numbers only past the header: no names or any other attribute of a
+ * real building can ride along.
+ */
+export const BuildingsFileSchema = z
+  .strictObject({
+    format: z.literal('cc-buildings-v1'),
+    ...tieredHeader,
+    district: z.enum(BUILDING_DISTRICT_IDS),
+    /** Local metres the rings are relative to (the district centre, rounded). */
+    origin: z.strictObject({ x: metre, y: metre }),
+    /** Mass heights, whole metres. */
+    h: z.array(z.int().positive()),
+    /** Mass footprints, [outer, ...holes], delta-encoded relative to `origin`. */
+    r: z.array(PolygonSchema),
+  })
+  .refine((file) => file.h.length === file.r.length, { error: 'h and r must be the same length' })
+export type BuildingsFile = z.infer<typeof BuildingsFileSchema>
+
+/** Block centres as one delta-encoded path (a single block is a one-point path). */
+const BlockPointsSchema = z
+  .array(metre)
+  .min(2)
+  .refine((points) => points.length % 2 === 0, { error: 'odd coordinate count' })
+
+/**
+ * data/geo/blocks.<tier>.derived.json: procedural low blocks outside the districts, one group
+ * (an instanced mesh) per borough, square `sizeM` boxes rotated by the group's grid angle.
+ */
+export const BlocksFileSchema = z.strictObject({
+  format: z.literal('cc-blocks-v1'),
+  ...tieredHeader,
+  sizeM: z.int().positive(),
+  groups: z.array(
+    z
+      .strictObject({
+        borough: BoroughSchema,
+        /** Degrees counter-clockwise from east. */
+        angleDeg: z.number().min(-90).max(90),
+        p: BlockPointsSchema,
+        /** Heights, whole metres. */
+        h: z.array(z.int().positive()).min(1),
+      })
+      .refine((group) => group.p.length === 2 * group.h.length, {
+        error: 'one point per height',
+      }),
+  ),
+})
+export type BlocksFile = z.infer<typeof BlocksFileSchema>
+
+const TIERED_PATH = new RegExp(
+  `^geo/(?:districts/(?:${BUILDING_DISTRICT_IDS.join('|')})|blocks)\\.(?:${QUALITY_TIERS.join('|')})\\.derived\\.json$`,
+)
+
+/**
  * data/landmarks/frames.derived.json: where each modelled landmark stands and faces, derived
  * from NYC DCP LION street centerlines (S07a).
  */
@@ -146,16 +214,30 @@ export const GeoManifestSchema = z.strictObject({
   format: z.literal('cc-geo-manifest-v1'),
   files: z
     .array(
-      z.strictObject({
-        /** Relative to data/. */
-        path: z
-          .string()
-          .regex(/^(?:geo|zones|landmarks)\/(?:[a-z0-9-]+\.derived\.json|SOURCES\.md)$/),
-        /** `base` ships with the map (perf.json baseGeoGzKB); `docs` does not. */
-        group: z.enum(['base', 'docs']),
-        bytes: z.int().positive(),
-        sha256: z.string().regex(/^[0-9a-f]{64}$/),
-      }),
+      z
+        .strictObject({
+          /** Relative to data/. */
+          path: z
+            .string()
+            .regex(
+              /^(?:(?:geo|zones|landmarks)\/(?:[a-z0-9-]+\.derived\.json|SOURCES\.md)|geo\/districts\/[a-z0-9-]+\.[a-z]+\.derived\.json|geo\/blocks\.[a-z]+\.derived\.json)$/,
+            ),
+          /**
+           * `base` ships with the map (perf.json baseGeoGzKB); `district` and `blocks` load per
+           * quality tier (perf.json districtBuildingsGzKB); `docs` never ships.
+           */
+          group: z.enum(['base', 'docs', 'district', 'blocks']),
+          /** Set exactly for `district` and `blocks` files. */
+          tier: z.enum(QUALITY_TIERS).optional(),
+          bytes: z.int().positive(),
+          sha256: z.string().regex(/^[0-9a-f]{64}$/),
+        })
+        .refine(
+          (file) =>
+            (file.group === 'district' || file.group === 'blocks') ===
+            (file.tier !== undefined && TIERED_PATH.test(file.path)),
+          { error: 'district and blocks files carry a tier and a per-tier path; others neither' },
+        ),
     )
     .min(1),
 })
