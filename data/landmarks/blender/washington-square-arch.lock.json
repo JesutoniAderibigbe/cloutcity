@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "washington-square-arch",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "974fcff1e829ae897d4fd151d61284f6f8ac6ff2e42ec641b7b753e61b8f2db8",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/washington-square-arch/lod0.glb",
+      "sha256": "74161b28012dda1c446d81cbaca18ca58d72cf310d0b18387108417db38c69ea",
+      "bytes": 12536,
+      "triangles": 636,
+      "uncompressedBytes": 57328
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/washington-square-arch/lod1.glb",
+      "sha256": "6634900fdd2afbf123251fab0ac9a3846b467230b831052d9782962c2bb9fb95",
+      "bytes": 7160,
+      "triangles": 300,
+      "uncompressedBytes": 27144
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/washington-square-arch/lod2.glb",
+      "sha256": "924db7eec3c41200cacda1a4c7d59961045db0ed0a6cbf27cd286c0ff582ea57",
+      "bytes": 4796,
+      "triangles": 148,
+      "uncompressedBytes": 13468
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/washington-square-arch/lod3.glb",
+      "sha256": "26af8a40d2b5324bf7bce7a84685628dd6521c49724ef60a84ca101ca6e0d628",
+      "bytes": 3632,
+      "triangles": 68,
+      "uncompressedBytes": 7180
+    }
+  ]
+}

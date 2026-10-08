@@ -71,10 +71,9 @@ interface Entry {
   readonly id: string
 }
 
-function entryOf<T extends Entry>(list: readonly T[], id: string, file: string): T {
-  const found = list.find((item) => item.id === id)
-  if (found === undefined) throw new Error(`${file} has no entry "${id}"`)
-  return found
+/** The entry for `id`, or null when the file has none (no S07a model or frame yet). */
+function entryOf<T extends Entry>(list: readonly T[], id: string): T | null {
+  return list.find((item) => item.id === id) ?? null
 }
 
 /** Every input of a landmark's build, as one plain object. */
@@ -97,8 +96,8 @@ export function buildInputs(id: string): Record<string, unknown> {
   return {
     scripts,
     measurements: sha256(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`))),
-    model: entryOf(models.models, id, 'models.json'),
-    frame: entryOf(frames.landmarks, id, 'frames.derived.json'),
+    model: entryOf(models.models, id),
+    frame: entryOf(frames.landmarks, id),
     scene: { land: scene.land, camera: scene.camera, landmarks: scene.landmarks },
     palette: Object.fromEntries(
       Object.entries(theme.scene.landmarks).map(([role, token]) => [role, colours[token]]),

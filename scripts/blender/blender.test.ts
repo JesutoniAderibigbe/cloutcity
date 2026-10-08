@@ -13,6 +13,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { describe, expect, it } from 'vitest'
 import framesJson from '../../data/landmarks/frames.derived.json'
 import modelsJson from '../../data/landmarks/models.json'
+import placesJson from '../../data/landmarks/landmarks.json'
 import perfJson from '../../data/config/perf.json'
 import sceneJson from '../../data/config/scene.json'
 import { LandmarkMeasurementsSchema } from '../../src/lib/data/schemas/landmarkBlender.ts'
@@ -23,11 +24,23 @@ import { checkLandmark, readLock, sourcesProblems } from './run.ts'
 
 const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 
-/** Landmarks still on the code-built kit, waiting for their Blender model (S07c chunks A-C). */
+/** Landmarks still waiting for their Blender model (S07c): every other landmark is built. */
 const PENDING = new Set([
+  'central-park',
+  'high-line',
+  'prospect-park',
+  'flushing-meadows',
+  'astoria-park',
+  'queens-ballpark',
+  'brooklyn-arena',
   'midtown-terminal',
   'penn-station',
   'jamaica-station',
+  'dumbo',
+  'coney-island-boardwalk',
+  'flushing-main-street',
+  'september-11-memorial',
+  'bronx-ballpark',
   'staten-island-ferry',
 ])
 
@@ -83,22 +96,22 @@ function triangles(gltf: Gltf): number {
   return total
 }
 
-const modelIds = modelsJson.models.map((model) => model.id)
+const placeIds = placesJson.landmarks.map((place) => place.id)
 const built = measuredIds()
 
 describe('Blender landmark coverage', () => {
-  it('builds every modelled landmark or lists it as pending', () => {
-    for (const id of modelIds) {
+  it('builds every landmark or lists it as pending', () => {
+    for (const id of placeIds) {
       expect(built.includes(id) || PENDING.has(id), `${id} is neither built nor pending`).toBe(true)
     }
   })
 
   it('keeps the pending list honest: nothing built is pending, nothing unknown is listed', () => {
     for (const id of PENDING) {
-      expect(modelIds).toContain(id)
+      expect(placeIds).toContain(id)
       expect(built).not.toContain(id)
     }
-    for (const id of built) expect(modelIds).toContain(id)
+    for (const id of built) expect(placeIds).toContain(id)
   })
 
   it('has a measurements file, a lock and a build script for each built landmark', () => {
@@ -134,7 +147,13 @@ describe.each(built)('%s shipped GLBs', (id) => {
     JSON.parse(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`), 'utf8')),
   )
   const model = modelsJson.models.find((entry) => entry.id === id)
-  const category = ARCHETYPE_CATEGORY[(model?.archetype ?? 'setbackSpire') as Archetype]
+  // The perf.json cap category: the S07a model's, or for a landmark without one the place's
+  // own when perf.json has caps for it, else building (monuments, neighbourhoods, memorial).
+  const place = placesJson.landmarks.find((entry) => entry.id === id)
+  const capped = ['bridge', 'building', 'station', 'government'] as const
+  const placeCategory = capped.find((c) => c === place?.category) ?? 'building'
+  const category =
+    model === undefined ? placeCategory : ARCHETYPE_CATEGORY[model.archetype as Archetype]
 
   it('matches the lock triangle counts', () => {
     expect(counts).toEqual(lock.levels.map((level) => level.triangles))
@@ -204,7 +223,7 @@ describe.each(built)('%s shipped GLBs', (id) => {
       )
       box.applyMatrix4(model.matrix)
       const height = expectedHeight()
-      const base = frame?.base === 'land' ? landTop : 0
+      const base = (frame?.base ?? measurements.base ?? 'land') === 'land' ? landTop : 0
       expect(Math.abs(box.max.y - base - height)).toBeLessThanOrEqual(BBOX_TOLERANCE * height)
       expect(box.min.y).toBeGreaterThanOrEqual(-0.05)
       if (frame?.spanM !== undefined) {

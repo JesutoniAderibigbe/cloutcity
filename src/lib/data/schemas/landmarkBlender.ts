@@ -53,6 +53,11 @@ const readability = z.number().min(1).max(5)
 export const LandmarkMeasurementsSchema = z
   .strictObject({
     id: IdSchema,
+    /**
+     * What the model stands on when the landmark has no frame in frames.derived.json yet
+     * (monuments, neighbourhoods, the memorial: S07b); a frame's own base wins.
+     */
+    base: z.enum(['land', 'water']).optional(),
     retrieved: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD'),
     sources: z.array(MeasurementSourceSchema).min(1),
     dimensions: z.record(z.string().regex(/^[a-z][A-Za-z0-9]*$/), DimensionSchema),

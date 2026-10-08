@@ -46,11 +46,12 @@ def landmark_inputs(landmark_id):
     frames = read_json("data", "landmarks", "frames.derived.json")["landmarks"]
     frame = next((f for f in frames if f["id"] == landmark_id), None)
     if frame is None:
-        raise ValueError("no frame for %s in frames.derived.json" % landmark_id)
+        # Landmarks the S07a kit does not model (monuments, neighbourhoods, the memorial) have no
+        # LION frame yet (S07b); the measurements give the base and the build stands at the
+        # origin facing north. Chunk 4 places them.
+        frame = {"id": landmark_id, "base": measurements.get("base", "land"), "headingDeg": 0.0}
     models = read_json("data", "landmarks", "models.json")["models"]
     model = next((m for m in models if m["id"] == landmark_id), None)
-    if model is None:
-        raise ValueError("no model for %s in models.json" % landmark_id)
     scene = read_json("data", "config", "scene.json")
     theme = read_json("data", "config", "theme.json")
     perf = read_json("data", "config", "perf.json")
