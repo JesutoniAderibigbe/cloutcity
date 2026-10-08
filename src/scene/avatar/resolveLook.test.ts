@@ -49,7 +49,7 @@ describe('resolveLook', () => {
     })
   })
 
-  it('a Blender piece on the bald head: facial hair takes the hair colour at the head joint', () => {
+  it('a Blender piece on the bald head: the piece and facial hair take the hair colour', () => {
     const resolved = resolve({
       ...base,
       hairStyle: 'afro',
@@ -62,8 +62,10 @@ describe('resolveLook', () => {
     const stubble = resolved.parts.attachments?.find((a) => a.ref.id === 'facial-stubble')
     expect(stubble).toMatchObject({ joint: 'head', offset: [0, 0, 0] })
     expect(stubble?.colors).toEqual({ hair: hexOf(options.hairColors, 'pink') })
-    // The hair pieces wait on their avatar-hair cap (A0.3): drawn bald until then.
-    expect(resolved.missing).toEqual(['hair-afro'])
+    const afro = resolved.parts.attachments?.find((a) => a.ref.id === 'hair-afro')
+    expect(afro).toMatchObject({ joint: 'head', offset: [0, 0, 0] })
+    expect(afro?.colors).toEqual({ hair: hexOf(options.hairColors, 'pink') })
+    expect(resolved.missing).toEqual([])
   })
 
   it('an item attachment follows its catalog joint: the tote rides the torso', () => {
@@ -77,6 +79,15 @@ describe('resolveLook', () => {
     )
     const tote = resolved.parts.attachments?.find((a) => a.ref.id === 'acc-subway-tote')
     expect(tote?.colors).toEqual({ fabric: hexOf(options.garmentColors, 'navy') })
+  })
+
+  it('a head covering takes the top colour and hides the hair piece', () => {
+    const resolved = resolve({ ...base, hairStyle: 'locs', headwear: 'hijab', top: 'navy' })
+    expect(resolved.parts.head.id).toBe('head-base')
+    expect(resolved.parts.attachments?.map((a) => a.ref.id)).toEqual(['headwear-hijab'])
+    expect(resolved.parts.attachments?.[0]?.colors).toEqual({
+      fabric: hexOf(options.garmentColors, 'navy'),
+    })
   })
 
   it('colours every skin tone, the A0 tones included', () => {

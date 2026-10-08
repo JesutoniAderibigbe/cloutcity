@@ -576,6 +576,146 @@
         "high": "/models/glasses.high.7efd38b7.glb"
       }
     },
+    "hair-afro": {
+      "id": "hair-afro",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.68,
+          1.05,
+          -0.66
+        ],
+        "max": [
+          0.68,
+          1.95,
+          0.54
+        ]
+      },
+      "files": {
+        "low": "/models/hair-afro.high.24f6a7d1.glb",
+        "mid": "/models/hair-afro.high.24f6a7d1.glb",
+        "high": "/models/hair-afro.high.24f6a7d1.glb"
+      }
+    },
+    "hair-box-braids": {
+      "id": "hair-box-braids",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.545,
+          0.36,
+          -0.4403
+        ],
+        "max": [
+          0.5275,
+          1.49,
+          0.37
+        ]
+      },
+      "files": {
+        "low": "/models/hair-box-braids.high.4ab52683.glb",
+        "mid": "/models/hair-box-braids.high.4ab52683.glb",
+        "high": "/models/hair-box-braids.high.4ab52683.glb"
+      }
+    },
+    "hair-buzz": {
+      "id": "hair-buzz",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.475,
+          0.86,
+          -0.375
+        ],
+        "max": [
+          0.475,
+          1.475,
+          0.365
+        ]
+      },
+      "files": {
+        "low": "/models/hair-buzz.high.d6985142.glb",
+        "mid": "/models/hair-buzz.high.d6985142.glb",
+        "high": "/models/hair-buzz.high.d6985142.glb"
+      }
+    },
+    "hair-cornrows": {
+      "id": "hair-cornrows",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.475,
+          0.86,
+          -0.405
+        ],
+        "max": [
+          0.475,
+          1.505,
+          0.365
+        ]
+      },
+      "files": {
+        "low": "/models/hair-cornrows.high.c6d05f43.glb",
+        "mid": "/models/hair-cornrows.high.c6d05f43.glb",
+        "high": "/models/hair-cornrows.high.c6d05f43.glb"
+      }
+    },
+    "hair-locs": {
+      "id": "hair-locs",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "hair"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.5354,
+          0.5,
+          -0.4354
+        ],
+        "max": [
+          0.5354,
+          1.49,
+          0.37
+        ]
+      },
+      "files": {
+        "low": "/models/hair-locs.high.5c5c4e07.glb",
+        "mid": "/models/hair-locs.high.5c5c4e07.glb",
+        "high": "/models/hair-locs.high.5c5c4e07.glb"
+      }
+    },
     "head-base": {
       "id": "head-base",
       "kind": "skinned",
@@ -881,6 +1021,146 @@
         "low": "/models/head-male-f.low.e6537e60.glb",
         "mid": "/models/head-male-f.high.5c3ad492.glb",
         "high": "/models/head-male-f.high.5c3ad492.glb"
+      }
+    },
+    "headwear-ballcap": {
+      "id": "headwear-ballcap",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.485,
+          1.2,
+          -0.38
+        ],
+        "max": [
+          0.485,
+          1.57,
+          0.68
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-ballcap.high.0ce5aa3e.glb",
+        "mid": "/models/headwear-ballcap.high.0ce5aa3e.glb",
+        "high": "/models/headwear-ballcap.high.0ce5aa3e.glb"
+      }
+    },
+    "headwear-beanie": {
+      "id": "headwear-beanie",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.505,
+          1.15,
+          -0.395
+        ],
+        "max": [
+          0.505,
+          1.71,
+          0.39
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-beanie.high.9be19fbd.glb",
+        "mid": "/models/headwear-beanie.high.9be19fbd.glb",
+        "high": "/models/headwear-beanie.high.9be19fbd.glb"
+      }
+    },
+    "headwear-durag": {
+      "id": "headwear-durag",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.49,
+          0.46,
+          -0.41
+        ],
+        "max": [
+          0.49,
+          1.48,
+          0.38
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-durag.high.346b43cf.glb",
+        "mid": "/models/headwear-durag.high.346b43cf.glb",
+        "high": "/models/headwear-durag.high.346b43cf.glb"
+      }
+    },
+    "headwear-hijab": {
+      "id": "headwear-hijab",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.56,
+          0.52,
+          -0.43
+        ],
+        "max": [
+          0.56,
+          1.53,
+          0.4
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-hijab.high.8b6b7a33.glb",
+        "mid": "/models/headwear-hijab.high.8b6b7a33.glb",
+        "high": "/models/headwear-hijab.high.8b6b7a33.glb"
+      }
+    },
+    "headwear-turban": {
+      "id": "headwear-turban",
+      "kind": "static",
+      "category": "avatar-hair",
+      "slots": [
+        "fabric"
+      ],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "bounds": {
+        "min": [
+          -0.505,
+          1.15,
+          -0.4
+        ],
+        "max": [
+          0.505,
+          1.64,
+          0.4233
+        ]
+      },
+      "files": {
+        "low": "/models/headwear-turban.high.c8d92360.glb",
+        "mid": "/models/headwear-turban.high.c8d92360.glb",
+        "high": "/models/headwear-turban.high.c8d92360.glb"
       }
     },
     "hearing-aid": {

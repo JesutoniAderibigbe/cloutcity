@@ -21,6 +21,8 @@ export const MODEL_CATEGORIES = [
   'avatar-head',
   'avatar-body',
   'avatar-accessory',
+  /** Blender hair pieces and head coverings (S16a A0.3), on the bald `head-base`. */
+  'avatar-hair',
 ] as const
 export type ModelCategory = (typeof MODEL_CATEGORIES)[number]
 

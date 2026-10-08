@@ -95,9 +95,9 @@ test('the map draws the player look, and the low capsule wears its top colour', 
     .toBe(options.outfits.find((outfit) => outfit.id === look.outfit)?.body)
   const resolved = await drawn()
   const style = options.hairStyles.find((s) => s.id === look.hairStyle)
-  // Hair pieces still waiting on their avatar-hair cap (S16a A0.3) are listed as missing; the
-  // style's head always draws (the bald head-base under them, or under a covering).
+  // The style's head draws, or the bald head-base under a head covering; nothing is missing.
   expect([style?.head, 'head-base']).toContain(resolved?.head)
+  expect(resolved?.missing).toEqual([])
   expect(resolved?.attachments.length ?? 0).toBeLessThanOrEqual(4)
 
   const top = palette[options.garmentColors.find((color) => color.id === look.top)?.token ?? '']

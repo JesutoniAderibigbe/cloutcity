@@ -269,6 +269,12 @@ export const PerfConfigSchema = z
         }>
       >,
     ),
+    /**
+     * The 3D avatar as drawn (S16a): triangles per tier of the worst look the options allow (the
+     * largest head and body plus the largest attachment of each kind, up to the attachment cap).
+     * src/lib/data/avatar-data.test.ts holds every look to it.
+     */
+    avatar: z.strictObject({ trianglesMax: perTier(positiveInt) }),
   })
   .refine(
     (perf) =>

@@ -23,10 +23,9 @@ test('draws the look with its accessories, animates while shown, and loses its c
   await page.goto('/dev/look?eyewear=glasses&ears=hearing-aid&hairStyle=afro')
   await expect.poll(async () => (await preview(page))?.status, { timeout: 60_000 }).toBe('ready')
   const state = await preview(page)
-  expect(state?.look?.attachments).toEqual(['glasses', 'hearing-aid'])
-  // The afro piece waits on its avatar-hair cap (S16a A0.3): the bald head draws meanwhile.
+  expect(state?.look?.attachments).toEqual(['hair-afro', 'glasses', 'hearing-aid'])
   expect(state?.look?.head).toBe('head-base')
-  expect(state?.look?.missing).toEqual(['hair-afro'])
+  expect(state?.look?.missing).toEqual([])
   expect(state?.animating).toBe(true)
 
   await page.getByRole('button', { name: 'Close preview' }).click()

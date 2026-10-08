@@ -200,6 +200,16 @@ Models: `tree-oak`, `tree-round`, `tree-tall`.
 
 | Output                  | Bytes | sha256                                                             | Script                                        |
 | ----------------------- | ----: | ------------------------------------------------------------------ | --------------------------------------------- |
+| `hair-afro.glb`         | 14180 | `e4f909e91b82767d7144d1d1be4937b6ebeed83a5850b35b24761617d348382e` | `scripts/blender/avatar/hair-afro.py`         |
+| `hair-locs.glb`         | 14788 | `dca6433f8b721e9017bdbaa39292dc6603aa45eceb89ea3dc81d0092f6b70442` | `scripts/blender/avatar/hair-locs.py`         |
+| `hair-box-braids.glb`   | 13884 | `b9ae6ba808450eec39ca395e7a9804c22306286f820143b0d5615095d887524c` | `scripts/blender/avatar/hair-box-braids.py`   |
+| `hair-cornrows.glb`     | 17312 | `c492654cb713311dae1fe47e443716d3cfd8ae6a2dc9385d505f8beb3a93ae9a` | `scripts/blender/avatar/hair-cornrows.py`     |
+| `hair-buzz.glb`         |  7924 | `dc9c9b4f4f1c14daf0ab43a1acfe9fc2b37b6a2329c8c1c5b96c6242059333d2` | `scripts/blender/avatar/hair-buzz.py`         |
+| `headwear-hijab.glb`    | 18248 | `2252cac89e7d0f7c4eb27ea6f5902c06bcd6965eb43717c21301f0ea860951aa` | `scripts/blender/avatar/headwear-hijab.py`    |
+| `headwear-turban.glb`   | 12320 | `8ed63945ec7c3603baaa74b7871863aad60ffc9e9f6c1572ce14c7ba6fbfaf57` | `scripts/blender/avatar/headwear-turban.py`   |
+| `headwear-durag.glb`    | 10760 | `1357ccaf38aa757898a9d6bce351a0186032e88483e9603228b02539ab2516a4` | `scripts/blender/avatar/headwear-durag.py`    |
+| `headwear-beanie.glb`   | 14196 | `5cd685830a7f56adf867c20bc0e469f27e3876b5281e21f2b4e07763d7157cc5` | `scripts/blender/avatar/headwear-beanie.py`   |
+| `headwear-ballcap.glb`  |  8892 | `7d35745781483fe219c907887ccb6ec5c6552f72cfa2363a42c44f958e699362` | `scripts/blender/avatar/headwear-ballcap.py`  |
 | `facial-stubble.glb`    |  3892 | `f835d297dc773ad8bb974505134d1cf45e30e96cd0350cf3a9a22155ef81c44f` | `scripts/blender/avatar/facial-stubble.py`    |
 | `facial-moustache.glb`  |  3900 | `47b460b78e0d94053fa37aa0073e5f9715353750cef6c66bbf13deb66de3477f` | `scripts/blender/avatar/facial-moustache.py`  |
 | `facial-goatee.glb`     |  4828 | `57ada8c39088c1893d23aa2b9ab20ab4760edd1c7dbf8e09f58fb6687a51a231` | `scripts/blender/avatar/facial-goatee.py`     |
@@ -207,7 +217,7 @@ Models: `tree-oak`, `tree-round`, `tree-tall`.
 | `acc-gold-hoops.glb`    |  8572 | `a33256fdcdf6298dcd619f6d209289377a4f9146d6d47b07ad35eff87232bb8e` | `scripts/blender/avatar/acc-gold-hoops.py`    |
 | `acc-subway-tote.glb`   |  8384 | `1e46d77559fe7f2a74fa96244dfb8c033f656c0f1afb35b6a40a598f7eee873c` | `scripts/blender/avatar/acc-subway-tote.py`   |
 
-Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`.
+Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`, `hair-afro`, `hair-locs`, `hair-box-braids`, `hair-cornrows`, `hair-buzz`, `headwear-hijab`, `headwear-turban`, `headwear-durag`, `headwear-beanie`, `headwear-ballcap`.
 
 ## Models
 
@@ -293,6 +303,16 @@ Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-bear
 | `facial-full-beard` | `clout-city-blender`         | `facial-full-beard.glb`        | avatar-accessory |
 | `acc-gold-hoops`    | `clout-city-blender`         | `acc-gold-hoops.glb`           | avatar-accessory |
 | `acc-subway-tote`   | `clout-city-blender`         | `acc-subway-tote.glb`          | avatar-accessory |
+| `hair-afro`         | `clout-city-blender`         | `hair-afro.glb`                | avatar-hair      |
+| `hair-locs`         | `clout-city-blender`         | `hair-locs.glb`                | avatar-hair      |
+| `hair-box-braids`   | `clout-city-blender`         | `hair-box-braids.glb`          | avatar-hair      |
+| `hair-cornrows`     | `clout-city-blender`         | `hair-cornrows.glb`            | avatar-hair      |
+| `hair-buzz`         | `clout-city-blender`         | `hair-buzz.glb`                | avatar-hair      |
+| `headwear-hijab`    | `clout-city-blender`         | `headwear-hijab.glb`           | avatar-hair      |
+| `headwear-turban`   | `clout-city-blender`         | `headwear-turban.glb`          | avatar-hair      |
+| `headwear-durag`    | `clout-city-blender`         | `headwear-durag.glb`           | avatar-hair      |
+| `headwear-beanie`   | `clout-city-blender`         | `headwear-beanie.glb`          | avatar-hair      |
+| `headwear-ballcap`  | `clout-city-blender`         | `headwear-ballcap.glb`         | avatar-hair      |
 
 ## Left out
 

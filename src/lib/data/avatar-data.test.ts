@@ -2,17 +2,14 @@
  * S16a data across files: the look options (data/avatar/options.json), traits, the creator
  * config, the career block and the items' `look`, against the S04h model manifest, the model
  * palette (theme.json `models`) and the copy.
- *
- * Part A0 has landed except the `avatar-hair` models (the Blender hair pieces and head
- * coverings), which wait on their new perf.json cap. They are listed in PENDING_A0 below; every
- * other id must resolve today. Each pending id must still be missing from the manifest, so when
- * they land this test fails until the list is emptied (TODO(S16a A0): delete PENDING_A0 then).
+ * Every id resolves: part A0 has landed (the Blender attachments, `head-base`, the tokens).
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
 import { creatorConfig } from '@/engine/creatorConfig'
+import { effectiveLook } from '@/engine/avatarLook'
 import { creatorSteps } from '@/engine/creatorFlow'
 import { resaleValue, shopItems } from '@/engine/items'
 import { scaleByPct } from '@/engine/traits'
@@ -46,27 +43,6 @@ const modelIds = new Set(manifest.models.map((model) => model.id))
 const tokens = new Set(Object.keys(theme.models))
 const strings = baseCopy.strings
 
-/**
- * Ids part A0 adds that wait on a new perf.json cap: the Blender hair pieces and head coverings
- * are `avatar-hair` models, a category whose caps need the user's sign-off (A0.3). Their scripts
- * and GLBs are built (scripts/blender/avatar/, scripts/blender/lock.json); the catalog entries
- * land with the cap.
- */
-const PENDING_A0 = {
-  models: new Set<string>([
-    'hair-afro',
-    'hair-locs',
-    'hair-box-braids',
-    'hair-cornrows',
-    'hair-buzz',
-    'headwear-hijab',
-    'headwear-turban',
-    'headwear-durag',
-    'headwear-beanie',
-    'headwear-ballcap',
-  ]),
-}
-
 /** Every catalog model id the options and items name. */
 function referencedModels(): string[] {
   const models = [
@@ -89,21 +65,13 @@ function referencedTokens(): string[] {
 }
 
 describe('look options resolve (S04h catalog and palette)', () => {
-  it('every model id is in the manifest, or pending part A0', () => {
-    const missing = referencedModels().filter(
-      (id) => !modelIds.has(id) && !PENDING_A0.models.has(id),
-    )
-    expect(missing).toEqual([])
+  it('every model id is in the manifest', () => {
+    expect(referencedModels().filter((id) => !modelIds.has(id))).toEqual([])
   })
 
   it('every palette token is in theme.json models', () => {
     const missing = referencedTokens().filter((t) => !tokens.has(t))
     expect(missing).toEqual([])
-  })
-
-  it('the pending list holds only ids still missing (empty it when A0 lands)', () => {
-    expect([...PENDING_A0.models].filter((id) => modelIds.has(id))).toEqual([])
-    expect([...PENDING_A0.models].filter((id) => !referencedModels().includes(id))).toEqual([])
   })
 
   it('heads, bodies and attachments sit in their own categories (GR-12)', () => {
@@ -113,10 +81,57 @@ describe('look options resolve (S04h catalog and palette)', () => {
     }
     for (const outfit of options.outfits)
       expect(category(outfit.body), outfit.id).toBe('avatar-body')
-    for (const option of [...options.eyewear, ...options.ears]) {
+    for (const option of [...options.facialHair, ...options.eyewear, ...options.ears]) {
       if (option.model !== undefined) {
         expect(category(option.model), option.id).toBe('avatar-accessory')
       }
+    }
+    for (const style of options.hairStyles) {
+      if (style.piece !== undefined) expect(category(style.piece), style.id).toBe('avatar-hair')
+    }
+    for (const option of options.headwear) {
+      if (option.model !== undefined) expect(category(option.model), option.id).toBe('avatar-hair')
+    }
+    for (const item of items) {
+      if (item.look?.part === 'attachment') {
+        expect(category(item.look.model), item.id).toBe('avatar-accessory')
+      }
+    }
+  })
+
+  it('the worst look the options allow fits perf.json avatar.trianglesMax on every tier', () => {
+    const perf = readJson('config/perf.json') as {
+      avatar: { trianglesMax: Record<'low' | 'mid' | 'high', number> }
+    }
+    const attachmentItems = items.filter((item) => item.look?.part === 'attachment')
+    const bodies = options.outfits.map((outfit) => outfit.body)
+    const tris = (id: string, tier: 'low' | 'mid' | 'high') =>
+      manifest.models.find((model) => model.id === id)?.tiers[tier].triangles ?? NaN
+    for (const tier of ['low', 'mid', 'high'] as const) {
+      // The body is independent of the head side, so the largest one bounds every outfit.
+      const body = Math.max(...bodies.map((id) => tris(id, tier)))
+      let worst = 0
+      for (const hairStyle of options.hairStyles)
+        for (const facialHair of options.facialHair)
+          for (const headwear of options.headwear)
+            for (const eyewear of options.eyewear)
+              for (const ears of options.ears)
+                for (const worn of [[], ...attachmentItems.map((item) => [item.id])]) {
+                  const look = {
+                    ...engineConfig.avatar.defaults,
+                    hairStyle: hairStyle.id,
+                    facialHair: facialHair.id,
+                    headwear: headwear.id,
+                    eyewear: eyewear.id,
+                    ears: ears.id,
+                  }
+                  const drawn = effectiveLook({ look, worn }, engineConfig, creatorConfig)
+                  const total =
+                    tris(drawn.head, tier) +
+                    drawn.attachments.reduce((sum, id) => sum + tris(id, tier), 0)
+                  worst = Math.max(worst, total)
+                }
+      expect(worst + body, tier).toBeLessThanOrEqual(perf.avatar.trianglesMax[tier])
     }
   })
 })
@@ -215,7 +230,7 @@ describe('items look (D12)', () => {
         expect(has(options.garmentColors, look.color), item.id).toBe(true)
       if (look?.part === 'shoes') expect(options.shoeColors, item.id).toContain(look.color)
       if (look?.part === 'attachment') {
-        expect(modelIds.has(look.model) || PENDING_A0.models.has(look.model), item.id).toBe(true)
+        expect(modelIds.has(look.model), item.id).toBe(true)
       }
     }
   })

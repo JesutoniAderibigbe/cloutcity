@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "8a24bf73581b2e30",
+  "assetVersion": "4409c12f164b7835",
   "models": [
     {
       "id": "taxi",
@@ -2815,6 +2815,366 @@
           "bytes": 4236,
           "gzBytes": 2098,
           "triangles": 88
+        }
+      }
+    },
+    {
+      "id": "hair-afro",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairAfro",
+      "bounds": { "min": [-0.68, 1.05, -0.66], "max": [0.68, 1.95, 0.54] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-afro.high.24f6a7d1.glb",
+          "sha256": "24f6a7d13c2114c37e46cf102a23f51b2728b303160b811cd61b266e04b1eb46",
+          "bytes": 5808,
+          "gzBytes": 3009,
+          "triangles": 168
+        },
+        "mid": {
+          "file": "/models/hair-afro.high.24f6a7d1.glb",
+          "sha256": "24f6a7d13c2114c37e46cf102a23f51b2728b303160b811cd61b266e04b1eb46",
+          "bytes": 5808,
+          "gzBytes": 3009,
+          "triangles": 168
+        },
+        "high": {
+          "file": "/models/hair-afro.high.24f6a7d1.glb",
+          "sha256": "24f6a7d13c2114c37e46cf102a23f51b2728b303160b811cd61b266e04b1eb46",
+          "bytes": 5808,
+          "gzBytes": 3009,
+          "triangles": 168
+        }
+      }
+    },
+    {
+      "id": "hair-locs",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairLocs",
+      "bounds": { "min": [-0.5354, 0.5, -0.4354], "max": [0.5354, 1.49, 0.37] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-locs.high.5c5c4e07.glb",
+          "sha256": "5c5c4e0712b05e157e0c85f13299e5c4cd5db52ee43625f52999fa31e50ca86b",
+          "bytes": 5252,
+          "gzBytes": 1755,
+          "triangles": 176
+        },
+        "mid": {
+          "file": "/models/hair-locs.high.5c5c4e07.glb",
+          "sha256": "5c5c4e0712b05e157e0c85f13299e5c4cd5db52ee43625f52999fa31e50ca86b",
+          "bytes": 5252,
+          "gzBytes": 1755,
+          "triangles": 176
+        },
+        "high": {
+          "file": "/models/hair-locs.high.5c5c4e07.glb",
+          "sha256": "5c5c4e0712b05e157e0c85f13299e5c4cd5db52ee43625f52999fa31e50ca86b",
+          "bytes": 5252,
+          "gzBytes": 1755,
+          "triangles": 176
+        }
+      }
+    },
+    {
+      "id": "hair-box-braids",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairBoxBraids",
+      "bounds": { "min": [-0.545, 0.36, -0.4403], "max": [0.5275, 1.49, 0.37] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-box-braids.high.4ab52683.glb",
+          "sha256": "4ab52683434a243b8b47eb44feb64c423f75e0cf05f2ed0f9f4d36e3243eec73",
+          "bytes": 5560,
+          "gzBytes": 2158,
+          "triangles": 164
+        },
+        "mid": {
+          "file": "/models/hair-box-braids.high.4ab52683.glb",
+          "sha256": "4ab52683434a243b8b47eb44feb64c423f75e0cf05f2ed0f9f4d36e3243eec73",
+          "bytes": 5560,
+          "gzBytes": 2158,
+          "triangles": 164
+        },
+        "high": {
+          "file": "/models/hair-box-braids.high.4ab52683.glb",
+          "sha256": "4ab52683434a243b8b47eb44feb64c423f75e0cf05f2ed0f9f4d36e3243eec73",
+          "bytes": 5560,
+          "gzBytes": 2158,
+          "triangles": 164
+        }
+      }
+    },
+    {
+      "id": "hair-cornrows",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairCornrows",
+      "bounds": { "min": [-0.475, 0.86, -0.405], "max": [0.475, 1.505, 0.365] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-cornrows.high.c6d05f43.glb",
+          "sha256": "c6d05f43a275dddb4cdb2feb3e070847fe8c2a2ad061eeabdd066ce3124a8a7e",
+          "bytes": 5960,
+          "gzBytes": 1864,
+          "triangles": 208
+        },
+        "mid": {
+          "file": "/models/hair-cornrows.high.c6d05f43.glb",
+          "sha256": "c6d05f43a275dddb4cdb2feb3e070847fe8c2a2ad061eeabdd066ce3124a8a7e",
+          "bytes": 5960,
+          "gzBytes": 1864,
+          "triangles": 208
+        },
+        "high": {
+          "file": "/models/hair-cornrows.high.c6d05f43.glb",
+          "sha256": "c6d05f43a275dddb4cdb2feb3e070847fe8c2a2ad061eeabdd066ce3124a8a7e",
+          "bytes": 5960,
+          "gzBytes": 1864,
+          "triangles": 208
+        }
+      }
+    },
+    {
+      "id": "hair-buzz",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairBuzz",
+      "bounds": { "min": [-0.475, 0.86, -0.375], "max": [0.475, 1.475, 0.365] },
+      "slots": ["hair"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hair-buzz.high.d6985142.glb",
+          "sha256": "d698514221844b958c07e2e15f397819390d4749a5d0e5616f866be38382aeca",
+          "bytes": 4184,
+          "gzBytes": 1549,
+          "triangles": 88
+        },
+        "mid": {
+          "file": "/models/hair-buzz.high.d6985142.glb",
+          "sha256": "d698514221844b958c07e2e15f397819390d4749a5d0e5616f866be38382aeca",
+          "bytes": 4184,
+          "gzBytes": 1549,
+          "triangles": 88
+        },
+        "high": {
+          "file": "/models/hair-buzz.high.d6985142.glb",
+          "sha256": "d698514221844b958c07e2e15f397819390d4749a5d0e5616f866be38382aeca",
+          "bytes": 4184,
+          "gzBytes": 1549,
+          "triangles": 88
+        }
+      }
+    },
+    {
+      "id": "headwear-hijab",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearHijab",
+      "bounds": { "min": [-0.56, 0.52, -0.43], "max": [0.56, 1.53, 0.4] },
+      "slots": ["fabric"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/headwear-hijab.high.8b6b7a33.glb",
+          "sha256": "8b6b7a33d0d8b40f6004852169629aa02b12db0c4317f3e371c67bf8cb1bf262",
+          "bytes": 6532,
+          "gzBytes": 2328,
+          "triangles": 220
+        },
+        "mid": {
+          "file": "/models/headwear-hijab.high.8b6b7a33.glb",
+          "sha256": "8b6b7a33d0d8b40f6004852169629aa02b12db0c4317f3e371c67bf8cb1bf262",
+          "bytes": 6532,
+          "gzBytes": 2328,
+          "triangles": 220
+        },
+        "high": {
+          "file": "/models/headwear-hijab.high.8b6b7a33.glb",
+          "sha256": "8b6b7a33d0d8b40f6004852169629aa02b12db0c4317f3e371c67bf8cb1bf262",
+          "bytes": 6532,
+          "gzBytes": 2328,
+          "triangles": 220
+        }
+      }
+    },
+    {
+      "id": "headwear-turban",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearTurban",
+      "bounds": { "min": [-0.505, 1.15, -0.4], "max": [0.505, 1.64, 0.4233] },
+      "slots": ["fabric"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/headwear-turban.high.c8d92360.glb",
+          "sha256": "c8d92360222387ce8841e2624a951ac8265220d2eec4c511618cf4dd7f4ed64a",
+          "bytes": 5284,
+          "gzBytes": 2205,
+          "triangles": 144
+        },
+        "mid": {
+          "file": "/models/headwear-turban.high.c8d92360.glb",
+          "sha256": "c8d92360222387ce8841e2624a951ac8265220d2eec4c511618cf4dd7f4ed64a",
+          "bytes": 5284,
+          "gzBytes": 2205,
+          "triangles": 144
+        },
+        "high": {
+          "file": "/models/headwear-turban.high.c8d92360.glb",
+          "sha256": "c8d92360222387ce8841e2624a951ac8265220d2eec4c511618cf4dd7f4ed64a",
+          "bytes": 5284,
+          "gzBytes": 2205,
+          "triangles": 144
+        }
+      }
+    },
+    {
+      "id": "headwear-durag",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearDurag",
+      "bounds": { "min": [-0.49, 0.46, -0.41], "max": [0.49, 1.48, 0.38] },
+      "slots": ["fabric"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/headwear-durag.high.346b43cf.glb",
+          "sha256": "346b43cffe733e99b3278fcf3c242ab16495db28f0f5c6c01042f9d00ba8e677",
+          "bytes": 4768,
+          "gzBytes": 1831,
+          "triangles": 124
+        },
+        "mid": {
+          "file": "/models/headwear-durag.high.346b43cf.glb",
+          "sha256": "346b43cffe733e99b3278fcf3c242ab16495db28f0f5c6c01042f9d00ba8e677",
+          "bytes": 4768,
+          "gzBytes": 1831,
+          "triangles": 124
+        },
+        "high": {
+          "file": "/models/headwear-durag.high.346b43cf.glb",
+          "sha256": "346b43cffe733e99b3278fcf3c242ab16495db28f0f5c6c01042f9d00ba8e677",
+          "bytes": 4768,
+          "gzBytes": 1831,
+          "triangles": 124
+        }
+      }
+    },
+    {
+      "id": "headwear-beanie",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearBeanie",
+      "bounds": { "min": [-0.505, 1.15, -0.395], "max": [0.505, 1.71, 0.39] },
+      "slots": ["fabric"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/headwear-beanie.high.9be19fbd.glb",
+          "sha256": "9be19fbdb99121a55f266a55ba7661153a016f0d1c324bb5cfb39062af5cabd2",
+          "bytes": 5680,
+          "gzBytes": 2710,
+          "triangles": 168
+        },
+        "mid": {
+          "file": "/models/headwear-beanie.high.9be19fbd.glb",
+          "sha256": "9be19fbdb99121a55f266a55ba7661153a016f0d1c324bb5cfb39062af5cabd2",
+          "bytes": 5680,
+          "gzBytes": 2710,
+          "triangles": 168
+        },
+        "high": {
+          "file": "/models/headwear-beanie.high.9be19fbd.glb",
+          "sha256": "9be19fbdb99121a55f266a55ba7661153a016f0d1c324bb5cfb39062af5cabd2",
+          "bytes": 5680,
+          "gzBytes": 2710,
+          "triangles": 168
+        }
+      }
+    },
+    {
+      "id": "headwear-ballcap",
+      "kind": "static",
+      "category": "avatar-hair",
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearBallcap",
+      "bounds": { "min": [-0.485, 1.2, -0.38], "max": [0.485, 1.57, 0.68] },
+      "slots": ["fabric"],
+      "attach": "head",
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/headwear-ballcap.high.0ce5aa3e.glb",
+          "sha256": "0ce5aa3e6a7cf2c9fbc7d5ec81ae76df5f6d6fdacec554dad24a1227a41d6de3",
+          "bytes": 4352,
+          "gzBytes": 1787,
+          "triangles": 100
+        },
+        "mid": {
+          "file": "/models/headwear-ballcap.high.0ce5aa3e.glb",
+          "sha256": "0ce5aa3e6a7cf2c9fbc7d5ec81ae76df5f6d6fdacec554dad24a1227a41d6de3",
+          "bytes": 4352,
+          "gzBytes": 1787,
+          "triangles": 100
+        },
+        "high": {
+          "file": "/models/headwear-ballcap.high.0ce5aa3e.glb",
+          "sha256": "0ce5aa3e6a7cf2c9fbc7d5ec81ae76df5f6d6fdacec554dad24a1227a41d6de3",
+          "bytes": 4352,
+          "gzBytes": 1787,
+          "triangles": 100
         }
       }
     }

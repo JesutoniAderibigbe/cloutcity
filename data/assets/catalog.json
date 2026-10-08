@@ -5448,6 +5448,436 @@
       "instanced": false,
       "nameKey": "models.name.accSubwayTote",
       "attach": "torso"
+    },
+    {
+      "id": "hair-afro",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-afro.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairAfro",
+      "attach": "head"
+    },
+    {
+      "id": "hair-locs",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-locs.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairLocs",
+      "attach": "head"
+    },
+    {
+      "id": "hair-box-braids",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-box-braids.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairBoxBraids",
+      "attach": "head"
+    },
+    {
+      "id": "hair-cornrows",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-cornrows.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairCornrows",
+      "attach": "head"
+    },
+    {
+      "id": "hair-buzz",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "hair-buzz.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["hair-900"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "hair",
+          "tokens": ["hair-900"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.hairBuzz",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-hijab",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-hijab.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearHijab",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-turban",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-turban.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearTurban",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-durag",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-durag.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearDurag",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-beanie",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-beanie.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearBeanie",
+      "attach": "head"
+    },
+    {
+      "id": "headwear-ballcap",
+      "source": "clout-city-blender",
+      "kind": "static",
+      "entries": [
+        {
+          "path": "headwear-ballcap.glb"
+        }
+      ],
+      "category": "avatar-hair",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": ["teal-600"],
+      "maxDeltaE": 4,
+      "emissive": [],
+      "slots": [
+        {
+          "name": "fabric",
+          "tokens": ["teal-600"]
+        }
+      ],
+      "clips": [],
+      "loadPhase": "creator",
+      "instanced": false,
+      "nameKey": "models.name.headwearBallcap",
+      "attach": "head"
     }
   ],
   "excluded": [

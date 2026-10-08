@@ -258,7 +258,7 @@
     {
       "id": "ballcap",
       "model": "headwear-ballcap",
-      "hidesHair": false,
+      "hidesHair": true,
       "colorSlot": "fabric",
       "nameKey": "avatar.headwear.ballcap"
     }

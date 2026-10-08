@@ -166,10 +166,12 @@ describe('effectiveLook', () => {
     expect(effectiveLook(publicAvatar(wearing(kenney, [])), config, creatorConfig).head).toBe(
       'head-base',
     )
+    // S16a A0 ruling: the ball cap hides hair too (Kenney styles poke through its crown).
     const cap: Look = { ...kenney, headwear: 'ballcap' }
     expect(effectiveLook(publicAvatar(wearing(cap, [])), config, creatorConfig).head).toBe(
-      'head-female-d',
+      'head-base',
     )
+    expect(options.headwear.every((option) => option.id === 'none' || option.hidesHair)).toBe(true)
   })
 
   it('keeps at most four attachments, in priority order: items go first', () => {
@@ -183,7 +185,13 @@ describe('effectiveLook', () => {
     }
     const drawn = effectiveLook(publicAvatar(wearing(full, ['gold-hoops'])), config, creatorConfig)
     expect(options.attachments.max).toBe(4)
-    expect(drawn.attachments).toEqual(['headwear-ballcap', 'hair-afro', 'facial-goatee', 'glasses'])
+    // The cap hides the afro piece; the hoops (an item, last in priority) fall past the cap.
+    expect(drawn.attachments).toEqual([
+      'headwear-ballcap',
+      'facial-goatee',
+      'glasses',
+      'hearing-aid',
+    ])
   })
 
   it('the height option sets the root scale', () => {

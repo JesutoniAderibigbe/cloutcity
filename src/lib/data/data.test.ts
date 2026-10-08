@@ -353,7 +353,10 @@ describe('config/perf.json', () => {
         'avatar-head': { trianglesMax: { low: 350, mid: 400, high: 400 }, gzKBMax: 11 },
         'avatar-body': { trianglesMax: { low: 400, mid: 650, high: 650 }, gzKBMax: 15 },
         'avatar-accessory': { trianglesMax: { low: 100, mid: 100, high: 100 }, gzKBMax: 4 },
+        // S16a A0.3: approved by the user (the measured hijab is 220 triangles, 2.3 KB gz).
+        'avatar-hair': { trianglesMax: { low: 240, mid: 300, high: 300 }, gzKBMax: 4 },
       },
+      avatar: { trianglesMax: { low: 1300, mid: 1700, high: 1700 } },
     })
   })
 
