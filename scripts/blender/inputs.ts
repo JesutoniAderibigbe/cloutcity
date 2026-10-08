@@ -90,6 +90,13 @@ export function buildInputs(id: string): Record<string, unknown> {
   // A scene role names a models or world token (DEC-26); same lookup order as cclib/inputs.py.
   const colours = { ...theme.colors, ...theme.world, ...theme.models }
   const perf = readJson('data/config/perf.json') as Record<string, unknown>
+  const measurements = JSON.parse(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`), 'utf8')) as {
+    park?: string
+    dimensions: Record<string, object>
+  }
+  const mapped =
+    measurements.park !== undefined ||
+    Object.values(measurements.dimensions).some((dimension) => 'lat' in dimension)
   const scripts = Object.fromEntries(
     scriptFiles(id).map((file) => [file, sha256(readFileSync(join(BLENDER_DIR, file)))]),
   )
@@ -106,6 +113,21 @@ export function buildInputs(id: string): Record<string, unknown> {
       landmarkTrianglesMax: perf.landmarkTrianglesMax,
       landmarkLodRatioMax: perf.landmarkLodRatioMax,
     },
+    // Only map-placed models (a park area or lat/lng points) read the projection and the
+    // landmark's location, and only park models the map's park area (archetypes/park.py).
+    ...(mapped ? { map: mapInputs(id, measurements.park) } : {}),
+  }
+}
+
+function mapInputs(id: string, parkId: string | undefined): Record<string, unknown> {
+  const parks = readJson('data/geo/parks.derived.json') as { projection: unknown; parks: Entry[] }
+  const places = readJson('data/landmarks/landmarks.json') as {
+    landmarks: (Entry & { location: unknown })[]
+  }
+  return {
+    projection: parks.projection,
+    area: parkId === undefined ? null : entryOf(parks.parks, parkId),
+    location: entryOf(places.landmarks, id)?.location ?? null,
   }
 }
 

@@ -165,6 +165,64 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1200 triangles, 22852 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
 - L3: 584 triangles, 13288 bytes (`public/landmarks/brooklyn-bridge/lod3.glb`)
 
+### central-park
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q160409 (Central Park) and its features: Q532029 Bethesda Terrace and Fountain, Q816268 Belvedere Castle, Q1190219 the Reservoir, Q903865 Great Lawn and Turtle Pond, Q902461 Sheep Meadow, Q3508849 Harlem Meer, Q7757717 The Pond, Q5163141 Conservatory Water, Q5061610 the Mall, Q63337240 North Woods and North Meadow, CC0-1.0, <https://www.wikidata.org/wiki/Q160409>
+
+Dimensions:
+
+- `heightM`: 27 m (estimate): the folly tower's roof tip above the surrounding park (the rock outcrop and a square tower), proportioned by eye
+- `treeLowM`: 14 m (estimate): the lower canopy height of the tree masses
+- `treeHighM`: 22 m (estimate): the upper canopy height of the tree masses (below the folly)
+- `treeSpacingM`: 52 m (estimate): the spacing of canopy mounds at the finest level at density 1 (each mound a clump of trees)
+- `bethesda`: 40.7741, -73.9711 (wikidata): Bethesda Terrace and Fountain (Q532029, P625): the generic terrace and fountain, facing up the park toward the lake
+- `terrace`: 70 × 60 m (estimate): the terrace and its fountain plaza: width across the park and depth toward the lake
+- `terraceM`: 6 m (estimate): the upper terrace above the plaza
+- `fountainRadiusM`: 14 m (estimate): the fountain basin's radius
+- `fountainM`: 7 m (estimate): the tiered fountain's height (no figure, LEGAL-1)
+- `belvedere`: 40.7794, -73.9691 (wikidata): Belvedere Castle (Q816268, P625): the generic folly on its rock
+- `rockM`: 12 m (estimate): the rock outcrop the folly stands on, above the park
+- `rockRadiusM`: 30 m (estimate): the outcrop's radius at its foot
+- `keep`: 12 × 9 m (estimate): the folly's half-length and height (its keep)
+- `towerWidthM`: 7 m (estimate): the folly tower's side
+- `towerRoofM`: 4 m (estimate): the turret roof's rise
+- `reservoir`: 40.7864, -73.9623 (estimate): the Reservoir's middle, centred across the park and north of the Great Lawn (the Wikidata Q1190219 point, 40.785089, -73.960475, lies near its south-east shore)
+- `reservoirAxes`: 420 × 300 m (derived): semi-axes along and across the park: an ellipse of about the reservoir's Wikidata area (43 ha, P2046; drawn 92 %), kept between the drives and clear of the Great Lawn
+- `greatLawn`: 40.7813, -73.9665 (wikidata): Great Lawn and Turtle Pond (Q903865, P625, first point)
+- `greatLawnAxes`: 150 × 105 m (estimate): the Great Lawn's semi-axes along and across the park
+- `turtlePond`: 40.77985, -73.96855 (estimate): Turtle Pond, between the Great Lawn and the folly (by eye)
+- `turtlePondAxes`: 80 × 32 m (estimate): Turtle Pond's semi-axes
+- `sheepMeadow`: 40.771944, -73.975 (wikidata): Sheep Meadow (Q902461, P625)
+- `sheepMeadowAxes`: 158.5 × 121.9 m (derived): semi-axes of an ellipse of Sheep Meadow's Wikidata area (15 acres, P2046)
+- `harlemMeer`: 40.7966, -73.9517 (wikidata): Harlem Meer (Q3508849, P625)
+- `harlemMeerAxes`: 140.8 × 100.6 m (estimate): Harlem Meer's semi-axes (about 11 acres)
+- `pond`: 40.766361, -73.97449 (wikidata): The Pond (Q7757717, P625)
+- `pondAxes`: 95 × 45 m (estimate): The Pond's semi-axes
+- `conservatoryWater`: 40.77418, -73.96747 (wikidata): Conservatory Water (Q5163141, P625)
+- `conservatoryWaterAxes`: 60 × 38 m (estimate): Conservatory Water's semi-axes
+- `lake`: 40.7763, -73.9718 (estimate): the Lake's middle, north of the terrace (no Wikidata point found; by eye)
+- `lakeAxes`: 210 × 105 m (estimate): the Lake's semi-axes (about 20 acres)
+- `northMeadow`: 40.7935, -73.9585 (estimate): North Meadow, south of the North Woods point (Q63337240), by eye
+- `northMeadowAxes`: 190 × 120 m (estimate): North Meadow's semi-axes
+- `mallSouth`: 40.771111, -73.971667 (wikidata): the Mall (Q5061610, P625, second point): its south end; it runs to the terrace
+- `mallWidthM`: 12 m (estimate): the Mall's paved width
+- `driveWidthM`: 9 m (estimate): the park drive's width
+- `driveInset`: 130 × 95 m (estimate): how far the loop drive runs inside the park outline: from each long side and from each end
+- `lampSpacingM`: 80 m (estimate): lamps along the drive at the finest level
+
+Readability scale (drawn width ÷ true width): structures ×2, paths ×2, lamp ×3.
+
+Game scale: heights ×1.8, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 (trees, the folly, the terrace); the plan stays the map's park outline (x1.0) so the model fits the green the map draws; structures and paths take the readability scale instead.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6748 triangles, 171052 bytes (`public/landmarks/central-park/lod0.glb`)
+- L1: 3290 triangles, 83288 bytes (`public/landmarks/central-park/lod1.glb`)
+- L2: 1179 triangles, 29900 bytes (`public/landmarks/central-park/lod2.glb`)
+- L3: 570 triangles, 14368 bytes (`public/landmarks/central-park/lod3.glb`)
+
 ### city-hall
 
 Retrieved 2026-10-08. Sources:
@@ -284,6 +342,49 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L2: 1088 triangles, 17420 bytes (`public/landmarks/flushing-main-street/lod2.glb`)
 - L3: 540 triangles, 10992 bytes (`public/landmarks/flushing-main-street/lod3.glb`)
 
+### high-line
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q843869 (High Line), CC0-1.0, <https://www.wikidata.org/wiki/Q843869>
+
+Dimensions:
+
+- `lengthM`: 2330 m (wikidata): length (P2043, 2.33 km): the route below runs about this long
+- `heightM`: 15 m (derived): the tallest tree's top above the street: the deck's elevation plus the tallest tree
+- `elevationM`: 9 m (estimate): the deck top above the street (about 30 ft)
+- `treeHighM`: 6 m (estimate): the tallest small trees in the beds
+- `treeLowM`: 3.5 m (estimate): the lower small trees
+- `deckWidthM`: 10 m (estimate): the viaduct's width (it widens and narrows; one width drawn)
+- `deckThicknessM`: 1.2 m (estimate): the deck slab
+- `girderM`: 1.4 m (estimate): the edge girders' depth below the slab
+- `walkWidthM`: 3.5 m (estimate): the paved walk down the middle
+- `columnSpacingM`: 20 m (estimate): between column pairs along the line
+- `columnWidthM`: 0.9 m (estimate): each steel column's side
+- `treeSpacingM`: 30 m (estimate): small trees along the beds at the finest level
+- `shrubSpacingM`: 14 m (estimate): shrubs along the beds at the finest level
+- `cornerRadiusM`: 45 m (estimate): how round the line turns its corners
+- `route0`: 40.73975, -74.0082 (estimate): route point 0: the south end at Gansevoort Street (by eye from the street grid; no PD/CC0 alignment found)
+- `route1`: 40.7416, -74.0079 (estimate): route point 1: along Washington Street near 14th Street (by eye from the street grid; no PD/CC0 alignment found)
+- `route2`: 40.74335, -74.00695 (estimate): route point 2: 16th Street, turning onto the avenue grid (by eye from the street grid; no PD/CC0 alignment found)
+- `route3`: 40.7458, -74.00515 (estimate): route point 3: 20th Street (by eye from the street grid; no PD/CC0 alignment found)
+- `route4`: 40.7478, -74.0037 (estimate): route point 4: 23rd Street (by eye from the street grid; no PD/CC0 alignment found)
+- `route5`: 40.7526, -74.0002 (estimate): route point 5: 30th Street, where the line turns west (by eye from the street grid; no PD/CC0 alignment found)
+- `route6`: 40.7544, -74.0045 (estimate): route point 6: 30th Street at 12th Avenue, turning north (by eye from the street grid; no PD/CC0 alignment found)
+- `route7`: 40.7565, -74.003 (estimate): route point 7: 34th Street, turning east (by eye from the street grid; no PD/CC0 alignment found)
+- `route8`: 40.7556, -74.0008 (estimate): route point 8: the north end on 34th Street (by eye from the street grid; no PD/CC0 alignment found)
+
+Readability scale (drawn width ÷ true width): deck ×2, columns ×3.
+
+Game scale: heights ×1.8, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 (the deck stands 16 m over the street); the route keeps its real length; widths take the readability scale.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6680 triangles, 133940 bytes (`public/landmarks/high-line/lod0.glb`)
+- L1: 3232 triangles, 63584 bytes (`public/landmarks/high-line/lod1.glb`)
+- L2: 1191 triangles, 24920 bytes (`public/landmarks/high-line/lod2.glb`)
+- L3: 589 triangles, 13688 bytes (`public/landmarks/high-line/lod3.glb`)
+
 ### jamaica-station
 
 Retrieved 2026-10-08. Sources:
@@ -397,6 +498,61 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L1: 332 triangles, 7456 bytes (`public/landmarks/penn-station/lod1.glb`)
 - L2: 144 triangles, 4876 bytes (`public/landmarks/penn-station/lod2.glb`)
 - L3: 64 triangles, 3732 bytes (`public/landmarks/penn-station/lod3.glb`)
+
+### prospect-park
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q1049632 (Prospect Park) and its features: Q106694860 Prospect Park Lake, Q4931524 Prospect Park Boathouse, Q6647480 Litchfield Villa, CC0-1.0, <https://www.wikidata.org/wiki/Q1049632>
+
+Dimensions:
+
+- `heightM`: 21 m (estimate): the villa's tower top above the park, proportioned by eye
+- `treeLowM`: 13 m (estimate): the lower canopy height of the tree masses
+- `treeHighM`: 19 m (estimate): the upper canopy height (below the villa tower)
+- `treeSpacingM`: 48 m (estimate): canopy mound spacing at the finest level at density 1
+- `longMeadowNorth`: 40.6685, -73.9695 (estimate): the Long Meadow's northern half, by eye
+- `longMeadowNorthAxes`: 330 × 140 m (estimate): its semi-axes, the long one running south-south-west
+- `longMeadowSouth`: 40.6627, -73.9732 (estimate): the Long Meadow's southern half, by eye
+- `longMeadowSouthAxes`: 290 × 130 m (estimate): its semi-axes
+- `longMeadowHeadingDeg`: 205 m (estimate): the compass heading of the Long Meadow's long axis
+- `nethermead`: 40.6597, -73.9683 (estimate): the Nethermead, the park's middle meadow, by eye
+- `nethermeadAxes`: 170 × 115 m (estimate): its semi-axes
+- `lake`: 40.6535, -73.968 (estimate): Prospect Park Lake's middle, by eye (Wikidata Q106694860 gives no point)
+- `lakeAxes`: 420 × 190 m (derived): semi-axes of an ellipse of the lake's Wikidata area (60 acres, P2046), the long axis east-north-east
+- `lakeHeadingDeg`: 75 m (estimate): the compass heading of the lake's long axis
+- `lullwater`: 40.6573, -73.9652 (estimate): the Lullwater, the narrow water from the boathouse down to the lake, by eye
+- `lullwaterAxes`: 240 × 34 m (estimate): its semi-axes, the long one north-south
+- `boathouse`: 40.660833, -73.965278 (wikidata): Prospect Park Boathouse (Q4931524, P625): a generic pale pavilion and terrace over the water
+- `boathouse2`: 40 × 26 m (estimate): the boathouse terrace's width and depth
+- `boathouseM`: 9 m (estimate): the boathouse's height
+- `villa`: 40.666944, -73.973889 (wikidata): Litchfield Villa (Q6647480, P625): a generic villa with a square tower
+- `villaKeep`: 10 × 9 m (estimate): the villa's half-length and height
+- `villaTowerWidthM`: 6 m (estimate): the villa tower's side
+- `villaRoofM`: 3 m (estimate): the tower's pointed roof
+- `driveWidthM`: 9 m (estimate): the park drive's width
+- `lampSpacingM`: 80 m (estimate): lamps along the drive at the finest level
+- `drive0`: 40.6703, -73.9688 (estimate): loop drive point 0: north, near Grand Army Plaza (by eye)
+- `drive1`: 40.6668, -73.9722 (estimate): loop drive point 1: west side (by eye)
+- `drive2`: 40.6618, -73.9758 (estimate): loop drive point 2: south-west (by eye)
+- `drive3`: 40.656, -73.972 (estimate): loop drive point 3: west of the lake (by eye)
+- `drive4`: 40.6512, -73.97 (estimate): loop drive point 4: south-west of the lake (by eye)
+- `drive5`: 40.6503, -73.966 (estimate): loop drive point 5: south of the lake (by eye)
+- `drive6`: 40.654, -73.964 (estimate): loop drive point 6: east of the lake (by eye)
+- `drive7`: 40.66, -73.9645 (estimate): loop drive point 7: east side (by eye)
+- `drive8`: 40.666, -73.965 (estimate): loop drive point 8: north-east (by eye)
+- `drive9`: 40.6698, -73.966 (estimate): loop drive point 9: north (by eye)
+
+Readability scale (drawn width ÷ true width): structures ×2, paths ×2, lamp ×3.
+
+Game scale: heights ×1.8, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8; the plan stays the map's park outline (x1.0); structures and the drive take the readability scale.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6726 triangles, 179324 bytes (`public/landmarks/prospect-park/lod0.glb`)
+- L1: 3002 triangles, 80532 bytes (`public/landmarks/prospect-park/lod1.glb`)
+- L2: 1173 triangles, 33020 bytes (`public/landmarks/prospect-park/lod2.glb`)
+- L3: 539 triangles, 16044 bytes (`public/landmarks/prospect-park/lod3.glb`)
 
 ### queens-borough-hall
 
