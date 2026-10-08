@@ -8,6 +8,7 @@ import { BufferGeometry, SkinnedMesh, Vector3 } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { modelManifest, modelRef } from '@/lib/data/models'
 import { scene } from '@/lib/data/config'
+import { VehicleKitConfigSchema, type VehicleKitConfig } from '@/lib/data/schemas/ambientKit'
 import { PEDESTRIAN_BUCKETS, VEHICLE_BUCKETS } from '@/lib/world/ambient/types'
 import { gltfLoader, prepareGltf, type SkinnedPartModel } from '../models/prepare'
 import { partsBounds } from './buckets'
@@ -28,6 +29,12 @@ import {
 
 const ROOT = join(import.meta.dirname, '../../..')
 const AMBIENT_CARS = ['taxi-ambient', 'sedan-ambient', 'hatchback-ambient'] as const
+
+/** The `vehicleKit` block proposed for data/config/ambient.json (lane C merges it there). */
+const VEHICLE_KIT: VehicleKitConfig = {
+  light: { warmMinRed: 0.5, warmMaxBlueShare: 0.6, tailMinRed: 0.3, tailMaxGreenShare: 0.25 },
+}
+const vehicleKits = catalogVehicleKits(VEHICLE_KIT)
 
 /** The loader the runtime builds on acquireModels, here straight from public/models. */
 function fileLoader(tier: 'low' | 'mid' | 'high'): AmbientModelLoader & { calls: string[][] } {
@@ -75,7 +82,8 @@ describe('ambient vehicle LODs in the catalog', () => {
 
 describe('vehicle kits', () => {
   it('classifies body, warm and red lamps, and everything else', () => {
-    const classify = vehicleClassifier(1)
+    expect(VehicleKitConfigSchema.parse(VEHICLE_KIT)).toEqual(VEHICLE_KIT)
+    const classify = vehicleClassifier(1, VEHICLE_KIT)
     expect(classify({ r: 0.1, g: 0.1, b: 0.1, slot: 1 })).toBe('paint')
     expect(classify({ r: 1, g: 0.54, b: 0.13, slot: 0 })).toBe('light')
     expect(classify({ r: 0.6, g: 0.04, b: 0.03, slot: 0 })).toBe('light')
@@ -93,7 +101,7 @@ describe('vehicle kits', () => {
 
   it('bakes every ambient car into paint, glass and light parts, real size, on the ground', async () => {
     const loader = fileLoader('mid')
-    const kits = await catalogVehicleKits('mid', AMBIENT_CARS, loader)
+    const kits = await vehicleKits('mid', AMBIENT_CARS, loader)
     expect(loader.calls).toEqual([[...AMBIENT_CARS]])
     expect(kits.map((kit) => kit.id)).toEqual([...AMBIENT_CARS])
     for (const kit of kits) {
@@ -131,6 +139,24 @@ describe('vehicle kits', () => {
     expect(b).toBeLessThan(80)
   })
 
+  it('bakes the Blender bus: generic, real size, paint, glass and lights', async () => {
+    const entry = manifestEntry('bus-ambient')
+    expect(entry.category).toBe('vehicle')
+    expect(entry.loadPhase).toBe('after-playable')
+    expect(entry.slots).toEqual(['body'])
+    const [bus] = await vehicleKits('high', ['bus-ambient'], fileLoader('high'))
+    if (bus === undefined) throw new Error('no bus')
+    expect(bus.kind).toBe('bus')
+    expect(bus.parts.map((part) => part.bucket)).toEqual([...VEHICLE_BUCKETS])
+    expect(bus.triangles).toBe(entry.tiers.high.triangles)
+    expect(bus.triangles).toBeLessThanOrEqual(400)
+    expect(bus.lengthM).toBeGreaterThan(11)
+    expect(bus.lengthM).toBeLessThan(13)
+    expect(bus.widthM).toBeLessThan(2.7)
+    expect(bus.heightM).toBeGreaterThan(2.8)
+    bus.dispose()
+  })
+
   it('rejects a model without a body slot and disposes kits already baked', async () => {
     const loader = fileLoader('low')
     const dispose = vi.spyOn(BufferGeometry.prototype, 'dispose')
@@ -140,9 +166,9 @@ describe('vehicle kits', () => {
         i === 1 ? { ...entry, ref: { ...entry.ref, slots: [] } } : entry,
       )
     }
-    await expect(
-      catalogVehicleKits('low', ['taxi-ambient', 'sedan-ambient'], wrapped),
-    ).rejects.toThrow(/no "body" slot/)
+    await expect(vehicleKits('low', ['taxi-ambient', 'sedan-ambient'], wrapped)).rejects.toThrow(
+      /no "body" slot/,
+    )
     // The taxi baked first: its three parts are freed.
     expect(dispose).toHaveBeenCalledTimes(VEHICLE_BUCKETS.length)
     dispose.mockRestore()

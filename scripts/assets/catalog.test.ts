@@ -105,7 +105,9 @@ describe('data/assets/catalog.json', () => {
   it('collapses across seams (Permissive) only for the far-away ambient LODs (S04l)', () => {
     for (const model of catalog.models) {
       const permissive = Object.values(model.tiers).some((tier) => tier.flags !== undefined)
-      expect(permissive, model.id).toBe(model.id.endsWith('-ambient'))
+      // The Blender bus is authored at its ambient size and needs no simplifying.
+      const simplifiedLod = model.id.endsWith('-ambient') && model.source !== 'clout-city-blender'
+      expect(permissive, model.id).toBe(simplifiedLod)
     }
     const [model] = catalog.models
     if (model === undefined) throw new Error('empty catalog')

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "1c50aa5f6ec151de",
+  "assetVersion": "63f92a6409afe3b2",
   "models": [
     {
       "id": "taxi",
@@ -50,24 +50,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/sedan.low.3288c3e3.glb",
-          "sha256": "3288c3e3287c4b35341ce89b5bc3b122ea1639553d10229889afcb5392bdd600",
-          "bytes": 27764,
-          "gzBytes": 18344,
+          "file": "/models/sedan.low.b24a02b9.glb",
+          "sha256": "b24a02b9dfa6d7c1ee0933469799259d7aa8df78190048a0a2140f1c06f78abf",
+          "bytes": 28476,
+          "gzBytes": 18511,
           "triangles": 1018
         },
         "mid": {
-          "file": "/models/sedan.high.cf501a99.glb",
-          "sha256": "cf501a997c2387ce47d25cbd71b3b57fd7da9410a518616d98477cae69fe40ba",
-          "bytes": 30372,
-          "gzBytes": 19282,
+          "file": "/models/sedan.high.6960ed50.glb",
+          "sha256": "6960ed5063d943121ebb00ec309945f7e38a546fba83cbe22051e40499f8d401",
+          "bytes": 31100,
+          "gzBytes": 19443,
           "triangles": 1222
         },
         "high": {
-          "file": "/models/sedan.high.cf501a99.glb",
-          "sha256": "cf501a997c2387ce47d25cbd71b3b57fd7da9410a518616d98477cae69fe40ba",
-          "bytes": 30372,
-          "gzBytes": 19282,
+          "file": "/models/sedan.high.6960ed50.glb",
+          "sha256": "6960ed5063d943121ebb00ec309945f7e38a546fba83cbe22051e40499f8d401",
+          "bytes": 31100,
+          "gzBytes": 19443,
           "triangles": 1222
         }
       }
@@ -209,6 +209,41 @@
           "bytes": 10484,
           "gzBytes": 6356,
           "triangles": 254
+        }
+      }
+    },
+    {
+      "id": "bus-ambient",
+      "kind": "static",
+      "category": "vehicle",
+      "loadPhase": "after-playable",
+      "instanced": true,
+      "nameKey": "models.name.busAmbient",
+      "bounds": { "min": [-1.3075, 0, -6.12], "max": [1.3075, 3.033, 6.12] },
+      "slots": ["body"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/bus-ambient.high.dcf5b900.glb",
+          "sha256": "dcf5b900bdc534e39d5ff3dce34caa385179224fcc05282b715c641c191f00fd",
+          "bytes": 6500,
+          "gzBytes": 2586,
+          "triangles": 276
+        },
+        "mid": {
+          "file": "/models/bus-ambient.high.dcf5b900.glb",
+          "sha256": "dcf5b900bdc534e39d5ff3dce34caa385179224fcc05282b715c641c191f00fd",
+          "bytes": 6500,
+          "gzBytes": 2586,
+          "triangles": 276
+        },
+        "high": {
+          "file": "/models/bus-ambient.high.dcf5b900.glb",
+          "sha256": "dcf5b900bdc534e39d5ff3dce34caa385179224fcc05282b715c641c191f00fd",
+          "bytes": 6500,
+          "gzBytes": 2586,
+          "triangles": 276
         }
       }
     },

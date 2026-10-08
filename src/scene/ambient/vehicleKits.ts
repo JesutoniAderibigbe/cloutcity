@@ -1,7 +1,8 @@
 /**
- * Ambient vehicle kits (S04l part B): the catalog's far-away car LODs (`*-ambient`, about 250
- * triangles, data/assets/catalog.json) split into the `paint`, `glass` and `light` colour
- * buckets, so each bucket draws as one InstancedMesh on the blocks' instanced material.
+ * Ambient vehicle kits (S04l part B): the catalog's far-away vehicles (`*-ambient`, about 250
+ * triangles per KayKit car LOD, about 280 for our Blender bus; data/assets/catalog.json) split
+ * into the `paint`, `glass` and `light` colour buckets, so each bucket draws as one
+ * InstancedMesh on the blocks' instanced material.
  *
  * - `paint`: the body (`_SLOT` "body"); recoloured per instance, a taxi keeps its own paint.
  * - `light`: warm head lamps and red tail lamps (bright warm or strongly red, outside the body).
@@ -18,6 +19,7 @@ import {
   type VehicleKit,
   type VehicleKitSource,
 } from '@/lib/world/ambient/types'
+import type { VehicleKitConfig } from '@/lib/data/schemas/ambientKit'
 import type { LoadedModel } from '../models/prepare'
 import type { ModelRef } from '../models/types'
 import { groundParts, partsBounds, splitIntoBuckets, type BucketTriangle } from './buckets'
@@ -38,18 +40,18 @@ export type AmbientModelLoader = (ids: readonly string[]) => Promise<readonly Am
 export type SceneVehicleKit = VehicleKit<BufferGeometry>
 export type SceneVehicleKitSource = VehicleKitSource<BufferGeometry, AmbientModelLoader>
 
-/** Linear-RGB thresholds of the `light` bucket (lamp colours are far from every body paint). */
-const WARM_LAMP_MIN_RED = 0.5
-const WARM_LAMP_MAX_BLUE_SHARE = 0.6
-const TAIL_LAMP_MIN_RED = 0.3
-const TAIL_LAMP_MAX_GREEN_SHARE = 0.25
-
-/** The bucket classifier for a car whose body is `_SLOT` value `paintSlot` (0 = none). */
-export function vehicleClassifier(paintSlot: number): (t: BucketTriangle) => VehicleBucket {
+/**
+ * The bucket classifier for a car whose body is `_SLOT` value `paintSlot` (0 = none), with the
+ * lamp thresholds of ambient.json `vehicleKit.light` (linear RGB).
+ */
+export function vehicleClassifier(
+  paintSlot: number,
+  { light }: VehicleKitConfig,
+): (t: BucketTriangle) => VehicleBucket {
   return ({ r, g, b, slot }) => {
     if (paintSlot > 0 && slot === paintSlot) return 'paint'
-    const warmLamp = r >= WARM_LAMP_MIN_RED && b <= r * WARM_LAMP_MAX_BLUE_SHARE
-    const tailLamp = r >= TAIL_LAMP_MIN_RED && g <= r * TAIL_LAMP_MAX_GREEN_SHARE
+    const warmLamp = r >= light.warmMinRed && b <= r * light.warmMaxBlueShare
+    const tailLamp = r >= light.tailMinRed && g <= r * light.tailMaxGreenShare
     return warmLamp || tailLamp ? 'light' : 'glass'
   }
 }
@@ -62,12 +64,15 @@ export function vehicleKind(id: string): VehicleKind {
 }
 
 /** Bakes one ambient vehicle kit from a loaded static model. */
-export function vehicleKitFromModel(loaded: AmbientLoadedModel): SceneVehicleKit {
+export function vehicleKitFromModel(
+  loaded: AmbientLoadedModel,
+  config: VehicleKitConfig,
+): SceneVehicleKit {
   const { ref, model } = loaded
   if (model.kind !== 'static') throw new Error(`Ambient vehicle "${ref.id}" is not a static model`)
   const paintSlot = ref.slots.indexOf('body') + 1
   if (paintSlot === 0) throw new Error(`Ambient vehicle "${ref.id}" has no "body" slot`)
-  const parts = splitIntoBuckets(model.geometry, vehicleClassifier(paintSlot), {
+  const parts = splitIntoBuckets(model.geometry, vehicleClassifier(paintSlot, config), {
     order: VEHICLE_BUCKETS,
     matrix: model.matrix,
   })
@@ -91,18 +96,20 @@ export function vehicleKitFromModel(loaded: AmbientLoadedModel): SceneVehicleKit
 }
 
 /**
- * The vehicle kit source: the tier's `vehicles.models` ids, loaded and baked in order. A kit
- * that fails to bake disposes the ones already baked and rejects (the runtime keeps traffic
- * off rather than drawing a partial set).
+ * The vehicle kit source for ambient.json's `vehicleKit` settings: the tier's `vehicles.models`
+ * ids, loaded and baked in order. A kit that fails to bake disposes the ones already baked and
+ * rejects (the runtime keeps traffic off rather than drawing a partial set).
  */
-export const catalogVehicleKits: SceneVehicleKitSource = async (_tier, ids, loadModels) => {
-  const loaded = await loadModels(ids)
-  const kits: SceneVehicleKit[] = []
-  try {
-    for (const entry of loaded) kits.push(vehicleKitFromModel(entry))
-  } catch (error) {
-    for (const kit of kits) kit.dispose()
-    throw error
+export function catalogVehicleKits(config: VehicleKitConfig): SceneVehicleKitSource {
+  return async (_tier, ids, loadModels) => {
+    const loaded = await loadModels(ids)
+    const kits: SceneVehicleKit[] = []
+    try {
+      for (const entry of loaded) kits.push(vehicleKitFromModel(entry, config))
+    } catch (error) {
+      for (const kit of kits) kit.dispose()
+      throw error
+    }
+    return kits
   }
-  return kits
 }
