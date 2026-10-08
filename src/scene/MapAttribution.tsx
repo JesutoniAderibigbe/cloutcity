@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'react'
-
 interface MapAttributionProps {
   readonly nyc: string
   readonly mta: string
@@ -10,10 +8,6 @@ interface MapAttributionProps {
   readonly toggle: string
   /** The overlay grid rows (src/components/overlay/layers.ts). */
   readonly gridTemplateRows: string
-  /** Where the chip sits while the sheet zone is empty: the free row down to the tab bar. */
-  readonly rows: string
-  /** Where it sits while a sheet is open: the free scene row only. */
-  readonly busyRow: number
 }
 
 /**
@@ -40,8 +34,6 @@ export function MapAttribution({
   credits,
   toggle,
   gridTemplateRows,
-  rows,
-  busyRow,
 }: MapAttributionProps) {
   return (
     <div
@@ -49,15 +41,7 @@ export function MapAttribution({
       className="pointer-events-none absolute inset-0 grid grid-cols-1"
       style={{ gridTemplateRows }}
     >
-      <div
-        className="map-attribution-row flex min-h-0 items-end justify-end overflow-hidden px-1"
-        style={
-          {
-            '--cc-attribution-rows': rows,
-            '--cc-attribution-busy-row': busyRow,
-          } as CSSProperties
-        }
-      >
+      <div className="map-attribution-row flex min-h-0 items-end justify-end overflow-hidden px-1">
         <details
           data-map-attribution=""
           className="pointer-events-auto relative text-[11px] leading-snug text-muted"

@@ -151,7 +151,9 @@ body {
    with its padding at 11 px text; the row's minimum (layout.json) fits the one-line form. */
 .map-attribution-row {
   container-type: size;
-  grid-row: var(--cc-attribution-rows);
+  /* Rows from src/components/overlay/layers.ts (FREE_SCENE_GRID_ROW to ZONE_GRID_ROW.tabs),
+     kept equal by layers.test.ts; plain CSS keeps them out of the page's inline scripts. */
+  grid-row: 4 / 7;
 }
 
 /* UX-15: in the bottom-end corner above the tab bar while the sheet zone is empty; back in the
@@ -160,7 +162,7 @@ body {
    child other than a passive sr-only status. (`:has()` cannot nest, hence the child test.) */
 .cc-overlay:has([data-overlay-zone='sheet'] > * > :not([data-overlay-passive]))
   .map-attribution-row {
-  grid-row: var(--cc-attribution-busy-row);
+  grid-row: 4;
 }
 
 .map-attribution-compact {

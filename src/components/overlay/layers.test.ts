@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   FREE_SCENE_GRID_ROW,
@@ -94,5 +95,16 @@ describe('overlay layers', () => {
     expect(start).toBe(ZONE_GRID_ROW.hud + 1)
     expect(start).toBe(FREE_SCENE_GRID_ROW)
     expect(end).toBe(ZONE_GRID_ROW.tabs)
+  })
+})
+
+describe('map attribution rows (UX-15, globals.css)', () => {
+  const css = readFileSync(new URL('../../app/globals.css', import.meta.url), 'utf8')
+
+  it('spans the free scene row down to the tab bar, and only the free row while a sheet is open', () => {
+    const idle = /\.map-attribution-row \{[^}]*grid-row: (\d+) \/ (\d+);/.exec(css)
+    const busy = /\)\s*\.map-attribution-row \{\s*grid-row: (\d+);/.exec(css)
+    expect(idle?.slice(1).map(Number)).toEqual([FREE_SCENE_GRID_ROW, ZONE_GRID_ROW.tabs])
+    expect(Number(busy?.[1])).toBe(FREE_SCENE_GRID_ROW)
   })
 })
