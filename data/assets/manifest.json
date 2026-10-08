@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "8f1a132c5ed7c2db",
+  "assetVersion": "1aa7d262d8680b64",
   "models": [
     {
       "id": "taxi",
@@ -50,24 +50,24 @@
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/sedan.low.3288c3e3.glb",
-          "sha256": "3288c3e3287c4b35341ce89b5bc3b122ea1639553d10229889afcb5392bdd600",
-          "bytes": 27764,
-          "gzBytes": 18344,
+          "file": "/models/sedan.low.b24a02b9.glb",
+          "sha256": "b24a02b9dfa6d7c1ee0933469799259d7aa8df78190048a0a2140f1c06f78abf",
+          "bytes": 28476,
+          "gzBytes": 18511,
           "triangles": 1018
         },
         "mid": {
-          "file": "/models/sedan.high.cf501a99.glb",
-          "sha256": "cf501a997c2387ce47d25cbd71b3b57fd7da9410a518616d98477cae69fe40ba",
-          "bytes": 30372,
-          "gzBytes": 19282,
+          "file": "/models/sedan.high.6960ed50.glb",
+          "sha256": "6960ed5063d943121ebb00ec309945f7e38a546fba83cbe22051e40499f8d401",
+          "bytes": 31100,
+          "gzBytes": 19443,
           "triangles": 1222
         },
         "high": {
-          "file": "/models/sedan.high.cf501a99.glb",
-          "sha256": "cf501a997c2387ce47d25cbd71b3b57fd7da9410a518616d98477cae69fe40ba",
-          "bytes": 30372,
-          "gzBytes": 19282,
+          "file": "/models/sedan.high.6960ed50.glb",
+          "sha256": "6960ed5063d943121ebb00ec309945f7e38a546fba83cbe22051e40499f8d401",
+          "bytes": 31100,
+          "gzBytes": 19443,
           "triangles": 1222
         }
       }
@@ -104,6 +104,146 @@
           "bytes": 31156,
           "gzBytes": 20011,
           "triangles": 1194
+        }
+      }
+    },
+    {
+      "id": "taxi-ambient",
+      "kind": "static",
+      "category": "vehicle",
+      "loadPhase": "after-playable",
+      "instanced": true,
+      "nameKey": "models.name.taxiAmbient",
+      "bounds": { "min": [-1.091, 0, -2.45], "max": [1.091, 2.2759, 2.45] },
+      "slots": ["body"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/taxi-ambient.high.23d56803.glb",
+          "sha256": "23d5680334b5ac7ae949f0fa61fad53f8bfc9294764b6f2ede4cb94688ca6579",
+          "bytes": 11324,
+          "gzBytes": 7092,
+          "triangles": 268
+        },
+        "mid": {
+          "file": "/models/taxi-ambient.high.23d56803.glb",
+          "sha256": "23d5680334b5ac7ae949f0fa61fad53f8bfc9294764b6f2ede4cb94688ca6579",
+          "bytes": 11324,
+          "gzBytes": 7092,
+          "triangles": 268
+        },
+        "high": {
+          "file": "/models/taxi-ambient.high.23d56803.glb",
+          "sha256": "23d5680334b5ac7ae949f0fa61fad53f8bfc9294764b6f2ede4cb94688ca6579",
+          "bytes": 11324,
+          "gzBytes": 7092,
+          "triangles": 268
+        }
+      }
+    },
+    {
+      "id": "sedan-ambient",
+      "kind": "static",
+      "category": "vehicle",
+      "loadPhase": "after-playable",
+      "instanced": true,
+      "nameKey": "models.name.sedanAmbient",
+      "bounds": { "min": [-1.0687, 0, -2.4], "max": [1.0687, 1.8923, 2.4] },
+      "slots": ["body"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/sedan-ambient.high.6f05cdd4.glb",
+          "sha256": "6f05cdd47f62185338988c5991a107a5ab8b8a3af9abf3b943aaf3c3ef124fdd",
+          "bytes": 10672,
+          "gzBytes": 6304,
+          "triangles": 262
+        },
+        "mid": {
+          "file": "/models/sedan-ambient.high.6f05cdd4.glb",
+          "sha256": "6f05cdd47f62185338988c5991a107a5ab8b8a3af9abf3b943aaf3c3ef124fdd",
+          "bytes": 10672,
+          "gzBytes": 6304,
+          "triangles": 262
+        },
+        "high": {
+          "file": "/models/sedan-ambient.high.6f05cdd4.glb",
+          "sha256": "6f05cdd47f62185338988c5991a107a5ab8b8a3af9abf3b943aaf3c3ef124fdd",
+          "bytes": 10672,
+          "gzBytes": 6304,
+          "triangles": 262
+        }
+      }
+    },
+    {
+      "id": "hatchback-ambient",
+      "kind": "static",
+      "category": "vehicle",
+      "loadPhase": "after-playable",
+      "instanced": true,
+      "nameKey": "models.name.hatchbackAmbient",
+      "bounds": { "min": [-1.0888, 0, -2.1], "max": [1.0888, 1.9278, 2.1] },
+      "slots": ["body"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/hatchback-ambient.high.477b8ee5.glb",
+          "sha256": "477b8ee519f2504d69bc554272a5031537e117e795c1670594bc758dcd8b8fd2",
+          "bytes": 10484,
+          "gzBytes": 6356,
+          "triangles": 254
+        },
+        "mid": {
+          "file": "/models/hatchback-ambient.high.477b8ee5.glb",
+          "sha256": "477b8ee519f2504d69bc554272a5031537e117e795c1670594bc758dcd8b8fd2",
+          "bytes": 10484,
+          "gzBytes": 6356,
+          "triangles": 254
+        },
+        "high": {
+          "file": "/models/hatchback-ambient.high.477b8ee5.glb",
+          "sha256": "477b8ee519f2504d69bc554272a5031537e117e795c1670594bc758dcd8b8fd2",
+          "bytes": 10484,
+          "gzBytes": 6356,
+          "triangles": 254
+        }
+      }
+    },
+    {
+      "id": "bus-ambient",
+      "kind": "static",
+      "category": "vehicle",
+      "loadPhase": "after-playable",
+      "instanced": true,
+      "nameKey": "models.name.busAmbient",
+      "bounds": { "min": [-1.3075, 0, -6.12], "max": [1.3075, 3.033, 6.12] },
+      "slots": ["body"],
+      "emissive": false,
+      "clips": [],
+      "tiers": {
+        "low": {
+          "file": "/models/bus-ambient.high.dcf5b900.glb",
+          "sha256": "dcf5b900bdc534e39d5ff3dce34caa385179224fcc05282b715c641c191f00fd",
+          "bytes": 6500,
+          "gzBytes": 2586,
+          "triangles": 276
+        },
+        "mid": {
+          "file": "/models/bus-ambient.high.dcf5b900.glb",
+          "sha256": "dcf5b900bdc534e39d5ff3dce34caa385179224fcc05282b715c641c191f00fd",
+          "bytes": 6500,
+          "gzBytes": 2586,
+          "triangles": 276
+        },
+        "high": {
+          "file": "/models/bus-ambient.high.dcf5b900.glb",
+          "sha256": "dcf5b900bdc534e39d5ff3dce34caa385179224fcc05282b715c641c191f00fd",
+          "bytes": 6500,
+          "gzBytes": 2586,
+          "triangles": 276
         }
       }
     },
@@ -2972,32 +3112,32 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.hairMohawk",
-      "bounds": { "min": [-0.0388, 1.569, -0.1595], "max": [0.0446, 1.9654, 0.2303] },
+      "bounds": { "min": [-0.0388, 1.6647, -0.1595], "max": [0.0446, 1.9654, 0.2303] },
       "slots": ["hair"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/hair-mohawk.low.15f833ff.glb",
-          "sha256": "15f833fffb64796d344b6f5bf64f32598076ce033130263b8c842fec98f0fb09",
-          "bytes": 3404,
-          "gzBytes": 1890,
-          "triangles": 248
+          "file": "/models/hair-mohawk.low.d9cbf6cc.glb",
+          "sha256": "d9cbf6cc4020b930d8c49e208551213271bab81bc1f91c9f37a214462f363946",
+          "bytes": 3388,
+          "gzBytes": 1889,
+          "triangles": 250
         },
         "mid": {
-          "file": "/models/hair-mohawk.mid.198e1c14.glb",
-          "sha256": "198e1c14ee1d7d593c86c1174589a5ca221d51fd6880f3c195d00c6f5ff27cbe",
-          "bytes": 4388,
-          "gzBytes": 2594,
-          "triangles": 498
+          "file": "/models/hair-mohawk.mid.b7732355.glb",
+          "sha256": "b773235524809995a8a134225dd0af753a252150eca9ffccb284eeb350cd5087",
+          "bytes": 4404,
+          "gzBytes": 2498,
+          "triangles": 500
         },
         "high": {
-          "file": "/models/hair-mohawk.high.29bcb5b6.glb",
-          "sha256": "29bcb5b689602dca509aeb07810d8239a95fb456da2e128c690aa3f3add4f32c",
-          "bytes": 4732,
-          "gzBytes": 2702,
-          "triangles": 588
+          "file": "/models/hair-mohawk.high.638e9b5f.glb",
+          "sha256": "638e9b5f938c3c9b34abd7a2095e948772465c82ae9e86713e55d5e763c23bdf",
+          "bytes": 4420,
+          "gzBytes": 2497,
+          "triangles": 504
         }
       }
     },

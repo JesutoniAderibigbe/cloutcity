@@ -10,9 +10,12 @@
  */
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import ambientJson from '@data/config/ambient.json'
 import geoConfigJson from '@data/config/geo.json'
 import { project } from '@/lib/geo/projection'
 import type { BuildingDistrictId } from '@/lib/geo/sources'
+import type { AmbientAssets, AmbientModelAsset } from '@/scene/ambient/assets'
+import { pedestrianModelIds } from '@/scene/ambient/kitIds'
 import type { StreetPropsAssets } from '@/scene/props/layer'
 import { perf, props as propsConfig } from './config'
 import { geoManifest } from './geo'
@@ -24,6 +27,7 @@ import {
   STREET_PROP_MODELS,
   type QualityTier,
 } from './schemas/config'
+import { AmbientConfigSchema } from './schemas/scene'
 import {
   BlocksFileSchema,
   BuildingsFileSchema,
@@ -34,6 +38,7 @@ import {
 } from './schemas/world'
 
 export const geoConfig = parseDataFile('config/geo.json', GeoConfigSchema, geoConfigJson)
+const ambientConfig = parseDataFile('config/ambient.json', AmbientConfigSchema, ambientJson)
 
 /** data/ path of one district's buildings for one tier (as scripts/geo/transform.ts writes it). */
 export const districtDataPath = (id: string, tier: QualityTier) =>
@@ -67,6 +72,8 @@ export interface DistrictAssets {
   readonly blocksUrl: string
   /** Street props (S04i), or null where the tier draws none (low: nothing is ever fetched). */
   readonly props: StreetPropsAssets | null
+  /** The living city (S04l, every tier): loaded after playable, never precached. */
+  readonly ambient: AmbientAssets
 }
 
 /** Everything the scene loads for one tier's buildings. */
@@ -84,10 +91,33 @@ export function districtAssets(tier: QualityTier): DistrictAssets {
     }),
     blocksUrl: `/geo/blocks/${tier}?v=${fileVersion(blocksDataPath(tier))}`,
     props: streetPropsAssets(tier),
+    ambient: ambientAssets(tier),
   }
 }
 
-/** /geo/streets?v=<hash>: fetched by the props layer only, never warmed or precached. */
+/**
+ * The living city's assets for one tier (S04l): the streets (fetched after playable, on low
+ * too: perf.json `streetsGzKB.low`) and the GLB of every model its vehicle and pedestrian kits
+ * bake, a kind whose perf.json `ambient` cap is 0 left out so it is never downloaded.
+ */
+export function ambientAssets(tier: QualityTier): AmbientAssets {
+  const caps = perf.ambient.instancesMax
+  const asset = (id: string): AmbientModelAsset => {
+    const ref = modelRef(id)
+    return [ref.id, ref.kind, ref.files[tier], ref.slots.join(',')]
+  }
+  const vehicles = ambientConfig.vehicles.models[tier].filter((id) =>
+    id.startsWith('bus') ? caps.bus[tier] > 0 : caps.vehicle[tier] > 0,
+  )
+  const pedestrians = caps.pedestrian[tier] > 0 ? pedestrianModelIds(tier) : []
+  return {
+    streetsUrl: streetsUrl(),
+    vehicles: vehicles.map(asset),
+    pedestrians: pedestrians.map(asset),
+  }
+}
+
+/** /geo/streets?v=<hash>: fetched by street props and the living city, never warmed or precached. */
 export const streetsUrl = () => `/geo/streets?v=${fileVersion(STREETS_DATA_PATH)}`
 
 /**

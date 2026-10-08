@@ -80,7 +80,7 @@
       "bounds": {
         "min": [
           -0.0388,
-          1.569,
+          1.6647,
           -0.1595
         ],
         "max": [
@@ -90,9 +90,9 @@
         ]
       },
       "files": {
-        "low": "/models/hair-mohawk.low.15f833ff.glb",
-        "mid": "/models/hair-mohawk.mid.198e1c14.glb",
-        "high": "/models/hair-mohawk.high.29bcb5b6.glb"
+        "low": "/models/hair-mohawk.low.d9cbf6cc.glb",
+        "mid": "/models/hair-mohawk.mid.b7732355.glb",
+        "high": "/models/hair-mohawk.high.638e9b5f.glb"
       }
     },
     "hair-parted": {

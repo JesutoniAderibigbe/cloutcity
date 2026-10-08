@@ -50,6 +50,7 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                                      |
 | `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                                       |
 | `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender, `-- --selftest` checks two builds are byte-identical                                              |
+| `npm run homes:update`            | Rewrites `data/homes/engine.derived.json` (the engine's compact home grids and finishes) after editing `data/homes/interiors.json` or `finishes.json`                                                                        |
 | `npm run thumbs`                  | Renders the shop's item thumbnails from the decor models into `public/thumbs` (see 3D models); `-- --check` verifies                                                                                                         |
 | `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                                       |
 
@@ -205,7 +206,7 @@ Four channels (music, sfx, ambience, voice) under a master, each with its own vo
 
 Hand-made low-poly models (S04h, DEC-24/25/26) come only from free CC0 packs pinned by commit,
 zip, Drive file or itch upload plus sha256 (KayKit City Builder, Furniture and Restaurant Bits;
-Kenney Mini Characters, Furniture Kit, City Kit Commercial and Nature Kit; Quaternius Ultimate
+Kenney Furniture Kit, City Kit Commercial and Nature Kit; Quaternius Ultimate
 Modular Women and Men as single Google Drive files, and the Universal Animation Library as an
 itch.io upload) and from our own Blender scripts. Download kinds: `github-raw` (files at a
 commit), `zip`, `gdrive-files` (each pack path names its Drive file id; an HTML page in place of
@@ -271,8 +272,7 @@ sha-matching file into `.cache/assets/` by hand and build with `-- --offline`.
   Lambert on low; or toon) and its baked vertex colours. `ModelInstances` draws every placement
   of a static model as one InstancedMesh; `_SLOT` recolours make one colour-buffer variant.
   `AvatarModel` binds a head and a body to one skeleton and poses them with the rig's clips; it
-  holds a continuous frame lease only while `animate` is true, so an idle map still draws zero
-  frames. Night glow uses the S04f contract: the shared material is patched with
+  holds a continuous frame lease only while `animate` is true, so it adds no frames of its own. Night glow uses the S04f contract: the shared material is patched with
   `patchNightGlow(material, 'attribute', …)`, so each `_EMISSIVE` vertex glows at
   `models.emissive.nightIntensity × uNightGlow` (the day/night rig writes `uNightGlow`;
   `dayIntensity` stays 0). The showcase sets `uNightGlow` from its own time-of-day preset.
@@ -464,22 +464,29 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   is refused (`PRESTIGE_KEPT`). Every wearable has a `look` (S16a): a top sets the outfit (a
   body option) and top colour, a bottom or shoes their colour, an accessory an attachment model,
   makeup `{ "part": "none" }`; the ids come from `data/avatar/options.json`.
-- **Apartment** (`home.ts`, slots in `data/homes/interiors.json`, numbers in `balance.json`
-  `home`): decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface,
-  `homeScore`, and at least two colour `variants`, each a palette token and a `colors.*` copy
-  name) is placed in a slot of its kind in the current home (`placeDecor`, `removeDecor`,
-  `setDecorVariant`). Home score is the home's `baseScore` plus placed decor's `homeScore`; home
-  clout is that score capped at `maxClout` and counts toward total, goal and level clout.
-  `moveHome` is instant and refused, in order, for the current home, a home in a borough the
-  level has not opened (`HOME_BOROUGHS` in `src/lib/data/homes.ts`) and a move the player cannot
-  afford (`canAffordMove`); it pays the move-in cost, keeps decor in slots the new home shares and
-  logs the move (`apartment.moveLog`). To add decor: add the item with its `decor` block to
-  `items.json` (cloutValue and styleValue 0, no stat effects), its name and description to
-  `data/copy/items/`, any new colour name to `data/copy/colors/`, a low-poly model to
-  `src/scene/apartment/buildDecor.ts` (one merged geometry, at most two material groups), and run
-  `npm test`. The Home panel (`src/components/hud/HomePanel.tsx`) places, recolours and moves
-  through a slot list (the keyboard path); the 3D room (`src/scene/apartment/`) mirrors it and
-  places by tapping a slot. While the room shows, the city draws nothing (`src/state/sceneFocus.ts`).
+- **Apartment** (S16, S40 buy mode 2.0; `home.ts` and `homeGrid.ts`, homes in
+  `data/homes/interiors.json`, finishes in `data/homes/finishes.json`, numbers in `balance.json`
+  `home`). Each home is a placement grid: floor cells `f{c}-{r}` and wall cells `w-{wall}-{i}`;
+  fixtures (the kitchen run), windows, the door, the way in and the avatar's spot stay clear.
+  Decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface, `footprint`
+  1x1/2x1/2x2, `layer: "rug"` for rugs, a buy-mode `category`, `homeScore`, optional `luxury`
+  (rare only: weekly upkeep of `home.upkeepPctPerWeek` of its price, billed with rent) and at
+  least one colour `variant`) is placed and turned on the grid (`placeDecor`, `rotateDecor`,
+  `removeDecor`, `setDecorVariant`). A new game is furnished with the start home's `starter`
+  pieces (free, score 0, never sold). Wall paints and floors are tried on in buy mode and bought
+  once (`applyFinish`). Home score is the home's `baseScore` plus placed decor's `homeScore`; home
+  clout is that score capped at `maxClout`. `moveHome` is instant and refused, in order, for the
+  current home, a home in a borough the level has not opened and a move the player cannot afford;
+  the movers keep what fits where it stood and set up the rest (`placementsAfterMove`). The
+  engine reads `data/homes/engine.derived.json`: after editing interiors.json or finishes.json run
+  `npm run homes:update`. To add decor: add the item to `items.json`, its name and description to
+  `data/copy/items/`, map it to a CC0 model in `scene.json models.decor` (or give it a code-built
+  model in `src/scene/apartment/buildDecor.ts`), an icon in `data/items/looks.json`, run
+  `npm run thumbs` and `npm test`. The Home panel (`HomePanel.tsx`, opened by the Home tab, where
+  the game starts) holds rest and moves; its lazy buy-mode chunk (`HomeDecor.tsx`) lists the room
+  and storage, the catalogue and the finishes, with keyboard placement (arrows, R, Enter, Escape)
+  mirrored by taps in the 3D room (`src/scene/apartment/`). While the room shows, the city draws
+  nothing (`src/state/sceneFocus.ts`).
 - **Events** (`events.ts`, data in `data/events/events.json`): each event lists conditions
   (personal-clock `hours`, `minDay`, `boroughs`, `locationIds`/`locationCategories`, `stats`,
   `cash`, `clout`, `items`), a `weight`, an optional `cooldownMin` or `once`, and two or three
@@ -810,7 +817,20 @@ camera starts over it).
   out any street prop inside a procedural fill block's footprint (roof water towers excepted). Each chunk
   is one merged mesh on the district material, so props add no shader program; streetlight lamps
   and taxi signs glow by sampling a lit window of the district window mask. Nothing is pickable,
-  and nothing loads or draws at the default view or on low.
+  and nothing loads on low. The default camera (scene.json `camera.distanceM`, 1100 m since S04l)
+  sits inside `showBelowDistanceM`, so props draw from the start on mid and high.
+- **Living city (S04l, DEC-52).** After the map is playable, CityCanvas lazily mounts
+  `src/scene/ambient/AmbientLife.tsx` (marker `ambient life: `): cars, taxis and buses drive the
+  LION streets on the right-hand lane and stop at seeded traffic lights, pedestrians walk the
+  sidewalks around places, homes and landmarks (never near a memorial), and subway trains run
+  the real lines between stations. Positions are a pure function of `data/config/ambient.json`
+  `seed` and the city clock (`src/lib/world/ambient/`), drawn as colour-bucket InstancedMeshes
+  on the blocks' material recipe, so no new shader program; counts are capped by `perf.json`
+  `ambient`. Its ticker requests at most `fpsCap` frames a second while something ambient is in
+  view, and nothing while the tab is hidden, the apartment or creator has the screen, or under
+  reduced motion (a frozen snapshot). The FPS step-down lowers `density.steps` before it drops a
+  tier. Test-hook builds read `localStorage['cc:test:ambient']` (`live`, or `frozen:<ms>`) and
+  default to a frozen clock, so specs stay deterministic; `scene.ambient()` reports what is drawn.
 - **Landmarks (S07a).** `src/scene/landmarks/Landmarks.tsx` builds the code-built kit models
   (`buildLandmark`) after the first frame, nearest first, each in a drei `Detailed` with the
   tier's levels and distances (`scene.json` `landmarks.lod`); teaser landmarks on "expanding
@@ -839,8 +859,9 @@ camera starts over it).
   shared gradient ramp (`toonRamp`).
 - **Camera.** three's `MapControls` (`src/scene/camera/CameraRig.tsx`): one finger or left drag
   pans, pinch or wheel zooms towards the pointer, two fingers or right drag rotate and tilt; the
-  target stays inside `data/geo/bounds.json`. Rendering is on demand (`frameloop="demand"`), so an
-  idle map draws zero frames.
+  target stays inside `data/geo/bounds.json`. Rendering is on demand (`frameloop="demand"`): while the
+  map is visible the living city (S04l) paces capped frames; hidden, behind the apartment or
+  creator, or under reduced motion with nothing moving, it draws none.
 - **Attribution.** `src/scene/MapAttribution.tsx` is a small "Map data" chip in the screen's
   bottom-end corner above the tab bar, moving up to the free scene row's corner while a sheet is
   open (UX-15, CSS only); a tap shows the NYC Open Data and MTA lines (a one-line form when the

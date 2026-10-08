@@ -2,9 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { minutesPerDay } from '@/engine/clock'
 import { engineConfig } from '@/engine/config'
 import { initialCloutState, legacyCloutState } from '@/engine/clout'
-import { playerWithClout, V12_FRESH_PLAYER, V12_PLAYER_KEYS } from '@/engine/test-support'
+import {
+  playerWithClout,
+  V12_FRESH_PLAYER,
+  V12_PLAYER_KEYS,
+  V13_MIGRATED_APARTMENT,
+  V13_MIGRATED_INVENTORY,
+} from '@/engine/test-support'
 import { initialFlexState } from '@/engine/game'
-import { initialApartment } from '@/engine/home'
 import { initialCreatorState } from '@/engine/creator'
 import type { EventContext } from '@/engine/events'
 import { nextRentDueDay } from '@/engine/rent'
@@ -83,10 +88,11 @@ describe('game store persistence', () => {
       flex: initialFlexState,
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
-      inventory: { wearables: [], gifts: [], outfit: {}, decor: [] },
+      // A new game comes furnished with the starter pieces (S40).
+      inventory: { wearables: [], gifts: [], outfit: {}, decor: fresh.player.inventory.decor },
       clubNights: {},
       visited: {},
-      apartment: initialApartment,
+      apartment: fresh.player.apartment,
       location: { kind: 'home' },
       transit: { rngState: 0 },
       look: fresh.player.look,
@@ -228,10 +234,10 @@ describe('game store persistence', () => {
         flex: initialFlexState,
         home: 'queens-room',
         rent: { owed: 280, missed: 1 },
-        inventory: { wearables: [], gifts: [], outfit: {}, decor: [] },
+        inventory: V13_MIGRATED_INVENTORY,
         clubNights: {},
         visited: {},
-        apartment: initialApartment,
+        apartment: V13_MIGRATED_APARTMENT,
         location: { kind: 'home' },
         transit: { rngState: 0 },
         ...V12_FRESH_PLAYER,
@@ -522,10 +528,10 @@ describe('jobs and rent in the store', () => {
       flex: initialFlexState,
       home: 'queens-room',
       rent: { owed: 0, missed: 0 },
-      inventory: { wearables: [], gifts: [], outfit: {}, decor: [] },
+      inventory: V13_MIGRATED_INVENTORY,
       clubNights: {},
       visited: {},
-      apartment: initialApartment,
+      apartment: V13_MIGRATED_APARTMENT,
       location: { kind: 'home' },
       transit: { rngState: 0 },
       ...V12_FRESH_PLAYER,
@@ -650,7 +656,7 @@ describe('items in the store', () => {
       wearables: [{ itemId: 'cargo-pants', acquiredMinute: 480, worn: true }],
       gifts: [],
       outfit: { bottom: 'cargo-pants' },
-      decor: [],
+      decor: fresh.player.inventory.decor,
     })
     expect(game.getState().unequipSlot('bottom').ok).toBe(true)
     const sold = game.getState().sellItem('cargo-pants')
@@ -674,7 +680,7 @@ describe('items in the store', () => {
     expect(local.getItem(STORE_KEY)).toBe(written)
   })
 
-  it('a v3 save loads with an empty inventory and is rewritten as the current version', () => {
+  it('a v3 save loads owning only the starter pieces and is rewritten as the current version', () => {
     const local = new MemoryStorage()
     const v3player: Record<string, unknown> = { ...saveOf(321).player, clout: 0 }
     delete v3player.inventory
@@ -696,12 +702,7 @@ describe('items in the store', () => {
     local.setItem(STORE_KEY, JSON.stringify({ state: v3, version: 3 }))
     const game = setup(local).store()
     expect(game.getState().player.cash).toBe(321)
-    expect(game.getState().player.inventory).toEqual({
-      wearables: [],
-      gifts: [],
-      outfit: {},
-      decor: [],
-    })
+    expect(game.getState().player.inventory).toEqual(V13_MIGRATED_INVENTORY)
     game.getState().buyItem('subway-tote')
     expect((saved(local) as { version: number }).version).toBe(STORE_VERSION)
   })
@@ -722,6 +723,8 @@ describe('items in the store: guards', () => {
           outfit: { top: 'bodega-graphic-tee' },
           decor: [],
         },
+        // A bare room to go with no decor (S40), so the load needs no repair.
+        apartment: { ...fresh.player.apartment, placed: {} },
       },
     }
     local.setItem(STORE_KEY, JSON.stringify({ state, version: STORE_VERSION }))

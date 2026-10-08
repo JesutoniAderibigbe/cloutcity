@@ -1,6 +1,9 @@
-/** Save v9 (S16): owned decor and the apartment; migration from v8 and every older version; repairs. */
+/**
+ * Save v9 (S16) and v13 (S40): owned decor and the apartment on its grid; migration from every
+ * older version (legacy slot names go to the movers, starter pieces are added); repairs.
+ */
 import { describe, expect, it } from 'vitest'
-import { V12_PLAYER_KEYS } from './test-support'
+import { V12_PLAYER_KEYS, unfurnished } from './test-support'
 import { engineConfig as config } from './config'
 import { initialApartment, type ApartmentState } from './home'
 import { emptyInventory, type Inventory } from './items'
@@ -15,11 +18,16 @@ import {
 
 const schema = createSaveSchema(config)
 const NOW = 30_000
-const base: SaveState = { ...initialSave(config), clock: { minute: NOW, remainderMs: 0 } }
+const base: SaveState = {
+  ...unfurnished(initialSave(config)),
+  clock: { minute: NOW, remainderMs: 0 },
+}
+const starterIds = initialSave(config).player.inventory.decor.map((owned) => owned.itemId)
 
 const neon = 'custom-neon-sign' // wall
 const lights = 'fairy-string-lights' // wall
-const rug = 'thrift-flatweave-rug' // floor
+const rug = 'thrift-flatweave-rug' // floor, 2×2, on the rug layer
+const chair = 'cloud-lounge-chair' // floor, 1×1
 
 const inventory: Inventory = {
   ...emptyInventory,
@@ -30,14 +38,15 @@ const inventory: Inventory = {
   ],
 }
 const apartment: ApartmentState = {
-  placed: { 'wall-1': neon, 'wall-2': lights, 'floor-1': rug },
+  ...initialApartment,
+  placed: { 'w-back-0': neon, 'w-left-0': lights, 'f1-2': rug },
   moveLog: [
     { from: 'queens-room', to: 'brooklyn-1br', at: 1000, cost: 400 },
     { from: 'brooklyn-1br', to: 'queens-room', at: 2000, cost: 0 },
     { from: 'queens-room', to: 'brooklyn-1br', at: 3000, cost: 400 },
   ],
 }
-/** A v9 save in Brooklyn with three decor items placed and three moves logged. */
+/** A save in Brooklyn with three decor items placed and three moves logged. */
 const decorated: SaveState = {
   ...base,
   player: { ...base.player, home: 'brooklyn-1br', inventory, apartment },
@@ -64,6 +73,13 @@ function preV9(save: SaveState = base): Record<string, unknown> & {
   return out as Record<string, unknown> & { player: Record<string, unknown> }
 }
 
+/** `save` as v12 wrote it: an apartment without finishes (its placements are given per test). */
+function preV13(save: SaveState): Record<string, unknown> & { player: Record<string, unknown> } {
+  return { ...save, player: { ...save.player } } as Record<string, unknown> & {
+    player: Record<string, unknown>
+  }
+}
+
 function load(save: unknown) {
   const result = loadSave(roundTrip(save), config)
   if (!result.ok) throw new Error(`unusable: ${result.issues.join(', ')}`)
@@ -75,13 +91,42 @@ const withPlayer = (patch: Record<string, unknown>) => ({
   player: { ...decorated.player, ...patch },
 })
 
-describe('save v9', () => {
-  it('is version 12; a fresh save owns no decor, places nothing and has moved nowhere', () => {
-    expect(SAVE_VERSION).toBe(12)
+describe('save v13', () => {
+  it('is version 13; a fresh save comes furnished with its starter pieces and has moved nowhere', () => {
+    expect(SAVE_VERSION).toBe(13)
     const fresh = initialSave(config)
-    expect(fresh.player.inventory.decor).toEqual([])
-    expect(fresh.player.apartment).toEqual(initialApartment)
+    expect(starterIds.length).toBeGreaterThanOrEqual(8)
+    expect(Object.values(fresh.player.apartment.placed).sort()).toEqual([...starterIds].sort())
+    expect(fresh.player.apartment).toMatchObject({
+      moveLog: [],
+      wallPaint: null,
+      floorFinish: null,
+      finishes: [],
+    })
     expect(schema.safeParse(fresh).success).toBe(true)
+  })
+
+  it('round-trips turns, finishes and bought finishes untouched', () => {
+    const save = {
+      ...decorated,
+      player: {
+        ...decorated.player,
+        inventory: {
+          ...inventory,
+          decor: inventory.decor.map((owned) =>
+            owned.itemId === rug ? { ...owned, turn: 1 as const } : owned,
+          ),
+        },
+        apartment: {
+          ...apartment,
+          wallPaint: 'mint-fresh',
+          floorFinish: 'marble-tile',
+          finishes: ['mint-fresh', 'marble-tile'],
+        },
+      },
+    }
+    expect(schema.safeParse(save).success).toBe(true)
+    expect(loadSave(roundTrip(save), config)).toEqual({ ok: true, save, repaired: [] })
   })
 
   it('round-trips owned decor, variants, kept marks, placements and the move log untouched', () => {
@@ -94,14 +139,37 @@ describe('save v9', () => {
   })
 })
 
-describe('v8 -> v9', () => {
-  it('a v8 save keeps everything and starts with no decor, nothing placed and no moves', () => {
+describe('older saves -> v13', () => {
+  it('a v12 save keeps its decor: the movers set slot-named placements up on the grid, and the starter pieces arrive', () => {
+    const v12 = roundTrip({
+      ...preV13(decorated),
+      player: {
+        ...preV13(decorated).player,
+        home: 'queens-room',
+        apartment: { placed: { 'wall-1': neon, 'floor-1': rug }, moveLog: apartment.moveLog },
+      },
+    })
+    const migrated = migrateSave(v12, 12, config)
+    expect(migrated.outcome).toBe('carried')
+    const { inventory: owned, apartment: home } = migrated.save.player
+    expect(Object.values(home.placed)).toEqual(expect.arrayContaining([neon, rug]))
+    expect(owned.decor.map((entry) => entry.itemId)).toEqual(
+      expect.arrayContaining([neon, lights, rug, ...starterIds]),
+    )
+    expect(home.moveLog).toEqual(apartment.moveLog)
+    expect(schema.safeParse(migrated.save).success).toBe(true)
+  })
+
+  it('a v8 save keeps everything and starts furnished with the starter pieces and no moves', () => {
     const v8 = { ...preV9(), player: { ...preV9().player, cash: 777 } }
     const migrated = migrateSave(roundTrip(v8), 8, config)
     expect(migrated.outcome).toBe('carried')
     expect(migrated.save.player.cash).toBe(777)
-    expect(migrated.save.player.inventory).toEqual(emptyInventory)
-    expect(migrated.save.player.apartment).toEqual(initialApartment)
+    expect(migrated.save.player.inventory.decor.map((entry) => entry.itemId)).toEqual(starterIds)
+    expect(Object.values(migrated.save.player.apartment.placed).sort()).toEqual(
+      [...starterIds].sort(),
+    )
+    expect(migrated.save.player.apartment.moveLog).toEqual([])
     expect(schema.safeParse(migrated.save).success).toBe(true)
     // The missing fields are filled in, not reported as repairs.
     expect(load(v8).repaired).toEqual([])
@@ -143,7 +211,9 @@ describe('v8 -> v9', () => {
       const migrated = migrateSave(roundTrip(persisted), Number(version), config)
       expect(migrated.outcome, `v${version}`).toBe('carried')
       expect(migrated.save.player.cash, `v${version}`).toBe(500 + Number(version))
-      expect(migrated.save.player.apartment, `v${version}`).toEqual(initialApartment)
+      expect(Object.values(migrated.save.player.apartment.placed).sort(), `v${version}`).toEqual(
+        [...starterIds].sort(),
+      )
       expect(schema.safeParse(migrated.save).success, `v${version}`).toBe(true)
     }
     const v9 = load({ ...decorated, player: { ...decorated.player, cash: 509 } })
@@ -158,22 +228,29 @@ describe('v8 -> v9', () => {
     }
     const migrated = migrateSave(roundTrip(tampered), 8, config)
     expect(migrated.outcome).toBe('carried')
-    expect(migrated.save.player.apartment.placed).toEqual({})
+    expect(Object.values(migrated.save.player.apartment.placed)).not.toContain(neon)
   })
 })
 
-describe('v9 repairs', () => {
+describe('v13 repairs', () => {
   it.each([
-    ['a slot the home does not have', { 'wall-1': neon, 'wall-3': lights }, { 'wall-1': neon }],
-    ['decor not owned', { 'wall-1': neon, 'floor-2': 'cloud-lounge-chair' }, { 'wall-1': neon }],
-    ['an item that is not decor', { 'wall-1': 'bodega-graphic-tee' }, {}],
     [
-      'decor in the wrong kind of slot',
-      { 'floor-1': neon, 'wall-2': lights },
-      { 'wall-2': lights },
+      'a cell the home does not have',
+      { 'w-back-0': neon, 'w-back-9': lights },
+      { 'w-back-0': neon },
     ],
-    ['one item in two slots', { 'wall-1': neon, 'wall-2': neon }, { 'wall-1': neon }],
-    ['a non-string item', { 'wall-1': 5, 'floor-1': rug }, { 'floor-1': rug }],
+    ['an old slot name', { 'w-back-0': neon, 'wall-2': lights }, { 'w-back-0': neon }],
+    ['decor not owned', { 'w-back-0': neon, 'f4-2': chair }, { 'w-back-0': neon }],
+    ['an item that is not decor', { 'w-back-0': 'bodega-graphic-tee' }, {}],
+    [
+      'decor on the wrong kind of cell',
+      { 'f4-2': neon, 'w-left-0': lights },
+      { 'w-left-0': lights },
+    ],
+    ['one item on two cells', { 'w-back-0': neon, 'w-back-1': neon }, { 'w-back-0': neon }],
+    ['a non-string item', { 'w-back-0': 5, 'f1-2': rug }, { 'f1-2': rug }],
+    ['a wall item over a window', { 'w-left-1': neon, 'f1-2': rug }, { 'f1-2': rug }],
+    ['a rug off the grid', { 'w-back-0': neon, 'f5-4': rug }, { 'w-back-0': neon }],
   ])('drops a placement of %s and keeps the rest', (_label, placed, kept) => {
     const result = load(withPlayer({ apartment: { ...apartment, placed } }))
     expect(result.repaired).toEqual(['player.apartment'])
@@ -183,11 +260,11 @@ describe('v9 repairs', () => {
 
   it('prototype-named slot keys from JSON are dropped without polluting anything', () => {
     const raw = JSON.parse(
-      JSON.stringify(decorated).replace('"wall-1":', '"__proto__":'),
+      JSON.stringify(decorated).replace('"w-back-0":', '"__proto__":'),
     ) as SaveState
     const result = loadSave(raw, config)
     if (!result.ok) throw new Error('unusable')
-    expect(result.save.player.apartment.placed).toEqual({ 'wall-2': lights, 'floor-1': rug })
+    expect(result.save.player.apartment.placed).toEqual({ 'w-left-0': lights, 'f1-2': rug })
     expect(Object.getPrototypeOf(result.save.player.apartment.placed)).toBe(Object.prototype)
     expect(({} as Record<string, unknown>)[neon]).toBeUndefined()
   })
@@ -227,11 +304,38 @@ describe('v9 repairs', () => {
   })
 
   it('an unknown home is repaired to the start home, and placements it lacks go to storage', () => {
-    const result = load(withPlayer({ home: 'penthouse' }))
+    const placed = { ...apartment.placed, 'f5-0': chair }
+    const owned = {
+      ...inventory,
+      decor: [...inventory.decor, { itemId: chair, acquiredMinute: 1, variant: 'lilac' }],
+    }
+    const result = load(
+      withPlayer({ home: 'penthouse', inventory: owned, apartment: { ...apartment, placed } }),
+    )
     expect(result.save.player.home).toBe(config.startHome)
     expect(result.repaired).toEqual(['player.home', 'player.apartment'])
-    expect(result.save.player.apartment.placed).toEqual({ 'wall-1': neon, 'floor-1': rug })
+    // The Queens room is five cells wide: the chair's column is not in it.
+    expect(result.save.player.apartment.placed).toEqual(apartment.placed)
     expect(schema.safeParse(result.save).success).toBe(true)
+  })
+
+  it('an unknown or misfiled finish shows the original; unknown or repeated bought finishes are dropped', () => {
+    const result = load(
+      withPlayer({
+        apartment: {
+          ...apartment,
+          wallPaint: 'marble-tile',
+          floorFinish: 'plaid',
+          finishes: ['mint-fresh', 'mint-fresh', 'plaid', 7],
+        },
+      }),
+    )
+    expect(result.repaired).toEqual(['player.apartment'])
+    expect(result.save.player.apartment).toMatchObject({
+      wallPaint: null,
+      floorFinish: null,
+      finishes: ['mint-fresh'],
+    })
   })
 
   it('repairs owned decor: unknown and duplicate items dropped, a bad colour shows the first, minutes clamped', () => {
@@ -241,7 +345,7 @@ describe('v9 repairs', () => {
       { itemId: 'bodega-graphic-tee', acquiredMinute: 1, variant: 'pink' },
       { itemId: '__proto__', acquiredMinute: 1, variant: 'pink' },
       { itemId: lights, acquiredMinute: -5, variant: 'pink', prestigeKept: 'yes' },
-      { itemId: rug, acquiredMinute: 'soon', variant: 7 },
+      { itemId: rug, acquiredMinute: 'soon', variant: 7, turn: 9 },
       'junk',
     ]
     const result = load(withPlayer({ inventory: { ...inventory, decor } }))
@@ -262,9 +366,12 @@ describe('v9 repairs', () => {
 
   it('the schema rejects every inconsistency the repairs fix', () => {
     const bad: unknown[] = [
-      withPlayer({ apartment: { ...apartment, placed: { 'wall-3': neon } } }),
-      withPlayer({ apartment: { ...apartment, placed: { 'floor-1': neon } } }),
-      withPlayer({ apartment: { ...apartment, placed: { 'wall-1': neon, 'wall-2': neon } } }),
+      withPlayer({ apartment: { ...apartment, placed: { 'w-back-9': neon } } }),
+      withPlayer({ apartment: { ...apartment, placed: { 'f4-2': neon } } }),
+      withPlayer({ apartment: { ...apartment, placed: { 'w-back-0': neon, 'w-back-1': neon } } }),
+      withPlayer({ apartment: { ...apartment, placed: { 'w-left-1': neon } } }),
+      withPlayer({ apartment: { ...apartment, wallPaint: 'plaid' } }),
+      withPlayer({ apartment: { ...apartment, finishes: ['mint-fresh', 'mint-fresh'] } }),
       withPlayer({ inventory: { ...inventory, decor: [...inventory.decor, inventory.decor[0]] } }),
       withPlayer({
         inventory: { ...inventory, decor: [{ itemId: neon, acquiredMinute: 1, variant: 'x' }] },

@@ -3,6 +3,7 @@
  * home clout lost before the next upload (a move to a cheaper home, decor taken down): honest, so
  * accepted. Also the icon-policy fuzz seed that first found it.
  */
+import { unfurnished } from '@/engine/test-support'
 import { expect, it } from 'vitest'
 import { engineConfig as config } from '@/engine/config'
 import { goalClout } from '@/engine/clout'
@@ -22,7 +23,8 @@ it('H-2 moving to a cheaper home after claiming a level goal is not rejected', (
     quiet,
   )
   const s = () => store.getState()
-  const fresh = initialSave(config)
+  // A bare room: the starter pieces stand where the Queens room has space, not Brooklyn.
+  const fresh = unfurnished(initialSave(config))
   // Accepted save: 72 flex clout, living in Brooklyn (home clout 10): goal clout 97.
   const prev: SaveState = {
     ...fresh,
@@ -128,10 +130,10 @@ it('H-2b taking decor down after claiming a level goal it helped reach is not re
   expect(first.outcome).not.toBe('reject')
   expect(s().adoptCloudSave(JSON.parse(JSON.stringify(first.save)), SAVE_VERSION)).toBe(true)
   expect(s().buyItem('thrift-flatweave-rug').ok).toBe(true)
-  expect(s().placeDecor('thrift-flatweave-rug', 'floor-1').ok).toBe(true) // home clout 0 -> 8: goal clout 100
+  expect(s().placeDecor('thrift-flatweave-rug', 'f3-1').ok).toBe(true) // home clout 0 -> 8: goal clout 100
   expect(s().goals.achieved['reach-local']).toBeDefined()
   expect(s().claimGoalReward('reach-local').ok).toBe(true)
-  expect(s().removeDecor('floor-1').ok).toBe(true) // back to storage
+  expect(s().removeDecor('f3-1').ok).toBe(true) // back to storage
   const verdict = checkUpload(
     first.save,
     JSON.parse(JSON.stringify(persistedOf(s()))),
@@ -192,7 +194,7 @@ it('H-2c decor bought, placed, claimed against and sold within one upload window
   expect(s().adoptCloudSave(JSON.parse(JSON.stringify(first.save)), SAVE_VERSION)).toBe(true)
   // All within one window: buy, place (home clout 0 -> 8, goal clout 100), claim, sell.
   expect(s().buyItem('thrift-flatweave-rug').ok).toBe(true)
-  expect(s().placeDecor('thrift-flatweave-rug', 'floor-1').ok).toBe(true)
+  expect(s().placeDecor('thrift-flatweave-rug', 'f3-1').ok).toBe(true)
   expect(s().goals.achieved['reach-local']).toBeDefined()
   expect(s().claimGoalReward('reach-local').ok).toBe(true)
   expect(s().sellItem('thrift-flatweave-rug').ok).toBe(true)

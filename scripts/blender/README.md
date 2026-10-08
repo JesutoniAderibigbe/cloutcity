@@ -59,6 +59,9 @@ PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 blender -b --factory-startup -noaudio
 - These belong to `npm run blender:build` (`build.ts`, `run.py`, `lock.json`, outputs in `out/`),
   not to the landmark build: the lock pins only `run.py`, the script and its `deps`/`sources`, so
   each avatar script carries its own copy of the shared helpers, and they never import `cclib`.
+- `vehicles/<id>.py` (S04l): our own vehicles, built the same way by `npm run blender:build`
+  (same runner, lock and `out/`, a copy of the avatar scripts' helpers): `bus-ambient`, the
+  living city's generic city bus (no livery, logo, route number or transit-agency colours).
 
 ## Rules
 

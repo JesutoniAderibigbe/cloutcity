@@ -29,11 +29,14 @@ async function scratch(): Promise<string> {
 }
 
 describe('blender:build', () => {
-  it('pins Blender 5.2.2 and ships the avatar attachments and clips (S16a/S16b), one script each', async () => {
+  it('pins Blender 5.2.2 and ships the avatar attachments and clips (S16a/S16b) and the S04l bus', async () => {
     const lock = await readBlenderLock()
     expect(lock.blender.version).toBe('5.2.2')
     expect(lock.outDir).toBe('scripts/blender/out')
-    const attachments = lock.models.filter((model) => !model.id.startsWith('avatar-clips-'))
+    const vehicles = new Set(['bus-ambient'])
+    const attachments = lock.models.filter(
+      (model) => !model.id.startsWith('avatar-clips-') && !vehicles.has(model.id),
+    )
     expect(attachments.map((model) => model.id)).toEqual([
       'hair-afro',
       'hair-locs',
@@ -85,6 +88,12 @@ describe('blender:build', () => {
         'scripts/blender/run.py',
       ])
     }
+    for (const model of lock.models.filter((m) => vehicles.has(m.id))) {
+      expect(model.script).toBe(`scripts/blender/vehicles/${model.id}.py`)
+    }
+    expect(lock.models.filter((model) => vehicles.has(model.id)).map((m) => m.id)).toEqual([
+      ...vehicles,
+    ])
     expect(await checkBlenderOutputs(lock)).toEqual([])
   })
 

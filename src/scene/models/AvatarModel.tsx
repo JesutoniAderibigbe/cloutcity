@@ -7,7 +7,7 @@
  * with weight 1 on the joint they follow, so the whole avatar is one draw call and one (skinned)
  * shader program, whatever it wears. Animation holds a continuous frame lease only while
  * `animate` is true; otherwise the avatar is posed once on the clip's first frame and requests a
- * single frame, so an idle scene still renders zero frames (frameloop="demand").
+ * single frame: it adds no frames of its own (frameloop="demand").
  */
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'

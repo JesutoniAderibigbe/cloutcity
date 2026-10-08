@@ -256,8 +256,12 @@ export const PerfConfigSchema = z
     otherPlayersStyle: perTier(z.enum(['billboard', 'model'])),
     /** Real reference device only (human/qa check); headless CI cannot measure FPS. */
     medianFpsMin: perTier(positive),
-    /** Idle renders zero frames (`frameloop="demand"`). */
-    idleFramesMax: z.literal(0),
+    /**
+     * Frames rendered while the map is paused (tab hidden, apartment or creator on screen,
+     * reduced motion with nothing else moving): none. While the map is visible the living city
+     * (S04l, DEC-52) animates it.
+     */
+    pausedFramesMax: z.literal(0),
     fpsStepDown: FpsStepDownSchema,
     tierPicker: TierPickerSchema,
     throttleProfiles: z.strictObject({ 'cc-mid-4g': ThrottleProfileSchema }),
@@ -290,10 +294,28 @@ export const PerfConfigSchema = z
     /** Street props (S04i): instances per model, triangles and draw calls, per tier. */
     streetProps: StreetPropsBudgetSchema,
     /**
-     * The LION street chains street props are placed on (/geo/streets, S04i), gzipped. Fetched
-     * only once the camera zooms in, never on the low tier (0), so outside every to-playable sum.
+     * The LION street chains street props and the living city use (/geo/streets, S04i, S04l),
+     * gzipped. Fetched only after playable (props once the camera zooms in; on low only by the
+     * living city), so outside every to-playable sum.
      */
     streetsGzKB: perTier(z.number().nonnegative()),
+    /**
+     * The living city (S04l, DEC-52): most ambient instances drawn at once per kind, their
+     * triangles and draw calls (part of `trianglesMax` and `drawCallsMax`, not on top), and the
+     * gzipped bytes it loads after playable (its chunk, the streets and its models; never
+     * precached).
+     */
+    ambient: z.strictObject({
+      instancesMax: z.strictObject({
+        vehicle: perTier(z.int().nonnegative()),
+        bus: perTier(z.int().nonnegative()),
+        pedestrian: perTier(z.int().nonnegative()),
+        trainCar: perTier(z.int().nonnegative()),
+      }),
+      trianglesMax: perTier(z.int().nonnegative()),
+      drawCallsMax: perTier(z.int().nonnegative()),
+      lazyGzKB: perTier(positive),
+    }),
     /**
      * Most fill trees (S04i fill-lite: street trees between the procedural blocks) drawn at once
      * per tier; 0 turns them off.
@@ -417,11 +439,19 @@ export const ScenePaletteRefsSchema = z.strictObject({
     plant: tokenRef,
     glow: tokenRef,
     window: tokenRef,
+    /** Buy mode's grid tiles: a free cell, where the held item fits, the selection, a refused spot. */
     marker: tokenRef,
     markerActive: tokenRef,
     markerSelected: tokenRef,
+    markerRefused: tokenRef,
     blob: tokenRef,
     lamp: tokenRef,
+    /** Wall tops and the floor slab's rim, seen from above (S40). */
+    cap: tokenRef,
+    /** The built-in kitchen run's cabinets and worktop, and the window curtains. */
+    counter: tokenRef,
+    countertop: tokenRef,
+    curtain: tokenRef,
   }),
   /** Brightness steps of the shared toon gradient ramp, darkest first, each in (0, 1]. */
   toonRamp: z.array(z.number().gt(0).max(1)).min(2),
@@ -1271,6 +1301,11 @@ export const BalanceConfigSchema = z
       ),
       maxClout: positiveInt,
       moveLogMax: positiveInt,
+      /**
+       * Weekly upkeep of each owned luxury decor item (S40, a cash sink), as a share of its
+       * price, charged with the rent (src/engine/rent.ts).
+       */
+      upkeepPctPerWeek: z.int().min(1).max(50),
     }),
     /**
      * Missed rent. Each consecutive due date the player cannot pay in full adds that week's
@@ -1541,6 +1576,15 @@ export const LayoutConfigSchema = z.strictObject({
        * globals.css repeats it as the `hud-tiny` variant.
        */
       hudTinyMaxWidthPx: positiveInt,
+      /**
+       * At least this wide and this tall, the Home panel docks beside the 3D room instead of
+       * filling the bottom rows, so the room is the hero (S40). globals.css repeats both as the
+       * dock's media query (src/app/layout-css.test.ts keeps them equal).
+       */
+      roomDockMinWidthPx: positiveInt,
+      roomDockMinHeightPx: positiveInt,
+      /** Below the dock, the sheet row's height while the 3D room shows, so the room is the hero (DEC-59). */
+      roomSheetMaxHeightVh: positive,
       toastHeightPx: positive,
       /** How long a toast (the level-up message) shows before it closes itself. */
       toastMs: positiveInt,

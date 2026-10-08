@@ -300,6 +300,7 @@
       "statEffects": {},
       "decor": {
         "fits": "wall",
+        "category": "wall-art",
         "homeScore": 4,
         "variants": [
           {
@@ -334,6 +335,7 @@
       "statEffects": {},
       "decor": {
         "fits": "surface",
+        "category": "plants",
         "homeScore": 3,
         "variants": [
           {
@@ -368,6 +370,9 @@
       "statEffects": {},
       "decor": {
         "fits": "floor",
+        "footprint": "2x2",
+        "layer": "rug",
+        "category": "rugs",
         "homeScore": 8,
         "variants": [
           {
@@ -402,6 +407,7 @@
       "statEffects": {},
       "decor": {
         "fits": "surface",
+        "category": "fun",
         "homeScore": 10,
         "variants": [
           {
@@ -436,6 +442,7 @@
       "statEffects": {},
       "decor": {
         "fits": "wall",
+        "category": "wall-art",
         "homeScore": 18,
         "variants": [
           {
@@ -475,6 +482,8 @@
       "statEffects": {},
       "decor": {
         "fits": "floor",
+        "category": "seating",
+        "luxury": true,
         "homeScore": 22,
         "variants": [
           {
@@ -491,6 +500,753 @@
             "id": "sky-blue",
             "token": "sky-400",
             "nameKey": "colors.skyBlue.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-bed",
+      "nameKey": "items.starterBed.name",
+      "descriptionKey": "items.starterBed.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 0,
+      "sellValue": 0,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x2",
+        "category": "sleep",
+        "starter": true,
+        "homeScore": 0,
+        "variants": [
+          {
+            "id": "sky-blue",
+            "token": "sky-400",
+            "nameKey": "colors.skyBlue.name"
+          },
+          {
+            "id": "oatmeal",
+            "token": "sand-200",
+            "nameKey": "colors.oatmeal.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-sofa",
+      "nameKey": "items.starterSofa.name",
+      "descriptionKey": "items.starterSofa.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 0,
+      "sellValue": 0,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x1",
+        "category": "seating",
+        "starter": true,
+        "homeScore": 0,
+        "variants": [
+          {
+            "id": "teal",
+            "token": "teal-700",
+            "nameKey": "colors.teal.name"
+          },
+          {
+            "id": "oatmeal",
+            "token": "sand-200",
+            "nameKey": "colors.oatmeal.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-rug",
+      "nameKey": "items.starterRug.name",
+      "descriptionKey": "items.starterRug.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 0,
+      "sellValue": 0,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x2",
+        "layer": "rug",
+        "category": "rugs",
+        "starter": true,
+        "homeScore": 0,
+        "variants": [
+          {
+            "id": "terracotta",
+            "token": "orange-400",
+            "nameKey": "colors.terracotta.name"
+          },
+          {
+            "id": "oatmeal",
+            "token": "sand-200",
+            "nameKey": "colors.oatmeal.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-tv",
+      "nameKey": "items.starterTv.name",
+      "descriptionKey": "items.starterTv.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 0,
+      "sellValue": 0,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "surface",
+        "footprint": "2x1",
+        "category": "fun",
+        "starter": true,
+        "homeScore": 0,
+        "variants": [
+          {
+            "id": "charcoal",
+            "token": "charcoal-800",
+            "nameKey": "colors.charcoal.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-lamp",
+      "nameKey": "items.starterLamp.name",
+      "descriptionKey": "items.starterLamp.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 0,
+      "sellValue": 0,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "category": "lighting",
+        "starter": true,
+        "homeScore": 0,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-plant",
+      "nameKey": "items.starterPlant.name",
+      "descriptionKey": "items.starterPlant.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 0,
+      "sellValue": 0,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "category": "plants",
+        "starter": true,
+        "homeScore": 0,
+        "variants": [
+          {
+            "id": "terracotta",
+            "token": "orange-400",
+            "nameKey": "colors.terracotta.name"
+          },
+          {
+            "id": "mint",
+            "token": "mint-400",
+            "nameKey": "colors.mint.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-table",
+      "nameKey": "items.starterTable.name",
+      "descriptionKey": "items.starterTable.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 0,
+      "sellValue": 0,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x1",
+        "category": "tables",
+        "starter": true,
+        "homeScore": 0,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "starter-poster",
+      "nameKey": "items.starterPoster.name",
+      "descriptionKey": "items.starterPoster.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 0,
+      "sellValue": 0,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "wall",
+        "category": "wall-art",
+        "starter": true,
+        "homeScore": 0,
+        "variants": [
+          {
+            "id": "yellow",
+            "token": "taxi-400",
+            "nameKey": "colors.yellow.name"
+          },
+          {
+            "id": "sky-blue",
+            "token": "sky-400",
+            "nameKey": "colors.skyBlue.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "linen-double-bed",
+      "nameKey": "items.linenDoubleBed.name",
+      "descriptionKey": "items.linenDoubleBed.description",
+      "category": "decor",
+      "rarity": "medium",
+      "currency": "cash",
+      "price": 160,
+      "sellValue": 80,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x2",
+        "category": "sleep",
+        "homeScore": 10,
+        "variants": [
+          {
+            "id": "oatmeal",
+            "token": "sand-200",
+            "nameKey": "colors.oatmeal.name"
+          },
+          {
+            "id": "lilac",
+            "token": "lilac-300",
+            "nameKey": "colors.lilac.name"
+          },
+          {
+            "id": "sky-blue",
+            "token": "sky-400",
+            "nameKey": "colors.skyBlue.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "canopy-king-bed",
+      "nameKey": "items.canopyKingBed.name",
+      "descriptionKey": "items.canopyKingBed.description",
+      "category": "decor",
+      "rarity": "rare",
+      "currency": "cash",
+      "price": 520,
+      "sellValue": 312,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x2",
+        "category": "sleep",
+        "luxury": true,
+        "homeScore": 24,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          },
+          {
+            "id": "teal",
+            "token": "teal-700",
+            "nameKey": "colors.teal.name"
+          },
+          {
+            "id": "pink",
+            "token": "pink-400",
+            "nameKey": "colors.pink.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "corduroy-sofa",
+      "nameKey": "items.corduroySofa.name",
+      "descriptionKey": "items.corduroySofa.description",
+      "category": "decor",
+      "rarity": "medium",
+      "currency": "cash",
+      "price": 150,
+      "sellValue": 75,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x1",
+        "category": "seating",
+        "homeScore": 9,
+        "variants": [
+          {
+            "id": "terracotta",
+            "token": "orange-400",
+            "nameKey": "colors.terracotta.name"
+          },
+          {
+            "id": "forest",
+            "token": "green-700",
+            "nameKey": "colors.moss.name"
+          },
+          {
+            "id": "charcoal",
+            "token": "charcoal-800",
+            "nameKey": "colors.charcoal.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "velvet-chesterfield",
+      "nameKey": "items.velvetChesterfield.name",
+      "descriptionKey": "items.velvetChesterfield.description",
+      "category": "decor",
+      "rarity": "rare",
+      "currency": "cash",
+      "price": 480,
+      "sellValue": 288,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x1",
+        "category": "seating",
+        "luxury": true,
+        "homeScore": 24,
+        "variants": [
+          {
+            "id": "forest",
+            "token": "green-700",
+            "nameKey": "colors.moss.name"
+          },
+          {
+            "id": "red",
+            "token": "red-700",
+            "nameKey": "colors.red.name"
+          },
+          {
+            "id": "lilac",
+            "token": "lilac-300",
+            "nameKey": "colors.lilac.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "wfh-desk",
+      "nameKey": "items.wfhDesk.name",
+      "descriptionKey": "items.wfhDesk.description",
+      "category": "decor",
+      "rarity": "medium",
+      "currency": "cash",
+      "price": 90,
+      "sellValue": 45,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x1",
+        "category": "tables",
+        "homeScore": 6,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "retro-fridge",
+      "nameKey": "items.retroFridge.name",
+      "descriptionKey": "items.retroFridge.description",
+      "category": "decor",
+      "rarity": "medium",
+      "currency": "cash",
+      "price": 140,
+      "sellValue": 70,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "category": "kitchen",
+        "homeScore": 6,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "chef-range",
+      "nameKey": "items.chefRange.name",
+      "descriptionKey": "items.chefRange.description",
+      "category": "decor",
+      "rarity": "rare",
+      "currency": "cash",
+      "price": 420,
+      "sellValue": 252,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "category": "kitchen",
+        "luxury": true,
+        "homeScore": 16,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "brass-table-lamp",
+      "nameKey": "items.brassTableLamp.name",
+      "descriptionKey": "items.brassTableLamp.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 35,
+      "sellValue": 14,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "surface",
+        "category": "lighting",
+        "homeScore": 3,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "arc-floor-lamp",
+      "nameKey": "items.arcFloorLamp.name",
+      "descriptionKey": "items.arcFloorLamp.description",
+      "category": "decor",
+      "rarity": "medium",
+      "currency": "cash",
+      "price": 85,
+      "sellValue": 42,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "category": "lighting",
+        "homeScore": 6,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "hand-knotted-rug",
+      "nameKey": "items.handKnottedRug.name",
+      "descriptionKey": "items.handKnottedRug.description",
+      "category": "decor",
+      "rarity": "rare",
+      "currency": "cash",
+      "price": 360,
+      "sellValue": 216,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "footprint": "2x2",
+        "layer": "rug",
+        "category": "rugs",
+        "luxury": true,
+        "homeScore": 18,
+        "variants": [
+          {
+            "id": "red",
+            "token": "red-700",
+            "nameKey": "colors.red.name"
+          },
+          {
+            "id": "teal",
+            "token": "teal-700",
+            "nameKey": "colors.teal.name"
+          },
+          {
+            "id": "lilac",
+            "token": "lilac-300",
+            "nameKey": "colors.lilac.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fiddle-leaf-fig",
+      "nameKey": "items.fiddleLeafFig.name",
+      "descriptionKey": "items.fiddleLeafFig.description",
+      "category": "decor",
+      "rarity": "medium",
+      "currency": "cash",
+      "price": 60,
+      "sellValue": 30,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "category": "plants",
+        "homeScore": 5,
+        "variants": [
+          {
+            "id": "terracotta",
+            "token": "orange-400",
+            "nameKey": "colors.terracotta.name"
+          },
+          {
+            "id": "charcoal",
+            "token": "charcoal-800",
+            "nameKey": "colors.charcoal.name"
+          },
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "milk-crate",
+      "nameKey": "items.milkCrate.name",
+      "descriptionKey": "items.milkCrate.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 30,
+      "sellValue": 12,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "category": "storage",
+        "homeScore": 1,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "floating-shelf",
+      "nameKey": "items.floatingShelf.name",
+      "descriptionKey": "items.floatingShelf.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 45,
+      "sellValue": 18,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "wall",
+        "category": "storage",
+        "homeScore": 4,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tower-speaker",
+      "nameKey": "items.towerSpeaker.name",
+      "descriptionKey": "items.towerSpeaker.description",
+      "category": "decor",
+      "rarity": "medium",
+      "currency": "cash",
+      "price": 110,
+      "sellValue": 55,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "floor",
+        "category": "fun",
+        "homeScore": 7,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "vintage-radio",
+      "nameKey": "items.vintageRadio.name",
+      "descriptionKey": "items.vintageRadio.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 30,
+      "sellValue": 12,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "surface",
+        "category": "fun",
+        "homeScore": 2,
+        "variants": [
+          {
+            "id": "warm-white",
+            "token": "cream-100",
+            "nameKey": "colors.warmWhite.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "big-screen-tv",
+      "nameKey": "items.bigScreenTv.name",
+      "descriptionKey": "items.bigScreenTv.description",
+      "category": "decor",
+      "rarity": "rare",
+      "currency": "cash",
+      "price": 600,
+      "sellValue": 360,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "surface",
+        "footprint": "2x1",
+        "category": "fun",
+        "luxury": true,
+        "homeScore": 20,
+        "variants": [
+          {
+            "id": "charcoal",
+            "token": "charcoal-800",
+            "nameKey": "colors.charcoal.name"
+          }
+        ]
+      }
+    },
+    {
+      "id": "skyline-print",
+      "nameKey": "items.skylinePrint.name",
+      "descriptionKey": "items.skylinePrint.description",
+      "category": "decor",
+      "rarity": "common",
+      "currency": "cash",
+      "price": 40,
+      "sellValue": 16,
+      "cloutValue": 0,
+      "styleValue": 0,
+      "statEffects": {},
+      "decor": {
+        "fits": "wall",
+        "category": "wall-art",
+        "homeScore": 4,
+        "variants": [
+          {
+            "id": "yellow",
+            "token": "taxi-400",
+            "nameKey": "colors.yellow.name"
+          },
+          {
+            "id": "sky-blue",
+            "token": "sky-400",
+            "nameKey": "colors.skyBlue.name"
+          },
+          {
+            "id": "pink",
+            "token": "pink-400",
+            "nameKey": "colors.pink.name"
           }
         ]
       }

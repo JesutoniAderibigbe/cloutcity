@@ -21,14 +21,15 @@ import {
 } from './items'
 import { prestige } from './prestige'
 import { createSaveSchema, initialSave, loadSave, type SaveState } from './save'
-import { withClout } from './test-support'
+import { freeSlot, unfurnished, withClout } from './test-support'
 
 const schema = createSaveSchema(config)
-const start = initialSnapshot(config)
+const start = unfurnished(initialSnapshot(config))
 const DAY = config.time.gameDayHours * 60
 const MS = 1_760_000_000_000
 
-const decorItems = config.items.catalog.filter(isDecor)
+// Shop decor: starter pieces come with the home and are never bought or sold (S40).
+const decorItems = config.items.catalog.filter(isDecor).filter((item) => !item.decor.starter)
 
 function decor(id: string): DecorDef {
   const item = findItem(id, config)
@@ -48,11 +49,10 @@ const withCash = (cash: number, snapshot: GameSnapshot = start): GameSnapshot =>
   player: { ...snapshot.player, cash },
 })
 
-/** The first slot of the start home that `item` fits. */
-function slotFor(item: DecorDef, home = config.startHome): string {
-  const slot = config.home.slots[home].find((entry) => entry.kind === item.decor.fits)
-  if (slot === undefined) throw new Error(`no ${item.decor.fits} slot in ${home}`)
-  return slot.id
+/** Places owned `itemId` in the first free spot of the player's home. */
+function placeFree(snapshot: GameSnapshot, itemId: string) {
+  const spot = freeSlot(snapshot.player, itemId, config)
+  return placeDecor(snapshot, itemId, spot.slotId, config, spot.turn)
 }
 
 describe('decor in the shop', () => {
@@ -94,7 +94,7 @@ describe('decor in the shop', () => {
 
   it('selling placed decor takes it out of its slot first, and its home clout with it', () => {
     const owned = ok(buyItem(withCash(1000), neon.id, config)).snapshot
-    const placed = ok(placeDecor(owned, neon.id, 'wall-1', config)).snapshot
+    const placed = ok(placeFree(owned, neon.id)).snapshot
     expect(homeClout(placed.player, config)).toBe(neon.decor.homeScore)
     const sold = ok(sellItem(placed, neon.id, config))
     expect(sold.amount).toBe(neon.sellValue)
@@ -120,9 +120,9 @@ describe('farming probes', () => {
     let snapshot = owned
     const levelUps: string[] = []
     for (let i = 0; i < 200; i += 1) {
-      const placed = ok(placeDecor(snapshot, neon.id, 'wall-1', config))
+      const placed = ok(placeDecor(snapshot, neon.id, 'w-back-0', config))
       if (placed.levelUp !== null) levelUps.push(placed.levelUp.to)
-      const removed = ok(removeDecor(placed.snapshot, 'wall-1', config))
+      const removed = ok(removeDecor(placed.snapshot, 'w-back-0', config))
       if (removed.levelUp !== null) levelUps.push(removed.levelUp.to)
       snapshot = removed.snapshot
     }
@@ -139,7 +139,7 @@ describe('farming probes', () => {
       // Earned clout just short of Local, so placing this item reaches the reach-local goal.
       const local = config.clout.levels[1]?.minClout ?? 0
       let save: SaveState = {
-        ...initialSave(config),
+        ...unfurnished(initialSave(config)),
         clock: { minute: 10_000, remainderMs: 0 },
       }
       // Just enough cash for five loops, so the grant's cash cap (a share of what the next home
@@ -155,7 +155,7 @@ describe('farming probes', () => {
         save = { ...save, player: ok(buyItem(save, item.id, config)).snapshot.player }
         save = {
           ...save,
-          player: ok(placeDecor(save, item.id, slotFor(item), config)).snapshot.player,
+          player: ok(placeFree(save, item.id)).snapshot.player,
         }
         save = syncGoals(save, config).save
         expect(save.goals.achieved['reach-local']).toBeDefined()
@@ -213,24 +213,27 @@ describe('prestige keeps decor as looks only (DEC-14) and remaps the apartment',
     }
     save = withClout(save, 5000, config) as SaveState
     save = { ...save, player: ok(moveHome(save, 'brooklyn-1br', config)).snapshot.player }
-    save = { ...save, player: ok(placeDecor(save, neon.id, 'wall-2', config)).snapshot.player }
-    save = { ...save, player: ok(placeDecor(save, lights.id, 'wall-1', config)).snapshot.player }
+    // The left wall's last spot: the Brooklyn 1BR has it, the Queens room does not.
+    save = { ...save, player: ok(placeDecor(save, neon.id, 'w-left-4', config)).snapshot.player }
+    save = { ...save, player: ok(placeDecor(save, lights.id, 'w-back-0', config)).snapshot.player }
     return syncGoals(save, config).save
   }
 
-  it('marks decor kept, keeps it placed where the new home has the slot, and scores it 0', () => {
+  it('marks decor kept, keeps it where the new home has the spot, sets the rest up, scores 0', () => {
     const before = iconSave()
     expect(before.goals.achieved['reach-icon']).toBeDefined()
     const result = prestige(before, MS, config)
     if (!result.ok) throw new Error(result.error.code)
     const { player } = result.save
     expect(player.home).toBe(config.startHome)
-    expect(player.inventory.decor.map((owned) => owned.itemId).sort()).toEqual(
-      [lights.id, neon.id].sort(),
+    expect(player.inventory.decor.map((owned) => owned.itemId)).toEqual(
+      expect.arrayContaining([lights.id, neon.id]),
     )
     expect(player.inventory.decor.every((owned) => owned.prestigeKept === true)).toBe(true)
-    // wall-2 is not in the Queens room, so the neon sign goes back to storage.
-    expect(player.apartment.placed).toEqual({ 'wall-1': lights.id })
+    // The Queens room has the back wall's first spot but not the left wall's fifth: the lights
+    // stay where they hung, the movers hang the neon sign on the first free wall spot.
+    expect(player.apartment.placed['w-back-0']).toBe(lights.id)
+    expect(Object.values(player.apartment.placed)).toContain(neon.id)
     expect(player.apartment.moveLog).toEqual(before.player.apartment.moveLog)
     expect(homeScore(player, config)).toBe(0)
     expect(totalClout(player, config)).toBe(0)
@@ -255,12 +258,13 @@ describe('prestige keeps decor as looks only (DEC-14) and remaps the apartment',
       ok: false,
       error: { code: 'ALREADY_OWNED', itemId: neon.id },
     })
-    const placed = ok(placeDecor(save, neon.id, 'wall-1', config))
+    const moved = ok(placeDecor(save, lights.id, 'w-back-2', config)).snapshot
+    const placed = ok(placeDecor(moved, neon.id, 'w-back-0', config))
     expect(placed.levelUp).toBeNull()
     expect(homeClout(placed.snapshot.player, config)).toBe(0)
   })
 
-  it('with the inventory reset, decor and placements start over', () => {
+  it('with the inventory reset, decor and placements start over, furnished like a new game', () => {
     const resetsInventory = {
       ...config,
       prestige: {
@@ -271,7 +275,8 @@ describe('prestige keeps decor as looks only (DEC-14) and remaps the apartment',
     }
     const result = prestige(iconSave(), MS, resetsInventory)
     if (!result.ok) throw new Error(result.error.code)
-    expect(result.save.player.inventory.decor).toEqual([])
-    expect(result.save.player.apartment.placed).toEqual({})
+    const fresh = initialSnapshot(config).player
+    expect(result.save.player.inventory.decor).toEqual(fresh.inventory.decor)
+    expect(result.save.player.apartment.placed).toEqual(fresh.apartment.placed)
   })
 })

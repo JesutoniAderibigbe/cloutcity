@@ -1,6 +1,6 @@
 /** Save v7 (S13): the clout ledger and flex state, the v6 upgrade and repairs on load. */
 import { describe, expect, it } from 'vitest'
-import { V12_PLAYER_KEYS } from './test-support'
+import { V12_PLAYER_KEYS, unfurnished } from './test-support'
 import {
   cloutSums,
   initialCloutState,
@@ -16,7 +16,7 @@ import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } fr
 
 const schema = createSaveSchema(config)
 const DAY = 24 * 60
-const base = { ...initialSave(config), clock: { minute: 10 * DAY, remainderMs: 0 } }
+const base = { ...unfurnished(initialSave(config)), clock: { minute: 10 * DAY, remainderMs: 0 } }
 const eventSource = (eventId: string) => ({ type: 'event', eventId, choiceId: 'a' }) as const
 
 /** A v6 save: clout is one number, no flex state, pending effects may hold clout. */
@@ -47,8 +47,8 @@ const level = (id: string) => config.clout.levels.findIndex((entry) => entry.id 
 const minOf = (id: string) => config.clout.levels[level(id)]?.minClout ?? Number.NaN
 
 describe('save v7', () => {
-  it('is version 12 (S16a after S18c) and a fresh save has an empty ledger and no flexes', () => {
-    expect(SAVE_VERSION).toBe(12)
+  it('is version 13 (S40 after S16a) and a fresh save has an empty ledger and no flexes', () => {
+    expect(SAVE_VERSION).toBe(13)
     expect(initialSave(config).player.clout).toEqual(initialCloutState)
     expect(initialSave(config).player.flex).toEqual(initialFlexState)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)

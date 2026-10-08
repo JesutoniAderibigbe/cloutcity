@@ -4,13 +4,13 @@
  * data/homes/interiors.json through the copy layer; money goes through `formatMoney` and counts
  * through `formatCount`, never literals.
  *
- * Client code: it reads data/homes/interiors.json directly (validated in
- * src/lib/data/homes-data.test.ts) rather than through the classic-zod loader.
+ * Client code: cell names and floor areas come from the engine's home layouts
+ * (src/engine/config.ts), never through the classic-zod loader.
  */
-import interiorsJson from '@data/homes/interiors.json'
 import { homeScorePct } from '@/engine/career'
 import { engineConfig, type EngineConfig, type HomeId } from '@/engine/config'
-import { homeClout, homeScore, slotsFor, type HomeError, type HomeLock } from '@/engine/home'
+import { homeClout, homeScore, layoutFor, type HomeError, type HomeLock } from '@/engine/home'
+import { parseSlot } from '@/engine/homeGrid'
 import { moveInCost } from '@/engine/housing'
 import { findItem, isDecor, type DecorDef, type DecorFit } from '@/engine/items'
 import type { PlayerState } from '@/engine/game'
@@ -50,30 +50,37 @@ function decor(itemId: string, config: EngineConfig): DecorDef {
 }
 
 const KIND_KEYS = {
-  wall: { title: 'home.kind.wall', lower: 'home.kind.wall.lower' },
-  floor: { title: 'home.kind.floor', lower: 'home.kind.floor.lower' },
-  surface: { title: 'home.kind.surface', lower: 'home.kind.surface.lower' },
-} as const satisfies Record<DecorFit, { title: CopyKey; lower: CopyKey }>
-
-/** A slot kind as a group heading: "Wall". */
-export function decorKindHeading(kind: DecorFit, { copy = activeCopy }: HomeCopyOptions = {}) {
-  return copy(KIND_KEYS[kind].title)
-}
+  wall: 'home.kind.wall.lower',
+  floor: 'home.kind.floor.lower',
+  surface: 'home.kind.surface.lower',
+} as const satisfies Record<DecorFit, CopyKey>
 
 /** A slot kind inside a sentence: "wall". */
 export function decorKindWord(kind: DecorFit, { copy = activeCopy }: HomeCopyOptions = {}) {
-  return copy(KIND_KEYS[kind].lower)
+  return copy(KIND_KEYS[kind])
 }
 
-/** A slot's name in `home` ("Windowsill"), from data/homes/interiors.json. */
-export function slotName(
-  home: HomeId,
-  slotId: string,
-  { copy = activeCopy }: HomeCopyOptions = {},
-) {
-  const slot = interiorsJson.homes[home].slots.find((entry) => entry.id === slotId)
-  if (slot === undefined) throw new Error(`homes/interiors.json: ${home} has no slot "${slotId}"`)
-  return copy(requireKey(slot.nameKey, `slot ${home}/${slotId}`))
+const WALL_KEYS = {
+  back: 'home.slot.wall.back',
+  left: 'home.slot.wall.left',
+  right: 'home.slot.wall.right',
+} as const satisfies Record<'back' | 'left' | 'right', CopyKey>
+
+/**
+ * A cell's name in `home` (S40): "Floor spot C2" (columns lettered from the left wall, rows
+ * numbered from the back) or "Left wall, spot 2" (spots numbered from the back or the left).
+ */
+export function slotName(home: HomeId, slotId: string, options: HomeCopyOptions = {}) {
+  const { copy = activeCopy, config = engineConfig } = options
+  const slot = parseSlot(slotId, layoutFor(home, config).size)
+  if (slot === null) throw new Error(`${home} has no cell "${slotId}"`)
+  if (slot.kind === 'floor') {
+    return copy('home.slot.floor', {
+      col: String.fromCharCode(65 + slot.c),
+      row: formatCount(slot.r + 1),
+    })
+  }
+  return copy(WALL_KEYS[slot.wall], { spot: formatCount(slot.i + 1) })
 }
 
 /** A decor colour variant's human name ("Hot pink"), never its hex or token (A11Y-1). */
@@ -107,91 +114,6 @@ export function currentHomeLine(home: HomeId, options: HomeCopyOptions = {}): st
   })
 }
 
-/** "Hot pink fairy lights": what sits in a slot, with its colour. */
-export function slotHoldsLine(itemId: string, variantId: string, options: HomeCopyOptions = {}) {
-  const { copy = activeCopy } = options
-  return copy('home.slot.holds', {
-    item: itemName(itemId, options),
-    color: variantName(itemId, variantId, options),
-  })
-}
-
-export function placeLabel(
-  itemId: string,
-  home: HomeId,
-  slotId: string,
-  options: HomeCopyOptions = {},
-) {
-  const { copy = activeCopy } = options
-  return copy('home.slot.placeLabel', {
-    item: itemName(itemId, options),
-    slot: slotName(home, slotId, options),
-  })
-}
-
-export function removeLabel(
-  itemId: string,
-  home: HomeId,
-  slotId: string,
-  options: HomeCopyOptions = {},
-) {
-  const { copy = activeCopy } = options
-  return copy('home.slot.removeLabel', {
-    item: itemName(itemId, options),
-    slot: slotName(home, slotId, options),
-  })
-}
-
-export function pickUpLabel(itemId: string, options: HomeCopyOptions = {}): string {
-  const { copy = activeCopy } = options
-  return copy('home.storage.pickUpLabel', { item: itemName(itemId, options) })
-}
-
-export function putDownLabel(itemId: string, options: HomeCopyOptions = {}): string {
-  const { copy = activeCopy } = options
-  return copy('home.storage.putDownLabel', { item: itemName(itemId, options) })
-}
-
-/** "Fits a wall spot". */
-export function fitsLine(itemId: string, options: HomeCopyOptions = {}): string {
-  const { copy = activeCopy, config = engineConfig } = options
-  return copy('home.storage.fits', {
-    kind: decorKindWord(decor(itemId, config).decor.fits, options),
-  })
-}
-
-/** The instruction while an item is held: "Holding Fairy lights. Choose a wall spot, ...". */
-export function pickedNotice(itemId: string, options: HomeCopyOptions = {}): string {
-  const { copy = activeCopy, config = engineConfig } = options
-  return copy('home.picked', {
-    item: itemName(itemId, options),
-    kind: decorKindWord(decor(itemId, config).decor.fits, options),
-  })
-}
-
-export function placedNotice(
-  itemId: string,
-  home: HomeId,
-  slotId: string,
-  options: HomeCopyOptions = {},
-) {
-  const { copy = activeCopy } = options
-  return copy('home.placed', {
-    item: itemName(itemId, options),
-    slot: slotName(home, slotId, options),
-  })
-}
-
-export function removedNotice(itemId: string, options: HomeCopyOptions = {}): string {
-  const { copy = activeCopy } = options
-  return copy('home.removed', { item: itemName(itemId, options) })
-}
-
-export function variantLegend(itemId: string, options: HomeCopyOptions = {}): string {
-  const { copy = activeCopy } = options
-  return copy('home.variant.legend', { item: itemName(itemId, options) })
-}
-
 export function variantChangedNotice(
   itemId: string,
   variantId: string,
@@ -204,9 +126,10 @@ export function variantChangedNotice(
   })
 }
 
-export function slotSelectedNotice(home: HomeId, slotId: string, options: HomeCopyOptions = {}) {
-  const { copy = activeCopy } = options
-  return copy('home.selected', { slot: slotName(home, slotId, options) })
+/** A home's floor in square metres (whole), from its grid. */
+function floorArea(home: HomeId, config: EngineConfig): number {
+  const { size, cellM: cell } = layoutFor(home, config)
+  return Math.round(size.cols * size.rows * cell * cell)
 }
 
 function moveVars(home: HomeId, options: HomeCopyOptions) {
@@ -215,7 +138,7 @@ function moveVars(home: HomeId, options: HomeCopyOptions) {
     home: homeName(home, options),
     cost: formatMoney(moveInCost(home, config)),
     rent: formatMoney(rentFor(home, config)),
-    slots: formatCount(slotsFor(home, config).length),
+    slots: formatCount(floorArea(home, config)),
   }
 }
 
@@ -310,6 +233,30 @@ export function homeErrorText(error: HomeError, options: HomeCopyOptions = {}): 
         item: findItem(error.itemId, config) === undefined ? '' : itemName(error.itemId, options),
         fits: decorKindWord(error.fits, options),
         kind: decorKindWord(error.kind, options),
+      })
+    case 'NO_ROOM': {
+      const item =
+        findItem(error.itemId, config) === undefined ? '' : itemName(error.itemId, options)
+      switch (error.reason) {
+        case 'off-grid':
+          return copy('home.error.noRoom.offGrid', { item })
+        case 'blocked':
+          return copy('home.error.noRoom.blocked')
+        case 'occupied':
+          return copy('home.error.noRoom.occupied')
+      }
+      break
+    }
+    case 'NO_ROOM_TO_TURN':
+      return copy('home.error.noRoomToTurn', {
+        item: findItem(error.itemId, config) === undefined ? '' : itemName(error.itemId, options),
+      })
+    case 'UNKNOWN_FINISH':
+      return copy('home.error.unknownFinish')
+    case 'FINISH_FUNDS_SHORT':
+      return copy('home.error.finishFunds', {
+        required: formatMoney(error.required),
+        available: formatMoney(error.available),
       })
     case 'UNKNOWN_VARIANT':
       return copy('home.error.unknownVariant')

@@ -1,0 +1,224 @@
+{
+  "homes": {
+    "queens-room": {
+      "cols": 5,
+      "rows": 4,
+      "cellM": 1,
+      "blocked": [
+        "w-left-1",
+        "w-left-2",
+        "w-right-3",
+        "f0-0",
+        "f1-0",
+        "f2-0"
+      ],
+      "walkway": [
+        "f2-2",
+        "f4-3"
+      ],
+      "starter": [
+        {
+          "itemId": "starter-bed",
+          "slot": "f3-0",
+          "turn": 0
+        },
+        {
+          "itemId": "starter-sofa",
+          "slot": "f0-1",
+          "turn": 1
+        },
+        {
+          "itemId": "starter-rug",
+          "slot": "f1-1",
+          "turn": 0
+        },
+        {
+          "itemId": "starter-tv",
+          "slot": "f3-2",
+          "turn": 3
+        },
+        {
+          "itemId": "starter-lamp",
+          "slot": "f0-3",
+          "turn": 0
+        },
+        {
+          "itemId": "starter-plant",
+          "slot": "f4-2",
+          "turn": 0
+        },
+        {
+          "itemId": "starter-table",
+          "slot": "f1-3",
+          "turn": 0
+        },
+        {
+          "itemId": "starter-poster",
+          "slot": "w-back-3",
+          "turn": 0
+        }
+      ],
+      "wallPaint": "butter-cream",
+      "floorFinish": "bodega-checker"
+    },
+    "brooklyn-1br": {
+      "cols": 6,
+      "rows": 5,
+      "cellM": 1,
+      "blocked": [
+        "w-left-1",
+        "w-left-2",
+        "w-back-4",
+        "w-back-5",
+        "w-right-4",
+        "f0-0",
+        "f1-0",
+        "f2-0",
+        "f3-0"
+      ],
+      "walkway": [
+        "f3-3",
+        "f5-4"
+      ],
+      "starter": [],
+      "wallPaint": "sage-wash",
+      "floorFinish": "honey-planks"
+    },
+    "manhattan-loft": {
+      "cols": 8,
+      "rows": 6,
+      "cellM": 1,
+      "blocked": [
+        "w-back-4",
+        "w-back-5",
+        "w-back-6",
+        "w-back-7",
+        "w-left-1",
+        "w-left-2",
+        "w-left-3",
+        "w-right-5",
+        "f0-0",
+        "f1-0",
+        "f2-0",
+        "f3-0"
+      ],
+      "walkway": [
+        "f4-3",
+        "f7-5"
+      ],
+      "starter": [],
+      "wallPaint": "gallery-white",
+      "floorFinish": "herringbone-oak"
+    }
+  },
+  "finishes": [
+    {
+      "id": "butter-cream",
+      "kind": "wall",
+      "price": 45,
+      "nameKey": "buy.finish.butterCream"
+    },
+    {
+      "id": "sage-wash",
+      "kind": "wall",
+      "price": 45,
+      "nameKey": "buy.finish.sageWash"
+    },
+    {
+      "id": "gallery-white",
+      "kind": "wall",
+      "price": 60,
+      "nameKey": "buy.finish.galleryWhite"
+    },
+    {
+      "id": "sky-wash",
+      "kind": "wall",
+      "price": 40,
+      "nameKey": "buy.finish.skyWash"
+    },
+    {
+      "id": "mint-fresh",
+      "kind": "wall",
+      "price": 40,
+      "nameKey": "buy.finish.mintFresh"
+    },
+    {
+      "id": "peach-glow",
+      "kind": "wall",
+      "price": 40,
+      "nameKey": "buy.finish.peachGlow"
+    },
+    {
+      "id": "lilac-haze",
+      "kind": "wall",
+      "price": 40,
+      "nameKey": "buy.finish.lilacHaze"
+    },
+    {
+      "id": "forest-green",
+      "kind": "wall",
+      "price": 70,
+      "nameKey": "buy.finish.forestGreen"
+    },
+    {
+      "id": "charcoal-loft",
+      "kind": "wall",
+      "price": 80,
+      "nameKey": "buy.finish.charcoalLoft"
+    },
+    {
+      "id": "exposed-brick",
+      "kind": "wall",
+      "price": 180,
+      "nameKey": "buy.finish.exposedBrick"
+    },
+    {
+      "id": "bodega-checker",
+      "kind": "floor",
+      "price": 60,
+      "nameKey": "buy.finish.bodegaChecker"
+    },
+    {
+      "id": "honey-planks",
+      "kind": "floor",
+      "price": 90,
+      "nameKey": "buy.finish.honeyPlanks"
+    },
+    {
+      "id": "herringbone-oak",
+      "kind": "floor",
+      "price": 160,
+      "nameKey": "buy.finish.herringboneOak"
+    },
+    {
+      "id": "worn-oak",
+      "kind": "floor",
+      "price": 60,
+      "nameKey": "buy.finish.wornOak"
+    },
+    {
+      "id": "black-white-checker",
+      "kind": "floor",
+      "price": 95,
+      "nameKey": "buy.finish.blackWhiteChecker"
+    },
+    {
+      "id": "terracotta-tile",
+      "kind": "floor",
+      "price": 85,
+      "nameKey": "buy.finish.terracottaTile"
+    },
+    {
+      "id": "polished-concrete",
+      "kind": "floor",
+      "price": 130,
+      "nameKey": "buy.finish.polishedConcrete"
+    },
+    {
+      "id": "marble-tile",
+      "kind": "floor",
+      "price": 380,
+      "nameKey": "buy.finish.marbleTile"
+    }
+  ]
+}

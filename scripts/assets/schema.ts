@@ -150,6 +150,14 @@ const TierSchema = z.union([
     ratio: z.number().gt(0).max(1),
     /** Relative error bound for the simplifier. */
     error: z.number().min(0).max(1),
+    /**
+     * MeshoptSimplifier flags (S04l ambient LODs): `Permissive` collapses across UV and normal
+     * seams, so a far-away LOD can drop below the seam floor (its colours may bleed at seams).
+     */
+    flags: z
+      .array(z.enum(['Permissive']))
+      .min(1)
+      .optional(),
   }),
   /**
    * A triangle target for the whole model (S16b: the realistic avatars carry per-tier caps far

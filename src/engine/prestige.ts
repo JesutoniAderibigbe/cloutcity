@@ -30,7 +30,7 @@ import { initialSnapshot, type PlayerState } from './game'
 import { initialGoalsState, victoryGoal, type GoalsState } from './goals'
 import { grant, type GrantRecord, type GrantSnapshot } from './grants'
 import { placementsAfterMove } from './home'
-import { emptyInventory, type Inventory } from './items'
+import type { Inventory } from './items'
 import { initialRent } from './rent'
 
 export interface PrestigeRun {
@@ -122,6 +122,12 @@ function nextRunPlayer(player: PlayerState, config: EngineConfig): PlayerState {
     resets(part, config) ? fresh[key] : player[key]
   const home = pick('home', 'home')
   const keepsInventory = !resets('inventory', config)
+  const kept = keptInventory(player.inventory)
+  // The movers set the kept decor up in the run's home; a reset inventory starts furnished.
+  const moved = keepsInventory
+    ? placementsAfterMove({ apartment: player.apartment, inventory: kept }, home, config)
+    : { placed: fresh.apartment.placed, inventory: fresh.inventory }
+  const sameHome = home === player.home
   const next: PlayerState = {
     cash: pick('cash', 'cash'),
     stats: pick('stats', 'stats'),
@@ -129,12 +135,15 @@ function nextRunPlayer(player: PlayerState, config: EngineConfig): PlayerState {
     flex: resets('flex', config) ? { ...fresh.flex, rngState: player.flex.rngState } : player.flex,
     home,
     rent: resets('rent', config) ? initialRent : player.rent,
-    inventory: keepsInventory ? keptInventory(player.inventory) : emptyInventory,
+    inventory: moved.inventory,
     clubNights: pick('clubNights', 'clubNights'),
     visited: pick('visited', 'visited'),
     apartment: {
-      placed: keepsInventory ? placementsAfterMove(player.apartment.placed, home, config) : {},
+      placed: moved.placed,
       moveLog: player.apartment.moveLog,
+      wallPaint: sameHome ? player.apartment.wallPaint : null,
+      floorFinish: sameHome ? player.apartment.floorFinish : null,
+      finishes: player.apartment.finishes,
     },
     // A new run starts at home; the delay roll's generator carries on (no re-rolls).
     location: fresh.location,

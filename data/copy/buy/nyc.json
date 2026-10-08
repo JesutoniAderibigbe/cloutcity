@@ -1,0 +1,9 @@
+{
+  "id": "nyc",
+  "strings": {
+    "buy.bought": "Bag secured. {item} is yours, now find it a spot.",
+    "buy.place.placed": "{item} is in. The place is giving home.",
+    "buy.room.empty": "Nothing placed yet. Bare floor is not the vibe.",
+    "buy.design.applied": "{finish} is on. Fresh coat, fresh start."
+  }
+}

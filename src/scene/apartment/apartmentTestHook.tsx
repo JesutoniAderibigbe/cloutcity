@@ -15,9 +15,10 @@ import { avatarReserve, tierBudget } from './data'
 import { ROOM_AVATAR_NAME, type ApartmentPlacement } from './types'
 
 export interface ApartmentSlotState {
+  /** A grid cell (src/engine/homeGrid.ts): `f{c}-{r}` or `w-{wall}-{i}`. */
   readonly id: string
   readonly kind: string
-  /** The decor item placed there, or null. */
+  /** The decor item whose slot (back-left cell, or wall cell) this is, or null. */
   readonly itemId: string | null
   /** The tap point in client (viewport) CSS pixels; null when behind the camera or off the canvas. */
   readonly screen: { readonly x: number; readonly y: number } | null
@@ -55,8 +56,12 @@ export interface ApartmentTestHook {
     avatarReserve: { drawCalls: number; triangles: number }
   }
   slots(): ApartmentSlotState[]
-  /** One slot's tap point in client CSS pixels, or null. */
+  /** One cell's tap point in client CSS pixels, or null. */
   slotScreen(slotId: string): { x: number; y: number } | null
+  /** Decor item ids the room draws now. */
+  drawnItems(): string[]
+  /** Buy mode's grid cells shown now, cell id → state (empty while the grid is hidden). */
+  gridCells(): Readonly<Record<string, string>>
   /**
    * The player's avatar in the room (S16a): whether its model is drawn, its meshes (the head and
    * body, then any `-attachment`) and its triangles; null when no avatar group is in the room.
@@ -94,20 +99,22 @@ export function ApartmentTestHook({
       const objects = objectsRef.current
       if (objects === null) return []
       const rect = gl.domElement.getBoundingClientRect()
-      const onScreen = new Map(
-        objects
-          .screenSlots(get().camera, rect.width, rect.height)
-          .filter(
-            (slot) => slot.x >= 0 && slot.y >= 0 && slot.x <= rect.width && slot.y <= rect.height,
-          )
-          .map((slot) => [slot.id, { x: slot.x + rect.left, y: slot.y + rect.top }]),
-      )
-      return objects.slots.map((slot) => ({
-        id: slot.id,
-        kind: slot.kind,
-        itemId: placed[slot.id]?.itemId ?? null,
-        screen: onScreen.get(slot.id) ?? null,
-      }))
+      const bySlot = new Map(Object.values(placed).map((entry) => [entry.slotId, entry.itemId]))
+      return objects.slots.map((slot) => {
+        const point = objects.cellScreen(get().camera, slot.id, rect.width, rect.height)
+        const visible =
+          point !== null &&
+          point.x >= 0 &&
+          point.y >= 0 &&
+          point.x <= rect.width &&
+          point.y <= rect.height
+        return {
+          id: slot.id,
+          kind: slot.kind,
+          itemId: bySlot.get(slot.id) ?? null,
+          screen: visible ? { x: point.x + rect.left, y: point.y + rect.top } : null,
+        }
+      })
     }
     const shadowPass = () => {
       let shadowCalls = 0
@@ -144,6 +151,8 @@ export function ApartmentTestHook({
       },
       slots,
       slotScreen: (slotId) => slots().find((slot) => slot.id === slotId)?.screen ?? null,
+      drawnItems: () => objectsRef.current?.drawnItems() ?? [],
+      gridCells: () => objectsRef.current?.gridCells() ?? {},
       avatar: () => {
         const group = get().scene.getObjectByName(ROOM_AVATAR_NAME)
         if (group === undefined) return null

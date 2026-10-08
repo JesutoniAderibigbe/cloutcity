@@ -210,6 +210,54 @@ body {
   display: none;
 }
 
+/* DEC-59: below the dock, while the 3D room has the screen (the game opens on Home), the sheet
+   row is shorter (layout.json roomSheetMaxHeightVh) so the room is the hero; the Home panel
+   scrolls inside it. Rows repeat the overlay's tracks (layers.ts `overlayGridTracks`). */
+.cc-overlay:has([data-scene-slot='room']:not(:empty)) [data-overlay-root] {
+  grid-template-rows:
+    env(safe-area-inset-top, 0px)
+    minmax(var(--overlay-banner-min, 0px), var(--overlay-banner-h))
+    var(--overlay-hud-h)
+    minmax(var(--overlay-free-min), 1fr)
+    minmax(0, var(--overlay-toast-h))
+    minmax(0, var(--overlay-room-sheet-h))
+    calc(var(--overlay-tabs-h) + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+/* S40: on a wide screen, while the 3D room has the screen (its scene slot is not empty), the
+   Home panel docks to the right of the room instead of filling the bottom rows, so the room is
+   the hero. The overlay grid gains a second column: the banner, HUD and tab bar span both, the
+   free scene row and toasts keep the first, and the sheet zone takes the second from the free
+   row down to the tab bar. The sheet's own row collapses to 0. Rows repeat the overlay's tracks
+   (src/components/overlay/layers.ts `overlayGridTracks`) from the variables the layout writes;
+   the room frames itself to whatever area is left (ApartmentCanvas.tsx `freeArea`). Zones carry
+   their grid row inline, hence `!important`. */
+@media (min-width: 1024px) and (min-height: 560px) {
+  .cc-overlay:has([data-scene-slot='room']:not(:empty)) [data-overlay-root] {
+    grid-template-columns: minmax(0, 1fr) clamp(380px, 34vw, 460px);
+    grid-template-rows:
+      env(safe-area-inset-top, 0px)
+      minmax(var(--overlay-banner-min, 0px), var(--overlay-banner-h))
+      var(--overlay-hud-h)
+      minmax(var(--overlay-free-min), 1fr)
+      minmax(0, var(--overlay-toast-h))
+      0px
+      calc(var(--overlay-tabs-h) + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .cc-overlay:has([data-scene-slot='room']:not(:empty)) [data-overlay-zone] {
+    grid-column: 1 / -1;
+  }
+  .cc-overlay:has([data-scene-slot='room']:not(:empty)) [data-overlay-zone='toast'] {
+    grid-column: 1;
+  }
+  .cc-overlay:has([data-scene-slot='room']:not(:empty)) [data-overlay-zone='sheet'] {
+    grid-column: 2;
+    grid-row: 4 / 7 !important;
+    max-width: none;
+    margin: 0;
+  }
+}
+
 /* A lazy feature's loading skeleton (src/components/overlay/ZoneLoading.tsx) stays invisible for
    the reveal delay (data/config/layout.json, written to --overlay-loading-delay by the overlay
    layout), so a fast load never flashes a placeholder. Under reduced motion the rule below turns

@@ -343,6 +343,16 @@
       },
       "sha256": "ecb767558bfcae8b754e3262393d4571fcd9053bbcd657c8559e208964123d5e",
       "bytes": 74984
+    },
+    {
+      "id": "bus-ambient",
+      "script": "scripts/blender/vehicles/bus-ambient.py",
+      "inputs": {
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c",
+        "scripts/blender/vehicles/bus-ambient.py": "6ed68fbd692672739d03f75194e1fd1d031b90a455411982f2e9db52b849f366"
+      },
+      "sha256": "df09f31903349ff9fc1f39fc00ebe62abea47ae1e0222e6dbedcfadeecfdcc06",
+      "bytes": 26144
     }
   ]
 }

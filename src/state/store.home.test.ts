@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { engineConfig } from '@/engine/config'
 import { homeClout } from '@/engine/home'
-import { playerWithClout } from '@/engine/test-support'
+import { playerWithClout, unfurnished } from '@/engine/test-support'
 import { createLogger } from '@/lib/log'
 import { createSafeJsonStorage } from './storage'
 import {
@@ -50,8 +50,10 @@ const fresh = initialPersistedState()
 /** A save with `cash` and earned clout `clout`, written to `local` before the store loads. */
 function seeded(cash: number, clout = 0) {
   const { local, store } = setup()
-  const player = playerWithClout({ ...fresh.player, cash }, clout, engineConfig)
-  local.setItem(STORE_KEY, JSON.stringify({ state: { ...fresh, player }, version: STORE_VERSION }))
+  // A bare room (S40: no starter pieces), so the decor here is all the test's.
+  const bare = unfurnished(fresh)
+  const player = playerWithClout({ ...bare.player, cash }, clout, engineConfig)
+  local.setItem(STORE_KEY, JSON.stringify({ state: { ...bare, player }, version: STORE_VERSION }))
   return { local, game: store(), reload: store }
 }
 
@@ -59,10 +61,10 @@ describe('decor in the store', () => {
   it('a placement persists across a reload', () => {
     const { local, game, reload } = seeded(1000)
     expect(game.getState().buyItem(NEON).ok).toBe(true)
-    expect(game.getState().placeDecor(NEON, 'wall-1').ok).toBe(true)
-    expect(saved(local).state.player.apartment.placed).toEqual({ 'wall-1': NEON })
+    expect(game.getState().placeDecor(NEON, 'w-back-0').ok).toBe(true)
+    expect(saved(local).state.player.apartment.placed).toEqual({ 'w-back-0': NEON })
     const again = reload().getState()
-    expect(again.player.apartment.placed).toEqual({ 'wall-1': NEON })
+    expect(again.player.apartment.placed).toEqual({ 'w-back-0': NEON })
     expect(again.player.inventory.decor.map((owned) => owned.itemId)).toEqual([NEON])
     expect(homeClout(again.player, engineConfig)).toBeGreaterThan(0)
   })
@@ -70,10 +72,10 @@ describe('decor in the store', () => {
   it('a colour change and a removal persist too', () => {
     const { local, game, reload } = seeded(1000)
     game.getState().buyItem(NEON)
-    game.getState().placeDecor(NEON, 'wall-1')
+    game.getState().placeDecor(NEON, 'w-back-0')
     expect(game.getState().setDecorVariant(NEON, 'mint').ok).toBe(true)
     expect(saved(local).state.player.inventory.decor[0]?.variant).toBe('mint')
-    expect(game.getState().removeDecor('wall-1').ok).toBe(true)
+    expect(game.getState().removeDecor('w-back-0').ok).toBe(true)
     expect(saved(local).state.player.apartment.placed).toEqual({})
     expect(reload().getState().player.inventory.decor[0]?.variant).toBe('mint')
   })
@@ -82,7 +84,7 @@ describe('decor in the store', () => {
     const { local, game } = seeded(1000)
     game.getState().buyItem(NEON)
     const before = local.getItem(STORE_KEY)
-    const result = game.getState().placeDecor(NEON, 'floor-1')
+    const result = game.getState().placeDecor(NEON, 'f3-1')
     expect(result.ok === false && result.error.code).toBe('WRONG_SLOT_KIND')
     expect(local.getItem(STORE_KEY)).toBe(before)
     expect(game.getState().player.apartment.placed).toEqual({})
@@ -95,7 +97,7 @@ describe('decor in the store', () => {
     const { game } = seeded(1000, (local?.minClout ?? 0) - neonScore)
     game.getState().buyItem(NEON)
     expect(game.getState().lastLevelUp).toBeNull()
-    const result = game.getState().placeDecor(NEON, 'wall-1')
+    const result = game.getState().placeDecor(NEON, 'w-back-0')
     expect(result.ok && result.levelUp).toMatchObject({ to: 'local', source: 'home' })
     expect(game.getState().lastLevelUp).toMatchObject({ to: 'local', source: 'home' })
     expect(game.getState().goals.achieved['reach-local']).toBeDefined()

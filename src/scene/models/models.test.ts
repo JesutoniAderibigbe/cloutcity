@@ -20,7 +20,7 @@ import { describe, expect, it } from 'vitest'
 import { modelManifest, modelRef } from '@/lib/data/models'
 import { scene } from '@/lib/data/config'
 import { items } from '@/lib/data/content'
-import { decorEntries } from '../apartment/decorModels'
+import { apartmentModelIds, decorEntries } from '../apartment/decorModels'
 import { nightGlowSource } from '../lighting/nightGlow'
 import { createModelMaterial } from './materials'
 import { wantsAvatarModel } from '../avatar/PlayerAvatar'
@@ -292,16 +292,23 @@ describe('createModelMaterial night glow (S04f contract)', () => {
 })
 
 describe('apartment decor models', () => {
-  it('maps only real decor items to static models with the named recolour slot', () => {
+  it('maps only real decor items to static furniture models with the named recolour slot', () => {
     const decorIds = new Set(items.filter((item) => item.category === 'decor').map((i) => i.id))
     const entries = decorEntries()
     expect(entries.size).toBe(Object.keys(scene.models.decor).length)
+    const manifestModels = new Map(modelManifest.models.map((model) => [model.id, model]))
     for (const [itemId, entry] of entries) {
       expect(decorIds.has(itemId)).toBe(true)
-      expect(entry.ref.kind).toBe('static')
-      expect(entry.ref.slots).toContain(entry.slot)
-      expect(entry.ref.category).toBe('furniture')
-      expect(entry.footprintM).toBeGreaterThan(0)
+      const model = manifestModels.get(entry.model)
+      expect(model?.kind, itemId).toBe('static')
+      expect(model?.category, itemId).toBe('furniture')
+      // A model with one look (a lamp, a fridge) has no recolour slot.
+      if (entry.slot !== null) expect(model?.slots, itemId).toContain(entry.slot)
     }
+  })
+
+  it('draws the homes’ built-in fixtures with static furniture models too', () => {
+    const ids = apartmentModelIds()
+    for (const id of ['fridge', 'stove']) expect(ids).toContain(id)
   })
 })

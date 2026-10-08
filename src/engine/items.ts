@@ -22,7 +22,8 @@
  *   loop earns nothing. Buying and selling a wearable write an `item` audit entry to the clout
  *   ledger; a purchase that lifts the player to a new level reports it (`levelUp`). Wearing
  *   changes the outfit's style score, never clout itself.
- * - Decor (S16) is owned at most once each, depreciates like a wearable, and is worth no item
+ * - Decor (S16) is owned at most once each, depreciates like a wearable (S40: starter pieces
+ *   are never bought or sold, NOT_FOR_SALE), and is worth no item
  *   clout or style: it adds to the home score only while placed (src/engine/home.ts). A new
  *   purchase shows its first colour variant. Selling placed decor takes it out of its slot
  *   first (which can lower clout, so the level is settled); decor kept through prestige is a
@@ -32,11 +33,14 @@ import { resaleBonusPts } from './career'
 import { recordClout, settleLevel, type LevelUp } from './clout'
 import type { EngineConfig } from './config'
 import type { GameSnapshot, PlayerState } from './game'
+import type { Turn } from './homeGrid'
 import {
+  DECOR_CATEGORIES,
   ITEM_SLOTS,
   isDecor,
   isGift,
   isWearable,
+  type DecorCategory,
   type DecorDef,
   type DecorFit,
   type DecorVariant,
@@ -48,8 +52,17 @@ import {
 import { applyStatChanges } from './stats'
 import { traitAdjustedPrice } from './traits'
 
-export { ITEM_SLOTS, isDecor, isGift, isWearable }
-export type { DecorDef, DecorFit, DecorVariant, GiftDef, ItemDef, ItemSlot, WearableDef }
+export { DECOR_CATEGORIES, ITEM_SLOTS, isDecor, isGift, isWearable }
+export type {
+  DecorCategory,
+  DecorDef,
+  DecorFit,
+  DecorVariant,
+  GiftDef,
+  ItemDef,
+  ItemSlot,
+  WearableDef,
+}
 
 const MINUTES_PER_HOUR = 60
 
@@ -75,6 +88,8 @@ export interface OwnedDecor {
   readonly acquiredMinute: number
   /** The colour variant shown: one of the item's `decor.variants` ids. */
   readonly variant: string
+  /** Quarter turns on the grid (S40, src/engine/homeGrid.ts); absent means 0. */
+  readonly turn?: Turn
   /** Kept through prestige from a past run: a look only (as `OwnedWearable.prestigeKept`). */
   readonly prestigeKept?: true
 }
@@ -154,10 +169,19 @@ export function isItemSlot(slot: unknown): slot is ItemSlot {
 /** An item the shop sells. */
 export type ShopItemDef = WearableDef | GiftDef | DecorDef
 
-/** Items the shop sells now: wearables, gifts and decor (apartment upgrades arrive later). */
+/** True for a starter piece (S40): it comes with the home and is never bought or sold. */
+export function isStarterDecor(item: ItemDef): boolean {
+  return isDecor(item) && item.decor.starter
+}
+
+/**
+ * Items the shop sells now: wearables, gifts and decor, starter pieces aside (apartment upgrades
+ * arrive later).
+ */
 export function shopItems(config: EngineConfig): readonly ShopItemDef[] {
   return config.items.catalog.filter(
-    (item): item is ShopItemDef => isWearable(item) || isGift(item) || isDecor(item),
+    (item): item is ShopItemDef =>
+      isWearable(item) || isGift(item) || (isDecor(item) && !item.decor.starter),
   )
 }
 
@@ -209,7 +233,7 @@ export function buyItem(
 ): ItemResult<{ readonly price: number; readonly levelUp: LevelUp | null }> {
   const item = findItem(itemId, config)
   if (item === undefined) return { ok: false, error: { code: 'UNKNOWN_ITEM', itemId } }
-  if (!isWearable(item) && !isGift(item) && !isDecor(item)) {
+  if ((!isWearable(item) && !isGift(item) && !isDecor(item)) || isStarterDecor(item)) {
     return { ok: false, error: { code: 'NOT_FOR_SALE', itemId } }
   }
   const { cash, inventory } = snapshot.player
@@ -320,6 +344,8 @@ function sellDecor(
   const owned = inventory.decor.find((entry) => entry.itemId === itemId)
   if (owned === undefined) return { ok: false, error: { code: 'NOT_OWNED', itemId } }
   if (isPrestigeKept(owned)) return { ok: false, error: { code: 'PRESTIGE_KEPT', itemId } }
+  // A starter piece came with the home: it can go to storage, never back to a shop.
+  if (item.decor.starter) return { ok: false, error: { code: 'NOT_FOR_SALE', itemId } }
   const bonus = resaleBonusPts(snapshot.player, config)
   const amount = resaleValue(item, owned.acquiredMinute, snapshot.clock.minute, config, bonus)
   const placed = Object.fromEntries(

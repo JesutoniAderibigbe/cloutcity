@@ -140,6 +140,26 @@ describe('data/assets/catalog.json', () => {
     ])
   })
 
+  it('collapses across seams (Permissive) only for the far-away ambient LODs (S04l)', () => {
+    for (const model of catalog.models) {
+      const permissive = Object.values(model.tiers).some(
+        (tier) => 'flags' in tier && tier.flags !== undefined,
+      )
+      // The Blender bus is authored at its ambient size and needs no simplifying.
+      const simplifiedLod = model.id.endsWith('-ambient') && model.source !== 'clout-city-blender'
+      expect(permissive, model.id).toBe(simplifiedLod)
+    }
+    const [model] = catalog.models
+    if (model === undefined) throw new Error('empty catalog')
+    const withFlag = (flags: unknown) => ({
+      ...catalog,
+      models: [{ ...model, tiers: { ...model.tiers, low: { ratio: 0.5, error: 0.1, flags } } }],
+    })
+    expect(CatalogSchema.safeParse(withFlag(['Permissive'])).success).toBe(true)
+    expect(CatalogSchema.safeParse(withFlag(['LockBorder'])).success).toBe(false)
+    expect(CatalogSchema.safeParse(withFlag([])).success).toBe(false)
+  })
+
   it('leaves out the police car and records why (LEGAL)', () => {
     const entries = catalog.models.flatMap((model) => model.entries.map((entry) => entry.path))
     expect(entries.filter((path) => /police/i.test(path))).toEqual([])
