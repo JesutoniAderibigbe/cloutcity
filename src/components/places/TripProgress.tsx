@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { ignoreKeyRepeat } from '@/components/overlay/useActionGuard'
 import { copy } from '@/lib/copy'
 import { formatCount } from '@/lib/format'
 import { tripProgressText } from '@/lib/world/travelCopy'
@@ -52,6 +53,9 @@ export function TripProgress({ trip }: { readonly trip: ActiveTrip }) {
         data-trip-skip=""
         aria-label={copy('travel.skipLabel')}
         onClick={() => void import('@/state/tripDriver').then((module) => module.skipTrip())}
+        // Focus lands here while the Enter that started the trip may still be held (TRV-6): its
+        // repeats must not skip the trip.
+        onKeyDown={ignoreKeyRepeat}
         className="min-h-11 min-w-11 shrink-0 rounded-xl bg-raised px-3 text-sm font-bold text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
         {copy('travel.skip')}

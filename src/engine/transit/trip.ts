@@ -93,7 +93,9 @@ const MIN_PER_HOUR = 60
 
 /**
  * A taxi trip as a straight drive, for when the transit world is not available: the same speed,
- * detour, pickup, rush-hour slowdown and fare as `planTrip`'s taxi, without water or crossings.
+ * detour, pickup, rush-hour slowdown and fare as `planTrip`'s taxi, without water or crossings,
+ * over the straight distance times `taxi.estimateDetourFactor` so the estimate is an upper
+ * bound of the routed ride.
  */
 export function planDirect(
   from: LocalPoint,
@@ -110,15 +112,18 @@ export function planDirect(
   }
   const rushHour = isRushHour(minuteOfDay, config)
   const rushFactor = rushHour ? config.rushHour.taxiDurationMultiplier : 1
+  // An upper bound on the routed drive (TRV-5): blocking the geo download must never buy a
+  // cheaper or quicker ride than the bridges and tunnels allow.
+  const pathM = straight * config.taxi.estimateDetourFactor
   const driveMin =
-    ((straight * config.taxi.detourFactor) / M_PER_KM / config.taxi.speedKmh) *
+    ((pathM * config.taxi.detourFactor) / M_PER_KM / config.taxi.speedKmh) *
     MIN_PER_HOUR *
     rushFactor
   const leg: TaxiLeg = {
     mode: 'taxi',
     from,
     to,
-    distanceM: straight,
+    distanceM: pathM,
     minutes: config.taxi.pickupMin + driveMin,
     polyline: [from, to],
     crossingIds: [],
@@ -132,7 +137,7 @@ export function planDirect(
       to,
       legs: [leg],
       durationMin: minutes,
-      fare: taxiFare(straight, config),
+      fare: taxiFare(pathM, config),
       transfers: 0,
       walkedM: 0,
       rushHour,

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { lazyIsland } from '@/components/overlay/lazyIsland'
+import { log } from '@/lib/log'
 import { useOpenPlaceId, usePlaceAnnouncement } from '@/state/placeSheet'
 import { useActiveTrip } from '@/state/trip'
 
@@ -32,7 +33,11 @@ export function PlaceSheetMount() {
   useEffect(() => {
     // Inlined at build time (next.config.ts): production builds drop the hook entirely.
     if (process.env.NEXT_PUBLIC_TEST_HOOKS !== '1') return
-    void import('./placeTestHook').then((module) => module.installPlaceTestHook())
+    import('./placeTestHook').then(
+      (module) => module.installPlaceTestHook(),
+      // Offline before the chunk was cached: tests then see no hook, players never load it.
+      () => log.info('The place test hook could not load'),
+    )
   }, [])
 
   return (

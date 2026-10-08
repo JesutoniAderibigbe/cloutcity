@@ -365,6 +365,7 @@ function CityScene3D({
               avatarRef={avatarRef}
               groundY={groundY}
               palette={palette.travel}
+              gradientMap={built.gradientMap}
               config={config.travel}
               avatar={config.avatar}
               animation={travelAnimation}
