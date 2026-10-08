@@ -431,6 +431,7 @@ function CityScene3D({
               color={palette.player}
               toonRamp={palette.toonRamp}
               avatar={config.avatar}
+              characterMaxM={look.characterMaxM}
               model={playerModel}
               models={config.models}
               tier={tier}
@@ -469,6 +470,7 @@ function CityScene3D({
                   }
                   groundY={groundY}
                   config={config}
+                  characterMaxM={look.characterMaxM}
                   hidden={hidden}
                   night={lighting.nightGlow}
                 />

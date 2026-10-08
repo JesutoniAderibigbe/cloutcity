@@ -220,21 +220,27 @@ export interface TownsfolkConfig {
   readonly maxShown: PerAmbientTier<number>
   readonly focusRadiusM: PerAmbientTier<number>
   readonly showBelowDistanceM: PerAmbientTier<number>
+  readonly fadeShare: number
   readonly heightOfPlayer: number
   readonly frontM: number
   readonly spacingOfHeight: number
   readonly minRingOfHeight: number
   readonly epochS: number
-  readonly walkSpeedMps: number
+  readonly walkHeightsPerS: number
+  readonly easeS: number
+  readonly turnS: number
+  readonly turnLookOfHeight: number
+  readonly sidewalkOfHeight: number
+  readonly maxDetour: number
+  readonly accessM: number
   readonly maxWalkShare: number
   readonly neighbours: number
   readonly homeShare: number
   readonly poses: PerAmbientTier<readonly TownsfolkPose[]>
   readonly poseShare: { readonly talk: number; readonly wave: number }
-  readonly poseTime: { readonly idle: number; readonly talk: number; readonly wave: number }
+  readonly frames: { readonly walk: PerAmbientTier<number>; readonly stand: PerAmbientTier<number> }
+  readonly phaseGroups: PerAmbientTier<number>
   readonly faceJitterRad: number
-  readonly bobOfHeight: number
-  readonly bobHz: number
   readonly hair: readonly string[]
   readonly names: {
     readonly woman: readonly string[]
@@ -242,6 +248,64 @@ export interface TownsfolkConfig {
     readonly initials: string
   }
   readonly vibes: readonly string[]
+}
+
+/** One aircraft route of ambient.json `planes.routes` (S04q, schemas/scene.ts documents it). */
+export interface PlaneRouteConfig {
+  readonly id: string
+  readonly kind: 'arrival' | 'departure' | 'overflight' | 'helicopter'
+  /** Waypoints: [longitude, latitude, map altitude in metres]. */
+  readonly points: readonly (readonly [number, number, number])[]
+  readonly headwayS: number
+  readonly offsetS: number
+  readonly closed: boolean
+}
+
+/** ambient.json `planes` (S04q). */
+export interface PlanesConfig {
+  readonly maxShown: PerAmbientTier<number>
+  readonly helicopters: PerAmbientTier<number>
+  readonly speedMps: number
+  readonly lengthM: number
+  readonly scale: DistanceScale
+  readonly samplesPerSpan: number
+  readonly lookM: number
+  readonly bankGain: number
+  readonly maxBankRad: number
+  readonly fadeS: number
+  readonly helicopter: {
+    readonly speedMps: number
+    readonly lengthM: number
+    readonly rotorHz: number
+  }
+  readonly lights: {
+    readonly strobePeriodS: number
+    readonly strobeOnS: number
+    readonly beaconPeriodS: number
+    readonly navM: number
+  }
+  readonly colors: {
+    readonly body: string
+    readonly accent: string
+    readonly helicopter: string
+    readonly lamp: string
+    readonly red: string
+    readonly green: string
+    readonly white: string
+  }
+  readonly routes: readonly PlaneRouteConfig[]
+  readonly passing: {
+    readonly cellM: number
+    readonly headwayS: number
+    readonly lengthM: number
+    /** Lowest and highest map altitude over a passing line. */
+    readonly altM: readonly [number, number]
+    /** Share of a square the line's middle may stray from its centre. */
+    readonly jitter: number
+    readonly headingJitterRad: number
+    /** [longitude, latitude] of each airport the flows lead to. */
+    readonly airports: readonly (readonly [number, number])[]
+  }
 }
 
 export interface AmbientConfig {
@@ -277,6 +341,7 @@ export interface AmbientConfig {
     }
   }
   readonly townsfolk: TownsfolkConfig
+  readonly planes: PlanesConfig
 }
 
 // ---- simulation inputs -----------------------------------------------------------------------

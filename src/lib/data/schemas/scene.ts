@@ -228,6 +228,8 @@ const TownsfolkConfigSchema = z.strictObject({
   focusRadiusM: ambientTier(metres),
   /** Drawn only while the camera is at most this far from its target. */
   showBelowDistanceM: ambientTier(metres),
+  /** Over this last share of `showBelowDistanceM` the locals shrink away (no pop). */
+  fadeShare: z.number().gt(0).lt(1),
   /** A local's height as a share of the player's (scene.json `avatar`, × `playerScale`). */
   heightOfPlayer: z.number().gt(0).max(1.5),
   /** The hangout ring's centre this many metres in front of (south of) the place point. */
@@ -237,7 +239,20 @@ const TownsfolkConfigSchema = z.strictObject({
   minRingOfHeight: z.number().positive(),
   /** One hangout-then-walk cycle. */
   epochS: z.number().positive(),
-  walkSpeedMps: metres,
+  /** Walking pace in the local's own heights a second (a real person: about 0.75). */
+  walkHeightsPerS: z.number().positive().max(2),
+  /** Seconds a walk eases in and out over (no instant starts or stops). */
+  easeS: z.number().nonnegative(),
+  /** Seconds a local turns on the spot before setting off and after arriving. */
+  turnS: z.number().positive(),
+  /** Heading look-ahead round corners, in local heights (larger: wider, smoother turns). */
+  turnLookOfHeight: z.number().positive(),
+  /** Locals keep to the sidewalk this far (in their heights) beyond the street's kerb. */
+  sidewalkOfHeight: z.number().nonnegative(),
+  /** A street route longer than this × the straight line is walked straight instead. */
+  maxDetour: z.number().min(1),
+  /** The street node a place's walkers step onto is at most this far from its ring. */
+  accessM: metres,
   /** Walking takes at most this share of a cycle: farther places are never visited. */
   maxWalkShare: z.number().gt(0).lt(1),
   /** How many of the nearest places a local visits. */
@@ -255,11 +270,20 @@ const TownsfolkConfigSchema = z.strictObject({
   poseShare: z
     .strictObject({ talk: chance, wave: chance })
     .refine((share) => share.talk + share.wave <= 1, { error: 'pose shares exceed 1' }),
-  /** Where in its clip each standing pose is taken, as a share of the clip. */
-  poseTime: z.strictObject({ idle: unit, talk: unit, wave: unit }),
+  /**
+   * Animation frames baked from each pose's rig clip (src/scene/ambient/pedestrianKits.ts):
+   * the walk cycle, and each standing pose's (idle, talk, wave) loop.
+   */
+  frames: z.strictObject({
+    walk: ambientTier(z.int().min(2).max(32)),
+    stand: ambientTier(z.int().min(1).max(32)),
+  }),
+  /**
+   * Walkers are split into this many groups stepping out of phase with each other (each group
+   * one more set of draw calls per body), so a crowd never marches in step.
+   */
+  phaseGroups: ambientTier(z.int().min(1).max(4)),
   faceJitterRad: z.number().nonnegative(),
-  bobOfHeight: z.number().nonnegative(),
-  bobHz: z.number().positive(),
   /** Hair (and shoe) colours: the kits' `accent` bucket. */
   hair: z.array(HEX).min(1),
   names: z.strictObject({
@@ -269,6 +293,83 @@ const TownsfolkConfigSchema = z.strictObject({
   }),
   /** Vibe ids: copy keys `townsfolk.vibe.<id>`. */
   vibes: z.array(z.string().regex(/^[a-z][a-zA-Z0-9]*$/)).min(1),
+})
+
+const lngLatAlt = z.tuple([
+  z.number().min(-180).max(180),
+  z.number().min(-90).max(90),
+  z.number().nonnegative(),
+])
+
+/**
+ * The sky (S04q, src/lib/world/ambient/planes.ts): airliners on the Queens airports' approach and
+ * departure paths and a helicopter looping over Manhattan. Every tier flies at least one plane
+ * (DEC-52: always alive); altitudes are map altitudes, compressed like the game map's buildings.
+ */
+const PlanesConfigSchema = z.strictObject({
+  /** Airliners drawn at once (nearest the camera target first); at least 1 on every tier. */
+  maxShown: ambientTier(z.int().min(1).max(8)),
+  helicopters: ambientTier(z.int().min(0).max(2)),
+  speedMps: metres,
+  /** An airliner's real length; drawn larger far out (`scale`, as the cars are). */
+  lengthM: metres,
+  scale: distanceScale,
+  /** Curve samples between two waypoints. */
+  samplesPerSpan: z.int().min(2).max(64),
+  /** Heading, climb and bank look this far ahead and behind along the route. */
+  lookM: metres,
+  /** Bank per radian of heading change over 2 × `lookM`, capped at `maxBankRad`. */
+  bankGain: z.number().nonnegative(),
+  maxBankRad: z.number().nonnegative().max(1),
+  /** Seconds a flight grows in after take-off and shrinks away before landing. */
+  fadeS: z.number().positive(),
+  helicopter: z.strictObject({ speedMps: metres, lengthM: metres, rotorHz: z.number().positive() }),
+  lights: z.strictObject({
+    /** White wingtip strobes: a flash of `strobeOnS` every `strobePeriodS`. */
+    strobePeriodS: z.number().positive(),
+    strobeOnS: z.number().positive(),
+    /** The red beacon's blink period (half on, half off). */
+    beaconPeriodS: z.number().positive(),
+    /** Lamp box size, as a share of the aircraft's length. */
+    navM: z.number().positive().max(0.2),
+  }),
+  colors: z.strictObject({
+    body: HEX,
+    accent: HEX,
+    helicopter: HEX,
+    lamp: HEX,
+    red: HEX,
+    green: HEX,
+    white: HEX,
+  }),
+  routes: z
+    .array(
+      z.strictObject({
+        id: z.string().regex(/^[a-z0-9-]+$/),
+        kind: z.enum(['arrival', 'departure', 'overflight', 'helicopter']),
+        points: z.array(lngLatAlt).min(2),
+        /** Seconds between two flights on the route (a closed route loops one aircraft). */
+        headwayS: z.number().positive(),
+        offsetS: z.number().nonnegative(),
+        closed: z.boolean(),
+      }),
+    )
+    .min(1)
+    .refine((routes) => routes.some((route) => route.kind !== 'helicopter'), {
+      error: 'the sky needs at least one airliner route',
+    }),
+  /** Passing flights over the camera's part of the city (planes.ts documents them). */
+  passing: z.strictObject({
+    cellM: metres,
+    headwayS: z.number().positive(),
+    lengthM: metres,
+    altM: z
+      .tuple([z.number().nonnegative(), z.number().nonnegative()])
+      .refine(([low, high]) => low <= high, { error: 'low above high' }),
+    jitter: z.number().min(0).max(0.5),
+    headingJitterRad: z.number().nonnegative().max(1),
+    airports: z.array(z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)])).min(1),
+  }),
 })
 
 /**
@@ -368,6 +469,7 @@ export const AmbientConfigSchema = z.strictObject({
   /** How the vehicle kits sort baked colours into buckets (src/scene/ambient/vehicleKits.ts). */
   vehicleKit: VehicleKitConfigSchema,
   townsfolk: TownsfolkConfigSchema,
+  planes: PlanesConfigSchema,
 })
 export type AmbientConfigFile = z.infer<typeof AmbientConfigSchema>
 
@@ -413,6 +515,13 @@ const MapStyleSchema = z.strictObject({
    * elevated lines would otherwise meet the roofs of the masses under them.
    */
   subwayLiftM: z.number().nonnegative(),
+  /**
+   * The tallest the map's people (the player and the townsfolk) are ever drawn, in metres. They
+   * grow with the camera distance to stay readable, but never past this: about half the
+   * smallest building beside them (plots.json buildings on the game map, a Queens row house on
+   * the real one), so zooming out never shows people taller than the houses.
+   */
+  characterMaxM: metres,
   pins: z.strictObject({
     /** Venue pins float over their plot buildings (the places layer's lift). */
     venueLift: z.boolean(),

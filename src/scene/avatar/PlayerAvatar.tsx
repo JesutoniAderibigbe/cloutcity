@@ -22,7 +22,7 @@ import { usePlayerLook } from '@/state/playerLook'
 import { toScene } from '../geo/coords'
 import type { AvatarParts, AvatarStatus } from '../models/AvatarModel'
 import type { ModelsConfig, ModelTier } from '../models/types'
-import { avatarSize, buildAvatar, type AvatarConfig } from './buildAvatar'
+import { buildAvatar, mapCharacterHeight, type AvatarConfig } from './buildAvatar'
 import { lookTint, type LookTintTable } from './lookTint'
 import type { ResolvedLook } from './resolveLook'
 
@@ -45,6 +45,8 @@ interface PlayerAvatarProps {
   readonly color: string
   readonly toonRamp: readonly number[]
   readonly avatar: AvatarConfig
+  /** The map style's tallest person (scene.json `mapStyles.*.characterMaxM`). */
+  readonly characterMaxM: number
   readonly model: PlayerModel
   readonly models: ModelsConfig
   readonly tier: ModelTier
@@ -79,6 +81,7 @@ export function PlayerAvatar({
   color,
   toonRamp,
   avatar,
+  characterMaxM,
   model,
   models,
   tier,
@@ -136,13 +139,13 @@ export function PlayerAvatar({
   useEffect(() => {
     if (!(controls instanceof MapControls)) return
     const update = () => {
-      built.setHeight(avatarSize(controls.getDistance(), avatar) * avatar.playerScale)
+      built.setHeight(mapCharacterHeight(controls.getDistance(), avatar, characterMaxM))
       invalidate()
     }
     update()
     controls.addEventListener('change', update)
     return () => controls.removeEventListener('change', update)
-  }, [built, controls, avatar, invalidate])
+  }, [built, controls, avatar, characterMaxM, invalidate])
 
   const onStatus = useCallback(
     (status: AvatarStatus) => {

@@ -101,7 +101,7 @@
       "perDistance": 0.004,
       "max": 5
     },
-    "bobM": 0.06,
+    "bobM": 0,
     "bobHz": 1.8,
     "lookOnlyMarginM": 120,
     "palette": {
@@ -186,16 +186,23 @@
       "high": 2200
     },
     "showBelowDistanceM": {
-      "low": 3000,
-      "mid": 3500,
-      "high": 4000
+      "low": 2400,
+      "mid": 2800,
+      "high": 3200
     },
+    "fadeShare": 0.25,
     "heightOfPlayer": 0.95,
     "frontM": 40,
     "spacingOfHeight": 0.6,
     "minRingOfHeight": 0.45,
     "epochS": 120,
-    "walkSpeedMps": 26,
+    "walkHeightsPerS": 0.7,
+    "easeS": 0.9,
+    "turnS": 0.6,
+    "turnLookOfHeight": 0.8,
+    "sidewalkOfHeight": 0.35,
+    "maxDetour": 1.9,
+    "accessM": 220,
     "maxWalkShare": 0.6,
     "neighbours": 3,
     "homeShare": 0.6,
@@ -208,14 +215,24 @@
       "talk": 0.5,
       "wave": 0.15
     },
-    "poseTime": {
-      "idle": 0.25,
-      "talk": 0.4,
-      "wave": 0.3
+    "frames": {
+      "walk": {
+        "low": 8,
+        "mid": 12,
+        "high": 16
+      },
+      "stand": {
+        "low": 6,
+        "mid": 8,
+        "high": 10
+      }
+    },
+    "phaseGroups": {
+      "low": 1,
+      "mid": 1,
+      "high": 2
     },
     "faceJitterRad": 0.5,
-    "bobOfHeight": 0.025,
-    "bobHz": 1.6,
     "hair": [
       "#1c1714",
       "#2b1d14",
@@ -312,5 +329,163 @@
       "brunch",
       "bike"
     ]
+  },
+  "planes": {
+    "maxShown": {
+      "low": 1,
+      "mid": 3,
+      "high": 4
+    },
+    "helicopters": {
+      "low": 0,
+      "mid": 1,
+      "high": 1
+    },
+    "speedMps": 48,
+    "lengthM": 38,
+    "scale": {
+      "perDistance": 0.0025,
+      "max": 3
+    },
+    "samplesPerSpan": 16,
+    "lookM": 220,
+    "bankGain": 0.9,
+    "maxBankRad": 0.45,
+    "fadeS": 5,
+    "helicopter": {
+      "speedMps": 32,
+      "lengthM": 13,
+      "rotorHz": 1.6
+    },
+    "lights": {
+      "strobePeriodS": 1.4,
+      "strobeOnS": 0.12,
+      "beaconPeriodS": 1.1,
+      "navM": 0.05
+    },
+    "colors": {
+      "body": "#f4f5f7",
+      "accent": "#2c5aa0",
+      "helicopter": "#c8342b",
+      "lamp": "#3a3d42",
+      "red": "#ff2a1f",
+      "green": "#2bff6a",
+      "white": "#ffffff"
+    },
+    "routes": [
+      {
+        "id": "lga-31-river",
+        "kind": "arrival",
+        "headwayS": 100,
+        "offsetS": 0,
+        "closed": false,
+        "points": [
+          [-74.035, 40.9, 167],
+          [-74.0, 40.81, 160],
+          [-73.955, 40.79, 142],
+          [-73.915, 40.773, 119],
+          [-73.885, 40.756, 86],
+          [-73.851, 40.753, 52],
+          [-73.852, 40.765, 22],
+          [-73.866, 40.775, 0]
+        ]
+      },
+      {
+        "id": "lga-13-departures",
+        "kind": "departure",
+        "headwayS": 150,
+        "offsetS": 60,
+        "closed": false,
+        "points": [
+          [-73.881, 40.783, 0],
+          [-73.862, 40.772, 34],
+          [-73.82, 40.751, 97],
+          [-73.76, 40.73, 149],
+          [-73.66, 40.7, 167]
+        ]
+      },
+      {
+        "id": "jfk-31-arrivals",
+        "kind": "arrival",
+        "headwayS": 120,
+        "offsetS": 30,
+        "closed": false,
+        "points": [
+          [-73.52, 40.54, 167],
+          [-73.68, 40.592, 119],
+          [-73.75, 40.623, 49],
+          [-73.779, 40.64, 0]
+        ]
+      },
+      {
+        "id": "jfk-22-departures",
+        "kind": "departure",
+        "headwayS": 160,
+        "offsetS": 110,
+        "closed": false,
+        "points": [
+          [-73.765, 40.656, 0],
+          [-73.8, 40.632, 56],
+          [-73.88, 40.6, 127],
+          [-73.98, 40.585, 164],
+          [-74.12, 40.57, 167]
+        ]
+      },
+      {
+        "id": "crossing",
+        "kind": "overflight",
+        "headwayS": 240,
+        "offsetS": 200,
+        "closed": false,
+        "points": [
+          [-74.16, 40.735, 167],
+          [-73.98, 40.758, 167],
+          [-73.8, 40.772, 167],
+          [-73.6, 40.8, 167]
+        ]
+      },
+      {
+        "id": "east-river",
+        "kind": "overflight",
+        "headwayS": 180,
+        "offsetS": 90,
+        "closed": false,
+        "points": [
+          [-74.03, 40.6, 150],
+          [-74.0, 40.69, 144],
+          [-73.962, 40.745, 138],
+          [-73.935, 40.79, 138],
+          [-73.915, 40.88, 150]
+        ]
+      },
+      {
+        "id": "manhattan-tour",
+        "kind": "helicopter",
+        "headwayS": 1,
+        "offsetS": 0,
+        "closed": true,
+        "points": [
+          [-74.009, 40.701, 120],
+          [-74.022, 40.73, 190],
+          [-74.012, 40.762, 220],
+          [-73.993, 40.778, 220],
+          [-73.968, 40.752, 200],
+          [-73.974, 40.722, 180],
+          [-73.996, 40.703, 150]
+        ]
+      }
+    ],
+    "passing": {
+      "cellM": 1500,
+      "headwayS": 70,
+      "lengthM": 12000,
+      "altM": [110, 170],
+      "jitter": 0.25,
+      "headingJitterRad": 0.3,
+      "airports": [
+        [-73.874, 40.777],
+        [-73.7781, 40.6413]
+      ]
+    }
   }
 }

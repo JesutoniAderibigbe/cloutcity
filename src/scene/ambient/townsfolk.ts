@@ -3,16 +3,23 @@
  * the player's size (scene.json `avatar`: avatarSize × `playerScale` × `heightOfPlayer`), so they
  * read at the map's default view like the Sims-style crowds of a game map.
  *
- * Each kit (a body in one pose, baked rigid by pedestrianKits.ts) is one colour-bucket
- * InstancedMesh per bucket on the living city's own material (the blocks' program: zero new
- * shader programs), skin, top, bottom and hair recoloured per local. Only kits with a local in
- * view draw, so a tier pays 4 draw calls per pose and body it shows. Nothing here uses three's
- * raycast: a tap picks a local by its projected box on screen (`pick`), like the place pins.
+ * Each kit (a body in one pose, baked by pedestrianKits.ts into a loop of frames of its rig clip)
+ * is one colour-bucket InstancedMesh per bucket on the living city's own material (the blocks'
+ * program: zero new shader programs), skin, top, bottom and hair recoloured per local. The
+ * locals in one kit move in step: the kit's positions are rewritten when its loop reaches the
+ * next frame (S04q). Walkers step at the cadence their pace and drawn size call for, so their
+ * feet do not slide, and on tiers with `phaseGroups` > 1 they split into groups stepping out of
+ * phase. Standing locals play their idle, talk or wave loop. Only kits with a local in view
+ * draw, so a tier pays 4 draw calls per pose, body and phase group it shows. Nothing here uses
+ * three's raycast: a tap picks a local by its projected box on screen (`pick`), like the pins.
  *
  * Locals are NPCs, never players (UX-3): no ring, no chip, never counted as "online".
  */
 import {
+  BufferAttribute,
+  BufferGeometry,
   Color,
+  DynamicDrawUsage,
   Frustum,
   Group,
   Matrix4,
@@ -30,9 +37,14 @@ import {
   type TownsfolkVenue,
 } from '@/lib/world/ambient/townsfolk'
 import { selectDrawn } from '@/lib/world/ambient/select'
-import type { AmbientConfig, AmbientTier, TownsfolkPose } from '@/lib/world/ambient/types'
+import type {
+  AmbientConfig,
+  AmbientTier,
+  StreetGraph,
+  TownsfolkPose,
+} from '@/lib/world/ambient/types'
 import { kitMeshes, type KitMeshes } from './layer'
-import type { ScenePedestrianKit } from './pedestrianKits'
+import type { AnimatedKit } from './pedestrianKits'
 
 export interface TownsfolkLayerOptions {
   readonly tier: AmbientTier
@@ -41,10 +53,14 @@ export interface TownsfolkLayerOptions {
   readonly material: Material
   readonly groundY: number
   readonly venues: readonly TownsfolkVenue[]
-  /** The player's drawn height for a camera distance (avatarSize × playerScale). */
+  /** The player's drawn height for a camera distance (buildAvatar.ts mapCharacterHeight). */
   readonly playerHeight: (distance: number) => number
+  /** The player's tallest (the map style's `characterMaxM`): what walks are planned for. */
+  readonly playerMaxHeight: number
+  /** The street graph the cars drive (null when the streets did not load: walks go straight). */
+  readonly graph: () => Promise<StreetGraph | null>
   /** Body-major kits: kit = body × poses + pose (pedestrianKits.ts bakeTownsfolkKits). */
-  readonly kits: () => Promise<readonly ScenePedestrianKit[]>
+  readonly kits: () => Promise<readonly AnimatedKit[]>
   readonly onChange: () => void
   readonly onFailure?: (reason: string) => void
 }
@@ -99,6 +115,53 @@ const MIN_TAP_HALF_WIDTH_PX = 14
 /** A local's tap box half-width as a share of its height on screen. */
 const TAP_HALF_WIDTH_SHARE = 0.22
 
+/**
+ * The locals' size multiplier at a camera distance: 1, then over the last `share` of
+ * `showBelowM` an eased shrink to 0, so pulling back never pops them out.
+ */
+export function farFade(distance: number, showBelowM: number, share: number): number {
+  const from = showBelowM * (1 - share)
+  if (distance <= from) return 1
+  const u = Math.max(0, Math.min(1, (showBelowM - distance) / (showBelowM - from)))
+  return u * u * (3 - 2 * u)
+}
+
+/** The longest step a walk loop advances in one update (a tab coming back skips, not races). */
+const MAX_STEP_S = 0.25
+
+/** Flat per-triangle normals of a non-indexed position array (9 floats a triangle). */
+export function flatNormals(positions: ArrayLike<number>, out: Float32Array): void {
+  for (let i = 0; i + 8 < positions.length; i += 9) {
+    const ax = positions[i] ?? 0
+    const ay = positions[i + 1] ?? 0
+    const az = positions[i + 2] ?? 0
+    const ux = (positions[i + 3] ?? 0) - ax
+    const uy = (positions[i + 4] ?? 0) - ay
+    const uz = (positions[i + 5] ?? 0) - az
+    const vx = (positions[i + 6] ?? 0) - ax
+    const vy = (positions[i + 7] ?? 0) - ay
+    const vz = (positions[i + 8] ?? 0) - az
+    let nx = uy * vz - uz * vy
+    let ny = uz * vx - ux * vz
+    let nz = ux * vy - uy * vx
+    const length = Math.hypot(nx, ny, nz)
+    if (length > 0) {
+      nx /= length
+      ny /= length
+      nz /= length
+    } else {
+      nx = 0
+      ny = 1
+      nz = 0
+    }
+    for (let k = 0; k < 9; k += 3) {
+      out[i + k] = nx
+      out[i + k + 1] = ny
+      out[i + k + 2] = nz
+    }
+  }
+}
+
 const EMPTY: TownsfolkView = {
   status: 'loading',
   drawn: 0,
@@ -115,7 +178,7 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
   const cap = tf.maxShown[tier]
   const poses: readonly TownsfolkPose[] = tf.poses[tier]
   const palette = config.pedestrians.palette
-  const sim: TownsfolkSim = createTownsfolkSim({
+  const simOptions = {
     venues: options.venues,
     seed: config.seed,
     config: tf,
@@ -125,7 +188,11 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
       tops: palette.tops.length,
       bottoms: palette.bottoms.length,
     },
-  })
+    heightM: options.playerMaxHeight * tf.heightOfPlayer,
+  }
+  // Until the streets arrive the locals are not drawn (their walks depend on the routes).
+  let sim: TownsfolkSim = createTownsfolkSim({ ...simOptions, graph: null })
+  // Profiles and order never depend on the graph: ids resolve the same before and after.
   const byId = new Map(sim.residents.map((r, i) => [r.profile.id, i]))
   const skins = palette.skin.map((hex) => new Color(hex))
   const tops = palette.tops.map((hex) => new Color(hex))
@@ -135,31 +202,66 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
   let disposed = false
   let status: TownsfolkView['status'] = cap === 0 ? 'ready' : 'loading'
   let last: TownsfolkView = { ...EMPTY, status }
+  /** One phase group of one kit: its own geometry (its frame) and meshes. */
+  interface Stepper {
+    readonly kit: AnimatedKit
+    readonly meshes: KitMeshes
+    readonly geometries: readonly BufferGeometry[]
+    /** This group's offset into the loop, 0..1. */
+    readonly offset: number
+    /** Loops walked so far (walkers integrate it: their cadence follows their drawn size). */
+    loops: number
+    frame: number
+  }
+  /** steppers[kit][group]. */
+  let steppers: Stepper[][] = []
   let kits: KitMeshes[] = []
-  let kitHeights: number[] = []
   let disposeKits = () => {}
+
+  const stepperFor = (kit: AnimatedKit, g: number, groups: number): Stepper => {
+    const geometries = kit.parts.map((part) => {
+      const geometry = new BufferGeometry()
+      const position = new BufferAttribute(
+        Float32Array.from(part.geometry.getAttribute('position').array),
+        3,
+      )
+      const normal = new BufferAttribute(
+        Float32Array.from(part.geometry.getAttribute('normal').array),
+        3,
+      )
+      position.setUsage(DynamicDrawUsage)
+      normal.setUsage(DynamicDrawUsage)
+      geometry.setAttribute('position', position)
+      geometry.setAttribute('normal', normal)
+      return geometry
+    })
+    const meshes = kitMeshes(
+      `townsfolk-${kit.id}-${g}`,
+      kit.parts.map((part, p) => ({ ...part, geometry: geometries[p] ?? part.geometry })),
+      cap,
+      material,
+      new Set(['skin', 'top', 'bottom', 'accent']),
+      kit.triangles,
+    )
+    return { kit, meshes, geometries, offset: g / groups, loops: 0, frame: 0 }
+  }
 
   async function load() {
     try {
-      const loaded = await options.kits()
+      const [loaded, graph] = await Promise.all([options.kits(), options.graph().catch(() => null)])
       if (disposed) {
         for (const kit of loaded) kit.dispose()
         return
       }
+      sim = createTownsfolkSim({ ...simOptions, graph })
       disposeKits = () => {
         for (const kit of loaded) kit.dispose()
       }
-      kits = loaded.map((kit) =>
-        kitMeshes(
-          `townsfolk-${kit.id}`,
-          kit.parts,
-          cap,
-          material,
-          new Set(['skin', 'top', 'bottom', 'accent']),
-          kit.triangles,
-        ),
-      )
-      kitHeights = loaded.map((kit) => kit.heightM)
+      steppers = loaded.map((kit) => {
+        const groups = kit.pose === 'walk' ? Math.max(1, tf.phaseGroups[tier]) : 1
+        return Array.from({ length: groups }, (_, g) => stepperFor(kit, g, groups))
+      })
+      kits = steppers.flatMap((list) => list.map((stepper) => stepper.meshes))
       for (const kit of kits) for (const mesh of kit.meshes) group.add(mesh)
       status = 'ready'
       options.onChange()
@@ -205,6 +307,52 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
     }
   }
 
+  /** City time of the last update: walkers' loops advance by the time since. */
+  let lastS: number | null = null
+  /**
+   * Moves every kit's loop on to `tS`. Standing loops are a pure function of the clock; a walk
+   * loop advances at the cadence that keeps a planted foot still for a local `h` tall walking
+   * the sim's pace (pace / (loop length × h) loops a second). A paused or frozen city passes the
+   * same time again, so nothing moves.
+   */
+  function advance(tS: number, h: number): void {
+    const dt = lastS === null ? 0 : Math.max(0, Math.min(MAX_STEP_S, tS - lastS))
+    lastS = tS
+    const pace = tf.walkHeightsPerS * options.playerMaxHeight * tf.heightOfPlayer
+    for (const list of steppers) {
+      for (const stepper of list) {
+        const { kit } = stepper
+        if (kit.cycleHeights > 0 && h > 0) {
+          stepper.loops = (stepper.loops + (dt * pace) / (kit.cycleHeights * h)) % 1
+        } else if (kit.durationS > 0) {
+          stepper.loops = (tS / kit.durationS) % 1
+        }
+      }
+    }
+  }
+
+  /** Writes a drawn kit's current frame into its geometry when the loop reached a new one. */
+  function showFrame(stepper: Stepper): void {
+    if (stepper.meshes.count === 0) return
+    const frames = stepper.kit.frames
+    const u = (stepper.loops + stepper.offset) % 1
+    const f = Math.min(frames.length - 1, Math.floor(u * frames.length))
+    if (f === stepper.frame && stepper.geometries[0]?.userData.shown === true) return
+    stepper.frame = f
+    const frame = frames[f]
+    stepper.geometries.forEach((geometry, p) => {
+      const source = frame?.[p]
+      const position = geometry.getAttribute('position')
+      const normal = geometry.getAttribute('normal')
+      if (source === undefined || !(position instanceof BufferAttribute)) return
+      position.array.set(source)
+      flatNormals(source, normal.array as Float32Array)
+      position.needsUpdate = true
+      normal.needsUpdate = true
+      geometry.userData.shown = true
+    })
+  }
+
   function update(input: TownsfolkUpdate): TownsfolkView {
     for (const kit of kits) kit.count = 0
     drawnCount = 0
@@ -216,12 +364,13 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
       frustum.setFromProjectionMatrix(projection)
       camera.getWorldPosition(cameraPosition)
       const h = options.playerHeight(input.distance) * tf.heightOfPlayer
+      const fade = farFade(input.distance, tf.showBelowDistanceM[tier], tf.fadeShare)
+      advance(input.tS, h)
       const n = sim.collect(
         input.targetX,
         input.targetY,
         tf.focusRadiusM[tier],
         input.tS,
-        h,
         input.share,
       )
       if (n > dist.length) {
@@ -248,12 +397,14 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
         const r = sim.residents[s.resident]
         if (r === undefined) continue
         const kitIndex = r.body * poses.length + Math.max(0, poses.indexOf(s.pose))
-        const kit = kits[kitIndex]
-        const kitHeight = kitHeights[kitIndex] ?? 1
-        if (kit === undefined || kitHeight <= 0) continue
+        const groupList = steppers[kitIndex]
+        const stepper = groupList?.[r.hash % Math.max(1, groupList.length)]
+        const kitHeight = stepper?.kit.heightM ?? 0
+        if (stepper === undefined || kitHeight <= 0) continue
+        const kit = stepper.meshes
         const slot = kit.count++
-        const size = h / kitHeight
-        position.set(s.x, groundY + s.lift, -s.y)
+        const size = (h * fade) / kitHeight
+        position.set(s.x, groundY, -s.y)
         quaternion.setFromAxisAngle(up, s.yaw)
         scale.set(size, size, size)
         matrix.compose(position, quaternion, scale)
@@ -275,6 +426,7 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
         drawnCount++
       }
     }
+    for (const list of steppers) for (const stepper of list) showFrame(stepper)
     let drawCalls = 0
     let kitsDrawn = 0
     for (const kit of kits) {
@@ -365,6 +517,9 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
       disposed = true
       group.removeFromParent()
       for (const kit of kits) for (const mesh of kit.meshes) mesh.dispose()
+      for (const list of steppers) {
+        for (const stepper of list) for (const geometry of stepper.geometries) geometry.dispose()
+      }
       disposeKits()
     },
   }
