@@ -21,7 +21,8 @@ describe('resolveLook', () => {
     expect(resolved.parts.rig.id).toBe(frame?.rig)
     expect(resolved.parts.head.id).toBe(frame?.head)
     expect(resolved.parts.body.id).toBe(outfit?.variants[base.body])
-    expect(resolved.parts.attachments?.map((a) => a.ref.id)).toEqual(['hair-bob'])
+    // The woman frame always wears its scalp cap (S16b), coloured with the skin tone.
+    expect(resolved.parts.attachments?.map((a) => a.ref.id)).toEqual(['scalp-cap-f', 'hair-bob'])
     expect(resolved.colors.head).toEqual({
       skin: hexOf(options.skinTones, base.skin),
       hair: hexOf(options.hairColors, base.hairColor),
@@ -33,6 +34,11 @@ describe('resolveLook', () => {
       shoes: hexOf(options.garmentColors, base.shoes),
     })
     expect(resolved.parts.attachments?.[0]).toMatchObject({
+      joint: 'head',
+      offset: [0, 0, 0],
+      colors: { skin: hexOf(options.skinTones, base.skin) },
+    })
+    expect(resolved.parts.attachments?.[1]).toMatchObject({
       joint: 'head',
       offset: [0, 0, 0],
       colors: { hair: hexOf(options.hairColors, base.hairColor) },
@@ -49,11 +55,14 @@ describe('resolveLook', () => {
     expect(resolved.parts.body.id).toBe('outfit-m-suit')
   })
 
-  it('skips a model pending its refit and lists it as missing, so the look still draws', () => {
+  it('draws the refitted Blender attachments, nothing pending (S16b P2a)', () => {
     const resolved = resolve({ ...base, hairStyle: 'afro', eyewear: 'glasses' })
-    expect(resolved.parts.attachments).toEqual([])
-    expect([...resolved.missing].sort()).toEqual(['glasses', 'hair-afro'])
-    for (const id of ['hair-afro', 'glasses']) expect(avatarRefs.models[id], id).toBeUndefined()
+    expect(resolved.parts.attachments?.map((a) => a.ref.id)).toEqual([
+      'scalp-cap-f',
+      'hair-afro',
+      'glasses',
+    ])
+    expect(resolved.missing).toEqual([])
   })
 
   it('a head covering hides the hair piece', () => {

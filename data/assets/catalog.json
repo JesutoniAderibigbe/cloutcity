@@ -4776,7 +4776,12 @@
       "loadPhase": "after-playable",
       "instanced": false,
       "nameKey": "models.name.avatarRigF",
-      "joints": "modular"
+      "joints": "modular",
+      "extraClips": {
+        "source": "clout-city-blender",
+        "path": "avatar-clips-f.glb",
+        "clips": ["talk", "sit"]
+      }
     },
     {
       "id": "avatar-rig-m",
@@ -4834,7 +4839,12 @@
       "loadPhase": "after-playable",
       "instanced": false,
       "nameKey": "models.name.avatarRigM",
-      "joints": "modular"
+      "joints": "modular",
+      "extraClips": {
+        "source": "clout-city-blender",
+        "path": "avatar-clips-m.glb",
+        "clips": ["talk", "sit"]
+      }
     },
     {
       "id": "npc-woman",

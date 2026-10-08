@@ -269,7 +269,7 @@ Models: none yet.
 | `glasses.glb`           |  7804 | `ece88e956a205d90e2d7dcd2cea670d55eef60fde5e3926f948c881dd81882ad` | `scripts/blender/avatar/glasses.py`           |
 | `sunglasses.glb`        |  7004 | `511c2f4aa0832fdd78ff78a9a3c73770a20f548d968a566ababdc053eb499cad` | `scripts/blender/avatar/sunglasses.py`        |
 | `hearing-aid.glb`       |  7516 | `19e029befc3bdedb7db043c4c511457db9f9126e766ee62968ecb441da72ebb8` | `scripts/blender/avatar/hearing-aid.py`       |
-| `scalp-cap-f.glb`       |  5440 | `08341d0ee424da3fdb12171b91aa2dd03e19cc2fccdd5995ae4088a604b1963a` | `scripts/blender/avatar/scalp-cap-f.py`       |
+| `scalp-cap-f.glb`       |  5444 | `60e5ce074a4201a351e4d46a16349b841634453994ad5a621315d0c1660338b8` | `scripts/blender/avatar/scalp-cap-f.py`       |
 | `bus-ambient.glb`       | 26144 | `df09f31903349ff9fc1f39fc00ebe62abea47ae1e0222e6dbedcfadeecfdcc06` | `scripts/blender/vehicles/bus-ambient.py`     |
 
 Models: `bus-ambient`, `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`, `hair-afro`, `hair-locs`, `hair-box-braids`, `hair-cornrows`, `hair-buzz`, `headwear-hijab`, `headwear-turban`, `headwear-durag`, `headwear-beanie`, `headwear-ballcap`, `glasses`, `sunglasses`, `hearing-aid`, `scalp-cap-f`.

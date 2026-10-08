@@ -32,7 +32,7 @@ describe('data/assets/manifest.json', () => {
         instanced: model.instanced,
         nameKey: model.nameKey,
         slots: model.slots.map((slot) => slot.name),
-        clips: model.clips.map(clipName),
+        clips: [...model.clips.map(clipName), ...(model.extraClips?.clips ?? [])],
       })
     }
   })

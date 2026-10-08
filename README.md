@@ -239,7 +239,9 @@ sha-matching file into `.cache/assets/` by hand and build with `-- --offline`.
   ratio, slots match source `materials` and `meshes`, and `joints` names a catalog `jointMaps`
   entry that folds fingers and pole targets into the wrist and foot and renames every joint to
   kebab-case (`Chest` becomes `torso`, `Head` `head`). A static model with `fromSkinned` cuts a
-  pack hairstyle from a skinned head in the bind pose. Rig `clips` may rename (`{from, as}`).
+  pack hairstyle from a skinned head in the bind pose. Rig `clips` may rename (`{from, as}`), and
+  `extraClips` adds clips from a committed Blender output (the S16b `talk`/`sit` retarget,
+  `scripts/blender/out/avatar-clips-{f,m}.glb`), bound to the rig's joints by name.
   These parts ship indexed without normals and with meshopt filters; the runtime flat-shades
   them (`src/scene/models/prepare.ts`). The build also writes `data/avatar/frame.json`, each
   part's material bounds and each rig's joint positions in the bind pose, which the Blender

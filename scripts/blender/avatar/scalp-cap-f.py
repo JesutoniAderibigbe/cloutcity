@@ -506,13 +506,14 @@ def build(bpy, ctx):
     parts = Parts()
     skin = "#c18a5f"
     cap = Frame(ctx)
-    # Inside the hair skull everywhere, so every hairstyle and covering hides it.
-    cap.radii = (frame.radii[0] - 0.003, frame.radii[1] - 0.003, frame.radii[2] - 0.012)
+    # Inside the hair skull and the pack hairstyles everywhere, so every hairstyle and covering
+    # hides it.
+    cap.radii = (frame.radii[0] - 0.007, frame.radii[1] - 0.012, frame.radii[2] - 0.016)
     edge = cap.hairline(((90, frame.eye_y + 0.030), (50, frame.eye_y - 0.020), (0, frame.eye_y - 0.034), (-90, frame.eye_y - 0.075)))
     parts.shell(skin, cap, edge, lambda _t: 0.0, 8, 4)
     check_triangles("scalp-cap-f", parts, 120)
     pts = parts.points()
-    if max(p[1] for p in pts) < frame.top - 0.004:
+    if max(p[1] for p in pts) < frame.top - 0.013:
         raise RuntimeError("scalp-cap-f: does not close the crown")
     if max(frame.skull_norm(p) for p in pts) > 1.0:
         raise RuntimeError("scalp-cap-f: pokes out of the hair skull")

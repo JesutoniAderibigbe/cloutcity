@@ -5,6 +5,7 @@
       "id": "woman",
       "head": "head-f",
       "rig": "avatar-rig-f",
+      "scalpCap": "scalp-cap-f",
       "nameKey": "avatar.body.woman"
     },
     {
@@ -351,6 +352,7 @@
         "woman": "outfit-w-outdoors",
         "man": "outfit-m-outdoors"
       },
+      "hides": ["acc-subway-tote"],
       "nameKey": "avatar.outfit.outdoors"
     },
     {

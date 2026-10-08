@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "1aa7d262d8680b64",
+  "assetVersion": "e32255af2964d7d8",
   "models": [
     {
       "id": "taxi",
@@ -2408,31 +2408,31 @@
       "loadPhase": "creator",
       "instanced": false,
       "nameKey": "models.name.scalpCapF",
-      "bounds": { "min": [-0.0902, 1.6259, -0.0446], "max": [0.0902, 1.8237, 0.1318] },
+      "bounds": { "min": [-0.0862, 1.6238, -0.0407], "max": [0.0862, 1.8147, 0.1279] },
       "slots": ["skin"],
       "attach": "head",
       "emissive": false,
       "clips": [],
       "tiers": {
         "low": {
-          "file": "/models/scalp-cap-f.high.668c0897.glb",
-          "sha256": "668c08971fea70ed4ab5c818bfb60b68d758f1aa8d4b1bd909ef7f99d8f3d46e",
-          "bytes": 4108,
-          "gzBytes": 2170,
+          "file": "/models/scalp-cap-f.high.b6632a9f.glb",
+          "sha256": "b6632a9fe77a74fe7b10d5507ca9d63003bfa4cef5bda2b114495d00915670fa",
+          "bytes": 4104,
+          "gzBytes": 2175,
           "triangles": 56
         },
         "mid": {
-          "file": "/models/scalp-cap-f.high.668c0897.glb",
-          "sha256": "668c08971fea70ed4ab5c818bfb60b68d758f1aa8d4b1bd909ef7f99d8f3d46e",
-          "bytes": 4108,
-          "gzBytes": 2170,
+          "file": "/models/scalp-cap-f.high.b6632a9f.glb",
+          "sha256": "b6632a9fe77a74fe7b10d5507ca9d63003bfa4cef5bda2b114495d00915670fa",
+          "bytes": 4104,
+          "gzBytes": 2175,
           "triangles": 56
         },
         "high": {
-          "file": "/models/scalp-cap-f.high.668c0897.glb",
-          "sha256": "668c08971fea70ed4ab5c818bfb60b68d758f1aa8d4b1bd909ef7f99d8f3d46e",
-          "bytes": 4108,
-          "gzBytes": 2170,
+          "file": "/models/scalp-cap-f.high.b6632a9f.glb",
+          "sha256": "b6632a9fe77a74fe7b10d5507ca9d63003bfa4cef5bda2b114495d00915670fa",
+          "bytes": 4104,
+          "gzBytes": 2175,
           "triangles": 56
         }
       }
@@ -3330,27 +3330,27 @@
       "nameKey": "models.name.avatarRigF",
       "slots": [],
       "emissive": false,
-      "clips": ["idle", "walk", "run", "wave", "interact"],
+      "clips": ["idle", "walk", "run", "wave", "interact", "talk", "sit"],
       "tiers": {
         "low": {
-          "file": "/models/avatar-rig-f.high.f8e04087.glb",
-          "sha256": "f8e04087413bf9f185da7ead1ed558e71bd7ebffbb53d6861dce5054e48793f5",
-          "bytes": 58504,
-          "gzBytes": 14700,
+          "file": "/models/avatar-rig-f.high.6982f196.glb",
+          "sha256": "6982f196a6cb1669937fffa4fe8cf9eebd20c94184a354e1920dbbc6b2406f8b",
+          "bytes": 80928,
+          "gzBytes": 21765,
           "triangles": 0
         },
         "mid": {
-          "file": "/models/avatar-rig-f.high.f8e04087.glb",
-          "sha256": "f8e04087413bf9f185da7ead1ed558e71bd7ebffbb53d6861dce5054e48793f5",
-          "bytes": 58504,
-          "gzBytes": 14700,
+          "file": "/models/avatar-rig-f.high.6982f196.glb",
+          "sha256": "6982f196a6cb1669937fffa4fe8cf9eebd20c94184a354e1920dbbc6b2406f8b",
+          "bytes": 80928,
+          "gzBytes": 21765,
           "triangles": 0
         },
         "high": {
-          "file": "/models/avatar-rig-f.high.f8e04087.glb",
-          "sha256": "f8e04087413bf9f185da7ead1ed558e71bd7ebffbb53d6861dce5054e48793f5",
-          "bytes": 58504,
-          "gzBytes": 14700,
+          "file": "/models/avatar-rig-f.high.6982f196.glb",
+          "sha256": "6982f196a6cb1669937fffa4fe8cf9eebd20c94184a354e1920dbbc6b2406f8b",
+          "bytes": 80928,
+          "gzBytes": 21765,
           "triangles": 0
         }
       }
@@ -3364,27 +3364,27 @@
       "nameKey": "models.name.avatarRigM",
       "slots": [],
       "emissive": false,
-      "clips": ["idle", "walk", "run", "wave", "interact"],
+      "clips": ["idle", "walk", "run", "wave", "interact", "talk", "sit"],
       "tiers": {
         "low": {
-          "file": "/models/avatar-rig-m.high.9e26cfe8.glb",
-          "sha256": "9e26cfe8adb5c070c2578e90dc70e84c680b08676ef785634cc3392e18af93d5",
-          "bytes": 59348,
-          "gzBytes": 15463,
+          "file": "/models/avatar-rig-m.high.992618a5.glb",
+          "sha256": "992618a549cdef9117d59b6c4d87fe0db165138729f9425c6ee50b69ff4f903a",
+          "bytes": 82108,
+          "gzBytes": 22514,
           "triangles": 0
         },
         "mid": {
-          "file": "/models/avatar-rig-m.high.9e26cfe8.glb",
-          "sha256": "9e26cfe8adb5c070c2578e90dc70e84c680b08676ef785634cc3392e18af93d5",
-          "bytes": 59348,
-          "gzBytes": 15463,
+          "file": "/models/avatar-rig-m.high.992618a5.glb",
+          "sha256": "992618a549cdef9117d59b6c4d87fe0db165138729f9425c6ee50b69ff4f903a",
+          "bytes": 82108,
+          "gzBytes": 22514,
           "triangles": 0
         },
         "high": {
-          "file": "/models/avatar-rig-m.high.9e26cfe8.glb",
-          "sha256": "9e26cfe8adb5c070c2578e90dc70e84c680b08676ef785634cc3392e18af93d5",
-          "bytes": 59348,
-          "gzBytes": 15463,
+          "file": "/models/avatar-rig-m.high.992618a5.glb",
+          "sha256": "992618a549cdef9117d59b6c4d87fe0db165138729f9425c6ee50b69ff4f903a",
+          "bytes": 82108,
+          "gzBytes": 22514,
           "triangles": 0
         }
       }

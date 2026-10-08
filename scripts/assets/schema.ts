@@ -318,6 +318,17 @@ export const ModelSchema = z
     slots: z.array(SlotSchema),
     /** Rig only: animation clips kept (everything else is dropped), optionally renamed. */
     clips: z.array(ClipSchema),
+    /**
+     * Rig only (S16b): clips added from another source's file, matched to the rig's joints by
+     * name after the joint map (the Blender talk/sit retarget, scripts/blender/out).
+     */
+    extraClips: z
+      .strictObject({
+        source: IdSchema,
+        path: z.string().regex(/^[\w./-]+\.glb$/),
+        clips: z.array(IdSchema).min(1),
+      })
+      .optional(),
     loadPhase: z.enum(MODEL_LOAD_PHASES),
     /** Drawn many times at once (InstancedMesh in Part 2). */
     instanced: z.boolean(),
@@ -331,6 +342,10 @@ export const ModelSchema = z
   .refine((model) => model.kind !== 'rig' || model.clips.length > 0, {
     error: 'a rig needs at least one clip',
     path: ['clips'],
+  })
+  .refine((model) => model.kind === 'rig' || model.extraClips === undefined, {
+    error: 'only rig models take extra clips',
+    path: ['extraClips'],
   })
   .refine((model) => model.kind === 'skinned' || model.strip === undefined, {
     error: 'only skinned models strip triangles',

@@ -61,11 +61,12 @@ const plain = (list: readonly { id: string; nameKey: string }[]): LookChoice[] =
   list.map(({ id, nameKey }) => ({ id, nameKey }))
 
 /** Options whose model is still pending its refit (S16b, data/avatar/compat.json) are not offered. */
+const pending: readonly string[] = compatJson.pending
 const drawn = (list: readonly { id: string; nameKey: string; model?: string; piece?: string }[]) =>
   plain(
     list.filter((option) => {
       const model = option.model ?? option.piece
-      return model === undefined || !compatJson.pending.includes(model)
+      return model === undefined || !pending.includes(model)
     }),
   )
 

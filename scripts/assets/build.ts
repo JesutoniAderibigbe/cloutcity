@@ -99,6 +99,15 @@ export function catalogProblems(
         }
       }
     }
+    if (model.extraClips !== undefined) {
+      const extra = model.extraClips
+      const from = catalog.sources.find((entry) => entry.id === extra.source)
+      if (from?.download.kind !== 'local') {
+        problems.push(`${model.id}: extra clips must come from a local Blender source`)
+      } else if (!blender.models.some((built) => `${built.id}.glb` === extra.path)) {
+        problems.push(`${model.id}: ${extra.path} is not a model in scripts/blender/lock.json`)
+      }
+    }
   }
   return problems
 }
@@ -278,6 +287,7 @@ export async function buildAssets(
       maxDeltaE: catalog.maxDeltaE,
       grade: source.grade,
       jointMaps: catalog.jointMaps ?? {},
+      packs,
     })
     for (const warning of result.warnings) log(`warn ${model.id}: ${warning}`)
     const colours = [...result.colours.entries()]

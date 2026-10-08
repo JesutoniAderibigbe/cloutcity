@@ -54,7 +54,8 @@ describe('the Look step as data (S16a, GR-12)', () => {
     expect(lookChoices('skin', base, options)).toHaveLength(options.skinTones.length)
     // Pending styles (S16b P2a) are not offered yet.
     const pendingStyles = options.hairStyles.filter(
-      (style) => style.piece !== undefined && compat.pending.includes(style.piece),
+      (style) =>
+        style.piece !== undefined && (compat.pending as readonly string[]).includes(style.piece),
     )
     expect(lookChoices('hairStyle', base, options)).toHaveLength(
       options.hairStyles.length - pendingStyles.length,

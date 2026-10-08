@@ -21,6 +21,7 @@ import {
   Document,
   GLB_BUFFER,
   NodeIO,
+  type Accessor,
   type ILogger,
   type Mesh,
   type Node,
@@ -85,6 +86,8 @@ export interface BuildContext {
   readonly grade: Grade
   /** The catalog's joint maps (S16b), by id. */
   readonly jointMaps: Readonly<Record<string, JointMap>>
+  /** Every pack by source id, for a rig's `extraClips` (S16b). */
+  readonly packs?: ReadonlyMap<string, Pack>
 }
 
 /** Collects glTF Transform's warnings so the build prints them per model instead of console. */
@@ -808,6 +811,7 @@ async function buildSkinned(
     for (const sampler of animation.listSamplers()) sampler.dispose()
     animation.dispose()
   }
+  if (model.extraClips !== undefined) await addExtraClips(model, doc, ctx, logger)
 
   // One uniform scale at the top of the hierarchy: skinning, bind matrices and clips stay valid,
   // and every head, body and the rig share it, so parts from different characters line up.
@@ -832,6 +836,76 @@ async function buildSkinned(
       ? { joints: jointPositions(skin, scale), materials: {} }
       : undefined
   return { doc, bounds: box, emissive, counts, ...(frame === undefined ? {} : { frame }) }
+}
+
+/**
+ * Copies a rig's `extraClips` (S16b: talk and sit, retargeted in Blender onto this rig's renamed
+ * joints) into the rig document, each channel bound to the rig joint of the same name.
+ */
+async function addExtraClips(model: Model, doc: Document, ctx: BuildContext, logger: ILogger) {
+  const extra = model.extraClips
+  if (extra === undefined) return
+  const pack = ctx.packs?.get(extra.source)
+  if (pack === undefined) {
+    throw new Error(`${model.id}: extra clips source ${extra.source} is not loaded`)
+  }
+  const from = await loadEntry(pack, extra.path, logger)
+  const nodes = new Map(
+    doc
+      .getRoot()
+      .listNodes()
+      .map((node) => [node.getName(), node]),
+  )
+  const buffer = doc.getRoot().listBuffers()[0] ?? doc.createBuffer()
+  const taken = new Set(
+    doc
+      .getRoot()
+      .listAnimations()
+      .map((animation) => animation.getName()),
+  )
+  for (const name of extra.clips) {
+    const source = from
+      .getRoot()
+      .listAnimations()
+      .find((animation) => animation.getName() === name)
+    if (source === undefined) throw new Error(`${model.id}: ${extra.path} has no clip ${name}`)
+    if (taken.has(name)) throw new Error(`${model.id}: clip ${name} already exists`)
+    const animation = doc.createAnimation(name)
+    const copies = new Map<Accessor, Accessor>()
+    const copy = (accessor: Accessor | null): Accessor => {
+      const array = accessor?.getArray() ?? null
+      if (accessor === null || array === null) {
+        throw new Error(`${model.id}: ${name} has a sampler without data`)
+      }
+      const known = copies.get(accessor)
+      if (known !== undefined) return known
+      const made = doc
+        .createAccessor()
+        .setType(accessor.getType())
+        .setArray(array.slice())
+        .setBuffer(buffer)
+      copies.set(accessor, made)
+      return made
+    }
+    for (const channel of source.listChannels()) {
+      const target = channel.getTargetNode()
+      const sampler = channel.getSampler()
+      const node = target === null ? undefined : nodes.get(target.getName())
+      const path = channel.getTargetPath()
+      if (node === undefined || sampler === null || path === null) {
+        throw new Error(`${model.id}: ${name} moves ${target?.getName() ?? '?'}, not a rig joint`)
+      }
+      const made = doc
+        .createAnimationSampler()
+        .setInput(copy(sampler.getInput()))
+        .setOutput(copy(sampler.getOutput()))
+        .setInterpolation(sampler.getInterpolation())
+      animation.addSampler(made)
+      animation.addChannel(
+        doc.createAnimationChannel().setTargetNode(node).setTargetPath(path).setSampler(made),
+      )
+    }
+  }
 }
 
 /** Measurements of a modular avatar part or rig for data/avatar/frame.json (S16b). */

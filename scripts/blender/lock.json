@@ -280,11 +280,11 @@
       ],
       "inputs": {
         "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
-        "scripts/blender/avatar/scalp-cap-f.py": "080db3ac7958f6a0818ad5f3be22ff953fbf7f6ac63247877279d7fcfb94a516",
+        "scripts/blender/avatar/scalp-cap-f.py": "ddb5191520d0ffdf881042f4ee47e05baff89b28041b37ca0dba60e94f3d65e5",
         "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
-      "sha256": "08341d0ee424da3fdb12171b91aa2dd03e19cc2fccdd5995ae4088a604b1963a",
-      "bytes": 5440
+      "sha256": "60e5ce074a4201a351e4d46a16349b841634453994ad5a621315d0c1660338b8",
+      "bytes": 5444
     },
     {
       "id": "avatar-clips-f",
