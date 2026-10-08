@@ -85,6 +85,41 @@ HAER/HABS, NPS, public-domain texts), never traced from photos. A value marked `
 wider than they are, by the readability scale, so they read at game distance. The models
 are ours: no third-party licence applies to them.
 
+### astoria-park
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q4811114 (Astoria Park), CC0-1.0, <https://www.wikidata.org/wiki/Q4811114>
+
+Dimensions:
+
+- `heightM`: 20 m (estimate): the pool bathhouse's twin towers above the park: the model's top
+- `treeLowM`: 11 m (estimate): the lower canopy height of the tree masses
+- `treeHighM`: 16 m (estimate): the upper canopy height (below the bathhouse towers)
+- `treeSpacingM`: 40 m (estimate): canopy mound spacing at the finest level at density 1
+- `pool`: 40.777504, -73.925076 (estimate): the big outdoor pool's centre, placed by eye inside the map's park outline
+- `poolPlan`: 100 × 50 m (estimate): the pool's length (widthM) and width (depthM), the commonly published 330 by 165 ft (drawn at the readability scale)
+- `bathhouse`: 70 × 18 m (estimate): the bathhouse along the pool's east side: length and depth
+- `bathhouseM`: 9 m (estimate): the bathhouse's walls
+- `lawn`: 40.780295, -73.921289 (estimate): the great lawn's centre, placed by eye inside the map's park outline
+- `lawnAxes`: 120 × 60 m (estimate): its semi-axes, the long one running north-north-east
+- `track`: 40.779035, -73.922827 (estimate): the running track's centre, placed by eye inside the map's park outline
+- `trackAxes`: 60 × 34 m (estimate): its semi-axes
+- `promenadeWidthM`: 10 m (estimate): the riverside promenade (Shore Boulevard), drawn along the park's west edge
+- `lampSpacingM`: 40 m (estimate): between the promenade lamps
+- `parkHeadingDeg`: 40 m (estimate): the park's long axis, compass degrees (north-north-east along the river)
+
+Readability scale (drawn width ÷ true width): structures ×1.6, paths ×1.6, lamp ×3.
+
+Game scale: heights ×1.6, widths ×1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.6 (trees, the bathhouse); the plan stays the map's park outline (park-qn0191), structures and paths take the readability scale.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 3814 triangles, 104540 bytes (`public/landmarks/astoria-park/lod0.glb`)
+- L1: 1676 triangles, 45920 bytes (`public/landmarks/astoria-park/lod1.glb`)
+- L2: 443 triangles, 14096 bytes (`public/landmarks/astoria-park/lod2.glb`)
+- L3: 177 triangles, 6496 bytes (`public/landmarks/astoria-park/lod3.glb`)
+
 ### brooklyn-borough-hall
 
 Retrieved 2026-10-08. Sources:

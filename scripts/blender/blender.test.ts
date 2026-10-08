@@ -31,7 +31,6 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 /** Landmarks still waiting for their Blender model (S07c): every other landmark is built. */
 const PENDING = new Set([
   'flushing-meadows',
-  'astoria-park',
   'queens-ballpark',
   'brooklyn-arena',
   'coney-island-boardwalk',
