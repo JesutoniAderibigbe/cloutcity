@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { ActionList } from '@/components/places/ActionList'
 import { engineConfig, type HomeId } from '@/engine/config'
 import { homeLock, slotsFor, type HomeError } from '@/engine/home'
+import { homeActions } from '@/engine/placeActions'
 import { findItem, isDecor, type DecorDef, type DecorFit, type OwnedDecor } from '@/engine/items'
 import { homeIds } from '@/engine/rent'
 import { copy } from '@/lib/copy'
@@ -41,7 +43,9 @@ import type { ApartmentPlacement, SlotTap } from '@/scene/apartment/types'
 import { useActionGuard } from '@/components/overlay/useActionGuard'
 import { onApartmentSlotTap, setApartmentView } from '@/state/apartmentView'
 import { closeHudPanel } from '@/state/hudPanel'
+import { openPlace } from '@/state/placeSheet'
 import { gameStore, useGameStore } from '@/state/store'
+import { HOME_SPOT_ID } from '@/state/trip'
 import { PANEL_BUTTON, PanelDialog, PanelStatus } from './PanelDialog'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/home'
@@ -51,6 +55,8 @@ const ACTION = `${PANEL_BUTTON} bg-raised text-center text-sm text-fg enabled:ho
 const ROW = 'flex flex-col gap-1.5 rounded-xl bg-canvas/60 p-2'
 const SECTION_HEADING = 'text-xs font-bold text-muted uppercase'
 const KINDS: readonly DecorFit[] = ['wall', 'floor', 'surface']
+
+const performHomeAction = (actionId: string) => gameStore.getState().performHomeAction(actionId)
 
 /**
  * Quality tiers arrive with S04b; until then every device gets the mid tier, as the map does
@@ -118,7 +124,11 @@ function VariantRadios({
  */
 export function HomePanel() {
   const player = useGameStore((state) => state.player)
-  const minute = useGameStore((state) => state.clock.minute)
+  const clock = useGameStore((state) => state.clock)
+  const minute = clock.minute
+  const snapshot = useMemo(() => ({ clock, player }), [clock, player])
+  const rest = useMemo(() => homeActions(snapshot, engineConfig), [snapshot])
+  const restId = useId()
   const [heldId, setHeldId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [chooserIds, setChooserIds] = useState<readonly string[] | null>(null)
@@ -303,6 +313,28 @@ export function HomePanel() {
         <p className="text-sm font-bold text-taxi-ink" data-home-score="">
           {homeScoreLine(player)}
         </p>
+      </div>
+
+      {/* B1: rest and eat here. Away, the rows say to head home first, and one button opens
+          the home card with the trip back. */}
+      <div data-home-rest="" className="flex flex-col gap-1.5">
+        <ActionList
+          headingId={restId}
+          actions={rest}
+          place={null}
+          snapshot={snapshot}
+          perform={performHomeAction}
+        />
+        {player.location.kind === 'home' ? null : (
+          <button
+            type="button"
+            data-home-head-home=""
+            onClick={() => openPlace(HOME_SPOT_ID, { origin: 'panel' })}
+            className={`${ACTION} bg-taxi text-on-taxi enabled:hover:bg-taxi`}
+          >
+            {copy('home.rest.headHome')}
+          </button>
+        )}
       </div>
 
       {chooser === null || chooser.length === 0 ? null : (

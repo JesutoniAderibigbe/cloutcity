@@ -128,7 +128,7 @@ test.describe('events', () => {
     await page.keyboard.press('Enter')
 
     await expect(dialog).toContainText('Treat secured.')
-    await expect(dialog).toContainText('Costs $2, 5 min, Mood +10')
+    await expect(dialog).toContainText('Costs $2, 5 min, +10 mood')
     const proceed = dialog.getByRole('button', { name: 'Continue' })
     await expect(proceed).toBeFocused()
     expect(await gameState(page)).toMatchObject({
@@ -158,13 +158,13 @@ test.describe('events', () => {
       ).ok,
     ).toBe(true)
     const post = page.getByRole('dialog', { name: 'Viral moment' }).getByRole('button', {
-      name: /Post it.*Clout \+6/,
+      name: /Post it.*\+6 clout/,
     })
     if (test.info().project.use.hasTouch) await post.tap()
     else await post.click()
     await expect(page.getByRole('dialog')).toContainText('Notifications won')
     // S13: event clout is applied now (no outfit, so unscaled), not kept pending.
-    await expect(page.getByRole('dialog')).toContainText('Clout +6')
+    await expect(page.getByRole('dialog')).toContainText('+6 clout')
     const state = await gameState(page)
     expect(state.clout).toBe(6)
     expect(state.pendingEffects).toBe(0)

@@ -334,6 +334,9 @@ test.describe('location action sheet: busy state and club nights (orchestrator r
     const shift = card.getByRole('button', { name: /^Work a Barista shift: / })
     await coffee.click()
     await expect(coffee).toBeDisabled()
+    // The action guard's cooldown (layout.json actionCooldownMs) ignores a click on another
+    // row in the spot just tapped; a deliberate click after it acts.
+    await expect(card.locator('[aria-busy="true"]')).toHaveCount(0)
     await shift.click()
     await expect(card.getByRole('status')).toHaveText(/^Shift done\./)
     await expect(coffee).toBeEnabled()

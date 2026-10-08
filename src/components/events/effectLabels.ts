@@ -12,7 +12,7 @@ export function eventText(key: string): string {
   return copy(key as CopyKey)
 }
 
-/** Plain text for one effect ("Costs $25", "30 min", "Mood +8"). */
+/** Plain text for one effect ("Costs $25", "30 min", "+8 mood"), in the place-action style. */
 export function effectLabel(effect: EventEffect): string {
   switch (effect.kind) {
     case 'cash':
