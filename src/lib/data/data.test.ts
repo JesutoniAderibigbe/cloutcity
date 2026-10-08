@@ -47,7 +47,11 @@ import {
 } from './schemas/content'
 import { NamespaceBaseSchema, SlangPackSchema, SuperlativesSchema } from './schemas/copy'
 import { HandleBlocklistSchema, HandleWordsSchema } from './schemas/handles'
-import { BlenderLockSchema, LandmarkMeasurementsSchema } from './schemas/landmarkBlender'
+import {
+  BlenderLockSchema,
+  BlenderModelsFileSchema,
+  LandmarkMeasurementsSchema,
+} from './schemas/landmarkBlender'
 import { LandmarkModelsFileSchema } from './schemas/landmarkModels'
 import { PinMarksConfigSchema, SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
@@ -172,6 +176,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
 function schemaFor(file: string): z.ZodType | undefined {
   if (/^landmarks\/measurements\/[a-z0-9-]+\.json$/.test(file)) return LandmarkMeasurementsSchema
   if (/^landmarks\/blender\/[a-z0-9-]+\.lock\.json$/.test(file)) return BlenderLockSchema
+  if (file === 'landmarks/blender.derived.json') return BlenderModelsFileSchema
   if (/^geo\/districts\/[a-z0-9-]+\.[a-z]+\.derived\.json$/.test(file)) return BuildingsFileSchema
   if (/^geo\/blocks\.[a-z]+\.derived\.json$/.test(file)) return BlocksFileSchema
   if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
@@ -372,6 +377,10 @@ describe('config/perf.json', () => {
         building: { low: 600, mid: 1800, high: 3500 },
         station: { low: 600, mid: 1800, high: 3500 },
         government: { low: 600, mid: 1800, high: 3500 },
+        stadium: { low: 600, mid: 1800, high: 3500 },
+        monument: { low: 600, mid: 1800, high: 3500 },
+        park: { low: 1200, mid: 3500, high: 7000 },
+        neighborhood: { low: 1200, mid: 3500, high: 7000 },
       },
       landmarkTrianglesOverride: {},
       landmarkLodRatioMax: 0.5,

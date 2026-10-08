@@ -8,7 +8,7 @@ import json
 import struct
 
 ALLOWED_EXTENSIONS = {"EXT_meshopt_compression", "KHR_mesh_quantization"}
-MATERIALS = {"cc-body", "cc-windows"}
+MATERIALS = {"model"}
 FORBIDDEN_KEYS = ("images", "textures", "samplers", "animations", "cameras", "skins")
 
 
@@ -72,10 +72,10 @@ def check(path, landmark_id, level):
     if not used <= ALLOWED_EXTENSIONS:
         problems.append("unexpected extensions %s" % sorted(used - ALLOWED_EXTENSIONS))
     names = {m.get("name") for m in gltf.get("materials", [])}
-    if not names <= MATERIALS or "cc-body" not in names:
+    if names != MATERIALS:
         problems.append("materials %s" % sorted(names))
-    prefix = "%s-lod%d-" % (landmark_id, level)
+    name = "%s-lod%d" % (landmark_id, level)
     for node in gltf.get("nodes", []):
-        if not node.get("name", "").startswith(prefix):
+        if node.get("name") != name:
             problems.append("node name %r" % node.get("name"))
     return problems

@@ -276,6 +276,26 @@
       "low": 600,
       "mid": 1800,
       "high": 3500
+    },
+    "stadium": {
+      "low": 600,
+      "mid": 1800,
+      "high": 3500
+    },
+    "monument": {
+      "low": 600,
+      "mid": 1800,
+      "high": 3500
+    },
+    "park": {
+      "low": 1200,
+      "mid": 3500,
+      "high": 7000
+    },
+    "neighborhood": {
+      "low": 1200,
+      "mid": 3500,
+      "high": 7000
     }
   },
   "landmarkTrianglesOverride": {},

@@ -1,0 +1,546 @@
+{
+  "format": "cc-landmark-glb-v1",
+  "derived": true,
+  "landmarks": [
+    {
+      "id": "astoria-park",
+      "files": [
+        "/landmarks/astoria-park/lod0.glb?v=94989e73",
+        "/landmarks/astoria-park/lod1.glb?v=ae2198b5",
+        "/landmarks/astoria-park/lod2.glb?v=bf5bb618",
+        "/landmarks/astoria-park/lod3.glb?v=7ecd8af1"
+      ],
+      "triangles": [
+        3814,
+        1676,
+        443,
+        177
+      ],
+      "topM": 32,
+      "gameScale": {
+        "height": 1.6,
+        "plan": 1
+      }
+    },
+    {
+      "id": "bronx-ballpark",
+      "files": [
+        "/landmarks/bronx-ballpark/lod0.glb?v=09ca2dd0",
+        "/landmarks/bronx-ballpark/lod1.glb?v=1194c503",
+        "/landmarks/bronx-ballpark/lod2.glb?v=c1be713d",
+        "/landmarks/bronx-ballpark/lod3.glb?v=88c4424d"
+      ],
+      "triangles": [
+        2948,
+        1274,
+        582,
+        224
+      ],
+      "topM": 76.8,
+      "gameScale": {
+        "height": 1.6,
+        "plan": 1.15
+      }
+    },
+    {
+      "id": "brooklyn-arena",
+      "files": [
+        "/landmarks/brooklyn-arena/lod0.glb?v=629a8c3b",
+        "/landmarks/brooklyn-arena/lod1.glb?v=83837a3f",
+        "/landmarks/brooklyn-arena/lod2.glb?v=833fbe70",
+        "/landmarks/brooklyn-arena/lod3.glb?v=c4b725a1"
+      ],
+      "triangles": [
+        1318,
+        486,
+        186,
+        74
+      ],
+      "topM": 58.2,
+      "gameScale": {
+        "height": 1.6,
+        "plan": 1.15
+      }
+    },
+    {
+      "id": "brooklyn-borough-hall",
+      "files": [
+        "/landmarks/brooklyn-borough-hall/lod0.glb?v=635439d3",
+        "/landmarks/brooklyn-borough-hall/lod1.glb?v=544b2510",
+        "/landmarks/brooklyn-borough-hall/lod2.glb?v=83967c3d",
+        "/landmarks/brooklyn-borough-hall/lod3.glb?v=fc982835"
+      ],
+      "triangles": [
+        1676,
+        672,
+        280,
+        108
+      ],
+      "topM": 79.2,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1.35
+      }
+    },
+    {
+      "id": "brooklyn-bridge",
+      "files": [
+        "/landmarks/brooklyn-bridge/lod0.glb?v=1628e157",
+        "/landmarks/brooklyn-bridge/lod1.glb?v=48463382",
+        "/landmarks/brooklyn-bridge/lod2.glb?v=6b0c2309",
+        "/landmarks/brooklyn-bridge/lod3.glb?v=7fd04705"
+      ],
+      "triangles": [
+        6680,
+        3320,
+        1200,
+        584
+      ],
+      "topM": 151.2,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 2
+      }
+    },
+    {
+      "id": "central-park",
+      "files": [
+        "/landmarks/central-park/lod0.glb?v=0ba62751",
+        "/landmarks/central-park/lod1.glb?v=80e14046",
+        "/landmarks/central-park/lod2.glb?v=4ebba39f",
+        "/landmarks/central-park/lod3.glb?v=33bad6f2"
+      ],
+      "triangles": [
+        6748,
+        3290,
+        1179,
+        570
+      ],
+      "topM": 48.6,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1
+      }
+    },
+    {
+      "id": "city-hall",
+      "files": [
+        "/landmarks/city-hall/lod0.glb?v=91ce3676",
+        "/landmarks/city-hall/lod1.glb?v=2dae4a4e",
+        "/landmarks/city-hall/lod2.glb?v=14776dfb",
+        "/landmarks/city-hall/lod3.glb?v=2ba3e746"
+      ],
+      "triangles": [
+        3350,
+        1186,
+        386,
+        168
+      ],
+      "topM": 75.6,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1.25
+      }
+    },
+    {
+      "id": "coney-island-boardwalk",
+      "files": [
+        "/landmarks/coney-island-boardwalk/lod0.glb?v=b0f205e4",
+        "/landmarks/coney-island-boardwalk/lod1.glb?v=456b300e",
+        "/landmarks/coney-island-boardwalk/lod2.glb?v=1b9c464b",
+        "/landmarks/coney-island-boardwalk/lod3.glb?v=5bbf7cc7"
+      ],
+      "triangles": [
+        6970,
+        3290,
+        1130,
+        122
+      ],
+      "topM": 16.8,
+      "gameScale": {
+        "height": 1.6,
+        "plan": 1
+      }
+    },
+    {
+      "id": "deco-spire",
+      "files": [
+        "/landmarks/deco-spire/lod0.glb?v=50663a75",
+        "/landmarks/deco-spire/lod1.glb?v=408da9f6",
+        "/landmarks/deco-spire/lod2.glb?v=5933b0e1",
+        "/landmarks/deco-spire/lod3.glb?v=646bd62d"
+      ],
+      "triangles": [
+        3018,
+        1346,
+        594,
+        290
+      ],
+      "topM": 357.2,
+      "gameScale": {
+        "height": 1.12,
+        "plan": 1.2
+      }
+    },
+    {
+      "id": "dumbo",
+      "files": [
+        "/landmarks/dumbo/lod0.glb?v=7c724b3c",
+        "/landmarks/dumbo/lod1.glb?v=8908fd01",
+        "/landmarks/dumbo/lod2.glb?v=fd17dc15",
+        "/landmarks/dumbo/lod3.glb?v=e3d1c9a9"
+      ],
+      "triangles": [
+        6840,
+        3120,
+        1200,
+        576
+      ],
+      "topM": 96,
+      "gameScale": {
+        "height": 1.2,
+        "plan": 1
+      }
+    },
+    {
+      "id": "flushing-main-street",
+      "files": [
+        "/landmarks/flushing-main-street/lod0.glb?v=7cd94ab2",
+        "/landmarks/flushing-main-street/lod1.glb?v=b3dca0ff",
+        "/landmarks/flushing-main-street/lod2.glb?v=574df954",
+        "/landmarks/flushing-main-street/lod3.glb?v=0d34576c"
+      ],
+      "triangles": [
+        6984,
+        3264,
+        1088,
+        540
+      ],
+      "topM": 108.3,
+      "gameScale": {
+        "height": 1.2,
+        "plan": 1
+      }
+    },
+    {
+      "id": "flushing-meadows",
+      "files": [
+        "/landmarks/flushing-meadows/lod0.glb?v=fd69c566",
+        "/landmarks/flushing-meadows/lod1.glb?v=d9884e0a",
+        "/landmarks/flushing-meadows/lod2.glb?v=4455497f",
+        "/landmarks/flushing-meadows/lod3.glb?v=2abf1d10"
+      ],
+      "triangles": [
+        6716,
+        3250,
+        1094,
+        522
+      ],
+      "topM": 124.2,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1
+      }
+    },
+    {
+      "id": "high-line",
+      "files": [
+        "/landmarks/high-line/lod0.glb?v=295b6b6c",
+        "/landmarks/high-line/lod1.glb?v=ffc0ddd1",
+        "/landmarks/high-line/lod2.glb?v=76c03b37",
+        "/landmarks/high-line/lod3.glb?v=eaf0618e"
+      ],
+      "triangles": [
+        6680,
+        3232,
+        1191,
+        589
+      ],
+      "topM": 27,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1
+      }
+    },
+    {
+      "id": "jamaica-station",
+      "files": [
+        "/landmarks/jamaica-station/lod0.glb?v=7a789950",
+        "/landmarks/jamaica-station/lod1.glb?v=ee2e2dab",
+        "/landmarks/jamaica-station/lod2.glb?v=086a71c9",
+        "/landmarks/jamaica-station/lod3.glb?v=96f54abf"
+      ],
+      "triangles": [
+        1144,
+        544,
+        224,
+        76
+      ],
+      "topM": 30.8,
+      "gameScale": {
+        "height": 1.4,
+        "plan": 1.1
+      }
+    },
+    {
+      "id": "manhattan-bridge",
+      "files": [
+        "/landmarks/manhattan-bridge/lod0.glb?v=103e17b5",
+        "/landmarks/manhattan-bridge/lod1.glb?v=d7d1e385",
+        "/landmarks/manhattan-bridge/lod2.glb?v=679fce8e",
+        "/landmarks/manhattan-bridge/lod3.glb?v=2fc0c800"
+      ],
+      "triangles": [
+        6640,
+        3232,
+        1192,
+        584
+      ],
+      "topM": 183.6,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1.6
+      }
+    },
+    {
+      "id": "midtown-terminal",
+      "files": [
+        "/landmarks/midtown-terminal/lod0.glb?v=feb05f2a",
+        "/landmarks/midtown-terminal/lod1.glb?v=dec1e0e4",
+        "/landmarks/midtown-terminal/lod2.glb?v=22cf3501",
+        "/landmarks/midtown-terminal/lod3.glb?v=5ea82b4a"
+      ],
+      "triangles": [
+        2410,
+        1034,
+        478,
+        156
+      ],
+      "topM": 50.4,
+      "gameScale": {
+        "height": 1.4,
+        "plan": 1.1
+      }
+    },
+    {
+      "id": "penn-station",
+      "files": [
+        "/landmarks/penn-station/lod0.glb?v=8d18541e",
+        "/landmarks/penn-station/lod1.glb?v=76d5c153",
+        "/landmarks/penn-station/lod2.glb?v=761528f6",
+        "/landmarks/penn-station/lod3.glb?v=eafadab7"
+      ],
+      "triangles": [
+        688,
+        332,
+        144,
+        64
+      ],
+      "topM": 19.2,
+      "gameScale": {
+        "height": 1.4,
+        "plan": 1.1
+      }
+    },
+    {
+      "id": "prospect-park",
+      "files": [
+        "/landmarks/prospect-park/lod0.glb?v=a37069e6",
+        "/landmarks/prospect-park/lod1.glb?v=11fe2353",
+        "/landmarks/prospect-park/lod2.glb?v=c235b47f",
+        "/landmarks/prospect-park/lod3.glb?v=e1da5766"
+      ],
+      "triangles": [
+        6726,
+        3002,
+        1173,
+        539
+      ],
+      "topM": 37.8,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1
+      }
+    },
+    {
+      "id": "queens-ballpark",
+      "files": [
+        "/landmarks/queens-ballpark/lod0.glb?v=6b7ebc50",
+        "/landmarks/queens-ballpark/lod1.glb?v=b20e1d40",
+        "/landmarks/queens-ballpark/lod2.glb?v=a7ffe6d2",
+        "/landmarks/queens-ballpark/lod3.glb?v=9064dddf"
+      ],
+      "triangles": [
+        2948,
+        1274,
+        582,
+        224
+      ],
+      "topM": 76.8,
+      "gameScale": {
+        "height": 1.6,
+        "plan": 1.15
+      }
+    },
+    {
+      "id": "queens-borough-hall",
+      "files": [
+        "/landmarks/queens-borough-hall/lod0.glb?v=679b4919",
+        "/landmarks/queens-borough-hall/lod1.glb?v=037928f5",
+        "/landmarks/queens-borough-hall/lod2.glb?v=a3e0666f",
+        "/landmarks/queens-borough-hall/lod3.glb?v=eafd7440"
+      ],
+      "triangles": [
+        1954,
+        602,
+        178,
+        60
+      ],
+      "topM": 41.4,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1.15
+      }
+    },
+    {
+      "id": "queensboro-bridge",
+      "files": [
+        "/landmarks/queensboro-bridge/lod0.glb?v=af64ea69",
+        "/landmarks/queensboro-bridge/lod1.glb?v=17463f47",
+        "/landmarks/queensboro-bridge/lod2.glb?v=11b1b873",
+        "/landmarks/queensboro-bridge/lod3.glb?v=30abe28d"
+      ],
+      "triangles": [
+        6552,
+        3216,
+        1184,
+        424
+      ],
+      "topM": 189,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1.8
+      }
+    },
+    {
+      "id": "september-11-memorial",
+      "files": [
+        "/landmarks/september-11-memorial/lod0.glb?v=3f3033fd",
+        "/landmarks/september-11-memorial/lod1.glb?v=2c451168",
+        "/landmarks/september-11-memorial/lod2.glb?v=76d7805d",
+        "/landmarks/september-11-memorial/lod3.glb?v=f3c89477"
+      ],
+      "triangles": [
+        3372,
+        1660,
+        460,
+        228
+      ],
+      "topM": 13.6,
+      "gameScale": {
+        "height": 1,
+        "plan": 1
+      }
+    },
+    {
+      "id": "staten-island-ferry",
+      "files": [
+        "/landmarks/staten-island-ferry/lod0.glb?v=97ae2e58",
+        "/landmarks/staten-island-ferry/lod1.glb?v=160e1edd",
+        "/landmarks/staten-island-ferry/lod2.glb?v=89ca8249",
+        "/landmarks/staten-island-ferry/lod3.glb?v=9aa035ef"
+      ],
+      "triangles": [
+        1666,
+        710,
+        334,
+        102
+      ],
+      "topM": 28,
+      "gameScale": {
+        "height": 1.4,
+        "plan": 1.05
+      }
+    },
+    {
+      "id": "statue-of-liberty",
+      "files": [
+        "/landmarks/statue-of-liberty/lod0.glb?v=c4e23e81",
+        "/landmarks/statue-of-liberty/lod1.glb?v=a60d917f",
+        "/landmarks/statue-of-liberty/lod2.glb?v=f5b96079",
+        "/landmarks/statue-of-liberty/lod3.glb?v=66bc9e10"
+      ],
+      "triangles": [
+        1070,
+        476,
+        218,
+        100
+      ],
+      "topM": 167.4,
+      "gameScale": {
+        "height": 1.8,
+        "plan": 1.8
+      }
+    },
+    {
+      "id": "times-square",
+      "files": [
+        "/landmarks/times-square/lod0.glb?v=262a1d19",
+        "/landmarks/times-square/lod1.glb?v=e57490a1",
+        "/landmarks/times-square/lod2.glb?v=1edb0db4",
+        "/landmarks/times-square/lod3.glb?v=08e40ab3"
+      ],
+      "triangles": [
+        3712,
+        1840,
+        900,
+        434
+      ],
+      "topM": 230,
+      "gameScale": {
+        "height": 1,
+        "plan": 1
+      }
+    },
+    {
+      "id": "washington-square-arch",
+      "files": [
+        "/landmarks/washington-square-arch/lod0.glb?v=74161b28",
+        "/landmarks/washington-square-arch/lod1.glb?v=6634900f",
+        "/landmarks/washington-square-arch/lod2.glb?v=924db7ee",
+        "/landmarks/washington-square-arch/lod3.glb?v=26af8a40"
+      ],
+      "triangles": [
+        636,
+        300,
+        148,
+        68
+      ],
+      "topM": 47,
+      "gameScale": {
+        "height": 2,
+        "plan": 2
+      }
+    },
+    {
+      "id": "wedge-building",
+      "files": [
+        "/landmarks/wedge-building/lod0.glb?v=7afa2ce2",
+        "/landmarks/wedge-building/lod1.glb?v=6e9e4e80",
+        "/landmarks/wedge-building/lod2.glb?v=0bd57042",
+        "/landmarks/wedge-building/lod3.glb?v=630e6137"
+      ],
+      "triangles": [
+        1332,
+        594,
+        264,
+        96
+      ],
+      "topM": 105.3,
+      "gameScale": {
+        "height": 1.12,
+        "plan": 1.2
+      }
+    }
+  ]
+}

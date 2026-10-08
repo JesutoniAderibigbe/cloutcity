@@ -1,0 +1,55 @@
+{
+  "id": "midtown-terminal",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q11290 (the 42nd Street terminal)",
+      "url": "https://www.wikidata.org/wiki/Q11290",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 36,
+      "source": "estimate",
+      "note": "the main hall's roof ridge above the street"
+    },
+    "hall": {
+      "widthM": 90,
+      "depthM": 60,
+      "source": "estimate",
+      "note": "the main hall's front width (widthM) and depth (depthM)"
+    },
+    "hallM": {
+      "valueM": 30,
+      "source": "estimate",
+      "note": "the main hall's walls, to the cornice"
+    },
+    "wings": {
+      "widthM": 25,
+      "depthM": 50,
+      "source": "estimate",
+      "note": "each side wing's width and depth"
+    },
+    "wingsM": {
+      "valueM": 20,
+      "source": "estimate",
+      "note": "the side wings' height"
+    },
+    "arches": {
+      "widthM": 10,
+      "depthM": 20,
+      "source": "estimate",
+      "note": "three tall arched front windows: width (widthM) and height to the crown (depthM)"
+    }
+  },
+  "readabilityScale": {
+    "note": "Generic and sign-free (LEGAL-1): no signage, no clock, no sculpture."
+  },
+  "gameScale": {
+    "height": 1.4,
+    "plan": 1.1,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.4 and widths x1.1, within the frame's exclusion, so the station reads at the game camera. Wikidata gives no dimensions, so every number is an estimate (the S07a kit's stylised proportions)."
+  }
+}

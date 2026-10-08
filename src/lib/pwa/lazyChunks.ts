@@ -10,6 +10,9 @@
 export const OPTIONAL_CHUNK_MARKERS = [
   // The model runtime: three's glTF loader with the meshopt decoder (S04h), after the map draws.
   { id: 'model-runtime', marker: 'EXT_meshopt_compression' },
+  // The Blender landmarks' level loader (S07c, src/scene/models/landmarkLevels.ts): it only
+  // runs once the model runtime has, and the levels themselves are never precached.
+  { id: 'landmark-levels', marker: 'landmark levels: ' },
   // The /dev/models showcase (S04h).
   { id: 'model-showcase', marker: 'cc-feature:model-showcase' },
   // The apartment's decor models (src/scene/apartment/decorModels.ts), once the room is up.

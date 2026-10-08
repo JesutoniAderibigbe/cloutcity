@@ -1,0 +1,53 @@
+{
+  "id": "flushing-main-street",
+  "base": "land",
+  "placement": {
+    "headingDeg": 10,
+    "note": "Main Street runs a little east of north (by eye)"
+  },
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q6736067 (Flushing Main Street)",
+      "url": "https://www.wikidata.org/wiki/Q6736067",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 90,
+      "source": "estimate",
+      "note": "the tallest of the newer towers behind Main Street: the model's top"
+    },
+    "streetLengthM": {
+      "valueM": 360,
+      "source": "estimate",
+      "note": "the stretch of Main Street modelled, about four blocks"
+    },
+    "streetWidthM": {
+      "valueM": 24,
+      "source": "estimate",
+      "note": "Main Street between the building lines, with its sidewalks"
+    },
+    "frontageM": {
+      "widthM": 28,
+      "depthM": 10,
+      "source": "estimate",
+      "note": "the shopfront blocks' tallest (widthM) and lowest (depthM) heights"
+    },
+    "towerLowM": {
+      "valueM": 55,
+      "source": "estimate",
+      "note": "the lower of the towers behind the street"
+    }
+  },
+  "readabilityScale": {
+    "note": "A composed, generic district: low shopfront blocks with plain colour sign bands and awnings (no text, no brands), and glass towers behind."
+  },
+  "gameScale": {
+    "height": 1.2,
+    "plan": 1.0,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.2; plan real, so the blocks match the district around them."
+  }
+}

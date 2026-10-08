@@ -1,0 +1,108 @@
+{
+  "id": "queensboro-bridge",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q125157 (Queensboro Bridge)",
+      "url": "https://www.wikidata.org/wiki/Q125157",
+      "licence": "CC0-1.0"
+    },
+    {
+      "id": "chamber-1906",
+      "title": "Chamber of Commerce of the State of New York, Rapid Transit in New York City and in the Other Great Cities (1906), ch. 4 \"Bridges to Brooklyn\" (the Blackwell's Island bridge)",
+      "url": "https://nycsubway.org/wiki/Chapter_04:_Bridges_to_Brooklyn",
+      "licence": "public-domain"
+    }
+  ],
+  "dimensions": {
+    "towerHeightM": {
+      "valueM": 105,
+      "source": "wikidata",
+      "note": "height (P2048): the tower finials above the water"
+    },
+    "totalLengthM": {
+      "valueM": 1135,
+      "source": "wikidata",
+      "note": "length (P2043) of the cantilever structure; the five spans below add up to it"
+    },
+    "shoreSpanWestM": {
+      "valueM": 143.1,
+      "source": "chamber-1906",
+      "note": "\"a shore span on the Manhattan side, 469.5 feet in length\""
+    },
+    "riverSpanWestM": {
+      "valueM": 360.27,
+      "source": "chamber-1906",
+      "note": "\"a river span of 1,182 feet\""
+    },
+    "islandSpanM": {
+      "valueM": 192.02,
+      "source": "chamber-1906",
+      "note": "\"a central span across the island of 630 feet\""
+    },
+    "riverSpanEastM": {
+      "valueM": 299.92,
+      "source": "chamber-1906",
+      "note": "\"a second river span of 984\" feet"
+    },
+    "shoreSpanEastM": {
+      "valueM": 139.9,
+      "source": "chamber-1906",
+      "note": "\"a shore span of 459 feet\""
+    },
+    "trussDepthAtTowersM": {
+      "valueM": 56.39,
+      "source": "chamber-1906",
+      "note": "\"the height between the chords at the towers will be 185 feet\""
+    },
+    "trussDepthMidM": {
+      "valueM": 14,
+      "source": "estimate",
+      "note": "truss depth mid-span and at the anchor piers, proportioned by eye"
+    },
+    "deckClearanceM": {
+      "valueM": 41,
+      "source": "estimate",
+      "note": "the deck (bottom chord) above the water, about the East River bridges' 135 ft"
+    },
+    "deckWidthM": {
+      "valueM": 30,
+      "source": "estimate",
+      "note": "the deck between the truss walls (the S07a kit's stylised width)"
+    },
+    "finialM": {
+      "valueM": 7.61,
+      "source": "derived",
+      "note": "tower height - deck clearance - truss depth at the towers, so the finials top out at the Wikidata height"
+    },
+    "towerLeg": {
+      "widthM": 6,
+      "depthM": 8,
+      "source": "estimate",
+      "note": "each steel tower leg's section over a pier"
+    },
+    "pier": {
+      "widthM": 36,
+      "depthM": 14,
+      "source": "estimate",
+      "note": "the masonry piers (the S07a kit's stylised plan)"
+    },
+    "pierTopM": {
+      "valueM": 12,
+      "source": "estimate",
+      "note": "the masonry piers' top above the water"
+    }
+  },
+  "readabilityScale": {
+    "chord": 3,
+    "member": 4,
+    "lamp": 3,
+    "note": "Truss chords and members are drawn this many times a real member's width so the lattice reads; panels are drawn longer than the real ones."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.8,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 and widths x1.8 against the real numbers above (1.8 keeps the deck inside the frame's 56 m exclusion), so the bridge reads at the 3,000-4,500 m game camera. Lengths along the axis stay real."
+  }
+}

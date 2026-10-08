@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "id": "coney-island-boardwalk",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "c1469fac6f1f36c478027fbdd70ef32cad77e20c4a70c1a5807b9991f7c66439",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "placement": {
+    "topM": 16.8,
+    "exclusions": [
+      {
+        "x": 13.3,
+        "y": -53.4,
+        "halfLengthM": 1350,
+        "halfWidthM": 74.5,
+        "angleDeg": 14
+      }
+    ]
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/coney-island-boardwalk/lod0.glb",
+      "sha256": "b0f205e40d6f74f473bd5314a780e6bfd3fe5f82181c553716334d15f700a919",
+      "bytes": 106416,
+      "triangles": 6970,
+      "uncompressedBytes": 734624
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/coney-island-boardwalk/lod1.glb",
+      "sha256": "456b300e93a636147c08b8010390ecd4287994ac3702fed13c9dc119e25e1983",
+      "bytes": 52344,
+      "triangles": 3290,
+      "uncompressedBytes": 347776
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/coney-island-boardwalk/lod2.glb",
+      "sha256": "1b9c464b1b3f9730c844611d2fe9f5549745b341d1d12165448fded190172b06",
+      "bytes": 21256,
+      "triangles": 1130,
+      "uncompressedBytes": 122820
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/coney-island-boardwalk/lod3.glb",
+      "sha256": "5bbf7cc7f020b107ea0b1eabdaaaac693d7b50d557f2ebbfb138c086108af0f0",
+      "bytes": 4384,
+      "triangles": 122,
+      "uncompressedBytes": 12740
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "id": "prospect-park",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "7fca096810ab657f417d7f51cd737a85566f79e5719d3761c4906b34d9599325",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "placement": {
+    "topM": 37.8,
+    "exclusions": []
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/prospect-park/lod0.glb",
+      "sha256": "a37069e6c3315f5587776092b3fb3e906faf5430bdd8d01dff9d7163bb0ca3ed",
+      "bytes": 179324,
+      "triangles": 6726,
+      "uncompressedBytes": 907560
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/prospect-park/lod1.glb",
+      "sha256": "11fe23534931193239433e777b79145292d9ac8ae2efc9eee977b9d7af900020",
+      "bytes": 80532,
+      "triangles": 3002,
+      "uncompressedBytes": 396104
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/prospect-park/lod2.glb",
+      "sha256": "c235b47f3704661a1bfbec8b749fd88b737fec39f069a91cbb6cacbc3c6e1e54",
+      "bytes": 33020,
+      "triangles": 1173,
+      "uncompressedBytes": 152236
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/prospect-park/lod3.glb",
+      "sha256": "e1da576686dfb9861af3eedbfc29b3199e80efcebbdadf4eb6ccc73779b64c77",
+      "bytes": 16044,
+      "triangles": 539,
+      "uncompressedBytes": 66852
+    }
+  ]
+}

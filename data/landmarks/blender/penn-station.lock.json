@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "id": "penn-station",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "0aaa928e4c97bb44c426fcb993a9b90e5813852be59f1f8e4c0e64ec50fb5d5f",
+  "caps": {
+    "low": 600,
+    "mid": 1800,
+    "high": 3500
+  },
+  "placement": {
+    "topM": 19.2,
+    "exclusions": [
+      {
+        "x": 0,
+        "y": 21.4,
+        "halfLengthM": 87.9,
+        "halfWidthM": 21.4,
+        "angleDeg": 0
+      }
+    ]
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/penn-station/lod0.glb",
+      "sha256": "8d18541e95316e458de2961dfdb0c5bb5b39e061d960be76b896e3da6361cedf",
+      "bytes": 11552,
+      "triangles": 688,
+      "uncompressedBytes": 66628
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/penn-station/lod1.glb",
+      "sha256": "76d5c15320334f0567a31a2832cd3a442857bb8ecf44f31aa26adf89b85ff68f",
+      "bytes": 7456,
+      "triangles": 332,
+      "uncompressedBytes": 32448
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/penn-station/lod2.glb",
+      "sha256": "761528f6b3d9b51ae399e3613877899bf0d8c4a6ffdaade3d4b7234beccddc11",
+      "bytes": 4876,
+      "triangles": 144,
+      "uncompressedBytes": 14776
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/penn-station/lod3.glb",
+      "sha256": "eafadab712497c699a00723634e660bb95ca397704093136e4bedbc6e91e7e00",
+      "bytes": 3732,
+      "triangles": 64,
+      "uncompressedBytes": 7252
+    }
+  ]
+}

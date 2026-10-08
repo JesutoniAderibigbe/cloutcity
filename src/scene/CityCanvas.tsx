@@ -93,8 +93,6 @@ export interface CityCanvasProps extends Pick<
   readonly label: string
   /** The "expanding soon" chip text, rendered by the server. */
   readonly expandingSoon: string
-  /** Landmark name chip text by id, rendered by the server (S07a). */
-  readonly landmarkNames: Readonly<Record<string, string>>
   readonly onReady: () => void
   /** The WebGL context was lost: the map shows nothing until it is restored. */
   readonly onContextLost: () => void
@@ -196,7 +194,6 @@ function CityScene3D({
   playerModel,
   label,
   expandingSoon,
-  landmarkNames,
   onReady,
   onContextLost,
   onContextRestored,
@@ -241,6 +238,13 @@ function CityScene3D({
       new Map(
         parsed.ok ? parsed.geo.places.pins.map((pin) => [pin.id, pin.liftM ?? 0] as const) : [],
       ),
+    [parsed],
+  )
+  // Landmark name chips (S07a) read the pins' copy names (the server's placeName: the generic
+  // label where a real name is trademarked, LEGAL-1), so the page carries no second copy.
+  const landmarkNames = useMemo(
+    () =>
+      Object.fromEntries(parsed.ok ? parsed.geo.places.pins.map((pin) => [pin.id, pin.name]) : []),
     [parsed],
   )
 

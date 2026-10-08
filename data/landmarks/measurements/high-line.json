@@ -1,0 +1,149 @@
+{
+  "id": "high-line",
+  "base": "land",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q843869 (High Line)",
+      "url": "https://www.wikidata.org/wiki/Q843869",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "lengthM": {
+      "valueM": 2330,
+      "source": "wikidata",
+      "note": "length (P2043, 2.33 km): the route below runs about this long"
+    },
+    "heightM": {
+      "valueM": 15,
+      "source": "derived",
+      "note": "the tallest tree's top above the street: the deck's elevation plus the tallest tree"
+    },
+    "elevationM": {
+      "valueM": 9,
+      "source": "estimate",
+      "note": "the deck top above the street (about 30 ft)"
+    },
+    "treeHighM": {
+      "valueM": 6,
+      "source": "estimate",
+      "note": "the tallest small trees in the beds"
+    },
+    "treeLowM": {
+      "valueM": 3.5,
+      "source": "estimate",
+      "note": "the lower small trees"
+    },
+    "deckWidthM": {
+      "valueM": 10,
+      "source": "estimate",
+      "note": "the viaduct's width (it widens and narrows; one width drawn)"
+    },
+    "deckThicknessM": {
+      "valueM": 1.2,
+      "source": "estimate",
+      "note": "the deck slab"
+    },
+    "girderM": {
+      "valueM": 1.4,
+      "source": "estimate",
+      "note": "the edge girders' depth below the slab"
+    },
+    "walkWidthM": {
+      "valueM": 3.5,
+      "source": "estimate",
+      "note": "the paved walk down the middle"
+    },
+    "columnSpacingM": {
+      "valueM": 20,
+      "source": "estimate",
+      "note": "between column pairs along the line"
+    },
+    "columnWidthM": {
+      "valueM": 0.9,
+      "source": "estimate",
+      "note": "each steel column's side"
+    },
+    "treeSpacingM": {
+      "valueM": 30,
+      "source": "estimate",
+      "note": "small trees along the beds at the finest level"
+    },
+    "shrubSpacingM": {
+      "valueM": 14,
+      "source": "estimate",
+      "note": "shrubs along the beds at the finest level"
+    },
+    "cornerRadiusM": {
+      "valueM": 45,
+      "source": "estimate",
+      "note": "how round the line turns its corners"
+    },
+    "route0": {
+      "lat": 40.73975,
+      "lng": -74.0082,
+      "source": "estimate",
+      "note": "route point 0: the south end at Gansevoort Street (by eye from the street grid; no PD/CC0 alignment found)"
+    },
+    "route1": {
+      "lat": 40.7416,
+      "lng": -74.0079,
+      "source": "estimate",
+      "note": "route point 1: along Washington Street near 14th Street (by eye from the street grid; no PD/CC0 alignment found)"
+    },
+    "route2": {
+      "lat": 40.74335,
+      "lng": -74.00695,
+      "source": "estimate",
+      "note": "route point 2: 16th Street, turning onto the avenue grid (by eye from the street grid; no PD/CC0 alignment found)"
+    },
+    "route3": {
+      "lat": 40.7458,
+      "lng": -74.00515,
+      "source": "estimate",
+      "note": "route point 3: 20th Street (by eye from the street grid; no PD/CC0 alignment found)"
+    },
+    "route4": {
+      "lat": 40.7478,
+      "lng": -74.0037,
+      "source": "estimate",
+      "note": "route point 4: 23rd Street (by eye from the street grid; no PD/CC0 alignment found)"
+    },
+    "route5": {
+      "lat": 40.7526,
+      "lng": -74.0002,
+      "source": "estimate",
+      "note": "route point 5: 30th Street, where the line turns west (by eye from the street grid; no PD/CC0 alignment found)"
+    },
+    "route6": {
+      "lat": 40.7544,
+      "lng": -74.0045,
+      "source": "estimate",
+      "note": "route point 6: 30th Street at 12th Avenue, turning north (by eye from the street grid; no PD/CC0 alignment found)"
+    },
+    "route7": {
+      "lat": 40.7565,
+      "lng": -74.003,
+      "source": "estimate",
+      "note": "route point 7: 34th Street, turning east (by eye from the street grid; no PD/CC0 alignment found)"
+    },
+    "route8": {
+      "lat": 40.7556,
+      "lng": -74.0008,
+      "source": "estimate",
+      "note": "route point 8: the north end on 34th Street (by eye from the street grid; no PD/CC0 alignment found)"
+    }
+  },
+  "readabilityScale": {
+    "deck": 2,
+    "columns": 3,
+    "note": "The deck and its beds are drawn twice their width and the columns three times so the line reads between the blocks at game distance; its length stays real."
+  },
+  "gameScale": {
+    "height": 1.8,
+    "plan": 1.0,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 (the deck stands 16 m over the street); the route keeps its real length; widths take the readability scale."
+  }
+}

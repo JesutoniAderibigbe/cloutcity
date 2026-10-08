@@ -1,0 +1,65 @@
+{
+  "id": "jamaica-station",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q11310077 (Jamaica)",
+      "url": "https://www.wikidata.org/wiki/Q11310077",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "heightM": {
+      "valueM": 22,
+      "source": "estimate",
+      "note": "the station hall's roof above the street"
+    },
+    "hall": {
+      "widthM": 60,
+      "depthM": 32,
+      "source": "estimate",
+      "note": "the hall's front width and depth"
+    },
+    "hallFloors": {
+      "count": 4,
+      "source": "estimate",
+      "note": "storeys of windows on the hall"
+    },
+    "pavilion": {
+      "widthM": 12,
+      "depthM": 12,
+      "source": "estimate",
+      "note": "each entrance pavilion's plan"
+    },
+    "pavilionM": {
+      "valueM": 11,
+      "source": "estimate",
+      "note": "the pavilions' height"
+    },
+    "pavilionSpacingM": {
+      "valueM": 72,
+      "source": "estimate",
+      "note": "between the pavilions' centres"
+    },
+    "canopy": {
+      "widthM": 70,
+      "depthM": 16,
+      "source": "estimate",
+      "note": "the canopy's length and width"
+    },
+    "canopyM": {
+      "valueM": 9,
+      "source": "estimate",
+      "note": "the canopy's height"
+    }
+  },
+  "readabilityScale": {
+    "note": "Generic and sign-free (LEGAL-1): no signage, no clock, no sculpture."
+  },
+  "gameScale": {
+    "height": 1.4,
+    "plan": 1.1,
+    "note": "Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.4 and widths x1.1, within the frame's exclusion, so the station reads at the game camera. Wikidata gives no dimensions, so every number is an estimate (the S07a kit's stylised proportions)."
+  }
+}

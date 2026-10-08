@@ -4,7 +4,8 @@
  * the `landmarks[].exclusion` of the frames file (data/landmarks/frames.derived.json), which the
  * same geo build derives just before the districts (INT-8), so a rebuild never reads a stale file.
  *
- * Only the `exclusion` of each frame is read; the rest of the file belongs to S07a. Frames that do
+ * Only the `grounds` (S07c, the Blender model's footprint) or else the `exclusion` (S07a, the kit
+ * model's) of each frame is read; the rest of the file belongs to S07a. Frames that do
  * not match fail the build rather than silently excluding nothing.
  */
 import { z } from 'zod'
@@ -22,18 +23,26 @@ export const LandmarkExclusionSchema = z.strictObject({
 export type LandmarkExclusion = z.infer<typeof LandmarkExclusionSchema>
 
 const FramesSchema = z.object({
-  landmarks: z.array(z.object({ exclusion: LandmarkExclusionSchema })),
+  landmarks: z.array(
+    z.object({
+      exclusion: LandmarkExclusionSchema.optional(),
+      grounds: z.array(LandmarkExclusionSchema).optional(),
+    }),
+  ),
 })
 
 export const FRAMES_PATH = 'landmarks/frames.derived.json'
 
-/** The exclusion rectangle of every landmark in a frames file. */
+/** The exclusion rectangles of every landmark in a frames file. */
 export function readLandmarkExclusions(json: unknown): LandmarkExclusion[] {
   const result = FramesSchema.safeParse(json)
   if (!result.success) {
     throw new Error(`Invalid data/${FRAMES_PATH} (INT-7):\n${z.prettifyError(result.error)}`)
   }
-  return result.data.landmarks.map((frame) => frame.exclusion)
+  // The Blender model's grounds (S07c) when the frame has them, else the kit model's.
+  return result.data.landmarks.flatMap(
+    (frame) => frame.grounds ?? (frame.exclusion === undefined ? [] : [frame.exclusion]),
+  )
 }
 
 export function insideExclusion(point: LocalPoint, rect: LandmarkExclusion): boolean {
