@@ -141,12 +141,20 @@ def prism_xz(outline, y0, y1, caps=True):
     return bm
 
 
+def _two_sided(verts, faces):
+    """Faces plus their reverses on their own vertices. The runtime's shared model material
+    culls back faces, so a sheet (a ribbon, a truss panel) must carry both sides."""
+    n = len(verts)
+    back = [tuple(n + i for i in reversed(face)) for face in faces]
+    return _bm_from(list(verts) + list(verts), list(faces) + back)
+
+
 def quad_strip(left, right):
-    """Quads between two equal-length point rows (a ribbon or a deck surface)."""
+    """A two-sided sheet of quads between two equal-length point rows."""
     n = len(left)
     verts = list(left) + list(right)
     faces = [(i, i + 1, n + i + 1, n + i) for i in range(n - 1)]
-    return _bm_from(verts, faces)
+    return _two_sided(verts, faces)
 
 
 def diamond(centre, r):
@@ -159,17 +167,20 @@ def diamond(centre, r):
     return bm
 
 
-def quad(a, b, c, d):
-    """One flat quad (a trim or an inset panel laid just proud of a face)."""
-    return _bm_from([a, b, c, d], [(0, 1, 2, 3)])
+def quad(a, b, c, d, facing):
+    """One flat quad (an inset panel laid just proud of a face), wound so its front faces
+    `facing`: the runtime culls back faces."""
+    normal = ops.cross(ops.sub(b, a), ops.sub(c, a))
+    corners = [a, b, c, d] if ops.dot(normal, facing) > 0 else [d, c, b, a]
+    return _bm_from(corners, [(0, 1, 2, 3)])
 
 
 def ribbon(a, b, half_width, across):
     """A flat two-triangle strip from a to b, `half_width` either side along `across`.
 
     Suspenders and stays are ribbons: a few px wide at game distance, so a box's extra sides
-    would never be seen. The body material is double-sided, so a ribbon reads from both sides.
+    would never be seen. Two-sided (4 triangles), as the runtime culls back faces.
     """
     off = ops.scale(across, half_width)
     verts = [ops.sub(a, off), ops.add(a, off), ops.add(b, off), ops.sub(b, off)]
-    return _bm_from(verts, [(0, 1, 2, 3)])
+    return _two_sided(verts, [(0, 1, 2, 3)])

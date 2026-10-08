@@ -16,7 +16,8 @@ ROUGHNESS = 0.9
 
 def _vertex_coloured(name, roughness):
     material = bpy.data.materials.new(name)
-    material.use_backface_culling = False
+    # Single-sided like the runtime's shared model material, so previews show what culls.
+    material.use_backface_culling = True
     tree = material.node_tree
     bsdf = tree.nodes.get("Principled BSDF")
     attribute = tree.nodes.new("ShaderNodeVertexColor")

@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "id": "queensboro-bridge",
+  "blender": {
+    "version": "5.2.2",
+    "buildHash": "d13f752e3b9c"
+  },
+  "inputsSha": "b065563edaba4049a4fa1bbaba7c55f0586fed3cbc34a7407ca012786b088ce8",
+  "caps": {
+    "low": 1200,
+    "mid": 3500,
+    "high": 7000
+  },
+  "levels": [
+    {
+      "level": 0,
+      "file": "public/landmarks/queensboro-bridge/lod0.glb",
+      "sha256": "af64ea6994f5e93a78b49e6bc7e5e7f65d8ca88b5cd6cf956b2357b1671074dc",
+      "bytes": 111544,
+      "triangles": 6552,
+      "uncompressedBytes": 670732
+    },
+    {
+      "level": 1,
+      "file": "public/landmarks/queensboro-bridge/lod1.glb",
+      "sha256": "17463f47d3eeb1ebc9de65bd1a473b51687ca3361d6031a26ba6ea55beea98ee",
+      "bytes": 57600,
+      "triangles": 3216,
+      "uncompressedBytes": 331088
+    },
+    {
+      "level": 2,
+      "file": "public/landmarks/queensboro-bridge/lod2.glb",
+      "sha256": "11b1b873420fcc5fb74dac8512909fad3ae20f701ad12f6d1ea4aefd06c7e131",
+      "bytes": 21116,
+      "triangles": 1184,
+      "uncompressedBytes": 119664
+    },
+    {
+      "level": 3,
+      "file": "public/landmarks/queensboro-bridge/lod3.glb",
+      "sha256": "30abe28dd2151d93a96a5da6e4f6dccf077c4443dc5623b15e18c6328be88ff4",
+      "bytes": 9192,
+      "triangles": 424,
+      "uncompressedBytes": 41176
+    }
+  ]
+}

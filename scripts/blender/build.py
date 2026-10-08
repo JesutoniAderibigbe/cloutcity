@@ -93,6 +93,8 @@ def run(landmark_id, out_dir, caps_override=None, true_scale=False):
         "trueScale": true_scale,
         "ratio": ratio,
         "levels": levels,
+        # Where preview.py puts land along the axis and which tower it looks at closely.
+        "context": module.context(spec) if hasattr(module, "context") else {"land": [], "focus": 0.0},
         "problems": problems,
     }
     os.makedirs(out_dir, exist_ok=True)

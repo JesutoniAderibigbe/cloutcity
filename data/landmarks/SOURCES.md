@@ -122,9 +122,9 @@ Game scale: heights ×1.8, widths ×2. Game scale (orchestrator decision 2026-10
 
 Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
 
-- L0: 6832 triangles, 112856 bytes (`public/landmarks/brooklyn-bridge/lod0.glb`)
-- L1: 3308 triangles, 60468 bytes (`public/landmarks/brooklyn-bridge/lod1.glb`)
-- L2: 1200 triangles, 23780 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
+- L0: 6680 triangles, 108904 bytes (`public/landmarks/brooklyn-bridge/lod0.glb`)
+- L1: 3320 triangles, 59808 bytes (`public/landmarks/brooklyn-bridge/lod1.glb`)
+- L2: 1200 triangles, 22852 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
 - L3: 584 triangles, 13288 bytes (`public/landmarks/brooklyn-bridge/lod3.glb`)
 
 ### manhattan-bridge
@@ -156,9 +156,45 @@ Game scale: heights ×1.8, widths ×1.6. Game scale (orchestrator decision 2026-
 
 Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
 
-- L0: 6572 triangles, 105968 bytes (`public/landmarks/manhattan-bridge/lod0.glb`)
-- L1: 3244 triangles, 55864 bytes (`public/landmarks/manhattan-bridge/lod1.glb`)
-- L2: 1152 triangles, 23396 bytes (`public/landmarks/manhattan-bridge/lod2.glb`)
-- L3: 548 triangles, 13032 bytes (`public/landmarks/manhattan-bridge/lod3.glb`)
+- L0: 6640 triangles, 104540 bytes (`public/landmarks/manhattan-bridge/lod0.glb`)
+- L1: 3232 triangles, 53584 bytes (`public/landmarks/manhattan-bridge/lod1.glb`)
+- L2: 1192 triangles, 24160 bytes (`public/landmarks/manhattan-bridge/lod2.glb`)
+- L3: 584 triangles, 13456 bytes (`public/landmarks/manhattan-bridge/lod3.glb`)
+
+### queensboro-bridge
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q125157 (Queensboro Bridge), CC0-1.0, <https://www.wikidata.org/wiki/Q125157>
+- `chamber-1906`: Chamber of Commerce of the State of New York, Rapid Transit in New York City and in the Other Great Cities (1906), ch. 4 "Bridges to Brooklyn" (the Blackwell's Island bridge), public-domain, <https://nycsubway.org/wiki/Chapter_04:_Bridges_to_Brooklyn>
+
+Dimensions:
+
+- `towerHeightM`: 105 m (wikidata): height (P2048): the tower finials above the water
+- `totalLengthM`: 1135 m (wikidata): length (P2043) of the cantilever structure; the five spans below add up to it
+- `shoreSpanWestM`: 143.1 m (chamber-1906): "a shore span on the Manhattan side, 469.5 feet in length"
+- `riverSpanWestM`: 360.27 m (chamber-1906): "a river span of 1,182 feet"
+- `islandSpanM`: 192.02 m (chamber-1906): "a central span across the island of 630 feet"
+- `riverSpanEastM`: 299.92 m (chamber-1906): "a second river span of 984" feet
+- `shoreSpanEastM`: 139.9 m (chamber-1906): "a shore span of 459 feet"
+- `trussDepthAtTowersM`: 56.39 m (chamber-1906): "the height between the chords at the towers will be 185 feet"
+- `trussDepthMidM`: 14 m (estimate): truss depth mid-span and at the anchor piers, proportioned by eye
+- `deckClearanceM`: 41 m (estimate): the deck (bottom chord) above the water, about the East River bridges' 135 ft
+- `deckWidthM`: 30 m (estimate): the deck between the truss walls (the S07a kit's stylised width)
+- `finialM`: 7.61 m (derived): tower height - deck clearance - truss depth at the towers, so the finials top out at the Wikidata height
+- `towerLeg`: 6 × 8 m (estimate): each steel tower leg's section over a pier
+- `pier`: 36 × 14 m (estimate): the masonry piers (the S07a kit's stylised plan)
+- `pierTopM`: 12 m (estimate): the masonry piers' top above the water
+
+Readability scale (drawn width ÷ true width): chord ×3, member ×4, lamp ×3.
+
+Game scale: heights ×1.8, widths ×1.8. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 and widths x1.8 against the real numbers above (1.8 keeps the deck inside the frame's 56 m exclusion), so the bridge reads at the 3,000-4,500 m game camera. Lengths along the axis stay real.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
+
+- L0: 6552 triangles, 111544 bytes (`public/landmarks/queensboro-bridge/lod0.glb`)
+- L1: 3216 triangles, 57600 bytes (`public/landmarks/queensboro-bridge/lod1.glb`)
+- L2: 1184 triangles, 21116 bytes (`public/landmarks/queensboro-bridge/lod2.glb`)
+- L3: 424 triangles, 9192 bytes (`public/landmarks/queensboro-bridge/lod3.glb`)
 
 <!-- measurements:end -->

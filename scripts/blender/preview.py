@@ -104,23 +104,19 @@ def import_level(path, level, material, heading_rad, offset=(0.0, 0.0, 0.0)):
     return objects
 
 
-def context(data, heading_rad):
-    """Water, and land slabs at the land top beyond each end of a bridge (or under a building)."""
+def context(data, heading_rad, report):
+    """Water, and land slabs at the land top: under a building, or along a bridge's axis where
+    its landmark script says the land is (report.json `context.land`)."""
     theme = inputs.read_json("data", "config", "theme.json")
     water = solid_material("preview-water", (1.0, 1.0, 1.0))
     land = solid_material("preview-land", theme_colour(theme, theme["scene"]["land"]["brooklyn"]))
     box_object("water", -20000, 20000, -20000, 20000, -1.0, 0.0, water)
     top = inputs.land_top_y(data["scene"])
-    frame = data["frame"]
-    if frame["base"] != "water":
+    if data["frame"]["base"] != "water":
         box_object("land", -3000, 3000, -3000, 3000, 0.0, top, land)
         return
-    half = frame["spanM"] / 2.0
-    towers = data["model"]["params"]["towers"]["offsetsM"]
-    # Shorelines just landward of each tower (the towers stand on piers in the river).
-    shore = (towers[0] - 260.0, towers[1] + 70.0)
-    for name, y0, y1 in (("land-a", -half - 2500, shore[0]), ("land-b", shore[1], half + 2500)):
-        obj = box_object(name, -2500, 2500, y0, y1, 0.0, top, land)
+    for i, (y0, y1) in enumerate(report["context"]["land"]):
+        obj = box_object("land-%d" % i, -2500, 2500, max(y0, -6000.0), min(y1, 6000.0), 0.0, top, land)
         obj.rotation_euler = (0.0, 0.0, heading_rad)
 
 
@@ -241,11 +237,11 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     prefix = os.path.join(args.out, args.label + "-" if args.label else "")
 
-    context(data, heading_rad)
+    context(data, heading_rad, report)
     levels = import_all(args.glb, material, heading_rad, (0.0, 0.0, 0.0))
     top = max(e["bbox"]["max"][1] for e in report["levels"])
     centre = (0.0, 0.0, top * 0.35)
-    tower_s = data["model"]["params"]["towers"]["offsetsM"][1] if bridge else 0.0
+    tower_s = report["context"]["focus"] if bridge else 0.0
     tower = (-math.sin(heading_rad) * tower_s, math.cos(heading_rad) * tower_s, top * 0.55)
     polar = scene_cfg["camera"]["polarDeg"]
     # The azimuth limit whose camera looks most nearly along a bridge, so its arches show.

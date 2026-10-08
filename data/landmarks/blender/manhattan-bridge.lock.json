@@ -5,7 +5,7 @@
     "version": "5.2.2",
     "buildHash": "d13f752e3b9c"
   },
-  "inputsSha": "96ba0209f3f92478fa43a3ea7341f22c6c10d3a148495701c432312966dcb4a9",
+  "inputsSha": "3114d0d52e60646fa3276d5103b1e18f4e07cf9e5d03084cf5fef02dceb2cd13",
   "caps": {
     "low": 1200,
     "mid": 3500,
@@ -15,34 +15,34 @@
     {
       "level": 0,
       "file": "public/landmarks/manhattan-bridge/lod0.glb",
-      "sha256": "211c19554c51ec0fa6ffdfc6f4b4485775d494ba8e883b7b8374ab6e932c4163",
-      "bytes": 105968,
-      "triangles": 6572,
-      "uncompressedBytes": 694404
+      "sha256": "103e17b51d48daa5ee5aa64a5cfeb0e872a8755a85677749f8d4db4bba9cf19d",
+      "bytes": 104540,
+      "triangles": 6640,
+      "uncompressedBytes": 685556
     },
     {
       "level": 1,
       "file": "public/landmarks/manhattan-bridge/lod1.glb",
-      "sha256": "6a6e048b0f58315f1862b26a87b3b36e8c06e9d9c14c74bc7166ad51812e2b2f",
-      "bytes": 55864,
-      "triangles": 3244,
-      "uncompressedBytes": 332812
+      "sha256": "d7d1e3851ec4af6dcc395b46fa81243afd7112964afd22fcefb423ed747e9221",
+      "bytes": 53584,
+      "triangles": 3232,
+      "uncompressedBytes": 328320
     },
     {
       "level": 2,
       "file": "public/landmarks/manhattan-bridge/lod2.glb",
-      "sha256": "fa22cb8f7ebbfe15dbf5d6c3f0da45a3f5915c963835d64dd5340aff8477a437",
-      "bytes": 23396,
-      "triangles": 1152,
-      "uncompressedBytes": 120408
+      "sha256": "679fce8e342486bcfdd2025a66974ca3896aec3b66028e7621e5b9003cd7bc85",
+      "bytes": 24160,
+      "triangles": 1192,
+      "uncompressedBytes": 127228
     },
     {
       "level": 3,
       "file": "public/landmarks/manhattan-bridge/lod3.glb",
-      "sha256": "2258d03804fca57fe3592ee35e168075a4d6c44a74663a6d812476bf2a3345f3",
-      "bytes": 13032,
-      "triangles": 548,
-      "uncompressedBytes": 57556
+      "sha256": "2fc0c80015a908eb827578e54e687487ac36d77bcb02ce5fd2bac5072d94e9ad",
+      "bytes": 13456,
+      "triangles": 584,
+      "uncompressedBytes": 59868
     }
   ]
 }

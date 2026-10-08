@@ -192,13 +192,13 @@ def _panels(s, edges, d_up, w_up, z0, spring, cornice, k, builder):
         for side in (-1, 1):
             y = s + side * (d_up / 2 + proud)
             builder.add(prim.quad((x0 + inset, y, z0 + margin), (x1 - inset, y, z0 + margin),
-                                  (x1 - inset, y, spring - margin), (x0 + inset, y, spring - margin)),
+                                  (x1 - inset, y, spring - margin), (x0 + inset, y, spring - margin), (0.0, side, 0.0)),
                         "granite", tone=PANEL_TONE)
     edge = 0.15 * d_up
     for side in (-1, 1):
         x = side * (w_up / 2 + proud)
         builder.add(prim.quad((x, s - d_up / 2 + edge, z0 + margin), (x, s + d_up / 2 - edge, z0 + margin),
-                              (x, s + d_up / 2 - edge, cornice - margin), (x, s - d_up / 2 + edge, cornice - margin)),
+                              (x, s + d_up / 2 - edge, cornice - margin), (x, s - d_up / 2 + edge, cornice - margin), (side, 0.0, 0.0)),
                     "granite", tone=PANEL_TONE)
 
 

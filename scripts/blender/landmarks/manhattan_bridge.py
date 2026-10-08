@@ -86,3 +86,9 @@ def spec(data, true_scale=False):
 def expected_height(data, true_scale=False):
     real = data["measurements"]["dimensions"]["towerHeightM"]["valueM"]
     return real if true_scale else real * data["measurements"]["gameScale"]["height"]
+
+
+def context(spec):
+    """Preview land along the axis: shorelines between each tower and its anchorage."""
+    t0, t1 = spec["towers"]
+    return {"land": [[-1e9, t0 - 150.0], [t1 + 120.0, 1e9]], "focus": t1}
