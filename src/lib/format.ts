@@ -45,6 +45,17 @@ export function formatPercent(percent: number): string {
   return PERCENT.format(percent / 100)
 }
 
+/**
+ * A short wait in real seconds as minutes and seconds (S19, the resend countdown): `45` →
+ * `"0:45"`, `90` → `"1:30"`. Rounded up, so it never shows 0:00 while still waiting; negative
+ * values show as `"0:00"`.
+ */
+export function formatCountdown(seconds: number): string {
+  assertFinite(seconds, 'Countdown')
+  const whole = Math.max(0, Math.ceil(seconds))
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
+}
+
 // The personal game clock has no time zone: its minute of day is laid on a UTC day and read
 // back in UTC, so the host's zone and DST never shift it.
 const GAME_TIME = new Intl.DateTimeFormat('en-US', {

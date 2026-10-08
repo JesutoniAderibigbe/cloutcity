@@ -1,15 +1,26 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 // Read directly (validated by LayoutConfigSchema in src/lib/data/data.test.ts): the classic-zod
 // loader in src/lib/data/config.ts must stay out of client chunks.
 import layoutJson from '@data/config/layout.json'
 import type { LevelUp } from '@/engine/clout'
 import { copy } from '@/lib/copy'
 import { levelUpCloseLabel, levelUpMessage, levelUpTitle, levelUpUnlocked } from '@/lib/levelUpCopy'
+import { lazyIsland } from '@/components/overlay/lazyIsland'
+import { guestSessionStore } from '@/state/guestSession'
 import { gameStore, useGameStore } from '@/state/store'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/clout'
+
+// S19, GR-4: a guest's level-up nudges them to save their progress. The button and its copy
+// load only when a guest levels up, never with the toast itself.
+const SaveNudge = lazyIsland(
+  () => import('@/components/account/SaveNudge').then((module) => module.SaveNudge),
+  { zone: 'toast', labelKey: 'loading.account', quiet: true },
+)
+
+const sessionStatus = () => guestSessionStore.getState().status
 
 /**
  * The level-up toast (S13), in the overlay toast zone, whose live region announces it. It
@@ -65,6 +76,9 @@ function Toast({ levelUp }: { readonly levelUp: LevelUp }) {
   }, [paused])
 
   const unlocked = levelUpUnlocked(levelUp)
+  // Only a guest with a server session has an account to save to (S19).
+  const guest =
+    useSyncExternalStore(guestSessionStore.subscribe, sessionStatus, sessionStatus) === 'anonymous'
   return (
     <div
       ref={ref}
@@ -83,6 +97,7 @@ function Toast({ levelUp }: { readonly levelUp: LevelUp }) {
         </p>
         {unlocked === null ? null : <p className="text-taxi-ink">{unlocked}</p>}
       </div>
+      {guest ? <SaveNudge /> : null}
       <button
         type="button"
         onClick={() => gameStore.getState().dismissLevelUp()}

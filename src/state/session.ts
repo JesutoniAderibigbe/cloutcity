@@ -9,9 +9,13 @@
  *  1. no Supabase configuration in this build → stays local (`no-config`), nothing is imported;
  *  2. waits until the map is playable, so the sign-in never competes with the map for bandwidth;
  *  3. imports src/lib/supabase/supabaseAuth.ts (and with it @supabase/supabase-js) lazily;
- *  4. reuses this device's session or signs in anonymously, then records the attestation;
- *  5. once connected, loads any moderator notices waiting for the player (S18b) and starts cloud
- *     save sync (src/state/cloudSync.ts, lazily, with the same session; S18c).
+ *  4. reuses this device's session (a guest's or, S19, a saved account's) or signs in
+ *     anonymously, then records the attestation. After the player signed out of an account here
+ *     (src/state/account.ts `signedOut`) no guest is created: play stays local ("signed-out")
+ *     until they log in or start a new guest game;
+ *  5. once connected, loads any moderator notices waiting for the player (S18b) and starts the
+ *     account coordinator (src/lib/supabase/accountSession.ts, lazily, with the same session), which
+ *     starts cloud save sync (S18c) and follows upgrades, log-ins and sign-outs (S19).
  *
  * Failures degrade to local play and never block it: a rate limit (429) or no network are
  * expected and logged at info (no network retries once when the browser comes back online);
@@ -41,10 +45,18 @@ export interface GuestSessionDeps {
     connectAnonymous: (
       env: SupabaseEnv,
       attestation: ReturnType<typeof toAttestationArgs>,
+      options: { readonly signedOut: boolean },
     ) => Promise<ConnectResult>
   }>
-  /** Loads and starts cloud save sync (S18c) once the session is connected. */
+  /**
+   * Loads and starts the account coordinator (S19) and with it cloud save sync (S18c) once the
+   * session is connected.
+   */
   readonly startSync: () => Promise<void>
+  /** Whether the player signed out of an account on this device (S19), read lazily. */
+  readonly signedOut: () => Promise<boolean>
+  /** The session is local because the player signed out (S19): the cloud chip says so. */
+  readonly onSignedOut?: () => void
   readonly isOnline: () => boolean
   /** Calls `listener` once when the browser is next online; returns a way to cancel. */
   readonly onceOnline: (listener: () => void) => () => void
@@ -62,13 +74,20 @@ export function browserSessionDeps(): GuestSessionDeps {
     whenMapPlayable,
     loadAuth: () => import('@/lib/supabase/supabaseAuth'),
     startSync: () =>
-      Promise.all([import('@/lib/supabase/supabaseAuth'), import('./cloudSync')]).then(
-        ([auth, sync]) => {
-          // The client connectAnonymous signed in with: the same session (supabaseAuth.ts).
-          const env = supabaseEnv()
-          sync.startCloudSync(env === null ? undefined : auth.supabaseClient(env))
-        },
-      ),
+      Promise.all([
+        import('@/lib/supabase/supabaseAuth'),
+        import('@/lib/supabase/accountSession'),
+      ]).then(async ([auth, account]) => {
+        // The client connectAnonymous signed in with: the same session (supabaseAuth.ts).
+        const env = supabaseEnv()
+        if (env !== null) await account.startAccountSession(auth.supabaseClient(env), env)
+      }),
+    signedOut: () => import('./account').then((module) => module.accountStore.getState().signedOut),
+    onSignedOut: () => {
+      void import('./syncStatus').then((module) =>
+        module.syncStatusStore.setState({ status: 'signedOut' }),
+      )
+    },
     isOnline: () => typeof navigator === 'undefined' || navigator.onLine,
     onceOnline: (listener) => {
       window.addEventListener('online', listener, { once: true })
@@ -136,7 +155,8 @@ export function createGuestSessionStarter(
 
     let result: ConnectResult
     try {
-      result = await (await deps.loadAuth()).connectAnonymous(env, attestation)
+      const signedOut = await deps.signedOut().catch(() => false)
+      result = await (await deps.loadAuth()).connectAnonymous(env, attestation, { signedOut })
     } catch (error) {
       // The session chunk itself failed to load: the same as no network.
       result = {
@@ -151,8 +171,12 @@ export function createGuestSessionStarter(
     }
 
     if (result.ok) {
-      deps.status.setState({ status: 'anonymous', reason: null, reused: result.reused })
-      logger.info('Guest session connected', { reused: result.reused })
+      deps.status.setState({
+        status: result.permanent ? 'permanent' : 'anonymous',
+        reason: null,
+        reused: result.reused,
+      })
+      logger.info('Guest session connected', { reused: result.reused, account: result.permanent })
       deps.onConnected?.()
       deps.startSync().catch((error: unknown) => {
         // The sync chunk failed to load (offline): the save stays on this device.
@@ -160,6 +184,12 @@ export function createGuestSessionStarter(
           error: error instanceof Error ? error.name : typeof error,
         })
       })
+      return
+    }
+    if (result.stage === 'signed-out') {
+      setLocal('signed-out')
+      deps.onSignedOut?.()
+      logger.info('Signed out of the account on this device; playing local')
       return
     }
     if (result.stage === 'attest') {

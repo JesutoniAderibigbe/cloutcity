@@ -27,6 +27,8 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `SUPABASE_SERVICE_ROLE_KEY`                                 | Server only (`src/server/supabase/service.ts`): the `/api/mod/*` routes and cloud saves (POST `/api/save`); never `NEXT_PUBLIC_` | unset: `/mod` and `/api/save` answer 503, saves stay on the device |
 | `SUPABASE_URL`                                              | The project URL for the cloud-save server code, if it differs from `NEXT_PUBLIC_SUPABASE_URL`                                    | `NEXT_PUBLIC_SUPABASE_URL`                                         |
 | `MODERATOR_EMAILS`                                          | Server only: comma-separated emails allowed into `/mod` (`src/server/moderation/auth.ts`)                                        | unset or empty: nobody                                             |
+| `SITE_URL`                                                  | Server only: this site's origin; `/mod` sign-in links land on `<SITE_URL>/mod`                                                   | unset: `/mod` sign-in is off                                       |
+| `NEXT_PUBLIC_SITE_URL`                                      | Account links (S19) land on `<NEXT_PUBLIC_SITE_URL>/auth/callback`; must equal `SITE_URL` (the build fails otherwise)            | unset: accounts are off (fail closed)                              |
 
 ## Scripts
 
@@ -838,9 +840,10 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   from an emailed link (`amr` `otp`, so a password or guest account that set the address is
   refused), and answers 401/403 otherwise. Every response is `no-store` and `noindex` and carries `X-Correlation-Id`, which is
   also the audit row's correlation id. `/mod?case=<player id>` opens one case directly. Locally the
-  magic link lands on `site_url` (`supabase/config.toml`); add the `/mod` URL of your dev server
-  to `additional_redirect_urls` to land on the console, and set the hosted project's redirect
-  URLs the same way. `src/server/**` starts with `import 'server-only'`
+  link lands on `/mod` (allowlisted for the dev server and the lane ports in
+  `supabase/config.toml`): a first sign-in's confirmation link carries the session in the
+  fragment, a returning moderator's log-in link a `token_hash` finished by a tap on "Finish
+  signing in". Set the hosted project's redirect URLs the same way. `src/server/**` starts with `import 'server-only'`
   (`src/lib/server-boundary.test.ts`; `npm run budget` also fails if a chunk names
   `MODERATOR_EMAILS` or `SUPABASE_SERVICE_ROLE_KEY`).
 - **Player safety UI** (S18a/S18b part 2). The Me tab opens the Me panel
@@ -865,6 +868,44 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   session (default `sb-<ref>-auth-token` key) and records the attestation. A rate limit or no
   network keeps local play (info; no network retries once when back online); sign-ins switched
   off or any other refusal warn. `npm run e2e:supabase` checks it against the local stack.
+- **Accounts (S19).** A guest saves their progress on the _same_ user (so the profile with its
+  attestation and consent, the handle and the cloud save all stay): `updateUser({ email })` sends
+  a confirmation link, `linkIdentity` adds Google (manual linking). Logging in is
+  `signInWithOtp({ shouldCreateUser: false })` (the email has a link and a 6-digit code) or
+  `signInWithOAuth`. No passwords. Every link comes back to `/auth/callback`
+  (`src/app/auth/callback`): an email link finishes only on a tap of Finish (mail scanners open
+  links on their own), Google's PKCE code at once; the page wipes the token from the URL at once,
+  is `no-store` and `Referrer-Policy: no-referrer`, and the service worker never handles `/auth`.
+  The templates are `supabase/templates/{magic_link,email_change}.html` (token-hash links to our
+  pages; `/mod` finishes the same log-in link on a tap). `public.check_account_email` answers
+  `ok` or `not_allowed` before a link is sent (rate limited, `data/config/account.json`
+  `emailCheck`), and triggers on `auth.users` and `auth.identities` refuse a banned email
+  however GoTrue is called; `private.require_permanent()` is the gate for features that need a
+  saved account. On the client, `src/lib/supabase/accountAuth.ts` (lazy, with supabase-js) does
+  the calls, `src/lib/supabase/accountSession.ts` follows the account (an upgrade confirmed on another
+  device is picked up by polling; a log-in to another account restarts cloud sync, whose restore
+  table or conflict sheet decides; sign-out stops it and never creates a new guest on the next
+  boot) and `src/state/account.ts` keeps the device's flags (no email). Locally, the stack has
+  `enable_confirmations = true` (so an email change is confirmed by its link, as in production),
+  manual linking on, the lane ports' `/auth/callback` and `/mod` allowlisted, and Google off;
+  Mailpit catches every email (`npx supabase status` prints its URL).
+- **Deploy checklist (S19).**
+  - **USER ACTION: Google OAuth client.** In Google Cloud Console set up the OAuth consent screen
+    (app name, Terms and Privacy URLs, scopes `email` and `profile`) and create a Web client with
+    the redirect URI `https://<project-ref>.supabase.co/auth/v1/callback`; enter its client id and
+    secret under Auth > Providers > Google. The round trip is a manual check on staging.
+  - **USER ACTION: custom SMTP** (Resend, Postmark, SES or similar) with SPF and DKIM on the
+    sending domain, then raise the hosted email rate limit: the built-in mailer only reaches the
+    project's team at 2 emails an hour.
+  - In the dashboard: enable **manual linking**; keep **email confirmations** and **secure email
+    change** on; paste both templates (Auth > Email Templates: Magic Link, Change Email Address);
+    Site URL = the production origin; redirect URLs `<SITE_URL>/auth/callback` and
+    `<SITE_URL>/mod`.
+  - Vercel env: `NEXT_PUBLIC_SITE_URL` equal to `SITE_URL`.
+  - With Turnstile on, the log-in requests need the captcha token wired in
+    (`setCaptchaProvider` in `accountAuth.ts`) before launch.
+  - The Privacy page (S27) states that we keep the account's email and Google identity (email,
+    provider id), and why.
 - **Production** (set in the Supabase dashboard, not `config.toml`): enable anonymous sign-ins,
   set the anonymous sign-in rate limit per IP (locally raised to 1000/h for tests) and turn on
   Turnstile under Auth > Bot and Abuse Protection (CAPTCHA). The local stack has no CAPTCHA.

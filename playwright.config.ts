@@ -27,6 +27,7 @@ export const WEBGL_LAUNCH_ARGS = [
 export const SUPABASE_BLANK_ENV = {
   NEXT_PUBLIC_SUPABASE_URL: '',
   NEXT_PUBLIC_SUPABASE_ANON_KEY: '',
+  NEXT_PUBLIC_SITE_URL: '',
 }
 
 export const SUPABASE_SPECS = '**/*.supabase.spec.ts'

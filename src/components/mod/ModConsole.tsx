@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import * as z from 'zod/mini'
+import { parseCallback } from '@/lib/account/callback'
 import { copy } from '@/lib/copy'
 import { snakeToCamel } from '@/lib/copy/camel'
 import { reportReasonKey } from '@/lib/safety/errorCopy'
@@ -41,6 +42,9 @@ const actionName = (action: ModActionName): string => copy(`mod.action.${snakeTo
 type Session =
   | { readonly state: 'loading' }
   | { readonly state: 'signed-out' }
+  /** A log-in link was opened: it finishes on the moderator's tap (S19 template). */
+  | { readonly state: 'link'; readonly tokenHash: string; readonly type: 'email' | 'magiclink' }
+  | { readonly state: 'link-failed' }
   | { readonly state: 'signed-in'; readonly token: () => Promise<string | null> }
 
 /** Loads the console's own session module (and supabase-js) lazily. */
@@ -51,6 +55,24 @@ async function loadSession(): Promise<Session> {
   const token = await auth.modAccessToken(env)
   if (token === null) return { state: 'signed-out' }
   return { state: 'signed-in', token: () => auth.modAccessToken(env) }
+}
+
+/** A log-in link's token hash in /mod's URL, read once and wiped from the address bar. */
+function takeLink(): Extract<Session, { state: 'link' }> | null {
+  if (!new URLSearchParams(window.location.search).has('token_hash')) return null
+  const parsed = parseCallback(window.location.search)
+  window.history.replaceState(null, '', '/mod')
+  if (parsed.kind !== 'finish' || parsed.params.kind !== 'token') return null
+  const { tokenHash, type } = parsed.params
+  return type === 'email_change' ? null : { state: 'link', tokenHash, type }
+}
+
+async function finishLink(link: Extract<Session, { state: 'link' }>): Promise<Session> {
+  const env = supabaseEnv()
+  if (env === null) return { state: 'signed-out' }
+  const auth = await import('@/lib/supabase/modAuth')
+  if (!(await auth.modFinishLink(env, link.tokenHash, link.type))) return { state: 'link-failed' }
+  return loadSession()
 }
 
 async function signOut() {
@@ -645,6 +667,13 @@ export function ModConsole() {
 
   useEffect(() => {
     let live = true
+    const link = takeLink()
+    if (link !== null) {
+      // The URL is only readable in the browser, after hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one read of the URL on arrival
+      setSession(link)
+      return
+    }
     void loadSession().then((next) => {
       if (live) setSession(next)
     })
@@ -661,8 +690,27 @@ export function ModConsole() {
         </h1>
         {session.state === 'loading' ? (
           <p className="text-sm text-muted">{copy('mod.loading')}</p>
-        ) : session.state === 'signed-out' ? (
-          <SignIn />
+        ) : session.state === 'link' ? (
+          <button
+            type="button"
+            data-mod-finish=""
+            onClick={() => {
+              setSession({ state: 'loading' })
+              void finishLink(session).then(setSession)
+            }}
+            className={`${BUTTON} self-start bg-taxi text-on-taxi`}
+          >
+            {copy('mod.signIn.finish')}
+          </button>
+        ) : session.state === 'signed-out' || session.state === 'link-failed' ? (
+          <>
+            {session.state === 'link-failed' ? (
+              <p role="alert" className="text-sm font-semibold text-danger">
+                {copy('mod.signIn.linkFailed')}
+              </p>
+            ) : null}
+            <SignIn />
+          </>
         ) : (
           <Console
             token={session.token}

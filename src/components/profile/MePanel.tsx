@@ -8,7 +8,8 @@ import { copy, copyParts, type CopyKey } from '@/lib/copy'
 import type { MyProfile } from '@/lib/forms/handle'
 import { connectedProfileApi, type ProfileApi } from '@/lib/supabase/profileApi'
 import { safetyApi } from '@/lib/supabase/safetyApi'
-import { guestSessionStore, type GuestSessionState } from '@/state/guestSession'
+import { AccountSection } from '@/components/account/AccountSection'
+import { guestSessionStore, isOnlineSession, type GuestSessionState } from '@/state/guestSession'
 import { closeHudPanel } from '@/state/hudPanel'
 import { HandleForm } from './HandleForm'
 import { PublicCard } from './PublicCard'
@@ -34,6 +35,8 @@ function offlineReasonKey(session: GuestSessionState): CopyKey {
       return 'profile.offline.offline'
     case 'rate-limited':
       return 'profile.offline.rateLimited'
+    case 'signed-out':
+      return 'profile.offline.signedOut'
     default:
       return 'profile.offline.other'
   }
@@ -144,9 +147,11 @@ function ConductLink() {
 }
 
 /**
- * The Me panel (S18a, S18b), opened by the Me tab: how other players see you, your handle, and
- * the players you blocked or muted. It needs the guest's server session; without one it says
- * why. supabase-js loads only once the player is online and the panel opens.
+ * The Me panel (S18a, S18b, S19), opened by the Me tab: the account (a guest's "Create account"
+ * with the warning that clearing browser data wipes a guest game, or who is signed in), how
+ * other players see you, your handle, and the players you blocked or muted. The profile needs a
+ * server session; without one it says why. supabase-js loads only once the player is online and
+ * the panel opens.
  */
 export function MePanel() {
   const session = useGuestSession()
@@ -158,7 +163,8 @@ export function MePanel() {
       onClose={closeHudPanel}
       scrollBody
     >
-      {session.status === 'anonymous' ? <OnlineProfile /> : <NotConnected session={session} />}
+      <AccountSection session={session} />
+      {isOnlineSession(session) ? <OnlineProfile /> : <NotConnected session={session} />}
       <ConductLink />
     </PanelDialog>
   )

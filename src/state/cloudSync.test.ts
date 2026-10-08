@@ -15,7 +15,13 @@ import type { Database } from '@/lib/supabase/database.types'
 import { createLogger } from '@/lib/log'
 import type { CloudCopy, UploadBody, UploadReply } from '@/lib/sync/protocol'
 import { createAudioSettingsStore, type PersistedAudioSettings } from './audioSettings'
-import { SYNC_META_KEY, cloudSignature, createCloudSync, type CloudSyncDeps } from './cloudSync'
+import {
+  SYNC_META_KEY,
+  cloudSignature,
+  createCloudSync,
+  parseSyncMeta,
+  type CloudSyncDeps,
+} from './cloudSync'
 import { createSafeJsonStorage } from './storage'
 import { createGameStore, persistedOf, type PersistedState } from './store'
 import { createSyncStatusStore } from './syncStatus'
@@ -57,7 +63,15 @@ interface CloudRow {
   last_device_id: string | null
 }
 
-function setup(options: { cloud?: CloudRow | null; online?: boolean; local?: SaveState } = {}) {
+function setup(
+  options: {
+    cloud?: CloudRow | null
+    online?: boolean
+    local?: SaveState
+    /** The signed-in user (S19): its id, and whether it is a guest (anonymous). */
+    user?: { readonly id: string; readonly anonymous: boolean }
+  } = {},
+) {
   const logger = createLogger({ sink: () => {} })
   const local = new MemoryStorage()
   const game = createGameStore(
@@ -89,7 +103,15 @@ function setup(options: { cloud?: CloudRow | null; online?: boolean; local?: Sav
   const client = {
     auth: {
       getSession: async () => ({
-        data: { session: { access_token: 'token', user: { id: USER } } },
+        data: {
+          session: {
+            access_token: 'token',
+            user:
+              options.user === undefined
+                ? { id: USER }
+                : { id: options.user.id, is_anonymous: options.user.anonymous },
+          },
+        },
         error: null,
       }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
@@ -716,6 +738,161 @@ describe('cloud save sync: a kept game behind the account (N2)', () => {
     await settle()
     expect(persistedOf(s.game.getState())).toEqual(theirs)
     expect(s.status.getState().status).toBe('synced')
+    sync.stop()
+  })
+})
+
+describe('cloud save sync: accounts (S19)', () => {
+  const meta = (fields: Record<string, unknown>) =>
+    JSON.stringify({
+      version: 2,
+      deviceId: DEVICE,
+      revision: 3,
+      cloudSignature: null,
+      ...fields,
+    })
+
+  it('reads a version 1 sync record as a guest\'s (only guests existed then)', () => {
+    expect(
+      parseSyncMeta({ version: 1, deviceId: DEVICE, userId: USER, revision: 2, cloudSignature: 'x' }),
+    ).toEqual({
+      version: 2,
+      deviceId: DEVICE,
+      userId: USER,
+      revision: 2,
+      cloudSignature: 'x',
+      ownerKind: 'anonymous',
+    })
+    expect(parseSyncMeta({ version: 3, deviceId: DEVICE })).toBeNull()
+    expect(parseSyncMeta({ version: 2, deviceId: DEVICE, userId: USER, revision: 0 })).toBeNull()
+  })
+
+  it('records the owner kind, and a guest who saves their progress keeps the same record', async () => {
+    const s = setup({ user: { id: USER, anonymous: true } })
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    expect(s.meta()).toMatchObject({ version: 2, userId: USER, ownerKind: 'anonymous', revision: 1 })
+    sync.markPermanent()
+    expect(s.meta()).toMatchObject({ userId: USER, ownerKind: 'permanent', revision: 1 })
+    sync.stop()
+  })
+
+  it("a played game from another saved account is never uploaded to a new account's empty slot", async () => {
+    const s = setup({ local: played(), user: { id: 'user-b', anonymous: false } })
+    s.local.setItem(SYNC_META_KEY, meta({ userId: 'user-a', ownerKind: 'permanent' }))
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    expect(s.uploads).toEqual([])
+    expect(s.status.getState()).toMatchObject({ status: 'conflict', conflictEmpty: true })
+    sync.stop()
+  })
+
+  it('"Start fresh" there replaces this device\'s game with a new one, then saves it', async () => {
+    const s = setup({ local: played(), user: { id: 'user-b', anonymous: false } })
+    s.local.setItem(SYNC_META_KEY, meta({ userId: 'user-a', ownerKind: 'permanent' }))
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.status.getState().controls?.resolveConflict('use-cloud')
+    await s.advance(0)
+    expect(persistedOf(s.game.getState()).actions).toBe(0)
+    expect(s.uploads).toHaveLength(1)
+    expect(s.uploads[0]?.body.baseRevision).toBe(0)
+    expect(s.status.getState()).toMatchObject({ status: 'synced', conflictEmpty: false })
+    sync.stop()
+  })
+
+  it('"Keep this device\'s game" there uploads it as the new account\'s first save', async () => {
+    const mine = played()
+    const s = setup({ local: mine, user: { id: 'user-b', anonymous: false } })
+    s.local.setItem(SYNC_META_KEY, meta({ userId: 'user-a', ownerKind: 'permanent' }))
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.status.getState().controls?.resolveConflict('keep-local')
+    await s.advance(0)
+    expect(s.uploads).toHaveLength(1)
+    expect(s.uploads[0]?.body).toMatchObject({ baseRevision: 0, save: mine })
+    expect(s.meta()).toMatchObject({ userId: 'user-b', ownerKind: 'permanent', revision: 1 })
+    sync.stop()
+  })
+
+  it("another saved account's game meets this account's save: always a conflict", async () => {
+    // Even unchanged since its last sync (which would otherwise adopt the account's save).
+    const mine = played()
+    const s = setup({
+      local: mine,
+      cloud: row({ ...played(), actions: 7 }, 5, 'other-device'),
+      user: { id: 'user-b', anonymous: false },
+    })
+    s.local.setItem(
+      SYNC_META_KEY,
+      meta({ userId: 'user-a', ownerKind: 'permanent', cloudSignature: cloudSignature(mine) }),
+    )
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    expect(s.status.getState()).toMatchObject({ status: 'conflict', conflictEmpty: false })
+    expect(persistedOf(s.game.getState())).toEqual(mine)
+    sync.stop()
+  })
+
+  it("a fresh game after another saved account's record takes the new account's save", async () => {
+    const theirs = played()
+    const s = setup({
+      cloud: row(theirs, 4, 'other-device'),
+      user: { id: 'user-b', anonymous: false },
+    })
+    s.local.setItem(SYNC_META_KEY, meta({ userId: 'user-a', ownerKind: 'permanent' }))
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    expect(persistedOf(s.game.getState())).toEqual(theirs)
+    expect(s.status.getState().status).toBe('synced')
+    sync.stop()
+  })
+
+  it("a guest's game logging in to an account with no save uploads to it (a guest is not another account)", async () => {
+    const mine = played()
+    const s = setup({ local: mine, user: { id: 'user-b', anonymous: false } })
+    s.local.setItem(SYNC_META_KEY, meta({ userId: 'guest-1', ownerKind: 'anonymous' }))
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    expect(s.uploads).toHaveLength(1)
+    expect(s.uploads[0]?.body.save).toEqual(mine)
+    sync.stop()
+  })
+
+  it('flushNow sends what is waiting and settles true once the account holds it', async () => {
+    const s = setup()
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.game.setState({ actions: 5 })
+    // The server's upload interval since the first upload is waited out, inside the timeout.
+    const flushed = sync.flushNow(syncJson.minUploadIntervalMs * 4)
+    await s.advance(0)
+    await s.advance(syncJson.minUploadIntervalMs + 500)
+    expect(await flushed).toBe(true)
+    expect(s.uploads).toHaveLength(2)
+    sync.stop()
+  })
+
+  it('flushNow settles false offline, without waiting out the timeout', async () => {
+    const s = setup()
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.goOffline()
+    s.game.setState({ actions: 5 })
+    expect(await sync.flushNow(5000)).toBe(false)
+    sync.stop()
+  })
+
+  it('flushNow settles false when the server keeps refusing within the timeout', async () => {
+    const s = setup()
+    const sync = createCloudSync(s.deps)
+    await sync.ready
+    s.game.setState({ actions: 5 })
+    s.replies.push(() => ({ status: 503, reply: { ok: false, code: 'unavailable' } }))
+    const flushed = sync.flushNow(1000)
+    await s.advance(0)
+    await s.advance(syncJson.minUploadIntervalMs + 1000)
+    expect(await flushed).toBe(false)
     sync.stop()
   })
 })

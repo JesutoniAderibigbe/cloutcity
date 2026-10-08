@@ -39,9 +39,16 @@ const MePanel = lazyIsland(
   { zone: 'sheet', labelKey: 'loading.me' },
 )
 
+// S19: the account sheet (save progress or log in), with the account copy; supabase-js loads
+// only when the player acts in it.
+const AccountSheet = lazyIsland(
+  () => import('@/components/account/AccountSheet').then((module) => module.AccountSheet),
+  { zone: 'sheet', labelKey: 'loading.account' },
+)
+
 /**
  * The sheet zone's HUD-panel slot (S10a; goals S15; more S05; home S16; me S18a; cloud save
- * S18c): nothing until a HUD button (or the Me tab) opens a panel. A place opening closes the
+ * S18c; account S19): nothing until a HUD button (or the Me tab) opens a panel. A place opening closes the
  * panel, so only one sheet shows at a time. In builds with test hooks the
  * e2e hook is installed from its own chunk, so no test code ships in the shell (or at all in
  * production).
@@ -63,5 +70,6 @@ export function HudPanelMount() {
   if (panel === 'home') return <HomePanel />
   if (panel === 'me') return <MePanel />
   if (panel === 'cloud') return <CloudSavePanel />
+  if (panel === 'account') return <AccountSheet />
   return panel === 'inventory' ? <InventoryPanel /> : <RentPanel />
 }

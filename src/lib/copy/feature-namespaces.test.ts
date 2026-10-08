@@ -673,3 +673,68 @@ describe('S18a/S18b chunks render with only their own namespaces', () => {
     expect(renderToStaticMarkup(createElement(ModConsole))).toContain('Moderation')
   })
 })
+
+describe('S19 account chunks render with only their own namespaces', () => {
+  const configure = () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'http://127.0.0.1:54321')
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon')
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://cloutcity.example')
+  }
+
+  it('the account sheet in both modes, for every session state', async () => {
+    configure()
+    const { AccountSheet } = await import('@/components/account/AccountSheet')
+    const { openAccountSheet } = await import('@/state/accountSheet')
+    const { guestSessionStore } = await import('@/state/guestSession')
+    const states = [
+      { status: 'anonymous', reason: null },
+      { status: 'permanent', reason: null },
+      { status: 'connecting', reason: null },
+      { status: 'local', reason: 'offline' },
+      { status: 'local', reason: 'signed-out' },
+      { status: 'local', reason: 'no-config' },
+    ] as const
+    for (const mode of ['save', 'login'] as const) {
+      openAccountSheet(mode)
+      for (const state of states) {
+        guestSessionStore.setState({ ...state, reused: false })
+        expect(renderToStaticMarkup(createElement(AccountSheet))).toContain(
+          'cc-feature:account-sheet',
+        )
+      }
+    }
+    vi.unstubAllEnvs()
+  })
+
+  it('the Me panel account section, the banner, the nudge, the welcome log-in and the callback', async () => {
+    configure()
+    const { MePanel } = await import('@/components/profile/MePanel')
+    const { guestSessionStore } = await import('@/state/guestSession')
+    for (const state of [
+      { status: 'anonymous', reason: null },
+      { status: 'permanent', reason: null },
+      { status: 'local', reason: 'signed-out' },
+    ] as const) {
+      guestSessionStore.setState({ ...state, reused: false })
+      renderToStaticMarkup(createElement(MePanel))
+    }
+    // The banner reads the stores' server snapshots here (no milestone yet): it renders nothing,
+    // and its copy is checked statically (key-usage.test.ts).
+    const { SaveProgressBanner } = await import('@/components/account/SaveProgressBanner')
+    renderToStaticMarkup(createElement(SaveProgressBanner))
+    const { SaveNudge } = await import('@/components/account/SaveNudge')
+    expect(renderToStaticMarkup(createElement(SaveNudge))).toContain('Save')
+    const { WelcomeLogin } = await import('@/components/account/WelcomeLogin')
+    renderToStaticMarkup(
+      createElement(WelcomeLogin, {
+        titleId: 't',
+        introId: 'i',
+        onBack: () => {},
+        onLoggedIn: () => {},
+      }),
+    )
+    const { AuthCallback } = await import('@/components/account/AuthCallback')
+    renderToStaticMarkup(createElement(AuthCallback))
+    vi.unstubAllEnvs()
+  })
+})

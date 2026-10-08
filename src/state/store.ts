@@ -171,6 +171,12 @@ export interface GameActions {
    */
   discardNewerSaveAndStartFresh(): void
   /**
+   * The player's explicit choice to start this device over with a fresh game (S19: a new guest
+   * game after signing out, or "start fresh" on an account that has no save). Never called
+   * without a tap.
+   */
+  startNewGame(): void
+  /**
    * Cloud sync (S18c): replaces the game with the account's save (restored on load, or the
    * player chose the cloud copy in a conflict). `save` (written as save format `version`) is
    * untrusted and validated like a local save, an older format upgraded; an unusable one, or one
@@ -605,6 +611,17 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
             set({
               ...initialPersistedState(),
               newerSavePresent: false,
+              eventOutcome: null,
+              lastRentEvent: null,
+              lastLevelUp: null,
+            })
+          },
+          startNewGame: () => {
+            if (get().newerSavePresent) return
+            logger.info("Starting a fresh game at the player's request")
+            carry = null
+            set({
+              ...initialPersistedState(),
               eventOutcome: null,
               lastRentEvent: null,
               lastLevelUp: null,

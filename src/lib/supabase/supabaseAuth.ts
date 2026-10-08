@@ -5,9 +5,17 @@
  * (src/lib/client-imports.test.ts, src/lib/shell-boundary.test.ts).
  *
  * A session this device already holds (supabase-js keeps it under its default
- * `sb-<project ref>-auth-token` key, Q7) is reused; otherwise it signs in anonymously. Either
- * way the welcome card's attestation and consent are then recorded on the server
- * (`attest_and_consent`, S18), which every social, realtime and purchase RPC requires.
+ * `sb-<project ref>-auth-token` key, Q7) is reused, a guest's or a saved account's (S19);
+ * otherwise it signs in anonymously, unless the player signed out of an account on this device
+ * (then nothing is created: sign-out never silently becomes a new guest). Either way the welcome
+ * card's attestation and consent are then recorded on the server (`attest_and_consent`, S18,
+ * idempotent: the first attestation wins), which every social, realtime and purchase RPC
+ * requires.
+ *
+ * The client uses the PKCE flow (S19): a Google round trip comes back to /auth/callback with a
+ * code only this browser can exchange. It never reads tokens from the URL itself
+ * (`detectSessionInUrl: false`): only /auth/callback finishes a link, so /mod's own sign-in
+ * fragment can never be picked up by the game (NOTE-23).
  *
  * Nothing here logs: the caller logs the outcome without the user id or any token.
  */
@@ -25,8 +33,10 @@ export interface AuthFailure {
 }
 
 export type ConnectResult =
-  | { readonly ok: true; readonly reused: boolean }
+  | { readonly ok: true; readonly reused: boolean; readonly permanent: boolean }
   | { readonly ok: false; readonly stage: 'session'; readonly failure: AuthFailure }
+  /** No session, and the player signed out of an account here: no guest is created. */
+  | { readonly ok: false; readonly stage: 'signed-out' }
   | {
       readonly ok: false
       readonly stage: 'attest'
@@ -43,7 +53,8 @@ const ErrorShapeSchema = z.object({
   code: z.optional(z.string()),
 })
 
-function failureOf(error: unknown): AuthFailure {
+/** The class, status and code of an auth error (never its message, which may echo input). */
+export function failureOf(error: unknown): AuthFailure {
   const parsed = ErrorShapeSchema.safeParse(error)
   const fields = parsed.success ? parsed.data : {}
   return {
@@ -61,27 +72,40 @@ function clientFor(env: SupabaseEnv): SupabaseClient<Database> {
     cached = {
       key,
       client: createClient<Database>(env.url, env.anonKey, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: false,
+          flowType: 'pkce',
+        },
       }),
     }
   }
   return cached.client
 }
 
-/** Reuses or starts the anonymous session, then records the attestation. Never throws. */
+/**
+ * Reuses the session on this device or starts an anonymous one (unless `signedOut`), then
+ * records the attestation. Never throws.
+ */
 export async function connectAnonymous(
   env: SupabaseEnv,
   attestation: AttestationArgs,
+  options: { readonly signedOut: boolean } = { signedOut: false },
 ): Promise<ConnectResult> {
   try {
     const client = clientFor(env)
     let reused = false
+    let permanent = false
     const existing = await client.auth.getSession()
     if (existing.error !== null) {
       return { ok: false, stage: 'session', failure: failureOf(existing.error) }
     }
     if (existing.data.session !== null) {
       reused = true
+      permanent = existing.data.session.user.is_anonymous !== true
+    } else if (options.signedOut) {
+      return { ok: false, stage: 'signed-out' }
     } else {
       const { data, error } = await client.auth.signInAnonymously()
       if (error !== null) return { ok: false, stage: 'session', failure: failureOf(error) }
@@ -99,7 +123,7 @@ export async function connectAnonymous(
     if (!AttestedProfileSchema.safeParse(data as unknown).success) {
       return { ok: false, stage: 'attest', code: 'unexpected-response' }
     }
-    return { ok: true, reused }
+    return { ok: true, reused, permanent }
   } catch (error) {
     // supabase-js reports failures as values; a throw is a fetch or storage failure underneath.
     return { ok: false, stage: 'session', failure: failureOf(error) }

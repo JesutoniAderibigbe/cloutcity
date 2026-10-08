@@ -8,6 +8,7 @@ import {
   WELCOME_FIELDS,
   createWelcomeSchema,
   type WelcomeValues,
+  WELCOME_MODE_FIELDS,
 } from './welcome'
 
 const YEAR = 2026
@@ -94,5 +95,23 @@ describe('fieldErrors', () => {
     for (const key of Object.values(errorsOf(EMPTY_WELCOME_VALUES))) {
       expect(isCopyKey(key)).toBe(true)
     }
+  })
+})
+
+describe('the welcome card after logging in (S19)', () => {
+  const year = 2026
+  it('asks only the sound choice, or the consent and the sound, never the year', () => {
+    const audio = createWelcomeSchema(year, onboardingJson, 'audio')
+    expect(fieldErrors(audio, { birthYear: '', consent: false, audio: '' })).toEqual({
+      audio: 'welcome.audio.error',
+    })
+    expect(fieldErrors(audio, { birthYear: '', consent: false, audio: 'own' })).toEqual({})
+    const consent = createWelcomeSchema(year, onboardingJson, 'consent')
+    expect(fieldErrors(consent, { birthYear: '', consent: false, audio: '' })).toEqual({
+      consent: 'welcome.consent.error',
+      audio: 'welcome.audio.error',
+    })
+    expect(fieldErrors(consent, { birthYear: '', consent: true, audio: 'ours' })).toEqual({})
+    expect(WELCOME_MODE_FIELDS.full).toEqual(['birthYear', 'consent', 'audio'])
   })
 })

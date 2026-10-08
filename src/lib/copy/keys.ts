@@ -3,6 +3,7 @@
  * erased, so this costs no bundle bytes; the strings load with their namespace module.
  */
 export type CopyKey =
+  | keyof (typeof import('@data/copy/account/base.json'))['strings']
   | keyof (typeof import('@data/copy/actions/base.json'))['strings']
   | keyof (typeof import('@data/copy/ageGate/base.json'))['strings']
   | keyof (typeof import('@data/copy/app/base.json'))['strings']

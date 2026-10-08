@@ -10,5 +10,13 @@
     "secondsPerTap": 1
   },
   "newPlayerNoticeMax": 3,
-  "meaningfulNotices": ["tour", "level-up", "goals-ready", "event", "icon", "update"]
+  "meaningfulNotices": [
+    "tour",
+    "level-up",
+    "goals-ready",
+    "event",
+    "icon",
+    "update",
+    "save-progress"
+  ]
 }

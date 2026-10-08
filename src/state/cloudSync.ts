@@ -18,6 +18,14 @@
  *   An upload "this device sent" is one whose mark (`uploadMark`) the sync record kept when it was
  *   sent: the device id alone also matches another tab of the game, or this device's upload for
  *   another account.
+ *   One exception (S19): when this device's game was last synced to a different *saved* account
+ *   (someone signed out, and another account logs in), a played game is never uploaded to or
+ *   replaced by the new account silently: the player always picks, even when that account has
+ *   no save yet (`conflictEmpty`: keep this device's game there, or start fresh).
+ * - Accounts (S19): the sync record notes whether its account is a guest's or a saved one
+ *   (`ownerKind`); a guest who saves their progress keeps the same account, so nothing restarts.
+ *   Logging in to another account restarts sync on the same client (`restartCloudSync`), and
+ *   signing out stops it (`stopCloudSync`, after `flushNow` sent what it could).
  * - Upload: a meaningful change (anything but the clock's minute) is uploaded after
  *   `sync.debounceMs` of quiet, and at most `sync.maxWaitMs` after the first change. A hidden tab
  *   or a page being left flushes at once with a keepalive request (if it fits
@@ -54,12 +62,16 @@ import { syncStatusStore, type SyncStatus, type SyncStatusStore } from './syncSt
 const SYNC = syncJson as SyncConfig
 
 export const SYNC_META_KEY = 'cloutcity:sync'
-const META_VERSION = 1
+const META_VERSION = 2
+/** How often `flushNow` looks again while an upload waits on the server's interval. */
+const FLUSH_POLL_MS = 250
 /** Quiet time after a volume change before it goes to the account. */
 const AUDIO_DEBOUNCE_MS = 2000
 
-const MetaSchema = z.strictObject({
-  version: z.literal(META_VERSION),
+export const OWNER_KINDS = ['anonymous', 'permanent'] as const
+export type OwnerKind = (typeof OWNER_KINDS)[number]
+
+const MetaFields = {
   deviceId: z.string().check(z.minLength(1)),
   /** The account the record belongs to; another account starts the record over. */
   userId: z.string(),
@@ -72,8 +84,26 @@ const MetaSchema = z.strictObject({
    * save both devices shared. Sent as `overrideFromRevision` until the server accepts the upload.
    */
   overrideFrom: z.optional(z.nullable(z.int().check(z.gte(0)))),
+}
+
+const MetaSchema = z.strictObject({
+  version: z.literal(META_VERSION),
+  ...MetaFields,
+  /** Whether the account is a guest's or a saved one (S19). */
+  ownerKind: z.enum(OWNER_KINDS),
 })
 type Meta = z.infer<typeof MetaSchema>
+
+/** Version 1 (S18c) had no owner kind: only guests existed then. */
+const MetaV1Schema = z.strictObject({ version: z.literal(1), ...MetaFields })
+
+/** The stored sync record in the current format, or null when there is none worth keeping. */
+export function parseSyncMeta(raw: unknown): Meta | null {
+  const current = MetaSchema.safeParse(raw)
+  if (current.success) return current.data
+  const v1 = MetaV1Schema.safeParse(raw)
+  return v1.success ? { ...v1.data, version: META_VERSION, ownerKind: 'anonymous' } : null
+}
 
 const RepairSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('drop-goal'), goalId: z.string(), victory: z.boolean() }),
@@ -246,8 +276,16 @@ export function browserSyncDeps(client: SupabaseClient<Database>): CloudSyncDeps
 }
 
 export interface CloudSync {
-  /** Stops every timer and listener (tests; a page keeps it running). */
+  /** Stops every timer and listener (sign-out, a log-in to another account, tests). */
   stop(): void
+  /**
+   * Sends any unsent change now and settles true once the account holds this device's game,
+   * or false when it could not within `timeoutMs` (offline, paused, a conflict). Sign-out uses
+   * it to warn before leaving progress behind.
+   */
+  flushNow(timeoutMs: number): Promise<boolean>
+  /** The guest saved their progress: the same account is now a saved one (S19). */
+  markPermanent(): void
   /** Settles when the restore decision and the first upload (if any) are done (tests). */
   readonly ready: Promise<void>
 }
@@ -268,6 +306,26 @@ export function startCloudSync(
   return running
 }
 
+/** The running sync, if any. */
+export function runningCloudSync(): CloudSync | undefined {
+  return running
+}
+
+/** Stops sync (sign-out): the game stays on this device. */
+export function stopCloudSync(): void {
+  running?.stop()
+  running = undefined
+}
+
+/**
+ * Starts sync over on the same client, for the account now signed in on it (a log-in to
+ * another account, S19): the restore table runs again against that account's save.
+ */
+export function restartCloudSync(client: SupabaseClient<Database>): CloudSync | undefined {
+  stopCloudSync()
+  return startCloudSync(client)
+}
+
 export function createCloudSync(deps: CloudSyncDeps): CloudSync {
   const { game, status, timers, logger } = deps
   let meta: Meta | null = null
@@ -283,6 +341,8 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
   let acceptedAt = Number.NEGATIVE_INFINITY
   let blocked: 'conflict' | 'update' | 'behind' | null = null
   let conflict: CloudCopy | null = null
+  /** This device's game was last synced to another saved account (see the header). */
+  let foreign = false
   const cleanups: (() => void)[] = []
 
   const setStatus = (next: SyncStatus) => {
@@ -290,18 +350,28 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
   }
   const current = (): SaveState => persistedOf(game.getState())
 
-  const readMeta = (userId: string): Meta => {
+  const readMeta = (userId: string, ownerKind: OwnerKind): Meta => {
     let stored: Meta | null = null
     try {
       const raw = deps.storage()?.getItem(SYNC_META_KEY)
-      const parsed = raw == null ? null : MetaSchema.safeParse(JSON.parse(raw))
-      stored = parsed?.success === true ? parsed.data : null
+      stored = raw == null ? null : parseSyncMeta(JSON.parse(raw))
     } catch {
       stored = null
     }
     const deviceId = stored?.deviceId ?? deps.randomId()
-    if (stored !== null && stored.userId === userId) return stored
-    return { version: META_VERSION, deviceId, userId, revision: 0, cloudSignature: null }
+    if (stored !== null && stored.userId === userId) {
+      // A guest who saved their progress keeps the same account, now a saved one.
+      return ownerKind === 'permanent' ? { ...stored, ownerKind } : stored
+    }
+    foreign = stored !== null && stored.ownerKind === 'permanent'
+    return {
+      version: META_VERSION,
+      deviceId,
+      userId,
+      revision: 0,
+      cloudSignature: null,
+      ownerKind,
+    }
   }
   const writeMeta = (patch: Partial<Meta>) => {
     if (meta === null) return
@@ -541,8 +611,9 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
     retryIn(ms)
   }
 
-  const enterConflict = (cloud: CloudCopy) => {
-    if (cloud.saveVersion > SAVE_VERSION) {
+  /** The player picks: `cloud` is the account's save, or null when the account has none. */
+  const enterConflict = (cloud: CloudCopy | null) => {
+    if (cloud !== null && cloud.saveVersion > SAVE_VERSION) {
       blocked = 'update'
       setStatus('update')
       return
@@ -550,6 +621,7 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
     blocked = 'conflict'
     conflict = cloud
     clearPending()
+    status.setState({ conflictEmpty: cloud === null })
     setStatus('conflict')
   }
 
@@ -602,6 +674,13 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       return
     }
     const cloud = read.cloud
+    const local = current()
+    if (foreign && !untouched(local)) {
+      // Another saved account's game: never moved into this account without the player.
+      logger.info("This device's game belongs to another account; asking which to keep")
+      enterConflict(cloud)
+      return
+    }
     if (cloud === null) {
       if (meta.revision !== 0) writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
       return
@@ -612,7 +691,6 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       return
     }
     if (cloud.revision === meta.revision) return
-    const local = current()
     if (
       cloudSignature(local) === meta.cloudSignature ||
       (meta.revision === 0 && untouched(local))
@@ -639,10 +717,19 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
         void flush()
       },
       resolveConflict: (choice) => {
-        if (blocked !== 'conflict' || conflict === null) return
+        if (blocked !== 'conflict') return
         const cloud = conflict
         blocked = null
         conflict = null
+        foreign = false
+        status.setState({ conflictEmpty: false })
+        if (cloud === null) {
+          // The account has no save: keep this device's game there, or start fresh on it.
+          if (choice === 'use-cloud') game.getState().startNewGame()
+          writeMeta({ revision: 0, cloudSignature: null, overrideFrom: null })
+          void flush()
+          return
+        }
         if (choice === 'use-cloud' && adopt(cloud)) return
         // Keep this device's progress: upload it on top of the account's save, checked against
         // the save both devices last shared (the revision this device last synced).
@@ -723,10 +810,10 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
 
   const ready = (async () => {
     const session = await deps.client.auth.getSession()
-    const userId = session.data.session?.user.id
+    const user = session.data.session?.user
     token = session.data.session?.access_token ?? null
-    if (userId === undefined || stopped) return
-    meta = readMeta(userId)
+    if (user === undefined || stopped) return
+    meta = readMeta(user.id, user.is_anonymous === true ? 'anonymous' : 'permanent')
     writeMeta({})
     const auth = deps.client.auth.onAuthStateChange((_event, next) => {
       token = next?.access_token ?? null
@@ -763,6 +850,8 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
     })
   })
 
+  const synced = () => !changed() && inflight === null && blocked === null
+
   return {
     ready,
     stop() {
@@ -770,7 +859,36 @@ export function createCloudSync(deps: CloudSyncDeps): CloudSync {
       clearPending()
       if (retryTimer !== null) timers.clear(retryTimer)
       for (const cleanup of cleanups.splice(0)) cleanup()
-      status.setState({ controls: null })
+      status.setState({ controls: null, conflictEmpty: false })
+    },
+    async flushNow(timeoutMs) {
+      await ready
+      if (meta === null) return false
+      if (synced()) return true
+      let timer: unknown = null
+      const timeout = new Promise<false>((resolve) => {
+        timer = timers.set(() => resolve(false), timeoutMs)
+      })
+      let done = false
+      const attempt = (async () => {
+        pausedUntil = 0
+        while (!done && !stopped) {
+          await flush()
+          if (inflight !== null) await inflight
+          if (synced()) return true
+          if (blocked !== null || !deps.isOnline()) return false
+          // Waiting out the server's upload interval or a retry: look again shortly.
+          await new Promise<void>((resolve) => timers.set(resolve, FLUSH_POLL_MS))
+        }
+        return false
+      })()
+      const result = await Promise.race([attempt, timeout])
+      done = true
+      timers.clear(timer)
+      return result
+    },
+    markPermanent() {
+      if (meta !== null && meta.ownerKind !== 'permanent') writeMeta({ ownerKind: 'permanent' })
     },
   }
 }

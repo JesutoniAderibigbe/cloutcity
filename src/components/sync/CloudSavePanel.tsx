@@ -6,18 +6,20 @@ import { closeHudPanel } from '@/state/hudPanel'
 import { useSyncStatus } from '@/state/syncStatus'
 import { syncSheetText, syncStatusText } from './syncCopy'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
+import '@/lib/copy/ns/account'
 import '@/lib/copy/ns/sync'
 
 /**
  * The cloud save panel (S18c), opened from the status chip or the More panel: where the save
  * stands, in a sentence. In a conflict the player keeps this device's progress or takes the
- * account game; while sync is paused or offline they can try again now, after the server refused
+ * account game (or, when this device's game belongs to another saved account and this account
+ * has none, keeps it here or starts fresh, S19); while sync is paused or offline they can try again now, after the server refused
  * this device's save they can take the account game instead, and when the account game is from a
  * newer build they can reload. The controls come from the
  * running sync (src/state/cloudSync.ts); without a session there is nothing to press.
  */
 export function CloudSavePanel() {
-  const { status, rejected, controls } = useSyncStatus()
+  const { status, rejected, conflictEmpty, identity, controls } = useSyncStatus()
   const act = (run: () => void) => () => {
     run()
     closeHudPanel()
@@ -30,9 +32,13 @@ export function CloudSavePanel() {
       onClose={closeHudPanel}
     >
       <p data-sync-status-line="" className="text-sm font-semibold text-taxi-ink">
-        {syncStatusText(status)}
+        {syncStatusText(status, identity)}
       </p>
-      <p className="text-sm text-fg">{syncSheetText(status)}</p>
+      <p className="text-sm text-fg">
+        {status === 'conflict' && conflictEmpty
+          ? copy('account.conflict.empty')
+          : syncSheetText(status, identity)}
+      </p>
       {controls !== null && status === 'conflict' ? (
         <div className="flex flex-col gap-1.5">
           <button
@@ -49,7 +55,7 @@ export function CloudSavePanel() {
             onClick={act(() => controls.resolveConflict('use-cloud'))}
             className={`${PANEL_BUTTON} bg-raised text-fg`}
           >
-            {copy('sync.sheet.useCloud')}
+            {conflictEmpty ? copy('account.conflict.fresh') : copy('sync.sheet.useCloud')}
           </button>
         </div>
       ) : null}

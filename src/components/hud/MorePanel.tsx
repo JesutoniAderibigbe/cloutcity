@@ -18,12 +18,12 @@ import '@/lib/copy/ns/hud'
  * returns focus to the More button.
  */
 export function MorePanel() {
-  const { status } = useSyncStatus()
+  const { status, identity } = useSyncStatus()
   const items = [
     { key: 'inventory', label: copy('hud.inventory'), open: () => openHudPanel('inventory') },
     { key: 'rent', label: copy('hud.rent'), open: () => openHudPanel('rent') },
     { key: 'home', label: copy('hud.home'), open: () => openHudPanel('home') },
-    { key: 'cloud', label: syncLabel(status), open: () => openHudPanel('cloud') },
+    { key: 'cloud', label: syncLabel(status, identity), open: () => openHudPanel('cloud') },
     {
       key: 'sound',
       label: copy('hud.soundSettings'),
