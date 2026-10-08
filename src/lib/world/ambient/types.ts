@@ -161,7 +161,7 @@ export interface VehiclesConfig {
 }
 
 export interface PedestriansConfig {
-  readonly source: 'kenney-temp' | 's16b'
+  readonly source: 's16b'
   readonly anchors: readonly AnchorKind[]
   readonly anchorRadiusM: number
   readonly perAnchor: PerAmbientTier<number>
@@ -313,9 +313,8 @@ export interface PedestrianKit<G> {
 }
 
 /**
- * The S16b seam: where pedestrian kits come from (`pedestrians.source` in ambient.json). The
- * temporary source bakes the Kenney avatar body and head; S16b swaps in its own ambient LOD by
- * changing that one config value. `L` is the models runtime's loader the source may use.
+ * The S16b seam: where pedestrian kits come from (`pedestrians.source` in ambient.json; S16b's
+ * merged `npc-*` models today). `L` is the models runtime's loader the source may use.
  */
 export type PedestrianKitSource<G, L> = (
   tier: AmbientTier,

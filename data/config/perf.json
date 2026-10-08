@@ -33,7 +33,7 @@
     "high": 800000
   },
   "programsMax": {
-    "low": 10,
+    "low": 11,
     "mid": 11,
     "high": 15
   },

@@ -308,8 +308,9 @@ describe('config/perf.json', () => {
       drawCallsMax: { low: 60, mid: 120, high: 200 },
       trianglesMax: { low: 150_000, mid: 400_000, high: 800_000 },
       // S04f (Q9): measured shader programs at the default view after the models load (low 9,
-      // mid 10, high 13, day and night alike) + 10%, rounded up. A new cap, not a raised one.
-      programsMax: { low: 10, mid: 11, high: 15 },
+      // mid 10, high 13, day and night alike) + 10%, rounded up. S16b (DEC-60, user-approved):
+      // low raised to 11 for the skinned avatar that replaces the capsule on low.
+      programsMax: { low: 11, mid: 11, high: 15 },
       // S16 apartment caps (TUNE-8 placeholders), with room kept for the avatar (S16b: 4200
       // triangles, user-approved).
       apartment: {

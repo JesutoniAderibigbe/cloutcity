@@ -260,8 +260,8 @@ export const AmbientConfigSchema = z.strictObject({
     paint: z.array(HEX).min(1),
   }),
   pedestrians: z.strictObject({
-    /** The S16b seam: the temporary Kenney bake, or S16b's own ambient LOD. */
-    source: z.enum(['kenney-temp', 's16b']),
+    /** Where pedestrian kits come from (the S16b seam): the merged `npc-*` models. */
+    source: z.enum(['s16b']),
     anchors: z.array(z.enum(['place', 'home', 'landmark'])).min(1),
     anchorRadiusM: metres,
     perAnchor: ambientTier(z.int().min(0).max(7)),

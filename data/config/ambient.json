@@ -76,7 +76,7 @@
     ]
   },
   "pedestrians": {
-    "source": "kenney-temp",
+    "source": "s16b",
     "anchors": ["place", "home", "landmark"],
     "anchorRadiusM": 140,
     "perAnchor": {

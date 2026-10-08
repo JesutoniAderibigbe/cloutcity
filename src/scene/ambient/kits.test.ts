@@ -13,10 +13,10 @@ import { PEDESTRIAN_BUCKETS, VEHICLE_BUCKETS } from '@/lib/world/ambient/types'
 import { gltfLoader, prepareGltf, type SkinnedPartModel } from '../models/prepare'
 import { partsBounds } from './buckets'
 import {
-  KENNEY_TEMP_PEDESTRIANS,
+  PEDESTRIANS,
   PEDESTRIAN_KIT_SOURCES,
-  kenneyTempModelIds,
-  kenneyTempPedestrians,
+  pedestrianModelIds,
+  s16bPedestrians,
   pedestrianBucket,
 } from './pedestrianKits'
 import {
@@ -175,7 +175,7 @@ describe('vehicle kits', () => {
   })
 })
 
-describe('kenney-temp pedestrian kits', () => {
+describe('s16b pedestrian kits', () => {
   it('buckets slot names into skin, top, bottom and accent', () => {
     expect(['skin', 'top', 'bottom', 'shoes', 'hair', undefined].map(pedestrianBucket)).toEqual([
       'skin',
@@ -187,39 +187,36 @@ describe('kenney-temp pedestrian kits', () => {
     ])
   })
 
-  it('uses manifest parts that are not the default player look (UX-3)', () => {
+  it('uses the merged npc models, never the default player look (UX-3)', () => {
     const player = scene.models.player
     for (const tier of ['low', 'mid', 'high'] as const) {
-      for (const id of kenneyTempModelIds(tier)) expect(() => modelRef(id)).not.toThrow()
-      for (const parts of KENNEY_TEMP_PEDESTRIANS[tier]) {
-        expect(parts.body).not.toBe(player.body)
-        expect(parts.head).not.toBe(player.head)
-        expect(manifestEntry(parts.body).category).toBe('avatar-body')
-        expect(manifestEntry(parts.head).category).toBe('avatar-head')
+      for (const id of pedestrianModelIds(tier)) expect(() => modelRef(id)).not.toThrow()
+      for (const variant of PEDESTRIANS[tier]) {
+        expect(variant.model).not.toBe(player.body)
+        expect(manifestEntry(variant.model).category).toBe('avatar-body')
+        expect(manifestEntry(variant.rig).category).toBe('avatar-rig')
       }
     }
-    expect(PEDESTRIAN_KIT_SOURCES['kenney-temp']).toBe(kenneyTempPedestrians)
+    expect(PEDESTRIANS.low.map((variant) => variant.model)).toEqual(['npc-man'])
+    expect(PEDESTRIAN_KIT_SOURCES.s16b).toBe(s16bPedestrians)
   })
 
   it('bakes a rigid mid-stride figure in four buckets, feet on the ground, facing +z', async () => {
     const loader = fileLoader('low')
-    const kits = await kenneyTempPedestrians('low', loader)
-    expect(kits).toHaveLength(KENNEY_TEMP_PEDESTRIANS.low.length)
+    const kits = await s16bPedestrians('low', loader)
+    expect(kits).toHaveLength(PEDESTRIANS.low.length)
     const [kit] = kits
-    const parts = KENNEY_TEMP_PEDESTRIANS.low[0]
-    if (kit === undefined || parts === undefined) throw new Error('no kit')
+    const variant = PEDESTRIANS.low[0]
+    if (kit === undefined || variant === undefined) throw new Error('no kit')
     expect(kit.parts.map((part) => part.bucket)).toEqual([...PEDESTRIAN_BUCKETS])
-    expect(kit.triangles).toBe(
-      manifestEntry(parts.body).tiers.low.triangles + manifestEntry(parts.head).tiers.low.triangles,
-    )
+    expect(kit.triangles).toBe(manifestEntry(variant.model).tiers.low.triangles)
     const { min, max } = partsBounds(kit.parts)
     expect(min.y).toBeCloseTo(0, 5)
-    expect(kit.heightM).toBeGreaterThan(1)
-    expect(kit.heightM).toBeLessThan(2.2)
+    expect(kit.heightM).toBeGreaterThan(1.5)
+    expect(kit.heightM).toBeLessThan(2.1)
     // Arms come down from the bind-pose T: the figure is narrower than the source body.
-    const body = manifestEntry(parts.body).bounds
+    const body = manifestEntry(variant.model).bounds
     expect(max.x - min.x).toBeLessThan((body?.max[0] ?? 0) * 2)
-    // Normals were recomputed: unit length.
     const normal = kit.parts[0]?.geometry.getAttribute('normal')
     expect(new Vector3(normal?.getX(0), normal?.getY(0), normal?.getZ(0)).length()).toBeCloseTo(
       1,
@@ -230,7 +227,7 @@ describe('kenney-temp pedestrian kits', () => {
 
   it('is deterministic and never moves the cached parts', async () => {
     const loader = fileLoader('high')
-    const loaded = await loader(kenneyTempModelIds('high'))
+    const loaded = await loader(pedestrianModelIds('high'))
     const restOf = (model: SkinnedPartModel) => {
       const out: number[] = []
       model.scene.traverse((object) => {
@@ -243,8 +240,8 @@ describe('kenney-temp pedestrian kits', () => {
     const skinned = loaded.flatMap((entry) => (entry.model.kind === 'skinned' ? [entry.model] : []))
     const before = skinned.map(restOf)
     const cached: AmbientModelLoader = () => Promise.resolve(loaded)
-    const a = await kenneyTempPedestrians('high', cached)
-    const b = await kenneyTempPedestrians('high', cached)
+    const a = await s16bPedestrians('high', cached)
+    const b = await s16bPedestrians('high', cached)
     expect(a).toHaveLength(2)
     expect(a.map((kit) => kit.id)).toEqual(b.map((kit) => kit.id))
     for (const [i, kit] of a.entries()) {
@@ -258,10 +255,8 @@ describe('kenney-temp pedestrian kits', () => {
 
   it('rejects when the rig is missing', async () => {
     const loader = fileLoader('low')
-    const noRig: AmbientModelLoader = async (ids) => {
-      const loaded = await loader(ids)
-      return loaded.slice(1)
-    }
-    await expect(kenneyTempPedestrians('low', noRig)).rejects.toThrow(/is not a rig/)
+    const noRig: AmbientModelLoader = async (ids) =>
+      (await loader(ids)).filter((entry) => entry.model.kind !== 'rig')
+    await expect(s16bPedestrians('low', noRig)).rejects.toThrow(/is not a rig/)
   })
 })
