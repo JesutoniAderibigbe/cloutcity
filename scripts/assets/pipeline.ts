@@ -577,7 +577,7 @@ function dominantJoints(prim: Primitive, skin: Skin | null): (string | undefined
 function simplifySource(
   doc: Document,
   prim: Primitive,
-  { ratio, error }: Model['tiers'][ModelTier],
+  { ratio, error, flags }: Model['tiers'][ModelTier],
 ) {
   if (ratio >= 1) return
   // The bake reads only POSITION, NORMAL, the atlas UVs and skin weights: drop the rest and weld,
@@ -600,7 +600,7 @@ function simplifySource(
   }
   const indices = triangleIndices(prim)
   const target = Math.floor((indices.length / 3) * ratio) * 3
-  const [simplified] = MeshoptSimplifier.simplify(indices, positions, 3, target, error)
+  const [simplified] = MeshoptSimplifier.simplify(indices, positions, 3, target, error, flags)
   prim.setIndices(
     doc
       .createAccessor()

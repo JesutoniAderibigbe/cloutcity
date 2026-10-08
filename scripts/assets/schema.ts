@@ -114,6 +114,14 @@ const TierSchema = z.strictObject({
   ratio: z.number().gt(0).max(1),
   /** Relative error bound for the simplifier. */
   error: z.number().min(0).max(1),
+  /**
+   * MeshoptSimplifier flags (S04l ambient LODs): `Permissive` collapses across UV and normal
+   * seams, so a far-away LOD can drop below the seam floor (its colours may bleed at seams).
+   */
+  flags: z
+    .array(z.enum(['Permissive']))
+    .min(1)
+    .optional(),
 })
 
 /** Uniform scale so the model's size along one measure is `metres` (1 scene unit = 1 m). */
