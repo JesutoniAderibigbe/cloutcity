@@ -1,7 +1,7 @@
 /**
  * Content checks for S07 places: the required landmarks are present and safe (categories,
  * name modes, generic labels for brands, look-only memorials), every playable borough has its
- * eight invented venues with original names, place copy never asserts an uncomputed
+ * core invented venues (Queens more, S41) with original names, place copy never asserts an uncomputed
  * superlative, and every place agrees with the S04 geo layers. A geo mismatch prints the
  * value the data should hold.
  */

@@ -421,6 +421,15 @@ them through `src/lib/world/places.ts` (`mapPlaces()`, `placeAccess()`,
   `zoneId` against the S04 borough and zone layers at `approach ?? location` (the failure
   prints the expected value), that venues are not inside parks and are 50 m apart, that a
   station venue is within 25 m of its station, and that landmarks off land have an `approach`.
+  `scripts/geo/streets.test.ts` and `src/lib/world/streetProps.test.ts` need every venue inside
+  a prop zone (a district or a `geo.json` streets zone) with street-prop chunks around it.
+- **A new venue type** (S41 added barber, salon, mall, bank, pharmacy, laundromat,
+  community-center, lounge, studio) needs an entry in `VENUE_TYPES`
+  (`src/lib/data/schemas/content.ts`), its actions in `balance.json` `place.venueActions` (and
+  `place.actions`, with a `place.actions.<camelId>.name` copy key), an icon group in
+  `data/places/icons.json` (plus `PLACE_ICON_GROUPS` and a `categories.*` label) and a plot style
+  in `data/config/plots.json`. A shop type also joins `SHOP_VENUE_TYPES`
+  (`src/engine/placeActions.ts`); a flex spot joins `clout.flex.venueTypes`.
 - **nameMode.** A landmark is `generic` when its real name contains a corporate or sponsor brand
   or its owner licenses the name or image as commercial IP; civic, park and place names stay
   `real`. Add the real name to `LANDMARK_REAL_NAMES` in the test. Every landmark ships with
