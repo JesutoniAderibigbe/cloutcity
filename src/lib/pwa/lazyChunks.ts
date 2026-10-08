@@ -43,6 +43,13 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'account', marker: 'account.sheet.saveTitle' },
   // The account calls and the account coordinator (S19), which run only online, after sign-in.
   { id: 'account-api', marker: 'check_account_email' },
+  // The moderator notices shown at session start (S18b): loaded only once a session connects, so
+  // never offline.
+  { id: 'account-notices', marker: 'cc-feature:account-notices' },
+  // The Me panel (S18a/S18b/S19): the handle, public card, blocked and muted lists and the
+  // account, all server data. Opened offline before it was ever cached, the Me tab shows the
+  // island's load-failure retry instead of its own offline line; play is untouched.
+  { id: 'me-panel', marker: 'cc-feature:me-panel' },
 ] as const
 
 /** The markers an optional chunk's text contains (empty: precache it). */
