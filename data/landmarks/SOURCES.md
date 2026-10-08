@@ -258,6 +258,31 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L2: 218 triangles, 6704 bytes (`public/landmarks/statue-of-liberty/lod2.glb`)
 - L3: 100 triangles, 4264 bytes (`public/landmarks/statue-of-liberty/lod3.glb`)
 
+### times-square
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q11259 (Times Square) and Q1139633 (One Times Square), CC0-1.0, <https://www.wikidata.org/wiki/Q1139633>
+
+Dimensions:
+
+- `centralTowerM`: 110.6 m (wikidata): One Times Square height (P2048) 363 ft: the generic screen tower at the square's south end
+- `centralTowerFloors`: 25 (wikidata): One Times Square floors (P1101)
+- `squareLengthM`: 420 m (estimate): the bowtie's length along Broadway and Seventh Avenue, 42nd to 47th Street (five blocks of about 80 m)
+- `plazaWidthM`: 70 × 26 m (estimate): the square's width at its ends (widthM) and at its waist (depthM), proportioned by eye
+- `flankHeightsM`: 230 × 60 m (estimate): the flanking towers' tallest (widthM) and lowest (depthM) heights; the blocks between are interpolated, generic
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1, widths ×1. Real scale: the square is a district of real-size blocks; its screens, not its size, make it read.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 3472 triangles, 46940 bytes (`public/landmarks/times-square/lod0.glb`)
+- L1: 1688 triangles, 28492 bytes (`public/landmarks/times-square/lod1.glb`)
+- L2: 588 triangles, 13484 bytes (`public/landmarks/times-square/lod2.glb`)
+- L3: 290 triangles, 8056 bytes (`public/landmarks/times-square/lod3.glb`)
+
 ### wedge-building
 
 Retrieved 2026-10-08. Sources:

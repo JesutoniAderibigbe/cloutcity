@@ -1,0 +1,50 @@
+{
+  "id": "times-square",
+  "base": "land",
+  "retrieved": "2026-10-08",
+  "sources": [
+    {
+      "id": "wikidata",
+      "title": "Wikidata Q11259 (Times Square) and Q1139633 (One Times Square)",
+      "url": "https://www.wikidata.org/wiki/Q1139633",
+      "licence": "CC0-1.0"
+    }
+  ],
+  "dimensions": {
+    "centralTowerM": {
+      "valueM": 110.6,
+      "source": "wikidata",
+      "note": "One Times Square height (P2048) 363 ft: the generic screen tower at the square's south end"
+    },
+    "centralTowerFloors": {
+      "count": 25,
+      "source": "wikidata",
+      "note": "One Times Square floors (P1101)"
+    },
+    "squareLengthM": {
+      "valueM": 420,
+      "source": "estimate",
+      "note": "the bowtie's length along Broadway and Seventh Avenue, 42nd to 47th Street (five blocks of about 80 m)"
+    },
+    "plazaWidthM": {
+      "widthM": 70,
+      "depthM": 26,
+      "source": "estimate",
+      "note": "the square's width at its ends (widthM) and at its waist (depthM), proportioned by eye"
+    },
+    "flankHeightsM": {
+      "widthM": 230,
+      "depthM": 60,
+      "source": "estimate",
+      "note": "the flanking towers' tallest (widthM) and lowest (depthM) heights; the blocks between are interpolated, generic"
+    }
+  },
+  "readabilityScale": {
+    "note": "A composed, generic district: blocks with window bands and plain colour screen panels. No text, logos or brands (LEGAL-1)."
+  },
+  "gameScale": {
+    "height": 1.0,
+    "plan": 1.0,
+    "note": "Real scale: the square is a district of real-size blocks; its screens, not its size, make it read."
+  }
+}
