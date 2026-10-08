@@ -44,6 +44,8 @@ export const LANDMARK_ROLES = [
   'screen-magenta',
   'screen-amber',
   'signal',
+  'foliage',
+  'lawn',
 ] as const
 export type LandmarkRole = (typeof LANDMARK_ROLES)[number]
 
@@ -55,6 +57,20 @@ const RoleSchema = z.enum(PART_ROLES)
 /** The landmark categories that get a model (S07b adds memorial: no window or emissive roles). */
 export const MODEL_CATEGORIES = ['bridge', 'building', 'station', 'government'] as const
 export type ModelCategory = (typeof MODEL_CATEGORIES)[number]
+
+/**
+ * The categories perf.json caps landmark triangles for: the code-built model categories plus
+ * those only the Blender models (S07c) depict. Kept apart from MODEL_CATEGORIES, which also
+ * says which landmarks need a code-built model in models.json.
+ */
+export const CAP_CATEGORIES = [
+  ...MODEL_CATEGORIES,
+  'stadium',
+  'monument',
+  'park',
+  'neighborhood',
+] as const
+export type CapCategory = (typeof CAP_CATEGORIES)[number]
 
 /** The part roles each category may use. */
 export const CATEGORY_ROLES: Readonly<Record<ModelCategory, readonly PartRole[]>> = {
@@ -605,12 +621,12 @@ export type LandmarkSceneConfig = z.infer<typeof LandmarkSceneConfigSchema>
 
 /** Per-tier triangle caps (perf.json): unknown category keys fail. */
 const trianglesPerTier = perTier(z.int().positive())
-export const LandmarkTrianglesMaxSchema = z.strictObject({
-  bridge: trianglesPerTier,
-  building: trianglesPerTier,
-  station: trianglesPerTier,
-  government: trianglesPerTier,
-})
+export const LandmarkTrianglesMaxSchema = z.strictObject(
+  Object.fromEntries(CAP_CATEGORIES.map((category) => [category, trianglesPerTier])) as Record<
+    CapCategory,
+    typeof trianglesPerTier
+  >,
+)
 /** Per-landmark overrides of the category caps, by landmark id. */
 export const LandmarkTrianglesOverrideSchema = z.record(IdSchema, trianglesPerTier)
 

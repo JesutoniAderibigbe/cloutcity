@@ -246,6 +246,13 @@ def main():
     polar = scene_cfg["camera"]["polarDeg"]
     # The azimuth limit whose camera looks most nearly along a bridge, so its arches show.
     arch_az = scene_cfg["camera"]["azimuthDeg"]["max"]
+    if not bridge:
+        # A building: the azimuth (within the camera's limits) that looks most nearly at its front.
+        front_az = (180.0 - data["frame"]["headingDeg"] + 180.0) % 360.0 - 180.0
+        limits = scene_cfg["camera"]["azimuthDeg"]
+        arch_az = min(max(front_az, limits["min"]), limits["max"])
+    # How far the close views stand: a landmark script may bring them in for a small building.
+    close = report["context"].get("closeM", 420.0)
     views = (("default", scene_cfg["camera"]["distanceM"]), ("focus", scene_cfg["focus"]["maxDistanceM"]))
 
     eevee()
@@ -262,9 +269,9 @@ def main():
         if keyframe_id == "day":
             continue
         show_only(levels, 0)
-        camera(tower, 420.0, polar["default"], arch_az, fov)
+        camera(tower, close, polar["default"], arch_az, fov)
         render("%sclose-tower-p48-%s.png" % (prefix, keyframe_id), WIDE)
-        camera(tower, 420.0, polar["max"], arch_az, fov)
+        camera(tower, close, polar["max"], arch_az, fov)
         render("%sclose-tower-p60-%s.png" % (prefix, keyframe_id), WIDE)
 
     if args.compare:

@@ -8,8 +8,7 @@ from archetypes import arch
 from cclib import inputs
 
 ARCHETYPE = arch
-#: perf.json has no monument caps yet: it is budgeted as a building.
-CATEGORY = "building"
+CATEGORY = "monument"
 
 
 def spec(data, true_scale=False):

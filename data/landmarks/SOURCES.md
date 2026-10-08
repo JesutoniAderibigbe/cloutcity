@@ -85,6 +85,44 @@ HAER/HABS, NPS, public-domain texts), never traced from photos. A value marked `
 wider than they are, by the readability scale, so they read at game distance. The models
 are ours: no third-party licence applies to them.
 
+### brooklyn-borough-hall
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q929403 (Brooklyn Borough Hall), CC0-1.0, <https://www.wikidata.org/wiki/Q929403>
+
+Dimensions:
+
+- `heightM`: 44 m (estimate): the cupola's tip above the street, proportioned by eye (Wikidata Q929403 lists no height; no PD/CC0 figure found)
+- `block`: 40 × 26 m (estimate): the main block's plan (the S07a kit's stylised footprint)
+- `wallM`: 17 m (estimate): the main cornice above the street: a tall raised basement and two storeys
+- `basementM`: 4.5 m (estimate): the raised basement, drawn as a darker rusticated band; the portico floor stands at its top
+- `atticM`: 1.2 m (estimate): the parapet over the cornice
+- `roofM`: 2.5 m (estimate): the low hipped roof
+- `storeys`: 2 (estimate): window storeys over the raised basement
+- `portico`: 22 × 6 m (estimate): the Greek Revival front portico (the S07a kit's stylised plan)
+- `porticoM`: 15 m (estimate): the portico's entablature top above the street
+- `pedimentM`: 5 m (estimate): the pediment's rise over the entablature
+- `porticoColumns`: 6 (estimate): columns across the portico front (hexastyle)
+- `stepsM`: 8 m (estimate): how far the tall flight of front steps runs out ahead of the portico
+- `cupolaBaseWidthM`: 10 m (estimate): the cupola's square lower stage across (drawn plain: no dial or text)
+- `cupolaBaseM`: 5 m (estimate): the square lower stage's height
+- `cupolaDrumDiameterM`: 8 m (estimate): the colonnaded drum across
+- `cupolaDrumM`: 8 m (estimate): the colonnaded drum's height
+- `cupolaDomeM`: 4.5 m (estimate): the dome's rise over the drum
+- `lanternM`: 3 m (estimate): the lantern on the dome
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.8, widths ×1.35. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 so the hall and its cupola read at the 3,000-4,500 m game camera; the plan x1.35, the most that fits the frame's exclusion (60 x 58 m) with the portico and steps.
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1676 triangles, 27980 bytes (`public/landmarks/brooklyn-borough-hall/lod0.glb`)
+- L1: 672 triangles, 13164 bytes (`public/landmarks/brooklyn-borough-hall/lod1.glb`)
+- L2: 280 triangles, 7580 bytes (`public/landmarks/brooklyn-borough-hall/lod2.glb`)
+- L3: 108 triangles, 4796 bytes (`public/landmarks/brooklyn-borough-hall/lod3.glb`)
+
 ### brooklyn-bridge
 
 Retrieved 2026-10-07. Sources:
@@ -126,6 +164,46 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 70
 - L1: 3320 triangles, 59808 bytes (`public/landmarks/brooklyn-bridge/lod1.glb`)
 - L2: 1200 triangles, 22852 bytes (`public/landmarks/brooklyn-bridge/lod2.glb`)
 - L3: 584 triangles, 13288 bytes (`public/landmarks/brooklyn-bridge/lod3.glb`)
+
+### city-hall
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q1065206 (New York City Hall), CC0-1.0, <https://www.wikidata.org/wiki/Q1065206>
+- `nps-survey-1959`: National Park Service, National Survey of Historic Sites and Buildings: New York City Hall (1959; NRHP 66000539), public-domain, <https://npgallery.nps.gov/NRHP/GetAsset/NHLS/66000539_text>
+
+Dimensions:
+
+- `lengthM`: 65.76 m (wikidata): length (P2043, 215.75 ft): the front from wing end to wing end
+- `storeys`: 2 (wikidata): number of floors above ground (P1101): two storeys over a raised basement
+- `heightM`: 42 m (estimate): the cupola's tip above the street, proportioned by eye (no PD/CC0 figure found); a plain needle stands in for the statue (LEGAL-1: no figures)
+- `wallM`: 16 m (estimate): the main cornice above the street: a raised basement and two tall storeys
+- `basementM`: 3.5 m (estimate): the raised basement storey, drawn as a darker rusticated band
+- `atticM`: 1.6 m (estimate): the balustrade over the cornice
+- `roofM`: 3 m (estimate): the low hipped roof behind the balustrade
+- `centreBlock`: 37.76 × 32 m (derived): the front length less the two wings; the depth is an estimate
+- `wing`: 14 × 5 m (estimate): each end wing's width (two bays) and how far it projects ahead of the centre block (the C-shaped plan the NPS survey's engravings show)
+- `portico`: 22 × 5 m (estimate): the central columned portico at the main storey, with a balustrade over it
+- `porticoM`: 9 m (estimate): the portico's top above the street
+- `porticoColumns`: 6 (estimate): columns across the portico front
+- `stepsM`: 6 m (estimate): how far the broad front steps run out ahead of the portico
+- `cupolaBaseWidthM`: 9 m (estimate): the cupola's square lower stage across (the clock stage, drawn plain: no dial or text)
+- `cupolaBaseM`: 6 m (estimate): the square lower stage's height
+- `cupolaDrumDiameterM`: 7.6 m (estimate): the colonnaded drum across
+- `cupolaDrumM`: 7 m (estimate): the colonnaded drum's height
+- `cupolaDomeM`: 4.5 m (estimate): the dome's rise over the drum
+- `lanternM`: 2.5 m (estimate): the small lantern on the dome
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.8, widths ×1.25. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 so the hall and its cupola read at the 3,000-4,500 m game camera; the plan x1.25, the most that fits the frame's exclusion (86 x 60 m).
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 3350 triangles, 50124 bytes (`public/landmarks/city-hall/lod0.glb`)
+- L1: 1186 triangles, 20048 bytes (`public/landmarks/city-hall/lod1.glb`)
+- L2: 386 triangles, 9744 bytes (`public/landmarks/city-hall/lod2.glb`)
+- L3: 168 triangles, 5940 bytes (`public/landmarks/city-hall/lod3.glb`)
 
 ### deco-spire
 
@@ -269,6 +347,38 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L2: 144 triangles, 4876 bytes (`public/landmarks/penn-station/lod2.glb`)
 - L3: 64 triangles, 3732 bytes (`public/landmarks/penn-station/lod3.glb`)
 
+### queens-borough-hall
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q2122585 (Queens Borough Hall), CC0-1.0, <https://www.wikidata.org/wiki/Q2122585>
+
+Dimensions:
+
+- `heightM`: 23 m (estimate): the roof ridge above the street, proportioned by eye (Wikidata Q2122585 lists no height; no PD/CC0 figure found)
+- `block`: 96 × 22 m (estimate): the long main block's plan (the S07a kit's stylised footprint)
+- `wallM`: 20 m (estimate): the main cornice above the street: four storeys of brick over a stone base
+- `basementM`: 3 m (estimate): the stone base storey, drawn as a darker band
+- `atticM`: 1.2 m (estimate): the parapet over the cornice
+- `roofM`: 1.8 m (derived): the low roof: the measured height less the wall and parapet
+- `storeys`: 4 (estimate): window storeys (the S07a kit's four floors)
+- `windowColumns`: 14 (estimate): window bays along the long front (the S07a kit's 14 columns)
+- `portico`: 24 × 5 m (estimate): the central stone portico (the S07a kit's stylised plan)
+- `porticoM`: 16 m (estimate): the portico's top above the street, a balustrade over it
+- `porticoColumns`: 6 (estimate): columns across the portico front
+- `stepsM`: 3 m (estimate): how far the front steps run out ahead of the portico
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.8, widths ×1.15. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.8 so the long hall reads at the 3,000-4,500 m game camera; the plan x1.15, the most that fits the frame's exclusion (116 m along Queens Boulevard).
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 1954 triangles, 28840 bytes (`public/landmarks/queens-borough-hall/lod0.glb`)
+- L1: 602 triangles, 10744 bytes (`public/landmarks/queens-borough-hall/lod1.glb`)
+- L2: 178 triangles, 5588 bytes (`public/landmarks/queens-borough-hall/lod2.glb`)
+- L3: 60 triangles, 3720 bytes (`public/landmarks/queens-borough-hall/lod3.glb`)
+
 ### queensboro-bridge
 
 Retrieved 2026-10-08. Sources:
@@ -385,11 +495,11 @@ Readability scale (drawn width ÷ true width): .
 
 Game scale: heights ×1, widths ×1. Real scale: the square is a district of real-size blocks; its screens, not its size, make it read.
 
-Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 1200 / mid 3500 / high 7000 triangles:
 
-- L0: 3472 triangles, 46940 bytes (`public/landmarks/times-square/lod0.glb`)
-- L1: 1688 triangles, 28492 bytes (`public/landmarks/times-square/lod1.glb`)
-- L2: 588 triangles, 13484 bytes (`public/landmarks/times-square/lod2.glb`)
+- L0: 3712 triangles, 49404 bytes (`public/landmarks/times-square/lod0.glb`)
+- L1: 1840 triangles, 29720 bytes (`public/landmarks/times-square/lod1.glb`)
+- L2: 900 triangles, 18016 bytes (`public/landmarks/times-square/lod2.glb`)
 - L3: 290 triangles, 8056 bytes (`public/landmarks/times-square/lod3.glb`)
 
 ### washington-square-arch
