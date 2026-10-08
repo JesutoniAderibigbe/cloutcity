@@ -19,18 +19,10 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
-import {
-  InstancedMesh,
-  Mesh,
-  type Material,
-  type Object3D,
-  type Texture,
-  type WebGLRenderer,
-} from 'three'
+import { InstancedMesh, Mesh, type Material, type Object3D, type WebGLRenderer } from 'three'
 import ambientJson from '@data/config/ambient.json'
 import perfJson from '@data/config/perf.json'
 import type { GeoBase } from '../geo/schema'
-import { lineColors } from '../geo/buildSubway'
 import { decodePath } from '@/lib/geo/codec'
 import { log } from '@/lib/log'
 import { useReducedMotion } from '@/lib/useReducedMotion'
@@ -43,9 +35,9 @@ import type {
   TrainLine,
 } from '@/lib/world/ambient/types'
 import type { SceneConfig } from '@/lib/data/schemas/scene'
-import { qualityStore } from '@/state/quality'
-import { avatarSize, type AvatarConfig } from '../avatar/buildAvatar'
+import type { AvatarConfig } from '../avatar/buildAvatar'
 import { acquireModels } from '../models/runtime'
+import { ambientSteps } from '../quality/ambientSteps'
 import { beginContinuous, endContinuous } from '../quality/continuity'
 import { loadStreets } from '../streets/loadStreets'
 import type { AmbientAssets, AmbientModelAsset } from './assets'
@@ -110,7 +102,8 @@ export interface AmbientLifeProps {
   readonly geo: Pick<GeoBase, 'subway' | 'places' | 'landmarks'>
   readonly subwayPalette: readonly string[]
   readonly homes: readonly { readonly x: number; readonly y: number }[]
-  readonly gradientMap: Texture
+  /** The blocks' material recipe (createBuildingMaterial, instance colours): zero new programs. */
+  readonly createMaterial: () => Material
   readonly groundY: number
   readonly config: Pick<SceneConfig, 'subway' | 'travel' | 'models'> & {
     readonly avatar: AvatarConfig
@@ -127,7 +120,7 @@ export default function AmbientLife({
   geo,
   subwayPalette,
   homes,
-  gradientMap,
+  createMaterial,
   groundY,
   config: scene,
   hidden,
@@ -145,7 +138,8 @@ export default function AmbientLife({
     () => typeof document === 'undefined' || document.visibilityState === 'visible',
   )
   const [contextLost, setContextLost] = useState(false)
-  const levelRef = useRef(qualityStore.getState().ambientSteps)
+  const materialRef = useRef(createMaterial)
+  const levelRef = useRef(ambientSteps.get().steps)
   const nightRef = useRef(night)
   const viewRef = useRef<AmbientView | null>(null)
   const clockRef = useRef(0)
@@ -172,10 +166,13 @@ export default function AmbientLife({
     nightRef.current = night
     invalidate()
   }, [night, invalidate])
+  useEffect(() => {
+    materialRef.current = createMaterial
+  }, [createMaterial])
 
   // The layer is created (and its loads start) in an effect, so a discarded render never leaks one.
   useEffect(() => {
-    const colorById = lineColors(geo.subway.lines, subwayPalette)
+    const colorById = trainLineColors(geo.subway.lines, subwayPalette)
     const lines: TrainLine[] = geo.subway.lines.map((line) => ({
       id: line.id,
       color: colorById.get(line.id) ?? subwayPalette[0] ?? 'gray',
@@ -229,11 +226,15 @@ export default function AmbientLife({
       tier,
       config,
       caps: ambientCaps(tier),
-      gradientMap,
+      createMaterial: () => materialRef.current(),
       groundY,
       trainY: groundY + scene.subway.liftM,
       trainCarSize: (distance, out) => {
-        const h = avatarSize(distance, avatar)
+        // The trip train's size (src/scene/avatar/buildAvatar.ts avatarSize × travel ratios).
+        const h = Math.min(
+          avatar.maxHeightM,
+          Math.max(avatar.minHeightM, distance * avatar.heightPerDistance),
+        )
         return out.set(
           Math.max(trains.carWidthM, h * travel.vehicleWidthRatio),
           Math.max(trains.carHeightM, h * travel.vehicleHeightRatio),
@@ -288,34 +289,21 @@ export default function AmbientLife({
       if (layerRef.current === created) layerRef.current = null
       viewRef.current = null
     }
-  }, [
-    assets,
-    tier,
-    geo,
-    subwayPalette,
-    homes,
-    gradientMap,
-    groundY,
-    scene,
-    get,
-    gl,
-    sceneRoot,
-    invalidate,
-  ])
+  }, [assets, tier, geo, subwayPalette, homes, groundY, scene, get, gl, sceneRoot, invalidate])
 
   // Density levels and the ambient-only FPS floor for the step-down (density before tier).
   useEffect(() => {
-    const store = qualityStore.getState()
-    store.setAmbient(maxDensityLevel(config.density), config.stepDown.belowFps[tier])
-    const off = qualityStore.subscribe((state) => {
-      if (state.ambientSteps !== levelRef.current) {
-        levelRef.current = state.ambientSteps
+    ambientSteps.register(maxDensityLevel(config.density), config.stepDown.belowFps[tier])
+    const off = ambientSteps.subscribe(() => {
+      const { steps } = ambientSteps.get()
+      if (steps !== levelRef.current) {
+        levelRef.current = steps
         invalidate()
       }
     })
     return () => {
       off()
-      qualityStore.getState().setAmbient(0, null)
+      ambientSteps.register(0, null)
     }
   }, [tier, invalidate])
 
@@ -423,7 +411,7 @@ export default function AmbientLife({
           mode,
           pauseReason,
           clockMs: clockRef.current,
-          densityLevel: qualityStore.getState().ambientSteps,
+          densityLevel: ambientSteps.get().steps,
           drawn: { vehicles: 0, buses: 0, pedestrians: 0, trainCars: 0 },
           triangles: 0,
           drawCalls: 0,
@@ -439,7 +427,7 @@ export default function AmbientLife({
         mode,
         pauseReason,
         clockMs: clockRef.current,
-        densityLevel: qualityStore.getState().ambientSteps,
+        densityLevel: ambientSteps.get().steps,
         drawn: view.drawn,
         triangles: view.triangles,
         drawCalls: view.drawCalls,
@@ -457,6 +445,19 @@ export default function AmbientLife({
   }, [mode, pauseReason, gl, sceneRoot])
 
   return null
+}
+
+/**
+ * Line id to its ribbon colour, as src/scene/geo/buildSubway.ts `lineColors` maps them (the
+ * palette cycled over the sorted ids; AmbientLife.test.ts holds the two equal). Repeated so this
+ * chunk does not pull the subway builder in.
+ */
+export function trainLineColors(
+  lines: readonly { readonly id: string }[],
+  palette: readonly string[],
+): Map<string, string> {
+  const ids = lines.map((line) => line.id).sort()
+  return new Map(ids.map((id, index) => [id, palette[index % palette.length] ?? palette[0] ?? '']))
 }
 
 const drawnTotal = (view: AmbientView) =>

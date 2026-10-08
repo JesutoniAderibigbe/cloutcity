@@ -4,6 +4,7 @@ import { createLogger, type LogRecord } from '@/lib/log'
 import { createQualityStore, selectActiveTier, type PersistedQuality } from '@/state/quality'
 import { createSafeJsonStorage } from '@/state/storage'
 import { beginContinuous, endContinuous } from './continuity'
+import { ambientSteps } from './ambientSteps'
 import { canStepDown, onMonitorDecline } from './decline'
 
 const rule = perf.fpsStepDown
@@ -19,7 +20,10 @@ function setup() {
   return { store, logger, records }
 }
 
-afterEach(() => endContinuous('gesture'))
+afterEach(() => {
+  endContinuous('gesture')
+  ambientSteps.reset()
+})
 
 describe('a PerformanceMonitor decline', () => {
   it('steps down one tier after sustainMs of continuous rendering, and logs it', () => {
@@ -92,7 +96,7 @@ describe('whether the monitor runs', () => {
 
   it('steps the living city density first, then the tier, on a shared cooldown (S04l)', () => {
     const { store, logger } = setup()
-    store.getState().setAmbient(2, 24)
+    ambientSteps.register(2, 24)
     beginContinuous('gesture', 0)
     const at = (ms: number) => onMonitorDecline(store, rule, ms, logger)
     expect(at(rule.sustainMs)).toEqual({ action: 'ambient-down', level: 1 })
@@ -100,14 +104,16 @@ describe('whether the monitor runs', () => {
     expect(at(rule.sustainMs + rule.cooldownMs)).toEqual({ action: 'ambient-down', level: 2 })
     expect(selectActiveTier(store.getState())).toBe('high')
     expect(at(rule.sustainMs + 2 * rule.cooldownMs)).toEqual({ action: 'step-down', to: 'mid' })
-    expect(store.getState().ambientSteps).toBe(2)
+    expect(ambientSteps.get().steps).toBe(2)
+    ambientSteps.register(0, null)
   })
 
   it('stays armed on low while a density level is left', () => {
     const { store } = setup()
     store.getState().setDetected({ tier: 'low', reasons: ['low-renderer'] }, false)
     expect(canStepDown(store.getState(), rule)).toBe(false)
-    store.getState().setAmbient(2, 24)
+    ambientSteps.register(2, 24)
     expect(canStepDown(store.getState(), rule)).toBe(true)
+    ambientSteps.register(0, null)
   })
 })

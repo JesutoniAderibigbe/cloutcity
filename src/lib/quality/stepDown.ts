@@ -1,12 +1,11 @@
 /**
  * Runtime FPS step-down rules (S04b, CLAUDE.md: one tier down when average FPS stays below the
- * floor for `sustainMs`, with hysteresis). The living city's density steps down first (S04l,
- * DEC-52): while a density level remains, a decline lowers it instead of the tier. The scene's TierMonitor feeds drei
+ * floor for `sustainMs`, with hysteresis). The scene's TierMonitor feeds drei
  * PerformanceMonitor's incline/decline events through {@link stepDecision}; the store applies the
  * result. Pure: time and state are passed in.
  *
  * The scene renders on demand (`frameloop="demand"`), so frames arrive only while something
- * moves (a gesture, a flight, a trip or the living city). PerformanceMonitor measures FPS as frames over wall time, so a sample spanning an idle
+ * moves. PerformanceMonitor measures FPS as frames over wall time, so a sample spanning an idle
  * gap reads as a very low FPS. A decline therefore counts only when the scene has rendered
  * continuously for the whole measurement window.
  */
@@ -37,9 +36,6 @@ export interface StepInput {
   readonly overrideActive: boolean
   /** A data-saver request already forces low. */
   readonly dataSaver: boolean
-  /** Living city density step-downs so far this session (S04l), and how many it allows. */
-  readonly ambientSteps?: number
-  readonly ambientStepsMax?: number
 }
 
 export type StepIgnoreReason =
@@ -47,6 +43,7 @@ export type StepIgnoreReason =
 
 export type StepDecision =
   | { readonly action: 'step-down'; readonly to: QualityTier }
+  /** The living city's density stepped down instead (S04l, src/scene/quality/decline.ts). */
   | { readonly action: 'ambient-down'; readonly level: number }
   | { readonly action: 'ignore'; readonly reason: StepIgnoreReason }
 
@@ -54,19 +51,14 @@ export type StepDecision =
 export function stepDecision(input: StepInput, cfg: FpsStepDown): StepDecision {
   const ignore = (reason: StepIgnoreReason): StepDecision => ({ action: 'ignore', reason })
   if (input.event === 'incline') return ignore('incline')
+  if (input.overrideActive) return ignore('override')
+  if (input.dataSaver) return ignore('data-saver')
   if (input.continuousSinceMs === null || input.nowMs - input.continuousSinceMs < cfg.sustainMs) {
     return ignore('gap')
   }
   if (input.lastStepAtMs !== null && input.nowMs - input.lastStepAtMs < cfg.cooldownMs) {
     return ignore('cooldown')
   }
-  // Density before tier, whatever the tier source: it costs no detail the player chose.
-  const ambientSteps = input.ambientSteps ?? 0
-  if (ambientSteps < (input.ambientStepsMax ?? 0)) {
-    return { action: 'ambient-down', level: ambientSteps + 1 }
-  }
-  if (input.overrideActive) return ignore('override')
-  if (input.dataSaver) return ignore('data-saver')
   if (input.steps >= cfg.maxSteps) return ignore('max-steps')
   if (input.active === 'low') return ignore('at-low')
   return { action: 'step-down', to: lower(input.active) }

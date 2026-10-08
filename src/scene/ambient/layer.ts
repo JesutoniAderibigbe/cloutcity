@@ -6,7 +6,7 @@
  * three only, no React (AmbientLife.tsx drives it).
  *
  * Zero new shader programs: every mesh draws with a fresh material made exactly as the blocks'
- * (`createBuildingMaterial({ gradientMap, colors: 'instance' })`: instanced toon with
+ * (`createBuildingMaterial({ gradientMap, colors: 'instance' })`, passed in: instanced toon with
  * instanceColor, no vertex colours, no patch), so three reuses the program the blocks already
  * compiled on every tier. All bucket meshes of one kit share one instanceMatrix attribute.
  * Nothing here is pickable, casts a shadow, or is ever counted as a player (UX-3).
@@ -27,7 +27,6 @@ import {
   type Camera,
   type Material,
   type Object3D,
-  type Texture,
 } from 'three'
 import { decodeStreets } from '@/lib/world/streetProps'
 import { densityShare } from '@/lib/world/ambient/density'
@@ -46,7 +45,6 @@ import {
   type TrainStation,
 } from '@/lib/world/ambient/types'
 import { createVehicleSim, type VehicleSim } from '@/lib/world/ambient/vehicles'
-import { createBuildingMaterial } from '../buildings/materials'
 import type { StreetsMini } from '../props/schema'
 import type { ScenePedestrianKit } from './pedestrianKits'
 import type { SceneVehicleKit } from './vehicleKits'
@@ -89,7 +87,12 @@ export interface AmbientLayerOptions {
   readonly tier: AmbientTier
   readonly config: AmbientConfig
   readonly caps: AmbientCaps
-  readonly gradientMap: Texture
+  /**
+   * Makes the material every ambient mesh draws with: exactly the blocks' options,
+   * `createBuildingMaterial({ gradientMap, colors: 'instance' })` (CityCanvas passes it, so this
+   * chunk never imports the buildings' modules).
+   */
+  readonly createMaterial: () => Material
   readonly groundY: number
   /** Height trains run at (the subway ribbons'). */
   readonly trainY: number
@@ -194,7 +197,7 @@ export function createAmbientLayer(options: AmbientLayerOptions): AmbientLayer {
   const { config, caps, tier, groundY } = options
   const group = new Group()
   group.name = 'ambient-life'
-  const material = createBuildingMaterial({ gradientMap: options.gradientMap, colors: 'instance' })
+  const material = options.createMaterial()
   let disposed = false
   let status: AmbientStatus = 'loading'
   let updates = 0

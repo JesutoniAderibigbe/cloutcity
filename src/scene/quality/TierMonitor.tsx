@@ -19,10 +19,19 @@ import { PerformanceMonitor } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import type { FpsStepDown } from '@/lib/data/schemas/config'
 import { qualityStore } from '@/state/quality'
+import { ambientSteps } from './ambientSteps'
 import { continuousSince, onlyAmbient, subscribeContinuous } from './continuity'
 import { canStepDown, onMonitorDecline } from './decline'
 
 const serverSince = () => null
+const subscribeArmed = (listener: () => void) => {
+  const offStore = qualityStore.subscribe(listener)
+  const offAmbient = ambientSteps.subscribe(listener)
+  return () => {
+    offStore()
+    offAmbient()
+  }
+}
 const serverArmed = () => false
 
 export function TierMonitor({
@@ -36,7 +45,7 @@ export function TierMonitor({
   const invalidate = useThree((state) => state.invalidate)
   const since = useSyncExternalStore(subscribeContinuous, continuousSince, serverSince)
   const armedNow = useCallback(() => canStepDown(qualityStore.getState(), stepDown), [stepDown])
-  const armed = useSyncExternalStore(qualityStore.subscribe, armedNow, serverArmed)
+  const armed = useSyncExternalStore(subscribeArmed, armedNow, serverArmed)
   const measuring = armed && since !== null && !paused
 
   // Inside the window every frame requests the next, so FPS reflects the device rather than
@@ -54,7 +63,7 @@ export function TierMonitor({
   )
   // At its 30 fps cap the living city alone sits too near the floor: it has its own (S04l).
   const bounds = useCallback((): [number, number] => {
-    const ambient = qualityStore.getState().ambientBelowFps
+    const ambient = ambientSteps.get().belowFps
     return [onlyAmbient() && ambient !== null ? ambient : stepDown.belowFps, Infinity]
   }, [stepDown])
 
