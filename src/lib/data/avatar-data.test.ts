@@ -2,7 +2,8 @@
  * S16a data across files: the look options (data/avatar/options.json), traits, the creator
  * config, the career block and the items' `look`, against the S04h model manifest, the model
  * palette (theme.json `models`) and the copy.
- * Every id resolves: part A0 has landed (the Blender attachments, `head-base`, the tokens).
+ * Every id resolves, except the models options.json lists as `pending` (S16b P2a: the Blender
+ * attachments being refitted to the realistic frame), which may be absent until they land.
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -28,7 +29,12 @@ import {
 import { balance, theme } from './config'
 import { items } from './content'
 import { ModelManifestSchema } from './schemas/assets'
-import { AvatarOptionsSchema, TraitsFileSchema, lookIssue } from './schemas/avatar'
+import {
+  AvatarCompatSchema,
+  AvatarOptionsSchema,
+  TraitsFileSchema,
+  lookIssue,
+} from './schemas/avatar'
 import { CAREER_PATHS } from './schemas/config'
 import { CreatorConfigSchema } from './schemas/creator'
 
@@ -36,6 +42,7 @@ const DATA = join(import.meta.dirname, '../../../data')
 const readJson = (file: string): unknown => JSON.parse(readFileSync(join(DATA, file), 'utf8'))
 
 const options = AvatarOptionsSchema.parse(readJson('avatar/options.json'))
+const compat = AvatarCompatSchema.parse(readJson('avatar/compat.json'))
 const traits = TraitsFileSchema.parse(readJson('avatar/traits.json'))
 const creator = CreatorConfigSchema.parse(readJson('config/creator.json'))
 const manifest = ModelManifestSchema.parse(readJson('assets/manifest.json'))
@@ -43,14 +50,19 @@ const modelIds = new Set(manifest.models.map((model) => model.id))
 const tokens = new Set(Object.keys(theme.models))
 const strings = baseCopy.strings
 
+const outfitBodies = options.outfits.flatMap((outfit) =>
+  Object.values(outfit.variants).filter((id) => id !== undefined),
+)
+
 /** Every catalog model id the options and items name. */
 function referencedModels(): string[] {
   const models = [
-    ...options.hairStyles.flatMap((style) => [style.head, ...(style.piece ? [style.piece] : [])]),
+    ...options.bodies.flatMap((body) => [body.head, body.rig]),
+    ...options.hairStyles.flatMap((style) => (style.piece ? [style.piece] : [])),
     ...[...options.facialHair, ...options.headwear, ...options.eyewear, ...options.ears].flatMap(
       (option) => (option.model === undefined ? [] : [option.model]),
     ),
-    ...options.outfits.map((outfit) => outfit.body),
+    ...outfitBodies,
     ...items.flatMap((item) => (item.look?.part === 'attachment' ? [item.look.model] : [])),
   ]
   return [...new Set(models)]
@@ -65,8 +77,14 @@ function referencedTokens(): string[] {
 }
 
 describe('look options resolve (S04h catalog and palette)', () => {
-  it('every model id is in the manifest', () => {
-    expect(referencedModels().filter((id) => !modelIds.has(id))).toEqual([])
+  it('every model id is in the manifest, unless it is pending its refit', () => {
+    const absent = referencedModels().filter((id) => !modelIds.has(id))
+    expect(absent.filter((id) => !compat.pending.includes(id))).toEqual([])
+    // Nothing stays pending once it ships, and nothing pending is a face, rig or body.
+    for (const body of options.bodies) {
+      for (const id of [body.head, body.rig]) expect(compat.pending).not.toContain(id)
+    }
+    for (const id of outfitBodies) expect(compat.pending).not.toContain(id)
   })
 
   it('every palette token is in theme.json models', () => {
@@ -75,26 +93,33 @@ describe('look options resolve (S04h catalog and palette)', () => {
   })
 
   it('heads, bodies and attachments sit in their own categories (GR-12)', () => {
-    const category = (id: string) => manifest.models.find((model) => model.id === id)?.category
-    for (const style of options.hairStyles) {
-      if (modelIds.has(style.head)) expect(category(style.head), style.id).toBe('avatar-head')
+    // A pending model (S16b P2a) is checked once it lands.
+    const category = (id: string) =>
+      compat.pending.includes(id) && !modelIds.has(id)
+        ? 'pending'
+        : manifest.models.find((model) => model.id === id)?.category
+    for (const body of options.bodies) {
+      expect(category(body.head), body.id).toBe('avatar-head')
+      expect(category(body.rig), body.id).toBe('avatar-rig')
     }
-    for (const outfit of options.outfits)
-      expect(category(outfit.body), outfit.id).toBe('avatar-body')
+    for (const id of outfitBodies) expect(category(id), id).toBe('avatar-body')
     for (const option of [...options.facialHair, ...options.eyewear, ...options.ears]) {
       if (option.model !== undefined) {
-        expect(category(option.model), option.id).toBe('avatar-accessory')
+        expect(category(option.model), option.id).toMatch(/^(?:avatar-accessory|pending)$/)
       }
     }
     for (const style of options.hairStyles) {
-      if (style.piece !== undefined) expect(category(style.piece), style.id).toBe('avatar-hair')
+      if (style.piece !== undefined)
+        expect(category(style.piece), style.id).toMatch(/^(?:avatar-hair|pending)$/)
     }
     for (const option of options.headwear) {
-      if (option.model !== undefined) expect(category(option.model), option.id).toBe('avatar-hair')
+      if (option.model !== undefined) {
+        expect(category(option.model), option.id).toMatch(/^(?:avatar-hair|pending)$/)
+      }
     }
     for (const item of items) {
       if (item.look?.part === 'attachment') {
-        expect(category(item.look.model), item.id).toBe('avatar-accessory')
+        expect(category(item.look.model), item.id).toMatch(/^(?:avatar-accessory|pending)$/)
       }
     }
   })
@@ -104,7 +129,7 @@ describe('look options resolve (S04h catalog and palette)', () => {
       avatar: { trianglesMax: Record<'low' | 'mid' | 'high', number> }
     }
     const attachmentItems = items.filter((item) => item.look?.part === 'attachment')
-    const bodies = options.outfits.map((outfit) => outfit.body)
+    const bodies = outfitBodies
     const tris = (id: string, tier: 'low' | 'mid' | 'high') =>
       manifest.models.find((model) => model.id === id)?.tiers[tier].triangles ?? NaN
     for (const tier of ['low', 'mid', 'high'] as const) {
@@ -126,9 +151,11 @@ describe('look options resolve (S04h catalog and palette)', () => {
                     ears: ears.id,
                   }
                   const drawn = effectiveLook({ look, worn }, engineConfig, creatorConfig)
+                  // A pending attachment is not drawn (S16b), so it adds nothing yet.
+                  const shown = (id: string) => (modelIds.has(id) ? tris(id, tier) : 0)
                   const total =
                     tris(drawn.head, tier) +
-                    drawn.attachments.reduce((sum, id) => sum + tris(id, tier), 0)
+                    drawn.attachments.reduce((sum, id) => sum + shown(id), 0)
                   worst = Math.max(worst, total)
                 }
       expect(worst + body, tier).toBeLessThanOrEqual(perf.avatar.trianglesMax[tier])
@@ -143,16 +170,31 @@ describe('look options (D2, D5–D8)', () => {
     expect(options.garmentColors).toHaveLength(11)
     expect(options.shoeColors).toHaveLength(4)
     expect(options.heights.map((height) => height.scale)).toEqual([0.96, 1, 1.04])
-    expect(options.outfits).toHaveLength(12)
+    expect(options.outfits).toHaveLength(9)
+    expect(options.bodies.map((body) => body.id)).toEqual(['woman', 'man'])
   })
 
-  it('offer at least 8 Kenney hairstyles and the 5 inclusive Blender styles on the base head', () => {
-    const blender = options.hairStyles.filter((style) => style.piece !== undefined)
-    expect(options.hairStyles.length - blender.length).toBeGreaterThanOrEqual(8)
-    expect(blender.map((style) => style.id).sort()).toEqual(
-      ['afro', 'box-braids', 'buzz', 'cornrows', 'locs'].sort(),
-    )
-    expect(new Set(blender.map((style) => style.head))).toEqual(new Set(['head-base']))
+  it('offer the pack hairstyles and the 5 inclusive Blender styles to every body (S16b)', () => {
+    const blender = ['afro', 'box-braids', 'buzz', 'cornrows', 'locs']
+    const pieces = options.hairStyles.filter((style) => style.piece !== undefined)
+    expect(pieces.length - blender.length).toBeGreaterThanOrEqual(8)
+    for (const id of blender) expect(pieces.map((style) => style.id)).toContain(id)
+    expect(options.hairStyles.some((style) => style.piece === undefined)).toBe(true)
+  })
+
+  it('maps every Kenney-era hairstyle and outfit id, and every old outfit to a body', () => {
+    const old = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
+    for (const n of old) {
+      const style = compat.legacy.ids[`style-${n}`]
+      expect(
+        options.hairStyles.some((option) => option.id === style),
+        n,
+      ).toBe(true)
+      expect(compat.legacy.ids[`outfit-${n}`], n).toBeDefined()
+      const body = compat.legacy.body[`outfit-${n}`]
+      const outfit = options.outfits.find((o) => o.id === compat.legacy.ids[`outfit-${n}`])
+      expect(body === undefined ? undefined : outfit?.variants[body], n).toBeDefined()
+    }
   })
 
   it('keep categories apart: hair, facial hair, head coverings, eyewear and ears (GR-12)', () => {
@@ -185,6 +227,7 @@ describe('every swatch and option has a human name (A11Y-1)', () => {
     eyewear: options.eyewear,
     ears: options.ears,
     outfits: options.outfits,
+    bodies: options.bodies,
     heights: options.heights,
   }
 
@@ -224,13 +267,18 @@ describe('items look (D12)', () => {
       expect(look, item.id).toBeDefined()
       if (look?.part === 'outfit') {
         expect(has(options.outfits, look.outfit), item.id).toBe(true)
+        // Worn by either body (S16b): an outfit item needs both variants.
+        const outfit = options.outfits.find((o) => o.id === look.outfit)
+        for (const body of options.bodies) {
+          expect(outfit?.variants[body.id], `${item.id} ${body.id}`).toBeDefined()
+        }
         expect(has(options.garmentColors, look.top), item.id).toBe(true)
       }
       if (look?.part === 'bottom')
         expect(has(options.garmentColors, look.color), item.id).toBe(true)
       if (look?.part === 'shoes') expect(options.shoeColors, item.id).toContain(look.color)
       if (look?.part === 'attachment') {
-        expect(modelIds.has(look.model), item.id).toBe(true)
+        expect(modelIds.has(look.model) || compat.pending.includes(look.model), item.id).toBe(true)
       }
     }
   })

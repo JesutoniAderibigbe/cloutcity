@@ -51,17 +51,20 @@ function maybe(ids: readonly string[], chance: number, rng: Rng): string {
 export function randomLook(seed: number, config: EngineConfig): Look {
   const options = config.avatar
   const rng = createRng(seed)
-  const ids = (field: LookField, hairStyle?: string) => lookFieldIds(field, options, hairStyle)
+  const ids = (field: LookField, body?: string) => lookFieldIds(field, options, body)
+  const body = pick(ids('body'), rng)
+  const skin = pick(ids('skin'), rng)
   const hairStyle = pick(ids('hairStyle'), rng)
   return {
-    skin: pick(ids('skin'), rng),
+    body,
+    skin,
     hairStyle,
-    hairColor: pick(ids('hairColor', hairStyle), rng),
+    hairColor: pick(ids('hairColor'), rng),
     facialHair: maybe(ids('facialHair'), options.random.facialHair, rng),
     headwear: maybe(ids('headwear'), options.random.headwear, rng),
     eyewear: maybe(ids('eyewear'), options.random.eyewear, rng),
     ears: maybe(ids('ears'), options.random.hearingAid, rng),
-    outfit: pick(ids('outfit'), rng),
+    outfit: pick(ids('outfit', body), rng),
     top: pick(ids('top'), rng),
     bottom: pick(ids('bottom'), rng),
     shoes: pick(ids('shoes'), rng),
@@ -70,29 +73,49 @@ export function randomLook(seed: number, config: EngineConfig): Look {
 }
 
 /**
- * A look from an untrusted save: each field that is not a string naming an option of its
- * category becomes the default (a hair colour the hairstyle does not offer becomes the default
- * when the style offers it, else the style's first colour), and unknown keys are dropped.
- * `repaired` is false when the look was already valid.
+ * Older builds' ids mapped to today's (S16b): a Kenney-era hairstyle or outfit becomes its
+ * alias, and a look saved before body frames existed takes the body its old outfit implies.
+ */
+function withLegacyIds(
+  source: Record<string, unknown>,
+  legacy: EngineConfig['avatar']['legacy'],
+): Record<string, unknown> {
+  const known = (map: Readonly<Record<string, string>>, value: unknown) =>
+    typeof value === 'string' && Object.hasOwn(map, value) ? map[value] : undefined
+  const { hairStyle, outfit } = source
+  return {
+    ...source,
+    hairStyle: known(legacy.ids, hairStyle) ?? hairStyle,
+    outfit: known(legacy.ids, outfit) ?? outfit,
+    ...(!Object.hasOwn(source, 'body') && { body: known(legacy.body, outfit) }),
+  }
+}
+
+/**
+ * A look from an untrusted save: legacy ids are mapped first (S16b), then each field that is
+ * not a string naming an option of its category becomes the default (an outfit the body has
+ * no variant of becomes the default when the body has it, else its first outfit), and unknown
+ * keys are dropped. `repaired` is
+ * false when the look was already valid. It is idempotent.
  */
 export function repairLook(
   raw: unknown,
   config: EngineConfig,
 ): { readonly look: Look; readonly repaired: boolean } {
-  const source =
+  const saved =
     typeof raw === 'object' && raw !== null && !Array.isArray(raw)
       ? (raw as Record<string, unknown>)
       : {}
   const { defaults } = config.avatar
-  let repaired = Object.keys(source).some(
-    (key) => !(LOOK_FIELDS as readonly string[]).includes(key),
-  )
+  const source = withLegacyIds(saved, config.avatar.legacy)
+  let repaired =
+    Object.keys(saved).some((key) => !(LOOK_FIELDS as readonly string[]).includes(key)) ||
+    LOOK_FIELDS.some((field) => source[field] !== saved[field])
   const look: Record<LookField, string> = { ...defaults }
-  // hairStyle comes before hairColor in LOOK_FIELDS, so the colour is checked against the
-  // style already kept.
+  // body comes before outfit in LOOK_FIELDS, so the outfit is checked against the body kept.
   for (const field of LOOK_FIELDS) {
     const value = Object.hasOwn(source, field) ? source[field] : undefined
-    const allowed = lookFieldIds(field, config.avatar, look.hairStyle)
+    const allowed = lookFieldIds(field, config.avatar, look.body)
     if (typeof value === 'string' && allowed.includes(value)) {
       look[field] = value
       continue

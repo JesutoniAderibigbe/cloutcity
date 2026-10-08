@@ -175,7 +175,9 @@ export default function AvatarPreviewCanvas({
           intensity={preview.sun.intensity}
           position={[...preview.sun.position]}
         />
-        <ModelsProvider config={config} tier={tier}>
+        {/* S16b: one avatar in its own canvas always draws the high LOD; the device tier only
+            sets the canvas's pixel ratio and antialiasing. */}
+        <ModelsProvider config={config} tier="high">
           <group name={PREVIEW_AVATAR_NAME}>
             <LookAvatar
               avatar={avatar}

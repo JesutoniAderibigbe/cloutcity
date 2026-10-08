@@ -2,6 +2,10 @@
   "version": 1,
   "avatar": {
     "look": {
+      "body": [
+        "woman",
+        "man"
+      ],
       "skin": [
         "tone-01",
         "tone-02",
@@ -17,16 +21,16 @@
         "tone-12"
       ],
       "hairStyle": [
-        "style-01",
-        "style-02",
-        "style-03",
-        "style-04",
-        "style-05",
-        "style-06",
-        "style-07",
-        "style-10",
-        "style-11",
-        "style-12",
+        "shaved",
+        "bob",
+        "pixie",
+        "updo",
+        "ponytail",
+        "parted",
+        "tousled",
+        "spiky",
+        "swept",
+        "mohawk",
         "afro",
         "locs",
         "box-braids",
@@ -70,18 +74,15 @@
         "hearing-aid"
       ],
       "outfit": [
-        "outfit-01",
-        "outfit-02",
-        "outfit-03",
-        "outfit-04",
-        "outfit-05",
-        "outfit-06",
-        "outfit-07",
-        "outfit-08",
-        "outfit-09",
-        "outfit-10",
-        "outfit-11",
-        "outfit-12"
+        "casual",
+        "hoodie",
+        "dress",
+        "suit",
+        "worker",
+        "punk",
+        "outdoors",
+        "beach",
+        "overalls"
       ],
       "top": [
         "denim",
@@ -121,16 +122,78 @@
         "tall"
       ]
     },
-    "hairColorLimits": {},
+    "outfitsByBody": {
+      "woman": [
+        "casual",
+        "dress",
+        "suit",
+        "worker",
+        "punk",
+        "outdoors"
+      ],
+      "man": [
+        "casual",
+        "hoodie",
+        "suit",
+        "worker",
+        "punk",
+        "outdoors",
+        "beach",
+        "overalls"
+      ]
+    },
+    "legacy": {
+      "ids": {
+        "style-01": "updo",
+        "style-02": "updo",
+        "style-03": "updo",
+        "style-04": "updo",
+        "style-05": "bob",
+        "style-06": "bob",
+        "style-07": "spiky",
+        "style-08": "tousled",
+        "style-09": "tousled",
+        "style-10": "spiky",
+        "style-11": "tousled",
+        "style-12": "parted",
+        "outfit-01": "casual",
+        "outfit-02": "casual",
+        "outfit-03": "casual",
+        "outfit-04": "suit",
+        "outfit-05": "casual",
+        "outfit-06": "dress",
+        "outfit-07": "casual",
+        "outfit-08": "worker",
+        "outfit-09": "casual",
+        "outfit-10": "suit",
+        "outfit-11": "hoodie",
+        "outfit-12": "overalls"
+      },
+      "body": {
+        "outfit-01": "woman",
+        "outfit-02": "woman",
+        "outfit-03": "woman",
+        "outfit-04": "woman",
+        "outfit-05": "woman",
+        "outfit-06": "woman",
+        "outfit-07": "man",
+        "outfit-08": "man",
+        "outfit-09": "man",
+        "outfit-10": "man",
+        "outfit-11": "man",
+        "outfit-12": "man"
+      }
+    },
     "defaults": {
+      "body": "woman",
       "skin": "tone-05",
-      "hairStyle": "style-01",
+      "hairStyle": "bob",
       "hairColor": "black",
       "facialHair": "none",
       "headwear": "none",
       "eyewear": "none",
       "ears": "none",
-      "outfit": "outfit-01",
+      "outfit": "casual",
       "top": "teal",
       "bottom": "denim",
       "shoes": "white",

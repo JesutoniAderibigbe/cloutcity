@@ -610,6 +610,7 @@ function prestigeIssue(prestige: PrestigeState, nowMinute: number) {
 function lookSchema(config: EngineConfig) {
   return z
     .strictObject({
+      body: z.string(),
       skin: z.string(),
       hairStyle: z.string(),
       hairColor: z.string(),

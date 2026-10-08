@@ -15,7 +15,9 @@ refuses any other licence and checks each pack’s licence file on every run.
   (`data/config/theme.json` → `models`, DEC-26) within a CIEDE2000 tolerance.
 - Merges each static model into one mesh, scales it to real-world size and re-centres it.
 - Simplifies per quality tier (meshoptimizer), quantizes and compresses (EXT_meshopt_compression).
-- Avatar parts keep the shared Kenney rig; the rig keeps only the clips listed in the catalog.
+- Avatar parts (Quaternius modular packs) merge each outfit or face into one skinned mesh, fold
+  fingers into the hands, rename the joints and simplify to per-tier triangle targets; each rig
+  keeps only the clips listed in the catalog. Pack hairstyles are cut out as attachments.
 
 ## Attribution
 
@@ -119,23 +121,6 @@ Models: `bed`, `couch`, `armchair`, `floor-lamp`, `table-lamp`, `rug`, `shelf`.
 | `addons/kaykit_restaurant_bits/Assets/gltf/stove_single.gltf`          |  3008 | `cce0730ec2025399a68cb6afaa8acb2f54fcb3d70537a26f62564f6f7754f679` |
 
 Models: `fridge`, `stove`, `crate`.
-
-### Kenney Mini Characters 1.0
-
-- Id: `kenney-mini-characters`
-- Author: Kenney
-- Page: <https://kenney.nl/assets/mini-characters>
-- Licence: CC0 1.0 Universal (public domain dedication) <https://creativecommons.org/publicdomain/zero/1.0/>
-- Licence evidence: `License.txt` contains "License: (Creative Commons Zero, CC0)" and "http://creativecommons.org/publicdomain/zero/1.0/"
-- Download: <https://kenney.nl/media/pages/assets/mini-characters/bfc7e272b4-1774770718/kenney_mini-characters.zip> (models under `Models/GLB format/`)
-- Colour grade (OKLCH): lightness × 1, chroma × 1
-- Retrieved: 2026-10-07
-
-| File                         |   Bytes | sha256                                                             |
-| ---------------------------- | ------: | ------------------------------------------------------------------ |
-| `kenney_mini-characters.zip` | 2403059 | `9e1d48e6d7b8479ebbe84df71eb5bd8e1b3f0da546dea641890dccc8a02d0999` |
-
-Models: `avatar-rig`, `head-female-a`, `body-female-a`, `head-female-b`, `body-female-b`, `head-female-c`, `body-female-c`, `head-female-d`, `body-female-d`, `head-female-e`, `body-female-e`, `head-female-f`, `body-female-f`, `head-male-a`, `body-male-a`, `head-male-b`, `body-male-b`, `head-male-c`, `body-male-c`, `head-male-d`, `body-male-d`, `head-male-e`, `body-male-e`, `head-male-f`, `head-base`, `body-male-f`, `glasses`, `sunglasses`, `hearing-aid`.
 
 ### Kenney Furniture Kit 2.0
 
@@ -333,35 +318,6 @@ Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-bear
 | `wall-window`       | `kenney-furniture-kit`       | `wallWindow.glb`               | room-shell       |
 | `wall-doorway`      | `kenney-furniture-kit`       | `wallDoorway.glb`              | room-shell       |
 | `floor`             | `kenney-furniture-kit`       | `floorFull.glb`                | room-shell       |
-| `avatar-rig`        | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-rig       |
-| `head-female-a`     | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-head      |
-| `body-female-a`     | `kenney-mini-characters`     | `character-female-a.glb`       | avatar-body      |
-| `head-female-b`     | `kenney-mini-characters`     | `character-female-b.glb`       | avatar-head      |
-| `body-female-b`     | `kenney-mini-characters`     | `character-female-b.glb`       | avatar-body      |
-| `head-female-c`     | `kenney-mini-characters`     | `character-female-c.glb`       | avatar-head      |
-| `body-female-c`     | `kenney-mini-characters`     | `character-female-c.glb`       | avatar-body      |
-| `head-female-d`     | `kenney-mini-characters`     | `character-female-d.glb`       | avatar-head      |
-| `body-female-d`     | `kenney-mini-characters`     | `character-female-d.glb`       | avatar-body      |
-| `head-female-e`     | `kenney-mini-characters`     | `character-female-e.glb`       | avatar-head      |
-| `body-female-e`     | `kenney-mini-characters`     | `character-female-e.glb`       | avatar-body      |
-| `head-female-f`     | `kenney-mini-characters`     | `character-female-f.glb`       | avatar-head      |
-| `body-female-f`     | `kenney-mini-characters`     | `character-female-f.glb`       | avatar-body      |
-| `head-male-a`       | `kenney-mini-characters`     | `character-male-a.glb`         | avatar-head      |
-| `body-male-a`       | `kenney-mini-characters`     | `character-male-a.glb`         | avatar-body      |
-| `head-male-b`       | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-head      |
-| `body-male-b`       | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-body      |
-| `head-male-c`       | `kenney-mini-characters`     | `character-male-c.glb`         | avatar-head      |
-| `body-male-c`       | `kenney-mini-characters`     | `character-male-c.glb`         | avatar-body      |
-| `head-male-d`       | `kenney-mini-characters`     | `character-male-d.glb`         | avatar-head      |
-| `body-male-d`       | `kenney-mini-characters`     | `character-male-d.glb`         | avatar-body      |
-| `head-male-e`       | `kenney-mini-characters`     | `character-male-e.glb`         | avatar-head      |
-| `body-male-e`       | `kenney-mini-characters`     | `character-male-e.glb`         | avatar-body      |
-| `head-male-f`       | `kenney-mini-characters`     | `character-male-f.glb`         | avatar-head      |
-| `head-base`         | `kenney-mini-characters`     | `character-male-b.glb`         | avatar-head      |
-| `body-male-f`       | `kenney-mini-characters`     | `character-male-f.glb`         | avatar-body      |
-| `glasses`           | `kenney-mini-characters`     | `aid-glasses.glb`              | avatar-accessory |
-| `sunglasses`        | `kenney-mini-characters`     | `aid-sunglasses.glb`           | avatar-accessory |
-| `hearing-aid`       | `kenney-mini-characters`     | `aid_hearing.glb`              | avatar-accessory |
 | `facial-stubble`    | `clout-city-blender`         | `facial-stubble.glb`           | avatar-accessory |
 | `facial-moustache`  | `clout-city-blender`         | `facial-moustache.glb`         | avatar-accessory |
 | `facial-goatee`     | `clout-city-blender`         | `facial-goatee.glb`            | avatar-accessory |
@@ -410,13 +366,14 @@ Models: `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-bear
 
 ## Left out
 
-| Item                                                                                                                | Why                                                                                                                                                 |
-| ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| KayKit City Builder Bits `car_police.gltf`                                                                          | Police livery (LEGAL): no law-enforcement markings in the city.                                                                                     |
-| KayKit City Builder Bits `car_stationwagon.gltf`                                                                    | Not needed yet (three cars cover traffic variety).                                                                                                  |
-| Pack textures, previews and source files                                                                            | Only geometry and baked colours ship (no images, no pack artwork as files).                                                                         |
-| Poly Pizza models                                                                                                   | Rejected at planning: per-model licences and authors, not pinnable as one pack.                                                                     |
-| Kenney Mini Characters wheelchairs and canes                                                                        | Deferred (A11Y-5): they need pose, travel and animation work first.                                                                                 |
-| Quaternius Ultimate Modular Women/Men: Soldier, Swat, SciFi, Spacesuit, Medieval, Witch and King outfits            | LEGAL/tone (S16b): nothing military, police, weapon, fantasy or sci-fi ships.                                                                       |
-| Quaternius Ultimate Modular Men: Pistol and Sword meshes; every pack's gun, sword, punch, kick, hit and death clips | LEGAL (S16b): no weapons or combat.                                                                                                                 |
-| Quaternius Universal Base Characters                                                                                | Rejected (S16b): the free Standard zip holds only nude Superhero bodies; regular bodies and outfits are in the paid Source zip (DEC-24: free only). |
+| Item                                                                                                                | Why                                                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| KayKit City Builder Bits `car_police.gltf`                                                                          | Police livery (LEGAL): no law-enforcement markings in the city.                                                                                                                        |
+| KayKit City Builder Bits `car_stationwagon.gltf`                                                                    | Not needed yet (three cars cover traffic variety).                                                                                                                                     |
+| Pack textures, previews and source files                                                                            | Only geometry and baked colours ship (no images, no pack artwork as files).                                                                                                            |
+| Poly Pizza models                                                                                                   | Rejected at planning: per-model licences and authors, not pinnable as one pack.                                                                                                        |
+| Avatar wheelchairs and canes                                                                                        | Deferred (A11Y-5): they need pose, travel and animation work first; the Kenney Mini Characters pack that had them is retired (S16b), so they will be modelled for the realistic frame. |
+| Quaternius Ultimate Modular Women/Men: Soldier, Swat, SciFi, Spacesuit, Medieval, Witch and King outfits            | LEGAL/tone (S16b): nothing military, police, weapon, fantasy or sci-fi ships.                                                                                                          |
+| Quaternius Ultimate Modular Men: Pistol and Sword meshes; every pack's gun, sword, punch, kick, hit and death clips | LEGAL (S16b): no weapons or combat.                                                                                                                                                    |
+| Quaternius Universal Base Characters                                                                                | Rejected (S16b): the free Standard zip holds only nude Superhero bodies; regular bodies and outfits are in the paid Source zip (DEC-24: free only).                                    |
+| Kenney Mini Characters                                                                                              | Retired (S16b, DEC-51): the chunky minis gave way to the realistic Quaternius modular characters.                                                                                      |

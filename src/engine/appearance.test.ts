@@ -62,21 +62,13 @@ describe('randomLook', () => {
     expect(rate((l) => l.ears !== 'none')).toBeCloseTo(options.random.hearingAid, 1)
   })
 
-  it('respects a hairstyle that limits its hair colours (SLOT-1 fallback)', () => {
-    const [first] = options.hairStyles
-    if (first === undefined) throw new Error('no hairstyles')
-    const limited = {
-      ...config,
-      avatar: {
-        ...config.avatar,
-        hairColorLimits: Object.fromEntries(
-          config.avatar.look.hairStyle.map((id) => [id, ['black']] as const),
-        ),
-      },
+  it('dresses each body in an outfit it has (S16b)', () => {
+    for (let seed = 0; seed < 300; seed++) {
+      const look = randomLook(seed, config)
+      expect(config.avatar.outfitsByBody[look.body]).toContain(look.outfit)
     }
-    for (let seed = 0; seed < 50; seed++) {
-      expect(randomLook(seed, limited).hairColor).toBe('black')
-    }
+    const bodies = new Set(Array.from({ length: 100 }, (_, seed) => randomLook(seed, config).body))
+    expect([...bodies].sort()).toEqual(['man', 'woman'])
   })
 })
 
@@ -104,27 +96,41 @@ describe('repairLook', () => {
     }
   })
 
-  it('a hair colour the kept hairstyle does not offer becomes one it does', () => {
-    const [first] = options.hairStyles
-    if (first === undefined) throw new Error('no hairstyles')
-    const limited = {
-      ...config,
-      avatar: { ...config.avatar, hairColorLimits: { [first.id]: ['grey'] } },
-    }
-    const { look } = repairLook({ ...base, hairStyle: first.id, hairColor: 'pink' }, limited)
-    expect(look.hairColor).toBe('grey')
+  it('maps Kenney-era ids and derives the body from the old outfit (S16b, no save bump)', () => {
+    const old = { ...base, hairStyle: 'style-12', outfit: 'outfit-11' } as Record<string, string>
+    delete old.body
+    const { look, repaired } = repairLook(old, config)
+    expect(repaired).toBe(true)
+    expect(look).toMatchObject({ body: 'man', hairStyle: 'parted', outfit: 'hoodie' })
+    expect(repairLook(look, config)).toEqual({ look, repaired: false })
+    const woman = repairLook({ ...old, outfit: 'outfit-02' }, config).look
+    expect(woman).toMatchObject({ body: 'woman', outfit: 'casual' })
+  })
+
+  it('an outfit the body has no variant of becomes the default outfit', () => {
+    const { look, repaired } = repairLook({ ...base, body: 'woman', outfit: 'hoodie' }, config)
+    expect(repaired).toBe(true)
+    expect(look.outfit).toBe(base.outfit)
+    expect(lookProblem({ ...base, body: 'man', outfit: 'dress' }, config)).toBe('outfit')
   })
 })
 
 describe('effectiveLook', () => {
   const look: Look = { ...base, hairStyle: 'afro', headwear: 'none', facialHair: 'stubble' }
 
-  it('draws the creator look with no items worn', () => {
+  it('draws the creator look with no items worn: the frame’s face, rig and outfit variant', () => {
     const drawn = effectiveLook(publicAvatar(wearing(look, [])), config, creatorConfig)
     expect(drawn.look).toEqual(look)
-    expect(drawn.head).toBe('head-base')
-    expect(drawn.body).toBe(options.outfits.find((o) => o.id === look.outfit)?.body)
+    expect(drawn.head).toBe('head-f')
+    expect(drawn.rig).toBe('avatar-rig-f')
+    expect(drawn.body).toBe('outfit-w-casual')
     expect(drawn.attachments).toEqual(['hair-afro', 'facial-stubble'])
+    const man = effectiveLook(
+      publicAvatar(wearing({ ...look, body: 'man', outfit: 'hoodie' }, [])),
+      config,
+      creatorConfig,
+    )
+    expect([man.head, man.rig, man.body]).toEqual(['head-m', 'avatar-rig-m', 'outfit-m-hoodie'])
     expect(drawn.hairHidden).toBe(false)
     expect(drawn.scale).toBe(1)
   })
@@ -138,12 +144,12 @@ describe('effectiveLook', () => {
       creatorConfig,
     )
     expect(drawn.look).toMatchObject({
-      outfit: 'outfit-03',
+      outfit: 'casual',
       top: 'white',
       bottom: 'moss',
       shoes: 'white',
     })
-    expect(drawn.body).toBe('body-female-c')
+    expect(drawn.body).toBe('outfit-w-casual')
     expect(drawn.attachments.at(-1)).toBe('acc-subway-tote')
     // The creator's own choices are kept underneath.
     expect(look.outfit).toBe(base.outfit)
@@ -155,23 +161,42 @@ describe('effectiveLook', () => {
     ).toEqual(effectiveLook(publicAvatar(wearing(look, [])), config, creatorConfig))
   })
 
-  it('a covering that hides hair puts the base head on and hides the hair piece, keeping the style', () => {
+  it('a covering that hides hair hides the hair piece, keeping the style', () => {
     const covered: Look = { ...base, hairStyle: 'locs', headwear: 'hijab' }
     const drawn = effectiveLook(publicAvatar(wearing(covered, [])), config, creatorConfig)
     expect(drawn.hairHidden).toBe(true)
-    expect(drawn.head).toBe('head-base')
+    expect(drawn.head).toBe('head-f')
     expect(drawn.attachments).toEqual(['headwear-hijab'])
     expect(drawn.look.hairStyle).toBe('locs')
-    const kenney: Look = { ...base, hairStyle: 'style-04', headwear: 'beanie' }
-    expect(effectiveLook(publicAvatar(wearing(kenney, [])), config, creatorConfig).head).toBe(
-      'head-base',
-    )
-    // S16a A0 ruling: the ball cap hides hair too (Kenney styles poke through its crown).
-    const cap: Look = { ...kenney, headwear: 'ballcap' }
-    expect(effectiveLook(publicAvatar(wearing(cap, [])), config, creatorConfig).head).toBe(
-      'head-base',
-    )
+    const pack: Look = { ...base, hairStyle: 'bob', headwear: 'ballcap' }
+    expect(
+      effectiveLook(publicAvatar(wearing(pack, [])), config, creatorConfig).attachments,
+    ).toEqual(['headwear-ballcap'])
     expect(options.headwear.every((option) => option.id === 'none' || option.hidesHair)).toBe(true)
+  })
+
+  it('a frame’s scalp cap shows under no hair or a covering, outside the attachment cap', () => {
+    const withCap = {
+      ...creatorConfig,
+      options: {
+        ...options,
+        bodies: options.bodies.map((body) =>
+          body.id === 'woman' ? { ...body, scalpCap: 'scalp-cap-f' } : body,
+        ),
+      },
+    }
+    const shaved = effectiveLook(
+      publicAvatar(wearing({ ...base, hairStyle: 'shaved' }, [])),
+      config,
+      withCap,
+    )
+    expect(shaved.attachments[0]).toBe('scalp-cap-f')
+    const bob = effectiveLook(
+      publicAvatar(wearing({ ...base, hairStyle: 'bob' }, [])),
+      config,
+      withCap,
+    )
+    expect(bob.attachments).not.toContain('scalp-cap-f')
   })
 
   it('keeps at most four attachments, in priority order: items go first', () => {

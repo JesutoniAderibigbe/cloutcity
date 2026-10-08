@@ -35,8 +35,8 @@ export interface ShowcaseScene {
     readonly spacingM: number
     readonly rowDepthM: number
     readonly clip: string
-    readonly rig: ModelRef
     readonly avatars: readonly {
+      readonly rig: ModelRef
       readonly head: ModelRef
       readonly body: ModelRef
       readonly colors: AvatarColors

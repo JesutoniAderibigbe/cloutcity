@@ -69,6 +69,7 @@ import {
 } from './schemas/world'
 import { ModelManifestSchema, ShowcaseSchema } from './schemas/assets'
 import {
+  AvatarCompatSchema,
   AvatarEngineTablesSchema,
   AvatarFrameFileSchema,
   AvatarOptionsSchema,
@@ -114,6 +115,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'assets/manifest.json': ModelManifestSchema,
   'assets/showcase.json': ShowcaseSchema,
   'audio/manifest.json': AudioManifestSchema,
+  'avatar/compat.json': AvatarCompatSchema,
   'avatar/engine.derived.json': AvatarEngineTablesSchema,
   'avatar/frame.json': AvatarFrameFileSchema,
   'avatar/options.json': AvatarOptionsSchema,

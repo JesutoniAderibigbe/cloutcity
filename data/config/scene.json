@@ -245,11 +245,12 @@
     },
     "cacheMaxEntries": 48,
     "player": {
-      "head": "head-female-c",
-      "body": "body-female-c",
+      "rig": "avatar-rig-f",
+      "head": "head-f",
+      "body": "outfit-w-casual",
       "clip": "idle",
       "minDeviceMemoryGB": 2,
-      "capsuleTiers": ["low"]
+      "capsuleTiers": []
     },
     "decor": {
       "thrift-flatweave-rug": {
@@ -398,11 +399,7 @@
     "alphaTest": 0.5
   },
   "avatarLook": {
-    "attachments": {
-      "glasses": { "joint": "head", "offset": [0, 0.98, 0.33] },
-      "sunglasses": { "joint": "head", "offset": [0, 0.98, 0.33] },
-      "hearing-aid": { "joint": "head", "offset": [0.5, 0.86, -0.08] }
-    },
+    "attachments": {},
     "preview": {
       "background": "#dfe7ee",
       "ambient": { "color": "#ffffff", "intensity": 0.45 },

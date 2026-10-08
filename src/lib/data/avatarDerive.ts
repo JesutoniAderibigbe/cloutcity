@@ -19,14 +19,17 @@ interface Option {
 
 /** The option lists of data/avatar/options.json that a look is checked against. */
 export interface LookOptionLists {
+  readonly bodies: readonly Option[]
   readonly skinTones: readonly Option[]
-  readonly hairStyles: readonly (Option & { readonly hairColors?: readonly string[] })[]
+  readonly hairStyles: readonly Option[]
   readonly hairColors: readonly Option[]
   readonly facialHair: readonly Option[]
   readonly headwear: readonly Option[]
   readonly eyewear: readonly Option[]
   readonly ears: readonly Option[]
-  readonly outfits: readonly Option[]
+  readonly outfits: readonly (Option & {
+    readonly variants: Readonly<Partial<Record<string, string>>>
+  })[]
   readonly garmentColors: readonly Option[]
   readonly shoeColors: readonly string[]
   readonly heights: readonly Option[]
@@ -38,15 +41,20 @@ export function deriveAvatarIds(
     readonly defaults: Readonly<Record<LookField, string>>
     readonly random: AvatarIdTables['random']
   },
+  /** data/avatar/compat.json (S16b); left out, nothing is aliased or pending. */
+  compat: { readonly legacy: AvatarIdTables['legacy'] } = { legacy: { ids: {}, body: {} } },
 ): AvatarIdTables {
   const ids = (list: readonly Option[]) => list.map((option) => option.id)
   const garment = ids(options.garmentColors)
-  const hairColorLimits: Record<string, readonly string[]> = {}
-  for (const style of options.hairStyles) {
-    if (style.hairColors !== undefined) hairColorLimits[style.id] = style.hairColors
+  const outfitsByBody: Record<string, readonly string[]> = {}
+  for (const body of options.bodies) {
+    outfitsByBody[body.id] = options.outfits
+      .filter((outfit) => outfit.variants[body.id] !== undefined)
+      .map((outfit) => outfit.id)
   }
   return {
     look: {
+      body: ids(options.bodies),
       skin: ids(options.skinTones),
       hairStyle: ids(options.hairStyles),
       hairColor: ids(options.hairColors),
@@ -60,7 +68,8 @@ export function deriveAvatarIds(
       shoes: options.shoeColors,
       height: ids(options.heights),
     },
-    hairColorLimits,
+    outfitsByBody,
+    legacy: compat.legacy,
     defaults: options.defaults,
     random: options.random,
   }
@@ -69,6 +78,7 @@ export function deriveAvatarIds(
 /** The engine tables from the S16a source files (see `AvatarEngineTables`). */
 export function deriveAvatarEngineTables(sources: {
   readonly options: Parameters<typeof deriveAvatarIds>[0]
+  readonly compat: NonNullable<Parameters<typeof deriveAvatarIds>[1]>
   readonly traits: {
     readonly maxModifierPct: number
     readonly traits: readonly {
@@ -93,7 +103,7 @@ export function deriveAvatarEngineTables(sources: {
   }
   return {
     version: 1,
-    avatar: deriveAvatarIds(options),
+    avatar: deriveAvatarIds(options, sources.compat),
     traits: {
       maxModifierPct: traits.maxModifierPct,
       pick: creator.steps.find((step) => step.id === 'traits')?.pick ?? 0,

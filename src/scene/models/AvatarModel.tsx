@@ -1,24 +1,25 @@
 'use client'
 
 /**
- * A hand-made avatar (S04h, S05): one body and one head (Kenney Mini Characters, recoloured
- * through their `_SLOT` regions) bound to a single skeleton and posed by the shared rig's
- * clips, plus up to `avatar.attachments.max` static attachments (S16a: glasses, a hearing aid,
- * later the Blender hair pieces and coverings), each a child of a rig joint so it follows the
- * pose with no extra skinning. Animation holds a continuous frame lease only while `animate` is true; otherwise the
- * avatar is posed once on the clip's first frame and requests a single frame, so an idle scene
- * still renders zero frames (frameloop="demand").
+ * A hand-made avatar (S04h, S05; S16b): the outfit's body, the frame's face and up to
+ * `avatar.attachments.max` static attachments (hair, facial hair, eyewear, items) merged into ONE
+ * SkinnedMesh on the body's skeleton, posed by the frame's rig clips. Attachments are skinned
+ * with weight 1 on the joint they follow, so the whole avatar is one draw call and one (skinned)
+ * shader program, whatever it wears. Animation holds a continuous frame lease only while
+ * `animate` is true; otherwise the avatar is posed once on the clip's first frame and requests a
+ * single frame, so an idle scene still renders zero frames (frameloop="demand").
  */
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import {
   AnimationMixer,
+  BufferAttribute,
+  BufferGeometry,
+  Matrix3,
   Matrix4,
-  Mesh,
-  Skeleton,
   SkinnedMesh,
+  Vector3,
   type AnimationClip,
-  type Bone,
   type Material,
   type Object3D,
 } from 'three'
@@ -31,6 +32,7 @@ import { disposeRecolored, recolorGeometry, slotColorsKey, type SlotColors } fro
 import type { ModelRef } from './types'
 
 export interface AvatarParts {
+  /** The body frame's rig (S16b: one per frame), whose clips pose the avatar. */
   readonly rig: ModelRef
   readonly head: ModelRef
   readonly body: ModelRef
@@ -68,9 +70,66 @@ function skinnedMeshOf(root: Object3D): SkinnedMesh {
   return found
 }
 
+/** Growable float arrays for the merged geometry. */
+interface Merge {
+  readonly position: number[]
+  readonly normal: number[]
+  readonly color: number[]
+  readonly skinIndex: number[]
+  readonly skinWeight: number[]
+}
+
 /**
- * Clones the body's skinned scene and binds a new head mesh to the clone's bones by joint name
- * (both parts carry the same seven-joint Kenney rig), so one mixer drives both.
+ * Appends a part's triangles to the merge, unindexed. `matrixFor` gives the transform carrying
+ * each vertex into the body's bind space (null: already there); `skin` its four joint indices
+ * (into the body's skeleton) and weights.
+ */
+function append(
+  merge: Merge,
+  geometry: BufferGeometry,
+  matrixFor: (vertex: number) => Matrix4 | null,
+  skin: (vertex: number, joints: number[], weights: number[]) => void,
+) {
+  const flat = geometry.index === null ? geometry : geometry.toNonIndexed()
+  if (flat.getAttribute('normal') === undefined) flat.computeVertexNormals()
+  const position = flat.getAttribute('position')
+  const normal = flat.getAttribute('normal')
+  const color = flat.getAttribute('color')
+  const normalMatrices = new Map<Matrix4, Matrix3>()
+  const point = new Vector3()
+  const direction = new Vector3()
+  const joints = [0, 0, 0, 0]
+  const weights = [0, 0, 0, 0]
+  for (let i = 0; i < position.count; i++) {
+    const matrix = matrixFor(i)
+    point.set(position.getX(i), position.getY(i), position.getZ(i))
+    direction.set(normal.getX(i), normal.getY(i), normal.getZ(i))
+    if (matrix !== null) {
+      let normalMatrix = normalMatrices.get(matrix)
+      if (normalMatrix === undefined) {
+        normalMatrix = new Matrix3().getNormalMatrix(matrix)
+        normalMatrices.set(matrix, normalMatrix)
+      }
+      point.applyMatrix4(matrix)
+      direction.applyMatrix3(normalMatrix)
+    }
+    direction.normalize()
+    merge.position.push(point.x, point.y, point.z)
+    merge.normal.push(direction.x, direction.y, direction.z)
+    if (color === undefined) merge.color.push(1, 1, 1)
+    else merge.color.push(color.getX(i), color.getY(i), color.getZ(i))
+    skin(i, joints, weights)
+    merge.skinIndex.push(...joints)
+    merge.skinWeight.push(...weights)
+  }
+  if (flat !== geometry) flat.dispose()
+}
+
+/**
+ * Merges the body, the face and the attachments into one SkinnedMesh bound to the body clone's
+ * skeleton (S16b). The face's vertices are carried into the body's bind space joint by joint
+ * (both carry the same frame's joints, so this is exact for the rigid face), and each attachment
+ * (modelled in the character's bind pose) is skinned with weight 1 on its joint.
  */
 export function assembleAvatar(
   body: SkinnedPartModel,
@@ -84,50 +143,107 @@ export function assembleAvatar(
   const bodyMesh = skinnedMeshOf(root)
   const bodySource = skinnedMeshOf(body.scene)
   const headSource = skinnedMeshOf(head.scene)
+  const skeleton = bodyMesh.skeleton
+  const jointOf = new Map(skeleton.bones.map((bone, i) => [bone.name, i]))
+  const merge: Merge = { position: [], normal: [], color: [], skinIndex: [], skinWeight: [] }
 
-  const bodyGeometry = recolorGeometry(bodySource.geometry, parts.body.slots, colors.body)
-  const headGeometry = recolorGeometry(headSource.geometry, parts.head.slots, colors.head)
-  bodyMesh.geometry = bodyGeometry
-  bodyMesh.material = material
-
-  const bones = new Map<string, Bone>(bodyMesh.skeleton.bones.map((bone) => [bone.name, bone]))
-  const headBones = headSource.skeleton.bones.map((bone) => {
-    const match = bones.get(bone.name)
-    if (match === undefined) throw new Error(`head joint "${bone.name}" missing from the body`)
-    return match
-  })
-  const headMesh = new SkinnedMesh(headGeometry, material)
-  headMesh.name = headSource.name
-  headMesh.position.copy(headSource.position)
-  headMesh.quaternion.copy(headSource.quaternion)
-  headMesh.scale.copy(headSource.scale)
-  // The body GLB keeps an empty node where the head mesh sat; the bound head replaces it.
-  const slot = root.getObjectByName(headSource.name)
-  const parent = slot?.parent ?? bodyMesh.parent ?? root
-  slot?.removeFromParent()
-  parent.add(headMesh)
-  headMesh.bind(new Skeleton(headBones, headSource.skeleton.boneInverses), headSource.bindMatrix)
-
-  // Each attachment hangs off its joint, placed where the bind pose puts it: its offset in the
-  // character's space, carried into the joint's frame by the joint's bind-pose world matrix.
-  root.updateMatrixWorld(true)
-  const extras: { readonly geometry: typeof bodyGeometry; readonly source: typeof bodyGeometry }[] =
-    []
-  for (const { part, model } of attachments) {
-    const joint = bones.get(part.joint)
-    if (joint === undefined) throw new Error(`attachment joint "${part.joint}" missing`)
-    const geometry = recolorGeometry(model.geometry, part.ref.slots, part.colors)
-    const mesh = new Mesh(geometry, material)
-    mesh.name = `${part.ref.id}-attachment`
-    mesh.matrixAutoUpdate = false
-    mesh.matrix
-      .copy(joint.matrixWorld)
-      .invert()
-      .multiply(new Matrix4().makeTranslation(...part.offset))
-      .multiply(model.matrix)
-    joint.add(mesh)
-    extras.push({ geometry, source: model.geometry })
+  const recolored: { readonly source: BufferGeometry; readonly geometry: BufferGeometry }[] = []
+  const recolor = (source: BufferGeometry, slots: readonly string[], c?: SlotColors) => {
+    const geometry = recolorGeometry(source, slots, c)
+    recolored.push({ source, geometry })
+    return geometry
   }
+
+  // The body: its own skin, as decoded.
+  const bodyGeometry = recolor(bodySource.geometry, parts.body.slots, colors.body)
+  {
+    const skinIndex = bodyGeometry.getAttribute('skinIndex')
+    const skinWeight = bodyGeometry.getAttribute('skinWeight')
+    append(
+      merge,
+      bodyGeometry,
+      () => null,
+      (i, joints, weights) => {
+        for (let k = 0; k < 4; k++) {
+          joints[k] = skinIndex.getComponent(i, k)
+          weights[k] = skinWeight.getComponent(i, k)
+        }
+      },
+    )
+  }
+
+  // The face: its joints renumbered into the body's skeleton by name, each vertex carried from
+  // the face's bind space into the body's through its strongest joint.
+  const headGeometry = recolor(headSource.geometry, parts.head.slots, colors.head)
+  {
+    const skinIndex = headGeometry.getAttribute('skinIndex')
+    const skinWeight = headGeometry.getAttribute('skinWeight')
+    const headBones = headSource.skeleton.bones
+    const remap = headBones.map((bone) => {
+      const at = jointOf.get(bone.name)
+      if (at === undefined) throw new Error(`head joint "${bone.name}" missing from the body`)
+      return at
+    })
+    const carry = headBones.map((_, j) =>
+      new Matrix4()
+        .copy(skeleton.boneInverses[remap[j] ?? 0] ?? new Matrix4())
+        .invert()
+        .multiply(headSource.skeleton.boneInverses[j] ?? new Matrix4()),
+    )
+    const strongest = (i: number) => {
+      let best = 0
+      for (let k = 1; k < 4; k++) {
+        if (skinWeight.getComponent(i, k) > skinWeight.getComponent(i, best)) best = k
+      }
+      return skinIndex.getComponent(i, best)
+    }
+    const identity = new Matrix4()
+    append(
+      merge,
+      headGeometry,
+      (i) => carry[strongest(i)] ?? identity,
+      (i, joints, weights) => {
+        for (let k = 0; k < 4; k++) {
+          joints[k] = remap[skinIndex.getComponent(i, k)] ?? 0
+          weights[k] = skinWeight.getComponent(i, k)
+        }
+      },
+    )
+  }
+
+  for (const { part, model } of attachments) {
+    const joint = jointOf.get(part.joint)
+    if (joint === undefined) throw new Error(`attachment joint "${part.joint}" missing`)
+    const geometry = recolor(model.geometry, part.ref.slots, part.colors)
+    const matrix = new Matrix4().makeTranslation(...part.offset).multiply(model.matrix)
+    append(
+      merge,
+      geometry,
+      () => matrix,
+      (_, joints, weights) => {
+        joints.splice(0, 4, joint, 0, 0, 0)
+        weights.splice(0, 4, 1, 0, 0, 0)
+      },
+    )
+  }
+
+  const merged = new BufferGeometry()
+  merged.setAttribute('position', new BufferAttribute(Float32Array.from(merge.position), 3))
+  merged.setAttribute('normal', new BufferAttribute(Float32Array.from(merge.normal), 3))
+  merged.setAttribute('color', new BufferAttribute(Float32Array.from(merge.color), 3))
+  merged.setAttribute('skinIndex', new BufferAttribute(Uint16Array.from(merge.skinIndex), 4))
+  merged.setAttribute('skinWeight', new BufferAttribute(Float32Array.from(merge.skinWeight), 4))
+  for (const { source, geometry } of recolored) disposeRecolored(source, geometry)
+
+  const mesh = new SkinnedMesh(merged, material)
+  mesh.name = parts.body.id
+  mesh.position.copy(bodyMesh.position)
+  mesh.quaternion.copy(bodyMesh.quaternion)
+  mesh.scale.copy(bodyMesh.scale)
+  const parent = bodyMesh.parent ?? root
+  bodyMesh.removeFromParent()
+  parent.add(mesh)
+  mesh.bind(skeleton, bodyMesh.bindMatrix)
 
   root.traverse((object) => {
     object.raycast = noRaycast
@@ -140,18 +256,12 @@ export function assembleAvatar(
   return {
     root,
     mixer,
-    triangles:
-      triangleCount(bodyGeometry) +
-      triangleCount(headGeometry) +
-      extras.reduce((sum, extra) => sum + triangleCount(extra.geometry), 0),
+    triangles: triangleCount(merged),
     dispose() {
-      for (const extra of extras) disposeRecolored(extra.source, extra.geometry)
       mixer.stopAllAction()
       mixer.uncacheRoot(root)
-      disposeRecolored(bodySource.geometry, bodyGeometry)
-      disposeRecolored(headSource.geometry, headGeometry)
-      bodyMesh.skeleton.dispose()
-      headMesh.skeleton.dispose()
+      merged.dispose()
+      skeleton.dispose()
     },
   }
 }
