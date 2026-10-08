@@ -297,7 +297,8 @@
       "screen-amber": "billboard-500",
       "signal": "signal-500",
       "foliage": "leaf-700",
-      "lawn": "grass-500"
+      "lawn": "grass-500",
+      "sand": "sand-300"
     },
     "buildings": {
       "walls": [
@@ -400,6 +401,7 @@
     "billboard-100": "#f4f1e8",
     "billboard-300": "#2fb7d6",
     "billboard-400": "#e0428c",
-    "billboard-500": "#f0bf3a"
+    "billboard-500": "#f0bf3a",
+    "sand-300": "#d9c49c"
   }
 }

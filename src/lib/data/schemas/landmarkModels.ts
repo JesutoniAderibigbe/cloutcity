@@ -44,6 +44,7 @@ export const LANDMARK_ROLES = [
   'screen-magenta',
   'screen-amber',
   'signal',
+  'sand',
   'foliage',
   'lawn',
 ] as const
