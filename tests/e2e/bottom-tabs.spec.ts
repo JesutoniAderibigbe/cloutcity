@@ -1,6 +1,15 @@
+import type { Page } from '@playwright/test'
 import { expect, test, waitForWelcomeGate } from './fixtures/test'
+import { waitForMapSettled } from './helpers/scene'
 
-const TAB_NAMES = ['Map', 'Phone', 'Shop', 'Me']
+const camera = async (page: Page) => {
+  const state = await page.evaluate(() => window.__cloutcityTest?.scene?.camera() ?? null)
+  if (state === null) throw new Error('no camera state')
+  return state
+}
+
+const TAB_NAMES = ['Home', 'Map', 'Phone', 'Shop', 'Me']
+const HOME_PANEL = '[data-hud-panel-dialog="home"]'
 const MIN_TARGET_PX = 44
 
 test.describe('bottom tab bar', () => {
@@ -44,7 +53,13 @@ test.describe('bottom tab bar', () => {
     await page.goto('/')
     const nav = page.getByRole('navigation', { name: 'Main' })
     const map = nav.getByRole('button', { name: 'Map', exact: true })
-    await expect(map).toHaveAttribute('aria-current', 'page')
+    // The game starts on Home (DEC-59): let its panel open before choosing another tab.
+    await expect(page.locator(HOME_PANEL)).toBeVisible({ timeout: 20_000 })
+    await expect(nav.getByRole('button', { name: 'Home', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    await expect(map).not.toHaveAttribute('aria-current')
 
     const me = nav.getByRole('button', { name: 'Me', exact: true })
     if (test.info().project.use.hasTouch) await me.tap()
@@ -84,5 +99,64 @@ test.describe('bottom tab bar', () => {
     await expect(page.getByRole('dialog', { name: 'Shop' })).toBeVisible()
     await nav.getByRole('button', { name: 'Map', exact: true }).click()
     await expect(page.getByRole('dialog', { name: 'Shop' })).toBeHidden()
+  })
+
+  test('Map always brings the map to the front, and on the map glides back to the player', async ({
+    page,
+  }, testInfo) => {
+    // The 3D map settles several times on the CPU (SwiftShader).
+    test.setTimeout(60_000)
+    await page.goto('/')
+    await waitForWelcomeGate(page)
+    await waitForMapSettled(page)
+    const nav = page.getByRole('navigation', { name: 'Main' })
+    const map = nav.getByRole('button', { name: 'Map', exact: true })
+
+    // The game starts on Home (DEC-59): Map closes it and its room.
+    await expect(page.locator(HOME_PANEL)).toBeVisible({ timeout: 20_000 })
+    await map.click()
+    await expect(page.locator(HOME_PANEL)).toHaveCount(0)
+    await expect(page.locator('[data-scene-hidden]')).toHaveCount(0)
+    await expect(map).toHaveAttribute('aria-current', 'page')
+    await waitForMapSettled(page)
+    const home = await camera(page)
+
+    // The Places list, then a place sheet, close too: Map is already current over both.
+    await page.locator('[data-places-button]').click()
+    await expect(page.locator('[data-places-panel]')).toBeVisible()
+    await map.click()
+    await expect(page.locator('[data-places-panel]')).toHaveCount(0)
+    await page.locator('[data-places-button]').click()
+    await page.locator('[data-place-button]:not([data-place-button="home"])').first().click()
+    await expect(page.locator('[data-place-sheet]')).toBeVisible()
+    await map.click()
+    await expect(page.locator('[data-place-sheet]')).toHaveCount(0)
+
+    // Panned away (the place pick flew the camera too), Map glides back to the default view.
+    if (!testInfo.project.use.hasTouch) {
+      const box = await page.locator('[data-scene-root] canvas').boundingBox()
+      if (!box) throw new Error('no map canvas')
+      const x = box.x + box.width / 2
+      const y = box.y + box.height / 2
+      await page.mouse.move(x + 150, y)
+      await page.mouse.down()
+      await page.mouse.move(x - 150, y - 100, { steps: 4 })
+      await page.mouse.up()
+    }
+    await waitForMapSettled(page)
+    const away = await camera(page)
+    expect(
+      Math.hypot(away.target.x - home.target.x, away.target.z - home.target.z),
+    ).toBeGreaterThan(10)
+    await map.click()
+    await expect
+      .poll(async () => {
+        const back = await camera(page)
+        return (
+          Math.hypot(back.target.x - home.target.x, back.target.z - home.target.z) < 1 &&
+          Math.abs(back.distance - home.distance) < 1
+        )
+      })
+      .toBe(true)
   })
 })

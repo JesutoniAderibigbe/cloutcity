@@ -52,6 +52,8 @@ const ALLOWED_FILES: readonly RegExp[] = [
   // for the build to list the room's chunk; it reads the room's view and hands the screen over.
   /^src\/scene\/apartment\/ApartmentMount\.tsx$/,
   /^src\/state\/(apartmentView|sceneFocus)\.ts$/,
+  // The Map tab: what it closes, and its recentre request to the 3D chunk.
+  /^src\/state\/(mapTab|mapRecenter)\.ts$/,
   // The tier picker runs in the shell (S04b); the quality store it reports to is lazy.
   /^src\/lib\/quality\/(probe|tier)\.ts$/,
 ]

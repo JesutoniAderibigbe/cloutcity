@@ -33,6 +33,7 @@ import { registerMapStyleDefault, useMapStyle } from '@/state/mapStyle'
 import { PlayerAvatar } from './avatar/PlayerAvatar'
 import { CameraRig } from './camera/CameraRig'
 import { FreeRowFraming, wideFraming } from './camera/FreeRowFraming'
+import { RecenterGlide } from './camera/RecenterGlide'
 import { nearFar } from './camera/limits'
 import { Buildings, type BuildingsHandle } from './buildings/Buildings'
 import { pinPoint } from './pins/buildPins'
@@ -356,146 +357,161 @@ function CityScene3D({
 
   return (
     <div
-      role="img"
-      aria-label={label}
       data-cc-feature="cc-feature:city-scene"
       data-scene-hidden={hidden ? '' : undefined}
       data-quality-tier={tier}
       className={`absolute inset-0 ${hidden ? 'invisible' : ''}`}
     >
-      <Canvas
-        frameloop={hidden ? 'never' : 'demand'}
-        dpr={[1, settings.dprCap]}
-        flat
-        shadows={shadows ? SHADOWS_ON : SHADOWS_OFF}
-        gl={gl}
-        camera={{ fov: camera.fovDeg, near: clip.near, far: clip.far }}
-        onCreated={() => perfMark('cc:3d:gl')}
-      >
-        <TierSettingsContext value={settings}>
-          <DayNightRig
-            lighting={lighting}
-            uniforms={dayNightUniforms}
-            target={built}
-            fog={config.dayNight.fog}
-            lights={config.lights}
-            distanceM={camera.distanceM}
-            shadowMapSizePx={shadows ? settings.shadowMapSizePx : 0}
-          >
-            <CameraRig camera={camera} start={cameraStart} bounds={boundsLocal} groundY={groundY} />
-            <FreeRowFraming />
-            <City
-              city={built}
-              config={config}
-              outlines={settings.outlines}
-              cityRef={cityRef}
-              onReady={() => {
-                readyRef.current = true
-                setCityReady(true)
-                onReady()
-              }}
-            />
-            <Buildings
-              assets={buildings}
-              palette={palette}
-              config={config}
-              groundY={groundY}
-              gradientMap={built.gradientMap}
-              dimmedBoroughs={built.dimmed}
-              pins={stylePins}
-              look={look}
-              active={cityReady}
-              handleRef={buildingsRef}
-            />
-            <Landmarks
-              landmarks={parsed.geo.landmarks.models}
-              palette={palette}
-              config={config}
-              groundY={groundY}
-              gradientMap={built.gradientMap}
-              active={cityReady}
-              names={landmarkNames}
-              pinLifts={pinLifts}
-              handleRef={landmarksRef}
-            />
-            {cityReady ? (
-              // No fallback: the pins draw as before until the marks arrive.
-              <Suspense>
-                <PinMarks pins={built.pins} palette={palette} look={look} />
-              </Suspense>
-            ) : null}
-            <PlayerAvatar
-              at={rest}
-              groupRef={avatarRef}
-              groundY={groundY}
-              color={palette.player}
-              toonRamp={palette.toonRamp}
-              avatar={config.avatar}
-              characterMaxM={look.characterMaxM}
-              model={playerModel}
-              models={config.models}
-              tier={tier}
-              loadModel={cityReady}
-              onPlaced={() => {
-                placedRef.current = true
-              }}
-            />
-            {cityReady ? (
-              <Suspense>
-                <TravelAnimator
-                  avatarRef={avatarRef}
-                  groundY={groundY}
-                  palette={palette.travel}
-                  gradientMap={built.gradientMap}
-                  config={config.travel}
-                  avatar={config.avatar}
-                  animation={travelAnimation}
-                  enabled={!hidden}
-                  trail={tier !== 'low' || config.travel.trailOnLow}
-                  pins={compact ? pins : null}
-                />
-              </Suspense>
-            ) : null}
-            {cityReady ? (
-              <Suspense>
-                <AmbientLife
-                  assets={buildings[tier].ambient}
-                  tier={tier}
-                  geo={styleGeo}
-                  subwayPalette={palette.subwayLines}
-                  homes={homeList}
-                  venues={venues}
-                  createMaterial={() =>
-                    createBuildingMaterial({ gradientMap: built.gradientMap, colors: 'instance' })
-                  }
-                  groundY={groundY}
-                  config={config}
-                  characterMaxM={look.characterMaxM}
-                  hidden={hidden}
-                  night={lighting.nightGlow}
-                />
-              </Suspense>
-            ) : null}
-            <PlayableMark readyRef={readyRef} placedRef={placedRef} />
-            {/* The apartment has the screen: nothing to measure, no frames forced. */}
-            <TierMonitor stepDown={quality.stepDown} paused={hidden} />
-            <ReleaseProgramsOnShadowChange
-              shadowKey={shadows ? `pcf:${settings.shadowMapSizePx}` : 'off'}
-              shadowsOn={shadows}
-            />
-            <FocusRedraw hidden={hidden} />
-            <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
-            <TestHooks
-              readyRef={readyRef}
-              cityRef={cityRef}
-              buildingsRef={buildingsRef}
-              landmarksRef={landmarksRef}
-              quality={quality}
+      {/* The image role wraps the canvas alone: the map's own controls (the style chip, the
+          townsfolk card) are siblings, never nested in an image (axe nested-interactive). */}
+      <div role="img" aria-label={label} className="absolute inset-0">
+        <Canvas
+          frameloop={hidden ? 'never' : 'demand'}
+          dpr={[1, settings.dprCap]}
+          flat
+          shadows={shadows ? SHADOWS_ON : SHADOWS_OFF}
+          gl={gl}
+          camera={{ fov: camera.fovDeg, near: clip.near, far: clip.far }}
+          onCreated={() => perfMark('cc:3d:gl')}
+        >
+          <TierSettingsContext value={settings}>
+            <DayNightRig
               lighting={lighting}
-            />
-          </DayNightRig>
-        </TierSettingsContext>
-      </Canvas>
+              uniforms={dayNightUniforms}
+              target={built}
+              fog={config.dayNight.fog}
+              lights={config.lights}
+              distanceM={camera.distanceM}
+              shadowMapSizePx={shadows ? settings.shadowMapSizePx : 0}
+            >
+              <CameraRig
+                camera={camera}
+                start={cameraStart}
+                bounds={boundsLocal}
+                groundY={groundY}
+              />
+              <FreeRowFraming />
+              <RecenterGlide
+                at={cameraStart}
+                groundY={groundY}
+                distanceM={camera.distanceM}
+                polarDeg={camera.polarDeg.default}
+                azimuthDeg={camera.azimuthDeg.default}
+                durationMs={config.focus.recenterMs}
+              />
+              <City
+                city={built}
+                config={config}
+                outlines={settings.outlines}
+                cityRef={cityRef}
+                onReady={() => {
+                  readyRef.current = true
+                  setCityReady(true)
+                  onReady()
+                }}
+              />
+              <Buildings
+                assets={buildings}
+                palette={palette}
+                config={config}
+                groundY={groundY}
+                gradientMap={built.gradientMap}
+                dimmedBoroughs={built.dimmed}
+                pins={stylePins}
+                look={look}
+                active={cityReady}
+                handleRef={buildingsRef}
+              />
+              <Landmarks
+                landmarks={parsed.geo.landmarks.models}
+                palette={palette}
+                config={config}
+                groundY={groundY}
+                gradientMap={built.gradientMap}
+                active={cityReady}
+                names={landmarkNames}
+                pinLifts={pinLifts}
+                handleRef={landmarksRef}
+              />
+              {cityReady ? (
+                // No fallback: the pins draw as before until the marks arrive.
+                <Suspense>
+                  <PinMarks pins={built.pins} palette={palette} look={look} />
+                </Suspense>
+              ) : null}
+              <PlayerAvatar
+                at={rest}
+                groupRef={avatarRef}
+                groundY={groundY}
+                color={palette.player}
+                toonRamp={palette.toonRamp}
+                avatar={config.avatar}
+                characterMaxM={look.characterMaxM}
+                model={playerModel}
+                models={config.models}
+                tier={tier}
+                loadModel={cityReady}
+                onPlaced={() => {
+                  placedRef.current = true
+                }}
+              />
+              {cityReady ? (
+                <Suspense>
+                  <TravelAnimator
+                    avatarRef={avatarRef}
+                    groundY={groundY}
+                    palette={palette.travel}
+                    gradientMap={built.gradientMap}
+                    config={config.travel}
+                    avatar={config.avatar}
+                    animation={travelAnimation}
+                    enabled={!hidden}
+                    trail={tier !== 'low' || config.travel.trailOnLow}
+                    pins={compact ? pins : null}
+                  />
+                </Suspense>
+              ) : null}
+              {cityReady ? (
+                <Suspense>
+                  <AmbientLife
+                    assets={buildings[tier].ambient}
+                    tier={tier}
+                    geo={styleGeo}
+                    subwayPalette={palette.subwayLines}
+                    homes={homeList}
+                    venues={venues}
+                    createMaterial={() =>
+                      createBuildingMaterial({ gradientMap: built.gradientMap, colors: 'instance' })
+                    }
+                    groundY={groundY}
+                    config={config}
+                    characterMaxM={look.characterMaxM}
+                    hidden={hidden}
+                    night={lighting.nightGlow}
+                  />
+                </Suspense>
+              ) : null}
+              <PlayableMark readyRef={readyRef} placedRef={placedRef} />
+              {/* The apartment has the screen: nothing to measure, no frames forced. */}
+              <TierMonitor stepDown={quality.stepDown} paused={hidden} />
+              <ReleaseProgramsOnShadowChange
+                shadowKey={shadows ? `pcf:${settings.shadowMapSizePx}` : 'off'}
+                shadowsOn={shadows}
+              />
+              <FocusRedraw hidden={hidden} />
+              <ContextWatcher onLost={onContextLost} onRestored={onContextRestored} />
+              <TestHooks
+                readyRef={readyRef}
+                cityRef={cityRef}
+                buildingsRef={buildingsRef}
+                landmarksRef={landmarksRef}
+                quality={quality}
+                lighting={lighting}
+              />
+            </DayNightRig>
+          </TierSettingsContext>
+        </Canvas>
+      </div>
       {cityReady ? (
         <Suspense>
           <MapStyleChip />

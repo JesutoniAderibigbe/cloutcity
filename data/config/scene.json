@@ -208,7 +208,8 @@
   },
   "focus": {
     "tweenMs": 350,
-    "maxDistanceM": 3000
+    "maxDistanceM": 3000,
+    "recenterMs": 700
   },
   "travel": {
     "taxiLengthRatio": 1.2,
