@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { expect, test } from './fixtures/test'
 import { waitForMapSettled } from './helpers/scene'
 import { database, newGuest, newPermanentUser } from './helpers/seed'
+import { STACK_SITE_URL, clearMail, linkIn, newestMail, ourLink } from './helpers/mail'
 import { E2E_MODERATOR_EMAIL, localStack } from './helpers/stack'
 
 // S18b part 2, opt-in (`npm run e2e:supabase`): the /mod console against the local stack. The
@@ -25,38 +26,6 @@ test.beforeAll(() => {
 test.afterAll(async () => {
   await sql.end()
 })
-
-interface MailpitSearch {
-  readonly messages: readonly { readonly ID: string }[]
-}
-
-/** The newest sign-in link sent to `email`, waiting for it to arrive. */
-async function signInLink(email: string): Promise<string> {
-  const query = encodeURIComponent(`to:"${email}"`)
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const search = (await (
-      await fetch(`${stack.mailpitUrl}/api/v1/search?query=${query}`)
-    ).json()) as MailpitSearch
-    const id = search.messages[0]?.ID
-    if (id !== undefined) {
-      const message = (await (await fetch(`${stack.mailpitUrl}/api/v1/message/${id}`)).json()) as {
-        Text: string
-        HTML: string
-      }
-      const link = `${message.Text}\n${message.HTML}`
-        .match(/https?:\/\/[^\s"'<>]+\/auth\/v1\/verify\?[^\s"'<>]+/)?.[0]
-        ?.replaceAll('&amp;', '&')
-      if (link !== undefined) return link
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500))
-  }
-  throw new Error(`no sign-in email for ${email}`)
-}
-
-async function clearMail(email: string): Promise<void> {
-  const query = encodeURIComponent(`to:"${email}"`)
-  await fetch(`${stack.mailpitUrl}/api/v1/search?query=${query}`, { method: 'DELETE' })
-}
 
 test('a non-moderator and a guest are refused; no token is a 401', async ({ request }) => {
   const [player, guest] = await Promise.all([newPermanentUser(stack), newGuest(stack)])
@@ -126,17 +95,23 @@ test('the sign-in answer is the same for a moderator and anyone else', async ({
   expect(forMod.status).toBe(202)
   expect(forOther.status()).toBe(202)
   expect(forMod.json).toEqual(await forOther.json())
-  // Locally the stack swaps a redirect it does not allow for its site_url, so only the absence
-  // of the spoofed host is checked here.
-  const redirectTo = new URL(await signInLink(E2E_MODERATOR_EMAIL)).searchParams.get('redirect_to')
-  expect(redirectTo ?? '').not.toContain('attacker.example')
+  // Never the spoofed host: our token-hash link goes to the stack's own site URL whatever the
+  // request named (review F4); GoTrue's verify link (a first sign-up) to SITE_URL's /mod.
+  const link = new URL(linkIn(await newestMail(E2E_MODERATOR_EMAIL)))
+  expect(link.href).not.toContain('attacker.example')
+  if (link.pathname === '/auth/v1/verify') {
+    expect(link.searchParams.get('redirect_to')).toBe(`${baseURL ?? ''}/mod`)
+  } else {
+    expect(link.origin).toBe(STACK_SITE_URL)
+    expect(link.search).toBe('')
+  }
 })
 
 test("the moderator's address with a password session (no emailed link) is refused", async ({
   request,
 }) => {
-  // With email confirmations off (the local stack), anyone can sign up with an address and get
-  // it marked confirmed. Only a session from the emailed link (amr otp) is a moderator's.
+  // An address can be marked confirmed without its owner's emailed link (an admin, or a project
+  // with confirmations off). Only a session from the emailed link (amr otp) is a moderator's.
   const admin = createClient(stack.apiUrl, stack.serviceRoleKey, {
     auth: { persistSession: false },
   })
@@ -206,13 +181,29 @@ test('a moderator signs in by email link, opens a seeded case and suspends; one 
   await page.getByRole('button', { name: 'Send sign-in link' }).click()
   await expect(page.getByRole('status').first()).toContainText('a sign-in link is on its way')
 
-  // The link verifies and redirects with the session in the URL fragment. Locally the redirect
-  // goes to the stack's site_url (supabase/config.toml), so the fragment is carried to /mod here.
-  const verify = await fetch(await signInLink(E2E_MODERATOR_EMAIL), { redirect: 'manual' })
-  const location = verify.headers.get('location') ?? ''
-  const fragment = location.slice(location.indexOf('#'))
-  expect(fragment).toMatch(/access_token=/)
-  await page.goto(`${baseURL ?? ''}/mod?case=${target.id}${fragment}`)
+  // A returning moderator's email (S19's magic-link template) links to /mod with a token hash,
+  // finished by a tap; a first sign-up's confirmation goes through GoTrue's verify endpoint and
+  // redirects with the session in the fragment (locally to the stack's site_url, so the fragment
+  // is carried to /mod here).
+  const link = linkIn(await newestMail(E2E_MODERATOR_EMAIL))
+  if (new URL(link).pathname !== '/auth/v1/verify') {
+    // Locally the stack's site URL is not this server's, so the template sends the link to its
+    // /auth/callback; in production SITE_URL is the site URL and it lands on /mod. The token is
+    // carried to this server's /mod the way it rides there: in the fragment.
+    const { hash } = new URL(link)
+    expect(ourLink(link, '/auth/callback')).toContain('#token_hash=')
+    await page.goto(`/mod?case=${target.id}${hash}`)
+    // The token never stays in the address bar; the linked case does.
+    await expect.poll(() => page.url()).not.toContain('token_hash')
+    expect(page.url()).toContain(`case=${target.id}`)
+    await page.getByRole('button', { name: 'Finish signing in' }).click()
+  } else {
+    const verify = await fetch(link, { redirect: 'manual' })
+    const location = verify.headers.get('location') ?? ''
+    const fragment = location.slice(location.indexOf('#'))
+    expect(fragment).toMatch(/access_token=/)
+    await page.goto(`${baseURL ?? ''}/mod?case=${target.id}${fragment}`)
+  }
 
   const kase = page.locator(`[data-mod-case="${target.id}"]`)
   await expect(kase).toBeVisible({ timeout: 20_000 })

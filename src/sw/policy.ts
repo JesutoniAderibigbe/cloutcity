@@ -14,7 +14,8 @@
  *  - `cc-models-<version>`: the hand-made 3D models (S04h), cache-first, only once the scene
  *    loads them; never precached (they load on demand, tier by tier, after the map is playable);
  *  - `cc-chunks-<revision>`: the build's JS chunks the precache leaves out (PERF-7: the model
- *    runtime, the model showcase, the apartment's decor models, the /mod console, supabase-js), cache-first
+ *    runtime, the model showcase, the apartment's decor models, the /mod console, supabase-js,
+ *    the account UI), cache-first
  *    once they load; precached chunks are answered by the precache before this route.
  * Everything else goes to the network untouched. Same-origin only, GET only, and a response
  * that is private, personalised or not a plain 200 is never stored ({@link refuseSensitive}).
@@ -154,11 +155,12 @@ export function isBuildChunk({ url, method, sameOrigin }: RequestFacts): boolean
 }
 
 /**
- * Navigations the worker never touches: server endpoints, the moderator area, the worker
+ * Navigations the worker never touches: server endpoints, account links (S19: /auth/callback
+ * carries a one-time token), the moderator area, the worker
  * itself, data routes and share images. They always go straight to the network, with no
  * offline page in their place.
  */
-export const NAVIGATION_DENYLIST: readonly RegExp[] = [/^\/(?:api|mod|serwist|geo|og)(?:\/|$)/]
+export const NAVIGATION_DENYLIST: readonly RegExp[] = [/^\/(?:api|auth|mod|serwist|geo|og)(?:\/|$)/]
 
 /** A page navigation the worker handles: network only, with `/offline` when that fails. */
 export function isPageNavigation({ url, method, mode, sameOrigin }: RequestFacts): boolean {

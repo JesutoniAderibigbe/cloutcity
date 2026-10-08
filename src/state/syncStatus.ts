@@ -12,6 +12,8 @@
  *  - `update`: the account's save is from a newer build.
  *  - `behind`: the player kept this device's game, but it is from before the account's last
  *    prestige, so it cannot replace the account's game; the account's game is offered.
+ *  - `signedOut`: the player signed out of their account here (S19); nothing is saved online
+ *    until they log in or start a new guest game.
  */
 import { createStore } from 'zustand/vanilla'
 import { useStore } from 'zustand'
@@ -25,6 +27,7 @@ export const SYNC_STATUSES = [
   'conflict',
   'update',
   'behind',
+  'signedOut',
 ] as const
 export type SyncStatus = (typeof SYNC_STATUSES)[number]
 
@@ -38,16 +41,27 @@ export interface SyncControls {
   useCloud(): void
 }
 
+/** Whose game the synced save is: a guest's, or a saved account's (S19). */
+export type SyncIdentity = 'guest' | 'account'
+
 export interface SyncStatusState {
   readonly status: SyncStatus
   /** True after the server refused this device's save (422), until a save is accepted or taken. */
   readonly rejected: boolean
+  /**
+   * In a conflict: the account has no save, and this device's game belongs to another saved
+   * account (S19), so the choice is keeping it there or starting fresh.
+   */
+  readonly conflictEmpty: boolean
+  readonly identity: SyncIdentity
   readonly controls: SyncControls | null
 }
 
 export const INITIAL_SYNC_STATUS: SyncStatusState = {
   status: 'local',
   rejected: false,
+  conflictEmpty: false,
+  identity: 'guest',
   controls: null,
 }
 

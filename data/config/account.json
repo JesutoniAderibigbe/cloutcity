@@ -1,0 +1,9 @@
+{
+  "resendCooldownMs": 45000,
+  "upgradePollMs": 30000,
+  "pendingUpgradeMaxAgeMs": 3600000,
+  "signOutFlushTimeoutMs": 5000,
+  "emailCheck": { "max": 10, "windowMs": 3600000 },
+  "emailMaxLength": 320,
+  "codeLength": 6
+}

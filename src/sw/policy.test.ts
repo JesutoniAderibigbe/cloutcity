@@ -297,6 +297,8 @@ describe('isPageNavigation', () => {
     for (const path of [
       '/api',
       '/api/save',
+      '/auth',
+      '/auth/callback',
       '/mod',
       '/mod/queue',
       '/serwist/sw.js',

@@ -10,6 +10,37 @@ const SERVICE_WORKER_HEADERS = [
   { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self'" },
 ]
 
+/**
+ * Account pages (S19, /auth/callback): links land here with a one-time token in the URL
+ * fragment, so the page is never stored and never sends a Referer (its own chunk requests
+ * included); the service worker never touches /auth either (src/sw/policy.ts).
+ */
+const AUTH_HEADERS = [
+  { key: 'Cache-Control', value: 'no-store, max-age=0' },
+  { key: 'Referrer-Policy', value: 'no-referrer' },
+  { key: 'X-Robots-Tag', value: 'noindex' },
+]
+
+/** The origin of an http(s) URL, or null (src/lib/supabase/env.ts `siteOrigin`). */
+function originOf(value: string | undefined): string | null {
+  try {
+    const url = new URL(value?.trim() ?? '')
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.origin : null
+  } catch {
+    return null
+  }
+}
+
+// Account links (NEXT_PUBLIC_SITE_URL) and /mod sign-in links (SITE_URL) must point at the same
+// site: a build where they differ would send players and moderators to different hosts.
+const publicSite = originOf(process.env.NEXT_PUBLIC_SITE_URL)
+const serverSite = originOf(process.env.SITE_URL)
+if (publicSite !== null && serverSite !== null && publicSite !== serverSite) {
+  throw new Error(
+    'NEXT_PUBLIC_SITE_URL and SITE_URL name different origins; set them to the same site',
+  )
+}
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   // No source maps for client code in production (the default, stated so it stays that way): the
@@ -28,6 +59,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: '/serwist/sw.js', headers: SERVICE_WORKER_HEADERS },
+      { source: '/auth/:path*', headers: AUTH_HEADERS },
       {
         // Geo is addressed by its content version (/geo/base?v=<geoVersion>), so a versioned
         // URL never changes. The fallback map is left out: its ?v= is the geo version, but it

@@ -354,6 +354,9 @@ isOneToOne: true
               "friendship_ended": boolean,"roommate_ended": boolean,"undo_expires_at": string,"undo_id": string
             }[]
                            },
+"check_account_email":
+{ Args: { "p_email": string }; Returns: string
+                           },
 "check_handle":
 { Args: { "p_handle": string }; Returns: string
                            },

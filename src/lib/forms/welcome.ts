@@ -33,18 +33,38 @@ const ERROR = {
   audio: 'welcome.audio.error',
 } as const satisfies Record<WelcomeField, CopyKey>
 
-/** The schema for a card rendered in `currentYear`: the year must be one the picker offers. */
+/**
+ * Which parts the card asks (S19): all three, or, after logging in to an account whose 18+
+ * check the server already holds, only the consent (when the Terms changed since) and the sound
+ * choice, or only the sound choice (GR-13: sound still waits for the player's own tap).
+ */
+export type WelcomeMode = 'full' | 'consent' | 'audio'
+
+export const WELCOME_MODE_FIELDS: Readonly<Record<WelcomeMode, readonly WelcomeField[]>> = {
+  full: WELCOME_FIELDS,
+  consent: ['consent', 'audio'],
+  audio: ['audio'],
+}
+
+/**
+ * The schema for a card rendered in `currentYear`: the year must be one the picker offers. A
+ * card that does not ask a part accepts any value for it (the card never reads it).
+ */
 export function createWelcomeSchema(
   currentYear: number,
   config: Pick<AgeGateConfig, 'birthYearSpan'>,
+  mode: WelcomeMode = 'full',
 ) {
   const years = new Set(birthYearOptions(currentYear, config.birthYearSpan).map(String))
+  const asks = new Set(WELCOME_MODE_FIELDS[mode])
   return z.object({
-    birthYear: z.string().check(
-      z.regex(/^\d{4}$/, ERROR.birthYear),
-      z.refine((value) => years.has(value), ERROR.birthYear),
-    ),
-    consent: z.literal(true, ERROR.consent),
+    birthYear: asks.has('birthYear')
+      ? z.string().check(
+          z.regex(/^\d{4}$/, ERROR.birthYear),
+          z.refine((value) => years.has(value), ERROR.birthYear),
+        )
+      : z.string(),
+    consent: asks.has('consent') ? z.literal(true, ERROR.consent) : z.boolean(),
     audio: z.enum(AUDIO_CHOICES, ERROR.audio),
   })
 }

@@ -1,13 +1,9 @@
 import { copy, type CopyKey } from '@/lib/copy'
-import type { SyncStatus } from '@/state/syncStatus'
+import type { SyncIdentity, SyncStatus } from '@/state/syncStatus'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/sync'
 
-/**
- * Whose account game a synced save went to. Only guests (anonymous sessions) exist today; S19
- * adds the signed-in variant as `sync.status.synced.<identity>` and `sync.sheet.synced.<identity>`.
- */
-export type SyncIdentity = 'guest'
+export type { SyncIdentity }
 
 /** The copy key of a status line (`status`) or its explanation (`sheet`). */
 export function syncCopyKey(
@@ -18,19 +14,19 @@ export function syncCopyKey(
   return status === 'synced' ? `sync.${part}.synced.${identity}` : `sync.${part}.${status}`
 }
 
-/** The short status line ("Saved on this device"). */
-export function syncStatusText(status: SyncStatus): string {
-  return copy(syncCopyKey('status', status))
+/** The short status line ("Saved on this device"; "Saved as a guest" or "to your account"). */
+export function syncStatusText(status: SyncStatus, identity: SyncIdentity = 'guest'): string {
+  return copy(syncCopyKey('status', status, identity))
 }
 
 /** The panel's sentence on where the save stands. */
-export function syncSheetText(status: SyncStatus): string {
-  return copy(syncCopyKey('sheet', status))
+export function syncSheetText(status: SyncStatus, identity: SyncIdentity = 'guest'): string {
+  return copy(syncCopyKey('sheet', status, identity))
 }
 
 /** The accessible name of the status chip and the More item. */
-export function syncLabel(status: SyncStatus): string {
-  return copy('sync.label', { status: syncStatusText(status) })
+export function syncLabel(status: SyncStatus, identity: SyncIdentity = 'guest'): string {
+  return copy('sync.label', { status: syncStatusText(status, identity) })
 }
 
 /** Statuses the player hears about when sync moves into or out of them (not routine saves). */
@@ -40,6 +36,7 @@ const NOTABLE: ReadonlySet<SyncStatus> = new Set([
   'conflict',
   'update',
   'behind',
+  'signedOut',
 ])
 
 /** True when a change from `from` to `to` is worth a polite announcement. */

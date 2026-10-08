@@ -77,6 +77,17 @@ export interface OnboardingActions {
     choice: { consentVersion: string; audioChoice: AudioChoice },
     nowMs: number,
   ): boolean
+  /**
+   * Records the attestation an account already holds on the server (S19: logging in from the
+   * welcome card), with the sound choice made now. `consent` is the account's consent, or null
+   * when the player agreed to the current version on the card just now. Returns false (and
+   * changes nothing) while an under-age lock holds.
+   */
+  completeFromAccount(
+    account: { attestedAt: number; consent: { version: string; at: number } | null },
+    choice: { consentVersion: string; audioChoice: AudioChoice },
+    nowMs: number,
+  ): boolean
   /** Locks the gate on this device for `underAgeLockHours`. */
   refuseUnderAge(nowMs: number): void
   /** Forgets a lock that has run out, so the card shows again. */
@@ -129,6 +140,21 @@ export function createOnboardingStore(
               attestedAt: nowMs,
               consentVersion,
               consentedAt: nowMs,
+              audioChoice,
+            },
+          })
+          return true
+        },
+        completeFromAccount: (account, { consentVersion, audioChoice }, nowMs) => {
+          const { record } = get()
+          if (record?.status === 'locked' && isLocked(record.lockedUntil, nowMs)) return false
+          set({
+            record: {
+              status: 'complete',
+              attested: true,
+              attestedAt: account.attestedAt,
+              consentVersion: account.consent?.version ?? consentVersion,
+              consentedAt: account.consent?.at ?? nowMs,
               audioChoice,
             },
           })

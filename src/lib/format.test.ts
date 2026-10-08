@@ -3,6 +3,7 @@ import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
 import {
   formatCount,
+  formatCountdown,
   formatDate,
   formatGameTime,
   formatMoney,
@@ -246,5 +247,17 @@ describe('formatProgressCount (the clout meter: never rounded up to the target)'
 
   it('rejects a non-finite count', () => {
     expect(() => formatProgressCount(Number.NaN)).toThrow(RangeError)
+  })
+})
+
+describe('formatCountdown (S19)', () => {
+  it('shows minutes and seconds, rounded up, never below 0:00', () => {
+    expect(formatCountdown(45)).toBe('0:45')
+    expect(formatCountdown(44.2)).toBe('0:45')
+    expect(formatCountdown(90)).toBe('1:30')
+    expect(formatCountdown(5)).toBe('0:05')
+    expect(formatCountdown(0)).toBe('0:00')
+    expect(formatCountdown(-3)).toBe('0:00')
+    expect(() => formatCountdown(Number.NaN)).toThrow(RangeError)
   })
 })
