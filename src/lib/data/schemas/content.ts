@@ -270,6 +270,16 @@ export const VENUE_TYPES = [
   'thrift',
   'club',
   'job-site',
+  // S41: the rest of a Lagos Life-style neighbourhood (errands, care, hangouts, creator spots).
+  'barber',
+  'salon',
+  'mall',
+  'bank',
+  'pharmacy',
+  'laundromat',
+  'community-center',
+  'lounge',
+  'studio',
 ] as const
 
 const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/
@@ -626,6 +636,15 @@ export const PLACE_ICON_GROUPS = [
   'stadium',
   'neighborhood',
   'memorial',
+  'barber',
+  'beauty',
+  'mall',
+  'bank',
+  'pharmacy',
+  'laundry',
+  'community',
+  'lounge',
+  'studio',
   'home',
 ] as const
 export type PlaceIconGroup = (typeof PLACE_ICON_GROUPS)[number]

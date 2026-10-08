@@ -130,6 +130,111 @@
       "trees": 4,
       "bushes": 4
     },
+    "barber": {
+      "model": "building-c",
+      "footprintM": 44,
+      "facade": "cobalt-400",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningred-500"
+      },
+      "trees": 2,
+      "bushes": 0
+    },
+    "salon": {
+      "model": "building-a",
+      "footprintM": 44,
+      "facade": "gamelilac-200",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningcream-100"
+      },
+      "trees": 2,
+      "bushes": 2
+    },
+    "mall": {
+      "model": "building-b",
+      "footprintM": 48,
+      "facade": "gamecoral-300",
+      "apron": "parking",
+      "awning": null,
+      "trees": 2,
+      "bushes": 2
+    },
+    "bank": {
+      "model": "building-d",
+      "footprintM": 44,
+      "facade": "softstone-200",
+      "apron": "plaza",
+      "awning": null,
+      "trees": 2,
+      "bushes": 2
+    },
+    "pharmacy": {
+      "model": "building-c",
+      "footprintM": 44,
+      "facade": "gamemint-200",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awninggreen-500"
+      },
+      "trees": 2,
+      "bushes": 0
+    },
+    "laundromat": {
+      "model": "building-a",
+      "footprintM": 44,
+      "facade": "lagoon-500",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningcream-100"
+      },
+      "trees": 2,
+      "bushes": 0
+    },
+    "community-center": {
+      "model": "building-d",
+      "footprintM": 48,
+      "facade": "butter-200",
+      "apron": "plaza",
+      "awning": null,
+      "trees": 4,
+      "bushes": 4
+    },
+    "park": {
+      "model": null,
+      "footprintM": 0,
+      "facade": null,
+      "apron": "none",
+      "awning": null,
+      "trees": 4,
+      "bushes": 6
+    },
+    "lounge": {
+      "model": "building-b",
+      "footprintM": 48,
+      "facade": "terra-400",
+      "apron": "plaza",
+      "awning": {
+        "model": "awning-wide",
+        "color": "awningorange-400"
+      },
+      "trees": 2,
+      "bushes": 2
+    },
+    "studio": {
+      "model": "building-d",
+      "footprintM": 44,
+      "facade": "grape-400",
+      "apron": "parking",
+      "awning": null,
+      "trees": 0,
+      "bushes": 2
+    },
     "home": {
       "model": "building-c",
       "footprintM": 44,

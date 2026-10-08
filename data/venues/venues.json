@@ -85,6 +85,178 @@
       "jobIds": ["delivery"]
     },
     {
+      "id": "taper-talk-barbers",
+      "nameKey": "venues.taperTalkBarbers.name",
+      "blurbKey": "venues.taperTalkBarbers.blurb",
+      "type": "barber",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.7712, "lng": -73.9128 },
+      "hours": { "open": "09:00", "close": "21:00" }
+    },
+    {
+      "id": "crown-and-coil-braids",
+      "nameKey": "venues.crownAndCoilBraids.name",
+      "blurbKey": "venues.crownAndCoilBraids.blurb",
+      "type": "salon",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.7618, "lng": -73.918 },
+      "hours": { "open": "10:00", "close": "20:00" }
+    },
+    {
+      "id": "ten-tips-nail-bar",
+      "nameKey": "venues.tenTipsNailBar.name",
+      "blurbKey": "venues.tenTipsNailBar.blurb",
+      "type": "salon",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.7598, "lng": -73.9222 },
+      "hours": { "open": "10:00", "close": "20:00" }
+    },
+    {
+      "id": "steam-tray-halal",
+      "nameKey": "venues.steamTrayHalal.name",
+      "blurbKey": "venues.steamTrayHalal.blurb",
+      "type": "food-spot",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.769, "lng": -73.916 },
+      "hours": { "open": "11:00", "close": "04:00" }
+    },
+    {
+      "id": "island-hour-kitchen",
+      "nameKey": "venues.islandHourKitchen.name",
+      "blurbKey": "venues.islandHourKitchen.blurb",
+      "type": "food-spot",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.7592, "lng": -73.9262 },
+      "hours": { "open": "10:00", "close": "22:00" }
+    },
+    {
+      "id": "fold-line-slices",
+      "nameKey": "venues.foldLineSlices.name",
+      "blurbKey": "venues.foldLineSlices.blurb",
+      "type": "food-spot",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.769, "lng": -73.9205 },
+      "hours": { "open": "11:00", "close": "02:00" }
+    },
+    {
+      "id": "pleat-and-steam",
+      "nameKey": "venues.pleatAndSteam.name",
+      "blurbKey": "venues.pleatAndSteam.blurb",
+      "type": "food-spot",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.765, "lng": -73.929 },
+      "hours": { "open": "10:00", "close": "22:00" }
+    },
+    {
+      "id": "overpass-commons",
+      "nameKey": "venues.overpassCommons.name",
+      "blurbKey": "venues.overpassCommons.blurb",
+      "type": "mall",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.7525, "lng": -73.937 },
+      "hours": { "open": "10:00", "close": "21:00" },
+      "jobIds": ["retail"]
+    },
+    {
+      "id": "stoop-street-savings",
+      "nameKey": "venues.stoopStreetSavings.name",
+      "blurbKey": "venues.stoopStreetSavings.blurb",
+      "type": "bank",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.76, "lng": -73.919 },
+      "hours": "24h"
+    },
+    {
+      "id": "night-shift-pharmacy",
+      "nameKey": "venues.nightShiftPharmacy.name",
+      "blurbKey": "venues.nightShiftPharmacy.blurb",
+      "type": "pharmacy",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.766, "lng": -73.9176 },
+      "hours": "24h"
+    },
+    {
+      "id": "suds-and-socks",
+      "nameKey": "venues.sudsAndSocks.name",
+      "blurbKey": "venues.sudsAndSocks.blurb",
+      "type": "laundromat",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.7615, "lng": -73.916 },
+      "hours": { "open": "06:00", "close": "23:00" }
+    },
+    {
+      "id": "open-door-hall",
+      "nameKey": "venues.openDoorHall.name",
+      "blurbKey": "venues.openDoorHall.blurb",
+      "type": "community-center",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.767, "lng": -73.9285 },
+      "hours": { "open": "08:00", "close": "22:00" }
+    },
+    {
+      "id": "half-court-hangout",
+      "nameKey": "venues.halfCourtHangout.name",
+      "blurbKey": "venues.halfCourtHangout.blurb",
+      "type": "park",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.7693, "lng": -73.9255 },
+      "hours": { "open": "06:00", "close": "01:00" }
+    },
+    {
+      "id": "golden-hour-roof",
+      "nameKey": "venues.goldenHourRoof.name",
+      "blurbKey": "venues.goldenHourRoof.blurb",
+      "type": "lounge",
+      "borough": "queens",
+      "zoneId": "qn02",
+      "location": { "lat": 40.747, "lng": -73.9445 },
+      "hours": { "open": "16:00", "close": "02:00" }
+    },
+    {
+      "id": "southpaw-social",
+      "nameKey": "venues.southpawSocial.name",
+      "blurbKey": "venues.southpawSocial.blurb",
+      "type": "gym",
+      "borough": "queens",
+      "zoneId": "qn02",
+      "location": { "lat": 40.746, "lng": -73.933 },
+      "hours": { "open": "06:00", "close": "22:00" }
+    },
+    {
+      "id": "pallet-row-warehouse",
+      "nameKey": "venues.palletRowWarehouse.name",
+      "blurbKey": "venues.palletRowWarehouse.blurb",
+      "type": "job-site",
+      "borough": "queens",
+      "zoneId": "qn02",
+      "location": { "lat": 40.737, "lng": -73.9365 },
+      "hours": { "open": "05:00", "close": "21:00" },
+      "jobIds": ["delivery"]
+    },
+    {
+      "id": "two-takes-loft",
+      "nameKey": "venues.twoTakesLoft.name",
+      "blurbKey": "venues.twoTakesLoft.blurb",
+      "type": "studio",
+      "borough": "queens",
+      "zoneId": "qn01",
+      "location": { "lat": 40.7525, "lng": -73.9395 },
+      "hours": { "open": "10:00", "close": "02:00" }
+    },
+    {
       "id": "two-moons-deli",
       "nameKey": "venues.twoMoonsDeli.name",
       "blurbKey": "venues.twoMoonsDeli.blurb",

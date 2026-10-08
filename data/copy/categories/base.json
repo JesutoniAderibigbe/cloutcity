@@ -14,6 +14,15 @@
     "categories.stadium": "Stadium",
     "categories.neighborhood": "Neighborhood",
     "categories.memorial": "Memorial",
+    "categories.barber": "Barber",
+    "categories.beauty": "Hair & nails",
+    "categories.mall": "Mall",
+    "categories.bank": "Bank",
+    "categories.pharmacy": "Pharmacy",
+    "categories.laundry": "Laundry",
+    "categories.community": "Community",
+    "categories.lounge": "Lounge",
+    "categories.studio": "Studio",
     "categories.home": "Home"
   }
 }

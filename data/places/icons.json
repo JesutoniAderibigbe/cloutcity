@@ -56,6 +56,42 @@
       "icon": "🕊️",
       "labelKey": "categories.memorial"
     },
+    "barber": {
+      "icon": "💈",
+      "labelKey": "categories.barber"
+    },
+    "beauty": {
+      "icon": "💅",
+      "labelKey": "categories.beauty"
+    },
+    "mall": {
+      "icon": "🏬",
+      "labelKey": "categories.mall"
+    },
+    "bank": {
+      "icon": "🏧",
+      "labelKey": "categories.bank"
+    },
+    "pharmacy": {
+      "icon": "🩹",
+      "labelKey": "categories.pharmacy"
+    },
+    "laundry": {
+      "icon": "🧺",
+      "labelKey": "categories.laundry"
+    },
+    "community": {
+      "icon": "🤝",
+      "labelKey": "categories.community"
+    },
+    "lounge": {
+      "icon": "🌇",
+      "labelKey": "categories.lounge"
+    },
+    "studio": {
+      "icon": "🎙️",
+      "labelKey": "categories.studio"
+    },
     "home": {
       "icon": "🏠",
       "labelKey": "categories.home"
@@ -79,6 +115,15 @@
     "government": "landmark",
     "stadium": "stadium",
     "neighborhood": "neighborhood",
-    "memorial": "memorial"
+    "memorial": "memorial",
+    "barber": "barber",
+    "salon": "beauty",
+    "mall": "mall",
+    "bank": "bank",
+    "pharmacy": "pharmacy",
+    "laundromat": "laundry",
+    "community-center": "community",
+    "lounge": "lounge",
+    "studio": "studio"
   }
 }
