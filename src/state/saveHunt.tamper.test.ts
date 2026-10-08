@@ -132,8 +132,20 @@ describe('tampered saves', () => {
     for (const save of SAVES) {
       const j = JSON.parse(JSON.stringify(save)) as Record<string, Any>
       const p = j.player
+      // v12 (S16a) had no finishes and no turns (S40, v13); its placements were slot-named,
+      // so a v12 save's grid ids here reach the movers like any legacy slot name.
+      const v12 = structuredClone(j)
+      v12.player.apartment = { placed: p.apartment.placed, moveLog: p.apartment.moveLog }
+      v12.player.inventory = {
+        ...v12.player.inventory,
+        decor: v12.player.inventory.decor.map((d: Any) => {
+          const rest = { ...d }
+          delete rest.turn
+          return rest
+        }),
+      }
       // v11 (S18c) had none of the S16a (v12) fields.
-      const v11 = structuredClone(j)
+      const v11 = structuredClone(v12)
       for (const key of V12_PLAYER_KEYS) delete v11.player[key]
       delete v11.creator
       delete v11.rolls
@@ -183,7 +195,8 @@ describe('tampered saves', () => {
         9: v9,
         10: v10,
         11: v11,
-        12: j,
+        12: v12,
+        13: j,
       }
       for (let v = 1; v <= SAVE_VERSION; v += 1) {
         let m
@@ -211,12 +224,21 @@ describe('tampered saves', () => {
         if (out.player.cash !== p.cash) problems.push(`v${v} cash ${out.player.cash} != ${p.cash}`)
         if (v >= 2 && out.clock.minute !== j.clock.minute) problems.push(`v${v} minute`)
         if (v >= 3 && out.player.home !== p.home) problems.push(`v${v} home`)
+        // From v9 the decor that was placed is placed again (the movers may set it up elsewhere
+        // before v13); v13 itself loads untouched.
+        const placedIds = (apartment: Any) =>
+          JSON.stringify(Object.values(apartment.placed as Record<string, string>).sort())
         if (
-          v >= 8 &&
-          JSON.stringify(out.player.apartment) !== JSON.stringify(p.apartment) &&
-          v >= 9
+          v === SAVE_VERSION &&
+          JSON.stringify(out.player.apartment) !== JSON.stringify(p.apartment)
         )
           problems.push(`v${v} apartment`)
+        if (v >= 9 && v < SAVE_VERSION) {
+          const kept = Object.values(p.apartment.placed as Record<string, string>)
+          const now = new Set(Object.values(out.player.apartment.placed))
+          if (!kept.every((id) => now.has(id)))
+            problems.push(`v${v} apartment ${placedIds(out.player.apartment)}`)
+        }
         // The migrated save must be acceptable as a first upload (a player upgrading then signing
         // in). Only from v8: the older copies here are built by hand from a current save (a v7 copy
         // keeps grant clout v7 never had; a v1 copy keeps cash on a fresh clock), not real saves.

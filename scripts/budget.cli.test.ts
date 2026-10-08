@@ -127,7 +127,8 @@ function fakeProject(perf: Record<string, unknown> = {}, files: Record<string, s
     ...Object.fromEntries(
       OPTIONAL_CHUNK_MARKERS.map(({ id, marker }) => [
         `.next/${chunk(id)}`,
-        `x=${JSON.stringify(marker)}`,
+        // Raw, not a string literal: a marker may hold quotes (home-finishes' JSON value).
+        `x=1;/*${marker}*/`,
       ]),
     ),
   }

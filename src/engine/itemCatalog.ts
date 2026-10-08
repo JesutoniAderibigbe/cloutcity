@@ -5,7 +5,8 @@
  * that does not fit throws at load (fail fast), without pulling classic zod into the client.
  */
 import type { RarityTier } from '@/lib/data/schemas/config'
-import type { DecorFit, Item, ItemLook } from '@/lib/data/schemas/content'
+import type { DecorCategory, DecorFit, Item, ItemLook } from '@/lib/data/schemas/content'
+import type { GridFootprint } from './homeGrid'
 import { STAT_KEYS, type StatChanges } from './stats'
 
 /** Outfit slots, in display order. Mirrors ITEM_SLOTS in src/lib/data/schemas/content.ts. */
@@ -15,7 +16,21 @@ export type ItemSlot = (typeof ITEM_SLOTS)[number]
 const CATEGORIES = ['clothing', 'makeup', 'gift', 'decor', 'upgrade'] as const
 /** Mirrors DECOR_FITS in src/lib/data/schemas/content.ts. */
 export const DECOR_FITS = ['wall', 'floor', 'surface'] as const satisfies readonly DecorFit[]
-export type { DecorFit }
+export type { DecorCategory, DecorFit }
+/** Mirrors DECOR_CATEGORIES in src/lib/data/schemas/content.ts (buy mode's tabs, in order). */
+export const DECOR_CATEGORIES = [
+  'sleep',
+  'seating',
+  'tables',
+  'kitchen',
+  'lighting',
+  'rugs',
+  'plants',
+  'storage',
+  'fun',
+  'wall-art',
+] as const satisfies readonly DecorCategory[]
+const FOOTPRINTS = ['1x1', '2x1', '2x2'] as const satisfies readonly GridFootprint[]
 const RARITIES = ['common', 'medium', 'rare'] as const
 type Category = (typeof CATEGORIES)[number]
 
@@ -69,16 +84,26 @@ export interface DecorVariant {
 }
 
 /**
- * Decor (S16): owned once and placed in a slot of its kind in the player's home. It is worth no
- * item clout or style (`cloutValue` and `styleValue` are 0); while placed it adds `homeScore` to
- * the home's score (src/engine/home.ts).
+ * Decor (S16, S40): owned once and placed on the home's grid (src/engine/homeGrid.ts). It is
+ * worth no item clout or style (`cloutValue` and `styleValue` are 0); while placed it adds
+ * `homeScore` to the home's score (src/engine/home.ts).
  */
 export interface DecorDef extends ItemBase {
   readonly category: 'decor'
   readonly decor: {
+    /** A wall cell, or floor cells (a surface item stands on its own small table). */
     readonly fits: DecorFit
+    readonly footprint: GridFootprint
+    /** Rugs lie under furniture. */
+    readonly layer: 'furniture' | 'rug'
+    /** Buy mode's tab. */
+    readonly category: DecorCategory
+    /** Costs weekly upkeep while owned (balance.json `home.upkeepPctPerWeek`). */
+    readonly luxury: boolean
+    /** Comes with a new game's home: free, never in the shop, never sold back, no home score. */
+    readonly starter: boolean
     readonly homeScore: number
-    /** At least two; the first is what a new purchase shows. */
+    /** At least one; the first is what a new purchase shows. */
     readonly variants: readonly DecorVariant[]
   }
 }
@@ -124,8 +149,11 @@ function narrow(raw: RawItem, index: number): ItemDef {
   if (!oneOf<Category>(category, CATEGORIES)) return fail('category')
   if (!oneOf<RarityTier>(rarity, RARITIES)) return fail('rarity')
   if (currency !== 'cash') return fail('currency')
-  if (!isDollars(price) || price < 1) return fail('price')
-  if (!isDollars(sellValue) || sellValue >= price) return fail('sellValue')
+  const starter = (decor as { starter?: unknown } | undefined)?.starter === true
+  if (!isDollars(price) || (starter ? price !== 0 : price < 1)) return fail('price')
+  if (!isDollars(sellValue) || (starter ? sellValue !== 0 : sellValue >= price)) {
+    return fail('sellValue')
+  }
   if (!isDollars(cloutValue)) return fail('cloutValue')
   if (!isDollars(styleValue) || (category === 'gift' && styleValue !== 0)) return fail('styleValue')
   if (typeof statEffects !== 'object' || statEffects === null) return fail('statEffects')
@@ -188,10 +216,22 @@ function narrowLook(raw: unknown, slot: ItemSlot, fail: (field: string) => never
 
 function narrowDecor(raw: unknown, fail: (field: string) => never): DecorDef['decor'] {
   if (typeof raw !== 'object' || raw === null) return fail('decor')
-  const { fits, homeScore, variants } = raw as Record<string, unknown>
+  const { fits, homeScore, variants, footprint, layer, category, luxury, starter } = raw as Record<
+    string,
+    unknown
+  >
   if (!oneOf<DecorFit>(fits, DECOR_FITS)) return fail('decor.fits')
-  if (!isDollars(homeScore) || homeScore < 1) return fail('decor.homeScore')
-  if (!Array.isArray(variants) || variants.length < 2) return fail('decor.variants')
+  const isStarter = starter === true
+  if (starter !== undefined && !isStarter) return fail('decor.starter')
+  if (!isDollars(homeScore) || (homeScore === 0) !== isStarter) return fail('decor.homeScore')
+  const shape = footprint ?? '1x1'
+  if (!oneOf<GridFootprint>(shape, FOOTPRINTS) || (fits === 'wall' && shape !== '1x1')) {
+    return fail('decor.footprint')
+  }
+  if (layer !== undefined && (layer !== 'rug' || fits !== 'floor')) return fail('decor.layer')
+  if (!oneOf<DecorCategory>(category, DECOR_CATEGORIES)) return fail('decor.category')
+  if (luxury !== undefined && luxury !== true) return fail('decor.luxury')
+  if (!Array.isArray(variants) || variants.length < 1) return fail('decor.variants')
   const list = variants.map((variant: unknown, i): DecorVariant => {
     const { id, token, nameKey } = (variant ?? {}) as Record<string, unknown>
     if (typeof id !== 'string' || typeof token !== 'string' || typeof nameKey !== 'string') {
@@ -202,7 +242,16 @@ function narrowDecor(raw: unknown, fail: (field: string) => never): DecorDef['de
   if (new Set(list.map((variant) => variant.id)).size !== list.length) {
     return fail('decor.variants')
   }
-  return { fits, homeScore, variants: list }
+  return {
+    fits,
+    footprint: shape,
+    layer: layer === 'rug' ? 'rug' : 'furniture',
+    category,
+    luxury: luxury === true,
+    starter: isStarter,
+    homeScore,
+    variants: list,
+  }
 }
 
 /** The engine catalog from the items file's `items` array. Throws on a duplicate id. */

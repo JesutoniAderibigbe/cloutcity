@@ -32,6 +32,12 @@
  *   steps) and `rolls` (committed creator rolls). An older save gets a look seeded from an FNV
  *   hash of what it already holds (the same save always gets the same look), no traits, no
  *   career, no neighborhood, a fresh creator and no rolls.
+ * - v13 (S40): the apartment becomes a placement grid: `player.apartment.placed` keys are grid
+ *   cells (`f{c}-{r}`, `w-{wall}-{i}`) instead of slot names, owned decor gains `turn`, and the
+ *   apartment gains `wallPaint`, `floorFinish` (null for the home's originals) and `finishes`
+ *   (bought). An older save's placed decor is set up by the movers in the first spot that fits
+ *   (`placementsAfterMove`), and every older save is given the starter pieces it lacks
+ *   (`withStarterPieces`), so nobody's home is empty.
  */
 import * as z from 'zod/mini'
 import { CLOUT_SOURCES, type CloutSourceId } from '@/lib/data/cloutSources'
@@ -76,8 +82,12 @@ import {
 } from './game'
 import { initialGoalsState, syncGoals, victoryGoal, type GoalsState } from './goals'
 import {
+  findFinish,
+  furnishWith,
   initialApartment,
-  slotsFor,
+  layoutFor,
+  placementRefusal,
+  starterFurnishing,
   type ApartmentState,
   type MoveRecord,
   type Placements,
@@ -102,11 +112,12 @@ import {
   type OwnedDecor,
   type OwnedWearable,
 } from './items'
+import { isTurn, parseSlot } from './homeGrid'
 import { initialPrestigeState, type PrestigeRun, type PrestigeState } from './prestige'
 import { initialRent } from './rent'
 import { isTraitId, traitPickCount } from './traits'
 
-export const SAVE_VERSION = 12
+export const SAVE_VERSION = 13
 
 export interface SaveState extends GameSnapshot {
   /** Passive clock speed, one of `time.speeds`. */
@@ -332,6 +343,8 @@ function inventorySchema(config: EngineConfig) {
         itemId: z.string().check(z.refine(knownDecor(config), 'Unknown decor')),
         acquiredMinute: z.int().check(z.gte(0)),
         variant: z.string(),
+        // Quarter turns on the grid (S40); absent means 0, so 0 is never written.
+        turn: z.optional(z.union([z.literal(1), z.literal(2), z.literal(3)])),
         // Kept through prestige: a look only.
         prestigeKept: z.optional(z.literal(true)),
       }),
@@ -384,30 +397,46 @@ function moveRecordSchema(config: EngineConfig) {
   })
 }
 
+const finishSchema = (config: EngineConfig, kind: 'wall' | 'floor') =>
+  z.nullable(
+    z.string().check(z.refine((id) => findFinish(id, config)?.kind === kind, 'Unknown finish')),
+  )
+
 /** The structure of `player.apartment`; cross-field rules are in `apartmentIssue`. */
 function apartmentSchema(config: EngineConfig) {
   return z.strictObject({
     placed: z.record(z.string(), z.string()),
     moveLog: z.array(moveRecordSchema(config)).check(z.maxLength(config.home.moveLogMax)),
+    wallPaint: finishSchema(config, 'wall'),
+    floorFinish: finishSchema(config, 'floor'),
+    finishes: z.array(
+      z.string().check(z.refine((id) => findFinish(id, config) !== undefined, 'Unknown finish')),
+    ),
   })
 }
 
-/** Why one placement does not fit `home` and `inventory`, or null. */
+/**
+ * Why one placement does not fit `home` among the others in `placed` and `inventory`, or null:
+ * a cell the home does not have, decor not owned, or a footprint that does not fit (the wrong
+ * kind of cell, off the grid, a cell the home keeps free, or one another item covers).
+ */
 function placementIssue(
   slotId: string,
   itemId: string,
+  placed: Placements,
   home: HomeId,
   inventory: Inventory,
   config: EngineConfig,
 ) {
-  const slot = slotsFor(home, config).find((entry) => entry.id === slotId)
-  if (slot === undefined) return 'decor in a slot this home does not have'
-  const item = decorItem(itemId, config)
-  if (item === undefined || !inventory.decor.some((owned) => owned.itemId === itemId)) {
+  if (parseSlot(slotId, layoutFor(home, config).size) === null) {
+    return 'decor in a slot this home does not have'
+  }
+  const owned = inventory.decor.find((entry) => entry.itemId === itemId)
+  if (decorItem(itemId, config) === undefined || owned === undefined) {
     return 'placed decor not owned'
   }
-  if (item.decor.fits !== slot.kind) return 'decor in the wrong kind of slot'
-  return null
+  const refusal = placementRefusal(home, placed, inventory, itemId, slotId, owned.turn ?? 0, config)
+  return refusal === null ? null : `decor does not fit its spot (${refusal})`
 }
 
 /** Why one move log entry cannot follow `previous` or happened after `nowMinute`, or null. */
@@ -429,12 +458,15 @@ function apartmentIssue(
   nowMinute: number,
   config: EngineConfig,
 ) {
+  // An unknown home is its own issue (the schema reports it); its grid cannot be checked.
+  if (!isHomeId(home, config)) return null
   const placedIds = Object.values(apartment.placed)
   if (new Set(placedIds).size !== placedIds.length) return 'decor placed twice'
   for (const [slotId, itemId] of Object.entries(apartment.placed)) {
-    const issue = placementIssue(slotId, itemId, home, inventory, config)
+    const issue = placementIssue(slotId, itemId, apartment.placed, home, inventory, config)
     if (issue !== null) return issue
   }
+  if (new Set(apartment.finishes).size !== apartment.finishes.length) return 'finish bought twice'
   for (const [i, move] of apartment.moveLog.entries()) {
     const issue = moveIssue(move, apartment.moveLog[i - 1], nowMinute)
     if (issue !== null) return issue
@@ -1102,7 +1134,7 @@ function repairInventory(
 
   const decor: OwnedDecor[] = []
   for (const entry of list(source.decor).map(record)) {
-    const { itemId, acquiredMinute, variant, prestigeKept } = entry
+    const { itemId, acquiredMinute, variant, prestigeKept, turn } = entry
     const item = typeof itemId === 'string' ? decorItem(itemId, config) : undefined
     if (item === undefined || decor.some((owned) => owned.itemId === item.id)) continue
     const known = item.decor.variants.some((option) => option.id === variant)
@@ -1110,6 +1142,8 @@ function repairInventory(
       itemId: item.id,
       acquiredMinute: purchaseMinute(acquiredMinute),
       variant: known ? (variant as string) : (item.decor.variants[0]?.id ?? ''),
+      // A turn that is not a quarter turn faces the front again.
+      ...(isTurn(turn) && turn !== 0 ? { turn } : {}),
       // Any mark at all keeps it a look only: a damaged mark never turns value back on.
       ...(prestigeKept === undefined ? {} : { prestigeKept: true as const }),
     })
@@ -1118,11 +1152,12 @@ function repairInventory(
 }
 
 /**
- * The apartment from an untrusted save, keeping everything usable: placements in a slot the
- * home does not have, of decor not owned or not of the slot's kind, or of an item already placed
- * are dropped (the item goes back to storage); move log entries that are malformed, in the
- * future, to the same home or out of order are dropped, and the newest `home.moveLogMax` kept.
- * `repaired` is false when the apartment was already valid.
+ * The apartment from an untrusted save, keeping everything usable: placements on a cell the
+ * home does not have, of decor not owned, of an item already placed, or that do not fit beside
+ * those kept before them (in slot order) are dropped (the item goes back to storage); move log
+ * entries that are malformed, in the future, to the same home or out of order are dropped, and
+ * the newest `home.moveLogMax` kept; an unknown finish shows the home's original, and unknown or
+ * repeated bought finishes are dropped. `repaired` is false when the apartment was already valid.
  */
 function repairApartment(
   raw: unknown,
@@ -1139,14 +1174,14 @@ function repairApartment(
     return { apartment: parsed.data as ApartmentState, repaired: false }
   }
   const source = recordOf(raw)
-  const kept: [string, string][] = []
-  for (const [slotId, itemId] of Object.entries(recordOf(source.placed))) {
-    if (typeof itemId !== 'string' || kept.some(([, keptId]) => keptId === itemId)) continue
-    if (placementIssue(slotId, itemId, home, inventory, config) === null) {
-      kept.push([slotId, itemId])
+  const kept: Record<string, string> = {}
+  const entries = Object.entries(recordOf(source.placed)).sort(([a], [b]) => (a < b ? -1 : 1))
+  for (const [slotId, itemId] of entries) {
+    if (typeof itemId !== 'string' || Object.values(kept).includes(itemId)) continue
+    if (placementIssue(slotId, itemId, kept, home, inventory, config) === null) {
+      kept[slotId] = itemId
     }
   }
-  const placed: Placements = Object.fromEntries(kept)
   const entrySchema = moveRecordSchema(config)
   const moveLog: MoveRecord[] = []
   for (const value of Array.isArray(source.moveLog) ? source.moveLog : []) {
@@ -1155,8 +1190,21 @@ function repairApartment(
     const entry = move.data as MoveRecord
     if (moveIssue(entry, moveLog.at(-1), nowMinute) === null) moveLog.push(entry)
   }
+  const finish = (value: unknown, kind: 'wall' | 'floor') =>
+    typeof value === 'string' && findFinish(value, config)?.kind === kind ? value : null
+  const finishes: string[] = []
+  for (const value of Array.isArray(source.finishes) ? source.finishes : []) {
+    if (typeof value !== 'string' || finishes.includes(value)) continue
+    if (findFinish(value, config) !== undefined) finishes.push(value)
+  }
   return {
-    apartment: { placed, moveLog: moveLog.slice(-config.home.moveLogMax) },
+    apartment: {
+      placed: kept,
+      moveLog: moveLog.slice(-config.home.moveLogMax),
+      wallPaint: finish(source.wallPaint, 'wall'),
+      floorFinish: finish(source.floorFinish, 'floor'),
+      finishes,
+    },
     repaired: true,
   }
 }
@@ -1943,6 +1991,67 @@ function loadV6(raw: unknown, config: EngineConfig): LoadResult | null {
   return loadSave(upgradeV6(v6.data, config), config)
 }
 
+/** A v9 to v12 save's placements (slot name → item id), which name no grid cell. */
+function legacyPlacements(persisted: unknown): Record<string, string> {
+  const placed = recordOf(recordOf(recordOf(recordOf(persisted).player).apartment).placed)
+  return Object.fromEntries(
+    Object.entries(placed).filter(
+      (entry): entry is [string, string] => typeof entry[1] === 'string',
+    ),
+  )
+}
+
+/** A v9 to v12 save with nothing placed (its placements go to the movers instead). */
+function withoutPlacements(persisted: unknown): unknown {
+  const save = recordOf(persisted)
+  const player = recordOf(save.player)
+  if (!Object.hasOwn(player, 'apartment')) return persisted
+  const apartment = recordOf(player.apartment)
+  return { ...save, player: { ...player, apartment: { ...apartment, placed: {} } } }
+}
+
+/**
+ * An older save's home set up on the grid (S40): first the decor it had placed (it scores, so it
+ * goes first), each in the first spot that fits, then the starter pieces it does not own yet,
+ * new at the save's minute, where the start home puts them or in the first spot that fits.
+ * Whatever fits nowhere stays in storage. Starter pieces are free and score nothing, so this adds
+ * no value (ECON-1).
+ */
+function withStarterPieces(
+  save: SaveState,
+  legacy: Readonly<Record<string, string>>,
+  config: EngineConfig,
+): SaveState {
+  const { player } = save
+  const owned = new Set(player.inventory.decor.map((entry) => entry.itemId))
+  const legacyIds = [...new Set(Object.values(legacy))].filter((itemId) => owned.has(itemId))
+  const starter = starterFurnishing(config.startHome, save.clock.minute, config)
+  const added = starter.decor.filter((entry) => !owned.has(entry.itemId))
+  const inventory = { ...player.inventory, decor: [...player.inventory.decor, ...added] }
+  const starterSpots = layoutFor(config.startHome, config).starter
+  const pieces = [
+    ...legacyIds.map((itemId) => ({ itemId, slotId: '', turn: 0 as const })),
+    ...added.map((entry) => {
+      const spot = starterSpots.find((candidate) => candidate.itemId === entry.itemId)
+      return { itemId: entry.itemId, slotId: spot?.slotId ?? '', turn: spot?.turn ?? 0 }
+    }),
+  ]
+  const furnished = furnishWith(
+    { apartment: player.apartment, inventory },
+    player.home,
+    pieces,
+    config,
+  )
+  return {
+    ...save,
+    player: {
+      ...player,
+      inventory: furnished.inventory,
+      apartment: { ...player.apartment, placed: furnished.placed },
+    },
+  }
+}
+
 /**
  * Upgrades a save written by an older SAVE_VERSION. A v1 save keeps its cash and starts the
  * new clock and stats fresh. A v2 save keeps everything and starts with no clout, the start
@@ -2024,11 +2133,14 @@ export function migrateSave(persisted: unknown, version: number, config: EngineC
     }
   }
   if (version === 6) loaded = loadV6(persisted, config)
-  // A v7 to v11 save is the current structure without the S15 (v7), S16 (v8), S08 (v9), S18c
-  // (v10) or S16a (v11) fields, which `loadSave` fills in.
-  if (version >= 7 && version <= 11) loaded = loadSave(persisted, config)
+  // A v7 to v12 save is the current structure without the S15 (v7), S16 (v8), S08 (v9), S18c
+  // (v10), S16a (v11) or S40 (v12) fields, which `loadSave` fills in; its slot-named placements
+  // are set aside for the movers (`legacyPlacements`).
+  const legacy = version >= 9 && version <= 12 ? legacyPlacements(persisted) : {}
+  if (version >= 7 && version <= 12) loaded = loadSave(withoutPlacements(persisted), config)
   if (loaded?.ok === true) {
-    return { save: syncGoals(loaded.save, config).save, outcome: 'carried' }
+    const furnished = withStarterPieces(loaded.save, legacy, config)
+    return { save: syncGoals(furnished, config).save, outcome: 'carried' }
   }
   return { save: fresh, outcome: 'fresh' }
 }

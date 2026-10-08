@@ -82,7 +82,7 @@ describe('clout bonuses (balance.json career, TUNE-11)', () => {
       ...bought.snapshot.player,
       apartment: {
         ...bought.snapshot.player.apartment,
-        placed: { 'surface-1': 'crate-record-player' },
+        placed: { 'f3-1': 'crate-record-player' },
       },
     }
     const score = homeScore(placed, config)

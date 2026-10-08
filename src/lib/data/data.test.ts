@@ -35,6 +35,8 @@ import {
 import {
   EventsFileSchema,
   HomesFileSchema,
+  FinishesFileSchema,
+  HomeEngineTablesSchema,
   HomeInteriorsFileSchema,
   ItemLooksFileSchema,
   NeighborhoodsFileSchema,
@@ -102,7 +104,6 @@ import {
   audioManifest,
   events,
   geoBounds,
-  homeInteriors,
   items,
   jobs,
   landmarks,
@@ -165,6 +166,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'geo/water.derived.json': WaterFileSchema,
   'homes/homes.json': HomesFileSchema,
   'homes/interiors.json': HomeInteriorsFileSchema,
+  'homes/finishes.json': FinishesFileSchema,
+  'homes/engine.derived.json': HomeEngineTablesSchema,
   'homes/neighborhoods.json': NeighborhoodsFileSchema,
   'items/items.json': ItemsFileSchema,
   'items/looks.json': ItemLooksFileSchema,
@@ -1087,7 +1090,10 @@ describe('cross-file references', () => {
     landmarks: landmarks.flatMap((entry) => [entry.nameKey, entry.infoKey]),
     club: Object.values(balance.place.clubs).map((club) => club.refusalKey),
     colors: items.flatMap((entry) => entry.decor?.variants.map((variant) => variant.nameKey) ?? []),
-    housing: Object.values(homeInteriors).flatMap((home) => home.slots.map((slot) => slot.nameKey)),
+    // Wall paints and floors (S40) are named in the buy-mode namespace that renders them.
+    buy: (readJson('homes/finishes.json') as { finishes: { nameKey: string }[] }).finishes.map(
+      (finish) => finish.nameKey,
+    ),
     categories: Object.values(
       PlaceIconsConfigSchema.parse(readJson('places/icons.json')).groups,
     ).map((group) => group.labelKey),

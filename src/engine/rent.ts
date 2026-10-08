@@ -3,6 +3,9 @@
  * charged at every rent-week boundary the personal clock crosses (the midnight that starts
  * game day 8, 15, 22, ...: every `time.rentPeriodGameDays` days).
  *
+ * The weekly charge is the home's rent plus the upkeep of owned luxury decor (S40,
+ * src/engine/home.ts `weeklyUpkeep`).
+ *
  * Missed rent escalates (`rent` in data/config/balance.json):
  * - On a due date the player pays what they owe plus the week's rent, in full, or nothing.
  * - Each consecutive due date missed adds the week's rent and `lateFees[missed - 1]` to what
@@ -19,7 +22,7 @@ import { HOME_IDS, lowestRentHome } from '@/lib/data/homes'
 import { minutesPerDay } from './clock'
 import { isHomeId, type EngineConfig, type HomeId } from './config'
 import type { PlayerState } from './game'
-import { placementsAfterMove } from './home'
+import { placementsAfterMove, weeklyUpkeep } from './home'
 
 export interface RentState {
   /** Whole dollars of unpaid rent and late fees. */
@@ -113,7 +116,8 @@ export function settleRent(
   while (dayIndex <= lastDay) {
     const day = dayIndex + 1
     if (dayIndex % period === 0) {
-      const rent = rentFor(home, config)
+      // Luxury decor's upkeep (S40) is billed with the rent: one weekly charge, one rule.
+      const rent = rentFor(home, config) + weeklyUpkeep(player, config)
       const total = owed + rent
       if (cash >= total) {
         cash -= total
@@ -158,9 +162,25 @@ export function settleRent(
   }
 
   if (events.length === 0) return { player, events }
-  const apartment =
-    home === player.home
-      ? player.apartment
-      : { ...player.apartment, placed: placementsAfterMove(player.apartment.placed, home, config) }
-  return { player: { ...player, cash, home, rent: { owed, missed }, apartment }, events }
+  if (home === player.home) {
+    return { player: { ...player, cash, rent: { owed, missed } }, events }
+  }
+  const moved = placementsAfterMove(player, home, config)
+  const apartment = {
+    ...player.apartment,
+    placed: moved.placed,
+    wallPaint: null,
+    floorFinish: null,
+  }
+  return {
+    player: {
+      ...player,
+      cash,
+      home,
+      rent: { owed, missed },
+      apartment,
+      inventory: moved.inventory,
+    },
+    events,
+  }
 }

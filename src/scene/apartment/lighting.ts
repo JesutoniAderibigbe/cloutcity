@@ -3,8 +3,9 @@
  * keyframe brought indoors. Sun and ambient take the keyframe's colours and intensities scaled by
  * scene.json `dayNight.room`; the sun keeps the room's own direction (light through the window).
  * At night a share of warm lamp light (theme `scene.apartment.lamp`) is mixed into the ambient
- * colour with the night glow, so the room reads lamp-lit without adding a light (which would
- * recompile its materials).
+ * colour with the night glow, and the lamps add `lampBoost` of ambient intensity at full night, so
+ * the room reads warm and lamp-lit after dark without adding a light (which would recompile its
+ * materials).
  */
 import { lightingAt as cityLightingAt, mixHexLinear } from '@/lib/dayNight/lightingAt'
 import type { DayNightModel } from '@/lib/dayNight/types'
@@ -12,6 +13,8 @@ import type { SceneConfig } from '@/lib/data/schemas/scene'
 import type { ApartmentConfig, RoomPalette } from './data'
 
 export interface RoomLighting {
+  /** 0 by day, 1 at full night: drives the lamps' glow (the models' night-glow uniform). */
+  readonly glow: number
   readonly ambient: { readonly color: string; readonly intensity: number }
   readonly sun: {
     readonly color: string
@@ -35,12 +38,14 @@ export function lightingAt(minute: number, input: RoomLightingInput): RoomLighti
   const city = cityLightingAt(minute, input.model, { step: input.step === true })
   const lamp = city.nightGlow * input.room.lampMix
   return {
+    glow: city.nightGlow,
     ambient: {
       color:
         lamp > 0
           ? mixHexLinear(city.colors.ambient, input.palette.lamp, lamp)
           : city.colors.ambient,
-      intensity: city.ambientIntensity * input.room.ambientScale,
+      intensity:
+        city.ambientIntensity * input.room.ambientScale + city.nightGlow * input.room.lampBoost,
     },
     sun: {
       color: city.colors.sun,

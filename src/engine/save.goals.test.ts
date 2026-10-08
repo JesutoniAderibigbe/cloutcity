@@ -13,12 +13,20 @@ import {
   migrateSave,
   type SaveState,
 } from './save'
-import { playerWithClout } from './test-support'
+import {
+  playerWithClout,
+  unfurnished,
+  V13_MIGRATED_APARTMENT,
+  V13_MIGRATED_INVENTORY,
+} from './test-support'
 
 const schema = createSaveSchema(config)
 const NOW = 20_000
 const MS = 1_760_000_000_000
-const base: SaveState = { ...initialSave(config), clock: { minute: NOW, remainderMs: 0 } }
+const base: SaveState = {
+  ...unfurnished(initialSave(config)),
+  clock: { minute: NOW, remainderMs: 0 },
+}
 
 /** `base` as a v7 save: no visits, goals, grants or prestige. */
 function v7(save: SaveState = base): Record<string, unknown> {
@@ -60,8 +68,8 @@ function claimedSave(): SaveState {
 const roundTrip = (value: unknown) => JSON.parse(JSON.stringify(value)) as unknown
 
 describe('save v8', () => {
-  it('is version 12 (S16a after S18c), and a fresh save has no visits, goals, grants or prestige', () => {
-    expect(SAVE_VERSION).toBe(12)
+  it('is version 13 (S40 after S16a), and a fresh save has no visits, goals, grants or prestige', () => {
+    expect(SAVE_VERSION).toBe(13)
     const fresh = initialSave(config)
     expect(fresh.player.visited).toEqual({})
     expect(fresh.goals).toEqual(initialGoalsState)
@@ -95,7 +103,12 @@ describe('v7 -> v8', () => {
     }
     const migrated = migrateSave(roundTrip(v7(progressed)), 7, config)
     expect(migrated.outcome).toBe('carried')
-    expect(migrated.save.player).toEqual({ ...progressed.player, visited: {} })
+    expect(migrated.save.player).toEqual({
+      ...progressed.player,
+      visited: {},
+      inventory: V13_MIGRATED_INVENTORY,
+      apartment: V13_MIGRATED_APARTMENT,
+    })
     expect(migrated.save.goals).toEqual({
       run: 1,
       achieved: { 'first-club-night': NOW, 'reach-local': NOW, 'reach-scene-regular': NOW },

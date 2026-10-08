@@ -32,7 +32,16 @@ import {
 import { advanceMinutes, tick, type GameSnapshot } from '@/engine/game'
 import { findGoal, syncGoals, victoryGoal, type GoalsState } from '@/engine/goals'
 import { grant, markGrantsSynced, type GrantResult } from '@/engine/grants'
-import { moveHome, placeDecor, removeDecor, setDecorVariant, type HomeResult } from '@/engine/home'
+import {
+  applyFinish,
+  moveHome,
+  placeDecor,
+  removeDecor,
+  rotateDecor,
+  setDecorVariant,
+  type HomeResult,
+} from '@/engine/home'
+import type { Turn } from '@/engine/homeGrid'
 import {
   buyItem,
   equipItem,
@@ -110,14 +119,19 @@ export interface GameActions {
   /** Uses one gift on yourself or an NPC; it is consumed. Never another player. */
   consumeGift(itemId: string, target: GiftTarget): ReturnType<typeof consumeGift>
   /**
-   * Places owned decor in a slot of the current home (whatever sat there goes to storage). A
-   * level reached through the home score shows the level-up toast.
+   * Places (or moves) owned decor on the current home's grid at a slot, turned `turn` (its own
+   * turn when omitted); refused where it does not fit. A level reached through the home score
+   * shows the level-up toast.
    */
-  placeDecor(itemId: string, slotId: string): ReturnType<typeof placeDecor>
+  placeDecor(itemId: string, slotId: string, turn?: Turn): ReturnType<typeof placeDecor>
   /** Takes the decor in a slot of the current home back to storage. */
   removeDecor(slotId: string): ReturnType<typeof removeDecor>
+  /** Turns owned decor a quarter turn where it stands (looks only). */
+  rotateDecor(itemId: string): HomeResult
   /** Shows owned decor in another of its colour variants. */
   setDecorVariant(itemId: string, variantId: string): HomeResult
+  /** Puts a wall paint or floor finish on the home, buying it first when it is not owned. */
+  applyFinish(finishId: string): ReturnType<typeof applyFinish>
   /**
    * Moves home at once, paying the move-in cost. The engine refuses the current home, a home in a
    * locked borough and a move the player cannot afford, in that order.
@@ -502,9 +516,19 @@ export function createGameStore(storage: PersistStorage<PersistedState>, logger:
             if (result.ok) set({ player: result.snapshot.player })
             return result
           },
-          placeDecor: (itemId, slotId) => {
-            const result = placeDecor(get(), itemId, slotId, engineConfig)
+          placeDecor: (itemId, slotId, turn) => {
+            const result = placeDecor(get(), itemId, slotId, engineConfig, turn)
             if (result.ok) commit({ player: result.snapshot.player }, result.levelUp)
+            return result
+          },
+          rotateDecor: (itemId) => {
+            const result = rotateDecor(get(), itemId, engineConfig)
+            if (result.ok) set({ player: result.snapshot.player })
+            return result
+          },
+          applyFinish: (finishId) => {
+            const result = applyFinish(get(), finishId, engineConfig)
+            if (result.ok) commit({ player: result.snapshot.player })
             return result
           },
           removeDecor: (slotId) => {

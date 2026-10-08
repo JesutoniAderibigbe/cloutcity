@@ -1,5 +1,6 @@
 import { minutesPerDay } from '@/engine/clock'
 import { engineConfig } from '@/engine/config'
+import { furnishWith } from '@/engine/home'
 import { shopItems, shopPrice } from '@/engine/items'
 import { nextRentDueDay, rentFor } from '@/engine/rent'
 import { gameStore } from '@/state/store'
@@ -24,6 +25,17 @@ export interface HudTestHook {
   setEnergy(energy: number): void
   /** Buys an item through the store and engine (funds and ownership still apply); false if refused. */
   buy(itemId: string): boolean
+  /** Moves home through the store and engine (locks still apply); false if refused. */
+  moveHome(home: string): boolean
+  /**
+   * Sets up every stored decor item in the first spot it fits (S40, the movers' rule), through
+   * the store's `placeDecor` so the engine checks each one. Returns how many were placed.
+   */
+  furnish(): number
+  /** Places owned decor at a cell, turned (S40), through the store and engine; false if refused. */
+  place(itemId: string, slotId: string, turn: 0 | 1 | 2 | 3): boolean
+  /** Puts every placed decor item in storage (S40). */
+  clearRoom(): void
   state(): {
     readonly cash: number
     readonly minute: number
@@ -81,6 +93,27 @@ function createHudTestHook(): HudTestHook {
       gameStore.setState({ player: { ...player, stats: { ...player.stats, energy } } })
     },
     buy: (itemId) => gameStore.getState().buyItem(itemId).ok,
+    moveHome: (home) => gameStore.getState().moveHome(home).ok,
+    place: (itemId, slotId, turn) => gameStore.getState().placeDecor(itemId, slotId, turn).ok,
+    clearRoom: () => {
+      for (const slotId of Object.keys(gameStore.getState().player.apartment.placed)) {
+        gameStore.getState().removeDecor(slotId)
+      }
+    },
+    furnish: () => {
+      const { player } = gameStore.getState()
+      const stored = player.inventory.decor
+        .filter((owned) => !Object.values(player.apartment.placed).includes(owned.itemId))
+        .map((owned) => ({ itemId: owned.itemId, slotId: '', turn: 0 as const }))
+      const set = furnishWith(player, player.home, stored, engineConfig)
+      let placed = 0
+      for (const [slotId, itemId] of Object.entries(set.placed)) {
+        if (Object.values(player.apartment.placed).includes(itemId)) continue
+        const turn = set.inventory.decor.find((owned) => owned.itemId === itemId)?.turn ?? 0
+        if (gameStore.getState().placeDecor(itemId, slotId, turn).ok) placed += 1
+      }
+      return placed
+    },
     state: () => {
       const { player, clock, lastRentEvent } = gameStore.getState()
       return {

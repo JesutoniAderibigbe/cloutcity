@@ -51,9 +51,9 @@ describe('home copy', () => {
     )
   })
 
-  it('gives each move its cost, weekly rent and slot count from config', () => {
-    expect(moveDetails('brooklyn-1br', plain)).toBe('Move-in $400, rent $520/wk, 5 slots')
-    expect(moveLabel('brooklyn-1br', plain)).toContain('rent $520/wk, 5 slots')
+  it('gives each move its cost, weekly rent and floor area from config', () => {
+    expect(moveDetails('brooklyn-1br', plain)).toBe('Move-in $400, rent $520/wk, 30 m² of floor')
+    expect(moveLabel('brooklyn-1br', plain)).toContain('rent $520/wk, 30 m² of floor')
     expect(moveConfirmText('brooklyn-1br', plain)).toContain('$520/wk')
   })
 

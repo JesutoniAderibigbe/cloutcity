@@ -73,7 +73,8 @@
   "home": {
     "baseScore": { "queens-room": 0, "brooklyn-1br": 10, "manhattan-loft": 25 },
     "maxClout": 60,
-    "moveLogMax": 20
+    "moveLogMax": 20,
+    "upkeepPctPerWeek": 4
   },
   "rent": {
     "lateFees": [0, 30],

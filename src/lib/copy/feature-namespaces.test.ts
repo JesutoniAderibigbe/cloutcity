@@ -269,7 +269,7 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     for (const text of ['Inventory', 'Rent', 'Home', 'Settings']) expect(more).toContain(text)
   })
 
-  it('the home chunk: slots, colours, storage, moves, locks and every home error (S16)', async () => {
+  it('the home chunk: cells, colours, moves, locks and every home error (S16, S40)', async () => {
     const { HomePanel } = await import('@/components/hud/HomePanel')
     const { engineConfig } = await import('@/engine/config')
     const { isDecor } = await import('@/engine/items')
@@ -278,21 +278,16 @@ describe('feature copy renders with only its own namespaces loaded', () => {
     const { slotsFor } = await import('@/engine/home')
 
     const fresh = renderToStaticMarkup(createElement(HomePanel))
-    for (const text of ['Queens room', 'Home score 0', 'Storage', 'Brooklyn 1BR. ']) {
+    for (const text of [
+      'Queens room',
+      'Home score 0',
+      'Your place',
+      'Buy mode',
+      'Brooklyn 1BR. ',
+    ]) {
       expect(fresh).toContain(text)
     }
-    // A server render reads the store's initial snapshot, so the rows for owned decor are
-    // driven through the helpers they render with.
     const decor = engineConfig.items.catalog.filter(isDecor)
-    const { copy } = await import('./index')
-    for (const key of ['home.storage.pickUp', 'home.slot.remove', 'home.slot.placeHere'] as const) {
-      expect(copy(key)).not.toBe('')
-    }
-    for (const item of decor) {
-      expect(homeCopy.pickUpLabel(item.id)).not.toBe('')
-      expect(homeCopy.fitsLine(item.id)).not.toBe('')
-      expect(homeCopy.placeLabel(item.id, 'queens-room', 'wall-1')).not.toBe('')
-    }
     for (const home of HOME_IDS) {
       for (const slot of slotsFor(home, engineConfig)) {
         expect(homeCopy.slotName(home, slot.id)).not.toBe('')
@@ -302,7 +297,6 @@ describe('feature copy renders with only its own namespaces loaded', () => {
       for (const variant of item.decor.variants) {
         expect(homeCopy.variantChangedNotice(item.id, variant.id)).not.toBe('')
       }
-      expect(homeCopy.pickedNotice(item.id)).not.toBe('')
     }
     for (const home of HOME_IDS) expect(homeCopy.movedNotice(home)).not.toBe('')
     const errors = [
@@ -311,6 +305,12 @@ describe('feature copy renders with only its own namespaces loaded', () => {
       { code: 'NOT_OWNED', itemId: 'x' },
       { code: 'UNKNOWN_SLOT', slotId: 'x' },
       { code: 'WRONG_SLOT_KIND', itemId: 'x', slotId: 'x', fits: 'wall', kind: 'floor' },
+      { code: 'NO_ROOM', itemId: 'x', slotId: 'x', reason: 'off-grid' },
+      { code: 'NO_ROOM', itemId: 'x', slotId: 'x', reason: 'blocked' },
+      { code: 'NO_ROOM', itemId: 'x', slotId: 'x', reason: 'occupied' },
+      { code: 'NO_ROOM_TO_TURN', itemId: 'x' },
+      { code: 'UNKNOWN_FINISH', finishId: 'x' },
+      { code: 'FINISH_FUNDS_SHORT', required: 40, available: 1 },
       { code: 'UNKNOWN_VARIANT', itemId: 'x', variantId: 'x' },
       { code: 'UNKNOWN_HOME', home: 'x' },
       { code: 'CURRENT_HOME', home: 'queens-room' },
@@ -329,6 +329,25 @@ describe('feature copy renders with only its own namespaces loaded', () => {
       },
     ] as const
     for (const error of errors) expect(homeCopy.homeErrorText(error)).not.toBe('')
+  })
+
+  it('the buy-mode chunk: your place, every catalogue tab and the finishes (S40)', async () => {
+    const { default: HomeDecor } = await import('@/components/hud/HomeDecor')
+    const props = {
+      minute: 0,
+      tier: 'mid' as const,
+      label: 'Your apartment',
+      onLive: () => {},
+      onStatus: () => {},
+    }
+    const room = renderToStaticMarkup(createElement(HomeDecor, { ...props, mode: 'room' }))
+    for (const text of ['In your room', 'Hand-me-down bed', 'Move', 'Turn', 'Store', 'Storage']) {
+      expect(room).toContain(text)
+    }
+    const buy = renderToStaticMarkup(createElement(HomeDecor, { ...props, mode: 'buy' }))
+    for (const text of ['Design', 'Sleep', 'Wall art', 'Wall paint', 'Floor', 'Mint fresh']) {
+      expect(buy).toContain(text)
+    }
   })
 
   it('the goals chunk: every goal line, status, reward and claim label (S15)', async () => {

@@ -50,6 +50,7 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                                      |
 | `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                                       |
 | `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender                                                                                                    |
+| `npm run homes:update`            | Rewrites `data/homes/engine.derived.json` (the engine's compact home grids and finishes) after editing `data/homes/interiors.json` or `finishes.json`                                                                        |
 | `npm run thumbs`                  | Renders the shop's item thumbnails from the decor models into `public/thumbs` (see 3D models); `-- --check` verifies                                                                                                         |
 | `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                                       |
 
@@ -441,22 +442,29 @@ The store holds an engine snapshot and calls the engine for every change (`tick`
   is refused (`PRESTIGE_KEPT`). Every wearable has a `look` (S16a): a top sets the outfit (a
   body option) and top colour, a bottom or shoes their colour, an accessory an attachment model,
   makeup `{ "part": "none" }`; the ids come from `data/avatar/options.json`.
-- **Apartment** (`home.ts`, slots in `data/homes/interiors.json`, numbers in `balance.json`
-  `home`): decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface,
-  `homeScore`, and at least two colour `variants`, each a palette token and a `colors.*` copy
-  name) is placed in a slot of its kind in the current home (`placeDecor`, `removeDecor`,
-  `setDecorVariant`). Home score is the home's `baseScore` plus placed decor's `homeScore`; home
-  clout is that score capped at `maxClout` and counts toward total, goal and level clout.
-  `moveHome` is instant and refused, in order, for the current home, a home in a borough the
-  level has not opened (`HOME_BOROUGHS` in `src/lib/data/homes.ts`) and a move the player cannot
-  afford (`canAffordMove`); it pays the move-in cost, keeps decor in slots the new home shares and
-  logs the move (`apartment.moveLog`). To add decor: add the item with its `decor` block to
-  `items.json` (cloutValue and styleValue 0, no stat effects), its name and description to
-  `data/copy/items/`, any new colour name to `data/copy/colors/`, a low-poly model to
-  `src/scene/apartment/buildDecor.ts` (one merged geometry, at most two material groups), and run
-  `npm test`. The Home panel (`src/components/hud/HomePanel.tsx`) places, recolours and moves
-  through a slot list (the keyboard path); the 3D room (`src/scene/apartment/`) mirrors it and
-  places by tapping a slot. While the room shows, the city draws nothing (`src/state/sceneFocus.ts`).
+- **Apartment** (S16, S40 buy mode 2.0; `home.ts` and `homeGrid.ts`, homes in
+  `data/homes/interiors.json`, finishes in `data/homes/finishes.json`, numbers in `balance.json`
+  `home`). Each home is a placement grid: floor cells `f{c}-{r}` and wall cells `w-{wall}-{i}`;
+  fixtures (the kitchen run), windows, the door, the way in and the avatar's spot stay clear.
+  Decor (`category: "decor"` with a `decor` block: `fits` wall, floor or surface, `footprint`
+  1x1/2x1/2x2, `layer: "rug"` for rugs, a buy-mode `category`, `homeScore`, optional `luxury`
+  (rare only: weekly upkeep of `home.upkeepPctPerWeek` of its price, billed with rent) and at
+  least one colour `variant`) is placed and turned on the grid (`placeDecor`, `rotateDecor`,
+  `removeDecor`, `setDecorVariant`). A new game is furnished with the start home's `starter`
+  pieces (free, score 0, never sold). Wall paints and floors are tried on in buy mode and bought
+  once (`applyFinish`). Home score is the home's `baseScore` plus placed decor's `homeScore`; home
+  clout is that score capped at `maxClout`. `moveHome` is instant and refused, in order, for the
+  current home, a home in a borough the level has not opened and a move the player cannot afford;
+  the movers keep what fits where it stood and set up the rest (`placementsAfterMove`). The
+  engine reads `data/homes/engine.derived.json`: after editing interiors.json or finishes.json run
+  `npm run homes:update`. To add decor: add the item to `items.json`, its name and description to
+  `data/copy/items/`, map it to a CC0 model in `scene.json models.decor` (or give it a code-built
+  model in `src/scene/apartment/buildDecor.ts`), an icon in `data/items/looks.json`, run
+  `npm run thumbs` and `npm test`. The Home panel (`HomePanel.tsx`, opened by the Home tab, where
+  the game starts) holds rest and moves; its lazy buy-mode chunk (`HomeDecor.tsx`) lists the room
+  and storage, the catalogue and the finishes, with keyboard placement (arrows, R, Enter, Escape)
+  mirrored by taps in the 3D room (`src/scene/apartment/`). While the room shows, the city draws
+  nothing (`src/state/sceneFocus.ts`).
 - **Events** (`events.ts`, data in `data/events/events.json`): each event lists conditions
   (personal-clock `hours`, `minDay`, `boroughs`, `locationIds`/`locationCategories`, `stats`,
   `cash`, `clout`, `items`), a `weight`, an optional `cooldownMin` or `once`, and two or three

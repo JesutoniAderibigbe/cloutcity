@@ -32,6 +32,7 @@
     "blender:build": "node scripts/blender/build.ts",
     "econ:update": "vitest run src/engine/sim --update",
     "avatar:update": "vitest run src/lib/data/avatar-derived.test.ts --update",
+    "homes:update": "vitest run src/lib/data/homes-derived.test.ts --update",
     "thumbs": "node scripts/assets/thumbs.ts"
   },
   "dependencies": {

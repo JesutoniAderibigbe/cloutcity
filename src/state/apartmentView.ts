@@ -9,7 +9,7 @@
  */
 import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
-import type { ApartmentView, SlotTap } from '@/scene/apartment/types'
+import type { ApartmentView } from '@/scene/apartment/types'
 
 interface ApartmentViewState {
   readonly view: ApartmentView | null
@@ -30,15 +30,15 @@ export function useApartmentView(): ApartmentView | null {
   return useSyncExternalStore(apartmentViewStore.subscribe, viewNow, serverView)
 }
 
-const tapListeners = new Set<(tap: SlotTap) => void>()
+const tapListeners = new Set<(slotId: string) => void>()
 
-/** Reports a tap on the room to the Home panel. */
-export function tapApartmentSlot(tap: SlotTap): void {
-  for (const listener of tapListeners) listener(tap)
+/** Reports a tap on a cell of the room (a grid cell id) to the Home panel. */
+export function tapApartmentCell(slotId: string): void {
+  for (const listener of tapListeners) listener(slotId)
 }
 
-/** Listens for taps on the room; returns the function that stops listening. */
-export function onApartmentSlotTap(listener: (tap: SlotTap) => void): () => void {
+/** Listens for taps on the room's cells; returns the function that stops listening. */
+export function onApartmentCellTap(listener: (slotId: string) => void): () => void {
   tapListeners.add(listener)
   return () => {
     tapListeners.delete(listener)

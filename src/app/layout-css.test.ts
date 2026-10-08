@@ -9,10 +9,17 @@ import { describe, expect, it } from 'vitest'
 import { layout } from '@/lib/data/config'
 
 const css = readFileSync(join(import.meta.dirname, 'globals.css'), 'utf8')
-const { hudWideMinWidthPx, hudCompactMaxHeightPx, hudTinyMaxWidthPx } = layout.overlay
+const {
+  hudWideMinWidthPx,
+  hudCompactMaxHeightPx,
+  hudTinyMaxWidthPx,
+  roomDockMinWidthPx,
+  roomDockMinHeightPx,
+} = layout.overlay
 
 const wide = `(min-width: ${hudWideMinWidthPx}px)`
 const short = `(min-width: ${hudWideMinWidthPx}px) and (max-height: ${hudCompactMaxHeightPx}px)`
+const dock = `(min-width: ${roomDockMinWidthPx}px) and (min-height: ${roomDockMinHeightPx}px)`
 
 /** Every media query in the file, in order. */
 const mediaQueries = [...css.matchAll(/@media ([^{)]+\)(?:\s*and\s*\([^)]*\))*)/g)].map((match) =>
@@ -43,9 +50,14 @@ describe('globals.css HUD breakpoints (S05)', () => {
     )
   })
 
+  it('docks the Home panel beside the room at roomDockMinWidthPx and roomDockMinHeightPx (S40)', () => {
+    expect(mediaQueries).toContain(dock)
+  })
+
   it('names no other HUD threshold (self-check: the scan sees the media queries)', () => {
     expect(mediaQueries).toContain(short)
     for (const query of mediaQueries) {
+      if (query === dock) continue
       for (const px of query?.matchAll(/(min-width|max-height|max-width): (\d+)px/g) ?? []) {
         const allowed =
           px[1] === 'min-width'

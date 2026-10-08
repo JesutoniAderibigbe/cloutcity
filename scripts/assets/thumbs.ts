@@ -34,7 +34,7 @@ interface Job {
   readonly itemId: string
   readonly file: string
   readonly slots: readonly string[]
-  readonly slot: string
+  readonly slot: string | null
   readonly color: string
 }
 
@@ -44,7 +44,7 @@ async function readJson<T>(path: string): Promise<T> {
 
 async function jobs(): Promise<Job[]> {
   const scene = await readJson<{
-    models: { decor: Record<string, { model: string; slot: string }> }
+    models: { decor: Record<string, { model: string; slot: string | null }> }
   }>('data/config/scene.json')
   const manifest = await readJson<{ models: ManifestModel[] }>('data/assets/manifest.json')
   const items = await readJson<{

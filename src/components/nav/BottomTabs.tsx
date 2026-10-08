@@ -12,6 +12,7 @@ import {
 } from '@/state/hudPanel'
 
 export const TABS = [
+  { id: 'home', labelKey: 'tabs.home', icon: '🏠' },
   { id: 'map', labelKey: 'tabs.map', icon: '🗺️' },
   { id: 'phone', labelKey: 'tabs.phone', icon: '📱' },
   { id: 'shop', labelKey: 'tabs.shop', icon: '🛍️' },
@@ -25,7 +26,7 @@ export const SHORTCUTS_APP = 'shortcuts'
 
 /** The tab a HUD panel belongs to: its own tab, or Map for every other panel. */
 function tabOf(panel: HudPanel | null): TabId {
-  return panel === 'me' || panel === 'phone' || panel === 'shop' ? panel : 'map'
+  return panel === 'home' || panel === 'me' || panel === 'phone' || panel === 'shop' ? panel : 'map'
 }
 
 /** True when a key press is typing into a field, so it is not a shortcut. */
@@ -35,7 +36,8 @@ function isTyping(target: EventTarget | null): boolean {
 }
 
 /**
- * Bottom tab bar. Map is the city and closes any panel; Phone opens the phone's app grid, Shop
+ * Bottom tab bar. Home (first, DEC-59) opens the Home panel with the 3D room, where the game
+ * starts (S40). Map is the city and closes any panel; Phone opens the phone's app grid, Shop
  * the store directory and Me the Me panel, all in the sheet zone (S18a, S58). A tab is current
  * while its panel is open, and tapping it again closes it. Each tab carries `data-hud-panel`, so
  * focus comes back to it when its panel closes (PanelDialog). The `?` key opens the keyboard
@@ -68,7 +70,7 @@ export function BottomTabs() {
       aria-label={copy('nav.main')}
       className="h-full border-t border-line glass pb-[env(safe-area-inset-bottom,0px)]"
     >
-      <ul className="grid h-full grid-cols-4">
+      <ul className="grid h-full grid-cols-5">
         {TABS.map((tab) => {
           const isActive = tab.id === active
           return (

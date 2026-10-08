@@ -88,7 +88,8 @@
     "room": {
       "sunScale": 0.552,
       "ambientScale": 0.821,
-      "lampMix": 0.6
+      "lampMix": 0.6,
+      "lampBoost": 1.1
     },
     "keyframes": [
       {
@@ -252,13 +253,105 @@
       "capsuleTiers": ["low"]
     },
     "decor": {
-      "thrift-flatweave-rug": {
-        "model": "rug",
-        "slot": "pattern"
+      "arc-floor-lamp": {
+        "model": "floor-lamp",
+        "slot": null
+      },
+      "big-screen-tv": {
+        "model": "tv",
+        "slot": null
+      },
+      "brass-table-lamp": {
+        "model": "table-lamp",
+        "slot": null
+      },
+      "canopy-king-bed": {
+        "model": "bed",
+        "slot": "bedding"
+      },
+      "chef-range": {
+        "model": "stove",
+        "slot": null
       },
       "cloud-lounge-chair": {
         "model": "armchair",
         "slot": "upholstery"
+      },
+      "corduroy-sofa": {
+        "model": "couch",
+        "slot": "upholstery"
+      },
+      "fiddle-leaf-fig": {
+        "model": "plant",
+        "slot": "pot"
+      },
+      "floating-shelf": {
+        "model": "shelf",
+        "slot": null
+      },
+      "hand-knotted-rug": {
+        "model": "rug",
+        "slot": "pattern"
+      },
+      "linen-double-bed": {
+        "model": "bed",
+        "slot": "bedding"
+      },
+      "milk-crate": {
+        "model": "crate",
+        "slot": null
+      },
+      "retro-fridge": {
+        "model": "fridge",
+        "slot": null
+      },
+      "starter-bed": {
+        "model": "bed",
+        "slot": "bedding"
+      },
+      "starter-lamp": {
+        "model": "floor-lamp",
+        "slot": null
+      },
+      "starter-plant": {
+        "model": "plant",
+        "slot": "pot"
+      },
+      "starter-rug": {
+        "model": "rug",
+        "slot": "pattern"
+      },
+      "starter-sofa": {
+        "model": "couch",
+        "slot": "upholstery"
+      },
+      "starter-table": {
+        "model": "desk",
+        "slot": null
+      },
+      "starter-tv": {
+        "model": "tv",
+        "slot": null
+      },
+      "thrift-flatweave-rug": {
+        "model": "rug",
+        "slot": "pattern"
+      },
+      "tower-speaker": {
+        "model": "speaker",
+        "slot": null
+      },
+      "velvet-chesterfield": {
+        "model": "couch",
+        "slot": "upholstery"
+      },
+      "vintage-radio": {
+        "model": "radio",
+        "slot": null
+      },
+      "wfh-desk": {
+        "model": "desk",
+        "slot": null
       },
       "windowsill-monstera": {
         "model": "plant",
@@ -277,21 +370,22 @@
     "dimmedLabelOpacity": 0.5
   },
   "apartment": {
-    "floorThicknessM": 0.12,
+    "floorThicknessM": 0.18,
     "insetM": 0.006,
     "trimHeightM": 0.1,
-    "ledgeDepthM": 0.32,
-    "ledgeThicknessM": 0.05,
-    "tableSizeM": 0.5,
-    "marker": {
-      "radiusM": 0.17,
-      "segments": 16,
-      "liftM": 0.02,
-      "selectedScale": 1.35
+    "wallThicknessM": 0.14,
+    "crownHeightM": 0.08,
+    "standHeightM": 0.5,
+    "standInsetM": 0.08,
+    "footprintFill": 0.92,
+    "wallItemHeight": 0.55,
+    "avatarHeightM": 1.1,
+    "grid": {
+      "gapShare": 0.06,
+      "liftM": 0.1,
+      "opacity": 0.55
     },
-    "hitRadiusPx": 26,
-    "ambiguityPx": 6,
-    "fitMargin": 1.06,
+    "fitMargin": 1.04,
     "lights": {
       "sunDirection": {
         "x": -0.6,
@@ -302,7 +396,7 @@
     },
     "blob": {
       "radiusM": 0.36,
-      "opacity": 0.35,
+      "opacity": 0.22,
       "liftM": 0.004
     }
   },
@@ -402,16 +496,40 @@
   },
   "avatarLook": {
     "attachments": {
-      "glasses": { "joint": "head", "offset": [0, 0.98, 0.33] },
-      "sunglasses": { "joint": "head", "offset": [0, 0.98, 0.33] },
-      "hearing-aid": { "joint": "head", "offset": [0.5, 0.86, -0.08] }
+      "glasses": {
+        "joint": "head",
+        "offset": [0, 0.98, 0.33]
+      },
+      "sunglasses": {
+        "joint": "head",
+        "offset": [0, 0.98, 0.33]
+      },
+      "hearing-aid": {
+        "joint": "head",
+        "offset": [0.5, 0.86, -0.08]
+      }
     },
     "preview": {
       "background": "#dfe7ee",
-      "ambient": { "color": "#ffffff", "intensity": 0.45 },
-      "hemisphere": { "sky": "#e4eef7", "ground": "#9c8f7e", "intensity": 0.9 },
-      "sun": { "color": "#fff6e6", "intensity": 2, "position": [2, 4, 3] },
-      "camera": { "fovDeg": 28, "position": [0, 1.05, 4.6], "target": [0, 0.85, 0] },
+      "ambient": {
+        "color": "#ffffff",
+        "intensity": 0.45
+      },
+      "hemisphere": {
+        "sky": "#e4eef7",
+        "ground": "#9c8f7e",
+        "intensity": 0.9
+      },
+      "sun": {
+        "color": "#fff6e6",
+        "intensity": 2,
+        "position": [2, 4, 3]
+      },
+      "camera": {
+        "fovDeg": 28,
+        "position": [0, 1.05, 4.6],
+        "target": [0, 0.85, 0]
+      },
       "clip": "idle"
     }
   }

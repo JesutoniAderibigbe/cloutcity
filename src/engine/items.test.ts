@@ -67,7 +67,7 @@ describe('buying', () => {
       ok: false,
       error: { code: 'INSUFFICIENT_FUNDS', required: tee.price, available: tee.price - 1 },
     })
-    expect(before.player.inventory).toBe(emptyInventory)
+    expect(before.player.inventory.wearables).toEqual(emptyInventory.wearables)
   })
 
   it('refuses a second copy of a wearable', () => {

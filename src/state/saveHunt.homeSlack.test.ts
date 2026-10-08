@@ -55,7 +55,7 @@ it.each([false, true])(
     expect(first.outcome).not.toBe('reject')
     expect(s().adoptCloudSave(JSON.parse(JSON.stringify(first.save)), SAVE_VERSION)).toBe(true)
     expect(s().buyItem('thrift-flatweave-rug').ok).toBe(true)
-    expect(s().placeDecor('thrift-flatweave-rug', 'floor-1').ok).toBe(true)
+    expect(s().placeDecor('thrift-flatweave-rug', 'f3-1').ok).toBe(true)
     expect(s().goals.achieved['reach-local']).toBeDefined()
     expect(s().claimGoalReward('reach-local').ok).toBe(true)
     expect(s().sellItem('thrift-flatweave-rug').ok).toBe(true)
@@ -101,7 +101,7 @@ it.each([0, 1, 3])(
       player: {
         ...fresh.player,
         cash: 2000,
-        apartment: { placed: {}, moveLog },
+        apartment: { ...fresh.player.apartment, placed: {}, moveLog },
         clout: {
           ...fresh.player.clout,
           compacted: { entries: 23, bySource: { flex: 291 } },

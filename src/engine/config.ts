@@ -12,7 +12,7 @@ import avatarEngineJson from '@data/avatar/engine.derived.json'
 import balanceJson from '@data/config/balance.json'
 import progressionJson from '@data/config/progression.json'
 import eventsJson from '@data/events/events.json'
-import interiorsJson from '@data/homes/interiors.json'
+import homesJson from '@data/homes/engine.derived.json'
 import itemsJson from '@data/items/items.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
@@ -31,17 +31,46 @@ import type {
   ProgressionConfig,
 } from '@/lib/data/schemas/config'
 import type { Borough, GameEvent, LocationCategory } from '@/lib/data/schemas/content'
-import { DECOR_FITS, catalogFromJson, type DecorFit, type ItemDef } from './itemCatalog'
+import type { GridSize, GridSlot, Turn } from './homeGrid'
+import { catalogFromJson, type ItemDef } from './itemCatalog'
 
 /** A housing tier: a key of `rentPerWeek`. */
 export type HomeId = keyof BalanceConfig['rentPerWeek']
 /** A job: a key of `jobs.hourlyWage`. */
 export type JobId = keyof BalanceConfig['jobs']['hourlyWage']
 
-/** A decor slot as the engine sees it (data/homes/interiors.json; the rest is for the scene). */
-export interface SlotDef {
+/** A placement cell as the engine sees it (src/engine/homeGrid.ts). */
+export type SlotDef = GridSlot
+
+/** A starter piece's spot in a home (data/homes/interiors.json `starter`). */
+export interface StarterPlacement {
+  readonly itemId: string
+  readonly slotId: string
+  readonly turn: Turn
+}
+
+/**
+ * One home's grid as the engine sees it (data/homes/interiors.json; the rest is for the scene):
+ * its cells, the cells nothing may take (fixtures; windows and the door on the walls), the floor
+ * cells kept walkable (the avatar's spot, the way in from the door), which rugs may still
+ * cover, its starter pieces and the finishes it comes with.
+ */
+export interface HomeLayout {
+  readonly size: GridSize
+  /** A cell's side in metres. */
+  readonly cellM: number
+  readonly blocked: ReadonlySet<string>
+  readonly walkway: ReadonlySet<string>
+  readonly starter: readonly StarterPlacement[]
+  readonly shell: { readonly wallPaint: string; readonly floorFinish: string }
+}
+
+/** A wall paint or floor finish (data/homes/finishes.json, S40). */
+export interface FinishDef {
   readonly id: string
-  readonly kind: DecorFit
+  readonly kind: 'wall' | 'floor'
+  readonly price: number
+  readonly nameKey: string
 }
 
 /** A goal (data/config/progression.json, src/engine/goals.ts). */
@@ -58,11 +87,13 @@ export interface EngineConfig {
   /** Move-in costs (src/engine/housing.ts). */
   readonly housing: BalanceConfig['housing']
   /**
-   * Home scores, the home clout cap and the move log's length (src/engine/home.ts), plus each
-   * home's decor slots, in data/homes/interiors.json order.
+   * Home scores, the home clout cap, the move log's length and luxury upkeep
+   * (src/engine/home.ts), plus each home's grid (data/homes/interiors.json) and the wall paints
+   * and floor finishes on sale (data/homes/finishes.json).
    */
   readonly home: BalanceConfig['home'] & {
-    readonly slots: Readonly<Record<HomeId, readonly SlotDef[]>>
+    readonly layouts: Readonly<Record<HomeId, HomeLayout>>
+    readonly finishes: readonly FinishDef[]
   }
   /** Food range and the subway fare, in whole dollars. */
   readonly costs: BalanceConfig['costs']
@@ -230,24 +261,51 @@ function progressionRules(json: typeof progressionJson) {
 
 const progression = progressionRules(progressionJson)
 
+type RawHome = (typeof homesJson.homes)[keyof typeof homesJson.homes]
+
 /**
- * Each home's decor slots from data/homes/interiors.json (validated by HomeInteriorsFileSchema in
- * data.test.ts). JSON imports widen `kind` to string, so it is narrowed here; anything else
- * throws at load (fail fast).
+ * One home's grid from data/homes/engine.derived.json (derived from interiors.json, validated by
+ * HomeEngineTablesSchema, its cells checked against the grid when it is derived and kept current
+ * by homes-derived.test.ts). Only turns are narrowed here: this module stays free of the grid
+ * maths, which would otherwise ship in every chunk that reads the config (PERF-3).
  */
-function homeSlots(json: typeof interiorsJson): Readonly<Record<HomeId, readonly SlotDef[]>> {
-  const slots = (id: HomeId): SlotDef[] =>
-    json.homes[id].slots.map((slot) => {
-      if (!(DECOR_FITS as readonly string[]).includes(slot.kind)) {
-        throw new Error(`homes/interiors.json: ${id} slot "${slot.id}" has an unknown kind`)
-      }
-      return { id: slot.id, kind: slot.kind as DecorFit }
-    })
-  return {
-    'queens-room': slots('queens-room'),
-    'brooklyn-1br': slots('brooklyn-1br'),
-    'manhattan-loft': slots('manhattan-loft'),
+function homeLayout(id: HomeId, raw: RawHome): HomeLayout {
+  const turn = (value: number, what: string): Turn => {
+    if (value !== 0 && value !== 1 && value !== 2 && value !== 3) {
+      throw new Error(`homes/engine.derived.json ${id}: ${what} turn ${value}`)
+    }
+    return value
   }
+  return {
+    size: { cols: raw.cols, rows: raw.rows },
+    cellM: raw.cellM,
+    blocked: new Set(raw.blocked),
+    walkway: new Set(raw.walkway),
+    starter: raw.starter.map((entry) => ({
+      itemId: entry.itemId,
+      slotId: entry.slot,
+      turn: turn(entry.turn, entry.itemId),
+    })),
+    shell: { wallPaint: raw.wallPaint, floorFinish: raw.floorFinish },
+  }
+}
+
+function homeLayouts(json: typeof homesJson): Readonly<Record<HomeId, HomeLayout>> {
+  return {
+    'queens-room': homeLayout('queens-room', json.homes['queens-room']),
+    'brooklyn-1br': homeLayout('brooklyn-1br', json.homes['brooklyn-1br']),
+    'manhattan-loft': homeLayout('manhattan-loft', json.homes['manhattan-loft']),
+  }
+}
+
+/** The finishes on sale (narrowed from the derived file; FinishesFileSchema checks the source). */
+function finishList(json: typeof homesJson): readonly FinishDef[] {
+  return json.finishes.map((finish) => ({
+    id: finish.id,
+    kind: oneOf(finish.kind, ['wall', 'floor'] as const, 'homes/engine.derived.json kind'),
+    price: finish.price,
+    nameKey: finish.nameKey,
+  }))
 }
 
 export function oneOf<T extends string>(value: unknown, options: readonly T[], where: string): T {
@@ -308,7 +366,11 @@ export const engineConfig: EngineConfig = {
   rentPerWeek,
   rent: balanceJson.rent,
   housing: balanceJson.housing,
-  home: { ...balanceJson.home, slots: homeSlots(interiorsJson) },
+  home: {
+    ...balanceJson.home,
+    layouts: homeLayouts(homesJson),
+    finishes: finishList(homesJson),
+  },
   costs: balanceJson.costs,
   clout: cloutRules(balanceJson.clout),
   items: { ...balanceJson.items, catalog: catalogFromJson(itemsJson.items) },

@@ -1,19 +1,24 @@
 /** Save v4 (S10): `player.inventory`, its migration from v3 and its repair on load. */
 import { describe, expect, it } from 'vitest'
-import { V12_FRESH_PLAYER, V12_FRESH_SAVE } from './test-support'
+import {
+  V12_FRESH_PLAYER,
+  V12_FRESH_SAVE,
+  V13_MIGRATED_APARTMENT,
+  V13_MIGRATED_INVENTORY,
+  unfurnished,
+} from './test-support'
 import { legacyCloutState } from './clout'
 import { engineConfig as config } from './config'
 import { initialEventsState } from './events'
 import { initialFlexState } from './game'
 import { initialGoalsState } from './goals'
 import { initialGrantsState } from './grants'
-import { initialApartment } from './home'
 import { emptyInventory, type Inventory } from './items'
 import { initialPrestigeState } from './prestige'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
 const schema = createSaveSchema(config)
-const base = { ...initialSave(config), clock: { minute: 10_000, remainderMs: 0 } }
+const base = { ...unfurnished(initialSave(config)), clock: { minute: 10_000, remainderMs: 0 } }
 const withInventory = (inventory: unknown) => ({
   ...base,
   player: { ...base.player, inventory },
@@ -30,9 +35,18 @@ const valid: Inventory = {
 }
 
 describe('save v4 schema', () => {
-  it('is version 12 (v4 inventory, v5 events, v6 club nights, v7 clout ledger, v8 goals, v9 apartment, v10 location, v11 actions, v12 look) and a fresh save has an empty inventory', () => {
-    expect(SAVE_VERSION).toBe(12)
-    expect(initialSave(config).player.inventory).toEqual(emptyInventory)
+  it('is version 13 (v4 inventory, v5 events, v6 club nights, v7 clout ledger, v8 goals, v9 apartment, v10 location, v11 actions, v12 look, v13 grid) and a fresh save owns nothing but its starter pieces', () => {
+    expect(SAVE_VERSION).toBe(13)
+    expect(initialSave(config).player.inventory).toEqual({
+      ...emptyInventory,
+      decor: initialSave(config).player.inventory.decor,
+    })
+    // The only decor a new game owns is its starter pieces (S40).
+    expect(
+      initialSave(config).player.inventory.decor.every((owned) =>
+        owned.itemId.startsWith('starter-'),
+      ),
+    ).toBe(true)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -105,10 +119,10 @@ describe('save v3 -> v4', () => {
           ...v3.player,
           clout: legacyCloutState(7, 0),
           flex: initialFlexState,
-          inventory: emptyInventory,
+          inventory: V13_MIGRATED_INVENTORY,
           clubNights: {},
           visited: {},
-          apartment: initialApartment,
+          apartment: V13_MIGRATED_APARTMENT,
           location: { kind: 'home' },
           transit: { rngState: 0 },
           ...V12_FRESH_PLAYER,
@@ -144,17 +158,17 @@ describe('save v3 -> v4', () => {
     })
   })
 
-  it('v1 and v2 saves still migrate, with an empty inventory', () => {
+  it('v1 and v2 saves still migrate, owning only the starter pieces', () => {
     const v1 = migrateSave({ player: { cash: 77 } }, 1, config)
     expect(v1.outcome).toBe('carried')
-    expect(v1.save.player).toMatchObject({ cash: 77, inventory: emptyInventory })
+    expect(v1.save.player).toMatchObject({ cash: 77, inventory: V13_MIGRATED_INVENTORY })
     const v2 = migrateSave(
       { clock: v3.clock, player: { cash: 5, stats: v3.player.stats }, speed: 1 },
       2,
       config,
     )
     expect(v2.outcome).toBe('carried')
-    expect(v2.save.player.inventory).toEqual(emptyInventory)
+    expect(v2.save.player.inventory).toEqual(V13_MIGRATED_INVENTORY)
     expect(schema.safeParse(v2.save).success).toBe(true)
   })
 

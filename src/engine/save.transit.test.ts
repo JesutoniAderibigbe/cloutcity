@@ -1,6 +1,6 @@
 /** Save v10 (S08): the player's location and the transit generator; migration from v9 and every older version; repairs. */
 import { describe, expect, it } from 'vitest'
-import { V12_PLAYER_KEYS } from './test-support'
+import { V12_PLAYER_KEYS, unfurnished } from './test-support'
 import { engineConfig as config } from './config'
 import { HOME_LOCATION, initialTransitState } from './game'
 import {
@@ -14,7 +14,10 @@ import {
 
 const schema = createSaveSchema(config)
 const NOW = 30_000
-const base: SaveState = { ...initialSave(config), clock: { minute: NOW, remainderMs: 0 } }
+const base: SaveState = {
+  ...unfurnished(initialSave(config)),
+  clock: { minute: NOW, remainderMs: 0 },
+}
 const PLACE = 'late-lantern-deli'
 
 /** A v10 save standing at a place, with a used generator. */
@@ -57,8 +60,8 @@ const withPlayer = (patch: Record<string, unknown>) => ({
 })
 
 describe('save v10', () => {
-  it('is version 12 (S16a after S18c) and a fresh save starts at home with a fresh generator', () => {
-    expect(SAVE_VERSION).toBe(12)
+  it('is version 13 (S40 after S16a) and a fresh save starts at home with a fresh generator', () => {
+    expect(SAVE_VERSION).toBe(13)
     const fresh = initialSave(config)
     expect(fresh.player.location).toEqual(HOME_LOCATION)
     expect(fresh.player.transit).toEqual(initialTransitState)
