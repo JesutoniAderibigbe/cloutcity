@@ -196,6 +196,28 @@
       "attempts": 0
     },
     {
+      "id": "S04l",
+      "phase": 1,
+      "title": "Living city: traffic, pedestrians and trains",
+      "acceptance": "Per DEC-52 (user ruling 2026-10-08) the map is always alive: CC0 cars, taxis and buses drive along the real street layer (S04i) obeying simple lane and intersection rules; CC0 pedestrians walk sidewalks near places, homes and landmarks (never on or around the memorial); subway trains run along the real subway lines between stations; all deterministic from a seed plus the clock, instanced or merged onto existing materials with zero new shader programs; per-tier ambient counts in /data/config, culled to the view; rendering pauses when the tab is hidden, while the apartment or creator is focused, and under reduced motion; the FPS step-down reduces ambient density before stepping down a tier; perf.json caps for ambient instances and per-tier triangles/draw calls are new and go to the user; e2e covers motion present when visible, paused when hidden, reduced motion, programs and budgets per tier.",
+      "requires": [],
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S16b",
+      "phase": 1,
+      "title": "Sims-like characters on a CC0 realistic base",
+      "acceptance": "Per DEC-51 (user ruling 2026-10-08) the player and NPC characters use a free CC0 realistic, rigged human base (e.g. Quaternius Universal Base Characters — licence file verified, download pinned by sha256 like the Kenney packs) with Sims-like proportions instead of the chunky Kenney minis; the S16a creator options (hair styles incl. afro, locs, braids, cornrows, buzz; head coverings; facial hair; 12 skin tones; outfits; shoes; heights) are rebuilt on the new base via the S04h pipeline and Blender-authored attachments; walking/idle/talk clips; per-tier triangle caps (new caps go to the user); capsule fallback on low/low-memory kept or replaced by a low-LOD body; map, apartment, preview and future other players share one runtime; screenshots compared side by side with Lagos Life characters.",
+      "requires": [],
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
       "id": "S04e",
       "phase": 1,
       "title": "Offline and caching",

@@ -165,7 +165,7 @@ All values live in `/data/config/perf.json` and are enforced by `npm run budget`
 | Median FPS on a real reference device (human/qa check) | ≥ 30 | ≥ 45 | ≥ 55 |
 
 Further rules:
-- Idle means zero frames rendered (`frameloop="demand"`).
+- Idle rendering (user ruling 2026-10-08, DEC-52, replaces "idle = zero frames"): the city is always alive — ambient traffic, pedestrians and trains animate continuously while the map is visible, on every tier. Rendering still pauses when the tab is hidden, while the apartment or creator has the screen, and under reduced motion (ambient motion stops; the map renders on demand again). Ambient counts per tier live in `/data/config` and the FPS step-down reduces them on struggling devices before dropping a quality tier.
 - The runtime steps down one tier when average FPS stays below 28 for 3 s, with hysteresis.
 - Headless CI cannot measure real FPS (it runs SwiftShader). Automated tests assert bytes, timings, draw calls and triangles. Real-device FPS is a "Needs human review" item for every 3D task.
 
