@@ -161,9 +161,23 @@
       "id": "S04i",
       "phase": 1,
       "title": "Street dressing with hand-made props",
-      "acceptance": "Seeded, deterministic placement of S04h catalog props (streetlights, hydrants, benches, trees, parked taxis and cars, traffic lights, roof water towers) around the home, venues, landmarks and the camera focus along real street segments, instanced per model and tier with per-tier instance caps in perf.json (off on the low tier unless measured headroom allows), streetlights glowing at night through the shared night-glow uniform (S04f), never on or around the memorial, no text or liveries, no blocking of pins or picking (raycast off), zero idle frames; npm run budget and e2e:perf pass for every tier. Also fixes GLOW-1: Kenney commercial buildings (building-a..d) get real window glass (Blender-authored window panes or a geometric region rule) so only glass glows at night, re-enabling their night glow (disabled in the interim by S04h p2); the asset glow test is updated to include them.",
+      "acceptance": "Seeded, deterministic placement of S04h catalog props (streetlights, hydrants, benches, trees, parked taxis and cars, traffic lights, roof water towers) around the home, venues, landmarks and the camera focus along real street segments, instanced per model and tier with per-tier instance caps in perf.json (off on the low tier unless measured headroom allows), streetlights glowing at night through the shared night-glow uniform (S04f), never on or around the memorial, no text or liveries, no blocking of pins or picking (raycast off), zero idle frames; npm run budget and e2e:perf pass for every tier. Also fixes GLOW-1: Kenney commercial buildings (building-a..d) get real window glass (Blender-authored window panes or a geometric region rule) so only glass glows at night, re-enabling their night glow (disabled in the interim by S04h p2); the asset glow test is updated to include them. Amended 2026-10-08 (approved plan): props may be instanced or merged per model/chunk and tier (merged onto the district material so no new shader programs); includes fill-lite (lots, plates and trees in the block instancing beyond districts, triangle-neutral on low).",
       "requires": [
-        "webgl"
+        "webgl",
+        "network"
+      ],
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
+      "id": "S04j",
+      "phase": 1,
+      "title": "Real city fill",
+      "acceptance": "Beyond the detailed districts, the city uses real block footprints (DOF tax blocks or LION-derived) instead of the jittered grid, with lit windows on fill at night (fixes NOTE-27; lets TUNE-16 use coarser cells or a distance fade), street ribbons, and optional mini-districts with real footprints around off-district places; deterministic geo:build; per-tier bytes, triangles and draw calls within perf.json (any budget raise is put to the user first); zero new shader programs; zero idle frames; low tier stays within its caps; screenshots compared against the competitors.",
+      "requires": [
+        "network"
       ],
       "review": false,
       "passes": false,
