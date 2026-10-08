@@ -195,6 +195,19 @@ test.describe('home and apartment', () => {
     await checkA11y()
   })
 
+  test('the Map data chip leaves with the map while the room shows, and comes back (UI-16)', async ({
+    page,
+  }) => {
+    const chip = page.locator('[data-map-attribution]')
+    await expect(chip).toBeVisible()
+    const dialog = await openHome(page)
+    await waitForRoom(page)
+    await expect(chip).toBeHidden()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(chip).toBeVisible()
+  })
+
   test('places decor by tapping its slot in the 3D room', async ({ page }) => {
     await buy(page, [LIGHTS])
     const dialog = await openHome(page)

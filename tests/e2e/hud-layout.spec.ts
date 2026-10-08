@@ -6,14 +6,19 @@ import { hideSceneForScreenshot, waitForMapSettled } from './helpers/scene'
 // S05: the HUD in the overlay's HUD zone (UX-1) at a phone, a desktop, a short phone and a
 // landscape phone. Nothing overlaps, every target is at least 44 px, Inventory, Rent and Home
 // move into More on phones and landscape phones, More (with the sound settings and Help, S06)
-// shows at every width, and it closes back to its button.
+// shows at every width, and it closes back to its button. At 320 px (UI-1) the sound control is
+// icon-only so the HUD fits the screen.
 
 const VIEWPORTS = [
   { width: 390, height: 844 },
   { width: 1280, height: 720 },
   { width: 390, height: 600 },
   { width: 844, height: 390 },
+  { width: 320, height: 568 },
 ] as const
+
+/** Widths at or below layout.json `hudTinyMaxWidthPx`, where the sound control is icon-only. */
+const isTiny = (width: number) => width <= 341
 
 const CELLS = ['money', 'clock', 'speed', 'clout', 'stats', 'actions'] as const
 
@@ -70,6 +75,14 @@ for (const viewport of VIEWPORTS) {
     }) => {
       await boot(page)
       const hudBox = await boxOf(zone(page), 'HUD zone')
+      // Nothing in the HUD reaches past the screen edge (UI-1: 342 px of minimums at 320 px).
+      expect(hudBox.x + hudBox.width, 'HUD inside the viewport').toBeLessThanOrEqual(
+        viewport.width + 0.5,
+      )
+      const overflow = await zone(page)
+        .locator('header[data-hud]')
+        .evaluate((el) => el.scrollWidth - el.clientWidth)
+      expect(overflow, 'HUD grid overflow').toBeLessThanOrEqual(0)
       const cells: { name: string; box: Box }[] = []
       for (const cell of CELLS) {
         const box = await boxOf(zone(page).locator(`[data-hud-cell="${cell}"]`), cell)
@@ -100,8 +113,19 @@ for (const viewport of VIEWPORTS) {
         }
       }
 
-      // The sound control's two lines are visible text at every width (UX-7).
-      await expect(zone(page).getByText('Tap for sound', { exact: true })).toBeVisible()
+      // The sound control's two lines are visible text at every width (UX-7) but the narrowest,
+      // where it is a 44 px icon whose name still says what a tap does (UI-1).
+      const tapForSound = zone(page).getByText('Tap for sound', { exact: true })
+      if (isTiny(viewport.width)) {
+        // Screen-reader only: a 1 px clipped box.
+        expect(
+          await tapForSound.evaluate((el) => el.getBoundingClientRect().width),
+        ).toBeLessThanOrEqual(1)
+        const sound = zone(page).getByRole('button', { name: 'Turn on sound' })
+        expect((await boxOf(sound, 'sound')).width).toBeLessThan(110)
+      } else {
+        await expect(tapForSound).toBeVisible()
+      }
       // The heading is for screen readers; the HUD has no visible title to squash (UX-8).
       await expect(zone(page).getByRole('heading', { level: 1 })).toHaveClass(/\bsr-only\b/)
       await checkA11y()

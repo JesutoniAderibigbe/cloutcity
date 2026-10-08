@@ -90,6 +90,25 @@ for (const viewport of VIEWPORTS) {
   })
 }
 
+test.describe('tour at 568x320 (a very short phone)', () => {
+  test.use({ viewport: { width: 568, height: 320 } })
+
+  test('the banner keeps its full height, so the buttons are not clipped (UI-8)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await holdGameTime(page)
+    await page.goto('/')
+    await waitForMapSettled(page)
+    await waitForHudLoaded(page)
+    await expectFits(page, 'hud')
+    const banner = await boxOf(page.locator('[data-overlay-zone="banner"]'), 'banner zone')
+    expect(banner.height).toBeGreaterThanOrEqual(48 - 0.5)
+    await tourNext(page).click()
+    await expectFits(page, 'find')
+  })
+})
+
 test('the ring pulses only when motion is welcome', async ({ page }) => {
   await page.goto('/')
   await waitForMapSettled(page)

@@ -30,24 +30,25 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 
 ## Scripts
 
-| Script                            | What it does                                                                                                                                                                                                    |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                                                                                         |
-| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                                                                                                     |
-| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                                                                                            |
-| `npm run format:check` / `format` | Prettier check / write                                                                                                                                                                                          |
-| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                                                                                                |
-| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                                                                                                    |
-| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                                                                                                        |
-| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)                                                                                        |
-| `npm run e2e:perf`                | Cold, warm and per-tier render budgets under the `cc-mid-4g` throttle (`tests/perf/*.perf.ts`); medians in `test-results/perf/report.json`                                                                      |
-| `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                                                                                                 |
-| `npm run budget`                  | Gzipped shell JS, 3D chunk, apartment chunk, total JS to playable, base geo, district assets, service worker and precache against `data/config/perf.json`, then the boot-path guard (run after `npm run build`) |
-| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                                                                        |
-| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                         |
-| `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                          |
-| `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender                                                                                       |
-| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                          |
+| Script                            | What it does                                                                                                                                                                                                                 |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev` / `build` / `start` | Next.js dev server, production build, production server                                                                                                                                                                      |
+| `npm run typecheck`               | `next typegen` then `tsc --noEmit` (strict)                                                                                                                                                                                  |
+| `npm run lint`                    | ESLint CLI (flat config): Next core-web-vitals + TypeScript, full jsx-a11y recommended set, `no-console` as an error                                                                                                         |
+| `npm run format:check` / `format` | Prettier check / write                                                                                                                                                                                                       |
+| `npm test`                        | Vitest unit tests (`*.test.ts` next to the code)                                                                                                                                                                             |
+| `npm run test:integration`        | Vitest integration suites in `tests/integration` against local Supabase (see Local Supabase)                                                                                                                                 |
+| `npm run db:types`                | Regenerates `src/lib/supabase/database.types.ts` from the local database                                                                                                                                                     |
+| `npm run e2e`                     | Playwright specs in `tests/e2e`, against a fresh production build on `E2E_PORT` (Supabase variables blanked: local-only)                                                                                                     |
+| `npm run e2e:perf`                | Cold, warm and per-tier render budgets under the `cc-mid-4g` throttle (`tests/perf/*.perf.ts`); medians in `test-results/perf/report.json`                                                                                   |
+| `npm run e2e:supabase`            | Only the `*.supabase.spec.ts` specs, against the running local Supabase stack (port 3110, `.next-e2e-supabase`)                                                                                                              |
+| `npm run e2e:dpl`                 | Offline support under Vercel Skew Protection: builds with `NEXT_DEPLOYMENT_ID` (so assets carry `?dpl=`) into `.next-e2e-dpl` (port 3111, `E2E_DPL_PORT`) and runs the service worker and offline specs plus `*.dpl.spec.ts` |
+| `npm run budget`                  | Gzipped shell JS, 3D chunk, apartment chunk, total JS to playable, base geo, district assets, service worker and precache against `data/config/perf.json`, then the boot-path guard (run after `npm run build`)              |
+| `npm run geo:build`               | Downloads the pinned geo sources and rebuilds `data/geo` and `data/zones` (see Geo data)                                                                                                                                     |
+| `npm run audio:build`             | Rebuilds `public/audio` and `data/audio/manifest.json` from the pinned CC0 originals (see Audio); `-- --check` verifies                                                                                                      |
+| `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                                       |
+| `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender                                                                                                    |
+| `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                                       |
 
 Gate order used by the build loop:
 `npm run format:check && npm run typecheck && npm run lint && npm test && npm run test:integration && npm run build && npm run e2e && npm run budget`
@@ -745,14 +746,19 @@ from `/serwist/sw.js` (no-cache, strict CSP, no source map) and registered once 
 playable and the browser is idle, in production builds only. It precaches the build's JS, CSS,
 SVG and fonts, the icons, the pages and the versioned base geo; models and audio are never
 precached. Runtime caches, all cache-first, same-origin GET only, versioned by content and
-deleted when a newer worker takes over: `cc-geo-*` (any `/geo/...?v=`), `cc-audio-*` (after the
-audio choice) and `cc-models-*` (`/models/<id>.<tier>.<sha8>.glb`, as the scene loads them).
+deleted when a newer worker takes over: `cc-geo-*` (`/geo/...` fetches whose only query is `?v=` at
+a version this build serves), `cc-audio-*` (after the audio choice), `cc-models-*`
+(`/models/<id>.<tier>.<sha8>.glb`, as the scene loads them) and `cc-chunks-*` (the optional
+chunks the precache leaves out). Under Vercel Skew Protection (`NEXT_DEPLOYMENT_ID`) asset URLs
+carry `?dpl=`: the precache ignores it and the chunk cache stores the URL without it
+(`npm run e2e:dpl` covers it).
 After registration the page sends `CC_WARM_TIER` with its quality tier, and the worker fetches
 that tier's district and block URLs (`districtAssetUrls(tier)`, baked in at build time) into
 `cc-geo-*`; it does so again when the tier changes, and never under a data-saver request or on
 a device reporting at most `tierWarm.skipAtOrBelowDeviceMemoryGB` of memory
 (`data/config/offline.json`). A new build waits: the update notice (banner zone,
 `data-cc-notice="update"`) offers a reload, and stays hidden while a modal or the tour is up.
+"Later" puts off that build only; if another tab applies it first, Update here just reloads.
 E2E blocks service workers by default; `service-worker.spec.ts`, `offline.spec.ts` and
 `npm run e2e:perf` opt in. To drop a local worker: DevTools > Application > Service workers >
 Unregister, or run `npm run dev` once (development builds unregister it).

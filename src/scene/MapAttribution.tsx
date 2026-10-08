@@ -19,7 +19,8 @@ interface MapAttributionProps {
  * nothing joins the shell, and it opens with the keyboard as well as a tap. When the row is too
  * short for the two-line text, a container query (globals.css, `.map-attribution-row`) swaps in
  * the one-line form; the row never shrinks below one 44 px target (layout.json
- * `freeSceneMinHeightPx`).
+ * `freeSceneMinHeightPx`). It hides while the apartment has the screen (globals.css, UI-16): it
+ * credits the map, and comes back with it.
  *
  * The credits link is a plain anchor, not next/link: next/link would cost the shell bundle about
  * 4.6 KB gz for one rarely used navigation.
@@ -35,6 +36,7 @@ export function MapAttribution({
 }: MapAttributionProps) {
   return (
     <div
+      data-map-attribution-layer=""
       className="pointer-events-none absolute inset-0 grid grid-cols-1"
       style={{ gridTemplateRows }}
     >

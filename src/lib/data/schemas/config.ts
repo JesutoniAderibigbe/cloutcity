@@ -1363,6 +1363,13 @@ export const LayoutConfigSchema = z.strictObject({
       hudCompactHeightPx: z.number().min(44),
       hudWideMinWidthPx: positiveInt,
       hudCompactMaxHeightPx: positiveInt,
+      /**
+       * At or below this width (a 320 px phone) the two-row phone HUD cannot hold the sound
+       * control's two text lines beside Places and More: the sound control turns icon-only and
+       * the clout column may shrink to fit, so the HUD never overflows the viewport (UI-1).
+       * globals.css repeats it as the `hud-tiny` variant.
+       */
+      hudTinyMaxWidthPx: positiveInt,
       toastHeightPx: positive,
       /** How long a toast (the level-up message) shows before it closes itself. */
       toastMs: positiveInt,

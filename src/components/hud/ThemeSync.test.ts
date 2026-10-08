@@ -51,6 +51,29 @@ describe('applyUiTheme (S04g)', () => {
     expect(attributes.has('data-theme-fading')).toBe(false)
   })
 
+  it('stores the theme even when the root already shows it (UI-2: night left from last session)', () => {
+    const stored = new Map<string, string>([[UI_THEME_KEY, 'night']])
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => stored.set(key, value),
+    })
+    try {
+      const { root, meta, element } = fakeRoot()
+      // The server HTML says day, and the clock says day: nothing to switch, but the store
+      // must stop saying night so /credits and /terms open in day.
+      root.dataset.theme = 'day'
+      meta.content = 'untouched'
+      applyUiTheme(element, 'day', OPTIONS)
+      expect(stored.get(UI_THEME_KEY)).toBe('day')
+      expect(readStoredTheme(localStorage)).toBe('day')
+      expect(meta.content).toBe('untouched')
+      applyUiTheme(element, 'night', OPTIONS)
+      expect(stored.get(UI_THEME_KEY)).toBe('night')
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('restarts the fade when the theme flips back before it ends', () => {
     const { root, attributes, element } = fakeRoot()
     root.dataset.theme = 'day'

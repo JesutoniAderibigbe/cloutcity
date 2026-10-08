@@ -90,6 +90,7 @@ export function serviceWorkerConfig(): ServiceWorkerConfig {
   })
   return {
     revision,
+    geoVersion,
     geoCache: runtimeCacheName('geo', geoVersion),
     audioCache: runtimeCacheName('audio', audioVersion),
     // The model manifest's own content hash (S04h): a rebuilt model set gets a new cache, and the
@@ -130,7 +131,13 @@ export interface ManifestFileEntry {
  * Runs before Serwist rewrites the URLs, so an entry's URL is its path under the project root.
  */
 export function dropOptionalChunks(
-  read: (path: string) => string = (path) => readFileSync(join(process.cwd(), path), 'utf8'),
+  // turbopackIgnore: a path built from process.cwd() makes Turbopack trace the whole project into
+  // the worker route's server bundle (F3); these are build outputs read at prerender time only.
+  read: (path: string) => string = (path) =>
+    readFileSync(
+      /* turbopackIgnore: true */ join(/* turbopackIgnore: true */ process.cwd(), path),
+      'utf8',
+    ),
 ) {
   return async <E extends ManifestFileEntry>(
     entries: E[],

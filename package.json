@@ -20,6 +20,7 @@
     "e2e": "playwright test",
     "e2e:supabase": "playwright test --config playwright.supabase.config.ts",
     "e2e:perf": "playwright test --config playwright.perf.config.ts",
+    "e2e:dpl": "playwright test --config playwright.dpl.config.ts",
     "budget": "node scripts/budget.ts && node scripts/shell-guard.ts",
     "handles:sql": "node scripts/moderation/blocklist-sql.ts",
     "db:types": "supabase gen types --local --schema public > src/lib/supabase/database.types.ts",

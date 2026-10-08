@@ -26,3 +26,12 @@ test('the shell does not scroll', async ({ page }) => {
   })
   expect(scroll).toEqual({ y: 0, overflow: 0 })
 })
+
+test('without JavaScript the page says the city needs it (UI-12)', async ({ request }) => {
+  // The server HTML: a browser without JavaScript renders the <noscript> content, above every
+  // overlay layer, instead of a loading city that never arrives.
+  const html = await (await request.get('/')).text()
+  expect(html).toMatch(
+    /<noscript><p class="fixed [^"]*z-\[1000\][^"]*">The city runs on JavaScript\. Switch it on and tap back in\.<\/p><\/noscript>/,
+  )
+})

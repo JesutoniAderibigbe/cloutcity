@@ -4,7 +4,7 @@ import modelManifestJson from '@data/assets/manifest.json'
 import { districtAssetUrls } from '@/lib/data/districts'
 import { geoVersion } from '@/lib/data/geo'
 import { QUALITY_TIERS } from '@/lib/data/schemas/config'
-import { isVersionedGeo, warmTierUrls } from '@/sw/policy'
+import { geoVersionsOf, isVersionedGeo, warmTierUrls } from '@/sw/policy'
 import {
   PRECACHED_PAGES,
   additionalPrecacheEntries,
@@ -69,6 +69,9 @@ describe('serviceWorkerConfig', () => {
   it('names the versioned caches after the current geo, audio and models', () => {
     const config = serviceWorkerConfig()
     expect(config.geoCache).toBe(`cc-geo-${geoVersion}`)
+    // The geo route caches the base geo at exactly this version (F4).
+    expect(config.geoVersion).toBe(geoVersion)
+    expect(geoVersionsOf(config).has(geoVersion)).toBe(true)
     expect(config.audioCache).toBe(`cc-audio-${audioVersionOf(audioManifestJson)}`)
     expect(config.modelsCache).toBe(`cc-models-${modelManifestJson.assetVersion}`)
     expect(config.revision).toMatch(/^[0-9a-f]{16}$/)
@@ -86,7 +89,9 @@ describe('serviceWorkerConfig', () => {
       expect(warmTierUrls(config, tier, origin)).toEqual(urls)
       for (const url of urls) {
         const facts = { url: new URL(url, origin), method: 'GET', mode: 'cors' as const }
-        expect(isVersionedGeo({ ...facts, sameOrigin: true }), url).toBe(true)
+        expect(isVersionedGeo({ ...facts, sameOrigin: true }, geoVersionsOf(config)), url).toBe(
+          true,
+        )
         expect(url, url).toMatch(new RegExp(`^/geo/(?:districts|blocks)/${tier}\\b`))
       }
     }

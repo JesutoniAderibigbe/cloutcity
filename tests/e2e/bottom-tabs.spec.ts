@@ -1,6 +1,6 @@
-import { expect, test } from './fixtures/test'
+import { expect, test, waitForWelcomeGate } from './fixtures/test'
 
-const TAB_NAMES = ['Map', 'Phone', 'Shop', 'Me']
+const TAB_NAMES = ['Map', 'Phone: coming soon', 'Shop: coming soon', 'Me']
 const MIN_TARGET_PX = 44
 
 test.describe('bottom tab bar', () => {
@@ -24,7 +24,7 @@ test.describe('bottom tab bar', () => {
 
     const boxes = await Promise.all(
       TAB_NAMES.map(async (name) => {
-        const box = await nav.getByRole('button', { name }).boundingBox()
+        const box = await nav.getByRole('button', { name, exact: true }).boundingBox()
         if (!box) throw new Error(`${name} tab is not rendered`)
         return box
       }),
@@ -43,19 +43,49 @@ test.describe('bottom tab bar', () => {
   test('selecting a tab marks it current, by touch or keyboard', async ({ page, checkA11y }) => {
     await page.goto('/')
     const nav = page.getByRole('navigation', { name: 'Main' })
-    await expect(nav.getByRole('button', { name: 'Map' })).toHaveAttribute('aria-current', 'page')
-
-    const shop = nav.getByRole('button', { name: 'Shop' })
-    if (test.info().project.use.hasTouch) await shop.tap()
-    else await shop.click()
-    await expect(shop).toHaveAttribute('aria-current', 'page')
-    await expect(nav.getByRole('button', { name: 'Map' })).not.toHaveAttribute('aria-current')
+    const map = nav.getByRole('button', { name: 'Map', exact: true })
+    await expect(map).toHaveAttribute('aria-current', 'page')
 
     const me = nav.getByRole('button', { name: 'Me' })
-    await me.focus()
-    await page.keyboard.press('Enter')
+    if (test.info().project.use.hasTouch) await me.tap()
+    else await me.click()
     await expect(me).toHaveAttribute('aria-current', 'page')
+    await expect(map).not.toHaveAttribute('aria-current')
+    // The Me panel loads lazily and takes focus when it opens: let it, before the keyboard part.
+    await expect(
+      page.getByRole('dialog', { name: 'Me' }).getByRole('heading', { name: 'Me' }),
+    ).toBeFocused()
+
+    await map.focus()
+    await page.keyboard.press('Enter')
+    await expect(map).toHaveAttribute('aria-current', 'page')
+    await expect(me).not.toHaveAttribute('aria-current')
 
     await checkA11y()
+  })
+
+  test('Phone and Shop are disabled with a Soon badge, and a tap does nothing (UI-16)', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    // Until the welcome gate has decided, everything behind it is inert and takes no focus.
+    await waitForWelcomeGate(page)
+    const nav = page.getByRole('navigation', { name: 'Main' })
+    for (const name of ['Phone', 'Shop']) {
+      const tab = nav.getByRole('button', { name: `${name}: coming soon`, exact: true })
+      await expect(tab).toHaveAttribute('aria-disabled', 'true')
+      await expect(tab).toBeDisabled()
+      await expect(tab).toContainText('Soon')
+      // Still reachable by keyboard, so its name says why it does nothing.
+      await tab.focus()
+      await expect(tab).toBeFocused()
+      await page.keyboard.press('Enter')
+      await tab.click({ force: true })
+      await expect(tab).not.toHaveAttribute('aria-current')
+      await expect(nav.getByRole('button', { name: 'Map', exact: true })).toHaveAttribute(
+        'aria-current',
+        'page',
+      )
+    }
   })
 })
