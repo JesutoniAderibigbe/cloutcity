@@ -185,6 +185,17 @@
       "attempts": 0
     },
     {
+      "id": "S04k",
+      "phase": 1,
+      "title": "v2 visual polish vs competitors",
+      "acceptance": "Closes the QA visual gaps against lagoslife/sflife: the apartment view is framed large and centred with the player's avatar standing in it (no black void); the shop shows item thumbnails (rendered from the CC0 models or the item look, cached, lazy) with purchase feedback next to the Buy button; map pins carry category icons and nearby name labels without overlapping landmark chips (fixes UX-14); the Places list groups or icons places by category; level-up gets a celebratory moment (reduced-motion safe, no audio autoplay, GR-9 respected); TUNE-15 leftovers (dusk vividness, park tint at golden/dusk) and TUNE-16 (night window moiré: coarser cells or distance fade) are fixed; side-by-side screenshots against competitor shots at phone and desktop sizes are produced for user review; zero new shader programs beyond programsMax; zero idle frames; playable-path bytes unchanged (all new UI lazy).",
+      "requires": [],
+      "review": false,
+      "passes": false,
+      "blocked": false,
+      "attempts": 0
+    },
+    {
       "id": "S04e",
       "phase": 1,
       "title": "Offline and caching",
