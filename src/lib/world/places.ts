@@ -13,6 +13,7 @@ import boroughsJson from '@data/boroughs/boroughs.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
 import { boroughAccess, placeBoroughAccess, type BoroughAccess } from '@/engine/boroughs'
+import { levelClout, type CloutPlayer } from '@/engine/clout'
 import { engineConfig, type EngineConfig } from '@/engine/config'
 import { copy as activeCopy, isCopyKey, type CopyFn, type CopyKey } from '@/lib/copy'
 import type { BoroughsFile } from '@/lib/data/schemas/world'
@@ -98,6 +99,16 @@ export function boroughRenderState(
   return entry.teaserKey === undefined
     ? { state: 'dimmed', teaserLandmarkIds: entry.teaserLandmarkIds }
     : { state: 'dimmed', teaserLandmarkIds: entry.teaserLandmarkIds, teaserKey: entry.teaserKey }
+}
+
+/**
+ * The clout a player's place and borough gates are judged on: `levelClout`, exactly what the
+ * engine's own gates read (trips, place actions, shops), so the Places panel never shows a place
+ * open that the engine would refuse (Icon needs earned clout, so grants and premium alone never
+ * open an Icon-gated borough).
+ */
+export function gateClout(player: CloutPlayer, config: EngineConfig = engineConfig): number {
+  return levelClout(player, config)
 }
 
 /**

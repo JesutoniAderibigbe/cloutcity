@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useId, useRef } from 'react'
-import { totalClout } from '@/engine/clout'
 import { engineConfig } from '@/engine/config'
 import { isAtPlace } from '@/engine/game'
 import { copy } from '@/lib/copy'
@@ -10,6 +9,7 @@ import {
   boroughAccessFor,
   boroughClosedReason,
   boroughs,
+  gateClout,
   isMemorial,
   mapPlaces,
   placeAccess,
@@ -60,7 +60,8 @@ function focusPlacesButton() {
 export function PlacesPanel() {
   const panel = usePlacesPanel()
   const openId = useOpenPlaceId()
-  const clout = useGameStore((state) => totalClout(state.player, engineConfig))
+  // The same clout the engine's gates read (levelClout), never the raw total.
+  const clout = useGameStore((state) => gateClout(state.player, engineConfig))
   const location = useGameStore((state) => state.player.location)
   const home = useGameStore((state) => state.player.home)
   const ref = useRef<HTMLDivElement>(null)

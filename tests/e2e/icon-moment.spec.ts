@@ -290,6 +290,62 @@ test.describe('the Icon moment: keyboard, focus, run 2, motion', () => {
     await expect(goals).toContainText('Run 3')
   })
 
+  test('after Keep playing, claim a reward, then prestige from the Goals panel', async ({
+    page,
+    checkA11y,
+  }) => {
+    await seedNearIcon(page)
+    await stubShare(page)
+    await boot(page)
+    await crossIcon(page)
+    await moment(page).getByRole('button', { name: 'Keep playing' }).click()
+    await expect(page.locator('[data-icon-moment]')).toHaveCount(0)
+
+    // Prestige waits in Goals for an Icon player, with the badge it earns named from config.
+    await goalsButton(page).click()
+    const goals = page.getByRole('dialog', { name: 'Goals' })
+    const entry = goals.locator('[data-goals-prestige]')
+    await expect(entry).toBeVisible()
+    await expect(entry).toHaveAccessibleName(
+      'Prestige: start over at Nobody and earn the Prestige I badge',
+    )
+    await checkA11y()
+
+    // Claim one reward first; the confirm then counts what is still unclaimed.
+    const claimable = goals.locator('[data-goal] button:not([aria-disabled])')
+    const before = await claimable.count()
+    expect(before).toBeGreaterThan(0)
+    await claimable.first().click()
+    await expect(goals.locator('[data-panel-status]')).toContainText('claimed')
+    await expect(claimable).toHaveCount(before - 1)
+
+    // Opened from Goals, Not yet closes the confirm and gives focus back to the entry. The panel's
+    // action guard ignores a click on another row in the spot just tapped until its cooldown ends.
+    await expect(goals.locator('[aria-busy="true"]')).toHaveCount(0)
+    await entry.click()
+    const confirm = page.getByRole('dialog', { name: 'Run it back?' })
+    await expect(confirm.getByRole('heading', { name: 'Run it back?' })).toBeFocused()
+    if (before - 1 > 0) {
+      await expect(confirm.locator('[data-prestige-unclaimed]')).toHaveAttribute(
+        'data-prestige-unclaimed',
+        String(before - 1),
+      )
+      await expect(confirm).toContainText('Claim them in Goals first')
+    }
+    await confirm.getByRole('button', { name: 'Not yet' }).click()
+    await expect(page.locator('[data-icon-moment]')).toHaveCount(0)
+    await expect(entry).toBeFocused()
+
+    // And the prestige itself: run 2 at Nobody with the badge, and no entry until Icon again.
+    await entry.click()
+    await confirm.getByRole('button', { name: 'Start over at Nobody, keep your badges' }).click()
+    await expect(page.locator('[data-icon-moment]')).toHaveCount(0)
+    expect((await state(page)).level).toBe('nobody')
+    await expect(goals.locator('[data-badge]')).toHaveText(['Prestige I'])
+    await expect(goals).toContainText('Run 2')
+    await expect(goals.locator('[data-goals-prestige]')).toHaveCount(0)
+  })
+
   test('reduced motion: the celebration does not animate', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await seedNearIcon(page)
