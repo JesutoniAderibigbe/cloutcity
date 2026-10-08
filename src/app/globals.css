@@ -156,8 +156,12 @@ body {
 
 /* UX-15: in the bottom-end corner above the tab bar while the sheet zone is empty; back in the
    free scene row's corner while a sheet (or the Places panel) fills it, so the chip never sits
-   under a sheet. An empty zone's content wrapper is :empty (OverlayLayout.tsx). */
-.cc-overlay:has([data-overlay-zone='sheet'] > :not(:empty)) .map-attribution-row {
+   under a sheet. An empty zone's content wrapper is :empty, or holds only a passive sr-only
+   status (OverlayLayout.tsx, the same test as its pointer-events rule). */
+.cc-overlay:has(
+    [data-overlay-zone='sheet'] > :not(:empty):not(:has(> [data-overlay-passive]:only-child))
+  )
+  .map-attribution-row {
   grid-row: var(--cc-attribution-busy-row);
 }
 
