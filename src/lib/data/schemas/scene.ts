@@ -1038,17 +1038,22 @@ export const PlotsConfigSchema = z.strictObject({
 
 /**
  * data/config/compactLayout.json (S04n): where venues stand on the game map style, packed like a
- * game map's. Each neighbourhood's (zone's) venues are laid on a square grid of `pitchM` around
- * an anchor: the zone's home, else a fixed venue (a subway station, which stays at its station),
- * else the point of the zone that best trades nearness to the nearest home (`pullToHome`)
- * against nearness to the venues' own centre. Every plot
- * stays wholly inside its own zone, off parks, clear of the subway ribbons and landmark models,
+ * game map's. Each cluster area's venues (a borough's or a neighbourhood zone's, `clusterBy`) are
+ * laid on a square grid of `pitchM` around an anchor: the area's home, else a fixed venue (a
+ * subway station, which stays at its station), else the point of the area that best trades
+ * nearness to the nearest home (`pullToHome`) against nearness to the venues' own centre. Every
+ * plot stays wholly inside its area, off parks, clear of the subway ribbons and landmark models,
  * and never overlaps another (the grid's gap between plots is the road). Homes, landmarks and
  * fixed venues never move. The server plans it (src/lib/world/compactLayout.ts) into the places
  * layer's `gx`/`gy`; the Real NYC style keeps every real position. Travel time, fares and
  * distances always use the real positions.
  */
 export const CompactLayoutConfigSchema = z.strictObject({
+  /**
+   * What a cluster gathers (S04n2): every venue of a neighbourhood zone, or of a whole borough
+   * (pulled in around the borough's home). Each plot stays wholly inside that area.
+   */
+  clusterBy: z.enum(['zone', 'borough']),
   /** Grid step between plot centres: the plot's side plus the road between two plots. */
   pitchM: metres,
   /** How many grid rings around the anchor are searched for a free slot. */

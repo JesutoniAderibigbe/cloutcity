@@ -1,4 +1,5 @@
 {
+  "clusterBy": "borough",
   "pitchM": 108,
   "maxRings": 10,
   "fixedCategories": ["subway-station"],
