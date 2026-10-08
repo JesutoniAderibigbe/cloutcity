@@ -297,4 +297,17 @@ describe('compact game-map points (S04n)', () => {
     expect(pins.groundOf(moved.id)?.x).toBe(moved.x)
     pins.dispose()
   })
+
+  it('floats a ring landmark (S07d) over its scaled model only on the game map', () => {
+    const pins = build()
+    const ring = pins.pins.find((pin) => pin.game !== undefined)
+    if (ring?.game === undefined) throw new Error('no landmark in the game map ring')
+    pins.applyDistance(1000)
+    const head = PIN_HEAD.badge * pins.height()
+    expect(pins.headY(ring)).toBeCloseTo(top + sceneConfig.pins.liftM + (ring.liftM ?? 0) + head)
+    pins.setCompact(true)
+    expect(pins.pointOf(ring)).toEqual({ x: ring.gx, y: ring.gy })
+    expect(pins.headY(ring)).toBeCloseTo(top + sceneConfig.pins.liftM + ring.game.liftM + head)
+    pins.dispose()
+  })
 })

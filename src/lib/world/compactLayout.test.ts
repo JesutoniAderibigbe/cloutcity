@@ -37,11 +37,14 @@ describe('compact game-map layout (S04n)', () => {
   const moved = venues.filter((pin) => pin.gx !== undefined)
   const fixed = venues.filter((pin) => compactLayout.fixedCategories.includes(pin.category))
 
-  it('moves every plot venue but the fixed categories, and never a landmark', () => {
+  it('moves every plot venue but the fixed categories, and no landmark outside the ring', () => {
     expect(moved.length).toBe(venues.length - fixed.length)
     expect(fixed.every((pin) => pin.gx === undefined && pin.gy === undefined)).toBe(true)
+    // The famous-places ring (S07d, landmarkRing.test.ts) is the only landmark that moves.
     expect(
-      placesLayer.pins.filter((pin) => pin.kind === 'landmark' && pin.gx !== undefined),
+      placesLayer.pins.filter(
+        (pin) => pin.kind === 'landmark' && pin.gx !== undefined && pin.game === undefined,
+      ),
     ).toEqual([])
   })
 

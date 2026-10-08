@@ -898,7 +898,11 @@ camera starts over it).
   into the places layer's `gx`/`gy`): each borough's venues (`clusterBy: "borough"`, S04n2; or each
   neighbourhood zone's with `"zone"`) on a road-separated grid around its home, subway station
   or the point of the area nearest a home, wholly inside that area,
-  off parks, the subway ribbons and landmarks; homes, landmarks and stations never move. Pins,
+  off parks, the subway ribbons and landmarks; homes and stations never move. A famous-places
+  ring (S07d, `landmarkRing` in the same file, planned by `src/lib/world/landmarkRing.ts`) stands
+  a few iconic landmarks (the harbour statue on its own pond, the Deco spire, Times Square, the
+  ballpark, ...) around the start home's cluster at a game scale, so the default view shows them
+  beside the venues; the other landmarks stay at their real points. Pins,
   bubbles, plots, clearings, props, pedestrians, camera focus and trip animations use those
   points; travel time, fares and distances always use real positions on both styles.
   **Real NYC**: the full city as before, every place at its real point.
