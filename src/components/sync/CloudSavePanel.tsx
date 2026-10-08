@@ -6,7 +6,6 @@ import { closeHudPanel } from '@/state/hudPanel'
 import { useSyncStatus } from '@/state/syncStatus'
 import { syncSheetText, syncStatusText } from './syncCopy'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
-import '@/lib/copy/ns/account'
 import '@/lib/copy/ns/sync'
 
 /**
@@ -36,7 +35,7 @@ export function CloudSavePanel() {
       </p>
       <p className="text-sm text-fg">
         {status === 'conflict' && conflictEmpty
-          ? copy('account.conflict.empty')
+          ? copy('sync.sheet.conflictEmpty')
           : syncSheetText(status, identity)}
       </p>
       {controls !== null && status === 'conflict' ? (
@@ -55,7 +54,7 @@ export function CloudSavePanel() {
             onClick={act(() => controls.resolveConflict('use-cloud'))}
             className={`${PANEL_BUTTON} bg-raised text-fg`}
           >
-            {conflictEmpty ? copy('account.conflict.fresh') : copy('sync.sheet.useCloud')}
+            {conflictEmpty ? copy('sync.sheet.startFresh') : copy('sync.sheet.useCloud')}
           </button>
         </div>
       ) : null}

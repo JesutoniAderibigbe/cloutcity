@@ -40,7 +40,9 @@
     ".next-e2e-supabase/types/**/*.ts",
     ".next-e2e-supabase/dev/types/**/*.ts",
     ".next-e2e-dpl/types/**/*.ts",
-    ".next-e2e-dpl/dev/types/**/*.ts"
+    ".next-e2e-dpl/dev/types/**/*.ts",
+    ".next-base/types/**/*.ts",
+    ".next-base/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -13,7 +13,8 @@
  *  - `cc-models-<version>`: the hand-made 3D models (S04h), cache-first, only once the scene
  *    loads them; never precached (they load on demand, tier by tier, after the map is playable);
  *  - `cc-chunks-<revision>`: the build's JS chunks the precache leaves out (PERF-7: the model
- *    runtime, the model showcase, the apartment's decor models, the /mod console, supabase-js), cache-first
+ *    runtime, the model showcase, the apartment's decor models, the /mod console, supabase-js,
+ *    the account UI), cache-first
  *    once they load; precached chunks are answered by the precache before this route.
  * Everything else goes to the network untouched. Same-origin only, GET only, and a response
  * that is private, personalised or not a plain 200 is never stored ({@link refuseSensitive}).

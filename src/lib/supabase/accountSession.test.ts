@@ -72,6 +72,7 @@ function setup(options: { pendingAt?: number | null; flushed?: boolean } = {}) {
     identity: accountIdentityStore,
     cloud,
     loadNotices: vi.fn(),
+    attestation: () => null,
     pollUpgraded: vi.fn(async () => polled.shift() ?? null),
     signOutLocal: vi.fn(async () => ({ ok: true as const })),
     now: () => now,

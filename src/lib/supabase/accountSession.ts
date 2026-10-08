@@ -19,7 +19,6 @@
  */
 import type { AuthChangeEvent, Session, SupabaseClient, User } from '@supabase/supabase-js'
 import { log, type Logger } from '@/lib/log'
-import { toAttestationArgs } from '@/lib/supabase/attestation'
 import {
   accountConfig,
   accountIdentityStore,
@@ -29,7 +28,6 @@ import {
 } from '@/state/account'
 import { clearAccountNotices } from '@/state/accountNotices'
 import { guestSessionStore, type GuestSessionStore } from '@/state/guestSession'
-import { onboardingStore } from '@/state/onboarding'
 import { armSavePrompt } from '@/state/savePrompt'
 import { syncStatusStore, type SyncStatusStore } from '@/state/syncStatus'
 import {
@@ -39,6 +37,7 @@ import {
   type AccountIdentity,
   type AccountResult,
 } from './accountAuth'
+import type { AttestationArgs } from './attestation'
 import type { Database } from './database.types'
 import type { SupabaseEnv } from './env'
 
@@ -60,6 +59,8 @@ export interface AccountSessionDeps {
   }
   /** Reloads the moderator notices for the account now signed in. */
   readonly loadNotices: () => void
+  /** This device's 18+ attestation and consent (the welcome card's), or null. */
+  readonly attestation: () => AttestationArgs | null
   readonly pollUpgraded: (env: SupabaseEnv) => Promise<AccountIdentity | null>
   readonly signOutLocal: (env: SupabaseEnv) => Promise<AccountResult>
   readonly now: () => number
@@ -127,13 +128,13 @@ export function createAccountSession(deps: AccountSessionDeps, user: User): Acco
     // An account first created by this log-in (a new Google user) has no attestation yet: this
     // device's own 18+ check and consent are recorded for it, as for any session (the first
     // attestation wins, so an attested account keeps its own).
-    const record = onboardingStore.getState().record
-    if (record?.status === 'complete') {
-      void Promise.resolve(
-        deps.client.rpc('attest_and_consent', { ...toAttestationArgs(record) }),
-      ).then(({ error }) => {
-        if (error !== null) logger.info('Could not record the attestation for this account')
-      })
+    const attestation = deps.attestation()
+    if (attestation !== null) {
+      void Promise.resolve(deps.client.rpc('attest_and_consent', { ...attestation })).then(
+        ({ error }) => {
+          if (error !== null) logger.info('Could not record the attestation for this account')
+        },
+      )
     }
     logger.info('Logged in to an account on this device', { provider: current.provider })
   }
@@ -228,10 +229,12 @@ export function browserAccountSessionDeps(
   client: SupabaseClient<Database>,
   env: SupabaseEnv,
   cloud: AccountSessionDeps['cloud'],
+  attestation: AccountSessionDeps['attestation'],
 ): AccountSessionDeps {
   return {
     client,
     env,
+    attestation,
     session: guestSessionStore,
     sync: syncStatusStore,
     account: accountStore,
@@ -281,6 +284,7 @@ export function runningAccountSession(): AccountSession | undefined {
 export async function startAccountSession(
   client: SupabaseClient<Database>,
   env: SupabaseEnv,
+  attestation: AccountSessionDeps['attestation'],
 ): Promise<AccountSession | undefined> {
   if (running !== undefined) return running
   const { data } = await client.auth.getSession()
@@ -288,13 +292,18 @@ export async function startAccountSession(
   if (user === undefined) return undefined
   const sync = await import('@/state/cloudSync')
   running = createAccountSession(
-    browserAccountSessionDeps(client, env, {
-      start: (c) => void sync.startCloudSync(c),
-      restart: (c) => void sync.restartCloudSync(c),
-      stop: sync.stopCloudSync,
-      markPermanent: () => sync.runningCloudSync()?.markPermanent(),
-      flushNow: (ms) => sync.runningCloudSync()?.flushNow(ms) ?? Promise.resolve(true),
-    }),
+    browserAccountSessionDeps(
+      client,
+      env,
+      {
+        start: (c) => void sync.startCloudSync(c),
+        restart: (c) => void sync.restartCloudSync(c),
+        stop: sync.stopCloudSync,
+        markPermanent: () => sync.runningCloudSync()?.markPermanent(),
+        flushNow: (ms) => sync.runningCloudSync()?.flushNow(ms) ?? Promise.resolve(true),
+      },
+      attestation,
+    ),
     user,
   )
   armSavePrompt()

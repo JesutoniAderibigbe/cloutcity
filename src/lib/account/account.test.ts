@@ -12,7 +12,7 @@ import { maskEmail } from './mask'
 const HASH = 'pkce_0a1b2c3d4e5f60718293a4b5c6d7e8f9'
 
 describe('/auth/callback parameters (S19)', () => {
-  it('reads our templates\' token-hash links', () => {
+  it("reads our templates' token-hash links", () => {
     for (const type of ['email', 'magiclink', 'email_change'] as const) {
       expect(parseCallback(`?token_hash=${HASH}&type=${type}`)).toEqual({
         kind: 'finish',
@@ -21,7 +21,7 @@ describe('/auth/callback parameters (S19)', () => {
     }
   })
 
-  it("refuses a type it does not finish (signup, recovery, invite) or a malformed hash", () => {
+  it('refuses a type it does not finish (signup, recovery, invite) or a malformed hash', () => {
     for (const type of ['signup', 'recovery', 'invite', 'sms', '']) {
       expect(parseCallback(`?token_hash=${HASH}&type=${type}`)).toEqual({
         kind: 'error',

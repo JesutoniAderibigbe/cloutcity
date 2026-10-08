@@ -3,18 +3,32 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { PANEL_BUTTON, PanelDialog } from '@/components/hud/PanelDialog'
+import { lazyIsland } from '@/components/overlay/lazyIsland'
 import { BlockedMutedList } from '@/components/safety/BlockedMutedList'
 import { copy, copyParts, type CopyKey } from '@/lib/copy'
 import type { MyProfile } from '@/lib/forms/handle'
 import { connectedProfileApi, type ProfileApi } from '@/lib/supabase/profileApi'
+import { authCallbackUrl, supabaseEnv } from '@/lib/supabase/env'
 import { safetyApi } from '@/lib/supabase/safetyApi'
-import { AccountSection } from '@/components/account/AccountSection'
 import { guestSessionStore, isOnlineSession, type GuestSessionState } from '@/state/guestSession'
 import { closeHudPanel } from '@/state/hudPanel'
 import { HandleForm } from './HandleForm'
 import { PublicCard } from './PublicCard'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/profile'
+
+// S19: the account section (Create account, Log in, Sign out) loads with the account chunk,
+// only for a player with an account to show (it needs the network, like everything about one).
+const AccountSection = lazyIsland(
+  () => import('@/components/account/AccountSection').then((module) => module.AccountSection),
+  { zone: 'sheet', labelKey: 'loading.account', quiet: true },
+)
+
+/** Whether the account section has anything to show for this session. */
+function showsAccount(session: GuestSessionState): boolean {
+  if (supabaseEnv() === null || authCallbackUrl() === null) return false
+  return isOnlineSession(session) || session.reason === 'signed-out'
+}
 
 const sessionState = () => guestSessionStore.getState()
 
@@ -163,7 +177,7 @@ export function MePanel() {
       onClose={closeHudPanel}
       scrollBody
     >
-      <AccountSection session={session} />
+      {showsAccount(session) ? <AccountSection session={session} /> : null}
       {isOnlineSession(session) ? <OnlineProfile /> : <NotConnected session={session} />}
       <ConductLink />
     </PanelDialog>

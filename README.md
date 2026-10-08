@@ -751,7 +751,9 @@ precached. Runtime caches, all cache-first, same-origin GET only, versioned by c
 deleted when a newer worker takes over: `cc-geo-*` (`/geo/...` fetches whose only query is `?v=` at
 a version this build serves), `cc-audio-*` (after the audio choice), `cc-models-*`
 (`/models/<id>.<tier>.<sha8>.glb`, as the scene loads them) and `cc-chunks-*` (the optional
-chunks the precache leaves out). Under Vercel Skew Protection (`NEXT_DEPLOYMENT_ID`) asset URLs
+chunks the precache leaves out, `src/lib/pwa/lazyChunks.ts`: the model runtime and showcase,
+the apartment's decor models, the /mod console, supabase-js and the account UI). The worker
+never handles `/api`, `/auth`, `/mod`, `/serwist`, `/geo` or `/og` navigations. Under Vercel Skew Protection (`NEXT_DEPLOYMENT_ID`) asset URLs
 carry `?dpl=`: the precache ignores it and the chunk cache stores the URL without it
 (`npm run e2e:dpl` covers it).
 After registration the page sends `CC_WARM_TIER` with its quality tier, and the worker fetches

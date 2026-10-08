@@ -80,7 +80,13 @@ export function browserSessionDeps(): GuestSessionDeps {
       ]).then(async ([auth, account]) => {
         // The client connectAnonymous signed in with: the same session (supabaseAuth.ts).
         const env = supabaseEnv()
-        if (env !== null) await account.startAccountSession(auth.supabaseClient(env), env)
+        if (env === null) return
+        // The device's own 18+ check and consent, for an account first created by a log-in.
+        const attestation = () => {
+          const record = onboardingStore.getState().record
+          return record?.status === 'complete' ? toAttestationArgs(record) : null
+        }
+        await account.startAccountSession(auth.supabaseClient(env), env, attestation)
       }),
     signedOut: () => import('./account').then((module) => module.accountStore.getState().signedOut),
     onSignedOut: () => {

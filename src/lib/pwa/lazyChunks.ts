@@ -19,6 +19,13 @@ export const OPTIONAL_CHUNK_MARKERS = [
   // supabase-js (S18): it only works online (sign-in, cloud saves, profiles, safety), so an
   // offline player gains nothing from having it installed; offline, the session stays local.
   { id: 'supabase-client', marker: 'GoTrueClient' },
+  // Accounts (S19): the account sheet, the welcome card's log-in view, the save banner and nudge,
+  // the Me tab's account section and /auth/callback all need the network (and supabase-js), so
+  // an offline player gains nothing from them installed. The marker is a key of the `account`
+  // copy namespace, which every one of those chunks carries and no boot chunk does.
+  { id: 'account', marker: 'account.sheet.saveTitle' },
+  // The account calls and the account coordinator (S19), which run only online, after sign-in.
+  { id: 'account-api', marker: 'check_account_email' },
 ] as const
 
 /** The markers an optional chunk's text contains (empty: precache it). */

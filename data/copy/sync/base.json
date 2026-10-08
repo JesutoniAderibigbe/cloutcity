@@ -21,9 +21,11 @@
     "sync.sheet.update": "Your account game was saved by a newer version of the game. Reload to update, then saving picks back up.",
     "sync.sheet.behind": "This device's game is from before your last prestige, so it can't replace your account game. Use your account game instead.",
     "sync.sheet.conflict": "This device and your account game have different progress. Pick the one to keep. The other one is gone for good, and a guest game on this device can't be recovered after this.",
+    "sync.sheet.conflictEmpty": "This device has a game from another account. Keep it on this account, or start fresh here. The other one is gone for good.",
     "sync.sheet.signedOut": "You signed out, so this device isn't saving to an account. Log in from the Me tab to save again.",
     "sync.sheet.keepLocal": "Keep this device's game",
     "sync.sheet.useCloud": "Use the account game",
+    "sync.sheet.startFresh": "Start fresh on this account",
     "sync.sheet.retry": "Try again now",
     "sync.sheet.reload": "Reload",
     "sync.announce": "Cloud save: {status}"

@@ -752,9 +752,15 @@ describe('cloud save sync: accounts (S19)', () => {
       ...fields,
     })
 
-  it('reads a version 1 sync record as a guest\'s (only guests existed then)', () => {
+  it("reads a version 1 sync record as a guest's (only guests existed then)", () => {
     expect(
-      parseSyncMeta({ version: 1, deviceId: DEVICE, userId: USER, revision: 2, cloudSignature: 'x' }),
+      parseSyncMeta({
+        version: 1,
+        deviceId: DEVICE,
+        userId: USER,
+        revision: 2,
+        cloudSignature: 'x',
+      }),
     ).toEqual({
       version: 2,
       deviceId: DEVICE,
@@ -771,7 +777,12 @@ describe('cloud save sync: accounts (S19)', () => {
     const s = setup({ user: { id: USER, anonymous: true } })
     const sync = createCloudSync(s.deps)
     await sync.ready
-    expect(s.meta()).toMatchObject({ version: 2, userId: USER, ownerKind: 'anonymous', revision: 1 })
+    expect(s.meta()).toMatchObject({
+      version: 2,
+      userId: USER,
+      ownerKind: 'anonymous',
+      revision: 1,
+    })
     sync.markPermanent()
     expect(s.meta()).toMatchObject({ userId: USER, ownerKind: 'permanent', revision: 1 })
     sync.stop()

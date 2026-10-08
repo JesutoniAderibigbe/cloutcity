@@ -92,8 +92,6 @@
     "account.welcome.back": "Back",
     "account.welcome.loginTitle": "Log in to Clout City",
     "account.welcome.loginIntro": "Get your saved game on this device. No account yet? Go back and start playing; you can save any time.",
-    "account.conflict.empty": "This device has a game from another account. Keep it on this account, or start fresh here. The other one is gone for good.",
-    "account.conflict.fresh": "Start fresh on this account",
     "account.banner.laterLabel": "Not now: hide this tip",
     "account.nudge.label": "Save your progress. Bigger name, same risk: clear your browser and a guest game is gone."
   }

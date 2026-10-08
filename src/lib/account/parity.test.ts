@@ -10,7 +10,9 @@ import accountJson from '@data/config/account.json'
 const MIGRATIONS = join(import.meta.dirname, '../../../supabase/migrations')
 
 function newestDefinition(fn: string): string {
-  const files = readdirSync(MIGRATIONS).filter((file) => file.endsWith('.sql')).sort()
+  const files = readdirSync(MIGRATIONS)
+    .filter((file) => file.endsWith('.sql'))
+    .sort()
   let found = ''
   for (const file of files) {
     const sql = readFileSync(join(MIGRATIONS, file), 'utf8')
@@ -23,9 +25,8 @@ function newestDefinition(fn: string): string {
 describe('account config parity (S19)', () => {
   it('check_account_email rate-limits as account.json emailCheck says', () => {
     const body = newestDefinition('check_account_email')
-    const match = /consume_rate_limit\(v_uid, 'checkAccountEmail', (\d+), interval '(\d+) seconds'\)/.exec(
-      body,
-    )
+    const match =
+      /consume_rate_limit\(v_uid, 'checkAccountEmail', (\d+), interval '(\d+) seconds'\)/.exec(body)
     expect(match, 'the rate limit call').not.toBeNull()
     expect(Number(match?.[1])).toBe(accountJson.emailCheck.max)
     expect(Number(match?.[2]) * 1000).toBe(accountJson.emailCheck.windowMs)
