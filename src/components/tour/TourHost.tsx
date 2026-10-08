@@ -14,6 +14,7 @@ import { isAtPlace } from '@/engine/game'
 import { gameStore } from '@/state/store'
 import { setArrivalEventsSuppressed } from '@/state/trip'
 import { setTourActive } from '@/state/tourActive'
+import { hudPanelStore, openHudPanel } from '@/state/hudPanel'
 import { TOUR_STEPS, isFreshStart, tourStore, type ActiveTour, type TourUi } from '@/state/tour'
 import { TOUR_TARGET, tourConfig, tourHighlightCss, tourHighlightSelector } from './tourControl'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -28,6 +29,24 @@ import '@/lib/copy/ns/tour'
  * A feature island loaded once the map is playable (TourMount). On load it settles this device's
  * first tour: a fresh game starts it; anyone else is marked done and never sees it unasked.
  */
+let openedHome = false
+
+declare global {
+  interface Window {
+    /** Test-hook builds only: `map` keeps a spec on the map at start instead of Home (DEC-59). */
+    __CLOUTCITY_E2E_START__?: 'map'
+  }
+}
+
+/** Opens Home unless it already opened this session or the player has another sheet up. */
+function openHomeOnce(placeOpen: boolean): void {
+  if (openedHome) return
+  openedHome = true
+  if (process.env.NEXT_PUBLIC_TEST_HOOKS === '1' && window.__CLOUTCITY_E2E_START__ === 'map') return
+  if (placeOpen || hudPanelStore.getState().panel !== null) return
+  openHudPanel('home')
+}
+
 export function TourHost() {
   const record = useStore(tourStore, (state) => state.record)
   const modalOpen = useModalOpen()
@@ -63,6 +82,14 @@ export function TourHost() {
       ),
     [],
   )
+
+  // DEC-59: the game opens on Home, like Lagos Life. Once the tour is not running (a returning
+  // player, or the tour just ended on the map), the Home panel and its room open, once a session.
+  const status = record?.status
+  useEffect(() => {
+    if (modalOpen || status === undefined || status === 'active') return
+    openHomeOnce(openPlaceId !== null)
+  }, [modalOpen, status, openPlaceId])
 
   // The welcome card (or any modal) comes first; the tour waits behind it.
   if (modalOpen || record?.status !== 'active') return null

@@ -1558,6 +1558,8 @@ export const LayoutConfigSchema = z.strictObject({
        */
       roomDockMinWidthPx: positiveInt,
       roomDockMinHeightPx: positiveInt,
+      /** Below the dock, the sheet row's height while the 3D room shows, so the room is the hero (DEC-59). */
+      roomSheetMaxHeightVh: positive,
       toastHeightPx: positive,
       /** How long a toast (the level-up message) shows before it closes itself. */
       toastMs: positiveInt,

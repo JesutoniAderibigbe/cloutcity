@@ -89,6 +89,7 @@ export function overlayCssVars(config: OverlayLayoutConfig): Readonly<Record<str
     '--overlay-toast-h': `${config.toastHeightPx}px`,
     '--overlay-tabs-h': `${config.tabBarHeightPx}px`,
     '--overlay-free-min': `${config.freeSceneMinHeightPx}px`,
+    '--overlay-room-sheet-h': `${config.roomSheetMaxHeightVh}dvh`,
     '--overlay-loading-delay': `${config.loadingRevealDelayMs}ms`,
   }
 }
