@@ -3,7 +3,10 @@
   "maxFriendFanout": 50,
   "heartbeatIntervalMs": 60000,
   "moveMinIntervalMs": 1000,
-  "emoteRateLimit": { "max": 5, "windowMs": 10000 },
+  "emoteRateLimit": {
+    "max": 5,
+    "windowMs": 10000
+  },
   "budgetMsgsPerPlayerMinute": 32,
   "presence": {
     "beatIntervalMs": 30000,
@@ -15,6 +18,15 @@
     "publicSnapshotMax": 40,
     "publicCacheS": 15,
     "beatsPerMinute": 6,
-    "snapshotsPerMinute": 8
+    "snapshotsPerMinute": 8,
+    "map": {
+      "ringStartOfHeight": 0.9,
+      "ringStepOfHeight": 0.7,
+      "perRing": 6,
+      "ringColorToken": "taxi-400",
+      "ringInnerOfHeight": 0.34,
+      "ringOuterOfHeight": 0.5,
+      "pose": "idle"
+    }
   }
 }

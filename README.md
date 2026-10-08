@@ -1097,6 +1097,20 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
     `src/lib/account/parity.test.ts` checks), manual linking off, the lane ports' `/mod`
     allowlisted, and Google off; Mailpit catches the console's emails (`npx supabase status`
     prints its URL).
+- **Real players on the map (S42 phase 1).** A player with an account announces where they are
+  with `presence_beat(spot, place, borough)` (attestation and standing gates, permanent accounts
+  with a handle only, `presence.beatsPerMinute`): a place pin id, `home` or `travelling`, and a
+  borough, never coordinates. Rows live in `private.player_presence`; a row is online while its
+  last beat is younger than `presence.onlineTtlS`. `presence_snapshot()` answers the online count
+  and the players this viewer may see (no blocks either way, no mutes, no banned or suspended
+  players, held handles as `Player`). Signed-out visitors get `GET /api/presence`
+  (`src/server/presence/publicSnapshot.ts`): the count and anonymous figures from the service-role
+  `presence_public_snapshot()`, CDN-cached for `presence.publicCacheS`. The client loop is
+  `src/realtime/` (`PresenceTransport`, the polled Supabase transport, a fake); the map draws
+  players with the townsfolk kits (`src/scene/players/layer.ts`, capped by perf.json
+  `otherPlayersMax`) and the overlay (`PlayersOverlay.tsx`) shows the online chip, name tags and
+  the player card. `private.presence_settings` mirrors `realtime.json` `presence`
+  (`tests/integration/presence.test.ts`). Without a Supabase configuration none of it starts.
 - **Deploy checklist (S19, DEC-61).**
   - **USER ACTION:** in the Supabase dashboard, **Authentication > Providers > Email**: turn
     **OFF "Confirm email"**. Without this a sign-up gets no session and the form says accounts

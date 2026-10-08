@@ -23,6 +23,10 @@
  * The townsfolk (S04o, townsfolk.ts) live here too: Sims-like locals at the player's size around
  * the places, on the same material, ticker and pauses. A tap on one claims the map tap
  * (src/scene/pins/mapTaps.ts) and opens their card (src/state/townsfolk.ts, TownsfolkCard.tsx).
+ *
+ * Real players (S42, src/scene/players/layer.ts) stand at their place pins on the townsfolk's
+ * kits and material, in their own chunk, loaded only once the presence store
+ * (src/state/presence.ts) has someone to draw. A tap on one opens their player card.
  */
 import { useEffect, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -46,6 +50,7 @@ import type {
   AmbientConfig,
   AmbientTier,
   Circle,
+  TownsfolkPose,
   PedestrianAnchor,
   TrainLine,
 } from '@/lib/world/ambient/types'
@@ -58,6 +63,9 @@ import { beginContinuous, endContinuous } from '../quality/continuity'
 import { claimMapTaps } from '../pins/mapTaps'
 import { loadStreets } from '../streets/loadStreets'
 import { selectLocal, townsfolkBridge, townsfolkStore } from '@/state/townsfolk'
+import { playersBridge, presenceStore, selectPlayer, visiblePlayers } from '@/state/presence'
+import realtimeJson from '@data/config/realtime.json'
+import type { PlayersLayer, PlayersView } from '../players/layer'
 import type { AmbientAssets, AmbientModelAsset } from './assets'
 import { createAmbientLayer, type AmbientCaps, type AmbientLayer, type AmbientView } from './layer'
 import {
@@ -197,6 +205,8 @@ export default function AmbientLife({
   const townsfolkViewRef = useRef<TownsfolkView | null>(null)
   const planesRef = useRef<PlaneLayer | null>(null)
   const planesViewRef = useRef<PlaneView | null>(null)
+  const playersRef = useRef<PlayersLayer | null>(null)
+  const playersViewRef = useRef<PlayersView | null>(null)
   useEffect(() => {
     nightRef.current = night
     invalidate()
@@ -353,6 +363,63 @@ export default function AmbientLife({
     })
     sceneRoot.add(created.group)
     sceneRoot.add(townsfolk.group)
+    // Real players (S42): their chunk loads once there is someone to draw, on the same kits.
+    let playersGone = false
+    let players: PlayersLayer | null = null
+    let playersLoading = false
+    const presence = realtimeJson.presence
+    const pinPoints = new Map(geo.places.pins.map((pin) => [pin.id, { x: pin.x, y: pin.y }]))
+    const showPlayers = () => {
+      const list = visiblePlayers()
+      if (players !== null) {
+        players.setPlayers(list, pinPoints)
+        invalidate()
+        return
+      }
+      if (list.length === 0 || playersLoading) return
+      playersLoading = true
+      Promise.all([import('../players/layer'), characterKits])
+        .then(([{ createPlayersLayer, themeColour }, kits]) => {
+          if (playersGone || kits.townsfolk.length === 0) return
+          const perf = (perfJson as unknown as { otherPlayersMax: Record<AmbientTier, number> })
+            .otherPlayersMax
+          players = createPlayersLayer({
+            cap: perf[tier],
+            material: created.material,
+            groundY,
+            kits: kits.townsfolk,
+            poses: config.townsfolk.poses[tier],
+            pose: presence.map.pose as TownsfolkPose,
+            playerHeight: (distance) =>
+              Math.min(
+                characterMaxM,
+                Math.min(
+                  avatar.maxHeightM,
+                  Math.max(avatar.minHeightM, distance * avatar.heightPerDistance),
+                ) * avatar.playerScale,
+              ),
+            showBelowM: config.townsfolk.showBelowDistanceM[tier],
+            fadeShare: config.townsfolk.fadeShare,
+            placement: presence.map,
+            ringColor: themeColour(presence.map.ringColorToken),
+            ringInnerOfHeight: presence.map.ringInnerOfHeight,
+            ringOuterOfHeight: presence.map.ringOuterOfHeight,
+          })
+          sceneRoot.add(players.group)
+          playersRef.current = players
+          players.setPlayers(visiblePlayers(), pinPoints)
+          invalidate()
+        })
+        .catch((error: unknown) => {
+          playersLoading = false
+          // Expected offline when the chunk was never cached: the map shows no players.
+          log.info('ambient life: not loaded', {
+            reason: `players: ${error instanceof Error ? error.message : String(error)}`,
+          })
+        })
+    }
+    const offPresence = presenceStore.subscribe(showPlayers)
+    showPlayers()
     layerRef.current = created
     townsfolkRef.current = townsfolk
     // The sky, in a chunk of its own (planes.ts); every tier flies at least one plane (DEC-52).
@@ -383,6 +450,14 @@ export default function AmbientLife({
       })
     invalidate()
     return () => {
+      offPresence()
+      playersGone = true
+      if (players !== null) {
+        players.dispose()
+        if (playersRef.current === players) playersRef.current = null
+      }
+      playersViewRef.current = null
+      selectPlayer(null)
       planesGone = true
       if (planes !== null) {
         planes.dispose()
@@ -420,6 +495,19 @@ export default function AmbientLife({
   // pins). The card reaches the locals in view through the bridge.
   useEffect(() => {
     const off = claimMapTaps((x, y, width, height) => {
+      // A real player in front wins over a local (and anonymous figures take no tap).
+      const playerId = playersRef.current?.pick(get().camera, x, y, width, height) ?? null
+      const player =
+        playerId === null
+          ? undefined
+          : presenceStore.getState().players.find((p) => p.id === playerId)
+      if (player?.handle != null) {
+        selectLocal(null)
+        selectPlayer(player.id)
+        invalidate()
+        return true
+      }
+      selectPlayer(null)
       const layer = townsfolkRef.current
       const id = layer?.pick(get().camera, x, y, width, height) ?? null
       const profile = id === null ? null : (layer?.profile(id) ?? null)
@@ -444,15 +532,27 @@ export default function AmbientLife({
         return head === null ? null : { x: head.x + rect.left, y: head.y + rect.top }
       },
     }
+    playersBridge.current = {
+      heads: () => {
+        const layer = playersRef.current
+        if (layer === null) return []
+        const rect = gl.domElement.getBoundingClientRect()
+        return layer
+          .heads(get().camera, rect.width, rect.height)
+          .map((head) => ({ id: head.id, x: head.x + rect.left, y: head.y + rect.top }))
+      },
+    }
     return () => {
       off()
       townsfolkBridge.current = null
+      playersBridge.current = null
     }
   }, [get, gl, invalidate])
 
   // The map is covered (the apartment or creator) or the city paused hidden: no card over it.
   useEffect(() => {
     if (hidden && townsfolkStore.getState().selected !== null) selectLocal(null)
+    if (hidden) selectPlayer(null)
   }, [hidden])
 
   // Density levels and the ambient-only FPS floor for the step-down (density before tier).
@@ -519,6 +619,7 @@ export default function AmbientLife({
         targetY: -target.z,
         share: densityShare(config.density, levelRef.current, 0),
       }) ?? null
+    playersViewRef.current = playersRef.current?.update({ tS: ms / 1000, camera, distance }) ?? null
     planesViewRef.current =
       planesRef.current?.update({
         tS: ms / 1000,
@@ -557,7 +658,9 @@ export default function AmbientLife({
       raf = requestAnimationFrame(loop)
       const drawing =
         viewRef.current !== null &&
-        drawnTotal(viewRef.current, townsfolkViewRef.current, planesViewRef.current) > 0
+        drawnTotal(viewRef.current, townsfolkViewRef.current, planesViewRef.current) +
+          (playersViewRef.current?.drawn ?? 0) >
+          0
       if (drawing) {
         // Half a display frame of tolerance, so a 60 Hz display hits a 30 fps cap exactly.
         if (now - lastTick >= minGap - 8) {
@@ -574,7 +677,9 @@ export default function AmbientLife({
         const view = updateRef.current()
         if (
           view !== null &&
-          drawnTotal(view, townsfolkViewRef.current, planesViewRef.current) > 0
+          drawnTotal(view, townsfolkViewRef.current, planesViewRef.current) +
+            (playersViewRef.current?.drawn ?? 0) >
+            0
         ) {
           invalidate()
         }
@@ -628,7 +733,11 @@ export default function AmbientLife({
     const read = (): AmbientHookState => {
       const layer = layerRef.current
       const view = viewRef.current ?? layer?.view() ?? null
-      const meshes = [...(layer?.meshes() ?? []), ...(townsfolkRef.current?.meshes() ?? [])]
+      const meshes = [
+        ...(layer?.meshes() ?? []),
+        ...(townsfolkRef.current?.meshes() ?? []),
+        ...(playersRef.current?.meshes() ?? []),
+      ]
       if (layer === null || view === null) {
         return {
           status: 'loading',

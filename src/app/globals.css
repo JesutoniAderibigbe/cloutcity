@@ -191,6 +191,11 @@ body {
   grid-row: 4;
 }
 
+/* Real players (S42, PlayersOverlay.tsx): the online count and a player's card, the same row. */
+.players-row {
+  grid-row: 4;
+}
+
 /* UX-15: in the bottom-end corner above the tab bar while the sheet zone is empty; back in the
    free scene row's corner while a sheet (or the Places panel) fills it, so the chip never sits
    under a sheet. A sheet is open when the zone's content wrapper (OverlayLayout.tsx) holds a

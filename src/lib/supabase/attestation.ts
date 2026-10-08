@@ -87,6 +87,9 @@ export const RPC_ERRORS = [
   'version_regressed',
   // S19 accounts (supabase/migrations/*_s19_accounts.sql): a feature that needs a saved account.
   'account_required',
+  // S42 real players on the map (supabase/migrations/*_s42_presence.sql).
+  'guest_not_announced',
+  'handle_required',
 ] as const
 export type RpcErrorCode = (typeof RPC_ERRORS)[number]
 

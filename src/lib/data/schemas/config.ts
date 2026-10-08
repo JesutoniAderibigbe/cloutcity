@@ -691,6 +691,22 @@ export const RealtimeConfigSchema = z.strictObject({
     /** Rate limits per player (server). */
     beatsPerMinute: positiveInt,
     snapshotsPerMinute: positiveInt,
+    /**
+     * How real players stand on the map: in rings around their place pin (radii in multiples of
+     * the drawn height), each over a flat ring in a theme colour so they never read as locals
+     * (UX-3). How many are drawn per tier is perf.json `otherPlayersMax`.
+     */
+    map: z.strictObject({
+      ringStartOfHeight: positive,
+      ringStepOfHeight: positive,
+      perRing: positiveInt,
+      /** A data/config/theme.json `colors` token. */
+      ringColorToken: z.string().min(1),
+      ringInnerOfHeight: positive,
+      ringOuterOfHeight: positive,
+      /** The townsfolk pose players stand in (ambient.json `townsfolk.poses`, every tier). */
+      pose: z.enum(['idle', 'talk', 'wave']),
+    }),
   }),
 })
 export type RealtimeConfig = z.infer<typeof RealtimeConfigSchema>
