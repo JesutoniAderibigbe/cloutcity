@@ -418,7 +418,8 @@ test.describe('3D city scene', () => {
   }) => {
     await page.goto('/')
     await waitForScene(page)
-    // UX-9: a compact "Map data" chip in the free row's corner; a tap shows the attribution.
+    // UX-9/UX-15: a compact "Map data" chip in the screen's bottom-end corner above the tab bar;
+    // a tap shows the attribution.
     const attribution = page.locator('[data-map-attribution]')
     await expect(attribution).toBeVisible()
     const chip = attribution.locator('summary')
@@ -431,9 +432,10 @@ test.describe('3D city scene', () => {
     await expect(attribution).toContainText('Map: NYC Open Data (NYC DCP)')
     await expect(attribution).toContainText('not endorsed by the MTA, may be inaccurate')
     const box = await attribution.boundingBox()
-    const { top, bottom } = await freeArea(page)
+    const { top } = await freeArea(page)
+    const tabs = await page.locator('[data-overlay-zone="tabs"]').boundingBox()
     expect(box?.y ?? -1).toBeGreaterThanOrEqual(top)
-    expect((box?.y ?? 0) + (box?.height ?? Infinity)).toBeLessThanOrEqual(bottom)
+    expect((box?.y ?? 0) + (box?.height ?? Infinity)).toBeLessThanOrEqual(tabs?.y ?? 0)
     await checkA11y()
 
     const credits = attribution.getByRole('link', { name: 'Credits' })
@@ -637,7 +639,7 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
     { width: 390, height: 480 },
     { width: 844, height: 390 },
   ]) {
-    test(`the attribution sits in the free scene row at ${size.width}x${size.height}`, async ({
+    test(`the attribution sits in the bottom-end corner at ${size.width}x${size.height}`, async ({
       page,
     }) => {
       await page.setViewportSize(size)
@@ -645,7 +647,14 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
       await waitForScene(page)
       const attribution = page.locator('[data-map-attribution]')
       await expect(attribution).toBeVisible()
-      // Opened (UX-9): the chip and its text together must still stay in the free scene row.
+      // UX-15: closed, the chip sits in the corner just above the tab bar, never mid-map.
+      const tabs = await page.locator('[data-overlay-zone="tabs"]').boundingBox()
+      const chip = await attribution.locator('summary').boundingBox()
+      if (!tabs || !chip) throw new Error('no tab bar or chip')
+      expect(tabs.y - (chip.y + chip.height), 'right above the tab bar').toBeLessThanOrEqual(8)
+      expect(size.width - (chip.x + chip.width), 'at the end edge').toBeLessThanOrEqual(8)
+      // Opened (UX-9): the chip and its text together must stay below the HUD, above the tab
+      // bar, and clear of every zone that has content (the empty sheet zone lets it through).
       await attribution.locator('summary').click()
       const box = await attribution.evaluate((element) => {
         const rects = [...element.querySelectorAll('summary, summary ~ div')].map((child) =>
@@ -660,12 +669,12 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
           height: Math.max(...rects.map((r) => r.bottom)) - y,
         }
       })
-      const { top, bottom } = await freeArea(page)
+      const { top } = await freeArea(page)
       expect(box.y, 'below the HUD').toBeGreaterThanOrEqual(top)
-      expect(box.y + box.height, 'above the toast zone').toBeLessThanOrEqual(bottom)
+      expect(box.y + box.height, 'above the tab bar').toBeLessThanOrEqual(tabs.y)
       expect(box.x).toBeGreaterThanOrEqual(0)
       expect(box.x + box.width).toBeLessThanOrEqual(size.width)
-      for (const zone of ['banner', 'hud', 'toast', 'sheet', 'tabs']) {
+      for (const zone of ['banner', 'hud', 'toast', 'tabs']) {
         const zoneBox = await page.locator(`[data-overlay-zone="${zone}"]`).boundingBox()
         if (!zoneBox || zoneBox.height === 0) continue
         const overlaps =
@@ -688,4 +697,30 @@ test.describe('3D city scene: limits, budgets and layout under stress', () => {
       expect(clipped, 'attribution text cut off').toEqual([])
     })
   }
+
+  test('the attribution moves up to the free scene row while a sheet is open (UX-15)', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await waitForScene(page)
+    const chip = page.locator('[data-map-attribution] summary')
+    await page.locator('[data-places-button]').click()
+    await expect(page.locator('[data-places-panel]')).toBeVisible()
+    const { top, bottom } = await freeArea(page)
+    await expect
+      .poll(async () => {
+        const box = await chip.boundingBox()
+        return box !== null && box.y >= top && box.y + box.height <= bottom
+      })
+      .toBe(true)
+    await page.keyboard.press('Escape')
+    await expect(page.locator('[data-places-panel]')).toHaveCount(0)
+    const tabs = await page.locator('[data-overlay-zone="tabs"]').boundingBox()
+    await expect
+      .poll(async () => {
+        const box = await chip.boundingBox()
+        return box !== null && tabs !== null && tabs.y - (box.y + box.height) <= 8
+      })
+      .toBe(true)
+  })
 })

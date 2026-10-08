@@ -145,12 +145,20 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Map attribution (src/scene/MapAttribution.tsx): the free scene row is a size container, and
+/* Map attribution (src/scene/MapAttribution.tsx): the chip's row is a size container, and
    when it is too short for the two-line attribution (landscape phones) the one-line form shows
    instead, so the chip never spills over the HUD or other zones. 5.5rem fits the two-line form
    with its padding at 11 px text; the row's minimum (layout.json) fits the one-line form. */
 .map-attribution-row {
   container-type: size;
+  grid-row: var(--cc-attribution-rows);
+}
+
+/* UX-15: in the bottom-end corner above the tab bar while the sheet zone is empty; back in the
+   free scene row's corner while a sheet (or the Places panel) fills it, so the chip never sits
+   under a sheet. An empty zone's content wrapper is :empty (OverlayLayout.tsx). */
+.cc-overlay:has([data-overlay-zone='sheet'] > :not(:empty)) .map-attribution-row {
+  grid-row: var(--cc-attribution-busy-row);
 }
 
 .map-attribution-compact {

@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react'
+
 interface MapAttributionProps {
   readonly nyc: string
   readonly mta: string
@@ -6,16 +8,22 @@ interface MapAttributionProps {
   readonly credits: string
   /** The chip's label ("Map data"). */
   readonly toggle: string
-  /** The overlay grid rows and free scene row (src/components/overlay/layers.ts). */
+  /** The overlay grid rows (src/components/overlay/layers.ts). */
   readonly gridTemplateRows: string
-  readonly row: number
+  /** Where the chip sits while the sheet zone is empty: the free row down to the tab bar. */
+  readonly rows: string
+  /** Where it sits while a sheet is open: the free scene row only. */
+  readonly busyRow: number
 }
 
 /**
- * Required map attribution (NYC Open Data, MTA; data/geo/SOURCES.md). A compact "ⓘ Map data"
- * chip in the bottom-end corner of the free scene row, so it never covers the middle of the map
- * on a phone (UX-9) nor any HUD, sheet, toast or tab bar (UX-1); one tap opens the attribution
- * and the link to /credits, where the full text lives. A native `<details>`: no JavaScript, so
+ * Required map attribution (NYC Open Data, MTA; data/geo/SOURCES.md). A small "ⓘ Map data" pill
+ * (a 44 px target around it) in the screen's bottom-end corner, just above the tab bar, while no
+ * sheet is open: the empty toast and sheet rows leave the lower part of a phone's map bare, and
+ * the free row's own corner sat in the middle of it (UX-15). While a sheet is open the chip
+ * moves up to the free scene row's bottom-end corner, so it never sits under the sheet nor over
+ * any HUD, toast or tab bar (UX-1; globals.css `.map-attribution-row`, CSS only). One tap opens
+ * the attribution and the link to /credits, where the full text lives. A native `<details>`: no JavaScript, so
  * nothing joins the shell, and it opens with the keyboard as well as a tap. When the row is too
  * short for the two-line text, a container query (globals.css, `.map-attribution-row`) swaps in
  * the one-line form; the row never shrinks below one 44 px target (layout.json
@@ -32,7 +40,8 @@ export function MapAttribution({
   credits,
   toggle,
   gridTemplateRows,
-  row,
+  rows,
+  busyRow,
 }: MapAttributionProps) {
   return (
     <div
@@ -41,16 +50,24 @@ export function MapAttribution({
       style={{ gridTemplateRows }}
     >
       <div
-        className="map-attribution-row flex min-h-0 items-end justify-end overflow-hidden px-2 py-1"
-        style={{ gridRow: row }}
+        className="map-attribution-row flex min-h-0 items-end justify-end overflow-hidden px-1"
+        style={
+          {
+            '--cc-attribution-rows': rows,
+            '--cc-attribution-busy-row': busyRow,
+          } as CSSProperties
+        }
       >
         <details
           data-map-attribution=""
           className="pointer-events-auto relative text-[11px] leading-snug text-muted"
         >
-          <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-end gap-1 rounded-lg glass px-3 font-semibold text-fg focus-visible:outline-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden">
-            <span aria-hidden="true">ⓘ</span>
-            {toggle}
+          {/* The 44 px target stays; only the pill inside it shows, so the chip reads as quiet. */}
+          <summary className="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-end rounded-lg px-1 font-semibold text-fg focus-visible:outline-2 focus-visible:outline-focus [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-1 rounded-full glass px-2 py-0.5 text-[10px] opacity-85">
+              <span aria-hidden="true">ⓘ</span>
+              {toggle}
+            </span>
           </summary>
           {/* Opens to the left of the chip, on the same bottom line, so it fits the shortest free
               row (one 44 px target tall) and never reaches into another zone. */}
