@@ -179,7 +179,9 @@ test.describe('3D city scene', () => {
     await page.goto('/')
     await expect(page.locator('[data-scene-root]')).toHaveAttribute('data-scene-status', 'loading')
     await expect(page.getByRole('status').filter({ hasText: 'Loading the city' })).toBeVisible()
-    const me = page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Me' })
+    const me = page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('button', { name: 'Me', exact: true })
     await me.click()
     await expect(me).toHaveAttribute('aria-current', 'page')
     await expect.poll(() => held.length).toBeGreaterThan(0)

@@ -46,7 +46,7 @@ test.describe('bottom tab bar', () => {
     const map = nav.getByRole('button', { name: 'Map', exact: true })
     await expect(map).toHaveAttribute('aria-current', 'page')
 
-    const me = nav.getByRole('button', { name: 'Me' })
+    const me = nav.getByRole('button', { name: 'Me', exact: true })
     if (test.info().project.use.hasTouch) await me.tap()
     else await me.click()
     await expect(me).toHaveAttribute('aria-current', 'page')

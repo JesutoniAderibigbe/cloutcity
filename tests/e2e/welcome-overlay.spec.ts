@@ -295,6 +295,9 @@ test('the inert background cannot be focused or clicked while the card is open',
   await expect(welcomeDialog(page)).toBeVisible()
 
   await passWelcomeCard(page)
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Me' }).click()
+  await page
+    .getByRole('navigation', { name: 'Main' })
+    .getByRole('button', { name: 'Me', exact: true })
+    .click()
   await expect(tab).toHaveAttribute('aria-current', 'page')
 })
