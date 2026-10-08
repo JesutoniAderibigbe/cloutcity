@@ -593,7 +593,8 @@
         "park": "gamepark-400",
         "water": "gamewater-400"
       },
-      "subwayLiftM": 24
+      "subwayLiftM": 24,
+      "characterMaxM": 20
     },
     "real": {
       "camera": {
@@ -622,7 +623,8 @@
         "pullToCamera": 0.35
       },
       "colors": {},
-      "subwayLiftM": 0
+      "subwayLiftM": 0,
+      "characterMaxM": 9
     }
   }
 }

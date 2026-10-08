@@ -121,6 +121,8 @@ export interface AmbientLifeProps {
   readonly config: Pick<SceneConfig, 'subway' | 'travel' | 'models'> & {
     readonly avatar: AvatarConfig
   }
+  /** The map style's tallest person (scene.json `mapStyles.*.characterMaxM`). */
+  readonly characterMaxM: number
   /** The apartment or creator has the screen. */
   readonly hidden: boolean
   /** The day/night rig's night blend, 0 (day) to 1 (night). */
@@ -137,6 +139,7 @@ export default function AmbientLife({
   createMaterial,
   groundY,
   config: scene,
+  characterMaxM,
   hidden,
   night,
 }: AmbientLifeProps) {
@@ -314,13 +317,16 @@ export default function AmbientLife({
       material: created.material,
       groundY,
       venues,
-      // The player's drawn height (src/scene/avatar/buildAvatar.ts avatarSize × playerScale),
+      // The player's drawn height (src/scene/avatar/buildAvatar.ts mapCharacterHeight),
       // repeated so this chunk does not pull the avatar builder in.
       playerHeight: (distance) =>
         Math.min(
-          avatar.maxHeightM,
-          Math.max(avatar.minHeightM, distance * avatar.heightPerDistance),
-        ) * avatar.playerScale,
+          characterMaxM,
+          Math.min(
+            avatar.maxHeightM,
+            Math.max(avatar.minHeightM, distance * avatar.heightPerDistance),
+          ) * avatar.playerScale,
+        ),
       kits: async () => (await characterKits).townsfolk,
       onChange: () => invalidate(),
       onFailure: (reason) => log.info('ambient life: not loaded', { reason }),
@@ -350,6 +356,7 @@ export default function AmbientLife({
     venues,
     groundY,
     scene,
+    characterMaxM,
     get,
     gl,
     sceneRoot,

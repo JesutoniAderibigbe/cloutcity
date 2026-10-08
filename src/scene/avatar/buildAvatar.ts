@@ -30,6 +30,20 @@ export function avatarSize(distance: number, avatar: AvatarConfig): number {
   )
 }
 
+/**
+ * How tall the map draws a person (the player; the townsfolk take a share of it) at a camera
+ * distance: the avatar size × `playerScale`, so they stay readable as the camera pulls back,
+ * capped at the map style's `characterMaxM`, so past that they shrink on screen with the
+ * buildings and are never drawn taller than the houses around them.
+ */
+export function mapCharacterHeight(
+  distance: number,
+  avatar: AvatarConfig,
+  characterMaxM: number,
+): number {
+  return Math.min(characterMaxM, avatarSize(distance, avatar) * avatar.playerScale)
+}
+
 /** What the drawn look resolved to (model ids and slot colours), as the test hook reports it. */
 export interface AvatarLookInfo {
   readonly head: string

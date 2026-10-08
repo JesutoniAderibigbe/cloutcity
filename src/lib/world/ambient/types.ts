@@ -220,6 +220,7 @@ export interface TownsfolkConfig {
   readonly maxShown: PerAmbientTier<number>
   readonly focusRadiusM: PerAmbientTier<number>
   readonly showBelowDistanceM: PerAmbientTier<number>
+  readonly fadeShare: number
   readonly heightOfPlayer: number
   readonly frontM: number
   readonly spacingOfHeight: number

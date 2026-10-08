@@ -99,6 +99,17 @@ const MIN_TAP_HALF_WIDTH_PX = 14
 /** A local's tap box half-width as a share of its height on screen. */
 const TAP_HALF_WIDTH_SHARE = 0.22
 
+/**
+ * The locals' size multiplier at a camera distance: 1, then over the last `share` of
+ * `showBelowM` an eased shrink to 0, so pulling back never pops them out.
+ */
+export function farFade(distance: number, showBelowM: number, share: number): number {
+  const from = showBelowM * (1 - share)
+  if (distance <= from) return 1
+  const u = Math.max(0, Math.min(1, (showBelowM - distance) / (showBelowM - from)))
+  return u * u * (3 - 2 * u)
+}
+
 const EMPTY: TownsfolkView = {
   status: 'loading',
   drawn: 0,
@@ -216,6 +227,7 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
       frustum.setFromProjectionMatrix(projection)
       camera.getWorldPosition(cameraPosition)
       const h = options.playerHeight(input.distance) * tf.heightOfPlayer
+      const fade = farFade(input.distance, tf.showBelowDistanceM[tier], tf.fadeShare)
       const n = sim.collect(
         input.targetX,
         input.targetY,
@@ -252,7 +264,7 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
         const kitHeight = kitHeights[kitIndex] ?? 1
         if (kit === undefined || kitHeight <= 0) continue
         const slot = kit.count++
-        const size = h / kitHeight
+        const size = (h * fade) / kitHeight
         position.set(s.x, groundY + s.lift, -s.y)
         quaternion.setFromAxisAngle(up, s.yaw)
         scale.set(size, size, size)

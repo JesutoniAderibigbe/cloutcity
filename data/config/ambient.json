@@ -175,10 +175,11 @@
       "high": 2200
     },
     "showBelowDistanceM": {
-      "low": 3000,
-      "mid": 3500,
-      "high": 4000
+      "low": 2400,
+      "mid": 2800,
+      "high": 3200
     },
+    "fadeShare": 0.25,
     "heightOfPlayer": 0.95,
     "frontM": 40,
     "spacingOfHeight": 0.6,

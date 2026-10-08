@@ -228,6 +228,8 @@ const TownsfolkConfigSchema = z.strictObject({
   focusRadiusM: ambientTier(metres),
   /** Drawn only while the camera is at most this far from its target. */
   showBelowDistanceM: ambientTier(metres),
+  /** Over this last share of `showBelowDistanceM` the locals shrink away (no pop). */
+  fadeShare: z.number().gt(0).lt(1),
   /** A local's height as a share of the player's (scene.json `avatar`, × `playerScale`). */
   heightOfPlayer: z.number().gt(0).max(1.5),
   /** The hangout ring's centre this many metres in front of (south of) the place point. */
@@ -407,6 +409,13 @@ const MapStyleSchema = z.strictObject({
    * elevated lines would otherwise meet the roofs of the masses under them.
    */
   subwayLiftM: z.number().nonnegative(),
+  /**
+   * The tallest the map's people (the player and the townsfolk) are ever drawn, in metres. They
+   * grow with the camera distance to stay readable, but never past this: about half the
+   * smallest building beside them (plots.json buildings on the game map, a Queens row house on
+   * the real one), so zooming out never shows people taller than the houses.
+   */
+  characterMaxM: metres,
   pins: z.strictObject({
     /** Venue pins float over their plot buildings (the places layer's lift). */
     venueLift: z.boolean(),
