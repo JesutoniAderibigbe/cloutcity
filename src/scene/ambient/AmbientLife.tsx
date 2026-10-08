@@ -353,6 +353,7 @@ export default function AmbientLife({
       playerMaxHeight: characterMaxM,
       graph: () => created.graph,
       kits: async () => (await characterKits).townsfolk,
+      glowMaterial: created.lampMaterial,
       onChange: () => invalidate(),
       onFailure: (reason) => log.info('ambient life: not loaded', { reason }),
     })

@@ -209,8 +209,8 @@
     "homeShare": 0.2,
     "poses": {
       "low": ["idle", "walk"],
-      "mid": ["idle", "talk", "wave", "walk"],
-      "high": ["idle", "talk", "wave", "walk"]
+      "mid": ["idle", "talk", "wave", "walk", "sit"],
+      "high": ["idle", "talk", "wave", "walk", "sit"]
     },
     "poseShare": {
       "talk": 0.45,
@@ -239,6 +239,20 @@
     "passWave": {
       "share": 0.5,
       "radiusOfHeight": 3
+    },
+    "bench": {
+      "soloShare": 0.22,
+      "crewShare": 0.35,
+      "seatOfHeight": 0.4,
+      "apartOfHeight": 0.75,
+      "behindOfHeight": 0.6,
+      "turnInRad": 0.35,
+      "maxShown": { "low": 0, "mid": 24, "high": 40 },
+      "color": "#8a5a3b"
+    },
+    "night": {
+      "emissive": [0.024, 0.021, 0.017],
+      "lift": 0.3
     },
     "pull": {
       "club": [0.2, 4],

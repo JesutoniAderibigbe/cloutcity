@@ -213,7 +213,7 @@ const distanceScale = z.strictObject({
 })
 
 /** The rig clips a townsperson can be posed in (src/scene/ambient/kitIds.ts). */
-export const TOWNSFOLK_POSES = ['idle', 'talk', 'wave', 'walk'] as const
+export const TOWNSFOLK_POSES = ['idle', 'talk', 'wave', 'walk', 'sit'] as const
 
 /**
  * The townsfolk (S04o): Sims-like locals drawn at the player's size, hanging out at the places
@@ -308,6 +308,36 @@ const TownsfolkConfigSchema = z.strictObject({
   }),
   /** A local standing idle (`share` of them) waves while another walks past within the radius. */
   passWave: z.strictObject({ share: chance, radiusOfHeight: z.number().positive() }),
+  /**
+   * Benches at townsfolk scale (S04r2), drawn by the townsfolk layer on tiers that bake `sit`:
+   * one per crew, `behindOfHeight` behind each place's ring and `apartOfHeight` either side of
+   * its middle, seats `seatOfHeight` apart. A local at home sits on its own seat `soloShare` of
+   * its stays; a crew meeting at home sits together `crewShare` of the time, turned
+   * `turnInRad` in to each other.
+   */
+  bench: z.strictObject({
+    soloShare: chance,
+    crewShare: chance,
+    seatOfHeight: z.number().positive(),
+    apartOfHeight: z.number().nonnegative(),
+    behindOfHeight: z.number().nonnegative(),
+    turnInRad: z.number().nonnegative().max(1),
+    maxShown: ambientTier(z.int().min(0).max(80)),
+    color: HEX,
+  }),
+  /**
+   * Night readability (S04r2): the locals glow `emissive` (linear RGB) at full night through the
+   * shared night-glow program (the vehicles' lamps' and pins'), and their outfits lift `lift` of
+   * the way to white.
+   */
+  night: z.strictObject({
+    emissive: z.tuple([
+      z.number().min(0).max(1),
+      z.number().min(0).max(1),
+      z.number().min(0).max(1),
+    ]),
+    lift: z.number().min(0).max(1),
+  }),
   /**
    * How strongly a place draws visitors, by venue type, as [day, night] weights (1 when not
    * listed): clubs and lounges fill up at night, food spots and coffee by day.

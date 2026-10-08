@@ -213,7 +213,7 @@ export interface DensityConfig {
   readonly night: number
 }
 
-export type TownsfolkPose = 'idle' | 'talk' | 'wave' | 'walk'
+export type TownsfolkPose = 'idle' | 'talk' | 'wave' | 'walk' | 'sit'
 
 /** ambient.json `townsfolk` (S04o, schemas/scene.ts TownsfolkConfigSchema documents each field). */
 export interface TownsfolkConfig {
@@ -260,6 +260,17 @@ export interface TownsfolkConfig {
     readonly loopShare: number
   }
   readonly passWave: { readonly share: number; readonly radiusOfHeight: number }
+  readonly bench: {
+    readonly soloShare: number
+    readonly crewShare: number
+    readonly seatOfHeight: number
+    readonly apartOfHeight: number
+    readonly behindOfHeight: number
+    readonly turnInRad: number
+    readonly maxShown: PerAmbientTier<number>
+    readonly color: string
+  }
+  readonly night: { readonly emissive: readonly [number, number, number]; readonly lift: number }
   readonly pull: Readonly<Record<string, readonly [number, number]>>
   readonly frames: { readonly walk: PerAmbientTier<number>; readonly stand: PerAmbientTier<number> }
   readonly phaseGroups: PerAmbientTier<number>

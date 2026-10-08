@@ -31,6 +31,7 @@ import {
   type Material,
 } from 'three'
 import {
+  TOWNSFOLK_BODIES,
   createTownsfolkSim,
   type TownsfolkProfile,
   type TownsfolkSim,
@@ -43,6 +44,7 @@ import type {
   StreetGraph,
   TownsfolkPose,
 } from '@/lib/world/ambient/types'
+import { NIGHT_GLOW_ATTRIBUTE } from '../lighting/nightGlow'
 import { kitMeshes, type KitMeshes } from './layer'
 import type { AnimatedKit } from './pedestrianKits'
 
@@ -61,6 +63,12 @@ export interface TownsfolkLayerOptions {
   readonly graph: () => Promise<StreetGraph | null>
   /** Body-major kits: kit = body × poses + pose (pedestrianKits.ts bakeTownsfolkKits). */
   readonly kits: () => Promise<readonly AnimatedKit[]>
+  /**
+   * The living city's lamp material (AmbientLayer.lampMaterial: the shared night-glow program
+   * the vehicles' lamps and the pins use). When given the locals draw with it and glow softly at
+   * night (S04r2); never a new program.
+   */
+  readonly glowMaterial?: Material | null
   readonly onChange: () => void
   readonly onFailure?: (reason: string) => void
 }
@@ -84,6 +92,8 @@ export interface TownsfolkView {
   readonly drawCalls: number
   /** Kits with at least one local drawn. */
   readonly kitsDrawn: number
+  /** Benches drawn (S04r2). */
+  readonly benches?: number
 }
 
 export interface TownsfolkLayer {
@@ -164,6 +174,54 @@ export function flatNormals(positions: ArrayLike<number>, out: Float32Array): vo
   }
 }
 
+/** How much of the night glow each bucket takes: the outfit most, the hair least. */
+const GLOW_SHARE: Readonly<Record<string, number>> = {
+  top: 1,
+  bottom: 0.8,
+  skin: 0.55,
+  accent: 0.4,
+}
+
+const liftScratch = new Color()
+const WHITE = new Color(1, 1, 1)
+/** `color` lifted `share` of the way to white (scratch: copy before the next call). */
+function lifted(color: Color | undefined, share: number): Color | undefined {
+  if (color === undefined || share <= 0) return color
+  return liftScratch.copy(color).lerp(WHITE, share)
+}
+
+/**
+ * A low-poly bench (S04r2) one local tall: seat, backrest and two end frames, sized for the
+ * baked `sit` pose (its seat 0.245 of a standing height up, under the sitter's thighs, which
+ * sit just behind the kit's origin), `length` heights long along x, facing +z like the locals.
+ * Non-indexed positions with flat normals, no bottoms (never seen): 40 triangles.
+ */
+export function createBenchGeometry(length: number): BufferGeometry {
+  const positions: number[] = []
+  const normals: number[] = []
+  const quad = (a: number[], b: number[], c: number[], d: number[], n: number[]) => {
+    positions.push(...a, ...b, ...c, ...a, ...c, ...d)
+    for (let i = 0; i < 6; i++) normals.push(...n)
+  }
+  const box = (x0: number, x1: number, y0: number, y1: number, z0: number, z1: number) => {
+    quad([x0, y1, z0], [x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [0, 1, 0])
+    quad([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], [0, 0, 1])
+    quad([x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [0, 0, -1])
+    quad([x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [1, 0, 0])
+    quad([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], [-1, 0, 0])
+  }
+  const half = length / 2
+  box(-half, half, 0.215, 0.245, -0.24, -0.02)
+  box(-half, half, 0.26, 0.48, -0.27, -0.24)
+  box(-half, -half + 0.04, 0, 0.215, -0.24, -0.04)
+  box(half - 0.04, half, 0, 0.215, -0.24, -0.04)
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new BufferAttribute(Float32Array.from(positions), 3))
+  geometry.setAttribute('normal', new BufferAttribute(Float32Array.from(normals), 3))
+  geometry.computeBoundingSphere()
+  return geometry
+}
+
 const EMPTY: TownsfolkView = {
   status: 'loading',
   drawn: 0,
@@ -174,6 +232,7 @@ const EMPTY: TownsfolkView = {
 
 export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkLayer {
   const { tier, config, material, groundY } = options
+  const glowMaterial = options.glowMaterial ?? null
   const tf = config.townsfolk
   const group = new Group()
   group.name = 'townsfolk'
@@ -219,6 +278,13 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
   let steppers: Stepper[][] = []
   let kits: KitMeshes[] = []
   let disposeKits = () => {}
+  /** Benches at townsfolk scale (S04r2): one instanced mesh on the living city's material. */
+  const benchCap = tf.bench.maxShown[tier]
+  let benchKit: KitMeshes | null = null
+  let benchGeometry: BufferGeometry | null = null
+  let standHeight: number[] = []
+  const benchOrder: number[] = []
+  const benchDist = new Map<number, number>()
 
   const stepperFor = (kit: AnimatedKit, g: number, groups: number): Stepper => {
     const geometries = kit.parts.map((part) => {
@@ -235,13 +301,24 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
       normal.setUsage(DynamicDrawUsage)
       geometry.setAttribute('position', position)
       geometry.setAttribute('normal', normal)
+      if (glowMaterial !== null) {
+        // A soft night glow, strongest on the outfit: read under the shared uNightGlow.
+        const share = GLOW_SHARE[part.bucket] ?? 0.5
+        const glow = new Float32Array(position.count * 3)
+        for (let i = 0; i < position.count; i++) {
+          glow[i * 3] = tf.night.emissive[0] * share
+          glow[i * 3 + 1] = tf.night.emissive[1] * share
+          glow[i * 3 + 2] = tf.night.emissive[2] * share
+        }
+        geometry.setAttribute(NIGHT_GLOW_ATTRIBUTE, new BufferAttribute(glow, 3))
+      }
       return geometry
     })
     const meshes = kitMeshes(
       `townsfolk-${kit.id}-${g}`,
       kit.parts.map((part, p) => ({ ...part, geometry: geometries[p] ?? part.geometry })),
       cap,
-      material,
+      glowMaterial ?? material,
       new Set(['skin', 'top', 'bottom', 'accent']),
       kit.triangles,
     )
@@ -265,6 +342,23 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
       })
       kits = steppers.flatMap((list) => list.map((stepper) => stepper.meshes))
       for (const kit of kits) for (const mesh of kit.meshes) group.add(mesh)
+      // The standing height of each body: a sitter is scaled as tall as it stands (S04r2).
+      const standPose = poses.findIndex((pose) => pose !== 'sit')
+      standHeight = TOWNSFOLK_BODIES.map(
+        (_, body) => loaded[body * poses.length + Math.max(0, standPose)]?.heightM ?? 0,
+      )
+      if (benchCap > 0 && sim.benches.length > 0) {
+        benchGeometry = createBenchGeometry(tf.bench.seatOfHeight * 3)
+        benchKit = kitMeshes(
+          'townsfolk-bench',
+          [{ bucket: 'bench', geometry: benchGeometry, color: tf.bench.color }],
+          benchCap,
+          material,
+          new Set(),
+          benchGeometry.getAttribute('position').count / 3,
+        )
+        for (const mesh of benchKit.meshes) group.add(mesh)
+      }
       status = 'ready'
       options.onChange()
     } catch (error) {
@@ -355,6 +449,42 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
     })
   }
 
+  /**
+   * Writes the benches near the camera target and in view into `kit`, nearest first, at the
+   * locals' drawn size (the frustum was set by the update that called this). Returns how many.
+   */
+  function placeBenches(input: TownsfolkUpdate, kit: KitMeshes): number {
+    const h = options.playerHeight(input.distance) * tf.heightOfPlayer
+    const size = h * farFade(input.distance, tf.showBelowDistanceM[tier], tf.fadeShare)
+    if (size <= 0) return 0
+    const reach = tf.focusRadiusM[tier]
+    benchOrder.length = 0
+    benchDist.clear()
+    sim.benches.forEach((bench, b) => {
+      const dx = bench.x - input.targetX
+      const dy = bench.y - input.targetY
+      if (dx * dx + dy * dy > reach * reach) return
+      sphere.center.set(bench.x, groundY + size / 4, -bench.y)
+      sphere.radius = size
+      if (!frustum.intersectsSphere(sphere)) return
+      benchOrder.push(b)
+      benchDist.set(b, sphere.center.distanceToSquared(cameraPosition))
+    })
+    benchOrder.sort((a, b) => (benchDist.get(a) ?? 0) - (benchDist.get(b) ?? 0) || a - b)
+    const shown = Math.min(benchCap, benchOrder.length)
+    for (let k = 0; k < shown; k++) {
+      const bench = sim.benches[benchOrder[k] ?? 0]
+      if (bench === undefined) continue
+      position.set(bench.x, groundY, -bench.y)
+      quaternion.setFromAxisAngle(up, bench.yaw)
+      scale.set(size, size, size)
+      matrix.compose(position, quaternion, scale)
+      matrix.toArray(kit.matrices.array, k * 16)
+    }
+    kit.count = shown
+    return shown
+  }
+
   function update(input: TownsfolkUpdate): TownsfolkView {
     for (const kit of kits) kit.count = 0
     drawnCount = 0
@@ -367,6 +497,8 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
       camera.getWorldPosition(cameraPosition)
       const h = options.playerHeight(input.distance) * tf.heightOfPlayer
       const fade = farFade(input.distance, tf.showBelowDistanceM[tier], tf.fadeShare)
+      // At night outfits lift towards white, so the locals read against the dark map (S04r2).
+      const lift = tf.night.lift * Math.max(0, Math.min(1, input.night ?? 0))
       advance(input.tS, h)
       const n = sim.collect(
         input.targetX,
@@ -402,20 +534,35 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
         const kitIndex = r.body * poses.length + Math.max(0, poses.indexOf(s.pose))
         const groupList = steppers[kitIndex]
         const stepper = groupList?.[r.hash % Math.max(1, groupList.length)]
-        const kitHeight = stepper?.kit.heightM ?? 0
+        // A sitter is scaled by its standing height, so it sits as tall as it stands.
+        const kitHeight =
+          s.pose === 'sit'
+            ? (standHeight[r.body] ?? stepper?.kit.heightM ?? 0)
+            : (stepper?.kit.heightM ?? 0)
         if (stepper === undefined || kitHeight <= 0) continue
         const kit = stepper.meshes
         const slot = kit.count++
         // A local going in or out of a door shrinks or grows there (S04r).
         const size = (h * fade * s.fade) / kitHeight
-        position.set(s.x, groundY, -s.y)
+        const bench = s.bench >= 0 ? sim.benches[s.bench] : undefined
+        if (bench !== undefined) {
+          // On its seat of the bench as drawn now (the bench is drawn at the locals' size).
+          const along = s.seat * h * fade
+          position.set(
+            bench.x + Math.cos(bench.yaw) * along,
+            groundY,
+            -(bench.y - Math.sin(bench.yaw) * along),
+          )
+        } else {
+          position.set(s.x, groundY, -s.y)
+        }
         quaternion.setFromAxisAngle(up, s.yaw)
         scale.set(size, size, size)
         matrix.compose(position, quaternion, scale)
         matrix.toArray(kit.matrices.array, slot * 16)
         setColor(kit, 'skin', slot, skins[r.skin])
-        setColor(kit, 'top', slot, tops[r.top])
-        setColor(kit, 'bottom', slot, bottoms[r.bottom])
+        setColor(kit, 'top', slot, lifted(tops[r.top], lift))
+        setColor(kit, 'bottom', slot, lifted(bottoms[r.bottom], lift))
         setColor(kit, 'accent', slot, hairs[r.hair])
         triangles += kit.triangles
         let entry = drawn[drawnCount]
@@ -433,6 +580,22 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
     for (const list of steppers) for (const stepper of list) showFrame(stepper)
     let drawCalls = 0
     let kitsDrawn = 0
+    let benchesDrawn = 0
+    if (benchKit !== null) {
+      benchKit.count = 0
+      if (status === 'ready' && input.distance <= tf.showBelowDistanceM[tier]) {
+        benchesDrawn = placeBenches(input, benchKit)
+        triangles += benchesDrawn * benchKit.triangles
+      }
+      for (const mesh of benchKit.meshes) {
+        mesh.count = benchKit.count
+        mesh.visible = benchKit.count > 0
+      }
+      if (benchKit.count > 0) {
+        benchKit.matrices.needsUpdate = true
+        drawCalls += benchKit.meshes.length
+      }
+    }
     for (const kit of kits) {
       for (const mesh of kit.meshes) {
         mesh.count = kit.count
@@ -447,7 +610,7 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
         kitsDrawn++
       }
     }
-    last = { status, drawn: drawnCount, triangles, drawCalls, kitsDrawn }
+    last = { status, drawn: drawnCount, triangles, drawCalls, kitsDrawn, benches: benchesDrawn }
     return last
   }
 
@@ -516,7 +679,7 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
       }
       return out
     },
-    meshes: () => kits.flatMap((kit) => kit.meshes),
+    meshes: () => [...kits.flatMap((kit) => kit.meshes), ...(benchKit?.meshes ?? [])],
     dispose() {
       disposed = true
       group.removeFromParent()
@@ -525,6 +688,8 @@ export function createTownsfolkLayer(options: TownsfolkLayerOptions): TownsfolkL
         for (const stepper of list) for (const geometry of stepper.geometries) geometry.dispose()
       }
       disposeKits()
+      for (const mesh of benchKit?.meshes ?? []) mesh.dispose()
+      benchGeometry?.dispose()
     },
   }
 }

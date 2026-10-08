@@ -289,7 +289,8 @@ describe('townsfolk social life (S04r)', () => {
       const crews = new Map<number, { x: number; y: number; yaw: number; venue: number }[]>()
       for (let i = 0; i < n; i++) {
         const p = s.samples[i]
-        if (p === undefined || p.pose === 'walk') continue
+        // Crews on their bench sit side by side (checked below).
+        if (p === undefined || p.pose === 'walk' || p.pose === 'sit') continue
         const stay = s.stayAt(p.resident, t)
         if (stay?.kind !== 'crew') continue
         const list = crews.get(stay.crew) ?? []
@@ -416,6 +417,59 @@ describe('townsfolk social life (S04r)', () => {
       }
     }
     expect(reactions).toBeGreaterThan(0)
+  })
+})
+
+describe('townsfolk benches (S04r2)', () => {
+  it('puts benches only on tiers that bake the sit pose, one per crew a place', () => {
+    expect(sim('low', TOWN).benches).toHaveLength(0)
+    const crews = Math.floor(tf.perVenue.mid / 2)
+    const s = sim('mid', TOWN)
+    expect(s.benches).toHaveLength(TOWN.length * crews)
+    // Two places at one spot: only the first gets benches (no shared seats).
+    const twin = sim('mid', [...TOWN, { id: 'twin', x: 0, y: 0, kind: 'club' }])
+    expect(twin.benches).toHaveLength(TOWN.length * crews)
+    for (const bench of s.benches) {
+      const venue = TOWN[bench.venue]
+      expect(venue).toBeDefined()
+      // Behind the ring, between it and the building.
+      expect(bench.y).toBeGreaterThan((venue?.y ?? 0) - tf.frontM)
+      expect(bench.y).toBeLessThan(venue?.y ?? 0)
+    }
+  })
+
+  it('sits locals on their own seats (never two on one), crews together on one bench', () => {
+    const s = sim('high', TOWN)
+    let sitters = 0
+    let crewBench = 0
+    for (let t = 0; t < tf.epochS * 20; t += 3) {
+      const n = s.collect(240, 160, 2000, t, 1)
+      const taken = new Set<string>()
+      const byCrew = new Map<number, Set<number>>()
+      for (let i = 0; i < n; i++) {
+        const p = s.samples[i]
+        if (p?.pose !== 'sit') continue
+        sitters++
+        expect(p.bench).toBeGreaterThanOrEqual(0)
+        const seat = `${p.bench}:${p.seat}`
+        expect(taken.has(seat)).toBe(false)
+        taken.add(seat)
+        const bench = s.benches[p.bench]
+        expect(Math.hypot(p.x - (bench?.x ?? 0), p.y - (bench?.y ?? 0))).toBeLessThan(H)
+        const stay = s.stayAt(p.resident, t)
+        if (stay?.kind === 'crew') {
+          const set = byCrew.get(stay.crew) ?? new Set<number>()
+          set.add(p.bench)
+          byCrew.set(stay.crew, set)
+        }
+      }
+      for (const set of byCrew.values()) {
+        expect(set.size).toBe(1)
+        crewBench++
+      }
+    }
+    expect(sitters).toBeGreaterThan(20)
+    expect(crewBench).toBeGreaterThan(0)
   })
 })
 

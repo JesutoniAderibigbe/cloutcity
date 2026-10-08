@@ -92,6 +92,19 @@ export interface TownsfolkSample {
   speed: number
   /** Size share, 1 drawn in full; below 1 while going in or coming out of a door (S04r). */
   fade: number
+  /** The bench (index into `benches`) a sitting local sits on, else -1 (S04r2). */
+  bench: number
+  /** Where along that bench, in local heights from its middle (positive: the bench's +x). */
+  seat: number
+}
+
+/** A bench at townsfolk scale in front of a place (S04r2), in local metres. */
+export interface TownsfolkBench {
+  readonly venue: number
+  readonly x: number
+  readonly y: number
+  /** Turn about up; 0 faces the camera (south), like the locals. */
+  readonly yaw: number
 }
 
 export interface TownsfolkPalette {
@@ -116,6 +129,8 @@ export interface TownsfolkSimOptions {
 export interface TownsfolkSim {
   readonly residents: readonly Resident[]
   readonly samples: readonly TownsfolkSample[]
+  /** Every place's benches (none on a tier without the `sit` pose). */
+  readonly benches: readonly TownsfolkBench[]
   /**
    * Writes every active local whose home is within `radiusM` of (x, y) (plus a walk) at city
    * time `tS` into `samples`, and returns how many (locals inside a place are left out).
@@ -321,7 +336,7 @@ function dijkstra(graph: StreetGraph, from: number, to: number, limitM: number):
 }
 
 /** What a local spends a stay doing (S04r). */
-export type TownsfolkStayKind = 'ring' | 'crew' | 'inside'
+export type TownsfolkStayKind = 'ring' | 'crew' | 'inside' | 'bench'
 
 /** One stay, planned for a cycle. Mutable scratch (no allocation per tick). */
 interface Stay {
@@ -335,9 +350,26 @@ interface Stay {
   fy: number
   /** The crew's leader (resident index) on a crew stay, else -1. */
   crew: number
+  /** Sitting on a bench (a `bench` stay, or a crew sitting together): its index, else -1. */
+  bench: number
+  /** The seat along it, in local heights from its middle. */
+  seat: number
+  /** The way a sitter faces (the bench's way, turned a little to its crew). */
+  sitYaw: number
 }
 
-const newStay = (): Stay => ({ venue: 0, kind: 'ring', x: 0, y: 0, fx: 0, fy: 0, crew: -1 })
+const newStay = (): Stay => ({
+  venue: 0,
+  kind: 'ring',
+  x: 0,
+  y: 0,
+  fx: 0,
+  fy: 0,
+  crew: -1,
+  bench: -1,
+  seat: 0,
+  sitYaw: 0,
+})
 
 /** Facing (fx, fy) from (x, y): yaw = atan2(dx, -dy) turns the model's +z that way. */
 const faceTo = (x: number, y: number, fx: number, fy: number) => Math.atan2(fx - x, -(fy - y))
@@ -492,12 +524,76 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
   /** How far past the door a local walks in while it fades. */
   const stepInM = config.inside.stepOfHeight * h
 
+  // ---- benches (S04r2) ---------------------------------------------------------------------
+  /**
+   * One bench per crew behind each place's ring (between it and the building), facing the camera:
+   * each seat belongs to one local of the place (its crew's bench, its place in the crew), so two
+   * sitters never share a seat. Only on tiers that bake the `sit` pose.
+   */
+  const sits = has('sit')
+  const benchConfig = config.bench
+  const benches: TownsfolkBench[] = []
+  /** The index of each place's first bench, or -1 (a place sharing its spot has none). */
+  const firstBench: number[] = []
+  if (sits) {
+    const clear = (2 * benchConfig.apartOfHeight + 3 * benchConfig.seatOfHeight) * h
+    venues.forEach((venue, v) => {
+      // Two places drawn at one spot would share their benches: only the first gets them.
+      const crowded = venues.some(
+        (other, u) => u < v && Math.hypot(other.x - venue.x, other.y - venue.y) < clear,
+      )
+      firstBench.push(crowded ? -1 : benches.length)
+      if (crowded) return
+      for (let c = 0; c < crews; c++) {
+        const side = crews === 1 ? -0.5 : c - (crews - 1) / 2
+        benches.push({
+          venue: v,
+          x: centreX(v) + side * 2 * benchConfig.apartOfHeight * h,
+          y: centreY(v) + ringRadius + benchConfig.behindOfHeight * h,
+          yaw: 0,
+        })
+      }
+    })
+  }
+  /** Writes a resident's seat on its crew's bench at home into `out` (sitting `yawTurn` in). */
+  const seatOf = (i: number, r: Resident, out: Stay, crewTurn: boolean): void => {
+    const index = (firstBench[r.home] ?? 0) + crewOfSlot(r.slot)
+    const bench = benches[index]
+    const size = sizeOf[i] ?? 1
+    const k = (memberOf[i] ?? 0) - (size - 1) / 2
+    out.bench = index
+    out.seat = k * benchConfig.seatOfHeight
+    const along = out.seat * h
+    const yaw = bench?.yaw ?? 0
+    out.x = (bench?.x ?? 0) + Math.cos(yaw) * along
+    out.y = (bench?.y ?? 0) - Math.sin(yaw) * along
+    // A crew turns in to each other: the one on the left a little right, and so on.
+    out.sitYaw = yaw - (crewTurn ? Math.sign(k) * benchConfig.turnInRad : 0)
+    out.fx = out.x + Math.sin(out.sitYaw)
+    out.fy = out.y - Math.cos(out.sitYaw)
+  }
+
   /** Writes the stay of resident `i` in `epoch` into `out`. */
   const stayOf = (i: number, r: Resident, epoch: number, out: Stay): Stay => {
     const venue = venueIn(i, r, epoch)
     out.venue = venue
     out.crew = -1
+    out.bench = -1
+    out.seat = 0
+    out.sitYaw = 0
     if (together(i, epoch)) {
+      if (
+        sits &&
+        venue === r.home &&
+        (firstBench[r.home] ?? -1) >= 0 &&
+        hash01(seed, crewHash[i] ?? 0, epoch, 0x8b) < benchConfig.crewShare
+      ) {
+        // The crew sits together on its bench at home.
+        seatOf(i, r, out, true)
+        out.kind = 'crew'
+        out.crew = leaderOf[i] ?? i
+        return out
+      }
       // A huddle just outside the ring, where the leader's ring spot is: members face its middle.
       const leader = residents[leaderOf[i] ?? i] ?? r
       const theta = angleOf(leader, venue)
@@ -511,6 +607,16 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
       out.y = out.fy + Math.cos(phi) * rad
       out.kind = 'crew'
       out.crew = leaderOf[i] ?? i
+      return out
+    }
+    if (
+      sits &&
+      venue === r.home &&
+      (firstBench[r.home] ?? -1) >= 0 &&
+      hash01(seed, r.hash, epoch, 0x8c) < benchConfig.soloShare
+    ) {
+      seatOf(i, r, out, false)
+      out.kind = 'bench'
       return out
     }
     if (hash01(seed, r.hash, epoch, 0x83) < config.inside.share) {
@@ -765,6 +871,7 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
 
   /** Where a standing local faces at `tau` into its stay (turning between segments). */
   const yawAt = (r: Resident, epoch: number, stay: Stay, tau: number, leaveS: number): number => {
+    if (stay.bench >= 0) return stay.sitYaw
     if (stay.kind === 'crew') return faceTo(stay.x, stay.y, stay.fx, stay.fy)
     if (stay.kind === 'inside') return tau <= 0 ? NORTH : SOUTH
     const t = Math.max(0, Math.min(leaveS, tau))
@@ -829,6 +936,8 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
     out.resident = index
     out.speed = 0
     out.fade = 1
+    out.bench = -1
+    out.seat = 0
     if (walk !== null && tau >= leaveS) {
       const next = stayOf(index, r, epoch + 1, sb)
       const toYaw = yawAt(r, epoch + 1, next, 0, config.epochS)
@@ -861,8 +970,15 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
     }
     out.x = stay.x
     out.y = stay.y
+    if (stay.kind === 'bench') {
+      out.yaw = stay.sitYaw
+      out.pose = 'sit'
+      out.bench = stay.bench
+      out.seat = stay.seat
+      return true
+    }
     if (stay.kind === 'crew') {
-      out.yaw = faceTo(stay.x, stay.y, stay.fx, stay.fy)
+      out.yaw = stay.bench >= 0 ? stay.sitYaw : faceTo(stay.x, stay.y, stay.fx, stay.fy)
       // Hello as they meet; goodbye before they part (a crew leaving together just goes).
       const prev = stayOf(index, r, epoch - 1, sb)
       const met = Math.hypot(prev.x - stay.x, prev.y - stay.y) > 0.05 * h
@@ -870,6 +986,12 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
       const parts = walk !== null && !(next.kind === 'crew' && next.crew === stay.crew)
       if (has('wave') && ((met && tau < config.waveS) || (parts && tau >= leaveS - config.waveS))) {
         out.pose = 'wave'
+        return true
+      }
+      if (stay.bench >= 0) {
+        out.pose = 'sit'
+        out.bench = stay.bench
+        out.seat = stay.seat
         return true
       }
       out.pose = segmentPose(r, epoch, Math.floor(tau / config.segmentS), true)
@@ -921,6 +1043,7 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
   return {
     residents,
     samples,
+    benches,
     collect(x, y, radiusM, tS, share, nightBlend = 0) {
       night = Math.max(0, Math.min(1, nightBlend))
       let n = 0
@@ -935,7 +1058,17 @@ export function createTownsfolkSim(options: TownsfolkSimOptions): TownsfolkSim {
         if (hash01(seed, r.hash, 0x78) >= share) continue
         let sample = samples[n]
         if (sample === undefined) {
-          sample = { resident: 0, x: 0, y: 0, yaw: 0, pose: standing, speed: 0, fade: 1 }
+          sample = {
+            resident: 0,
+            x: 0,
+            y: 0,
+            yaw: 0,
+            pose: standing,
+            speed: 0,
+            fade: 1,
+            bench: -1,
+            seat: 0,
+          }
           samples.push(sample)
         }
         if (write(sample, i, r, tS)) n++
