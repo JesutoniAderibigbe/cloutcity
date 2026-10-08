@@ -45,7 +45,7 @@ import { NEAR_M, RoomOrbit, type FreeArea, type RoomOrbitHandle } from './RoomOr
 import { createPlaceholderVisuals } from './visuals'
 import type { ApartmentViewProps } from './types'
 
-// The player's avatar (S16a) loads in its own chunk with the model and look runtimes.
+// The player's Sim (S16a, S40c) loads in its own chunk with the model and look runtimes.
 const RoomAvatar = lazy(() => import('./RoomAvatar'))
 
 const GL = {
@@ -319,7 +319,11 @@ export default function ApartmentCanvas({
         />
         <Suspense fallback={null}>
           <RoomAvatar
+            home={home}
             interior={interior}
+            placed={placed}
+            // Only buy mode's grid takes taps from the Sim: a selected item's outline does not.
+            gridShown={cells !== null && Object.values(cells).some((state) => state !== 'selected')}
             tier={tier}
             toonRamp={toonRamp}
             avatarHeightM={apartmentConfig.avatarHeightM}

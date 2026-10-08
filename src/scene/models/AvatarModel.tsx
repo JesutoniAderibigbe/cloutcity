@@ -19,6 +19,7 @@ import {
   Matrix4,
   SkinnedMesh,
   Vector3,
+  type AnimationAction,
   type AnimationClip,
   type Material,
   type Object3D,
@@ -284,6 +285,7 @@ export function AvatarModel({
   name,
   scale = 1,
   shadows = false,
+  fadeS = 0,
   onStatus,
   onAssembled,
 }: {
@@ -298,9 +300,14 @@ export function AvatarModel({
   readonly scale?: number
   /** Casts the sun's shadow (the high tier's one directional shadow map). */
   readonly shadows?: boolean
+  /**
+   * Cross-fades from the last clip to a new one over this many seconds (S40c: the room's Sim
+   * walking into a sit); 0 cuts. A fade only plays while `animate` is true.
+   */
+  readonly fadeS?: number
   readonly onStatus?: (status: AvatarStatus) => void
-  /** The assembled avatar, for callers that size or measure it. */
-  readonly onAssembled?: (avatar: AssembledAvatar | null) => void
+  /** The assembled avatar and its rig's clips, for callers that size, measure or drive it. */
+  readonly onAssembled?: (avatar: AssembledAvatar | null, clips: readonly AnimationClip[]) => void
 }) {
   const { material } = useModelsContext()
   const invalidate = useThree((state) => state.invalidate)
@@ -364,26 +371,43 @@ export function AvatarModel({
 
   useEffect(() => {
     if (ready === null) return
-    onAssembledRef.current?.(ready.assembled)
+    onAssembledRef.current?.(ready.assembled, ready.rig.clips)
     return () => {
-      onAssembledRef.current?.(null)
+      onAssembledRef.current?.(null, [])
       // The avatar leaves the scene (unmount, or rebuilt for new parts): no longer 'ready'.
       onStatusRef.current?.('loading')
       ready.assembled.dispose()
     }
   }, [ready])
 
+  // The action playing now: a new clip fades in from it (or cuts, with no fade), and it stops
+  // with the avatar.
+  const playing = useRef<AnimationAction | null>(null)
+  const fadeRef = useRef(fadeS)
+  useEffect(() => {
+    fadeRef.current = fadeS
+  })
   useEffect(() => {
     if (ready === null) return
     const { mixer } = ready.assembled
     const action = mixer.clipAction(clipNamed(ready.rig, clip))
+    const previous = playing.current
     action.reset().play()
+    if (previous !== null && previous !== action) {
+      if (fadeRef.current > 0) action.crossFadeFrom(previous, fadeRef.current, false)
+      else previous.stop()
+    }
+    playing.current = action
     mixer.update(0)
     invalidate()
-    return () => {
-      action.stop()
-    }
   }, [ready, clip, invalidate])
+  useEffect(
+    () => () => {
+      playing.current?.stop()
+      playing.current = null
+    },
+    [ready],
+  )
 
   // The frame lease: while animating, every frame advances the mixer and asks for the next.
   useFrame((_, delta) => {

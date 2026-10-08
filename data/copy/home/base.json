@@ -46,6 +46,10 @@
     "home.mode.label": "Home view",
     "home.mode.room": "Your place",
     "home.mode.buy": "Buy mode",
-    "home.decor.offline": "Your furniture and buy mode need a connection the first time. Rest and moving still work."
+    "home.decor.offline": "Your furniture and buy mode need a connection the first time. Rest and moving still work.",
+    "home.sim.bubble.sleep": "Zzz",
+    "home.sim.bubble.nap": "Zzz",
+    "home.sim.bubble.cook": "Sizzle",
+    "home.sim.bubble.eat": "Mmm"
   }
 }

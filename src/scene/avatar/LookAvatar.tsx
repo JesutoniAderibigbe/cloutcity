@@ -9,6 +9,7 @@
  * it only ever loads in lazy chunks, never on the playable path (PERF-6).
  */
 import { useEffect, useMemo } from 'react'
+import type { AnimationClip } from 'three'
 import avatarRefsJson from '@data/avatar/scene.derived.json'
 import { repairLook, type PublicAvatar } from '@/engine/appearance'
 import { effectiveLook } from '@/engine/avatarLook'
@@ -35,6 +36,7 @@ export function LookAvatar({
   name,
   fitHeight = false,
   shadows,
+  fadeS,
   onStatus,
   onAssembled,
   onResolved,
@@ -47,7 +49,9 @@ export function LookAvatar({
   readonly fitHeight?: boolean
   readonly shadows?: boolean
   readonly onStatus?: (status: AvatarStatus) => void
-  readonly onAssembled?: (avatar: AssembledAvatar | null) => void
+  readonly onAssembled?: (avatar: AssembledAvatar | null, clips: readonly AnimationClip[]) => void
+  /** Cross-fade between clips, in seconds (AvatarModel `fadeS`). */
+  readonly fadeS?: number
   /** What the look resolved to (the test hooks read it). */
   readonly onResolved?: (resolved: ResolvedLook) => void
 }) {
@@ -65,6 +69,7 @@ export function LookAvatar({
       scale={scale}
       {...(name === undefined ? {} : { name })}
       {...(shadows === undefined ? {} : { shadows })}
+      {...(fadeS === undefined ? {} : { fadeS })}
       {...(onStatus === undefined ? {} : { onStatus })}
       {...(onAssembled === undefined ? {} : { onAssembled })}
     />

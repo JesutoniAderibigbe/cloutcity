@@ -1,0 +1,141 @@
+{
+  "walk": {
+    "speedMps": 0.9,
+    "accelMps2": 2.4,
+    "turnDegPerS": 420,
+    "strideRigUnits": 1.233,
+    "minTimeScale": 0.35,
+    "clearanceM": 0.2,
+    "edgeM": 0.3
+  },
+  "fadeS": 0.25,
+  "enterS": 0.75,
+  "exitS": 0.6,
+  "poses": {
+    "stand": {
+      "clip": "idle",
+      "contactRigUnits": [0, 0, 0],
+      "tiltDeg": 0
+    },
+    "sit": {
+      "clip": "sit",
+      "contactRigUnits": [0, 0.53, -0.2],
+      "tiltDeg": 0
+    },
+    "lie": {
+      "clip": "idle",
+      "contactRigUnits": [0, 0.97, -0.08],
+      "tiltDeg": -90
+    },
+    "cook": {
+      "clip": "interact",
+      "contactRigUnits": [0, 0, 0],
+      "tiltDeg": 0
+    },
+    "table": {
+      "clip": "talk",
+      "contactRigUnits": [0, 0, 0],
+      "tiltDeg": 0
+    },
+    "grab": {
+      "clip": "interact",
+      "contactRigUnits": [0, 0, 0],
+      "tiltDeg": 0
+    }
+  },
+  "props": {
+    "pan": {
+      "parts": [
+        {
+          "shape": "disc",
+          "size": [0.3, 0.05, 0.3],
+          "at": [0, 0.025, 0],
+          "token": "charcoal-800"
+        },
+        {
+          "shape": "box",
+          "size": [0.05, 0.03, 0.26],
+          "at": [0, 0.04, 0.26],
+          "token": "charcoal-800"
+        },
+        {
+          "shape": "disc",
+          "size": [0.2, 0.03, 0.2],
+          "at": [0, 0.05, 0],
+          "token": "orange-400"
+        }
+      ]
+    },
+    "plate": {
+      "parts": [
+        {
+          "shape": "disc",
+          "size": [0.24, 0.02, 0.24],
+          "at": [0, 0.01, 0],
+          "token": "cream-100"
+        },
+        {
+          "shape": "disc",
+          "size": [0.14, 0.04, 0.14],
+          "at": [0, 0.035, 0],
+          "token": "orange-400"
+        }
+      ]
+    }
+  },
+  "actions": {
+    "sleep": [
+      {
+        "poses": ["lie"],
+        "models": ["bed", "couch"],
+        "holdMs": 7000,
+        "bubble": "home.sim.bubble.sleep"
+      }
+    ],
+    "nap": [
+      {
+        "poses": ["lie"],
+        "models": ["couch", "bed"],
+        "holdMs": 4500,
+        "bubble": "home.sim.bubble.nap"
+      }
+    ],
+    "home-meal": [
+      {
+        "poses": ["grab"],
+        "models": ["fridge"],
+        "holdMs": 1400,
+        "optional": true
+      },
+      {
+        "poses": ["cook"],
+        "models": ["stove"],
+        "holdMs": 3800,
+        "prop": "pan",
+        "propAt": "anchor",
+        "bubble": "home.sim.bubble.cook"
+      },
+      {
+        "poses": ["sit", "table"],
+        "models": ["armchair", "couch", "crate", "bed", "desk"],
+        "holdMs": 3200,
+        "prop": "plate",
+        "propAt": "hands",
+        "bubble": "home.sim.bubble.eat"
+      }
+    ]
+  },
+  "fallback": {
+    "poses": ["stand"],
+    "holdMs": 2500
+  },
+  "hands": {
+    "sit": [0, 0.68, 0.24],
+    "table": [0, 0.98, 0.3],
+    "stand": [0, 0.98, 0.3]
+  },
+  "bubble": {
+    "aboveHeadM": 0.32,
+    "joint": "head"
+  }
+}
