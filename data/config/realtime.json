@@ -4,5 +4,17 @@
   "heartbeatIntervalMs": 60000,
   "moveMinIntervalMs": 1000,
   "emoteRateLimit": { "max": 5, "windowMs": 10000 },
-  "budgetMsgsPerPlayerMinute": 32
+  "budgetMsgsPerPlayerMinute": 32,
+  "presence": {
+    "beatIntervalMs": 30000,
+    "snapshotIntervalMs": 15000,
+    "backoffMaxMs": 120000,
+    "hideAfterFailures": 2,
+    "onlineTtlS": 90,
+    "snapshotMax": 60,
+    "publicSnapshotMax": 40,
+    "publicCacheS": 15,
+    "beatsPerMinute": 6,
+    "snapshotsPerMinute": 8
+  }
 }
