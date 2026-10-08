@@ -215,6 +215,32 @@ Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 350
 - L2: 478 triangles, 8052 bytes (`public/landmarks/midtown-terminal/lod2.glb`)
 - L3: 156 triangles, 4692 bytes (`public/landmarks/midtown-terminal/lod3.glb`)
 
+### penn-station
+
+Retrieved 2026-10-08. Sources:
+
+- `wikidata`: Wikidata Q54451 (Pennsylvania Station), CC0-1.0, <https://www.wikidata.org/wiki/Q54451>
+
+Dimensions:
+
+- `heightM`: 13.8 m (estimate): the entrance pavilions' roofs above the street
+- `pavilion`: 18 × 14 m (estimate): each entrance pavilion's width and depth
+- `pavilionM`: 13 m (estimate): the entrance pavilions' height
+- `pavilionSpacingM`: 140 m (estimate): between the two pavilions' centres
+- `canopy`: 110 × 24 m (estimate): the concourse canopy's length (widthM) and width (depthM)
+- `canopyM`: 10 m (estimate): the canopy's height
+
+Readability scale (drawn width ÷ true width): .
+
+Game scale: heights ×1.4, widths ×1.1. Game scale (orchestrator decision 2026-10-08, the user may overrule): heights x1.4 and widths x1.1, within the frame's exclusion, so the station reads at the game camera. Wikidata gives no dimensions, so every number is an estimate (the S07a kit's stylised proportions).
+
+Built with Blender 5.2.2 (d13f752e3b9c) under caps low 600 / mid 1800 / high 3500 triangles:
+
+- L0: 688 triangles, 11552 bytes (`public/landmarks/penn-station/lod0.glb`)
+- L1: 332 triangles, 7456 bytes (`public/landmarks/penn-station/lod1.glb`)
+- L2: 144 triangles, 4876 bytes (`public/landmarks/penn-station/lod2.glb`)
+- L3: 64 triangles, 3732 bytes (`public/landmarks/penn-station/lod3.glb`)
+
 ### queensboro-bridge
 
 Retrieved 2026-10-08. Sources:

@@ -36,7 +36,6 @@ const PENDING = new Set([
   'city-hall',
   'brooklyn-borough-hall',
   'queens-borough-hall',
-  'penn-station',
   'jamaica-station',
   'dumbo',
   'coney-island-boardwalk',

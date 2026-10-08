@@ -13,10 +13,10 @@ from archetypes import facade, setback
 from cclib import curves, env, prim
 
 LEVELS = {
-    0: {"rows": 1.0, "trims": True, "arc": 8, "supports": 1.0, "chamfer": True},
-    1: {"rows": 0.55, "trims": True, "arc": 5, "supports": 1.0, "chamfer": False},
-    2: {"rows": 0.3, "trims": False, "arc": 3, "supports": 0.5, "chamfer": False},
-    3: {"rows": 0.15, "trims": False, "arc": 1, "supports": 0.0, "chamfer": False},
+    0: {"rows": 1.0, "trims": True, "arc": 8, "supports": 1.0, "chamfer": True, "skylights": 8},
+    1: {"rows": 0.55, "trims": True, "arc": 5, "supports": 1.0, "chamfer": False, "skylights": 4},
+    2: {"rows": 0.3, "trims": False, "arc": 3, "supports": 0.5, "chamfer": False, "skylights": 0},
+    3: {"rows": 0.15, "trims": False, "arc": 1, "supports": 0.0, "chamfer": False, "skylights": 0},
 }
 
 TRIM_TONE = 1.1
@@ -110,7 +110,16 @@ def _concourse(spec, flags, density, builder, level):
     ch = z0 + canopy["height"]
     builder.add(prim.box(-canopy["length"] / 2, canopy["length"] / 2, cy - canopy["width"] / 2, cy + canopy["width"] / 2,
                          ch - canopy["thickness"], ch), spec["canopy_role"], glow=builder.colour("lamp", 0.3))
-    supports = int(round(canopy["supports"] * flags["supports"]))
+    supports = int(round(canopy["supports"] * flags["supports"] * min(density, 2.0)))
+    lights = int(round(flags["skylights"] * density))
+    for i in range(lights):
+        # Skylight strips across the canopy roof, lit from below at night.
+        x0 = -canopy["length"] / 2 + canopy["length"] * (i + 0.2) / lights
+        x1 = -canopy["length"] / 2 + canopy["length"] * (i + 0.8) / lights
+        y0, y1 = cy - canopy["width"] * 0.35, cy + canopy["width"] * 0.35
+        builder.add(prim.quad((x0, y0, ch + 0.1 * k), (x1, y0, ch + 0.1 * k), (x1, y1, ch + 0.1 * k),
+                              (x0, y1, ch + 0.1 * k), (0.0, 0.0, 1.0)), "glass", jitter=False,
+                    glow=builder.colour("window", 0.5))
     post = 0.7 * k
     for i in range(supports):
         x = -canopy["length"] / 2 + canopy["length"] * (i + 0.5) / supports
@@ -124,15 +133,19 @@ def _concourse(spec, flags, density, builder, level):
         y = cy + canopy["width"] / 2 + pav["depth"] / 2
         builder.add(prim.box(x - pav["width"] / 2, x + pav["width"] / 2, y - pav["depth"] / 2, y + pav["depth"] / 2, z0,
                              z0 + pav["height"]), spec["body"], chamfer_dim=pav["width"] if flags["chamfer"] else None)
+        sides = rect(x, y, pav["width"], pav["depth"])
+        rows = int(round(3 * flags["rows"] * density))
+        facade.window_bands(builder, sides, z0 + pav["height"] * 0.72, z0 + pav["height"] - 1.0 * k, rows,
+                            0.15 * pav["width"], lit, share=0.5, column_pitch=3.0 * k)
         # A glass front facing the street, lit at night, and a flat roof slab.
         gy = y + pav["depth"] / 2 + 0.15 * k
         gw = pav["width"] * 0.36
         builder.add(prim.quad((x - gw, gy, z0 + 1.0 * k), (x + gw, gy, z0 + 1.0 * k), (x + gw, gy, z0 + pav["height"] * 0.7),
                               (x - gw, gy, z0 + pav["height"] * 0.7), (0.0, 1.0, 0.0)), "glass", jitter=False,
                     glow=builder.colour("window", 0.7))
-        if flags["trims"]:
-            o = 0.8 * k
-            builder.add(prim.box(x - pav["width"] / 2 - o, x + pav["width"] / 2 + o, y - pav["depth"] / 2 - o,
-                                 y + pav["depth"] / 2 + o, z0 + pav["height"], z0 + pav["height"] + 0.8 * k),
-                        spec["trim"], tone=TRIM_TONE, glow=facade.floodlight(builder))
+        # The pavilion's roof slab, on every level (it sets the model's top).
+        o = 0.8 * k
+        builder.add(prim.box(x - pav["width"] / 2 - o, x + pav["width"] / 2 + o, y - pav["depth"] / 2 - o,
+                             y + pav["depth"] / 2 + o, z0 + pav["height"], z0 + pav["height"] + 0.8 * k),
+                    spec["trim"], tone=TRIM_TONE, glow=facade.floodlight(builder))
 
