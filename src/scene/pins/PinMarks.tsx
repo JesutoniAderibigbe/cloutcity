@@ -165,6 +165,7 @@ export default function PinMarks({ pins, palette, look }: PinMarksProps) {
       distance: rig.getDistance(),
       pinHeight: pins.height(),
       headY: pins.headY,
+      pointOf: pins.pointOf,
       chips: chips instanceof Mesh ? chips : null,
       topInsetPx: topInset(gl.domElement),
     })

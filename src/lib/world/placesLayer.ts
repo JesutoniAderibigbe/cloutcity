@@ -3,10 +3,18 @@
  * scene draws each borough. Built on the server at build time from the same data the game uses
  * (src/lib/world/places.ts), so the 3D chunk needs no place data, copy or engine config.
  */
+import homesJson from '@data/homes/homes.json'
+import parksJson from '@data/geo/parks.derived.json'
+import subwayJson from '@data/geo/subway.derived.json'
+import zoneShapesJson from '@data/zones/zone-shapes.derived.json'
 import type { Borough } from '@/lib/data/schemas/content'
 import type { PinStyle } from '@/scene/geo/schema'
-import { plots } from '@/lib/data/config'
+import { compactLayout, plots } from '@/lib/data/config'
 import { modelRef } from '@/lib/data/models'
+import { decodePath } from '@/lib/geo/codec'
+import { prepareAreas } from '@/lib/geo/lookup'
+import { project, type LocalPoint } from '@/lib/geo/projection'
+import { planCompactLayout } from './compactLayout'
 import { landmarkPinLifts } from './landmarksLayer'
 import { boroughRenderState, boroughs, mapPlaces, placeName, type MapPlace } from './places'
 import { plotPinLifts } from './venuePlots'
@@ -36,6 +44,12 @@ export interface PlacePin {
    * instead of the placeholder marker. Omitted otherwise.
    */
   readonly badge?: true
+  /**
+   * Where the venue stands on the game map style (S04n, compactLayout.ts), local metres; omitted
+   * when it stands at its real point there too. Never used for travel or distances.
+   */
+  readonly gx?: number
+  readonly gy?: number
 }
 
 export interface BoroughRender {
@@ -57,6 +71,48 @@ function pinStyle(place: MapPlace, render: BoroughRender): PinStyle {
   return render.render === 'dimmed' ? 'teaser' : 'normal'
 }
 
+/**
+ * The game map's compact venue positions (compactLayout.ts) for the playable venues that stand on
+ * plots. The geo files are read directly (validated in src/lib/data/data.test.ts, which gates
+ * every build): src/lib/data/geo.ts imports this module, so it cannot be imported back.
+ */
+function compactPositions(
+  places: readonly MapPlace[],
+  styleOf: (place: MapPlace) => PinStyle,
+): Map<string, LocalPoint> {
+  const homes = Object.entries(
+    homesJson.homes as Record<string, { zoneId: string; location: { lat: number; lng: number } }>,
+  ).map(([id, home]) => {
+    const point = project(home.location)
+    return { id, zoneId: home.zoneId, x: Math.round(point.x), y: Math.round(point.y) }
+  })
+  return planCompactLayout(
+    {
+      venues: places
+        .filter(
+          (place) =>
+            place.kind === 'venue' &&
+            styleOf(place) === 'normal' &&
+            plots.styles[place.category] !== undefined,
+        )
+        .map((place) => ({
+          id: place.id,
+          category: place.category,
+          zoneId: place.zoneId,
+          x: Math.round(place.x),
+          y: Math.round(place.y),
+        })),
+      homes,
+      landmarks: places.filter((place) => place.kind === 'landmark'),
+      zones: prepareAreas(zoneShapesJson.zones),
+      parks: prepareAreas(parksJson.parks),
+      lines: subwayJson.lines.flatMap((line) => line.paths.map((path) => decodePath(path))),
+      plotM: plots.plotM,
+    },
+    compactLayout,
+  )
+}
+
 export function buildPlacesLayer(): PlacesLayer {
   const renders: BoroughRender[] = boroughs.map((entry) => {
     const state = boroughRenderState(entry.id)
@@ -71,9 +127,14 @@ export function buildPlacesLayer(): PlacesLayer {
     plots,
     (id) => modelRef(id).bounds,
   )
-  const pins = mapPlaces().map((place): PlacePin => {
+  const styleOf = (place: MapPlace): PinStyle => {
     const render = renderOf.get(place.borough)
     if (render === undefined) throw new Error(`places layer: no borough "${place.borough}"`)
+    return pinStyle(place, render)
+  }
+  const compact = compactPositions(mapPlaces(), styleOf)
+  const pins = mapPlaces().map((place): PlacePin => {
+    const game = compact.get(place.id)
     const lift = place.kind === 'landmark' ? lifts.get(place.id) : undefined
     const venueLift = place.kind === 'venue' ? venueLifts.get(place.id) : undefined
     return {
@@ -84,10 +145,11 @@ export function buildPlacesLayer(): PlacesLayer {
       name: placeName(place),
       x: Math.round(place.x),
       y: Math.round(place.y),
-      style: pinStyle(place, render),
+      style: styleOf(place),
       ...(lift === undefined ? {} : { badge: true as const }),
       ...(lift === undefined || lift === 0 ? {} : { liftM: lift }),
       ...(venueLift === undefined || venueLift === 0 ? {} : { liftM: venueLift }),
+      ...(game === undefined ? {} : { gx: game.x, gy: game.y }),
     }
   })
   return { pins, boroughs: renders }

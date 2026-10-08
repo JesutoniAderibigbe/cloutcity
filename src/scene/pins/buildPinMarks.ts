@@ -227,6 +227,8 @@ export interface MarksView {
   readonly pinHeight: number
   /** A pin's head height at that scale (buildPins `headY`). */
   readonly headY: (pin: GeoPin) => number
+  /** Where a pin stands now (buildPins `pointOf`: its compact game-map point or its real one). */
+  readonly pointOf: (pin: GeoPin) => { readonly x: number; readonly y: number }
   /** Landmark name chips to keep labels off, or null while they are hidden. */
   readonly chips: Mesh | null
   /** Canvas pixels from the top that the HUD covers: no label is placed above this line. */
@@ -379,7 +381,8 @@ export function buildPinMarks(
       const metresPerPx: number[] = []
       plans.forEach((plan, i) => {
         const { pin } = plan
-        _head.set(pin.x, view.headY(pin), -pin.y)
+        const at = view.pointOf(pin)
+        _head.set(at.x, view.headY(pin), -at.y)
         _centre.copy(_head).addScaledVector(_back, settings.pullToCamera * view.pinHeight)
         const depth = -_back.dot(_corner.copy(_centre).sub(eye))
         const centre = _centre.clone()
@@ -397,7 +400,7 @@ export function buildPinMarks(
         const r = settings.iconPx / 2
         icons.push({ left: p.x - r, top: p.y - r, right: p.x + r, bottom: p.y + r })
         if (!labelsOn || plan.labelCell < 0) return
-        const ground = Math.hypot(pin.x - view.target.x, -pin.y - view.target.z)
+        const ground = Math.hypot(at.x - view.target.x, -at.y - view.target.z)
         if (ground > settings.labelRadiusM) return
         const lh = settings.labelPx
         const lw = lh * labelAspect

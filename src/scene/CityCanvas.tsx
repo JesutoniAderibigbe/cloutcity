@@ -19,7 +19,7 @@
  * browser restores the context, so the canvas is never remounted; this only reports the loss
  * and, after the first frame drawn again, the recovery.
  */
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { addAfterEffect, Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
@@ -35,6 +35,7 @@ import { CameraRig } from './camera/CameraRig'
 import { FreeRowFraming } from './camera/FreeRowFraming'
 import { nearFar } from './camera/limits'
 import { Buildings, type BuildingsHandle } from './buildings/Buildings'
+import { pinPoint } from './pins/buildPins'
 import { createBuildingMaterial } from './buildings/materials'
 import { buildCity, City, type CityObjects } from './City'
 import { landTopY } from './geo/buildLand'
@@ -307,19 +308,35 @@ function CityScene3D({
     }),
     [config.camera, look],
   )
+  // The game map style stands venues at their compact points (S04n): the pins, plots, props,
+  // the living city, trips and the avatar's rest all follow; travel maths keeps the real ones.
+  const compact = look.plots
+  const pins = parsed.ok ? parsed.geo.places.pins : null
+  const stylePins = useMemo(
+    () => (pins === null ? [] : pins.map((pin) => ({ ...pin, ...pinPoint(pin, compact) }))),
+    [pins, compact],
+  )
+  const styleGeo = useMemo(
+    () => (parsed.ok ? { ...parsed.geo, places: { ...parsed.geo.places, pins: stylePins } } : null),
+    [parsed, stylePins],
+  )
+  // Before the frame that follows: the pins never draw a frame at the other style's points.
+  useLayoutEffect(() => {
+    if (built !== null && !(built instanceof Error)) built.pins.setCompact(compact)
+  }, [built, compact])
   const placeId = spot?.kind === 'place' ? spot.placeId : null
   const rest = useMemo(() => {
-    if (placeId === null || built === null || built instanceof Error) return home
-    const ground = built.pins.groundOf(placeId)
-    return ground === null ? home : { x: ground.x, y: -ground.z }
-  }, [placeId, built, home])
+    const pin =
+      placeId === null ? undefined : stylePins.find((candidate) => candidate.id === placeId)
+    return pin === undefined ? home : { x: pin.x, y: pin.y }
+  }, [placeId, stylePins, home])
   if (built instanceof Error) throw built
 
   const groundY = landTopY(config.land)
   const clip = nearFar(camera.distanceM, camera)
   const shadows = settings.shadows === 'pcf-directional'
 
-  if (!parsed.ok || built === null) return null
+  if (!parsed.ok || built === null || styleGeo === null) return null
 
   return (
     <div
@@ -369,7 +386,7 @@ function CityScene3D({
               groundY={groundY}
               gradientMap={built.gradientMap}
               dimmedBoroughs={built.dimmed}
-              pins={parsed.geo.places.pins}
+              pins={stylePins}
               look={look}
               active={cityReady}
               handleRef={buildingsRef}
@@ -418,6 +435,7 @@ function CityScene3D({
                   animation={travelAnimation}
                   enabled={!hidden}
                   trail={tier !== 'low' || config.travel.trailOnLow}
+                  pins={compact ? pins : null}
                 />
               </Suspense>
             ) : null}
@@ -426,7 +444,7 @@ function CityScene3D({
                 <AmbientLife
                   assets={buildings[tier].ambient}
                   tier={tier}
-                  geo={parsed.geo}
+                  geo={styleGeo}
                   subwayPalette={palette.subwayLines}
                   homes={homeList}
                   createMaterial={() =>

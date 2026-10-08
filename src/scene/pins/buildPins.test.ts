@@ -21,6 +21,7 @@ import {
   buildBadgePinGeometry,
   pinGlow,
   pinLook,
+  pinPoint,
 } from './buildPins'
 import {
   NIGHT_GLOW_ATTRIBUTE,
@@ -276,5 +277,24 @@ describe('pin looks with no pins (S07c)', () => {
       const instanced = mesh(group, `pins-${look}`)
       expect(instanced.visible, look).toBe(instanced.count > 0)
     }
+  })
+})
+
+describe('compact game-map points (S04n)', () => {
+  it('stands moved venues at their game points only while compact', () => {
+    const pins = build()
+    const moved = placesLayer.pins.find((pin) => pin.gx !== undefined && pin.gy !== undefined)
+    if (moved === undefined) throw new Error('no venue moves on the game map')
+    expect(pinPoint(moved, false)).toBe(moved)
+    expect(pins.pointOf(moved)).toBe(moved)
+    expect(pins.groundOf(moved.id)?.x).toBe(moved.x)
+    pins.applyDistance(1000)
+    pins.setCompact(true)
+    expect(pins.pointOf(moved)).toEqual({ x: moved.gx, y: moved.gy })
+    expect(pins.groundOf(moved.id)?.x).toBe(moved.gx)
+    expect(pins.groundOf(moved.id)?.z).toBe(-(moved.gy ?? 0))
+    pins.setCompact(false)
+    expect(pins.groundOf(moved.id)?.x).toBe(moved.x)
+    pins.dispose()
   })
 })

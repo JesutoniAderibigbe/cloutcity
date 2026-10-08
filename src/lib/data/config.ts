@@ -1,6 +1,7 @@
 /** Validated /data/config. Import config from here, never the JSON directly. */
 import audioJson from '@data/config/audio.json'
 import balanceJson from '@data/config/balance.json'
+import compactLayoutJson from '@data/config/compactLayout.json'
 import copyJson from '@data/config/copy.json'
 import layoutJson from '@data/config/layout.json'
 import moderationJson from '@data/config/moderation.json'
@@ -27,7 +28,12 @@ import {
   createProgressionConfigSchema,
   ThemeConfigSchema,
 } from './schemas/config'
-import { PlotsConfigSchema, SceneConfigSchema, StreetPropsConfigSchema } from './schemas/scene'
+import {
+  CompactLayoutConfigSchema,
+  PlotsConfigSchema,
+  SceneConfigSchema,
+  StreetPropsConfigSchema,
+} from './schemas/scene'
 
 export const audio = parseDataFile('config/audio.json', AudioConfigSchema, audioJson)
 export const balance = parseDataFile('config/balance.json', BalanceConfigSchema, balanceJson)
@@ -55,3 +61,8 @@ export const theme = parseDataFile('config/theme.json', ThemeConfigSchema, theme
 export const scene = parseDataFile('config/scene.json', SceneConfigSchema, sceneJson)
 export const props = parseDataFile('config/props.json', StreetPropsConfigSchema, propsJson)
 export const plots = parseDataFile('config/plots.json', PlotsConfigSchema, plotsJson)
+export const compactLayout = parseDataFile(
+  'config/compactLayout.json',
+  CompactLayoutConfigSchema,
+  compactLayoutJson,
+)

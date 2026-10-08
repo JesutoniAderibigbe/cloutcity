@@ -143,6 +143,9 @@ export const PlacesMiniSchema = z.strictObject({
       liftM: z.optional(z.number().check(z.gte(0))),
       /** A modelled landmark's pin: a compact badge over its model (S07a). */
       badge: z.optional(z.literal(true)),
+      /** Where a venue stands on the game map style (S04n); omitted means its real point. */
+      gx: z.optional(metre),
+      gy: z.optional(metre),
     }),
   ),
   boroughs: listOf(

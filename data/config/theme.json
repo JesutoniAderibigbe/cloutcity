@@ -230,10 +230,23 @@
     "softbrown-300": "#cbab99",
     "softroof-200": "#d9d7d2",
     "parkbright-400": "#6cc451",
-    "roofslate-200": "#aab1bb",
+    "roofslate-200": "#c4ccd6",
     "road-300": "#c5c7c6",
     "road-200": "#cbcdcb",
-    "lagoon-500": "#3f97d6"
+    "lagoon-500": "#3f97d6",
+    "gamegrass-300": "#a8d98a",
+    "gamegrass-200": "#b4de98",
+    "gamepark-400": "#4fbf45",
+    "gamewater-400": "#2f9ff0",
+    "gamecream-100": "#fbeccb",
+    "gamepeach-200": "#f7bf9f",
+    "gamemint-200": "#bfe8cc",
+    "gamesky-200": "#addaf5",
+    "gamebutter-200": "#fbe08c",
+    "gamecoral-300": "#f4a28e",
+    "gamelilac-200": "#d5c6f4",
+    "gamewhite-100": "#fbf8f1",
+    "gameroof-100": "#eeebe5"
   },
   "sky": {
     "dawn": {
