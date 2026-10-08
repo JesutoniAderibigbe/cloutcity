@@ -143,10 +143,10 @@ describe('config/perf.json against CLAUDE.md "Performance budgets"', () => {
     })
   })
 
-  it('matches the idle and FPS step-down rules', () => {
+  it('matches the paused-rendering and FPS step-down rules', () => {
     const section = budgetSection()
-    expect(section).toMatch(/Idle means zero frames rendered/)
-    expect(perfJson.idleFramesMax).toBe(0)
+    expect(section).toMatch(/Rendering still pauses when the tab is hidden/)
+    expect(perfJson.pausedFramesMax).toBe(0)
     const stepDown = /average FPS stays below (\d+) for (\d+) s/.exec(section)
     if (!stepDown) throw new Error('CLAUDE.md FPS step-down rule not found')
     expect(perfJson.fpsStepDown).toMatchObject({

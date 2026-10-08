@@ -8,7 +8,7 @@
  * before. Its config (data/config/pinMarks.json) loads with it, and the label text is the pins'
  * own `name` (the server's copy in the geo body), so nothing joins the page's props. The marks
  * follow the camera in `useFrame`, which only runs for frames something else requested: an
- * idle map still renders no frames. The mount itself requests one frame.
+ * the marks add no frames of their own. The mount itself requests one frame.
  */
 import { useEffect, useMemo } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'

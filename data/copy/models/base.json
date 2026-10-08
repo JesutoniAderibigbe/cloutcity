@@ -24,17 +24,20 @@
     "models.name.floorLamp": "Floor lamp",
     "models.name.fridge": "Fridge",
     "models.name.hatchback": "Hatchback",
+    "models.name.hatchbackAmbient": "Hatchback (traffic)",
     "models.name.hydrant": "Fire hydrant",
     "models.name.plant": "Potted plant",
     "models.name.radio": "Radio",
     "models.name.rug": "Striped rug",
     "models.name.sedan": "Sedan",
+    "models.name.sedanAmbient": "Sedan (traffic)",
     "models.name.shelf": "Bookshelf",
     "models.name.speaker": "Speaker",
     "models.name.stove": "Stove",
     "models.name.streetlight": "Streetlight",
     "models.name.tableLamp": "Table lamp",
     "models.name.taxi": "Yellow cab",
+    "models.name.taxiAmbient": "Yellow cab (traffic)",
     "models.name.trafficLight": "Traffic light",
     "models.name.trashBags": "Trash bags",
     "models.name.treeOak": "Oak tree",
@@ -191,6 +194,7 @@
     "models.name.outfitWOutdoors": "Outdoors (woman)",
     "models.name.outfitWPunk": "Punk (woman)",
     "models.name.outfitWSuit": "Suit (woman)",
-    "models.name.outfitWWorker": "Work wear (woman)"
+    "models.name.outfitWWorker": "Work wear (woman)",
+    "models.name.busAmbient": "City bus (traffic)"
   }
 }

@@ -4,7 +4,8 @@ import { createLogger, type LogRecord } from '@/lib/log'
 import { createQualityStore, selectActiveTier, type PersistedQuality } from '@/state/quality'
 import { createSafeJsonStorage } from '@/state/storage'
 import { beginContinuous, endContinuous } from './continuity'
-import { onMonitorDecline } from './decline'
+import { ambientSteps } from './ambientSteps'
+import { canStepDown, onMonitorDecline } from './decline'
 
 const rule = perf.fpsStepDown
 
@@ -19,7 +20,10 @@ function setup() {
   return { store, logger, records }
 }
 
-afterEach(() => endContinuous('gesture'))
+afterEach(() => {
+  endContinuous('gesture')
+  ambientSteps.reset()
+})
 
 describe('a PerformanceMonitor decline', () => {
   it('steps down one tier after sustainMs of continuous rendering, and logs it', () => {
@@ -88,5 +92,28 @@ describe('whether the monitor runs', () => {
     store.getState().setDetected({ tier: 'high', reasons: ['high-capable'] }, false)
     for (let step = 0; step < rule.maxSteps; step += 1) store.getState().recordStepDown(step)
     expect(canStepDown(store.getState(), rule)).toBe(false)
+  })
+
+  it('steps the living city density first, then the tier, on a shared cooldown (S04l)', () => {
+    const { store, logger } = setup()
+    ambientSteps.register(2, 24)
+    beginContinuous('gesture', 0)
+    const at = (ms: number) => onMonitorDecline(store, rule, ms, logger)
+    expect(at(rule.sustainMs)).toEqual({ action: 'ambient-down', level: 1 })
+    expect(at(rule.sustainMs + 1)).toEqual({ action: 'ignore', reason: 'cooldown' })
+    expect(at(rule.sustainMs + rule.cooldownMs)).toEqual({ action: 'ambient-down', level: 2 })
+    expect(selectActiveTier(store.getState())).toBe('high')
+    expect(at(rule.sustainMs + 2 * rule.cooldownMs)).toEqual({ action: 'step-down', to: 'mid' })
+    expect(ambientSteps.get().steps).toBe(2)
+    ambientSteps.register(0, null)
+  })
+
+  it('stays armed on low while a density level is left', () => {
+    const { store } = setup()
+    store.getState().setDetected({ tier: 'low', reasons: ['low-renderer'] }, false)
+    expect(canStepDown(store.getState(), rule)).toBe(false)
+    ambientSteps.register(2, 24)
+    expect(canStepDown(store.getState(), rule)).toBe(true)
+    ambientSteps.register(0, null)
   })
 })

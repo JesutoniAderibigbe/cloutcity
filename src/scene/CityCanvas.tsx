@@ -3,8 +3,9 @@
 /**
  * The 3D chunk's entry (loaded with next/dynamic, ssr: false, from CitySceneClient): the
  * react-three-fiber canvas with the city, place pins, the player's avatar, lights, camera rig and
- * test hooks. Renders on demand only, so an idle map draws zero frames, and none at all while
- * the apartment has the screen (src/state/sceneFocus.ts).
+ * test hooks. Renders on demand: the living city (S04l, DEC-52) paces capped frames while it is
+ * in view, and nothing renders while the tab is hidden or the apartment or creator has the
+ * screen (src/state/sceneFocus.ts).
  *
  * Quality tiers (S04b): the active tier (src/state/quality.ts) sets the DPR cap, outlines and
  * shadows live, and antialiasing when the WebGL context is created; TierMonitor steps it down
@@ -33,6 +34,7 @@ import { CameraRig } from './camera/CameraRig'
 import { FreeRowFraming } from './camera/FreeRowFraming'
 import { nearFar } from './camera/limits'
 import { Buildings, type BuildingsHandle } from './buildings/Buildings'
+import { createBuildingMaterial } from './buildings/materials'
 import { buildCity, City, type CityObjects } from './City'
 import { landTopY } from './geo/buildLand'
 import type { GeoLoadFailure } from './geo/load'
@@ -56,6 +58,9 @@ const PinMarks = lazy(() => import('./pins/PinMarks'))
 const TravelAnimator = lazy(() =>
   import('./travel/TravelAnimator').then((module) => ({ default: module.TravelAnimator })),
 )
+
+// The living city (S04l): after the city is playable, never on its path.
+const AmbientLife = lazy(() => import('./ambient/AmbientLife'))
 
 perfMark('cc:3d:chunk')
 
@@ -233,6 +238,7 @@ function CityScene3D({
     if (!parsed.ok) onInvalidGeo({ reason: 'geo-invalid', paths: parsed.paths })
   }, [parsed, onInvalidGeo])
 
+  const homeList = useMemo(() => Object.values(homesLocal), [homesLocal])
   const pinLifts = useMemo(
     () =>
       new Map(
@@ -394,6 +400,24 @@ function CityScene3D({
                   animation={travelAnimation}
                   enabled={!hidden}
                   trail={tier !== 'low' || config.travel.trailOnLow}
+                />
+              </Suspense>
+            ) : null}
+            {cityReady ? (
+              <Suspense>
+                <AmbientLife
+                  assets={buildings[tier].ambient}
+                  tier={tier}
+                  geo={parsed.geo}
+                  subwayPalette={palette.subwayLines}
+                  homes={homeList}
+                  createMaterial={() =>
+                    createBuildingMaterial({ gradientMap: built.gradientMap, colors: 'instance' })
+                  }
+                  groundY={groundY}
+                  config={config}
+                  hidden={hidden}
+                  night={lighting.nightGlow}
                 />
               </Suspense>
             ) : null}

@@ -10,7 +10,7 @@
  * `streetProps` caps, are merged one mesh each onto the district material (mergeChunk.ts): one
  * draw call per chunk and no new shader program. Building runs in time slices; nothing is drawn
  * above `props.showBelowDistanceM`, and only a change of what is drawn requests a frame, so an
- * idle map still renders nothing. Props are never pickable. three only, no React.
+ * props add no frames of their own. Props are never pickable. three only, no React.
  */
 import perfJson from '@data/config/perf.json'
 import propsJson from '@data/config/props.json'
@@ -57,7 +57,7 @@ import {
   type PropModel,
   type WindowMask,
 } from './mergeChunk'
-import { StreetsMiniSchema } from './schema'
+import { loadStreets } from '../streets/loadStreets'
 
 /** What the page carries for a tier that draws props (src/lib/data/districts.ts). */
 export interface StreetPropsAssets {
@@ -159,12 +159,6 @@ export interface StreetPropsLayer {
 /** The merged meshes ignore the raycaster: props never block a pin or a tap. */
 export const noRaycast: Object3D['raycast'] = () => {}
 
-async function defaultFetchJson(url: string): Promise<unknown> {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error(`HTTP ${response.status}`)
-  return (await response.json()) as unknown
-}
-
 interface Built {
   readonly mesh: Mesh
   readonly merged: MergedChunk
@@ -175,7 +169,6 @@ interface Built {
 export function createStreetPropsLayer(options: StreetPropsLayerOptions): StreetPropsLayer {
   const { tier } = options
   const { config, caps } = options.settings ?? propsSettings(tier)
-  const fetchJson = options.fetchJson ?? defaultFetchJson
   const loadModels =
     options.loadModels ??
     ((refs: readonly Pick<ModelRef, 'id' | 'kind' | 'files'>[]) =>
@@ -326,9 +319,10 @@ export function createStreetPropsLayer(options: StreetPropsLayerOptions): Street
     const acquired = loadModels(refs)
     release = acquired.release
     try {
-      const [json, loaded] = await Promise.all([fetchJson(options.assets.url), acquired.models])
-      const parsed = StreetsMiniSchema.safeParse(json)
-      if (!parsed.success) throw new Error('invalid streets file')
+      const [streets, loaded] = await Promise.all([
+        loadStreets(options.assets.url, options.fetchJson),
+        acquired.models,
+      ])
       if (disposed) return
       const glow = new Set<string>(config.glowModels)
       models = new Map()
@@ -344,7 +338,7 @@ export function createStreetPropsLayer(options: StreetPropsLayerOptions): Street
         triangles.set(ref.id, model.triangles)
       })
       placing = true
-      const data = decodeStreets(parsed.data, config.seed)
+      const data = decodeStreets(streets, config.seed)
       const ctx: PlacementContext = { tier, config, pins: options.pins, clear: data.clear }
       const street = new Map<string, Chunk>()
       const slice = step()

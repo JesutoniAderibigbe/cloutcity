@@ -506,7 +506,7 @@ async function buildStatic(
       if (node.getSkin() !== null) throw new Error(`${model.id}: static model with a skinned mesh`)
       const world = multiply(place, node.getWorldMatrix())
       for (const prim of mesh.listPrimitives()) {
-        simplifySource(src, prim, tierRule.ratio, tierRule.error)
+        simplifySource(src, prim, tierRule.ratio, tierRule.error, tierRule.flags)
         parts.push({
           prim,
           world,
@@ -601,7 +601,13 @@ function dominantJoints(prim: Primitive, skin: Skin | null): (string | undefined
  * there; after the bake every face owns its corners and nothing could collapse. Faces that merge
  * take the swatch under their new UV centroid.
  */
-function simplifySource(doc: Document, prim: Primitive, ratio: number, error: number) {
+function simplifySource(
+  doc: Document,
+  prim: Primitive,
+  ratio: number,
+  error: number,
+  flags?: readonly 'Permissive'[],
+) {
   if (ratio >= 1) return
   // The bake reads only POSITION, NORMAL, the atlas UVs and skin weights: drop the rest and weld,
   // because duplicate vertices look like seams to the simplifier and stall it.
@@ -623,7 +629,14 @@ function simplifySource(doc: Document, prim: Primitive, ratio: number, error: nu
   }
   const indices = triangleIndices(prim)
   const target = Math.floor((indices.length / 3) * ratio) * 3
-  const [simplified] = MeshoptSimplifier.simplify(indices, positions, 3, target, error)
+  const [simplified] = MeshoptSimplifier.simplify(
+    indices,
+    positions,
+    3,
+    target,
+    error,
+    flags && [...flags],
+  )
   prim.setIndices(
     doc
       .createAccessor()
@@ -697,7 +710,7 @@ async function buildSkinned(
     const tierRule = model.tiers[tier]
     if (!('ratio' in tierRule)) throw new Error(`${model.id}: triangle targets need meshes`)
     for (const prim of kept.listPrimitives())
-      simplifySource(doc, prim, tierRule.ratio, tierRule.error)
+      simplifySource(doc, prim, tierRule.ratio, tierRule.error, tierRule.flags)
     const fitScale = 'scale' in model.fit ? model.fit.scale : 1
     const prims = kept.listPrimitives().map((prim) => {
       const colours = triangleColours(prim, textures, pack.source.factorEncoding)

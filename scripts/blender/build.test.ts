@@ -21,14 +21,19 @@ async function scratch(): Promise<string> {
 }
 
 describe('blender:build', () => {
-  it('pins Blender 5.2.2 and ships the S16a avatar attachments (DEC-28), one script each', async () => {
+  it('pins Blender 5.2.2 and ships the avatar attachments (DEC-28) and the S04l bus, one script each', async () => {
     const lock = await readBlenderLock()
     expect(lock.blender.version).toBe('5.2.2')
     expect(lock.outDir).toBe('scripts/blender/out')
-    expect(lock.models.length).toBe(16)
+    const vehicles = new Set(['bus-ambient'])
+    expect(lock.models.filter((model) => !vehicles.has(model.id)).length).toBe(16)
     for (const model of lock.models) {
-      expect(model.script).toBe(`scripts/blender/avatar/${model.id}.py`)
+      const folder = vehicles.has(model.id) ? 'vehicles' : 'avatar'
+      expect(model.script).toBe(`scripts/blender/${folder}/${model.id}.py`)
     }
+    expect(lock.models.filter((model) => vehicles.has(model.id)).map((m) => m.id)).toEqual([
+      ...vehicles,
+    ])
     expect(await checkBlenderOutputs(lock)).toEqual([])
   })
 
