@@ -44,8 +44,9 @@ CHAMFER_RATIO = 0.02
 
 
 def expected_size(module, data, true_scale):
-    """(length along the axis, height) the model must measure."""
-    return data["frame"]["spanM"], module.expected_height(data, true_scale)
+    """(length along a bridge's axis or None, top above the water) the model must measure."""
+    base = inputs.land_top_y(data["scene"]) if data["frame"]["base"] == "land" else 0.0
+    return data["frame"].get("spanM"), base + module.expected_height(data, true_scale)
 
 
 def run(landmark_id, out_dir, caps_override=None, true_scale=False):
@@ -76,7 +77,7 @@ def run(landmark_id, out_dir, caps_override=None, true_scale=False):
         lo, hi = validate.bbox(gltf)
         entry["bbox"] = {"min": [round(v, 3) for v in lo], "max": [round(v, 3) for v in hi]}
         size_len, size_h = hi[2] - lo[2], hi[1]
-        if abs(size_len - length) > BBOX_TOLERANCE * length:
+        if length is not None and abs(size_len - length) > BBOX_TOLERANCE * length:
             problems.append("L%d: length %.1f m, expected %.1f" % (level, size_len, length))
         if abs(size_h - height) > BBOX_TOLERANCE * height:
             problems.append("L%d: height %.1f m, expected %.1f" % (level, size_h, height))

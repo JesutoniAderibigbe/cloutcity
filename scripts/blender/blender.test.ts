@@ -14,7 +14,9 @@ import { describe, expect, it } from 'vitest'
 import framesJson from '../../data/landmarks/frames.derived.json'
 import modelsJson from '../../data/landmarks/models.json'
 import perfJson from '../../data/config/perf.json'
+import sceneJson from '../../data/config/scene.json'
 import { LandmarkMeasurementsSchema } from '../../src/lib/data/schemas/landmarkBlender.ts'
+import { ARCHETYPE_CATEGORY, type Archetype } from '../../src/lib/data/schemas/landmarkModels.ts'
 import { BLENDER_DIR, MEASUREMENTS_DIR, ROOT, measuredIds } from './inputs.ts'
 import { prepareGltf } from '../../src/scene/models/prepare.ts'
 import { checkLandmark, readLock, sourcesProblems } from './run.ts'
@@ -23,18 +25,18 @@ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)
 
 /** Landmarks still on the code-built kit, waiting for their Blender model (S07c chunks A-C). */
 const PENDING = new Set([
-  'wedge-building',
-  'deco-spire',
   'city-hall',
   'brooklyn-borough-hall',
   'queens-borough-hall',
   'midtown-terminal',
   'penn-station',
   'jamaica-station',
+  'wedge-building',
   'staten-island-ferry',
 ])
 
 const TIER_FINEST = { high: 0, mid: 1, low: 2 } as const
+const landTop = sceneJson.land.heightM - sceneJson.land.baseM
 const ALLOWED_EXTENSIONS = new Set(['EXT_meshopt_compression', 'KHR_mesh_quantization'])
 const BBOX_TOLERANCE = 0.02
 
@@ -136,7 +138,7 @@ describe.each(built)('%s shipped GLBs', (id) => {
     JSON.parse(readFileSync(join(MEASUREMENTS_DIR, `${id}.json`), 'utf8')),
   )
   const model = modelsJson.models.find((entry) => entry.id === id)
-  const category = model?.archetype.endsWith('Bridge') ? 'bridge' : 'building'
+  const category = ARCHETYPE_CATEGORY[(model?.archetype ?? 'setbackSpire') as Archetype]
 
   it('matches the lock triangle counts', () => {
     expect(counts).toEqual(lock.levels.map((level) => level.triangles))
@@ -206,7 +208,8 @@ describe.each(built)('%s shipped GLBs', (id) => {
       )
       box.applyMatrix4(model.matrix)
       const height = expectedHeight()
-      expect(Math.abs(box.max.y - height)).toBeLessThanOrEqual(BBOX_TOLERANCE * height)
+      const base = frame?.base === 'land' ? landTop : 0
+      expect(Math.abs(box.max.y - base - height)).toBeLessThanOrEqual(BBOX_TOLERANCE * height)
       expect(box.min.y).toBeGreaterThanOrEqual(-0.05)
       if (frame?.spanM !== undefined) {
         const length = box.max.z - box.min.z
@@ -219,8 +222,8 @@ describe.each(built)('%s shipped GLBs', (id) => {
 
   /** The tower top above the water, at the measurements' game scale. */
   function expectedHeight(): number {
-    const height = measurements.dimensions.towerHeightM
-    if (height === undefined || !('valueM' in height)) throw new Error('no towerHeightM')
+    const height = measurements.dimensions.towerHeightM ?? measurements.dimensions.heightM
+    if (height === undefined || !('valueM' in height)) throw new Error('no towerHeightM or heightM')
     return height.valueM * (measurements.gameScale?.height ?? 1)
   }
 })
