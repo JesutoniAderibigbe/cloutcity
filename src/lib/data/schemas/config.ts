@@ -623,6 +623,31 @@ export const ProfileConfigSchema = z.strictObject({
 export type ProfileConfig = z.infer<typeof ProfileConfigSchema>
 
 /**
+ * data/config/account.json (S19): saving progress and logging in. `emailCheck` is mirrored in
+ * public.check_account_email (supabase/migrations/*_s19_accounts.sql; src/lib/account/parity.test.ts).
+ */
+export const AccountConfigSchema = z.strictObject({
+  /** How long the sheet waits before it offers to send another link (GoTrue limits sends too). */
+  resendCooldownMs: z.int().min(1000).max(600_000),
+  /**
+   * While an email upgrade waits for its confirmation link, how often (and on focus) this device
+   * asks the server whether it was confirmed, perhaps on another device.
+   */
+  upgradePollMs: z.int().min(5000).max(600_000),
+  /** A waiting upgrade older than this is forgotten (the link runs out in an hour). */
+  pendingUpgradeMaxAgeMs: positiveInt,
+  /** Signing out waits this long for unsent progress to reach the account before asking. */
+  signOutFlushTimeoutMs: z.int().min(500).max(30_000),
+  /** The server's limit on email pre-checks per player. */
+  emailCheck: z.strictObject({ max: positiveInt, windowMs: positiveInt }),
+  /** The longest email the form accepts (RFC 5321's path limit is 256; 320 covers local+domain). */
+  emailMaxLength: z.int().min(64).max(320),
+  /** Digits in the emailed log-in code (supabase/config.toml `otp_length`). */
+  codeLength: z.int().min(6).max(10),
+})
+export type AccountConfig = z.infer<typeof AccountConfigSchema>
+
+/**
  * data/config/handles.json (S18a). The database enforces these: the migration's generated seed
  * (scripts/moderation/blocklist-sql.ts) copies them into private.handle_settings, and the
  * format rule is the pattern src/lib/handles/normalise.ts builds from them.
@@ -1441,7 +1466,15 @@ export const OnboardingConfigSchema = z
 export type OnboardingConfig = z.infer<typeof OnboardingConfigSchema>
 
 /** The kinds of notice a new player may see (GR-9): each surface tags itself `data-cc-notice`. */
-export const NOTICE_KINDS = ['tour', 'level-up', 'goals-ready', 'event', 'icon', 'update'] as const
+export const NOTICE_KINDS = [
+  'tour',
+  'level-up',
+  'goals-ready',
+  'event',
+  'icon',
+  'update',
+  'save-progress',
+] as const
 
 /**
  * The first-run tour (S06): coach marks over the live map that walk a new player through one

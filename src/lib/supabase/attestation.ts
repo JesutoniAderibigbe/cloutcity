@@ -46,7 +46,7 @@ export function toAttestationArgs(record: OnboardingRecord): AttestationArgs {
   }
 }
 
-/** Machine codes the S18, S18a and S18b RPCs raise as their error message (with SQLSTATE PTxyz → HTTP xyz). */
+/** Machine codes the S18, S18a, S18b, S18c and S19 RPCs raise as their error message (with SQLSTATE PTxyz → HTTP xyz). */
 export const RPC_ERRORS = [
   'not_authenticated',
   'attestation_required',
@@ -85,6 +85,8 @@ export const RPC_ERRORS = [
   // S18c cloud save sync (supabase/migrations/*_s18c_save_sync.sql).
   'revision_conflict',
   'version_regressed',
+  // S19 accounts (supabase/migrations/*_s19_accounts.sql): a feature that needs a saved account.
+  'account_required',
 ] as const
 export type RpcErrorCode = (typeof RPC_ERRORS)[number]
 

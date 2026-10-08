@@ -1,0 +1,11 @@
+<!-- S19: the log-in email. The link goes to our own page (/auth/callback, or /mod for the
+     moderator console), which finishes only when the player taps, so a mail scanner that opens
+     the link uses nothing up. The 6-digit code works on any device. Paste into the hosted
+     dashboard too (Auth > Email Templates > Magic Link). -->
+<h2>Log in to Clout City</h2>
+<p>Tap the button to log in on this device:</p>
+<p><a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">Log me in</a></p>
+<p>Or type this code in the game: <strong>{{ .Token }}</strong></p>
+<p>
+  The link and the code work once and run out in an hour. Didn't ask to log in? Ignore this email.
+</p>
