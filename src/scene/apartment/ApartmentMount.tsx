@@ -20,7 +20,7 @@
 import dynamic from 'next/dynamic'
 import { Component, useEffect, useState, type ReactNode } from 'react'
 import { log } from '@/lib/log'
-import { tapApartmentSlot, useApartmentView } from '@/state/apartmentView'
+import { tapApartmentCell, useApartmentView } from '@/state/apartmentView'
 import { setSceneFocus } from '@/state/sceneFocus'
 import { webgl2Available } from '../webgl'
 
@@ -73,7 +73,7 @@ export function ApartmentMount() {
   if (!showing) return null
   return (
     <RoomErrorBoundary onError={() => setFailed(true)}>
-      <ApartmentCanvas {...view} onSlotTap={tapApartmentSlot} />
+      <ApartmentCanvas {...view} onCellTap={tapApartmentCell} />
     </RoomErrorBoundary>
   )
 }

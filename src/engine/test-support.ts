@@ -7,7 +7,9 @@ import { cloutLevel, itemClout, legacyCloutState } from './clout'
 import type { EngineConfig } from './config'
 import { initialCreatorState, initialRolls } from './creator'
 import type { GameSnapshot, PlayerState } from './game'
-import { homeClout } from './home'
+import { gridItem, gridPlacements, homeClout, layoutFor } from './home'
+import { firstFit, type Turn } from './homeGrid'
+import { findItem, isDecor } from './items'
 import { buyAtShop, performPlaceAction, placeActions, shopBlock } from './placeActions'
 import type { Place } from './places'
 
@@ -104,3 +106,67 @@ export const V12_FRESH_PLAYER = {
 
 /** What a migration to v12 adds at the top of an older save: a fresh creator and no rolls. */
 export const V12_FRESH_SAVE = { creator: initialCreatorState, rolls: initialRolls } as const
+
+/**
+ * `snapshot` without the starter pieces a new game comes furnished with (S40): nothing owned
+ * as decor, nothing placed. For tests about decor rules that want a bare room.
+ */
+export function unfurnished<S extends GameSnapshot>(snapshot: S): S {
+  const { player } = snapshot
+  return {
+    ...snapshot,
+    player: {
+      ...player,
+      inventory: { ...player.inventory, decor: [] },
+      apartment: { ...player.apartment, placed: {} },
+    },
+  }
+}
+
+/**
+ * The first free slot (and its facing turn) where owned or not-yet-owned `itemId` fits in the
+ * player's home, by the movers' rule (src/engine/homeGrid.ts `firstFit`); throws when none does.
+ */
+export function freeSlot(
+  player: Pick<PlayerState, 'home' | 'apartment' | 'inventory'>,
+  itemId: string,
+  config: EngineConfig,
+): { readonly slotId: string; readonly turn: Turn } {
+  const def = findItem(itemId, config)
+  if (def === undefined || !isDecor(def)) throw new Error(`no decor ${itemId}`)
+  const layout = layoutFor(player.home, config)
+  const item = gridItem(def)
+  const blocked =
+    item.kind === 'wall' || item.layer === 'rug'
+      ? layout.blocked
+      : new Set([...layout.blocked, ...layout.walkway])
+  const lookup = (id: string) => {
+    const other = findItem(id, config)
+    return other !== undefined && isDecor(other) ? gridItem(other) : undefined
+  }
+  const others = gridPlacements(player.apartment.placed, player.inventory).filter(
+    (entry) => entry.itemId !== itemId,
+  )
+  const spot = firstFit(item, layout.size, blocked, others, lookup)
+  if (spot === null) throw new Error(`no free spot for ${itemId} in ${player.home}`)
+  return spot
+}
+
+/**
+ * What a migration to v13 gives an older save (S40): its starter pieces, owned and set up by the
+ * movers. Which cells they take depends on the home, so specs match the shape here and check
+ * the pieces themselves in save.home.test.ts.
+ */
+export const V13_MIGRATED_INVENTORY = {
+  wearables: [],
+  gifts: [],
+  outfit: {},
+  decor: expect.any(Array) as unknown,
+} as const
+export const V13_MIGRATED_APARTMENT = {
+  placed: expect.any(Object) as unknown,
+  moveLog: [],
+  wallPaint: null,
+  floorFinish: null,
+  finishes: [],
+} as const

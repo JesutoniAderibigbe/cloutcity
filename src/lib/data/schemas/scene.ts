@@ -56,7 +56,13 @@ export const DayNightConfigSchema = z
      * The apartment (S16): the city keyframe's sun and ambient scaled for indoors, and the share
      * of warm lamp light mixed into the ambient colour at full night glow.
      */
-    room: z.strictObject({ sunScale: ratio, ambientScale: ratio, lampMix: unit }),
+    room: z.strictObject({
+      sunScale: ratio,
+      ambientScale: ratio,
+      lampMix: unit,
+      /** Ambient intensity the lamps add at full night (S40): the room stays lived-in after dark. */
+      lampBoost: z.number().nonnegative(),
+    }),
     /** Every keyframe once, in clock order. */
     keyframes: z.array(DayNightKeyframeSchema).length(KEYFRAME_IDS.length),
   })
@@ -427,14 +433,14 @@ export const SceneConfigSchema = z.strictObject({
     }),
     /**
      * Apartment decor drawn with a hand-made model (S16 + S04h): decor item id → model id and the
-     * model slot the player's colour variant recolours. Items left out keep their code-built
-     * stand-in (string lights and the neon sign wait for their Blender models).
+     * model slot the player's colour variant recolours (null for a model with one look). Items
+     * left out keep their code-built stand-in (string lights, the neon sign and the prints).
      */
     decor: z.record(
       z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
       z.strictObject({
         model: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-        slot: z.string().min(1),
+        slot: z.string().min(1).nullable(),
       }),
     ),
   }),
@@ -453,35 +459,35 @@ export const SceneConfigSchema = z.strictObject({
     dimmedLabelOpacity: z.number().gt(0).max(1),
   }),
   /**
-   * The apartment interior (S16, src/scene/apartment/): the floor slab and wall insets, the ledge or
-   * side table drawn under each surface slot, the slot markers, tap picking, the camera fit, the
-   * static lighting (until S04f drives it from the clock) and the mid tier's blob shadows.
+   * The apartment interior (S16, S40, src/scene/apartment/): the floor slab, wall thickness and
+   * trims, the small tables under surface items, how much of its footprint an item fills, where
+   * wall items hang, the buy-mode grid overlay, the camera fit, the lights and the mid tier's
+   * blob shadows.
    */
   apartment: z.strictObject({
     floorThicknessM: metres,
-    /**
-     * Walls are single-sided planes facing into the room, so a wall between the camera and the
-     * room is culled (the cutaway); trim, the window pane and the door sit this far in front of
-     * their wall so they never fight it in the depth test.
-     */
+    /** Trim, panes and doors sit this far in front of their wall so they never fight it in the depth test. */
     insetM: metres,
     trimHeightM: metres,
-    /** A surface slot this close to a side wall sits on a ledge; elsewhere on a side table. */
-    ledgeDepthM: metres,
-    ledgeThicknessM: metres,
-    tableSizeM: metres,
-    marker: z.strictObject({
-      radiusM: metres,
-      segments: z.int().min(3).max(64),
+    /** Walls are boxes this thick with a darker cap, read from above like a doll's house. */
+    wallThicknessM: metres,
+    crownHeightM: metres,
+    /** The small table a surface item stands on: its height and how far it sits in from the cell edge. */
+    standHeightM: metres,
+    standInsetM: z.number().nonnegative(),
+    /** A model is scaled down (never up) to this share of its footprint. */
+    footprintFill: z.number().gt(0).max(1),
+    /** A wall item hangs at this share of the ceiling height. */
+    wallItemHeight: z.number().gt(0).lt(1),
+    /** The player's avatar stands this tall in the room (S16a's model scaled to fit). */
+    avatarHeightM: metres,
+    /** Buy mode's grid overlay: the gap between cell tiles (share of a cell), lift and opacity. */
+    grid: z.strictObject({
+      gapShare: z.number().min(0).lt(0.5),
       liftM: z.number().nonnegative(),
-      /** The selected or highlighted slot's marker grows by this factor. */
-      selectedScale: z.number().min(1),
+      opacity: z.number().gt(0).max(1),
     }),
-    /** At least 22 px, so a slot's tap target is at least 44 px across (CLAUDE.md "Art direction"). */
-    hitRadiusPx: z.number().min(22),
-    /** Slots this close to the nearest hit (in pixels) make the tap ambiguous: a chooser opens. */
-    ambiguityPx: z.number().nonnegative(),
-    /** The room's bounding sphere is fitted into the free scene row with this much margin. */
+    /** The room's projected box fills the free scene area with this much margin. */
     fitMargin: z.number().min(1),
     /**
      * The room's light comes from the city's day/night keyframe (scene `dayNight.room` scales

@@ -12,8 +12,20 @@ export const OPTIONAL_CHUNK_MARKERS = [
   { id: 'model-runtime', marker: 'EXT_meshopt_compression' },
   // The /dev/models showcase (S04h).
   { id: 'model-showcase', marker: 'cc-feature:model-showcase' },
+  // The apartment's 3D room (S16/S40, ApartmentCanvas.tsx): decoration over the Home panel,
+  // whose lists do everything without it; offline before it was ever cached the room stays shut
+  // (ApartmentMount's boundary) and the city keeps the screen.
+  { id: 'apartment-scene', marker: 'cc-feature:apartment-scene' },
   // The apartment's decor models (src/scene/apartment/decorModels.ts), once the room is up.
   { id: 'apartment-decor-models', marker: 'apartment decor models: ' },
+  // The finishes' looks and the room's palette (data/homes/finishes.json with theme.json), which
+  // only the 3D room and buy mode read: the bundler splits them into a chunk of their own, so
+  // the marker is a value only finishes.json holds (a floor's pattern; the engine's derived copy
+  // has no patterns).
+  { id: 'home-finishes', marker: 'pattern:"herringbone"' },
+  // Buy mode 2.0 (S40, src/components/hud/HomeDecor.tsx): the furniture lists, catalogue and
+  // finishes; offline before it was ever cached, the Home panel says so and rest and moves work.
+  { id: 'home-decor', marker: 'cc-feature:home-decor' },
   // Street props (S04i, src/scene/props/layer.ts): mid and high only, once the camera zooms in.
   { id: 'street-props', marker: 'street props: ' },
   // The look runtime (S16a): the full look options and derived avatar refs (resolveLook.ts), with

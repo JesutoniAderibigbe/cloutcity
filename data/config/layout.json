@@ -6,6 +6,8 @@
     "hudWideMinWidthPx": 640,
     "hudCompactMaxHeightPx": 479,
     "hudTinyMaxWidthPx": 341,
+    "roomDockMinWidthPx": 1024,
+    "roomDockMinHeightPx": 560,
     "toastHeightPx": 72,
     "sheetMaxHeightVh": 40,
     "sheetMaxWidthPx": 560,

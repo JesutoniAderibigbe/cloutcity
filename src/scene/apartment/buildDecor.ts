@@ -29,6 +29,9 @@ export interface DecorModel {
   readonly glows: boolean
   /** Half the footprint's width, for the blob shadow under floor and surface items. */
   readonly footprintM: number
+  /** Its size across (x) and deep (z), and how far it reaches behind its origin (−z). */
+  readonly sizeM: { readonly w: number; readonly d: number }
+  readonly backM: number
 }
 
 interface ModelParts {
@@ -173,7 +176,43 @@ function cloudChair(): ModelParts {
   }
 }
 
+/** A framed print: the frame in the variant colour, a cream mat and a little city skyline. */
+function framedPrint(skyline: boolean): () => ModelParts {
+  return () => {
+    const width = 0.62
+    const height = 0.8
+    const frame = 0.05
+    const towers: [number, number][] = skyline
+      ? [
+          [-0.18, 0.22],
+          [-0.08, 0.36],
+          [0.02, 0.28],
+          [0.12, 0.42],
+          [0.2, 0.18],
+        ]
+      : [
+          [-0.1, 0.16],
+          [0.1, 0.16],
+        ]
+    return {
+      main: [
+        boxAt([width, frame, 0.04], [0, height / 2 - frame / 2, 0.02]),
+        boxAt([width, frame, 0.04], [0, -height / 2 + frame / 2, 0.02]),
+        boxAt([frame, height, 0.04], [-width / 2 + frame / 2, 0, 0.02]),
+        boxAt([frame, height, 0.04], [width / 2 - frame / 2, 0, 0.02]),
+        ...towers.map(([x, h]) => boxAt([0.08, h, 0.012], [x, -0.26 + h / 2, 0.026])),
+      ],
+      secondParts: [boxAt([width - frame, height - frame, 0.02], [0, 0, 0.01])],
+      second: 'glow',
+      glows: false,
+      footprintM: width / 2,
+    }
+  }
+}
+
 const BUILDERS: Readonly<Record<string, () => ModelParts>> = {
+  'starter-poster': framedPrint(false),
+  'skyline-print': framedPrint(true),
   'fairy-string-lights': fairyLights,
   'windowsill-monstera': monstera,
   'thrift-flatweave-rug': rug,
@@ -182,23 +221,46 @@ const BUILDERS: Readonly<Record<string, () => ModelParts>> = {
   'cloud-lounge-chair': cloudChair,
 }
 
-/** The item ids that have a model (every decor item, checked in buildDecor.test.ts). */
+/** The item ids that have a code-built model of their own. */
 export const DECOR_MODEL_IDS: readonly string[] = Object.keys(BUILDERS)
 
-/** Builds one decor item's model, or null for an item with no model yet. */
-export function buildDecorModel(itemId: string): DecorModel | null {
-  const build = BUILDERS[itemId]
-  if (build === undefined) return null
+/**
+ * A plain block standing in for an item drawn by a hand-made model (S04h) until the models have
+ * loaded (or for good, offline): the item's footprint, low, so the room never looks bare.
+ */
+function standIn(): ModelParts {
+  return {
+    main: [boxAt([0.6, 0.35, 0.6], [0, 0.175, 0])],
+    secondParts: [],
+    second: null,
+    glows: false,
+    footprintM: 0.3,
+  }
+}
+
+/** Builds one decor item's model (its stand-in block when it has no code-built model). */
+export function buildDecorModel(itemId: string): DecorModel {
+  const build = BUILDERS[itemId] ?? standIn
   const { main, secondParts, second, glows, footprintM } = build()
   const mainGeometry = mergeParts(main.map(part), `${itemId} main`)
-  if (second === null || secondParts.length === 0) {
-    return { geometry: mainGeometry, second: null, glows, footprintM }
-  }
-  const secondGeometry = mergeParts(secondParts.map(part), `${itemId} second`)
+  const geometry =
+    second === null || secondParts.length === 0
+      ? mainGeometry
+      : mergeParts(
+          [mainGeometry, mergeParts(secondParts.map(part), `${itemId} second`)],
+          itemId,
+          true,
+        )
+  geometry.computeBoundingBox()
+  const box = geometry.boundingBox
+  const sizeM =
+    box === null ? { w: 0, d: 0 } : { w: box.max.x - box.min.x, d: box.max.z - box.min.z }
   return {
-    geometry: mergeParts([mainGeometry, secondGeometry], itemId, true),
-    second,
+    geometry,
+    second: second === null || secondParts.length === 0 ? null : second,
     glows,
     footprintM,
+    sizeM,
+    backM: box === null ? 0 : Math.max(0, -box.min.z),
   }
 }

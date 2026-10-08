@@ -10,6 +10,7 @@ export type CopyKey =
   | keyof (typeof import('@data/copy/audio/base.json'))['strings']
   | keyof (typeof import('@data/copy/avatar/base.json'))['strings']
   | keyof (typeof import('@data/copy/boroughs/base.json'))['strings']
+  | keyof (typeof import('@data/copy/buy/base.json'))['strings']
   | keyof (typeof import('@data/copy/career/base.json'))['strings']
   | keyof (typeof import('@data/copy/categories/base.json'))['strings']
   | keyof (typeof import('@data/copy/clout/base.json'))['strings']

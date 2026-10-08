@@ -1,5 +1,7 @@
 {
-  "thumbs": { "sizePx": 160 },
+  "thumbs": {
+    "sizePx": 160
+  },
   "icons": {
     "bodega-graphic-tee": "👕",
     "thrifted-denim-jacket": "🧥",
@@ -21,6 +23,31 @@
     "thrift-flatweave-rug": "🧶",
     "crate-record-player": "📻",
     "custom-neon-sign": "🔆",
-    "cloud-lounge-chair": "🛋️"
+    "cloud-lounge-chair": "🛋️",
+    "starter-bed": "🛏️",
+    "starter-sofa": "🛋️",
+    "starter-rug": "🟫",
+    "starter-tv": "📺",
+    "starter-lamp": "💡",
+    "starter-plant": "🪴",
+    "starter-table": "🪑",
+    "starter-poster": "🖼️",
+    "linen-double-bed": "🛏️",
+    "canopy-king-bed": "👑",
+    "corduroy-sofa": "🛋️",
+    "velvet-chesterfield": "🛋️",
+    "wfh-desk": "🖥️",
+    "retro-fridge": "🧊",
+    "chef-range": "🍳",
+    "brass-table-lamp": "💡",
+    "arc-floor-lamp": "💡",
+    "hand-knotted-rug": "🧶",
+    "fiddle-leaf-fig": "🌿",
+    "milk-crate": "📦",
+    "floating-shelf": "📚",
+    "tower-speaker": "🔊",
+    "vintage-radio": "📻",
+    "big-screen-tv": "📺",
+    "skyline-print": "🖼️"
   }
 }

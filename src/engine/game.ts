@@ -15,7 +15,7 @@ import type { CareerPathId } from '@/lib/data/avatarIds'
 import type { Look } from './appearance'
 import { initialCloutState, type CloutState } from './clout'
 import type { EngineConfig, HomeId } from './config'
-import { initialApartment, type ApartmentState } from './home'
+import { initialApartment, starterFurnishing, type ApartmentState } from './home'
 import { emptyInventory, type Inventory } from './items'
 import { initialRent, settleRent, type RentEvent, type RentState } from './rent'
 import { decayStats, initialStats, type Stats } from './stats'
@@ -126,9 +126,16 @@ export interface Advance {
   readonly rent: readonly RentEvent[]
 }
 
+/**
+ * A new game: the start cash and home, furnished with the home's starter pieces (S40), and every
+ * other part fresh.
+ */
 export function initialSnapshot(config: EngineConfig): GameSnapshot {
+  const clock = initialClock(config)
+  // Starter pieces came with the home: owned from minute 0, before any clock a test may set.
+  const starter = starterFurnishing(config.startHome, 0, config)
   return {
-    clock: initialClock(config),
+    clock,
     player: {
       cash: config.startCash,
       stats: initialStats(config),
@@ -136,10 +143,10 @@ export function initialSnapshot(config: EngineConfig): GameSnapshot {
       flex: initialFlexState,
       home: config.startHome,
       rent: initialRent,
-      inventory: emptyInventory,
+      inventory: { ...emptyInventory, decor: starter.decor },
       clubNights: {},
       visited: {},
-      apartment: initialApartment,
+      apartment: { ...initialApartment, placed: starter.placed },
       location: HOME_LOCATION,
       transit: initialTransitState,
       look: config.avatar.defaults,

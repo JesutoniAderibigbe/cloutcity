@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { PerspectiveCamera, type InstancedMesh, type Mesh } from 'three'
+import { BoxGeometry, Matrix4, PerspectiveCamera, type InstancedMesh } from 'three'
+import sceneJson from '@data/config/scene.json'
+import finishesJson from '@data/homes/finishes.json'
 import itemsJson from '@data/items/items.json'
 import { HOME_IDS } from '@/lib/data/homes'
-import { buildApartment } from './buildApartment'
+import { buildApartment, mergeMeshes, type PlacedFill } from './buildApartment'
 import { buildDecorModel, DECOR_MODEL_IDS } from './buildDecor'
 import { buildRoomGeometry, roomBounds } from './buildRoom'
 import {
@@ -10,6 +12,7 @@ import {
   avatarReserve,
   dayNightConfig,
   dayNightModel,
+  finishLook,
   roomInterior,
   roomPalette,
   tierBudget,
@@ -22,16 +25,33 @@ import { lightingAt } from './lighting'
 import { triangleCount } from './parts'
 import { createPlaceholderVisuals } from './visuals'
 
+const modelled = new Set(Object.keys(sceneJson.models.decor))
 const decorItems = itemsJson.items.filter((item) => item.category === 'decor')
 
 describe('apartment data', () => {
-  it('reads every home interior with its slots', () => {
+  it('reads every home interior: its grid, openings, fixtures and the avatar on its cell', () => {
     for (const home of HOME_IDS) {
       const interior = roomInterior(home)
-      expect(interior.slots.length).toBeGreaterThan(0)
-      for (const slot of interior.slots) expect(slot.position).toHaveLength(3)
+      expect(interior.room.widthM).toBe(interior.grid.cols * interior.grid.cellM)
+      expect(interior.room.depthM).toBe(interior.grid.rows * interior.grid.cellM)
+      expect(interior.openings.some((opening) => opening.kind === 'door')).toBe(true)
+      for (const opening of interior.openings) {
+        const length = opening.wall === 'back' ? interior.room.widthM : interior.room.depthM
+        expect(Math.abs(opening.centerM) + opening.widthM / 2).toBeLessThanOrEqual(length / 2)
+      }
+      const [x, , z] = interior.avatarAnchor.position
+      expect(Math.abs(x)).toBeLessThan(interior.room.widthM / 2)
+      expect(Math.abs(z)).toBeLessThan(interior.room.depthM / 2)
     }
-    expect(roomInterior('brooklyn-1br').slots).toHaveLength(5)
+  })
+
+  it('resolves every finish to a pattern and two hex colours, and refuses an unknown one', () => {
+    for (const finish of finishesJson.finishes) {
+      const look = finishLook(finish.id)
+      expect(look.kind).toBe(finish.kind)
+      for (const hex of look.colors) expect(hex).toMatch(/^#[0-9a-f]{6}$/i)
+    }
+    expect(() => finishLook('plaid')).toThrow(/unknown finish/)
   })
 
   it('resolves the room palette to hex and keeps the avatar reserve inside every tier', () => {
@@ -46,22 +66,21 @@ describe('apartment data', () => {
     expect(tierBudget('mid').shadows).toBe('blob-or-baked')
     expect(tierBudget('low').shadows).toBe('none')
   })
-
-  it('keeps tap targets at least 44 px across', () => {
-    expect(apartmentConfig.hitRadiusPx * 2).toBeGreaterThanOrEqual(44)
-  })
 })
 
 describe('decor models', () => {
-  it('has a model for every decor item and nothing else', () => {
-    expect([...DECOR_MODEL_IDS].sort()).toEqual(decorItems.map((item) => item.id).sort())
-    expect(buildDecorModel('cargo-pants')).toBeNull()
+  it('draws every decor item: a hand-made model (S04h) or a code-built one of its own', () => {
+    const codeBuilt = new Set(DECOR_MODEL_IDS)
+    for (const item of decorItems) {
+      expect(modelled.has(item.id) || codeBuilt.has(item.id), item.id).toBe(true)
+    }
+    // Anything else gets the plain stand-in block until its model arrives.
+    expect(buildDecorModel('cargo-pants').sizeM.w).toBeGreaterThan(0)
   })
 
   it('builds each as one merged geometry with at most two material groups, low-poly', () => {
     for (const id of DECOR_MODEL_IDS) {
       const model = buildDecorModel(id)
-      if (model === null) throw new Error(`no model for ${id}`)
       const groups = model.geometry.groups.length
       expect(groups, id).toBeLessThanOrEqual(2)
       expect(model.second === null ? groups <= 1 : groups === 2, id).toBe(true)
@@ -74,13 +93,23 @@ describe('decor models', () => {
 })
 
 describe('room shell', () => {
-  it('is one vertex-coloured geometry for every home', () => {
+  it('is one vertex-coloured geometry for every home and every finish, within budget', () => {
     for (const home of HOME_IDS) {
-      const geometry = buildRoomGeometry(roomInterior(home), apartmentConfig, roomPalette)
-      expect(geometry.getAttribute('color')).toBeDefined()
-      expect(geometry.groups).toHaveLength(0)
-      expect(triangleCount(geometry)).toBeLessThan(1000)
-      geometry.dispose()
+      const interior = roomInterior(home)
+      for (const finish of finishesJson.finishes) {
+        const finishes =
+          finish.kind === 'wall'
+            ? { wall: finish.id, floor: interior.shell.floorFinish }
+            : { wall: interior.shell.wallPaint, floor: finish.id }
+        const geometry = buildRoomGeometry(interior, apartmentConfig, roomPalette, finishes)
+        expect(geometry.getAttribute('color')).toBeDefined()
+        expect(geometry.groups).toHaveLength(0)
+        // Room for the avatar and the furniture inside the low tier's triangle cap.
+        expect(triangleCount(geometry), `${home} ${finish.id}`).toBeLessThan(
+          tierBudget('low').trianglesMax / 3,
+        )
+        geometry.dispose()
+      }
     }
   })
 })
@@ -128,11 +157,16 @@ describe('lighting seam (S04f)', () => {
     expect(noon.sun.direction).toEqual(apartmentConfig.lights.sunDirection)
   })
 
-  it('is lamp-lit at night and darker than by day', () => {
+  it('is lamp-lit at night: warm ambient, the lamps glowing, the sun dimmer than by day', () => {
     const noon = lightingAt(720, input)
     const night = lightingAt(23 * 60, input)
     expect(city(23 * 60).nightGlow).toBe(1)
+    expect(night.glow).toBe(1)
+    expect(noon.glow).toBe(0)
     expect(night.sun.intensity).toBeLessThan(noon.sun.intensity)
+    expect(night.ambient.intensity).toBeCloseTo(
+      city(23 * 60).ambientIntensity * input.room.ambientScale + input.room.lampBoost,
+    )
     expect(night.ambient.color).not.toBe(city(23 * 60).colors.ambient)
     expect(night.ambient.color).toBe(
       mixHexLinear(city(23 * 60).colors.ambient, roomPalette.lamp, input.room.lampMix),
@@ -147,68 +181,138 @@ describe('lighting seam (S04f)', () => {
 })
 
 describe('apartment scene graph', () => {
+  const interior = roomInterior('queens-room')
   const build = () =>
     buildApartment(
-      roomInterior('queens-room'),
+      interior,
       apartmentConfig,
       roomPalette,
       createPlaceholderVisuals(apartmentConfig, roomPalette, toonRamp),
+      { wall: interior.shell.wallPaint, floor: interior.shell.floorFinish },
     )
-  const decorMeshes = (apartment: ReturnType<typeof build>) =>
-    apartment.group.children.filter((child) => child.name.startsWith('apartment-decor-'))
+  const fill = (
+    itemId: string,
+    slotId: string,
+    patch: Partial<PlacedFill> = {},
+  ): Record<string, PlacedFill> => ({
+    [itemId]: {
+      itemId,
+      slotId,
+      turn: 0,
+      mount: 'wall',
+      footprint: '1x1',
+      color: '#ffffff',
+      ...patch,
+    },
+  })
+  const decorObjects = (apartment: ReturnType<typeof build>) =>
+    apartment.group.getObjectByName('apartment-decor')?.children ?? []
 
-  it('draws one mesh per filled slot and swaps it when the colour changes', () => {
+  it('draws each placed item once and swaps it when the colour changes', () => {
     const apartment = build()
-    apartment.setPlaced({ 'wall-1': { itemId: 'fairy-string-lights', color: '#ffffff' } })
-    expect(decorMeshes(apartment)).toHaveLength(1)
-    const first = decorMeshes(apartment)[0]
-    apartment.setPlaced({ 'wall-1': { itemId: 'fairy-string-lights', color: '#ffffff' } })
-    expect(decorMeshes(apartment)[0]).toBe(first)
-    apartment.setPlaced({ 'wall-1': { itemId: 'fairy-string-lights', color: '#ff0000' } })
-    expect(decorMeshes(apartment)[0]).not.toBe(first)
+    apartment.setPlaced(fill('fairy-string-lights', 'w-back-0'))
+    expect(apartment.drawnItems()).toEqual(['fairy-string-lights'])
+    const first = decorObjects(apartment)[0]
+    apartment.setPlaced(fill('fairy-string-lights', 'w-back-1'))
+    expect(decorObjects(apartment)[0]).toBe(first)
+    apartment.setPlaced(fill('fairy-string-lights', 'w-back-1', { color: '#ff0000' }))
+    expect(decorObjects(apartment)[0]).not.toBe(first)
     apartment.setPlaced({})
-    expect(decorMeshes(apartment)).toHaveLength(0)
+    expect(apartment.drawnItems()).toEqual([])
     apartment.dispose()
   })
 
-  it('keeps every slot marker in one instanced mesh and blobs only on the mid tier', () => {
+  it('centres a 2×1 item on its two cells, turned, and stands a surface item on a table', () => {
     const apartment = build()
-    const markers = apartment.group.getObjectByName('apartment-slot-markers') as InstancedMesh
+    apartment.setPlaced({
+      ...fill('corduroy-sofa', 'f3-1', { mount: 'floor', footprint: '2x1', turn: 0 }),
+      ...fill('windowsill-monstera', 'f0-3', { mount: 'surface', footprint: '1x1', turn: 1 }),
+    })
+    const objects = decorObjects(apartment)
+    const sofa = objects.find((child) => child.name === 'apartment-decor-corduroy-sofa')
+    const plant = objects.find((child) => child.name === 'apartment-decor-windowsill-monstera')
+    const [x34, z1] = [-interior.room.widthM / 2 + 4, -interior.room.depthM / 2 + 1.5]
+    expect(sofa?.position.x).toBeCloseTo(x34)
+    expect(sofa?.position.z).toBeCloseTo(z1)
+    expect(plant?.rotation.y).toBeCloseTo(Math.PI / 2)
+    expect(plant?.position.y).toBeCloseTo(apartmentConfig.standHeightM)
+    expect(apartment.group.getObjectByName('apartment-stands')).toBeDefined()
+    apartment.dispose()
+  })
+
+  it('shows buy mode’s grid in one instanced mesh, hidden while closed; blobs only on the mid tier', () => {
+    const apartment = build()
+    const tiles = apartment.group.getObjectByName('apartment-grid') as InstancedMesh
     const blobs = apartment.group.getObjectByName('apartment-blob-shadows') as InstancedMesh
-    expect(markers.count).toBe(apartment.slots.length)
-    apartment.setPlaced({ 'floor-1': { itemId: 'cloud-lounge-chair', color: '#ffffff' } })
+    expect(tiles.count).toBe(apartment.slots.length)
+    expect(tiles.visible).toBe(false)
+    apartment.setCells({ 'f3-1': 'free', 'f4-1': 'ghost' })
+    expect(tiles.visible).toBe(true)
+    expect(apartment.gridCells()).toEqual({ 'f3-1': 'free', 'f4-1': 'ghost' })
+    apartment.setCells(null)
+    expect(tiles.visible).toBe(false)
+    apartment.setPlaced(fill('cloud-lounge-chair', 'f3-1', { mount: 'floor' }))
     apartment.setTier('mid')
     expect(blobs.visible).toBe(true)
     apartment.setTier('low')
     expect(blobs.visible).toBe(false)
-    apartment.setTier('high')
-    const chair = decorMeshes(apartment)[0] as Mesh
-    expect(chair.castShadow).toBe(true)
     // The room is rebuilt for the tier through the visuals seam, and stays one object.
+    apartment.setTier('high')
     expect(
       apartment.group.children.filter((child) => child.name === 'apartment-room'),
     ).toHaveLength(1)
     apartment.dispose()
   })
 
-  it('projects every slot to the screen for picking', () => {
+  it('rebuilds the shell when a finish is tried on, and only then', () => {
     const apartment = build()
-    const camera = new PerspectiveCamera(50, 390 / 844, 0.05, 100)
-    const interior = roomInterior('queens-room')
+    const room = apartment.group.getObjectByName('apartment-room')
+    apartment.setFinishes({ wall: interior.shell.wallPaint, floor: interior.shell.floorFinish })
+    expect(apartment.group.getObjectByName('apartment-room')).toBe(room)
+    apartment.setFinishes({ wall: 'mint-fresh', floor: 'marble-tile' })
+    expect(apartment.group.getObjectByName('apartment-room')).not.toBe(room)
+    apartment.dispose()
+  })
+
+  it('finds the floor or wall cell under a tap, and projects every cell back to the screen', () => {
+    const apartment = build()
+    const camera = new PerspectiveCamera(40, 390 / 844, 0.05, 100)
     const bounds = roomBounds(interior, apartmentConfig)
     const sphere = boundingSphere(bounds.min, bounds.max)
     camera.position.set(
-      ...cameraPosition(sphere.center, interior.camera.position, interior.camera.target, 8),
+      ...cameraPosition(sphere.center, interior.camera.position, interior.camera.target, 22),
     )
     camera.lookAt(...sphere.center)
     camera.updateMatrixWorld()
-    const slots = apartment.screenSlots(camera, 390, 844)
-    expect(slots.map((slot) => slot.id)).toEqual(interior.slots.map((slot) => slot.id))
-    for (const slot of slots) {
-      expect(slot.x).toBeGreaterThan(0)
-      expect(slot.x).toBeLessThan(390)
+    for (const slotId of ['f0-0', 'f3-1', 'f4-3', 'w-back-2', 'w-left-0', 'w-right-1']) {
+      const point = apartment.cellScreen(camera, slotId, 390, 844)
+      if (point === null) throw new Error(`${slotId} is behind the camera`)
+      expect(point.x, slotId).toBeGreaterThan(0)
+      expect(point.x, slotId).toBeLessThan(390)
+      expect(apartment.cellAt(camera, point.x, point.y, 390, 844), slotId).toBe(slotId)
     }
+    // Off the room: nothing.
+    expect(apartment.cellAt(camera, 2, 2, 390, 844)).toBeNull()
     apartment.dispose()
+  })
+})
+
+describe('mergeMeshes', () => {
+  it('merges meshes into one indexed geometry in group space, quantized or float', () => {
+    const a = new BoxGeometry(1, 1, 1)
+    const b = new BoxGeometry(1, 1, 1).toNonIndexed()
+    const merged = mergeMeshes([
+      { geometry: a, matrix: new Matrix4() },
+      { geometry: b, matrix: new Matrix4().makeTranslation(5, 0, 0) },
+    ])
+    expect(merged.getAttribute('position').count).toBe(
+      a.getAttribute('position').count + b.getAttribute('position').count,
+    )
+    merged.computeBoundingBox()
+    expect(merged.boundingBox?.max.x).toBeCloseTo(5.5)
+    // Missing colours read as white; missing night glow as none.
+    expect(merged.getAttribute('color').getX(0)).toBe(1)
+    expect(merged.getAttribute('_emissive').getX(0)).toBe(0)
   })
 })
 

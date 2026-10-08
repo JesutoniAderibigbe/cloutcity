@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { ApartmentView } from '@/scene/apartment/types'
 import {
   apartmentViewStore,
-  onApartmentSlotTap,
+  onApartmentCellTap,
   setApartmentView,
-  tapApartmentSlot,
+  tapApartmentCell,
 } from './apartmentView'
 
 afterEach(() => setApartmentView(null))
@@ -12,8 +12,8 @@ afterEach(() => setApartmentView(null))
 const view: ApartmentView = {
   home: 'queens-room',
   placed: {},
-  heldKind: null,
-  selectedSlotId: null,
+  finishes: { wall: 'butter-cream', floor: 'bodega-checker' },
+  cells: null,
   label: 'Your apartment, Queens room',
   minute: 0,
   tier: 'mid',
@@ -29,11 +29,11 @@ describe('apartment view', () => {
   })
 
   it('delivers room taps to listeners until they stop', () => {
-    const taps: unknown[] = []
-    const stop = onApartmentSlotTap((tap) => taps.push(tap))
-    tapApartmentSlot({ kind: 'one', slotId: 'wall-1' })
+    const taps: string[] = []
+    const stop = onApartmentCellTap((slotId) => taps.push(slotId))
+    tapApartmentCell('f3-1')
     stop()
-    tapApartmentSlot({ kind: 'many', slotIds: ['wall-1', 'floor-1'] })
-    expect(taps).toEqual([{ kind: 'one', slotId: 'wall-1' }])
+    tapApartmentCell('w-back-0')
+    expect(taps).toEqual(['f3-1'])
   })
 })

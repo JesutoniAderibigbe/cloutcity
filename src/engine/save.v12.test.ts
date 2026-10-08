@@ -16,11 +16,14 @@ import {
   migrateSave,
   type SaveState,
 } from './save'
-import { V12_PLAYER_KEYS } from './test-support'
+import { V12_PLAYER_KEYS, unfurnished } from './test-support'
 
 const schema = createSaveSchema(config)
 const NOW = 30_000
-const base: SaveState = { ...initialSave(config), clock: { minute: NOW, remainderMs: 0 } }
+const base: SaveState = {
+  ...unfurnished(initialSave(config)),
+  clock: { minute: NOW, remainderMs: 0 },
+}
 
 /** A v12 save that has been through the creator. */
 const chosen: SaveState = {
@@ -59,8 +62,8 @@ function v11Of(save: SaveState = base): Record<string, unknown> & {
 }
 
 describe('save v12', () => {
-  it('is version 12; a fresh save has the default look, no choices, a fresh creator, no rolls', () => {
-    expect(SAVE_VERSION).toBe(12)
+  it('is version 13 (S40 after S16a); a fresh save has the default look, no choices, a fresh creator, no rolls', () => {
+    expect(SAVE_VERSION).toBe(13)
     const fresh = initialSave(config)
     expect(fresh.player.look).toEqual(config.avatar.defaults)
     expect(fresh.player).toMatchObject({

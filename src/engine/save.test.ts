@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { V12_FRESH_PLAYER, V12_FRESH_SAVE, V12_PLAYER_KEYS } from './test-support'
+import {
+  V12_FRESH_PLAYER,
+  V12_FRESH_SAVE,
+  V12_PLAYER_KEYS,
+  V13_MIGRATED_APARTMENT,
+  V13_MIGRATED_INVENTORY,
+} from './test-support'
 import { initialCloutState, legacyCloutState } from './clout'
 import { engineConfig as config } from './config'
-import { emptyInventory } from './items'
 import { initialEventsState } from './events'
 import { initialFlexState } from './game'
 import { initialGoalsState } from './goals'
 import { initialGrantsState } from './grants'
-import { initialApartment } from './home'
 import { initialPrestigeState } from './prestige'
 import { SAVE_VERSION, createSaveSchema, initialSave, loadSave, migrateSave } from './save'
 
@@ -71,7 +75,7 @@ const S15_FIELDS = {
 
 describe('save schema', () => {
   it('accepts a fresh save', () => {
-    expect(SAVE_VERSION).toBe(12)
+    expect(SAVE_VERSION).toBe(13)
     expect(schema.safeParse(initialSave(config)).success).toBe(true)
   })
 
@@ -248,10 +252,10 @@ describe('save v3: clout, home and rent', () => {
           flex: initialFlexState,
           home: config.startHome,
           rent: { owed: 0, missed: 0 },
-          inventory: emptyInventory,
+          inventory: V13_MIGRATED_INVENTORY,
           clubNights: {},
           visited: {},
-          apartment: initialApartment,
+          apartment: V13_MIGRATED_APARTMENT,
           location: { kind: 'home' },
           transit: { rngState: 0 },
           ...V12_FRESH_PLAYER,
@@ -341,10 +345,10 @@ describe('save v3: tampered and edge saves', () => {
         flex: initialFlexState,
         home: config.startHome,
         rent: { owed: 5, missed: 1 },
-        inventory: emptyInventory,
+        inventory: V13_MIGRATED_INVENTORY,
         clubNights: {},
         visited: {},
-        apartment: initialApartment,
+        apartment: V13_MIGRATED_APARTMENT,
         location: { kind: 'home' },
         transit: { rngState: 0 },
         ...V12_FRESH_PLAYER,
@@ -403,10 +407,10 @@ describe('save v3: tampered and edge saves', () => {
         flex: initialFlexState,
         home: config.startHome,
         rent: { owed: 0, missed: 0 },
-        inventory: emptyInventory,
+        inventory: V13_MIGRATED_INVENTORY,
         clubNights: {},
         visited: {},
-        apartment: initialApartment,
+        apartment: V13_MIGRATED_APARTMENT,
         location: { kind: 'home' },
         transit: { rngState: 0 },
         ...V12_FRESH_PLAYER,
@@ -453,8 +457,8 @@ describe('event state in the save (v5)', () => {
           flex: initialFlexState,
           clubNights: {},
           visited: {},
-          inventory: emptyInventory,
-          apartment: initialApartment,
+          inventory: V13_MIGRATED_INVENTORY,
+          apartment: V13_MIGRATED_APARTMENT,
           location: { kind: 'home' },
           transit: { rngState: 0 },
           ...V12_FRESH_PLAYER,
@@ -662,8 +666,8 @@ describe('club nights in the save (v6)', () => {
           flex: initialFlexState,
           clubNights: {},
           visited: {},
-          inventory: emptyInventory,
-          apartment: initialApartment,
+          inventory: V13_MIGRATED_INVENTORY,
+          apartment: V13_MIGRATED_APARTMENT,
           location: { kind: 'home' },
           transit: { rngState: 0 },
           ...V12_FRESH_PLAYER,

@@ -30,10 +30,13 @@ export default function RoomAvatar({
   interior,
   tier,
   toonRamp,
+  avatarHeightM,
 }: {
   readonly interior: RoomInterior
   readonly tier: QualityTier
   readonly toonRamp: readonly number[]
+  /** How tall the avatar stands in the room (scene.json `apartment.avatarHeightM`). */
+  readonly avatarHeightM: number
 }) {
   const look = usePlayerLook()
   const config = useMemo(() => modelsConfig(), [])
@@ -49,8 +52,14 @@ export default function RoomAvatar({
   const { position, rotationDeg } = interior.avatarAnchor
   return (
     <ModelsProvider config={config} tier={tier} {...(gradientMap && { gradientMap })}>
-      <group name={ROOM_AVATAR_NAME} position={position} rotation={[0, rotationDeg * DEG, 0]}>
+      <group
+        name={ROOM_AVATAR_NAME}
+        position={position}
+        rotation={[0, rotationDeg * DEG, 0]}
+        scale={avatarHeightM}
+      >
         <LookAvatar
+          fitHeight
           avatar={look}
           clip={config.player.clip}
           animate={false}

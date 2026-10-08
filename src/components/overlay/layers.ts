@@ -85,6 +85,10 @@ export function overlayCssVars(config: OverlayLayoutConfig): Readonly<Record<str
     [HUD_COMPACT_HEIGHT_VAR]: `${config.hudCompactHeightPx}px`,
     [BANNER_HEIGHT_VAR]: `${config.bannerHeightPx}px`,
     '--overlay-sheet-max-w': `${config.sheetMaxWidthPx}px`,
+    // The docked Home panel's layout (globals.css `cc-room-docked`, S40) repeats these rows.
+    '--overlay-toast-h': `${config.toastHeightPx}px`,
+    '--overlay-tabs-h': `${config.tabBarHeightPx}px`,
+    '--overlay-free-min': `${config.freeSceneMinHeightPx}px`,
     '--overlay-loading-delay': `${config.loadingRevealDelayMs}ms`,
   }
 }

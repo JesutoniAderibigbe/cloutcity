@@ -6,7 +6,7 @@ import { engineConfig } from '@/engine/config'
 import { ITEM_SLOTS as ENGINE_SLOTS } from '@/engine/items'
 import { baseCopy, slangPacks } from '@/lib/copy/all'
 import { BalanceConfigSchema, RARITY_TIERS, type BalanceConfig } from './schemas/config'
-import { ITEM_SLOTS, ItemsFileSchema } from './schemas/content'
+import { DECOR_CATEGORIES, ITEM_SLOTS, ItemsFileSchema } from './schemas/content'
 import { balance, theme } from './config'
 import { items } from './content'
 
@@ -23,6 +23,9 @@ const validBalance = JSON.parse(
 const wearables = items.filter((item) => item.category === 'clothing' || item.category === 'makeup')
 const gifts = items.filter((item) => item.category === 'gift')
 const decor = items.filter((item) => item.category === 'decor')
+/** Decor the shop sells: starter pieces come with the home (S40) and are never sold. */
+const shopDecor = decor.filter((item) => item.decor?.starter !== true)
+const starters = decor.filter((item) => item.decor?.starter === true)
 
 describe('data/items/items.json', () => {
   it('has 12 clothing and makeup items and 3 gifts', () => {
@@ -68,8 +71,12 @@ describe('data/items/items.json', () => {
     }
   })
 
-  it('sellValue is floor(price * resalePct[rarity] / 100) and below price', () => {
+  it('sellValue is floor(price * resalePct[rarity] / 100) and below price; starter pieces are free', () => {
     for (const item of items) {
+      if (item.decor?.starter === true) {
+        expect([item.price, item.sellValue], item.id).toEqual([0, 0])
+        continue
+      }
       expect(item.sellValue, item.id).toBe(
         Math.floor((item.price * balance.items.resalePct[item.rarity]) / 100),
       )
@@ -78,7 +85,7 @@ describe('data/items/items.json', () => {
   })
 
   it('rarer tiers cost more: every common < every medium < every rare, per category', () => {
-    for (const group of [wearables, gifts, decor]) {
+    for (const group of [wearables, gifts, shopDecor]) {
       const prices = (tier: string) =>
         group.filter((item) => item.rarity === tier).map((item) => item.price)
       expect(Math.max(...prices('common'))).toBeLessThan(Math.min(...prices('medium')))
@@ -95,7 +102,24 @@ describe('data/items/items.json', () => {
   })
 
   it('the engine reads the same catalog, slots and rules', () => {
-    expect(engineConfig.items.catalog).toEqual(items)
+    // The engine fills in decor's optional fields (S40): a 1×1 footprint on the furniture layer,
+    // not luxury, not a starter piece.
+    expect(engineConfig.items.catalog).toEqual(
+      items.map((item) =>
+        item.decor === undefined
+          ? item
+          : {
+              ...item,
+              decor: {
+                footprint: '1x1',
+                layer: 'furniture',
+                ...item.decor,
+                luxury: item.decor.luxury === true,
+                starter: item.decor.starter === true,
+              },
+            },
+      ),
+    )
     expect(ENGINE_SLOTS).toEqual(ITEM_SLOTS)
     const { catalog, ...rules } = engineConfig.items
     expect(catalog).toHaveLength(items.length)
@@ -103,22 +127,25 @@ describe('data/items/items.json', () => {
   })
 })
 
-describe('decor (S16)', () => {
+describe('decor (S16, S40)', () => {
   const HEX_LIKE = /^#?[0-9a-f]{3,8}$/i
   /** A key's text in `pack`, falling back to base like the copy layer (undefined if missing). */
   const renderIn = (pack: string) => (key: string) =>
     slangPacks[pack]?.strings[key] ?? baseCopy.strings[key]
 
-  it('has exactly 6 decor items across all 3 rarity tiers, none about drinking (DEC-12)', () => {
-    expect(decor.map((item) => item.id)).toEqual([
-      'fairy-string-lights',
-      'windowsill-monstera',
-      'thrift-flatweave-rug',
-      'crate-record-player',
-      'custom-neon-sign',
-      'cloud-lounge-chair',
-    ])
-    expect(new Set(decor.map((item) => item.rarity))).toEqual(new Set(RARITY_TIERS))
+  it('sells 20+ pieces in all 10 buy-mode categories and all 3 rarity tiers, none about drinking (DEC-12)', () => {
+    expect(shopDecor.length).toBeGreaterThanOrEqual(20)
+    expect(new Set(shopDecor.map((item) => item.decor?.category))).toEqual(
+      new Set(DECOR_CATEGORIES),
+    )
+    expect(new Set(shopDecor.map((item) => item.rarity))).toEqual(new Set(RARITY_TIERS))
+    expect(new Set(shopDecor.map((item) => item.decor?.footprint ?? '1x1'))).toEqual(
+      new Set(['1x1', '2x1', '2x2']),
+    )
+    // The starter room: a bed, a sofa, a rug, a lamp, a table, a plant, a TV and wall art.
+    expect(starters.map((item) => item.decor?.category).sort()).toEqual(
+      ['fun', 'lighting', 'plants', 'rugs', 'seating', 'sleep', 'tables', 'wall-art'].sort(),
+    )
     const text = decor
       .flatMap((item) => [item.id, baseCopy.strings[item.nameKey] ?? ''])
       .join(' ')
@@ -131,7 +158,9 @@ describe('decor (S16)', () => {
       expect(item.cloutValue, item.id).toBe(0)
       expect(item.styleValue, item.id).toBe(0)
       expect(item.statEffects, item.id).toEqual({})
-      expect(item.decor?.homeScore, item.id).toBeGreaterThanOrEqual(1)
+      expect(item.decor?.homeScore, item.id).toBeGreaterThanOrEqual(
+        item.decor?.starter === true ? 0 : 1,
+      )
     }
     expect(new Set(decor.map((item) => item.decor?.fits))).toEqual(
       new Set(['wall', 'floor', 'surface']),
@@ -141,7 +170,7 @@ describe('decor (S16)', () => {
   it('every variant names a theme token, and its colour name is unique per item', () => {
     for (const item of decor) {
       const variants = item.decor?.variants ?? []
-      expect(variants.length, item.id).toBeGreaterThanOrEqual(2)
+      expect(variants.length, item.id).toBeGreaterThanOrEqual(1)
       for (const variant of variants) {
         expect(Object.hasOwn(theme.colors, variant.token), `${item.id} ${variant.id}`).toBe(true)
       }
@@ -201,7 +230,7 @@ describe('ItemSchema', () => {
     expect(parses({ ...tee, ...patch })).toBe(false)
   })
 
-  it('decor needs its decor block, worth no clout, style or stat effects, with 2+ variants', () => {
+  it('decor needs its decor block, worth no clout, style or stat effects, with a variant', () => {
     const lights = rawItems.find((item) => item.id === 'fairy-string-lights')
     expect(parses(lights)).toBe(true)
     const block = (lights as { decor: { variants: unknown[] } }).decor
@@ -213,9 +242,21 @@ describe('ItemSchema', () => {
     expect(parses({ ...lights, slot: 'top' })).toBe(false)
     expect(parses({ ...lights, decor: { ...block, fits: 'ceiling' } })).toBe(false)
     expect(parses({ ...lights, decor: { ...block, homeScore: 0 } })).toBe(false)
-    expect(parses({ ...lights, decor: { ...block, variants: block.variants.slice(0, 1) } })).toBe(
-      false,
-    )
+    expect(parses({ ...lights, decor: { ...block, variants: [] } })).toBe(false)
+    expect(parses({ ...lights, decor: { ...block, footprint: '2x1' } })).toBe(false)
+    expect(parses({ ...lights, decor: { ...block, layer: 'rug' } })).toBe(false)
+    expect(parses({ ...lights, decor: { ...block, luxury: true } })).toBe(false)
+    expect(parses({ ...lights, decor: { ...block, category: 'garage' } })).toBe(false)
+    // A starter piece is free, sells for nothing and scores nothing.
+    expect(parses({ ...lights, decor: { ...block, starter: true } })).toBe(false)
+    expect(
+      parses({
+        ...lights,
+        price: 0,
+        sellValue: 0,
+        decor: { ...block, starter: true, homeScore: 0 },
+      }),
+    ).toBe(true)
     const [first] = block.variants as { id: string; token: string; nameKey: string }[]
     const variant = (patch: object) => ({
       ...block,

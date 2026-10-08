@@ -1,0 +1,148 @@
+{
+  "finishes": [
+    {
+      "id": "butter-cream",
+      "kind": "wall",
+      "pattern": "solid",
+      "tokens": ["butter-200"],
+      "price": 45,
+      "nameKey": "buy.finish.butterCream"
+    },
+    {
+      "id": "sage-wash",
+      "kind": "wall",
+      "pattern": "solid",
+      "tokens": ["sagewall-200"],
+      "price": 45,
+      "nameKey": "buy.finish.sageWash"
+    },
+    {
+      "id": "gallery-white",
+      "kind": "wall",
+      "pattern": "solid",
+      "tokens": ["gallery-50"],
+      "price": 60,
+      "nameKey": "buy.finish.galleryWhite"
+    },
+    {
+      "id": "sky-wash",
+      "kind": "wall",
+      "pattern": "solid",
+      "tokens": ["skywall-200"],
+      "price": 40,
+      "nameKey": "buy.finish.skyWash"
+    },
+    {
+      "id": "mint-fresh",
+      "kind": "wall",
+      "pattern": "solid",
+      "tokens": ["mintwall-200"],
+      "price": 40,
+      "nameKey": "buy.finish.mintFresh"
+    },
+    {
+      "id": "peach-glow",
+      "kind": "wall",
+      "pattern": "solid",
+      "tokens": ["peachwall-200"],
+      "price": 40,
+      "nameKey": "buy.finish.peachGlow"
+    },
+    {
+      "id": "lilac-haze",
+      "kind": "wall",
+      "pattern": "solid",
+      "tokens": ["lilacwall-200"],
+      "price": 40,
+      "nameKey": "buy.finish.lilacHaze"
+    },
+    {
+      "id": "forest-green",
+      "kind": "wall",
+      "pattern": "solid",
+      "tokens": ["forestwall-600"],
+      "price": 70,
+      "nameKey": "buy.finish.forestGreen"
+    },
+    {
+      "id": "charcoal-loft",
+      "kind": "wall",
+      "pattern": "solid",
+      "tokens": ["charcoalwall-700"],
+      "price": 80,
+      "nameKey": "buy.finish.charcoalLoft"
+    },
+    {
+      "id": "exposed-brick",
+      "kind": "wall",
+      "pattern": "brick",
+      "tokens": ["brickwall-500", "brickwall-300"],
+      "price": 180,
+      "nameKey": "buy.finish.exposedBrick"
+    },
+    {
+      "id": "bodega-checker",
+      "kind": "floor",
+      "pattern": "checker",
+      "tokens": ["floorchk-500", "floorchk-600"],
+      "price": 60,
+      "nameKey": "buy.finish.bodegaChecker"
+    },
+    {
+      "id": "honey-planks",
+      "kind": "floor",
+      "pattern": "planks",
+      "tokens": ["plank-400", "plank-500"],
+      "price": 90,
+      "nameKey": "buy.finish.honeyPlanks"
+    },
+    {
+      "id": "herringbone-oak",
+      "kind": "floor",
+      "pattern": "herringbone",
+      "tokens": ["herring-400", "herring-500"],
+      "price": 160,
+      "nameKey": "buy.finish.herringboneOak"
+    },
+    {
+      "id": "worn-oak",
+      "kind": "floor",
+      "pattern": "planks",
+      "tokens": ["wornoak-500", "wornoak-600"],
+      "price": 60,
+      "nameKey": "buy.finish.wornOak"
+    },
+    {
+      "id": "black-white-checker",
+      "kind": "floor",
+      "pattern": "checker",
+      "tokens": ["tilebw-100", "tilebw-900"],
+      "price": 95,
+      "nameKey": "buy.finish.blackWhiteChecker"
+    },
+    {
+      "id": "terracotta-tile",
+      "kind": "floor",
+      "pattern": "checker",
+      "tokens": ["terratile-500", "terratile-600"],
+      "price": 85,
+      "nameKey": "buy.finish.terracottaTile"
+    },
+    {
+      "id": "polished-concrete",
+      "kind": "floor",
+      "pattern": "solid",
+      "tokens": ["concretefloor-300", "concretefloor-400"],
+      "price": 130,
+      "nameKey": "buy.finish.polishedConcrete"
+    },
+    {
+      "id": "marble-tile",
+      "kind": "floor",
+      "pattern": "checker",
+      "tokens": ["marble-50", "marble-200"],
+      "price": 380,
+      "nameKey": "buy.finish.marbleTile"
+    }
+  ]
+}
