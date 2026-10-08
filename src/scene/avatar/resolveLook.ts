@@ -8,6 +8,8 @@
  * - Attachments not in the refs (the Blender pieces pending their refit to the realistic frame,
  *   options.json `pending`) are left out and listed in `missing`, so every look draws.
  * - A colour applies only to a slot the model has, and only when the palette has the token.
+ * - The hair cap (`drawn.hairCap`, S04p) takes the hair colour on its skin slot and its fit
+ *   (scale, then offset) from the body frame.
  * - Attachments follow a rig joint: one with a scene.json `avatarLook` entry sits at its offset;
  *   the rest (pack hair and Blender pieces, built in the character's bind pose) at their catalog
  *   `attach` joint (the head unless it says the torso), with no offset.
@@ -26,6 +28,8 @@ export interface AvatarAttachment {
   readonly joint: string
   /** Metres in the character's bind pose. */
   readonly offset: readonly [number, number, number]
+  /** Per-axis scale about the bind-pose origin, before the offset (default 1). */
+  readonly scale?: readonly [number, number, number]
 }
 
 export interface ResolvedLook {
@@ -75,10 +79,10 @@ export function resolveLook(
     bottom: hex(tokenOf(options.garmentColors, look.bottom)),
     shoes: hex(tokenOf(options.garmentColors, look.shoes)),
   }
-  const colorsFor = (ref: ModelRef): SlotColors | undefined => {
+  const colorsFor = (ref: ModelRef, hairCap = false): SlotColors | undefined => {
     const colors: Record<string, string> = {}
     for (const slot of ref.slots) {
-      const from = SLOT_SOURCE[slot]
+      const from = hairCap && slot === 'skin' ? 'hair' : SLOT_SOURCE[slot]
       const value = from === undefined ? undefined : source[from]
       if (value !== undefined) colors[slot] = value
     }
@@ -103,12 +107,14 @@ export function resolveLook(
     const ref = model(id)
     if (ref === undefined) continue
     const place = refs.attachments[id]
-    const colors = colorsFor(ref)
+    const cap = drawn.hairCap?.model === id ? drawn.hairCap : null
+    const colors = colorsFor(ref, cap !== null)
     attachments.push({
       ref,
       ...(colors === undefined ? {} : { colors }),
       joint: place?.joint ?? ref.attach ?? 'head',
-      offset: place?.offset ?? ORIGIN,
+      offset: cap?.offset ?? place?.offset ?? ORIGIN,
+      ...(cap?.scale === undefined ? {} : { scale: cap.scale }),
     })
   }
 

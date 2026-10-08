@@ -6,12 +6,18 @@
       "head": "head-f",
       "rig": "avatar-rig-f",
       "scalpCap": "scalp-cap-f",
+      "hairCap": { "model": "scalp-cap-f" },
       "nameKey": "avatar.body.woman"
     },
     {
       "id": "man",
       "head": "head-m",
       "rig": "avatar-rig-m",
+      "hairCap": {
+        "model": "scalp-cap-f",
+        "scale": [1.175, 1.122, 1.255],
+        "offset": [0, -0.2044, -0.0147]
+      },
       "nameKey": "avatar.body.man"
     }
   ],

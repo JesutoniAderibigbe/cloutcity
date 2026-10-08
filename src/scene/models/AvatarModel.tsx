@@ -215,7 +215,9 @@ export function assembleAvatar(
     const joint = jointOf.get(part.joint)
     if (joint === undefined) throw new Error(`attachment joint "${part.joint}" missing`)
     const geometry = recolor(model.geometry, part.ref.slots, part.colors)
-    const matrix = new Matrix4().makeTranslation(...part.offset).multiply(model.matrix)
+    const matrix = new Matrix4().makeTranslation(...part.offset)
+    if (part.scale !== undefined) matrix.scale(new Vector3(...part.scale))
+    matrix.multiply(model.matrix)
     append(
       merge,
       geometry,
@@ -308,7 +310,8 @@ export function AvatarModel({
     slotColorsKey(colors?.head),
     slotColorsKey(colors?.body),
     ...attachments.map(
-      (a) => `${a.ref.id}:${a.joint}:${a.offset.join(',')}:${slotColorsKey(a.colors)}`,
+      (a) =>
+        `${a.ref.id}:${a.joint}:${a.offset.join(',')}:${a.scale?.join(',') ?? ''}:${slotColorsKey(a.colors)}`,
     ),
   ].join('|')
 

@@ -38,6 +38,15 @@ export interface CreatorEngineConfig {
   readonly neighborhoods: readonly NeighborhoodDef[]
 }
 
+/** A JSON number list as an [x, y, z] tuple; anything else throws at load. */
+function vec3(list: readonly number[], where: string): [number, number, number] {
+  const [x, y, z] = list
+  if (list.length !== 3 || x === undefined || y === undefined || z === undefined) {
+    throw new Error(`${where}: expected [x, y, z]`)
+  }
+  return [x, y, z]
+}
+
 /**
  * JSON imports widen enums to string, so the look options are narrowed here; anything else
  * throws at load (fail fast). AvatarOptionsSchema checks the same file in the data tests.
@@ -47,6 +56,26 @@ function avatarRules(json: typeof avatarOptionsJson): AvatarOptions {
   return {
     ...json,
     version: 1,
+    bodies: json.bodies.map((body) => {
+      if (!('hairCap' in body)) return body
+      const { model, scale, offset } = body.hairCap as {
+        model: string
+        scale?: readonly number[]
+        offset?: readonly number[]
+      }
+      return {
+        ...body,
+        hairCap: {
+          model,
+          ...(scale === undefined
+            ? {}
+            : { scale: vec3(scale, `${where} ${body.id} hairCap.scale`) }),
+          ...(offset === undefined
+            ? {}
+            : { offset: vec3(offset, `${where} ${body.id} hairCap.offset`) }),
+        },
+      }
+    }),
     attachments: {
       max: json.attachments.max,
       priority: json.attachments.priority.map((kind) =>

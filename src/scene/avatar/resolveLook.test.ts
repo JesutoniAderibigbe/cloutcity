@@ -21,7 +21,7 @@ describe('resolveLook', () => {
     expect(resolved.parts.rig.id).toBe(frame?.rig)
     expect(resolved.parts.head.id).toBe(frame?.head)
     expect(resolved.parts.body.id).toBe(outfit?.variants[base.body])
-    // The woman frame always wears its scalp cap (S16b), coloured with the skin tone.
+    // Under a hair piece the woman frame's cap is its hair cap (S04p), in the hair colour.
     expect(resolved.parts.attachments?.map((a) => a.ref.id)).toEqual(['scalp-cap-f', 'hair-bob'])
     expect(resolved.colors.head).toEqual({
       skin: hexOf(options.skinTones, base.skin),
@@ -36,8 +36,9 @@ describe('resolveLook', () => {
     expect(resolved.parts.attachments?.[0]).toMatchObject({
       joint: 'head',
       offset: [0, 0, 0],
-      colors: { skin: hexOf(options.skinTones, base.skin) },
+      colors: { skin: hexOf(options.hairColors, base.hairColor) },
     })
+    expect(resolved.parts.attachments?.[0]?.scale).toBeUndefined()
     expect(resolved.parts.attachments?.[1]).toMatchObject({
       joint: 'head',
       offset: [0, 0, 0],
@@ -97,7 +98,40 @@ describe('resolveLook', () => {
     delete legacy.body
     const man = resolveAvatar({ look: legacy as unknown as Look, worn: [] })
     expect([man.parts.rig.id, man.parts.body.id]).toEqual(['avatar-rig-m', 'outfit-m-hoodie'])
-    expect(man.parts.attachments?.map((a) => a.ref.id)).toEqual(['hair-parted'])
+    expect(man.parts.attachments?.map((a) => a.ref.id)).toEqual(['scalp-cap-f', 'hair-parted'])
+  })
+
+  it('every hair piece covers the scalp on both frames: a hair cap in the hair colour (S04p)', () => {
+    const hair = (look: Look) => hexOf(options.hairColors, look.hairColor)
+    for (const body of options.bodies) {
+      const cap = body.hairCap
+      expect(cap, body.id).toBeDefined()
+      for (const style of options.hairStyles.filter((s) => s.piece !== undefined)) {
+        const look = { ...base, body: body.id, hairStyle: style.id, hairColor: 'pink' }
+        const resolved = resolve(look)
+        const ids = resolved.parts.attachments?.map((a) => a.ref.id) ?? []
+        expect(ids.slice(0, 2), `${body.id} ${style.id}`).toEqual([cap?.model, style.piece])
+        expect(resolved.parts.attachments?.[0]).toMatchObject({
+          colors: { skin: hair(look) },
+          offset: cap?.offset ?? [0, 0, 0],
+        })
+        expect(resolved.parts.attachments?.[0]?.scale).toEqual(cap?.scale)
+      }
+    }
+  })
+
+  it('a bald head keeps its skin: the woman wears her skin-toned scalp cap, the man none', () => {
+    const woman = resolve({ ...base, hairStyle: 'shaved' })
+    expect(woman.parts.attachments?.map((a) => a.ref.id)).toEqual(['scalp-cap-f'])
+    expect(woman.parts.attachments?.[0]?.colors).toEqual({
+      skin: hexOf(options.skinTones, base.skin),
+    })
+    expect(woman.parts.attachments?.[0]?.scale).toBeUndefined()
+    const man = resolve({ ...base, body: 'man', outfit: 'suit', hairStyle: 'shaved' })
+    expect(man.parts.attachments ?? []).toEqual([])
+    // Under a covering the hair (and its cap) is hidden.
+    const covered = resolve({ ...base, body: 'man', outfit: 'suit', headwear: 'beanie' })
+    expect(covered.parts.attachments?.map((a) => a.ref.id)).toEqual(['headwear-beanie'])
   })
 
   it('carries the height option as the root scale', () => {

@@ -49,7 +49,9 @@ PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 blender -b --factory-startup -noaudio
   and the SOURCES.md section.
 - `avatar/<id>.py` (S16a, DEC-28; refit to the Quaternius modular frame in S16b P2a): the avatar
   attachments (hair pieces, head coverings, facial hair, eyewear, accessories, and `scalp-cap-f`,
-  which closes the women's open bald head). Each is modelled in the characters' bind pose, read
+  which closes the women's open bald head; under a hair piece it is also both frames' hair cap,
+  in the hair colour and fitted to the man's skull by `bodies[].hairCap` in
+  data/avatar/options.json, S04p). Each is modelled in the characters' bind pose, read
   from `data/avatar/frame.json`, and checks its own triangle cap and bounds (hair over the crown
   and never inside the skull, the face left open, facial hair on the jaw outline, hoops and the
   hearing aid at the ears, lenses at eye height); a failed check fails the build.

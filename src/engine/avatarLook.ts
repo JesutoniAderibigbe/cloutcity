@@ -11,6 +11,13 @@ import type { EngineConfig } from './config'
 import type { CreatorEngineConfig } from './creatorConfig'
 import { findItem, ITEM_SLOTS } from './items'
 
+/** A body frame's hair cap (data/avatar/options.json `bodies[].hairCap`). */
+export interface HairCap {
+  readonly model: string
+  readonly scale?: readonly [number, number, number]
+  readonly offset?: readonly [number, number, number]
+}
+
 /** What the avatar shows: models and the attachments, by catalog model id (A2 resolves colours). */
 export interface EffectiveLook {
   /** The creator's look with worn items over it (outfit, top, bottom and shoes). */
@@ -25,6 +32,11 @@ export interface EffectiveLook {
   readonly attachments: readonly string[]
   /** True when a head covering hides the hair (the hairstyle is kept for when it comes off). */
   readonly hairHidden: boolean
+  /**
+   * The hair cap under the hair piece (S04p): its model (also in `attachments`), drawn in the
+   * hair colour and fitted to the frame's skull; null when no hair piece is drawn.
+   */
+  readonly hairCap: HairCap | null
   /** Root scale of the rig (the height option). */
   readonly scale: number
 }
@@ -75,12 +87,17 @@ export function effectiveLook(
   const style = optionOf(options.hairStyles, look.hairStyle)
   const headwear = optionOf(options.headwear, look.headwear)
   const hairHidden = headwear.hidesHair === true
+  const hairPiece = hairHidden || style.piece === undefined ? [] : [style.piece]
+  // S04p: under a hair piece the frame wears its hair cap in the hair colour, so the gaps the
+  // pack styles leave at the crown and the nape read as hair, not scalp, on either face.
+  // Otherwise (bald, or the hair under a covering) a frame whose bald head is open behind the
+  // hairline wears its skin-toned scalp cap (S16b), which sits inside every covering.
+  const hairCap = hairPiece.length > 0 ? (frame.hairCap ?? null) : null
+  const cap = hairCap?.model ?? frame.scalpCap
   const byKind: Record<string, readonly string[]> = {
     headwear: headwear.model === undefined ? [] : [headwear.model],
-    hairPiece: hairHidden || style.piece === undefined ? [] : [style.piece],
-    // S16b: a frame whose bald head is open behind the hairline always wears its scalp cap; it
-    // sits inside every hairstyle and covering, and short styles do not reach the open edge.
-    scalpCap: frame.scalpCap === undefined ? [] : [frame.scalpCap],
+    hairPiece,
+    scalpCap: cap === undefined ? [] : [cap],
     facialHair: modelOf(options.facialHair, look.facialHair),
     eyewear: modelOf(options.eyewear, look.eyewear),
     ears: modelOf(options.ears, look.ears),
@@ -89,7 +106,7 @@ export function effectiveLook(
   const outfit = optionOf(options.outfits, look.outfit)
   // An outfit can hide an attachment that clashes with it (the outdoors pack and the tote).
   const hidden = new Set(outfit.hides ?? [])
-  // The scalp cap is part of the head, so it never takes an attachment's place.
+  // The scalp or hair cap is part of the head, so it never takes an attachment's place.
   const attachments = [
     ...(byKind.scalpCap ?? []),
     ...options.attachments.priority
@@ -108,6 +125,7 @@ export function effectiveLook(
     rig: frame.rig,
     attachments,
     hairHidden,
+    hairCap,
     scale: optionOf(options.heights, look.height).scale,
   }
 }

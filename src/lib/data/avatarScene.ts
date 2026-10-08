@@ -16,6 +16,7 @@ export function optionModelIds(options: AvatarOptions): string[] {
       body.head,
       body.rig,
       ...(body.scalpCap === undefined ? [] : [body.scalpCap]),
+      ...(body.hairCap === undefined ? [] : [body.hairCap.model]),
     ]),
     ...options.hairStyles.flatMap((style) => (style.piece ? [style.piece] : [])),
     ...[...options.facialHair, ...options.headwear, ...options.eyewear, ...options.ears].flatMap(

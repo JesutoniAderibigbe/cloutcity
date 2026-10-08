@@ -38,15 +38,30 @@ const SwatchSchema = z.strictObject({ id: IdSchema, token: AvatarTokenSchema })
 const SkinToneSchema = SwatchSchema.extend({ nameKey: AvatarNameKeySchema })
 const ColorSchema = SwatchSchema.extend({ nameKey: ColorNameKeySchema })
 
+const vec3 = z.tuple([z.number(), z.number(), z.number()])
+
+/**
+ * The hair cap (S04p): a skull cap worn under every hair piece in the hair colour, so the gaps
+ * the pack styles leave at the crown and the nape read as hair, never scalp. `scale` then
+ * `offset` (metres, bind pose) fit the model to the frame's skull.
+ */
+const HairCapSchema = z.strictObject({
+  model: IdSchema,
+  scale: z.tuple([z.number().positive(), z.number().positive(), z.number().positive()]).optional(),
+  offset: vec3.optional(),
+})
+
 /**
  * A body frame (S16b, DEC-51): the face (a bald head; its brows take the hair colour), the rig
- * whose clips pose it, and an optional scalp cap drawn whenever no hair piece covers the head.
+ * whose clips pose it, an optional scalp cap that closes a bald head open behind the hairline,
+ * and an optional hair cap (S04p).
  */
 const BodySchema = z.strictObject({
   id: IdSchema,
   head: IdSchema,
   rig: IdSchema,
   scalpCap: IdSchema.optional(),
+  hairCap: HairCapSchema.optional(),
   nameKey: AvatarNameKeySchema,
 })
 
