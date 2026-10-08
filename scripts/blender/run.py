@@ -12,13 +12,28 @@ with PYTHONHASHSEED=0. The model script defines `build(bpy)`, which adds objects
 scene; colours are Principled BSDF base colours (the asset pipeline bakes them to vertex
 colours). The export settings below are fixed so the same script and Blender version always
 produce byte-identical GLBs.
+
+A script may instead take `build(bpy, ctx)`, where ctx holds the lock's inputs for that model:
+`deps` (repository path -> absolute path, e.g. data/avatar/frame.json), `sources` (pinned pack
+file "<source>/<path>" -> absolute path of the sha-checked cache copy) and `args`. A script that
+writes its own GLB (the S16b clip retarget) also defines `export(bpy, ctx, out)`, which replaces
+the scene export below.
 """
 
 import argparse
+import inspect
 import runpy
 import sys
 
 import bpy
+
+
+def _pairs(values):
+    out = {}
+    for value in values:
+        key, _, path = value.partition("=")
+        out[key] = path
+    return out
 
 
 def parse_args():
@@ -26,6 +41,9 @@ def parse_args():
     parser = argparse.ArgumentParser(prog="run.py")
     parser.add_argument("--script", required=True)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--dep", action="append", default=[])
+    parser.add_argument("--source", action="append", default=[])
+    parser.add_argument("--arg", action="append", default=[])
     return parser.parse_args(argv)
 
 
@@ -37,7 +55,15 @@ def main():
     build = namespace.get("build")
     if not callable(build):
         raise RuntimeError(f"{args.script} does not define build(bpy)")
-    build(bpy)
+    ctx = {"deps": _pairs(args.dep), "sources": _pairs(args.source), "args": list(args.arg)}
+    if len(inspect.signature(build).parameters) >= 2:
+        build(bpy, ctx)
+    else:
+        build(bpy)
+    export = namespace.get("export")
+    if callable(export):
+        export(bpy, ctx, args.out)
+        return
     bpy.ops.export_scene.gltf(
         filepath=args.out,
         check_existing=False,
