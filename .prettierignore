@@ -25,3 +25,5 @@ qa-reports/
 data/**/*.derived.json
 data/geo/SOURCES.md
 src/lib/supabase/database.types.ts
+# Go templates (GoTrue email templates), not plain HTML.
+supabase/templates/
