@@ -217,6 +217,18 @@ def convert(path, value):
     return Vector(value)
 
 
+class UalClip:
+    """A UAL clip as a retarget sampler: its key times and the world pose at each."""
+
+    def __init__(self, gltf, name):
+        self.gltf = gltf
+        self.clip = Clip(gltf, name)
+        self.times = self.clip.times
+
+    def world(self, t):
+        return world_at(self.gltf, self.clip, t)
+
+
 def node_trs(gltf, index):
     node = gltf.nodes[index]
     t = node.get("translation", (0, 0, 0))
@@ -251,8 +263,12 @@ def keep_sign(q, previous):
     return q
 
 
-def retarget(source, target, frame_joints, rig):
-    """{clip: (times, {pack joint: [(translation, rotation)]})} for the target rig."""
+def retarget(source, target, frame_joints, rig, clips=None):
+    """{clip: (times, {pack joint: [(translation, rotation)]})} for the target rig.
+
+    `clips` is a list of (name, sampler), a sampler having `times` and `world(t)` (UAL joint name
+    -> world matrix); by default the UAL clips of CLIPS. The dance clips (dance.py) pass their own.
+    """
     s_bind = source.bind("pelvis")
     t_bind = target.bind("Head")
     for joint, (renamed, _, _) in JOINTS.items():
@@ -283,11 +299,12 @@ def retarget(source, target, frame_joints, rig):
         correct[joint] = t_dir.rotation_difference(s_dir)
     hip_ratio = t_pos["Body"].y / s_pos["pelvis"].y
     out = {}
-    for clip_name, source_name in CLIPS:
-        clip = Clip(source, source_name)
+    if clips is None:
+        clips = [(clip_name, UalClip(source, source_name)) for clip_name, source_name in CLIPS]
+    for clip_name, clip in clips:
         frames = {j: [] for j in order}
         for t in clip.times:
-            world = world_at(source, clip, t)
+            world = clip.world(t)
             rot, pos = {}, {}
             for joint in order:
                 _, follow, _ = JOINTS[joint]
@@ -345,7 +362,7 @@ def check(rig, order, parent, rest, clips, t_pos):
                     raise RuntimeError(f"{rig}: {name} {joint} is not finite")
 
 
-def glb(order, parent, rest, clips, moving):
+def glb(order, parent, rest, clips, moving, generator="retarget.py"):
     blob = bytearray()
     views, accessors = [], []
 
@@ -379,8 +396,7 @@ def glb(order, parent, rest, clips, moving):
         nodes.append(node)
     roots = [index[j] for j in order if parent[j] is None]
     animations = []
-    for clip_name, _ in CLIPS:
-        times, frames = clips[clip_name]
+    for clip_name, (times, frames) in clips.items():
         time_accessor = add([float(t) for t in times], "SCALAR", minmax=True)
         samplers, channels = [], []
         for joint in order:
@@ -398,7 +414,7 @@ def glb(order, parent, rest, clips, moving):
     while len(blob) % 4:
         blob.append(0)
     doc = {
-        "asset": {"generator": "Clout City scripts/blender/avatar-anim/retarget.py", "version": "2.0"},
+        "asset": {"generator": f"Clout City scripts/blender/avatar-anim/{generator}", "version": "2.0"},
         "scene": 0,
         "scenes": [{"nodes": roots}],
         "nodes": nodes,

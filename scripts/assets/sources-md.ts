@@ -76,8 +76,18 @@ function sourceSection(
     models.length === 0
       ? 'Models: none yet.'
       : `Models: ${models.map((model) => `\`${model.id}\``).join(', ')}.`,
-    '',
   )
+  // Our Blender builds that read this pack (the avatar clips retargeted from the UAL, S16b/S16c).
+  const readers = blender.models.filter((model) =>
+    (model.sources ?? []).some((entry) => entry.source === source.id),
+  )
+  if (readers.length > 0) {
+    lines.push(
+      '',
+      `Read by our Blender builds: ${readers.map((model) => `\`${model.id}\` (\`${model.script}\`)`).join(', ')}.`,
+    )
+  }
+  lines.push('')
   return lines
 }
 

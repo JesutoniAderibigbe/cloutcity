@@ -196,6 +196,8 @@ Models: `tree-oak`, `tree-round`, `tree-tall`.
 
 Models: `outfit-w-casual`, `outfit-w-suit`, `outfit-w-worker`, `outfit-w-dress`, `outfit-w-punk`, `outfit-w-outdoors`, `head-f`, `hair-bob`, `hair-pixie`, `hair-updo`, `avatar-rig-f`, `npc-woman`.
 
+Read by our Blender builds: `avatar-clips-f` (`scripts/blender/avatar-anim/retarget.py`), `avatar-dance-f` (`scripts/blender/avatar-anim/dance.py`).
+
 ### Quaternius Ultimate Modular Men 2022-02
 
 - Id: `quaternius-modular-men`
@@ -221,6 +223,8 @@ Models: `outfit-w-casual`, `outfit-w-suit`, `outfit-w-worker`, `outfit-w-dress`,
 
 Models: `outfit-m-casual`, `outfit-m-hoodie`, `outfit-m-suit`, `outfit-m-worker`, `outfit-m-beach`, `outfit-m-punk`, `outfit-m-overalls`, `outfit-m-outdoors`, `head-m`, `hair-mohawk`, `hair-spiky`, `hair-ponytail`, `hair-tousled`, `hair-parted`, `hair-swept`, `avatar-rig-m`, `npc-man`.
 
+Read by our Blender builds: `avatar-clips-m` (`scripts/blender/avatar-anim/retarget.py`), `avatar-dance-m` (`scripts/blender/avatar-anim/dance.py`).
+
 ### Quaternius Universal Animation Library Standard 1.0
 
 - Id: `quaternius-ual`
@@ -237,6 +241,8 @@ Models: `outfit-m-casual`, `outfit-m-hoodie`, `outfit-m-suit`, `outfit-m-worker`
 | `quaternius-ual-standard.zip` | 15904933 | `cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724` |
 
 Models: none yet.
+
+Read by our Blender builds: `avatar-clips-f` (`scripts/blender/avatar-anim/retarget.py`), `avatar-clips-m` (`scripts/blender/avatar-anim/retarget.py`), `avatar-dance-f` (`scripts/blender/avatar-anim/dance.py`), `avatar-dance-m` (`scripts/blender/avatar-anim/dance.py`).
 
 ### Clout City Blender models 1
 
@@ -270,9 +276,11 @@ Models: none yet.
 | `sunglasses.glb`        |  7004 | `511c2f4aa0832fdd78ff78a9a3c73770a20f548d968a566ababdc053eb499cad` | `scripts/blender/avatar/sunglasses.py`        |
 | `hearing-aid.glb`       |  7516 | `19e029befc3bdedb7db043c4c511457db9f9126e766ee62968ecb441da72ebb8` | `scripts/blender/avatar/hearing-aid.py`       |
 | `scalp-cap-f.glb`       |  5444 | `60e5ce074a4201a351e4d46a16349b841634453994ad5a621315d0c1660338b8` | `scripts/blender/avatar/scalp-cap-f.py`       |
+| `avatar-dance-f.glb`    | 69412 | `25695ee0de2bdd646bb0c81cf0ba74083f84695e494acce3ee168dd98a2ab5cc` | `scripts/blender/avatar-anim/dance.py`        |
+| `avatar-dance-m.glb`    | 69736 | `d5d34445b4ef1a15d267b9632290de35c6ea46ee9abb35cd6f17db43be052f05` | `scripts/blender/avatar-anim/dance.py`        |
 | `bus-ambient.glb`       | 26144 | `df09f31903349ff9fc1f39fc00ebe62abea47ae1e0222e6dbedcfadeecfdcc06` | `scripts/blender/vehicles/bus-ambient.py`     |
 
-Models: `bus-ambient`, `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`, `hair-afro`, `hair-locs`, `hair-box-braids`, `hair-cornrows`, `hair-buzz`, `headwear-hijab`, `headwear-turban`, `headwear-durag`, `headwear-beanie`, `headwear-ballcap`, `glasses`, `sunglasses`, `hearing-aid`, `scalp-cap-f`.
+Models: `bus-ambient`, `facial-stubble`, `facial-moustache`, `facial-goatee`, `facial-full-beard`, `acc-gold-hoops`, `acc-subway-tote`, `hair-afro`, `hair-locs`, `hair-box-braids`, `hair-cornrows`, `hair-buzz`, `headwear-hijab`, `headwear-turban`, `headwear-durag`, `headwear-beanie`, `headwear-ballcap`, `glasses`, `sunglasses`, `hearing-aid`, `scalp-cap-f`, `avatar-dance-f`, `avatar-dance-m`.
 
 ## Models
 
@@ -374,6 +382,8 @@ Models: `bus-ambient`, `facial-stubble`, `facial-moustache`, `facial-goatee`, `f
 | `hair-swept`        | `quaternius-modular-men`     | `glTF/Adventurer.gltf`         | avatar-hair      |
 | `avatar-rig-f`      | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-rig       |
 | `avatar-rig-m`      | `quaternius-modular-men`     | `glTF/Casual_Hoodie.gltf`      | avatar-rig       |
+| `avatar-dance-f`    | `clout-city-blender`         | `avatar-dance-f.glb`           | avatar-rig       |
+| `avatar-dance-m`    | `clout-city-blender`         | `avatar-dance-m.glb`           | avatar-rig       |
 | `npc-woman`         | `quaternius-modular-women`   | `glTF/Casual.gltf`             | avatar-body      |
 | `npc-man`           | `quaternius-modular-men`     | `glTF/Casual_2.gltf`           | avatar-body      |
 

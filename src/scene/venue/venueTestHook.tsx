@@ -43,7 +43,15 @@ export interface VenueTestHook {
    */
   setOccupants(count: number, activities: readonly InteriorActivity[]): void
   /** The player's Sim: where it stands and what it plays; null before it loads. */
-  avatar(): { drawn: boolean; position: [number, number, number]; clip: string | null } | null
+  avatar(): {
+    drawn: boolean
+    position: [number, number, number]
+    clip: string | null
+    /** The dance move playing over the dance pose (S16c), or null. */
+    move: string | null
+  } | null
+  /** The locals' baked kits drawn now (body model and clip, e.g. `npc-man-dance-party`). */
+  crowdKits(): string[]
 }
 
 declare global {
@@ -134,12 +142,23 @@ export function VenueTestHook({
             drawn = true
           }
         })
-        const sim = group.userData.sim as { clip: string } | undefined
+        const sim = group.userData.sim as { clip: string; move?: string | null } | undefined
         return {
           drawn,
           position: [group.position.x, group.position.y, group.position.z],
           clip: sim?.clip ?? null,
+          move: sim?.move ?? null,
         }
+      },
+      crowdKits: () => {
+        const kits = new Set<string>()
+        get()
+          .scene.getObjectByName('venue-crowd')
+          ?.traverseVisible((object) => {
+            const kit = /^venue-crowd-(.+)-(?:skin|top|bottom|accent)$/.exec(object.name)?.[1]
+            if (kit !== undefined) kits.add(kit)
+          })
+        return [...kits].sort()
       },
     }
     window.__cloutcityTest = { ...window.__cloutcityTest, venue: hook }

@@ -44,7 +44,11 @@ const tokens = new Set([
   ...Object.keys(theme.world ?? {}),
   ...Object.keys(theme.models ?? {}),
 ])
-const rigs = manifest.models.filter((model) => model.kind === 'rig')
+// The body frames' rigs (not the dance moves' rigs, S16c, which hold only the dance clips).
+const frameRigs = new Set(
+  (readJson('avatar/options.json') as { bodies: { rig: string }[] }).bodies.map((body) => body.rig),
+)
+const rigs = manifest.models.filter((model) => model.kind === 'rig' && frameRigs.has(model.id))
 const interiors = Object.entries(file.interiors)
 
 /** Every palette token a value names, wherever it sits. */
@@ -226,6 +230,34 @@ describe('data/config/interiors.json (S43)', () => {
 
   it('leaves room in the low tier for the locals the tier draws (four calls per body and clip)', () => {
     const clips = new Set(config.crowd.poses.low.map((pose) => config.crowd.clips[pose]))
-    expect(config.crowd.bodies.low * clips.size * 4).toBeLessThan(config.caps.drawCallsMax.low)
+    // With the dance moves loaded, the dance pose's clip gives way to the tier's moves.
+    const withMoves = clips.size - 1 + config.crowd.dance.moves.low
+    for (const count of [clips.size, withMoves]) {
+      expect(config.crowd.bodies.low * count * 4).toBeLessThan(config.caps.drawCallsMax.low)
+    }
+  })
+
+  it('names dance moves every frame rig has a dance rig for (S16c)', () => {
+    for (const rig of rigs) {
+      const dance = manifest.models.find((model) => model.id === config.dance.rigs[rig.id])
+      expect(dance?.kind, rig.id).toBe('rig')
+      for (const move of config.dance.moves) expect(dance?.clips).toContain(move)
+    }
+    for (const tier of QUALITY_TIERS) {
+      expect(config.crowd.dance.moves[tier]).toBeLessThanOrEqual(config.dance.moves.length)
+    }
+    expect(config.crowd.dance.moves.mid).toBeGreaterThanOrEqual(config.crowd.dance.moves.low)
+    expect(config.crowd.dance.moves.high).toBeGreaterThanOrEqual(config.crowd.dance.moves.mid)
+  })
+
+  it('bakes the dance moves within the townsfolk walk CPU-bake frame budget (S16c)', () => {
+    const ambient = readJson('config/ambient.json') as {
+      townsfolk: { frames: { walk: Record<(typeof QUALITY_TIERS)[number], number> } }
+    }
+    for (const tier of QUALITY_TIERS) {
+      expect(config.crowd.dance.frames[tier]).toBeLessThanOrEqual(
+        ambient.townsfolk.frames.walk[tier],
+      )
+    }
   })
 })

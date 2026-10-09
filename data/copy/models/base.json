@@ -170,6 +170,8 @@
     "models.name.sunglasses": "Sunglasses",
     "models.name.hearingAid": "Hearing aid",
     "models.name.scalpCapF": "Scalp (woman)",
+    "models.name.avatarDanceF": "Dance moves (woman)",
+    "models.name.avatarDanceM": "Dance moves (man)",
     "models.name.avatarRigF": "Avatar rig (woman)",
     "models.name.avatarRigM": "Avatar rig (man)",
     "models.name.hairBob": "Bob",

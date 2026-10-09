@@ -309,7 +309,7 @@
       ],
       "inputs": {
         "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
-        "scripts/blender/avatar-anim/retarget.py": "f8c62d842d9935c6aa95c0f7df9270be14aab92149a25646073cddfc1a474ef9",
+        "scripts/blender/avatar-anim/retarget.py": "c2021d9a093ee2c8cb735eea65b2097893b358935b200c742665bacd75e89b97",
         "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
       "sha256": "ceaa23f9c140efdd6704e8382d8f13263c2c747504187a87b358e202d070d049",
@@ -338,11 +338,73 @@
       ],
       "inputs": {
         "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
-        "scripts/blender/avatar-anim/retarget.py": "f8c62d842d9935c6aa95c0f7df9270be14aab92149a25646073cddfc1a474ef9",
+        "scripts/blender/avatar-anim/retarget.py": "c2021d9a093ee2c8cb735eea65b2097893b358935b200c742665bacd75e89b97",
         "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
       },
       "sha256": "ecb767558bfcae8b754e3262393d4571fcd9053bbcd657c8559e208964123d5e",
       "bytes": 74984
+    },
+    {
+      "id": "avatar-dance-f",
+      "script": "scripts/blender/avatar-anim/dance.py",
+      "deps": [
+        "data/avatar/frame.json",
+        "scripts/blender/avatar-anim/retarget.py"
+      ],
+      "sources": [
+        {
+          "source": "quaternius-ual",
+          "path": "quaternius-ual-standard.zip",
+          "sha256": "cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724"
+        },
+        {
+          "source": "quaternius-modular-women",
+          "path": "glTF/Casual.gltf",
+          "sha256": "b0fe6e92219cd71808844a20a1a8b960fd1cf640a6546dc6362b5add6604e87c"
+        }
+      ],
+      "args": [
+        "frame=f"
+      ],
+      "inputs": {
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar-anim/dance.py": "3c03e685dc43d09559342a786bc8cebd93e2b4d313099f47a8e5eeb614c31fb8",
+        "scripts/blender/avatar-anim/retarget.py": "c2021d9a093ee2c8cb735eea65b2097893b358935b200c742665bacd75e89b97",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
+      },
+      "sha256": "25695ee0de2bdd646bb0c81cf0ba74083f84695e494acce3ee168dd98a2ab5cc",
+      "bytes": 69412
+    },
+    {
+      "id": "avatar-dance-m",
+      "script": "scripts/blender/avatar-anim/dance.py",
+      "deps": [
+        "data/avatar/frame.json",
+        "scripts/blender/avatar-anim/retarget.py"
+      ],
+      "sources": [
+        {
+          "source": "quaternius-ual",
+          "path": "quaternius-ual-standard.zip",
+          "sha256": "cc73fc4e495b82958207316596317a3f40b9fa38065bde1027937452da537724"
+        },
+        {
+          "source": "quaternius-modular-men",
+          "path": "glTF/Casual_Hoodie.gltf",
+          "sha256": "dd74886c26998a0fa888b4ce557a0932d7d97b0265dd4c763154d081b7a6cb98"
+        }
+      ],
+      "args": [
+        "frame=m"
+      ],
+      "inputs": {
+        "data/avatar/frame.json": "490afba85c2f6410bd509553ecc4baaab391338dfb37fe277aa11f20cbd84203",
+        "scripts/blender/avatar-anim/dance.py": "3c03e685dc43d09559342a786bc8cebd93e2b4d313099f47a8e5eeb614c31fb8",
+        "scripts/blender/avatar-anim/retarget.py": "c2021d9a093ee2c8cb735eea65b2097893b358935b200c742665bacd75e89b97",
+        "scripts/blender/run.py": "1182874d88dc46595e690c0ff022410d29898991f79bda8b7514a0463dd7175c"
+      },
+      "sha256": "d5d34445b4ef1a15d267b9632290de35c6ea46ee9abb35cd6f17db43be052f05",
+      "bytes": 69736
     },
     {
       "id": "bus-ambient",

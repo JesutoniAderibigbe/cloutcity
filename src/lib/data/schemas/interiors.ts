@@ -322,6 +322,17 @@ export const InteriorsConfigSchema = z.strictObject({
     jitterM: nonNegative,
     headingJitterDeg: nonNegative,
     groove: z.strictObject({ bobM: nonNegative, swayDeg: nonNegative }),
+    /**
+     * Dancers with the dance moves (S16c): how many of the `dance.moves` a tier bakes (each body
+     * and move costs four draw calls), the frames baked per loop (the townsfolk walk's CPU-bake
+     * budget), and the gentle turn each dancer adds from their own phase. Until the moves load
+     * (or if they cannot), dancers fall back to `clips.dance` with the `groove` bob and sway.
+     */
+    dance: z.strictObject({
+      moves: perTier(z.int().min(1)),
+      frames: perTier(z.int().min(2)),
+      swayDeg: nonNegative,
+    }),
     palette: z.strictObject({
       skin: z.array(hex).min(1),
       tops: z.array(hex).min(1),
@@ -331,6 +342,18 @@ export const InteriorsConfigSchema = z.strictObject({
   }),
   /** Real players drawn inside at once (S43 hook; each costs `occupantReserve`). */
   occupants: z.strictObject({ max: perTier(z.int().nonnegative()) }),
+  /**
+   * The dance moves (S16c): clips keyed on the beat at `bpm` (scripts/blender/avatar-anim/
+   * dance.py) in their own rig per body frame (`rigs`: frame rig -> dance rig), fetched only
+   * inside a venue and played at the venue's beat. The player's Sim changes move every
+   * `barsPerMove` bars.
+   */
+  dance: z.strictObject({
+    bpm: positive,
+    moves: z.array(IdSchema).min(1),
+    rigs: z.record(IdSchema, IdSchema),
+    barsPerMove: z.int().positive(),
+  }),
   lights: z.strictObject({
     /** Party light beams drawn (transparent cones: fill rate). */
     beams: perTier(z.int().nonnegative()),

@@ -28,7 +28,11 @@ const scene = readJson('config/scene.json') as {
 }
 const theme = readJson('config/theme.json') as { colors: Record<string, string> }
 
-const rigs = manifest.models.filter((model) => model.kind === 'rig')
+// The body frames' rigs (not the dance moves' rigs, S16c, which hold only the dance clips).
+const frameRigs = new Set(
+  (readJson('avatar/options.json') as { bodies: { rig: string }[] }).bodies.map((body) => body.rig),
+)
+const rigs = manifest.models.filter((model) => model.kind === 'rig' && frameRigs.has(model.id))
 const drawnModels = new Set([
   ...Object.values(scene.models.decor).map((entry) => entry.model),
   ...HOME_IDS.flatMap((home) =>

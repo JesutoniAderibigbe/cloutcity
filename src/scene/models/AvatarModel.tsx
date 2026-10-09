@@ -8,6 +8,10 @@
  * shader program, whatever it wears. Animation holds a continuous frame lease only while
  * `animate` is true; otherwise the avatar is posed once on the clip's first frame and requests a
  * single frame: it adds no frames of its own (frameloop="demand").
+ *
+ * `extraClips` adds another rig's clips (S16c: the dance moves, fetched only inside a venue): they
+ * bind to the same joints by name, arrive after the avatar is up, and a failure to load them only
+ * leaves the frame rig's own clips.
  */
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -269,11 +273,13 @@ export function assembleAvatar(
   }
 }
 
-export function clipNamed(rig: RigModel, name: string): AnimationClip {
+export function clipNamed(rig: Pick<RigModel, 'clips'>, name: string): AnimationClip {
   const clip = rig.clips.find((candidate) => candidate.name === name)
   if (clip === undefined) throw new Error(`rig has no clip "${name}"`)
   return clip
 }
+
+const NO_CLIPS: readonly AnimationClip[] = []
 
 export type AvatarStatus = 'loading' | 'ready' | 'error'
 
@@ -288,6 +294,7 @@ export function AvatarModel({
   fadeS = 0,
   onStatus,
   onAssembled,
+  extraClips,
 }: {
   readonly parts: AvatarParts
   readonly colors?: AvatarColors
@@ -306,13 +313,19 @@ export function AvatarModel({
    */
   readonly fadeS?: number
   readonly onStatus?: (status: AvatarStatus) => void
-  /** The assembled avatar and its rig's clips, for callers that size, measure or drive it. */
+  /**
+   * The assembled avatar and the clips it can play (its rig's, then `extraClips`' once loaded),
+   * for callers that size, measure or drive it.
+   */
   readonly onAssembled?: (avatar: AssembledAvatar | null, clips: readonly AnimationClip[]) => void
+  /** Another rig whose clips this avatar may also play (the dance moves, S16c). */
+  readonly extraClips?: ModelRef
 }) {
   const { material } = useModelsContext()
   const invalidate = useThree((state) => state.invalidate)
   const attachments = parts.attachments ?? []
   const state = useModels([parts.rig, parts.body, parts.head, ...attachments.map((a) => a.ref)])
+  const extraState = useModels(extraClips === undefined ? [] : [extraClips])
   const colorsKey = [
     slotColorsKey(colors?.head),
     slotColorsKey(colors?.body),
@@ -336,8 +349,6 @@ export function AvatarModel({
         if (model?.kind !== 'static') throw new Error(`attachment ${part.ref.id} is not static`)
         return { part, model }
       })
-      // Fails here, not later in an effect, when the rig lacks the clip.
-      clipNamed(rig, clip)
       const assembled = assembleAvatar(body, head, parts, material, colors ?? {}, loaded)
       assembled.root.scale.setScalar(scale)
       if (name !== undefined) assembled.root.name = name
@@ -352,8 +363,9 @@ export function AvatarModel({
       })
       return 'failed' as const
     }
+    // Not on `clip`: a new clip plays on the same avatar (rebuilding it would drop the fade).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, material, colorsKey, name, shadows, clip, scale])
+  }, [state, material, colorsKey, name, shadows, scale])
 
   const onStatusRef = useRef(onStatus)
   const onAssembledRef = useRef(onAssembled)
@@ -368,10 +380,15 @@ export function AvatarModel({
   }, [avatar, state.status])
 
   const ready = avatar === null || avatar === 'failed' ? null : avatar
+  const extra = extraState.status === 'ready' ? extraState.models[0] : undefined
+  const extraRigClips = extra?.kind === 'rig' ? extra.clips : NO_CLIPS
+  const clips = useMemo(
+    () => (ready === null ? NO_CLIPS : [...ready.rig.clips, ...extraRigClips]),
+    [ready, extraRigClips],
+  )
 
   useEffect(() => {
     if (ready === null) return
-    onAssembledRef.current?.(ready.assembled, ready.rig.clips)
     return () => {
       onAssembledRef.current?.(null, [])
       // The avatar leaves the scene (unmount, or rebuilt for new parts): no longer 'ready'.
@@ -379,6 +396,9 @@ export function AvatarModel({
       ready.assembled.dispose()
     }
   }, [ready])
+  useEffect(() => {
+    if (ready !== null) onAssembledRef.current?.(ready.assembled, clips)
+  }, [ready, clips])
 
   // The action playing now: a new clip fades in from it (or cuts, with no fade), and it stops
   // with the avatar.
@@ -389,9 +409,17 @@ export function AvatarModel({
   })
   useEffect(() => {
     if (ready === null) return
+    const found = clips.find((candidate) => candidate.name === clip)
+    if (found === undefined) {
+      // A caller asking for a clip the rig lacks keeps the pose it has (and says so once).
+      log.warn('avatar has no clip', { rig: parts.rig.id, clip })
+      return
+    }
     const { mixer } = ready.assembled
-    const action = mixer.clipAction(clipNamed(ready.rig, clip))
+    const action = mixer.clipAction(found)
     const previous = playing.current
+    // Only the clip list grew (the extra clips arrived): the playing clip carries on.
+    if (previous === action) return
     action.reset().play()
     if (previous !== null && previous !== action) {
       if (fadeRef.current > 0) action.crossFadeFrom(previous, fadeRef.current, false)
@@ -400,7 +428,8 @@ export function AvatarModel({
     playing.current = action
     mixer.update(0)
     invalidate()
-  }, [ready, clip, invalidate])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, clip, clips, invalidate])
   useEffect(
     () => () => {
       playing.current?.stop()
