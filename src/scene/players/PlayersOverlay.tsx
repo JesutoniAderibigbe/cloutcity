@@ -242,7 +242,7 @@ export default function PlayersOverlay({
     const { players } = presenceStore.getState()
     return (playersBridge.current?.heads() ?? [])
       .map((head) => head.id)
-      .filter((id) => players.some((p) => p.id === id && p.handle !== null))
+      .filter((id) => players.some((p) => p.id === id))
   }
   const find = () => {
     const first = drawnIds()[0] ?? null

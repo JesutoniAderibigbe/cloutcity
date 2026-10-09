@@ -78,14 +78,13 @@ beforeAll(async () => {
 describe('settings', () => {
   it('match data/config/realtime.json presence', async () => {
     const [row] = await sql<Record<string, number>[]>`
-      select online_ttl_s, snapshot_max, public_snapshot_max, beats_per_minute,
+      select online_ttl_s, snapshot_max, beats_per_minute,
         snapshots_per_minute
       from private.presence_settings
     `
     expect(row).toEqual({
       online_ttl_s: config.onlineTtlS,
       snapshot_max: config.snapshotMax,
-      public_snapshot_max: config.publicSnapshotMax,
       beats_per_minute: config.beatsPerMinute,
       snapshots_per_minute: config.snapshotsPerMinute,
     })
@@ -250,23 +249,16 @@ describe('presence_public_snapshot (signed-out view)', () => {
     expect((await a.client.rpc('presence_public_snapshot')).error).not.toBeNull()
   })
 
-  it('answers the count and anonymous figures at places only', async () => {
+  it('answers the online count and nothing else (S42b)', async () => {
     const [a, b] = await pair()
-    expect((await beat(b, 'home', null, 'queens')).error).toBeNull()
     const { data, error } = await serviceClient().rpc('presence_public_snapshot')
     expect(error).toBeNull()
-    const pub = data as unknown as {
-      online: number
-      figures: { place: string; borough: string; look: unknown }[]
-    }
+    const pub = data as unknown as { online: number }
+    expect(Object.keys(pub)).toEqual(['online'])
     expect(pub.online).toBeGreaterThanOrEqual(2)
-    expect(pub.figures.length).toBeLessThanOrEqual(config.publicSnapshotMax)
-    for (const figure of pub.figures) {
-      expect(Object.keys(figure).sort()).toEqual(['borough', 'look', 'place'])
-      expect(figure.place).toMatch(/^[a-z0-9-]+$/)
-    }
     const text = JSON.stringify(pub)
     expect(text).not.toContain(a.id)
     expect(text).not.toContain(b.id)
+    expect(text).not.toContain('late-lantern-deli')
   })
 })

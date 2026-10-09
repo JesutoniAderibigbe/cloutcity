@@ -62,19 +62,14 @@ describe('presence store', () => {
     expect(presenceStore.getState().selected).toBeNull()
   })
 
-  it('anonymous figures can never be selected', () => {
-    applyPublicSnapshot({
-      online: 7,
-      figures: [{ place: 'late-lantern-deli', borough: 'queens', look: null }],
-    })
-    const [figure] = presenceStore.getState().players
-    expect(figure?.handle).toBeNull()
-    selectPlayer(figure?.id ?? '')
-    expect(presenceStore.getState().selected).toBeNull()
-    expect(presenceStore.getState().online).toBe(7)
+  it('a signed-out read is the count only: nobody drawn, no card left open', () => {
+    applySnapshot({ online: 2, players: [player('a')] })
+    selectPlayer('a')
+    applyPublicSnapshot({ online: 7 })
+    expect(presenceStore.getState()).toMatchObject({ online: 7, players: [], selected: null })
   })
 
-  it('hides the count and figures when reads keep failing', () => {
+  it('hides the count and players when reads keep failing', () => {
     applySnapshot({ online: 2, players: [player('a')] })
     presenceUnavailable()
     expect(presenceStore.getState()).toMatchObject({ online: null, players: [] })

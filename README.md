@@ -1130,8 +1130,9 @@ npm run db:types                # regenerates src/lib/supabase/database.types.ts
   last beat is younger than `presence.onlineTtlS`. `presence_snapshot()` answers the online count
   and the players this viewer may see (no blocks either way, no mutes, no banned or suspended
   players, held handles as `Player`). Signed-out visitors get `GET /api/presence`
-  (`src/server/presence/publicSnapshot.ts`): the count and anonymous figures from the service-role
-  `presence_public_snapshot()`, CDN-cached for `presence.publicCacheS`. The client loop is
+  (`src/server/presence/publicSnapshot.ts`): the online count only (S42b: no figures, places or
+  looks) from the service-role `presence_public_snapshot()`, CDN-cached for
+  `presence.publicCacheS`. The client loop is
   `src/realtime/` (`PresenceTransport`, the polled Supabase transport, a fake); the map draws
   players with the townsfolk kits (`src/scene/players/layer.ts`, capped by perf.json
   `otherPlayersMax`) and the overlay (`PlayersOverlay.tsx`) shows the online chip, name tags and

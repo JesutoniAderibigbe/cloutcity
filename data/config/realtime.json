@@ -15,7 +15,6 @@
     "hideAfterFailures": 2,
     "onlineTtlS": 90,
     "snapshotMax": 60,
-    "publicSnapshotMax": 40,
     "publicCacheS": 15,
     "beatsPerMinute": 6,
     "snapshotsPerMinute": 8,

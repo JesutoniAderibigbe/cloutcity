@@ -9,13 +9,11 @@ import type {
   PresencePlayer,
   PresenceSnapshot,
   PresenceTransport,
-  PublicFigure,
   PublicSnapshot,
 } from './types'
 
 export interface FakePresence extends PresenceTransport {
   players: PresencePlayer[]
-  figures: PublicFigure[]
   /** Added to the answered online count (players not in this viewer's list). */
   othersOnline: number
   readonly beats: Announce[]
@@ -29,7 +27,6 @@ export interface FakePresence extends PresenceTransport {
 export function createFakePresence(players: PresencePlayer[] = []): FakePresence {
   const fake: FakePresence = {
     players,
-    figures: [],
     othersOnline: 0,
     beats: [],
     leaves: 0,
@@ -61,7 +58,7 @@ export function createFakePresence(players: PresencePlayer[] = []): FakePresence
       if (fake.failWith !== null) return Promise.resolve(failure(fake.failWith))
       return Promise.resolve({
         ok: true,
-        data: { online: fake.figures.length + fake.othersOnline, figures: [...fake.figures] },
+        data: { online: fake.othersOnline },
       })
     },
   }

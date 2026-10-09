@@ -501,13 +501,13 @@ export default function AmbientLife({
   // pins). The card reaches the locals in view through the bridge.
   useEffect(() => {
     const off = claimMapTaps((x, y, width, height) => {
-      // A real player in front wins over a local (and anonymous figures take no tap).
+      // A real player in front wins over a local.
       const playerId = playersRef.current?.pick(get().camera, x, y, width, height) ?? null
       const player =
         playerId === null
           ? undefined
           : presenceStore.getState().players.find((p) => p.id === playerId)
-      if (player?.handle != null) {
+      if (player !== undefined) {
         selectLocal(null)
         selectPlayer(player.id)
         invalidate()

@@ -60,16 +60,9 @@ export interface PresenceSnapshot {
   readonly players: readonly PresencePlayer[]
 }
 
-/** An anonymous figure the signed-out view shows: where, and what they look like. */
-export interface PublicFigure {
-  readonly place: string
-  readonly borough: PresenceBorough
-  readonly look: LookIds | null
-}
-
 export interface PublicSnapshot {
+  /** Every player online now. The signed-out view is the count only: no one is drawn. */
   readonly online: number
-  readonly figures: readonly PublicFigure[]
 }
 
 export interface PresenceTransport {
@@ -79,6 +72,6 @@ export interface PresenceTransport {
   snapshot(): Promise<ApiResult<PresenceSnapshot>>
   /** Takes the player off the map at once. */
   leave(): Promise<ApiResult<null>>
-  /** The signed-out view: the count and anonymous figures (a cached server route). */
+  /** The signed-out view: the online count only (a cached server route). */
   publicSnapshot(): Promise<ApiResult<PublicSnapshot>>
 }

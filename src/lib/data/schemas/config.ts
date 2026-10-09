@@ -684,8 +684,6 @@ export const RealtimeConfigSchema = z.strictObject({
     onlineTtlS: z.int().min(30).max(600),
     /** Rows one snapshot answers with at most (server). */
     snapshotMax: z.int().min(1).max(200),
-    /** Anonymous figures the signed-out view gets at most (server). */
-    publicSnapshotMax: z.int().min(0).max(200),
     /** How long the signed-out view is cached (the /api/presence route). */
     publicCacheS: positiveInt,
     /** Rate limits per player (server). */

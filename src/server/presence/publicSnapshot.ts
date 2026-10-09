@@ -1,8 +1,8 @@
 import 'server-only'
 /**
- * GET /api/presence (S42 phase 1): the signed-out view of who is online, for the landing and any
- * visitor without an account: the honest online count and anonymous figures (a place and a
- * look; never an id, a handle or a level). The database function is the service role's only
+ * GET /api/presence (S42, S42b): the signed-out view of who is online, for the landing and any
+ * visitor without an account: the honest online count and nothing else (no figures, places or
+ * looks: nobody can be singled out without an account). The database function is the service role's only
  * (presence_public_snapshot), so no client role ever reads presence rows; this route answers
  * from a per-instance memo and lets the CDN cache it for `publicCacheS`, so the database sees
  * one read per window however many visitors there are.
@@ -22,7 +22,7 @@ export interface PublicPresenceDeps {
 
 const memo: { at: number; body: PublicSnapshot } = {
   at: -Infinity,
-  body: { online: 0, figures: [] },
+  body: { online: 0 },
 }
 
 export function publicPresenceDeps(): PublicPresenceDeps {

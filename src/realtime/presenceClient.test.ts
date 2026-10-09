@@ -98,7 +98,7 @@ describe('presence client', () => {
     expect(fake.leaves).toBe(0)
 
     mode = 'public'
-    fake.figures = [{ place: 'late-lantern-deli', borough: 'queens', look: null }]
+    fake.othersOnline = 1
     const visitor = client()
     visitor.start()
     await settle()

@@ -1,33 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 import { handlePublicPresence, type PublicPresenceDeps } from './publicSnapshot'
 
-const fresh = () => ({ at: -Infinity, body: { online: 0, figures: [] } })
-const answer = {
-  online: 3,
-  figures: [
-    { place: 'late-lantern-deli', borough: 'queens', look: { body: 'man', skin: 'tone-02' } },
-    { place: 'NOT A PIN', borough: 'queens', look: {} },
-  ],
-}
+const fresh = () => ({ at: -Infinity, body: { online: 0 } })
+const answer = { online: 3 }
 
 function deps(read: PublicPresenceDeps['read'], now = 1_000_000): PublicPresenceDeps {
   return { read, now: () => now, cacheS: 15 }
 }
 
 describe('GET /api/presence', () => {
-  it('answers the count and valid figures, cacheable by the CDN', async () => {
+  it('answers the count only, cacheable by the CDN', async () => {
     const response = await handlePublicPresence(
-      deps(() => Promise.resolve(answer)),
+      deps(() => Promise.resolve({ online: 3, figures: [{ place: 'late-lantern-deli' }] })),
       fresh(),
     )
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toContain('s-maxage=15')
-    expect(await response.json()).toEqual({
-      online: 3,
-      figures: [
-        { place: 'late-lantern-deli', borough: 'queens', look: { body: 'man', skin: 'tone-02' } },
-      ],
-    })
+    expect(await response.json()).toEqual({ online: 3 })
   })
 
   it('reads the database once per cache window', async () => {

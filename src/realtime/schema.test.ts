@@ -58,19 +58,14 @@ describe('parseSnapshot', () => {
 })
 
 describe('parsePublicSnapshot', () => {
-  it('keeps only valid figures', () => {
+  it('reads the count and nothing else', () => {
+    expect(parsePublicSnapshot({ online: 2 })).toEqual({ online: 2 })
+    // Anything more the server might send is dropped, never drawn.
     expect(
-      parsePublicSnapshot({
-        online: 2,
-        figures: [
-          { place: 'late-lantern-deli', borough: 'queens', look: { body: 'woman' } },
-          { place: 'late-lantern-deli', borough: 'mars', look: {} },
-        ],
-      }),
-    ).toEqual({
-      online: 2,
-      figures: [{ place: 'late-lantern-deli', borough: 'queens', look: { body: 'woman' } }],
-    })
+      parsePublicSnapshot({ online: 2, figures: [{ place: 'late-lantern-deli', look: {} }] }),
+    ).toEqual({ online: 2 })
+    expect(parsePublicSnapshot({ online: -1 })).toBeNull()
+    expect(parsePublicSnapshot({})).toBeNull()
   })
 })
 

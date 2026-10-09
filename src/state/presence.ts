@@ -11,13 +11,13 @@ import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
 import type { CloutLevelId, LookIds, PresenceSnapshot, PublicSnapshot } from '@/realtime/types'
 
-/** One real player drawn on the map. `handle` is null for an anonymous (signed-out) figure. */
+/** One real player drawn on the map. */
 export interface MapPlayer {
   readonly id: string
   readonly place: string
   readonly look: LookIds | null
-  readonly handle: string | null
-  readonly level: CloutLevelId | null
+  readonly handle: string
+  readonly level: CloutLevelId
 }
 
 /** What a player card shows: a signed-in view's player. */
@@ -75,23 +75,12 @@ export function applySnapshot(snapshot: PresenceSnapshot): void {
   })
 }
 
-/** A signed-out read: anonymous figures, never tappable. */
+/** A signed-out read: the online count only; nobody is drawn. */
 export function applyPublicSnapshot(snapshot: PublicSnapshot): void {
-  presenceStore.setState({
-    online: snapshot.online,
-    players: snapshot.figures.map((f, i) => ({
-      id: `figure-${i}`,
-      place: f.place,
-      look: f.look,
-      handle: null,
-      level: null,
-    })),
-    elsewhere: 0,
-    selected: null,
-  })
+  presenceStore.setState({ online: snapshot.online, players: [], elsewhere: 0, selected: null })
 }
 
-/** Reads keep failing: hide the count and the figures rather than show stale ones. */
+/** Reads keep failing: hide the count and the players rather than show stale ones. */
 export function presenceUnavailable(): void {
   presenceStore.setState({ online: null, players: [], elsewhere: 0, selected: null })
 }
@@ -118,7 +107,7 @@ export function selectPlayer(id: string | null): void {
     return
   }
   const player = state.players.find((p) => p.id === id)
-  if (player?.handle == null || player.level === null || state.hidden.has(id)) return
+  if (player === undefined || state.hidden.has(id)) return
   presenceStore.setState({
     selected: { id: player.id, handle: player.handle, level: player.level, look: player.look },
   })

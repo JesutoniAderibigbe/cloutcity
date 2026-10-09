@@ -1,7 +1,7 @@
 /**
  * The presence answers, validated at the boundary (zod/mini): the signed-in snapshot
- * (presence_snapshot) and the signed-out view (/api/presence). A row that does not fit is
- * dropped, never trusted: one bad row must not blank the whole map.
+ * (presence_snapshot) and the signed-out view (/api/presence, the count only). A row that does not
+ * fit is dropped, never trusted: one bad row must not blank the whole map.
  */
 import * as z from 'zod/mini'
 import {
@@ -11,7 +11,6 @@ import {
   type LookIds,
   type PresencePlayer,
   type PresenceSnapshot,
-  type PublicFigure,
   type PublicSnapshot,
 } from './types'
 
@@ -42,16 +41,7 @@ const SnapshotSchema = z.object({
   players: z.array(z.unknown()),
 })
 
-const FigureSchema = z.object({
-  place: z.string().check(z.maxLength(64), z.regex(PLACE_ID)),
-  borough: z.enum(PRESENCE_BOROUGHS),
-  look: z.unknown(),
-})
-
-const PublicSchema = z.object({
-  online: z.int().check(z.gte(0)),
-  figures: z.array(z.unknown()),
-})
+const PublicSchema = z.object({ online: z.int().check(z.gte(0)) })
 
 /** The signed-in snapshot, or null when its shape is wrong. Bad rows are skipped. */
 export function parseSnapshot(value: unknown): PresenceSnapshot | null {
@@ -72,14 +62,8 @@ export function parseSnapshot(value: unknown): PresenceSnapshot | null {
   return { online: parsed.data.online, players }
 }
 
-/** The signed-out view, or null when its shape is wrong. Bad figures are skipped. */
+/** The signed-out view (the online count only), or null when its shape is wrong. */
 export function parsePublicSnapshot(value: unknown): PublicSnapshot | null {
   const parsed = PublicSchema.safeParse(value)
-  if (!parsed.success) return null
-  const figures: PublicFigure[] = []
-  for (const raw of parsed.data.figures) {
-    const row = FigureSchema.safeParse(raw)
-    if (row.success) figures.push({ ...row.data, look: readLook(row.data.look) })
-  }
-  return { online: parsed.data.online, figures }
+  return parsed.success ? { online: parsed.data.online } : null
 }
