@@ -107,6 +107,11 @@ function NameTags({ hidden }: { readonly hidden: boolean }) {
       for (const head of heads) {
         const handle = players.find((p) => p.id === head.id)?.handle ?? null
         if (handle === null) continue
+        // Tags show only where the map is uncovered, never over the HUD, a sheet or a dialog (the
+        // overlay zones; layers that let taps through are skipped by the hit test).
+        if (document.elementFromPoint(head.x, head.y)?.closest('[data-overlay-zone]') != null) {
+          continue
+        }
         seen.add(head.id)
         let tag = tags.get(head.id)
         if (tag === undefined) {
@@ -150,11 +155,11 @@ function OnlineChip() {
   return (
     <p
       data-online-count={online}
-      role="status"
-      aria-label={copy('players.onlineLabel', { count })}
       className="pointer-events-auto flex h-8 items-center gap-1.5 rounded-full glass px-3 text-xs font-bold whitespace-nowrap text-success shadow"
     >
       <span aria-hidden="true" className="size-2 rounded-full bg-success" />
+      {/* No live region: a count that changes every few seconds would keep interrupting. */}
+      <span className="sr-only">{copy('players.onlineLabel', { count })}</span>
       <span aria-hidden="true">{copy('players.online', { count })}</span>
     </p>
   )
@@ -169,23 +174,22 @@ function Swatches({ card }: { readonly card: PlayerCard }) {
     ['hair', colours.hair],
   ] as const
   return (
-    <ul aria-label={copy('players.card.look')} className="mt-2 flex flex-wrap gap-1.5">
+    <ul aria-label={copy('players.card.look')} className="flex items-center gap-1">
       {parts.map(([part, swatch]) => {
         const name = copy('players.card.swatch', {
           part: copy(`players.card.part.${part}`),
           colour: copy(swatch.nameKey),
         })
+        // A compact dot (the card must fit a phone's free map row); its colour's name is read out
+        // and shown on hover (A11Y-1/2).
         return (
-          <li
-            key={part}
-            className="flex items-center gap-1 rounded-full border border-line px-2 py-0.5 text-xs text-fg"
-          >
+          <li key={part} title={name} className="flex">
             <span
               aria-hidden="true"
-              className="size-3 rounded-full border border-line"
+              className="size-4 rounded-full border border-line"
               style={{ backgroundColor: swatch.hex }}
             />
-            {name}
+            <span className="sr-only">{name}</span>
           </li>
         )
       })}
@@ -321,9 +325,11 @@ export default function PlayersOverlay({
                       <span aria-hidden="true">×</span>
                     </button>
                   </div>
-                  <p className="mt-1 text-xs text-muted">{copy('players.card.real')}</p>
-                  <Swatches card={card} />
-                  <div className="mt-3">
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    <p className="text-xs text-muted">{copy('players.card.real')}</p>
+                    <Swatches card={card} />
+                  </div>
+                  <div className="mt-2">
                     <PlayerActions
                       key={card.id}
                       player={{ id: card.id, handle: card.handle }}
