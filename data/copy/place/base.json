@@ -62,6 +62,10 @@
     "place.interior.exitLabel": "Leave {place} for the map",
     "place.sim.bubble.dance": "Let's go!",
     "place.sim.bubble.flex": "Say cheese",
-    "place.sim.bubble.hang": "Vibes"
+    "place.sim.bubble.hang": "Vibes",
+    "place.sim.bubble.order": "One of those, please",
+    "place.sim.bubble.eat": "So good",
+    "place.sim.bubble.coffee": "Caffeine hit",
+    "place.sim.bubble.work": "On the clock"
   }
 }

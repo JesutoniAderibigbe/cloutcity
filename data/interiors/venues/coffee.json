@@ -1,0 +1,428 @@
+{
+  "grid": { "cols": 10, "rows": 8, "cellM": 1 },
+  "heightM": 3.3,
+  "openings": [
+    { "kind": "door", "wall": "right", "at": 2, "span": 1, "sillM": 0, "heightM": 2.3 },
+    { "kind": "window", "wall": "left", "at": 3, "span": 4, "sillM": 0.95, "heightM": 1.6 }
+  ],
+  "camera": { "position": [1.2, 7.2, 9], "target": [0, 0.4, -0.3], "fovDeg": 40 },
+  "entry": { "slot": "f9-2", "rotationDeg": -100 },
+  "shell": {
+    "wallPaint": "sage-wash",
+    "floorFinish": "herringbone-oak",
+    "crown": false,
+    "accentBack": "exposed-brick"
+  },
+  "backdrop": { "kind": "room", "tint": null },
+  "mood": {
+    "music": "cafe-lofi",
+    "bpm": 84,
+    "tint": "latte-300",
+    "openMix": 0.18,
+    "openAmbientScale": 1,
+    "openSunScale": 1,
+    "closedAmbientScale": 0.8
+  },
+  "decor": [
+    {
+      "id": "cafe-rug",
+      "item": "thrift-flatweave-rug",
+      "slot": "f7-5",
+      "turn": 0,
+      "footprint": "2x2",
+      "token": "orange-400"
+    },
+    {
+      "id": "cafe-sofa",
+      "item": "corduroy-sofa",
+      "slot": "f9-5",
+      "turn": 3,
+      "footprint": "2x1",
+      "token": "green-700"
+    },
+    {
+      "id": "cafe-armchair",
+      "item": "cloud-lounge-chair",
+      "slot": "f6-6",
+      "turn": 1,
+      "footprint": "1x1",
+      "token": "cream-100"
+    },
+    {
+      "id": "cafe-lamp",
+      "item": "arc-floor-lamp",
+      "slot": "f9-7",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "cream-100"
+    },
+    {
+      "id": "cafe-plant",
+      "item": "fiddle-leaf-fig",
+      "slot": "f6-0",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "orange-400"
+    },
+    {
+      "id": "cafe-plant-2",
+      "item": "starter-plant",
+      "slot": "f0-7",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "mint-400"
+    }
+  ],
+  "fixtures": [],
+  "kinds": {
+    "window-stool": {
+      "parts": [
+        { "shape": "disc", "size": [0.4, 0.07, 0.4], "at": [0, 0.62, 0], "token": "oak-500" },
+        { "shape": "disc", "size": [0.07, 0.62, 0.07], "at": [0, 0.31, 0], "token": "iron-900" },
+        { "shape": "disc", "size": [0.34, 0.03, 0.34], "at": [0, 0.015, 0], "token": "iron-900" }
+      ],
+      "anchors": [
+        { "pose": "sit", "at": [0, 0.62, -0.02], "headingDeg": 0, "approach": [[0, 0, -0.78]] }
+      ]
+    },
+    "laptop-table": {
+      "parts": [
+        { "shape": "disc", "size": [0.66, 0.05, 0.66], "at": [0, 0.74, 0], "token": "oak-500" },
+        { "shape": "disc", "size": [0.08, 0.74, 0.08], "at": [0, 0.37, 0], "token": "iron-900" },
+        { "shape": "disc", "size": [0.4, 0.03, 0.4], "at": [0, 0.015, 0], "token": "iron-900" },
+        {
+          "shape": "box",
+          "size": [0.34, 0.02, 0.24],
+          "at": [-0.1, 0.77, 0.08],
+          "token": "silver-300"
+        },
+        {
+          "shape": "box",
+          "size": [0.34, 0.22, 0.02],
+          "at": [-0.1, 0.88, -0.04],
+          "token": "silver-300"
+        },
+        {
+          "shape": "box",
+          "size": [0.3, 0.18, 0.01],
+          "at": [-0.1, 0.88, -0.03],
+          "token": "sky-400",
+          "glow": "steady"
+        },
+        { "shape": "disc", "size": [0.08, 0.1, 0.08], "at": [0.2, 0.81, 0.1], "token": "white-50" }
+      ],
+      "anchors": []
+    },
+    "cafe-table": {
+      "parts": [
+        { "shape": "disc", "size": [0.66, 0.05, 0.66], "at": [0, 0.74, 0], "token": "oak-500" },
+        { "shape": "disc", "size": [0.08, 0.74, 0.08], "at": [0, 0.37, 0], "token": "iron-900" },
+        { "shape": "disc", "size": [0.4, 0.03, 0.4], "at": [0, 0.015, 0], "token": "iron-900" },
+        {
+          "shape": "disc",
+          "size": [0.08, 0.1, 0.08],
+          "at": [0.12, 0.81, 0.05],
+          "token": "white-50",
+          "repeat": { "count": 2, "step": [-0.26, 0, -0.06] }
+        },
+        {
+          "shape": "disc",
+          "size": [0.16, 0.02, 0.16],
+          "at": [-0.12, 0.77, -0.12],
+          "token": "white-50"
+        }
+      ],
+      "anchors": []
+    },
+    "cafe-chair": {
+      "parts": [
+        { "shape": "box", "size": [0.44, 0.06, 0.42], "at": [0, 0.46, 0], "token": "wood-500" },
+        { "shape": "box", "size": [0.44, 0.46, 0.05], "at": [0, 0.72, -0.19], "token": "wood-500" },
+        {
+          "shape": "box",
+          "size": [0.04, 0.46, 0.04],
+          "at": [-0.19, 0.23, 0.17],
+          "token": "iron-900",
+          "repeat": { "count": 2, "step": [0.38, 0, 0] },
+          "rows": { "count": 2, "step": [0, 0, -0.34] }
+        }
+      ],
+      "anchors": [
+        {
+          "pose": "sit",
+          "at": [0, 0.46, 0.02],
+          "headingDeg": 0,
+          "approach": [
+            [0.72, 0, 0.05],
+            [-0.72, 0, 0.05],
+            [0, 0, 0.72]
+          ]
+        }
+      ]
+    }
+  },
+  "pieces": [
+    { "kind": "window-stool", "slot": "f0-3", "turn": 3 },
+    { "kind": "window-stool", "slot": "f0-4", "turn": 3 },
+    { "kind": "window-stool", "slot": "f0-5", "turn": 3 },
+    { "kind": "window-stool", "slot": "f0-6", "turn": 3 },
+    { "kind": "laptop-table", "slot": "f4-4", "turn": 0 },
+    { "kind": "cafe-chair", "slot": "f3-4", "turn": 1, "offset": [0.22, 0, 0] },
+    { "kind": "cafe-chair", "slot": "f5-4", "turn": 3, "offset": [-0.22, 0, 0] },
+    { "kind": "cafe-table", "slot": "f7-3", "turn": 0 },
+    { "kind": "cafe-chair", "slot": "f6-3", "turn": 1, "offset": [0.22, 0, 0] },
+    { "kind": "cafe-chair", "slot": "f8-3", "turn": 3, "offset": [-0.22, 0, 0] },
+    { "kind": "cafe-table", "slot": "f4-6", "turn": 0 },
+    { "kind": "cafe-chair", "slot": "f3-6", "turn": 1, "offset": [0.22, 0, 0] },
+    { "kind": "cafe-chair", "slot": "f5-6", "turn": 3, "offset": [-0.22, 0, 0] }
+  ],
+  "build": [
+    { "shape": "box", "size": [5.4, 0.9, 0.55], "at": [-2.2, 0.45, -3.7], "token": "wood-700" },
+    {
+      "shape": "box",
+      "size": [5.4, 0.04, 0.58],
+      "at": [-2.2, 0.92, -3.7],
+      "token": "countertop-100"
+    },
+    {
+      "shape": "box",
+      "size": [5, 0.05, 0.3],
+      "at": [-2.2, 1.55, -3.84],
+      "token": "wood-500",
+      "repeat": { "count": 2, "step": [0, 0.45, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.16, 0.2, 0.16],
+      "at": [-4.5, 1.68, -3.84],
+      "token": "cream-100",
+      "repeat": { "count": 11, "step": [0.46, 0, 0] },
+      "rows": { "count": 2, "step": [0, 0.45, 0] },
+      "tokens": ["cream-100", "latte-300", "white-50", "sage-400"]
+    },
+    { "shape": "box", "size": [2.4, 1.1, 0.05], "at": [2.6, 2.1, -3.97], "token": "coal-900" },
+    {
+      "shape": "box",
+      "size": [0.9, 0.04, 0.02],
+      "at": [2.15, 2.45, -3.93],
+      "token": "white-50",
+      "repeat": { "count": 2, "step": [0.95, 0, 0] },
+      "rows": { "count": 4, "step": [0, -0.2, 0] }
+    },
+    { "shape": "box", "size": [0.3, 0.3, 0.02], "at": [3.5, 1.75, -3.93], "token": "mustard-300" },
+    { "shape": "box", "size": [4.9, 1, 0.65], "at": [-2.5, 0.5, -1.5], "token": "walnut-700" },
+    {
+      "shape": "box",
+      "size": [5, 0.06, 0.75],
+      "at": [-2.5, 1.03, -1.52],
+      "token": "countertop-100"
+    },
+    { "shape": "box", "size": [4.9, 0.5, 0.03], "at": [-2.5, 0.45, -1.16], "token": "latte-300" },
+    { "shape": "box", "size": [0.9, 0.5, 0.5], "at": [-3.9, 1.31, -1.55], "token": "steel-400" },
+    { "shape": "box", "size": [0.9, 0.08, 0.52], "at": [-3.9, 1.6, -1.55], "token": "steel-700" },
+    {
+      "shape": "disc",
+      "size": [0.07, 0.12, 0.07],
+      "at": [-4.15, 1.12, -1.38],
+      "token": "iron-900",
+      "repeat": { "count": 3, "step": [0.25, 0, 0] }
+    },
+    {
+      "shape": "disc",
+      "size": [0.1, 0.1, 0.1],
+      "at": [-4.15, 1.65, -1.7],
+      "token": "white-50",
+      "repeat": { "count": 4, "step": [0.17, 0, 0] }
+    },
+    { "shape": "box", "size": [1.7, 0.5, 0.55], "at": [-2, 1.31, -1.5], "token": "glass-300" },
+    {
+      "shape": "box",
+      "size": [1.6, 0.04, 0.5],
+      "at": [-2, 1.12, -1.5],
+      "token": "lamp-200",
+      "glow": "steady"
+    },
+    {
+      "shape": "disc",
+      "size": [0.18, 0.08, 0.18],
+      "at": [-2.6, 1.2, -1.5],
+      "token": "latte-300",
+      "repeat": { "count": 5, "step": [0.3, 0, 0] },
+      "tokens": ["latte-300", "amber-400", "blush-300", "gold-400"]
+    },
+    {
+      "shape": "disc",
+      "size": [0.18, 0.08, 0.18],
+      "at": [-2.6, 1.36, -1.5],
+      "token": "amber-400",
+      "repeat": { "count": 4, "step": [0.38, 0, 0] },
+      "tokens": ["amber-400", "latte-300", "rose-400"]
+    },
+    { "shape": "box", "size": [0.4, 0.25, 0.3], "at": [-0.45, 1.18, -1.5], "token": "coal-800" },
+    {
+      "shape": "box",
+      "size": [0.3, 0.18, 0.02],
+      "at": [-0.45, 1.4, -1.4],
+      "token": "sky-400",
+      "glow": "steady"
+    },
+    {
+      "shape": "disc",
+      "size": [0.09, 0.14, 0.09],
+      "at": [-0.95, 1.13, -1.3],
+      "token": "white-50",
+      "repeat": { "count": 3, "step": [0.1, 0, 0] }
+    },
+    {
+      "shape": "disc",
+      "size": [0.02, 0.9, 0.02],
+      "at": [-3.6, 2.85, -1.5],
+      "token": "iron-900",
+      "repeat": { "count": 3, "step": [1.4, 0, 0] }
+    },
+    {
+      "shape": "disc",
+      "size": [0.32, 0.28, 0.32],
+      "at": [-3.6, 2.3, -1.5],
+      "token": "mustard-300",
+      "repeat": { "count": 3, "step": [1.4, 0, 0] }
+    },
+    {
+      "shape": "disc",
+      "size": [0.16, 0.05, 0.16],
+      "at": [-3.6, 2.15, -1.5],
+      "token": "lamp-200",
+      "glow": "night",
+      "repeat": { "count": 3, "step": [1.4, 0, 0] }
+    },
+    { "shape": "box", "size": [0.34, 0.05, 3.6], "at": [-4.82, 1.02, 1], "token": "oak-500" },
+    { "shape": "disc", "size": [0.6, 0.04, 0.6], "at": [3.3, 0.42, 2], "token": "walnut-700" },
+    { "shape": "disc", "size": [0.1, 0.4, 0.1], "at": [3.3, 0.2, 2], "token": "iron-900" },
+    {
+      "shape": "disc",
+      "size": [0.09, 0.1, 0.09],
+      "at": [3.15, 0.49, 2.05],
+      "token": "white-50",
+      "repeat": { "count": 2, "step": [0.3, 0, 0] }
+    }
+  ],
+  "blocked": [
+    "f0-0",
+    "f1-0",
+    "f2-0",
+    "f3-0",
+    "f4-0",
+    "f5-0",
+    "f0-2",
+    "f1-2",
+    "f2-2",
+    "f3-2",
+    "f4-2",
+    "f8-5"
+  ],
+  "danceFloor": null,
+  "partyLights": null,
+  "stringLights": null,
+  "skyline": null,
+  "simSpots": [
+    { "pose": "use", "slot": "f4-3", "rotationDeg": 180, "heightM": 0 },
+    { "pose": "work", "slot": "f3-1", "rotationDeg": 0, "heightM": 0 },
+    { "pose": "browse", "slot": "f6-4", "rotationDeg": 10, "heightM": 0 },
+    { "pose": "flex", "slot": "f2-5", "rotationDeg": 0, "heightM": 0 }
+  ],
+  "actions": {
+    "coffee": [
+      { "poses": ["use"], "models": [], "holdMs": 1600, "bubble": "place.sim.bubble.order" },
+      {
+        "poses": ["sit", "browse"],
+        "models": ["cafe-chair", "window-stool", "couch", "armchair"],
+        "holdMs": 5000,
+        "prop": "cup",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.coffee"
+      }
+    ],
+    "shift-barista": [
+      {
+        "poses": ["work"],
+        "models": [],
+        "holdMs": 7000,
+        "prop": "cup",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.work"
+      }
+    ],
+    "flex": [
+      {
+        "poses": ["flex"],
+        "models": [],
+        "holdMs": 3500,
+        "prop": "phone",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.flex"
+      }
+    ]
+  },
+  "crowd": {
+    "poses": ["sit", "work", "idle", "talk"],
+    "spots": [
+      {
+        "activity": "barista",
+        "pose": "work",
+        "at": [-3.5, -2.75],
+        "headingDeg": 0,
+        "rank": 0,
+        "staff": true
+      },
+      {
+        "activity": "register",
+        "pose": "work",
+        "at": [-0.45, -2.75],
+        "headingDeg": 0,
+        "rank": 0,
+        "staff": true
+      },
+      { "activity": "barista", "pose": "work", "at": [-2.3, -2.75], "headingDeg": 180, "rank": 3 },
+      { "activity": "queue", "pose": "idle", "at": [0.45, -0.6], "headingDeg": 200, "rank": 1 },
+      { "activity": "queue", "pose": "idle", "at": [1.1, 0.1], "headingDeg": 210, "rank": 2 },
+      { "activity": "queue", "pose": "talk", "at": [1.6, 0.8], "headingDeg": 220, "rank": 4 },
+      { "activity": "chat", "pose": "talk", "at": [2.5, -2.2], "headingDeg": 100, "rank": 3 },
+      { "activity": "chat", "pose": "talk", "at": [3.3, -2], "headingDeg": -100, "rank": 3 },
+      { "activity": "pickup", "pose": "idle", "at": [-1.6, -0.8], "headingDeg": 180, "rank": 5 }
+    ],
+    "seats": [
+      { "activity": "sip", "kind": "cafe-chair", "rank": 1 },
+      { "activity": "sip", "kind": "window-stool", "rank": 2 },
+      { "activity": "sip", "model": "couch", "rank": 2 },
+      { "activity": "sip", "model": "armchair", "rank": 4 }
+    ],
+    "hours": [
+      [0, 0.4],
+      [1, 0.4],
+      [2, 0.4],
+      [3, 0.4],
+      [4, 0.4],
+      [5, 0.4],
+      [6, 0.4],
+      [7, 0.7],
+      [8, 1],
+      [9, 0.85],
+      [10, 0.7],
+      [11, 0.73],
+      [12, 0.77],
+      [13, 0.8],
+      [14, 0.73],
+      [15, 0.67],
+      [16, 0.6],
+      [17, 0.55],
+      [18, 0.5],
+      [19, 0.45],
+      [20, 0.4],
+      [21, 0.4],
+      [22, 0.4],
+      [23, 0.4]
+    ],
+    "busyDays": [1, 2, 3, 4, 5],
+    "quietShare": 0.8
+  }
+}

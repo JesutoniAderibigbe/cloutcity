@@ -4,12 +4,13 @@
  * (src/scene/venue/crowdLayer.ts).
  *
  * - How many: its staff (the DJ, the bartender) whenever it is open, and the rest of the tier's
- *   crowd at the hour's share (data/interiors/venues.json `crowd.hours`), all of it on busy
+ *   crowd at the hour's share (data/interiors/venues/<id>.json `crowd.hours`), all of it on busy
  *   nights and `quietShare` of it on others; nobody while the venue is closed.
  * - Where: spots fill by rank (the dance floor and the bar before the corners), ties broken by a
  *   shuffle seeded by the venue and the night, so a crowd that grows keeps the locals already
  *   there and the same night always looks the same. Spots real players take (`taken`) and spots
- *   in a pose the tier does not draw are left out (a standing local's pose falls back to `talk`).
+ *   in a pose the tier does not draw are left out (a standing local's pose falls back to `talk`,
+ *   else `idle`).
  * - Who: each local's body, height, colours, small offset and turn, and groove phase are seeded
  *   by the spot and the night, so locals differ but never flicker between renders.
  *
@@ -86,7 +87,8 @@ export interface CrowdMember {
   readonly phase: number
 }
 
-const STANDING_FALLBACK = 'talk'
+/** What a standing local does instead when the tier draws not their pose, best first. */
+const STANDING_FALLBACKS = ['talk', 'idle'] as const
 const MINUTES_PER_HOUR = 60
 
 /** FNV-1a: a stable 32-bit hash of a string. */
@@ -139,10 +141,10 @@ export function hourShare(
 /** The pose a spot is drawn in on this tier, or null when the tier has no fitting pose. */
 function poseOn(spot: CrowdSpot, poses: ReadonlySet<string>): string | null {
   if (poses.has(spot.pose)) return spot.pose
-  // A standing local (idle) can talk instead; a seated or dancing one has no stand-in.
-  return spot.y === 0 && spot.pose === 'idle' && poses.has(STANDING_FALLBACK)
-    ? STANDING_FALLBACK
-    : null
+  // A standing local (idle, at work, on a treadmill) can talk or stand instead; a seated or
+  // dancing one has no stand-in.
+  if (spot.y !== 0 || spot.pose === 'dance') return null
+  return STANDING_FALLBACKS.find((pose) => poses.has(pose)) ?? null
 }
 
 /** How many locals are in now: zero while closed, at least the staff while open. */

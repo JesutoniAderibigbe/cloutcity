@@ -38,6 +38,9 @@ export const OPTIONAL_CHUNK_MARKERS = [
   // Its locals' kit bakers (src/scene/venue/crowdLayer.ts) and its players (VenuePeople.tsx).
   { id: 'venue-crowd', marker: 'venue crowd: ' },
   { id: 'venue-people', marker: 'venueOccupant' },
+  // Each interior's own data (S43b, data/interiors/venues/<id>.json): one small chunk per
+  // interior, fetched when a player steps inside (a key only those files and their reader hold).
+  { id: 'venue-interior-data', marker: 'openAmbientScale' },
   // Buy mode 2.0 (S40, src/components/hud/HomeDecor.tsx): the furniture lists, catalogue and
   // finishes; offline before it was ever cached, the Home panel says so and rest and moves work.
   { id: 'home-decor', marker: 'cc-feature:home-decor' },

@@ -7,18 +7,28 @@
   "crowd": {
     "max": { "low": 6, "mid": 10, "high": 14 },
     "bodies": { "low": 1, "mid": 2, "high": 2 },
-    "poses": {
-      "low": ["dance", "talk"],
-      "mid": ["dance", "talk", "sit", "idle"],
-      "high": ["dance", "talk", "sit", "idle"]
+    "clipsMax": { "low": 2, "mid": 4, "high": 5 },
+    "clips": {
+      "dance": "wave",
+      "talk": "talk",
+      "sit": "sit",
+      "idle": "idle",
+      "wave": "wave",
+      "work": "interact",
+      "workout": "interact",
+      "spar": "interact",
+      "run": "run"
     },
-    "clips": { "dance": "wave", "talk": "talk", "sit": "sit", "idle": "idle" },
     "frames": { "low": 6, "mid": 8, "high": 10 },
     "heightM": { "min": 1.62, "max": 1.84 },
     "sit": { "seatShare": 0.245, "backShare": 0.05 },
     "jitterM": 0.12,
     "headingJitterDeg": 30,
     "groove": { "bobM": 0.07, "swayDeg": 14 },
+    "moves": {
+      "workout": { "bobM": 0.05, "swayDeg": 0, "perBeat": 0.5 },
+      "spar": { "bobM": 0.06, "swayDeg": 16, "perBeat": 1 }
+    },
     "palette": {
       "skin": [
         "#f3d3b9",

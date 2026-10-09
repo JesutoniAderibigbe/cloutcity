@@ -1,0 +1,104 @@
+{
+  "sim": {
+    "poses": {
+      "dance": { "clip": "wave", "contactRigUnits": [0, 0, 0], "tiltDeg": 0 },
+      "flex": { "clip": "interact", "contactRigUnits": [0, 0, 0], "tiltDeg": 0 },
+      "use": { "clip": "interact", "contactRigUnits": [0, 0, 0], "tiltDeg": 0 },
+      "work": { "clip": "interact", "contactRigUnits": [0, 0, 0], "tiltDeg": 0 },
+      "browse": { "clip": "idle", "contactRigUnits": [0, 0, 0], "tiltDeg": 0 },
+      "chat": { "clip": "talk", "contactRigUnits": [0, 0, 0], "tiltDeg": 0 },
+      "run": { "clip": "run", "contactRigUnits": [0, 0, 0], "tiltDeg": 0 }
+    },
+    "props": {
+      "phone": {
+        "parts": [
+          {
+            "shape": "box",
+            "size": [0.075, 0.15, 0.012],
+            "at": [0, 0.075, 0],
+            "token": "coal-900"
+          },
+          {
+            "shape": "box",
+            "size": [0.065, 0.13, 0.004],
+            "at": [0, 0.075, 0.008],
+            "token": "sky-400"
+          }
+        ]
+      },
+      "cup": {
+        "parts": [
+          { "shape": "disc", "size": [0.09, 0.12, 0.09], "at": [0, 0.06, 0], "token": "cream-100" },
+          {
+            "shape": "disc",
+            "size": [0.095, 0.03, 0.095],
+            "at": [0, 0.135, 0],
+            "token": "coal-900"
+          },
+          { "shape": "disc", "size": [0.092, 0.04, 0.092], "at": [0, 0.06, 0], "token": "red-700" }
+        ]
+      },
+      "wrap": {
+        "parts": [
+          { "shape": "disc", "size": [0.09, 0.16, 0.09], "at": [0, 0.08, 0], "token": "fog-300" },
+          {
+            "shape": "disc",
+            "size": [0.08, 0.04, 0.08],
+            "at": [0, 0.175, 0],
+            "token": "orange-400"
+          }
+        ]
+      },
+      "bag": {
+        "parts": [
+          { "shape": "box", "size": [0.26, 0.3, 0.1], "at": [0, -0.12, 0], "token": "pink-400" },
+          { "shape": "box", "size": [0.02, 0.12, 0.02], "at": [0, 0.07, 0], "token": "coal-900" }
+        ]
+      },
+      "parcel": {
+        "parts": [
+          { "shape": "box", "size": [0.36, 0.26, 0.3], "at": [0, 0, 0.08], "token": "sand-200" },
+          { "shape": "box", "size": [0.37, 0.04, 0.31], "at": [0, 0, 0.08], "token": "amber-800" }
+        ]
+      },
+      "laundry": {
+        "parts": [
+          { "shape": "box", "size": [0.46, 0.24, 0.32], "at": [0, 0, 0.1], "token": "mist-200" },
+          { "shape": "box", "size": [0.38, 0.06, 0.26], "at": [0, 0.13, 0.1], "token": "sky-400" }
+        ]
+      },
+      "ball": {
+        "parts": [
+          {
+            "shape": "disc",
+            "size": [0.24, 0.24, 0.24],
+            "at": [0, 0.06, 0.08],
+            "token": "orange-400"
+          }
+        ]
+      },
+      "dumbbell": {
+        "parts": [
+          { "shape": "disc", "size": [0.04, 0.32, 0.04], "at": [0, 0, 0], "token": "slate-600" },
+          { "shape": "disc", "size": [0.12, 0.08, 0.12], "at": [0, 0.15, 0], "token": "coal-900" },
+          { "shape": "disc", "size": [0.12, 0.08, 0.12], "at": [0, -0.15, 0], "token": "coal-900" }
+        ]
+      },
+      "mic": {
+        "parts": [
+          { "shape": "disc", "size": [0.04, 0.18, 0.04], "at": [0, 0, 0], "token": "coal-900" },
+          { "shape": "disc", "size": [0.07, 0.07, 0.07], "at": [0, 0.12, 0], "token": "fog-300" }
+        ]
+      }
+    },
+    "hands": {
+      "flex": [0, 1.32, 0.34],
+      "dance": [0, 1.1, 0.3],
+      "use": [0, 1.02, 0.34],
+      "work": [0, 1.02, 0.34],
+      "browse": [0, 0.98, 0.3],
+      "chat": [0, 1.2, 0.26]
+    },
+    "groove": { "clip": "wave", "bobM": 0.07, "swayDeg": 12 }
+  }
+}

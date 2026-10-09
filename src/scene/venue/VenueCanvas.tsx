@@ -16,7 +16,7 @@
  * reduced motion it renders on demand and nothing pulses or swings. Tiers: the dpr cap and
  * shadows of perf.json, the caps and counts of data/config/interiors.json.
  */
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { lazy, Suspense, use, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap, type IUniform } from 'three'
 import type { QualityTier } from '@/lib/data/schemas/config'
@@ -45,6 +45,7 @@ import { buildVenue, type VenueObjects } from './buildVenue'
 import {
   crowdConfig,
   lightsConfig,
+  loadVenueInterior,
   occupantsMax,
   venueBudget,
   venueInterior,
@@ -249,7 +250,16 @@ function useBackdrop(interior: VenueInterior, minute: number, open: boolean) {
   return { className: 'apartment-backdrop', style: undefined }
 }
 
-export default function VenueCanvas({
+/**
+ * Waits for the interior's own data chunk (S43b: one small lazy chunk per interior) under the
+ * place sheet's Suspense; a failed fetch reaches VenueInterior's boundary (the sheet still works).
+ */
+export default function VenueCanvas(props: VenueViewProps) {
+  use(loadVenueInterior(props.interiorId))
+  return <VenueScene {...props} />
+}
+
+function VenueScene({
   placeId,
   interiorId,
   label,
@@ -292,7 +302,7 @@ export default function VenueCanvas({
   // The crowd changes with the hour, not every minute.
   const hourKey = Math.floor(minute / 60)
   const crowd = useMemo((): CrowdMember[] => {
-    const config = crowdConfig(tier)
+    const config = crowdConfig(tier, interiorId)
     const taken = new Set(occupantSpots.flatMap((spot) => (spot === null ? [] : [spot.id])))
     return planCrowd({
       spots: interior.crowdSpots,
@@ -313,7 +323,7 @@ export default function VenueCanvas({
       heightM: config.heightM,
       palette: config.palette,
     })
-  }, [tier, interior, occupantSpots, hourKey, open, placeId])
+  }, [tier, interior, interiorId, occupantSpots, hourKey, open, placeId])
 
   return (
     <div
@@ -360,7 +370,7 @@ export default function VenueCanvas({
           />
         </Suspense>
         <Suspense fallback={null}>
-          <VenueCrowd members={crowd} tier={tier} bpm={interior.mood.bpm} />
+          <VenueCrowd interiorId={interiorId} members={crowd} tier={tier} bpm={interior.mood.bpm} />
         </Suspense>
         <VenueTestHook
           placeId={placeId}

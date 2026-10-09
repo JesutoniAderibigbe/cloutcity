@@ -3,9 +3,10 @@
  * the townsfolk's way (src/scene/ambient/townsfolk.ts), from the same pedestrian kits: each body
  * in each pose is baked into a loop of rigid frames (pedestrianKits.ts `bakeAnimatedKit`), drawn
  * as one colour-bucket InstancedMesh per bucket (skin, top, bottom, accent recoloured per local)
- * on one plain instanced toon material. A tier pays four draw calls per body and pose it shows,
+ * on one plain instanced toon material. A tier pays four draw calls per body and clip it shows,
  * and no new shader program. Dancers bob and sway on the beat on top of their loop (the rigs have
- * no dance clip), each from their own phase; sitters sit on the seat they were given.
+ * no dance clip), as do the poses with a move (a rep at the gym, a boxer's bounce, S43b), each
+ * from their own phase; sitters sit on the seat they were given.
  *
  * Locals are NPCs, never players (UX-3): the merged `npc-*` models, never the player look's parts,
  * no name tag, never picked or counted. Loaded in its own lazy chunk with the bakers, after the
@@ -34,7 +35,7 @@ import { NPC_VARIANTS } from '../avatar/npc'
 import { bakeAnimatedKit, type AnimatedKit } from '../ambient/pedestrianKits'
 import { acquireModels } from '../models/runtime'
 import type { ModelRef } from '../models/types'
-import type { crowdConfig } from './data'
+import type { CrowdClip, crowdConfig } from './data'
 
 type CrowdConfig = ReturnType<typeof crowdConfig>
 
@@ -67,14 +68,14 @@ function refOf(id: string): ModelRef {
 /** One body's loop of one clip, as baked. */
 export interface CrowdKit {
   readonly body: 0 | 1
-  readonly clip: TownsfolkPose
+  readonly clip: CrowdClip
   readonly baked: AnimatedKit
 }
 
 /** One body in one clip, baked: its bucket meshes share one matrix attribute. */
 interface Kit {
   readonly body: 0 | 1
-  readonly clip: TownsfolkPose
+  readonly clip: CrowdClip
   readonly baked: AnimatedKit
   readonly geometries: readonly BufferGeometry[]
   readonly meshes: readonly { readonly mesh: InstancedMesh; readonly bucket: string }[]
@@ -83,8 +84,8 @@ interface Kit {
 }
 
 /**
- * Bakes the tier's kits: each body the tier draws (the man alone on one body) in each clip its
- * poses use. Rejects when a model fails to load (the venue stays empty of locals).
+ * Bakes the tier's kits: each body the tier draws (the man alone on one body) in each clip the
+ * interior's drawn poses use. Rejects when a model fails to load (the venue stays empty of locals).
  */
 export async function bakeCrowdKits(
   tier: QualityTier,
@@ -104,7 +105,7 @@ export async function bakeCrowdKits(
   try {
     const loaded = await acquired.models
     const byId = new Map(ids.map((id, i) => [id, loaded[i]]))
-    const clips = [...new Set([...config.poses].map((pose) => config.clipOf(pose)))]
+    const clips = config.clips
     const kits: CrowdKit[] = []
     try {
       for (const variant of variants) {
@@ -118,7 +119,9 @@ export async function bakeCrowdKits(
             `${variant.model}-${clip}`,
             rig,
             [{ model, slots }],
-            clip,
+            // The baker looks the clip up on the rig by name: every rig clip bakes (the
+            // townsfolk's poses are a subset; the venues add `interact` and `run`).
+            clip as TownsfolkPose,
             config.frames,
           )
           kits.push({ body: variant.body, clip, baked })
@@ -222,10 +225,11 @@ export function createCrowdLayer(
       const k = member.heightM / (kit.clip === 'sit' ? stand : kit.baked.heightM)
       let yaw = member.headingRad
       let lift = 0
-      if (member.pose === 'dance' && !still) {
-        const beat = timeS / beatS + member.phase * 2
-        lift = Math.abs(Math.sin(beat * Math.PI)) * config.groove.bobM
-        yaw += Math.sin(beat * Math.PI * 0.5) * config.groove.swayRad
+      const move = still ? undefined : config.moves.get(member.pose)
+      if (move !== undefined) {
+        const beat = (timeS / beatS) * move.perBeat + member.phase * 2
+        lift = Math.abs(Math.sin(beat * Math.PI)) * move.bobM
+        yaw += Math.sin(beat * Math.PI * 0.5) * move.swayRad
       }
       if (kit.clip === 'sit') {
         // The seat lies under the thighs, just behind the loop's origin: put it on the seat.

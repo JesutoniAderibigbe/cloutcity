@@ -1,11 +1,15 @@
 /**
- * A venue interior's data for its lazy chunk (S43): data/interiors/venues.json (each interior's
- * layout, pieces, lights, crowd spots and the Sim's actions), data/config/interiors.json (the
+ * A venue interior's data for its lazy chunk (S43): data/interiors/venues/<id>.json (each
+ * interior's layout, pieces, lights, crowd spots and the Sim's actions), data/interiors/sim.json
+ * (the poses and props every interior adds to the room Sim), data/config/interiors.json (the
  * per-tier caps and crowd) and the shared apartment data it builds on (the room shell config,
- * finishes, palette and day/night model, src/scene/apartment/data.ts). Both files are validated
+ * finishes, palette and day/night model, src/scene/apartment/data.ts). The files are validated
  * with their zod schemas in src/lib/data/interiors-data.test.ts; this chunk reads the raw JSON
  * and narrows it here, throwing at load on anything unexpected (fail fast), so classic zod never
  * ships to the browser.
+ *
+ * Each interior's file is its own small lazy chunk (S43b, `INTERIOR_LOADERS`), fetched when the
+ * player steps inside: `loadVenueInterior` first, then the synchronous readers below.
  *
  * An interior is turned into the apartment's own `RoomInterior`, so the room shell, the orbit
  * camera, the furniture models and the room Sim all work on it unchanged.
@@ -14,7 +18,9 @@ import interiorsConfigJson from '@data/config/interiors.json'
 import perfJson from '@data/config/perf.json'
 import sceneJson from '@data/config/scene.json'
 import themeJson from '@data/config/theme.json'
-import venuesJson from '@data/interiors/venues.json'
+import simJson from '@data/interiors/sim.json'
+import type clubJson from '@data/interiors/venues/club.json'
+import type loungeJson from '@data/interiors/venues/lounge.json'
 import { isTurn, parseSlot, type GridFootprint, type Turn } from '@/engine/homeGrid'
 import type { QualityTier } from '@/lib/data/schemas/config'
 import type { CrowdPalette, CrowdSpot } from '@/lib/world/venueCrowd'
@@ -30,7 +36,8 @@ import {
 } from '../apartment/sim/simData'
 import type { ApartmentPlacement } from '../apartment/types'
 
-type Raw = (typeof venuesJson.interiors)[keyof typeof venuesJson.interiors]
+/** An interior file's raw JSON (every file has the same shape; these two cover its variants). */
+type Raw = typeof clubJson | typeof loungeJson
 type RawPart = Raw['build'][number]
 
 export type Glow = 'steady' | 'beat' | 'night'
@@ -540,25 +547,69 @@ function venueAnchors(raw: Raw): ReadonlyMap<string, readonly SimAnchor[]> {
   return anchors
 }
 
-const RAW_INTERIORS = venuesJson.interiors as unknown as Readonly<Record<string, Raw | undefined>>
+/**
+ * Each interior's file, as its own lazy chunk: the bundler splits every `import()` here, so an
+ * interior's data is only fetched when a player steps inside it (never in the shell, never
+ * precached: src/lib/pwa/lazyChunks.ts `venue-interior-data`).
+ */
+const INTERIOR_LOADERS: Readonly<Record<string, () => Promise<{ default: unknown }>>> = {
+  club: () => import('@data/interiors/venues/club.json'),
+  lounge: () => import('@data/interiors/venues/lounge.json'),
+  // S43b: food
+  'food-spot': () => import('@data/interiors/venues/food-spot.json'),
+  coffee: () => import('@data/interiors/venues/coffee.json'),
+  'food-cart': () => import('@data/interiors/venues/food-cart.json'),
+  bodega: () => import('@data/interiors/venues/bodega.json'),
+}
+
+/** Every interior id with a data file. */
+export const VENUE_INTERIOR_IDS: readonly string[] = Object.keys(INTERIOR_LOADERS)
+
+const rawInteriors = new Map<string, Raw>()
+const loading = new Map<string, Promise<void>>()
+
+/**
+ * Fetches interior `id`'s data (once: the same promise until it fails, so React's `use` can wait
+ * on it); rejects on an unknown id or a failed fetch (offline before it was cached).
+ */
+export function loadVenueInterior(id: string): Promise<void> {
+  let pending = loading.get(id)
+  if (pending === undefined) {
+    const loader = INTERIOR_LOADERS[id]
+    pending =
+      loader === undefined
+        ? Promise.reject(new Error(`venue interior data: unknown interior "${id}"`))
+        : loader().then((module) => {
+            rawInteriors.set(id, module.default as Raw)
+          })
+    loading.set(id, pending)
+    // A failed fetch can be retried on the next visit.
+    pending.catch(() => loading.delete(id))
+  }
+  return pending
+}
+
+function rawInterior(id: string): Raw {
+  return rawInteriors.get(id) ?? fail(`interior "${id}" is not loaded (loadVenueInterior first)`)
+}
+
 const cache = new Map<string, VenueInterior>()
 
-/** An interior by id (data/interiors/venues.json); throws on an unknown id (fail fast). */
+/** A loaded interior by id (`loadVenueInterior` first); throws on one not loaded (fail fast). */
 export function venueInterior(id: string): VenueInterior {
   let interior = cache.get(id)
   if (interior === undefined) {
-    const raw = RAW_INTERIORS[id] ?? fail(`unknown interior "${id}"`)
-    interior = load(id, raw)
+    interior = load(id, rawInterior(id))
     cache.set(id, interior)
   }
   return interior
 }
 
-const venueSim = venuesJson.sim
+const venueSim = simJson.sim
 
 /** The room Sim's data with an interior's poses, props, anchors, actions and spots added. */
 export function venueSimData(id: string): SimData {
-  const raw = RAW_INTERIORS[id] ?? fail(`unknown interior "${id}"`)
+  const raw = rawInterior(id)
   const poses = new Map<string, SimPose>(simData.poses)
   for (const [pose, entry] of Object.entries(venueSim.poses)) {
     poses.set(pose, {
@@ -645,37 +696,61 @@ export function venueBudget(tier: QualityTier): VenueBudget {
 export const occupantReserve: { readonly drawCalls: number; readonly triangles: number } =
   interiorsConfigJson.caps.occupantReserve
 
-/** The locals' config for a tier (data/config/interiors.json `crowd`). */
-export function crowdConfig(tier: QualityTier) {
+export type CrowdClip = 'idle' | 'talk' | 'wave' | 'walk' | 'sit' | 'interact' | 'run'
+const CROWD_CLIPS: readonly string[] = ['idle', 'talk', 'wave', 'walk', 'sit', 'interact', 'run']
+
+/** A pose's movement over its loop: the dance's groove, a rep's bob, a boxer's bounce. */
+export interface CrowdMove {
+  readonly bobM: number
+  readonly swayRad: number
+  /** Bobs per beat. */
+  readonly perBeat: number
+}
+
+/**
+ * The locals' config for a tier in interior `id` (data/config/interiors.json `crowd`): the poses
+ * drawn are the interior's first poses (`crowd.poses`) whose clips fit the tier's `clipsMax`.
+ */
+export function crowdConfig(tier: QualityTier, id: string) {
   const crowd = interiorsConfigJson.crowd
   const clips = crowd.clips as Readonly<Record<string, string | undefined>>
-  const poses = crowd.poses[tier]
-  for (const pose of poses) {
+  const clipOf = (pose: string): CrowdClip => {
     const clip = clips[pose]
-    if (
-      clip !== 'idle' &&
-      clip !== 'talk' &&
-      clip !== 'wave' &&
-      clip !== 'walk' &&
-      clip !== 'sit'
-    ) {
-      fail(`crowd.clips.${pose}`)
+    return clip !== undefined && CROWD_CLIPS.includes(clip)
+      ? (clip as CrowdClip)
+      : fail(`crowd.clips.${pose}`)
+  }
+  const baked = new Set<CrowdClip>()
+  const poses = new Set<string>()
+  for (const pose of rawInterior(id).crowd.poses) {
+    const clip = clipOf(pose)
+    if (!baked.has(clip)) {
+      if (baked.size >= crowd.clipsMax[tier]) continue
+      baked.add(clip)
     }
+    poses.add(pose)
   }
   const bodies = crowd.bodies[tier]
   if (bodies !== 1 && bodies !== 2) fail(`crowd.bodies.${tier}`)
+  const moves = new Map<string, CrowdMove>([
+    ['dance', { bobM: crowd.groove.bobM, swayRad: crowd.groove.swayDeg * DEG, perBeat: 1 }],
+  ])
+  for (const [pose, move] of Object.entries(crowd.moves)) {
+    moves.set(pose, { bobM: move.bobM, swayRad: move.swayDeg * DEG, perBeat: move.perBeat })
+  }
   return {
     max: crowd.max[tier],
     bodies,
-    poses: new Set(poses),
-    clipOf: (pose: string) =>
-      (clips[pose] ?? fail(`crowd.clips.${pose}`)) as 'idle' | 'talk' | 'wave' | 'walk' | 'sit',
+    poses,
+    /** The clips the tier bakes for this interior. */
+    clips: [...baked],
+    clipOf,
     frames: crowd.frames[tier],
     heightM: crowd.heightM,
     sit: crowd.sit,
     jitterM: crowd.jitterM,
     headingJitterRad: crowd.headingJitterDeg * DEG,
-    groove: { ...crowd.groove, swayRad: crowd.groove.swayDeg * DEG },
+    moves,
     palette: crowd.palette as CrowdPalette,
   }
 }

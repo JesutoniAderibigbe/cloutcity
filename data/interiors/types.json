@@ -1,6 +1,11 @@
 {
   "byVenueType": {
     "club": "club",
-    "lounge": "lounge"
-  }
+    "lounge": "lounge",
+    "food-spot": "food-spot",
+    "coffee-shop": "coffee",
+    "food-cart": "food-cart",
+    "bodega": "bodega"
+  },
+  "byVenue": {}
 }
