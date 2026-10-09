@@ -1,0 +1,20 @@
+{
+  "strings": {
+    "players.online": "{count} online",
+    "players.onlineLabel": "{count} players online right now",
+    "players.find": "Players here",
+    "players.none": "No players in view right now. Move the map to find some.",
+    "players.next": "Next player",
+    "players.card.label": "{handle}, a real player",
+    "players.card.badge": "Player",
+    "players.card.real": "Real person, playing now",
+    "players.card.level": "Clout: {level}",
+    "players.card.look": "Their look",
+    "players.card.swatch": "{part}: {colour}",
+    "players.card.part.skin": "Skin",
+    "players.card.part.top": "Top",
+    "players.card.part.bottom": "Bottom",
+    "players.card.part.hair": "Hair",
+    "players.card.close": "Close"
+  }
+}

@@ -136,6 +136,8 @@
     "safety.rpc.revisionConflict": "Your save changed somewhere else. Reload to get the latest one.",
     "safety.rpc.versionRegressed": "Your account has a save from a newer version of the game. Reload to update.",
     "safety.rpc.accountRequired": "Save your progress first: this needs an account, not a guest game.",
+    "safety.rpc.guestNotAnnounced": "Guest games watch the city but don't show up on the map. Make an account to be seen.",
+    "safety.rpc.handleRequired": "Pick a username first: other players see you by it.",
     "safety.rpc.unknown": "That didn't go through. Check your connection and try again."
   }
 }

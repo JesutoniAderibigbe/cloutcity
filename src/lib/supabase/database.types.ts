@@ -440,6 +440,18 @@ isOneToOne: true
 "mute_player":
 { Args: { "p_target": string }; Returns: undefined
                            },
+"presence_beat":
+{ Args: { "p_borough": string,"p_place": string,"p_spot": string }; Returns: undefined
+                           },
+"presence_leave":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"presence_public_snapshot":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"presence_snapshot":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "quarantine_save":
 { Args: { "p_base_revision": number,"p_data": Json,"p_device_id": string,"p_findings": (string)[],"p_max_per_minute": number,"p_quarantine_keep": number,"p_save_version": number,"p_user_id": string }; Returns: undefined
                            },

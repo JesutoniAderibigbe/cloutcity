@@ -667,6 +667,47 @@ export const RealtimeConfigSchema = z.strictObject({
   emoteRateLimit: RateLimitSchema,
   /** Cost guard for S35's load simulation. */
   budgetMsgsPerPlayerMinute: positive,
+  /**
+   * Real players on the map (S42 phase 1). The database keeps its own copy of the server-side
+   * values, private.presence_settings (tests/integration/presence.test.ts checks they match).
+   */
+  presence: z.strictObject({
+    /** A signed-in player's heartbeat, and the soonest a spot change is announced again. */
+    beatIntervalMs: positiveInt,
+    /** How often a viewer reads who is online while the page is visible. */
+    snapshotIntervalMs: positiveInt,
+    /** The longest wait between retries after failures. */
+    backoffMaxMs: positiveInt,
+    /** Failed snapshots in a row before the online count is hidden. */
+    hideAfterFailures: positiveInt,
+    /** A player is online while their last heartbeat is younger than this (server). */
+    onlineTtlS: z.int().min(30).max(600),
+    /** Rows one snapshot answers with at most (server). */
+    snapshotMax: z.int().min(1).max(200),
+    /** Anonymous figures the signed-out view gets at most (server). */
+    publicSnapshotMax: z.int().min(0).max(200),
+    /** How long the signed-out view is cached (the /api/presence route). */
+    publicCacheS: positiveInt,
+    /** Rate limits per player (server). */
+    beatsPerMinute: positiveInt,
+    snapshotsPerMinute: positiveInt,
+    /**
+     * How real players stand on the map: in rings around their place pin (radii in multiples of
+     * the drawn height), each over a flat ring in a theme colour so they never read as locals
+     * (UX-3). How many are drawn per tier is perf.json `otherPlayersMax`.
+     */
+    map: z.strictObject({
+      ringStartOfHeight: positive,
+      ringStepOfHeight: positive,
+      perRing: positiveInt,
+      /** A data/config/theme.json `colors` token. */
+      ringColorToken: z.string().min(1),
+      ringInnerOfHeight: positive,
+      ringOuterOfHeight: positive,
+      /** The townsfolk pose players stand in (ambient.json `townsfolk.poses`, every tier). */
+      pose: z.enum(['idle', 'talk', 'wave']),
+    }),
+  }),
 })
 export type RealtimeConfig = z.infer<typeof RealtimeConfigSchema>
 

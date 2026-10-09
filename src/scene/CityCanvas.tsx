@@ -25,6 +25,7 @@ import { addAfterEffect, Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap } from 'three'
 import { joinSkyColors } from '@/lib/dayNight/joinSky'
 import { PLAYABLE_MARK, perfMark } from '@/lib/perfMarks'
+import { supabaseEnv } from '@/lib/supabase/env'
 import { usePlayerHome } from '@/state/playerHome'
 import { useSceneFocus } from '@/state/sceneFocus'
 import { usePlayerSpot } from '@/state/trip'
@@ -58,6 +59,8 @@ const PinMarks = lazy(() => import('./pins/PinMarks'))
 // The map style chip (S04m): after the city is playable, never on its path.
 const MapStyleChip = lazy(() => import('./style/MapStyleChip'))
 const TownsfolkCard = lazy(() => import('./townsfolk/TownsfolkCard'))
+// Real players (S42): the online count, name tags and player card, after the city is playable.
+const PlayersOverlay = lazy(() => import('./players/PlayersOverlay'))
 // The trip animation (S08) is never needed before the player picks a trip, so it loads after the
 // city is playable (S04k, PERF-6). Until it has loaded a trip cuts to its arrival, as it does
 // while the apartment has the screen (setTravelAnimator).
@@ -69,6 +72,9 @@ const TravelAnimator = lazy(() =>
 const AmbientLife = lazy(() => import('./ambient/AmbientLife'))
 
 perfMark('cc:3d:chunk')
+
+// Without a Supabase configuration (the default e2e build) there are no other players to show.
+const hasPresence = supabaseEnv() !== null
 
 // R3F turns a boolean `shadows` into PCFSoftShadowMap, which three 0.182 deprecates with a
 // console warning (and CLAUDE.md never allows): both values name PCFShadowMap explicitly.
@@ -538,6 +544,11 @@ function CityScene3D({
       {cityReady && !hidden ? (
         <Suspense>
           <TownsfolkCard />
+        </Suspense>
+      ) : null}
+      {cityReady && hasPresence ? (
+        <Suspense>
+          <PlayersOverlay pins={stylePins} hidden={hidden} />
         </Suspense>
       ) : null}
     </div>

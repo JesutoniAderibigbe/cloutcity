@@ -65,6 +65,13 @@ export const OPTIONAL_CHUNK_MARKERS = [
   // A local's card on the map (S04o, src/scene/townsfolk/TownsfolkCard.tsx): after the map is
   // playable, opened by tapping a townsperson.
   { id: 'townsfolk-card', marker: 'cc-feature:townsfolk-card' },
+  // Real players (S42, src/scene/players/PlayersOverlay.tsx): the online count, name tags and
+  // player card, after the map is playable, only in a build with Supabase configured.
+  { id: 'players', marker: 'cc-feature:players' },
+  // Their 3D figures (src/scene/players/layer.ts), loaded by the living city once someone is on.
+  { id: 'players-layer', marker: 'cc-feature:players-layer' },
+  // The presence transport and loop (src/realtime/), which the bundler may split from both.
+  { id: 'presence', marker: 'presence_snapshot' },
   // The map style chip (S04m, src/scene/style/MapStyleChip.tsx): after the map is playable; the
   // same choice lives in Phone → Settings.
   { id: 'map-style', marker: 'cc-feature:map-style' },
