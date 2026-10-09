@@ -12,9 +12,19 @@
     "thrift": "thrift",
     "gym": "gym",
     "park": "park",
-    "studio": "studio"
+    "studio": "studio",
+    "job-site": "job-site",
+    "mall": "mall",
+    "bank": "bank",
+    "pharmacy": "pharmacy",
+    "laundromat": "laundromat",
+    "community-center": "community",
+    "subway-station": "station"
   },
   "byVenue": {
-    "southpaw-social": "boxing"
+    "southpaw-social": "boxing",
+    "pallet-row-warehouse": "warehouse",
+    "wallabout-freight": "warehouse",
+    "northside-dispatch": "depot"
   }
 }

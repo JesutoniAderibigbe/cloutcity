@@ -570,6 +570,16 @@ const INTERIOR_LOADERS: Readonly<Record<string, () => Promise<{ default: unknown
   boxing: () => import('@data/interiors/venues/boxing.json'),
   park: () => import('@data/interiors/venues/park.json'),
   studio: () => import('@data/interiors/venues/studio.json'),
+  // S43b: work and everyday
+  'job-site': () => import('@data/interiors/venues/job-site.json'),
+  warehouse: () => import('@data/interiors/venues/warehouse.json'),
+  depot: () => import('@data/interiors/venues/depot.json'),
+  mall: () => import('@data/interiors/venues/mall.json'),
+  bank: () => import('@data/interiors/venues/bank.json'),
+  pharmacy: () => import('@data/interiors/venues/pharmacy.json'),
+  laundromat: () => import('@data/interiors/venues/laundromat.json'),
+  community: () => import('@data/interiors/venues/community.json'),
+  station: () => import('@data/interiors/venues/station.json'),
 }
 
 /** Every interior id with a data file. */

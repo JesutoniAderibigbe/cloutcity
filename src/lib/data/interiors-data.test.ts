@@ -113,6 +113,12 @@ describe('data/interiors/types.json (S43)', () => {
     expect(types.byVenueType.club).toBe('club')
     expect(types.byVenueType.lounge).toBe('lounge')
   })
+
+  it('opens an inside view at every venue in the data (S43b)', () => {
+    for (const venue of venues) {
+      expect(types.byVenue[venue.id] ?? types.byVenueType[venue.type], venue.id).toBeDefined()
+    }
+  })
 })
 
 describe('data/interiors/venues (S43)', () => {

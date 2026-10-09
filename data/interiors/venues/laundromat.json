@@ -1,0 +1,279 @@
+{
+  "grid": { "cols": 11, "rows": 8, "cellM": 1 },
+  "heightM": 3.2,
+  "openings": [
+    { "kind": "door", "wall": "right", "at": 6, "span": 1, "sillM": 0, "heightM": 2.3 },
+    { "kind": "window", "wall": "right", "at": 2, "span": 3, "sillM": 0.9, "heightM": 1.5 }
+  ],
+  "camera": { "position": [1.4, 7.4, 9.4], "target": [0, 0.5, -0.3], "fovDeg": 40 },
+  "entry": { "slot": "f10-6", "rotationDeg": -80 },
+  "shell": {
+    "wallPaint": "mint-fresh",
+    "floorFinish": "black-white-checker",
+    "crown": false,
+    "accentBack": null
+  },
+  "backdrop": { "kind": "room", "tint": null },
+  "mood": {
+    "music": "laundry-lofi",
+    "bpm": 76,
+    "tint": "sky-400",
+    "openMix": 0.1,
+    "openAmbientScale": 1.05,
+    "openSunScale": 1,
+    "closedAmbientScale": 0.85
+  },
+  "decor": [
+    {
+      "id": "laundry-plant",
+      "item": "starter-plant",
+      "slot": "f10-7",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "orange-400"
+    }
+  ],
+  "fixtures": [],
+  "kinds": {
+    "washer": {
+      "parts": [
+        { "shape": "box", "size": [0.82, 0.95, 0.72], "at": [0, 0.48, 0], "token": "white-50" },
+        { "shape": "box", "size": [0.82, 0.12, 0.2], "at": [0, 0.98, -0.25], "token": "mist-300" },
+        { "shape": "box", "size": [0.5, 0.5, 0.03], "at": [0, 0.5, 0.36], "token": "steel-400" },
+        {
+          "shape": "box",
+          "size": [0.4, 0.4, 0.02],
+          "at": [0, 0.5, 0.38],
+          "token": "sky-400",
+          "glow": "beat",
+          "tokens": ["sky-400", "lagoon-400", "mist-100", "cobalt-400"]
+        },
+        {
+          "shape": "box",
+          "size": [0.12, 0.05, 0.02],
+          "at": [0.24, 0.98, -0.14],
+          "token": "tomato-400",
+          "glow": "steady"
+        }
+      ],
+      "anchors": [
+        { "pose": "use", "at": [0, 0, 0.75], "headingDeg": 180, "approach": [[0, 0, 0.8]] }
+      ]
+    },
+    "plastic-chair": {
+      "parts": [
+        { "shape": "box", "size": [0.44, 0.06, 0.42], "at": [0, 0.45, 0], "token": "taxi-400" },
+        { "shape": "box", "size": [0.44, 0.46, 0.05], "at": [0, 0.71, -0.19], "token": "taxi-400" },
+        {
+          "shape": "box",
+          "size": [0.04, 0.45, 0.04],
+          "at": [-0.19, 0.225, 0.17],
+          "token": "silver-300",
+          "repeat": { "count": 2, "step": [0.38, 0, 0] },
+          "rows": { "count": 2, "step": [0, 0, -0.34] }
+        }
+      ],
+      "anchors": [
+        {
+          "pose": "sit",
+          "at": [0, 0.45, 0.02],
+          "headingDeg": 0,
+          "approach": [
+            [0.72, 0, 0.05],
+            [-0.72, 0, 0.05],
+            [0, 0, 0.72]
+          ]
+        }
+      ]
+    }
+  },
+  "pieces": [
+    { "kind": "washer", "slot": "f1-0", "turn": 0, "offset": [0, 0, -0.1] },
+    { "kind": "washer", "slot": "f2-0", "turn": 0, "offset": [0, 0, -0.1] },
+    { "kind": "washer", "slot": "f3-0", "turn": 0, "offset": [0, 0, -0.1] },
+    { "kind": "washer", "slot": "f4-0", "turn": 0, "offset": [0, 0, -0.1] },
+    { "kind": "washer", "slot": "f5-0", "turn": 0, "offset": [0, 0, -0.1] },
+    { "kind": "washer", "slot": "f6-0", "turn": 0, "offset": [0, 0, -0.1] },
+    { "kind": "washer", "slot": "f7-0", "turn": 0, "offset": [0, 0, -0.1] },
+    { "kind": "washer", "slot": "f8-0", "turn": 0, "offset": [0, 0, -0.1] },
+    { "kind": "plastic-chair", "slot": "f4-7", "turn": 2, "offset": [0, 0, 0.1] },
+    { "kind": "plastic-chair", "slot": "f5-7", "turn": 2, "offset": [0, 0, 0.1] },
+    { "kind": "plastic-chair", "slot": "f6-7", "turn": 2, "offset": [0, 0, 0.1] },
+    { "kind": "plastic-chair", "slot": "f7-7", "turn": 2, "offset": [0, 0, 0.1] }
+  ],
+  "build": [
+    { "shape": "box", "size": [0.8, 2.3, 4.6], "at": [-5.1, 1.15, -0.6], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.03, 0.55, 0.55],
+      "at": [-4.69, 0.6, -2.4],
+      "token": "steel-400",
+      "repeat": { "count": 5, "step": [0, 0, 0.9] },
+      "rows": { "count": 2, "step": [0, 1.05, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.02, 0.45, 0.45],
+      "at": [-4.67, 0.6, -2.4],
+      "token": "amber-400",
+      "glow": "beat",
+      "repeat": { "count": 5, "step": [0, 0, 0.9] },
+      "rows": { "count": 2, "step": [0, 1.05, 0] },
+      "tokens": ["amber-400", "orange-400", "mustard-300"]
+    },
+    { "shape": "box", "size": [3, 0.06, 1], "at": [0.4, 0.9, -0.6], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.08, 0.88, 0.08],
+      "at": [-1, 0.44, -1],
+      "token": "steel-400",
+      "repeat": { "count": 2, "step": [2.8, 0, 0] },
+      "rows": { "count": 2, "step": [0, 0, 0.8] }
+    },
+    {
+      "shape": "box",
+      "size": [0.4, 0.12, 0.32],
+      "at": [-0.6, 0.99, -0.75],
+      "token": "sky-400",
+      "repeat": { "count": 4, "step": [0.6, 0, 0] },
+      "tokens": ["sky-400", "bubblegum-300", "white-50", "mustard-300"]
+    },
+    {
+      "shape": "box",
+      "size": [0.4, 0.1, 0.32],
+      "at": [-0.6, 1.1, -0.75],
+      "token": "white-50",
+      "repeat": { "count": 3, "step": [0.6, 0, 0] },
+      "tokens": ["white-50", "denim-500", "tomato-400"]
+    },
+    { "shape": "box", "size": [0.6, 0.5, 0.45], "at": [-2.4, 0.6, 1.4], "token": "steel-400" },
+    { "shape": "box", "size": [0.62, 0.03, 0.47], "at": [-2.4, 0.86, 1.4], "token": "silver-300" },
+    { "shape": "box", "size": [0.5, 0.2, 0.36], "at": [-2.4, 0.95, 1.4], "token": "bubblegum-300" },
+    {
+      "shape": "box",
+      "size": [0.04, 0.85, 0.04],
+      "at": [-2.65, 0.43, 1.2],
+      "token": "silver-300",
+      "repeat": { "count": 2, "step": [0.5, 0, 0] },
+      "rows": { "count": 2, "step": [0, 0, 0.4] }
+    },
+    { "shape": "box", "size": [0.8, 1.8, 0.6], "at": [5.05, 0.9, -3.6], "token": "cobalt-400" },
+    {
+      "shape": "box",
+      "size": [0.6, 0.6, 0.02],
+      "at": [5.05, 1.25, -3.29],
+      "token": "dawn-100",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [0.12, 0.2, 0.1],
+      "at": [4.88, 1.25, -3.32],
+      "token": "bubblegum-300",
+      "repeat": { "count": 3, "step": [0.17, 0, 0] },
+      "rows": { "count": 2, "step": [0, 0.24, 0] },
+      "tokens": ["bubblegum-300", "mint-400", "taxi-400"]
+    },
+    { "shape": "box", "size": [0.06, 0.7, 1.2], "at": [-4.66, 2.7, 2.6], "token": "coal-900" },
+    {
+      "shape": "box",
+      "size": [0.02, 0.6, 1.1],
+      "at": [-4.62, 2.7, 2.6],
+      "token": "sky-400",
+      "glow": "steady"
+    }
+  ],
+  "blocked": [
+    "f0-0",
+    "f0-1",
+    "f0-2",
+    "f0-3",
+    "f0-4",
+    "f0-5",
+    "f4-3",
+    "f5-3",
+    "f6-3",
+    "f10-0",
+    "f2-5"
+  ],
+  "danceFloor": null,
+  "partyLights": null,
+  "stringLights": null,
+  "skyline": null,
+  "simSpots": [
+    { "pose": "browse", "slot": "f8-4", "rotationDeg": 180, "heightM": 0 },
+    { "pose": "flex", "slot": "f3-5", "rotationDeg": 0, "heightM": 0 }
+  ],
+  "actions": {
+    "laundry": [
+      {
+        "poses": ["use"],
+        "models": ["washer"],
+        "holdMs": 3200,
+        "prop": "laundry",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.laundry"
+      },
+      { "poses": ["sit", "browse"], "models": ["plastic-chair"], "holdMs": 4500 }
+    ],
+    "flex": [
+      {
+        "poses": ["flex"],
+        "models": [],
+        "holdMs": 3500,
+        "prop": "phone",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.flex"
+      }
+    ]
+  },
+  "crowd": {
+    "poses": ["work", "sit", "idle", "talk"],
+    "spots": [
+      {
+        "activity": "attendant",
+        "pose": "work",
+        "at": [0.4, 0],
+        "headingDeg": 180,
+        "rank": 0,
+        "staff": true
+      },
+      { "activity": "washers", "pose": "work", "at": [-3, -2.65], "headingDeg": 180, "rank": 1 },
+      { "activity": "washers", "pose": "work", "at": [1, -2.65], "headingDeg": 180, "rank": 2 },
+      { "activity": "dryers", "pose": "work", "at": [-4.05, -1.5], "headingDeg": -90, "rank": 2 },
+      { "activity": "folding", "pose": "work", "at": [1.2, 0], "headingDeg": 180, "rank": 3 },
+      { "activity": "waiting", "pose": "idle", "at": [3.4, 0.8], "headingDeg": 200, "rank": 4 },
+      { "activity": "chat", "pose": "talk", "at": [-1, 2.6], "headingDeg": 120, "rank": 4 },
+      { "activity": "chat", "pose": "talk", "at": [-0.2, 2.9], "headingDeg": -120, "rank": 5 }
+    ],
+    "seats": [{ "activity": "waiting", "kind": "plastic-chair", "rank": 1 }],
+    "hours": [
+      [0, 0.43],
+      [1, 0.41],
+      [2, 0.39],
+      [3, 0.37],
+      [4, 0.34],
+      [5, 0.32],
+      [6, 0.3],
+      [7, 0.43],
+      [8, 0.57],
+      [9, 0.7],
+      [10, 0.85],
+      [11, 1],
+      [12, 0.9],
+      [13, 0.8],
+      [14, 0.7],
+      [15, 0.75],
+      [16, 0.8],
+      [17, 0.85],
+      [18, 0.9],
+      [19, 0.77],
+      [20, 0.63],
+      [21, 0.5],
+      [22, 0.48],
+      [23, 0.46]
+    ],
+    "busyDays": [6, 7],
+    "quietShare": 0.8
+  }
+}
