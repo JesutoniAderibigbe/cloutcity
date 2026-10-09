@@ -16,6 +16,7 @@ import { effectiveLook } from '@/engine/avatarLook'
 import { engineConfig } from '@/engine/config'
 import { creatorConfig } from '@/engine/creatorConfig'
 import { AvatarModel, type AssembledAvatar, type AvatarStatus } from '../models/AvatarModel'
+import type { ModelRef } from '../models/types'
 import { resolveLook, type ResolvedLook } from './resolveLook'
 import type { AvatarSceneRefs } from './types'
 
@@ -40,6 +41,7 @@ export function LookAvatar({
   onStatus,
   onAssembled,
   onResolved,
+  extraClipsFor,
 }: {
   readonly avatar: PublicAvatar
   readonly clip: string
@@ -54,12 +56,15 @@ export function LookAvatar({
   readonly fadeS?: number
   /** What the look resolved to (the test hooks read it). */
   readonly onResolved?: (resolved: ResolvedLook) => void
+  /** More clips for the look's frame rig (the dance moves inside a venue, S16c). */
+  readonly extraClipsFor?: (frameRig: string) => ModelRef | null
 }) {
   const key = JSON.stringify(avatar)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const resolved = useMemo(() => resolveAvatar(avatar), [key])
   useEffect(() => onResolved?.(resolved), [resolved, onResolved])
   const scale = fitHeight ? resolved.scale / resolved.heightM : resolved.scale
+  const extraClips = extraClipsFor?.(resolved.parts.rig.id) ?? undefined
   return (
     <AvatarModel
       parts={resolved.parts}
@@ -72,6 +77,7 @@ export function LookAvatar({
       {...(fadeS === undefined ? {} : { fadeS })}
       {...(onStatus === undefined ? {} : { onStatus })}
       {...(onAssembled === undefined ? {} : { onAssembled })}
+      {...(extraClips === undefined ? {} : { extraClips })}
     />
   )
 }

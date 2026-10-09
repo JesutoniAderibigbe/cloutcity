@@ -34,6 +34,7 @@ import { ModelsProvider } from '../../models/runtime'
 import type { AssembledAvatar } from '../../models/AvatarModel'
 import { LookAvatar } from '../../avatar/LookAvatar'
 import type { ResolvedLook } from '../../avatar/resolveLook'
+import type { ModelRef } from '../../models/types'
 import { attachTapDetector } from '../../pins/tap'
 import { createToonRamp } from '../../toonRamp'
 import { modelsConfig } from '../modelsConfig'
@@ -47,15 +48,27 @@ import type { SimWorld } from './simWorld'
 const MAX_STEP_S = 0.1
 
 /**
- * A procedural groove over a held clip (the venue's dance, S43): while the Sim plays `clip`
- * standing up, it bobs `bobM` and sways `swayDeg` either way on the beat. The rigs have no dance
- * clip; this is what makes a hands-up loop read as dancing.
+ * The venue's dance (S43, S16c): while the Sim holds `clip` standing up, it dances the `moves`
+ * (fetched for the look's frame rig), a new move every `barsPerMove` bars, played at the venue's
+ * `bpm`. Until the moves load (or if they cannot), it bobs `bobM` and sways `swayDeg` either way
+ * on the beat over `clip` instead.
  */
 export interface SimGroove {
   readonly clip: string
   readonly bpm: number
   readonly bobM: number
   readonly swayDeg: number
+  readonly moves?: SimMoves | null
+}
+
+export interface SimMoves {
+  /** Clip names, danced in turn. */
+  readonly clips: readonly string[]
+  /** The tempo the clips are keyed at. */
+  readonly bpm: number
+  readonly barsPerMove: number
+  /** The rig holding the moves for a body frame's rig. */
+  readonly rigFor: (frameRig: string) => ModelRef | null
 }
 
 function deviceMemoryGB(): number | undefined {
@@ -203,6 +216,8 @@ export function SimAvatar({
   const bubbleRef = useRef<HTMLDivElement | null>(null)
   const wake = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timeRef = useRef(0)
+  // The clips the avatar can play: the moves count once they are among them.
+  const clipNamesRef = useRef<ReadonlySet<string>>(new Set())
 
   // A new scope starts at its start; furniture moved keeps the Sim where it is unless it now
   // stands inside something.
@@ -290,6 +305,7 @@ export function SimAvatar({
   }
   const onAssembled = (avatar: AssembledAvatar | null, clips: readonly AnimationClip[]) => {
     avatarRef.current = avatar
+    clipNamesRef.current = new Set(clips.map((candidate) => candidate.name))
     const walk = clips.find((candidate) => candidate.name === 'walk')
     if (walk !== undefined) controller.setWalkClip(walk.duration)
     invalidate()
@@ -300,30 +316,55 @@ export function SimAvatar({
     timeRef.current += delta
     const grooving =
       groove !== null && !reduced && frame.clip === groove.clip && frame.body.tilt === 0
+    const beat = grooving ? groove : null
+    const moves = beat?.moves ?? null
+    let move: string | null = null
+    if (
+      beat !== null &&
+      moves !== null &&
+      moves.clips.every((name) => clipNamesRef.current.has(name))
+    ) {
+      const barS = (4 * 60) / beat.bpm
+      const turn = Math.floor(timeRef.current / (barS * moves.barsPerMove))
+      move = moves.clips[turn % moves.clips.length] ?? null
+    }
+    const shown = move ?? frame.clip
     const group = placeRef.current
     if (group !== null) {
       const { body } = frame
       let lift = 0
       let sway = 0
-      if (grooving) {
-        const beat = (timeRef.current * groove.bpm) / 60
-        lift = Math.abs(Math.sin(beat * Math.PI)) * groove.bobM
-        sway = Math.sin(beat * Math.PI * 0.5) * ((groove.swayDeg * Math.PI) / 180)
+      if (beat !== null && move === null) {
+        const beats = (timeRef.current * beat.bpm) / 60
+        lift = Math.abs(Math.sin(beats * Math.PI)) * beat.bobM
+        sway = Math.sin(beats * Math.PI * 0.5) * ((beat.swayDeg * Math.PI) / 180)
       }
       group.position.set(body.x, body.y + lift, body.z)
       group.rotation.set(body.tilt, body.yaw + sway, 0, 'YXZ')
       // Read by the test hooks (what the Sim is doing, without timing guesses).
-      group.userData.sim = { clip: frame.clip, prop: frame.prop?.id ?? null, bubble: frame.bubble }
+      group.userData.sim = {
+        clip: frame.clip,
+        prop: frame.prop?.id ?? null,
+        bubble: frame.bubble,
+        move,
+      }
     }
     const avatar = avatarRef.current
-    if (avatar !== null) avatar.mixer.timeScale = frame.timeScale
-    if (frame.clip !== clipRef.current) {
-      clipRef.current = frame.clip
-      setClip(frame.clip)
+    if (avatar !== null) {
+      // A move plays at the venue's beat, whatever tempo it was keyed at.
+      avatar.mixer.timeScale =
+        move !== null && beat !== null && moves !== null
+          ? (frame.timeScale * beat.bpm) / moves.bpm
+          : frame.timeScale
     }
-    if (frame.active !== animateRef.current) {
-      animateRef.current = frame.active
-      setAnimate(frame.active)
+    if (shown !== clipRef.current) {
+      clipRef.current = shown
+      setClip(shown)
+    }
+    const playing = frame.active || move !== null
+    if (playing !== animateRef.current) {
+      animateRef.current = playing
+      setAnimate(playing)
     }
     placeProps(props, frame)
     const { camera, size } = get()
@@ -359,6 +400,7 @@ export function SimAvatar({
             shadows={tier === 'high'}
             onResolved={onResolved}
             onAssembled={onAssembled}
+            {...(groove?.moves == null ? {} : { extraClipsFor: groove.moves.rigFor })}
           />
         </group>
       </group>

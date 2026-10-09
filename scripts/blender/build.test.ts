@@ -35,7 +35,10 @@ describe('blender:build', () => {
     expect(lock.outDir).toBe('scripts/blender/out')
     const vehicles = new Set(['bus-ambient'])
     const attachments = lock.models.filter(
-      (model) => !model.id.startsWith('avatar-clips-') && !vehicles.has(model.id),
+      (model) =>
+        !model.id.startsWith('avatar-clips-') &&
+        !model.id.startsWith('avatar-dance-') &&
+        !vehicles.has(model.id),
     )
     expect(attachments.map((model) => model.id)).toEqual([
       'hair-afro',
@@ -84,6 +87,25 @@ describe('blender:build', () => {
       }
       expect(modelInputs(clip)).toEqual([
         'data/avatar/frame.json',
+        'scripts/blender/avatar-anim/retarget.py',
+        'scripts/blender/run.py',
+      ])
+    }
+    // S16c: the dance moves, keyed by dance.py and retargeted by retarget.py (a dep, so a change
+    // to the retarget rebuilds them).
+    const dances = lock.models.filter((model) => model.id.startsWith('avatar-dance-'))
+    expect(dances.map((model) => [model.id, model.args])).toEqual([
+      ['avatar-dance-f', ['frame=f']],
+      ['avatar-dance-m', ['frame=m']],
+    ])
+    for (const dance of dances) {
+      expect(dance.script).toBe('scripts/blender/avatar-anim/dance.py')
+      for (const source of dance.sources ?? []) {
+        expect(source.sha256).toBe(pins.get(`${source.source}/${source.path}`))
+      }
+      expect(modelInputs(dance)).toEqual([
+        'data/avatar/frame.json',
+        'scripts/blender/avatar-anim/dance.py',
         'scripts/blender/avatar-anim/retarget.py',
         'scripts/blender/run.py',
       ])

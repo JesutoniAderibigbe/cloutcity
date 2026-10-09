@@ -270,9 +270,12 @@ export const s16bPedestrians: ScenePedestrianKitSource = async (tier, loadModels
   return kits
 }
 
-/** A townsfolk kit (S04q): one body in one pose, as a loop of baked frames. */
-export interface AnimatedKit extends ScenePedestrianKit {
-  readonly pose: TownsfolkPose
+/**
+ * A townsfolk kit (S04q): one body in one pose, as a loop of baked frames. The venue locals bake
+ * other clips the same way (the dance moves, S16c), hence the clip-name parameter.
+ */
+export interface AnimatedKit<P extends string = TownsfolkPose> extends ScenePedestrianKit {
+  readonly pose: P
   /** One loop of the clip, seconds. */
   readonly durationS: number
   /** frames[f][p]: part p's positions at frame f (frame 0 is what `parts` hold at first). */
@@ -290,13 +293,13 @@ const breathe = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
  * per-frame offset would make the walk hop). Every frame has the same triangles in the same
  * order, so the runtime swaps positions in place.
  */
-export async function bakeAnimatedKit(
+export async function bakeAnimatedKit<P extends string>(
   id: string,
   rig: RigModel,
   parts: readonly { readonly model: SkinnedPartModel; readonly slots: readonly string[] }[],
-  pose: TownsfolkPose,
+  pose: P,
   frameCount: number,
-): Promise<AnimatedKit> {
+): Promise<AnimatedKit<P>> {
   const clip = rig.clips.find((candidate) => candidate.name === pose)
   if (clip === undefined) throw new Error(`rig has no clip "${pose}"`)
   const posed = parts.map((part) => posable(part.model, part.slots, rig, pose))

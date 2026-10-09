@@ -58,6 +58,11 @@ PYTHONHASHSEED=0 PYTHONDONTWRITEBYTECODE=1 blender -b --factory-startup -noaudio
 - `avatar-anim/retarget.py` (S16b P2b): bakes the UAL `Idle_Talking_Loop` and
   `Sitting_Idle_Loop` onto `avatar-rig-f` and `avatar-rig-m` as `talk` and `sit` (rest-pose
   correction, forward kinematics, the asset build's joint names) and writes the GLB itself.
+- `avatar-anim/dance.py` (S16c): the dance moves `dance-groove` (the UAL `Dance_Loop`),
+  `dance-party` and `dance-bounce` (keyframed on the beat at 120 BPM on the UAL skeleton: FK
+  turns for the spine, arms and head, two-bone IK keeping the feet planted), retargeted onto both
+  frames by retarget.py's machinery (a dep) into `avatar-dance-f` and `avatar-dance-m`, which the
+  asset build ships as their own small rigs that only the venue interiors fetch.
 - These belong to `npm run blender:build` (`build.ts`, `run.py`, `lock.json`, outputs in `out/`),
   not to the landmark build: the lock pins only `run.py`, the script and its `deps`/`sources`, so
   each avatar script carries its own copy of the shared helpers, and they never import `cclib`.

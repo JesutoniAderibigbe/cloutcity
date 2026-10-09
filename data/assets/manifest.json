@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "assetVersion": "e32255af2964d7d8",
+  "assetVersion": "3df4384e54f60164",
   "models": [
     {
       "id": "taxi",
@@ -3385,6 +3385,74 @@
           "sha256": "992618a549cdef9117d59b6c4d87fe0db165138729f9425c6ee50b69ff4f903a",
           "bytes": 82108,
           "gzBytes": 22514,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "avatar-dance-f",
+      "kind": "rig",
+      "category": "avatar-rig",
+      "loadPhase": "apartment",
+      "instanced": false,
+      "nameKey": "models.name.avatarDanceF",
+      "slots": [],
+      "emissive": false,
+      "clips": ["dance-groove", "dance-party", "dance-bounce"],
+      "tiers": {
+        "low": {
+          "file": "/models/avatar-dance-f.high.6cb25484.glb",
+          "sha256": "6cb25484271f0ca21fbde0a503d5b12b95e0a0d31d6d8b64e7ac3ec68dd0aef1",
+          "bytes": 49968,
+          "gzBytes": 24754,
+          "triangles": 0
+        },
+        "mid": {
+          "file": "/models/avatar-dance-f.high.6cb25484.glb",
+          "sha256": "6cb25484271f0ca21fbde0a503d5b12b95e0a0d31d6d8b64e7ac3ec68dd0aef1",
+          "bytes": 49968,
+          "gzBytes": 24754,
+          "triangles": 0
+        },
+        "high": {
+          "file": "/models/avatar-dance-f.high.6cb25484.glb",
+          "sha256": "6cb25484271f0ca21fbde0a503d5b12b95e0a0d31d6d8b64e7ac3ec68dd0aef1",
+          "bytes": 49968,
+          "gzBytes": 24754,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "avatar-dance-m",
+      "kind": "rig",
+      "category": "avatar-rig",
+      "loadPhase": "apartment",
+      "instanced": false,
+      "nameKey": "models.name.avatarDanceM",
+      "slots": [],
+      "emissive": false,
+      "clips": ["dance-groove", "dance-party", "dance-bounce"],
+      "tiers": {
+        "low": {
+          "file": "/models/avatar-dance-m.high.e5f7d5cb.glb",
+          "sha256": "e5f7d5cbdeb066f6774734df62765946b69096676860fccd9ae5749264de655f",
+          "bytes": 50032,
+          "gzBytes": 25416,
+          "triangles": 0
+        },
+        "mid": {
+          "file": "/models/avatar-dance-m.high.e5f7d5cb.glb",
+          "sha256": "e5f7d5cbdeb066f6774734df62765946b69096676860fccd9ae5749264de655f",
+          "bytes": 50032,
+          "gzBytes": 25416,
+          "triangles": 0
+        },
+        "high": {
+          "file": "/models/avatar-dance-m.high.e5f7d5cb.glb",
+          "sha256": "e5f7d5cbdeb066f6774734df62765946b69096676860fccd9ae5749264de655f",
+          "bytes": 50032,
+          "gzBytes": 25416,
           "triangles": 0
         }
       }

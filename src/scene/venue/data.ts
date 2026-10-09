@@ -676,6 +676,11 @@ export function crowdConfig(tier: QualityTier) {
     jitterM: crowd.jitterM,
     headingJitterRad: crowd.headingJitterDeg * DEG,
     groove: { ...crowd.groove, swayRad: crowd.groove.swayDeg * DEG },
+    dance: {
+      moves: crowd.dance.moves[tier],
+      frames: crowd.dance.frames[tier],
+      swayRad: crowd.dance.swayDeg * DEG,
+    },
     palette: crowd.palette as CrowdPalette,
   }
 }

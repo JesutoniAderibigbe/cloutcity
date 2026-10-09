@@ -34,6 +34,14 @@ describe('data/assets/SOURCES.md', () => {
     for (const excluded of catalog.excluded) expect(committed).toContain(excluded.reason)
   })
 
+  it('names the Blender builds that read a pack (clips retargeted from the UAL)', () => {
+    for (const model of blender.models) {
+      if ((model.sources ?? []).length > 0) {
+        expect(committed).toContain(`\`${model.id}\` (\`${model.script}\`)`)
+      }
+    }
+  })
+
   it('renders deterministically from the same inputs', () => {
     if (lock === undefined) throw new Error('no lock')
     expect(renderSourcesMd(catalog, lock, blender)).toBe(renderSourcesMd(catalog, lock, blender))

@@ -250,6 +250,8 @@ describe('Blender Python lint', () => {
     'mathutils',
     'hashlib',
     'importlib',
+    // runpy: the S16c dance moves run retarget.py (a pinned dep) for its machinery.
+    'runpy',
     'json',
     'math',
     'os',

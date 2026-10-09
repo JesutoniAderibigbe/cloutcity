@@ -194,7 +194,10 @@ describe('data/assets/catalog.json', () => {
     for (const model of avatar.filter((m) => m.source === 'clout-city-blender')) {
       expect(model.fit, model.id).toEqual({ scale: 1 })
       expect(model.pivot, model.id).toBe('source')
-      expect(model.kind === 'static' && model.attach !== undefined, model.id).toBe(true)
+      // An attachment, or the dance moves' rig (S16c: retargeted clips only, no mesh).
+      const attachment = model.kind === 'static' && model.attach !== undefined
+      const moves = model.kind === 'rig' && model.id.startsWith('avatar-dance-')
+      expect(attachment || moves, model.id).toBe(true)
     }
     expect(quaternius.filter((model) => model.category === 'avatar-head')).toHaveLength(2)
     expect(quaternius.filter((model) => model.id.startsWith('outfit-'))).toHaveLength(14)

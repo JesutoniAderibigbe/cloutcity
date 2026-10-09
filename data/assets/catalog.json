@@ -4847,6 +4847,78 @@
       }
     },
     {
+      "id": "avatar-dance-f",
+      "source": "clout-city-blender",
+      "kind": "rig",
+      "entries": [
+        {
+          "path": "avatar-dance-f.glb"
+        }
+      ],
+      "category": "avatar-rig",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [],
+      "clips": ["dance-groove", "dance-party", "dance-bounce"],
+      "loadPhase": "apartment",
+      "instanced": false,
+      "nameKey": "models.name.avatarDanceF"
+    },
+    {
+      "id": "avatar-dance-m",
+      "source": "clout-city-blender",
+      "kind": "rig",
+      "entries": [
+        {
+          "path": "avatar-dance-m.glb"
+        }
+      ],
+      "category": "avatar-rig",
+      "fit": {
+        "scale": 1
+      },
+      "pivot": "source",
+      "tiers": {
+        "low": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "mid": {
+          "ratio": 1,
+          "error": 0.02
+        },
+        "high": {
+          "ratio": 1,
+          "error": 0.02
+        }
+      },
+      "swatches": [],
+      "emissive": [],
+      "slots": [],
+      "clips": ["dance-groove", "dance-party", "dance-bounce"],
+      "loadPhase": "apartment",
+      "instanced": false,
+      "nameKey": "models.name.avatarDanceM"
+    },
+    {
       "id": "npc-woman",
       "source": "quaternius-modular-women",
       "kind": "skinned",

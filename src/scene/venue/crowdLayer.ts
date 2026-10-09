@@ -3,15 +3,17 @@
  * the townsfolk's way (src/scene/ambient/townsfolk.ts), from the same pedestrian kits: each body
  * in each pose is baked into a loop of rigid frames (pedestrianKits.ts `bakeAnimatedKit`), drawn
  * as one colour-bucket InstancedMesh per bucket (skin, top, bottom, accent recoloured per local)
- * on one plain instanced toon material. A tier pays four draw calls per body and pose it shows,
- * and no new shader program. Dancers bob and sway on the beat on top of their loop (the rigs have
- * no dance clip), each from their own phase; sitters sit on the seat they were given.
+ * on one plain instanced toon material. A tier pays four draw calls per body and clip it shows,
+ * and no new shader program. Dancers dance the dance moves (S16c, danceMoves.ts: the tier's first
+ * `crowd.dance.moves` of them, baked like a walk), each local the move their phase picks, at the
+ * venue's beat, every kit's loop offset from the others' so the floor never moves in unison, with
+ * a gentle turn from their own phase. If the moves cannot load, dancers fall back to the `dance`
+ * pose's clip with a bob and sway on the beat. Sitters sit on the seat they were given.
  *
  * Locals are NPCs, never players (UX-3): the merged `npc-*` models, never the player look's parts,
  * no name tag, never picked or counted. Loaded in its own lazy chunk with the bakers, after the
  * interior is up; until then (and for good, if the models fail) the venue is simply empty.
  */
-import manifestJson from '@data/assets/manifest.json'
 import {
   BufferAttribute,
   BufferGeometry,
@@ -27,13 +29,14 @@ import {
   type Object3D,
 } from 'three'
 import type { QualityTier } from '@/lib/data/schemas/config'
+import { log } from '@/lib/log'
 import type { CrowdMember } from '@/lib/world/venueCrowd'
-import type { TownsfolkPose } from '@/lib/world/ambient/types'
 import { flatNormals } from '../ambient/flatNormals'
 import { NPC_VARIANTS } from '../avatar/npc'
 import { bakeAnimatedKit, type AnimatedKit } from '../ambient/pedestrianKits'
+import type { RigModel } from '../models/prepare'
 import { acquireModels } from '../models/runtime'
-import type { ModelRef } from '../models/types'
+import { danceMoves, modelRef } from './danceMoves'
 import type { crowdConfig } from './data'
 
 type CrowdConfig = ReturnType<typeof crowdConfig>
@@ -47,44 +50,43 @@ function fail(what: string): never {
   throw new Error(`venue crowd: ${what}`)
 }
 
-/** A manifest model as a ref the model runtime loads. */
-function refOf(id: string): ModelRef {
-  const entry = manifestJson.models.find((candidate) => candidate.id === id)
-  if (entry === undefined) fail(`no model "${id}" in the manifest`)
-  const kind = entry.kind
-  if (kind !== 'rig' && kind !== 'skinned') fail(`"${id}" is not a rig or skinned model`)
-  return {
-    id: entry.id,
-    kind,
-    category: entry.category as ModelRef['category'],
-    slots: entry.slots,
-    emissive: entry.emissive,
-    clips: entry.clips,
-    files: { low: entry.tiers.low.file, mid: entry.tiers.mid.file, high: entry.tiers.high.file },
-  }
-}
+/** Logged when the dance moves cannot load: the dancers fall back to the `dance` pose's clip. */
+export const DANCE_MOVES_FAILED_MESSAGE = 'venue crowd: the dance moves could not load'
 
 /** One body's loop of one clip, as baked. */
 export interface CrowdKit {
   readonly body: 0 | 1
-  readonly clip: TownsfolkPose
-  readonly baked: AnimatedKit
+  readonly clip: string
+  /** Index among the tier's dance moves, or null for a pose's clip. */
+  readonly move: number | null
+  readonly baked: AnimatedKit<string>
 }
 
 /** One body in one clip, baked: its bucket meshes share one matrix attribute. */
 interface Kit {
   readonly body: 0 | 1
-  readonly clip: TownsfolkPose
-  readonly baked: AnimatedKit
+  readonly clip: string
+  readonly move: number | null
+  /** Loop seconds per venue second (a move plays at the venue's beat). */
+  readonly rate: number
+  /** Where this kit's loop starts, as a share of the loop (kits never move in unison). */
+  readonly offset: number
+  readonly baked: AnimatedKit<string>
   readonly geometries: readonly BufferGeometry[]
   readonly meshes: readonly { readonly mesh: InstancedMesh; readonly bucket: string }[]
   readonly matrices: InstancedBufferAttribute
   frame: number
 }
 
+/** A frame rig with the dance moves' clips added (the moves bind to the same joints by name). */
+function withMoves(rig: RigModel, moves: RigModel | undefined): RigModel {
+  return moves === undefined ? rig : { kind: 'rig', clips: [...rig.clips, ...moves.clips] }
+}
+
 /**
  * Bakes the tier's kits: each body the tier draws (the man alone on one body) in each clip its
- * poses use. Rejects when a model fails to load (the venue stays empty of locals).
+ * poses use, and in the tier's dance moves. Rejects when a body fails to load (the venue stays
+ * empty of locals); when only the moves fail, the dancers keep the `dance` pose's clip.
  */
 export async function bakeCrowdKits(
   tier: QualityTier,
@@ -99,29 +101,71 @@ export async function bakeCrowdKits(
     return { ...variant, body }
   })
   const ids = [...new Set(variants.flatMap((variant) => [variant.rig, variant.model]))]
-  const refs = ids.map(refOf)
+  const refs = ids.map(modelRef)
+  const dancing = config.poses.has('dance')
+  const dance = danceMoves()
+  const moves = dancing ? dance.moves.slice(0, config.dance.moves) : []
+  const danceRefs = moves.length === 0 ? [] : variants.map((variant) => dance.rigFor(variant.rig))
   const acquired = acquireModels(refs, tier, cacheMaxEntries)
+  const danceAcquired = danceRefs.every((ref) => ref !== null)
+    ? acquireModels(danceRefs, tier, cacheMaxEntries)
+    : null
   try {
-    const loaded = await acquired.models
+    const [loaded, danceLoaded] = await Promise.all([
+      acquired.models,
+      (danceAcquired?.models ?? Promise.reject(new Error('a body has no dance rig'))).catch(
+        (error: unknown) => {
+          if (moves.length > 0) {
+            log.info(DANCE_MOVES_FAILED_MESSAGE, {
+              error: error instanceof Error ? error.message : String(error),
+            })
+          }
+          return null
+        },
+      ),
+    ])
     const byId = new Map(ids.map((id, i) => [id, loaded[i]]))
-    const clips = [...new Set([...config.poses].map((pose) => config.clipOf(pose)))]
+    const moved = danceLoaded !== null
+    // The dance pose's own clip is only baked when the moves are not there to replace it.
+    const clips = [
+      ...new Set(
+        [...config.poses]
+          .filter((pose) => !(moved && pose === 'dance'))
+          .map((pose) => config.clipOf(pose)),
+      ),
+    ]
     const kits: CrowdKit[] = []
     try {
-      for (const variant of variants) {
+      for (const [v, variant] of variants.entries()) {
         const rig = byId.get(variant.rig)
         const model = byId.get(variant.model)
         if (rig?.kind !== 'rig') fail(`"${variant.rig}" is not a rig`)
         if (model?.kind !== 'skinned') fail(`"${variant.model}" is not skinned`)
         const slots = refs.find((ref) => ref.id === variant.model)?.slots ?? []
+        const parts = [{ model, slots }]
         for (const clip of clips) {
           const baked = await bakeAnimatedKit(
             `${variant.model}-${clip}`,
             rig,
-            [{ model, slots }],
+            parts,
             clip,
             config.frames,
           )
-          kits.push({ body: variant.body, clip, baked })
+          kits.push({ body: variant.body, clip, move: null, baked })
+        }
+        const danceRig = danceLoaded?.[v]
+        if (danceRig === undefined) continue
+        if (danceRig.kind !== 'rig') fail('a dance rig is not a rig')
+        const posed = withMoves(rig, danceRig)
+        for (const [move, clip] of (moved ? moves : []).entries()) {
+          const baked = await bakeAnimatedKit(
+            `${variant.model}-${clip}`,
+            posed,
+            parts,
+            clip,
+            config.dance.frames,
+          )
+          kits.push({ body: variant.body, clip, move, baked })
         }
       }
     } catch (error) {
@@ -131,6 +175,7 @@ export async function bakeCrowdKits(
     return kits
   } finally {
     acquired.release()
+    danceAcquired?.release()
   }
 }
 
@@ -160,7 +205,8 @@ export function createCrowdLayer(
   group.name = 'venue-crowd'
   group.raycast = noRaycast
   const size = Math.max(1, capacity)
-  const built: Kit[] = kits.map(({ body, clip, baked }) => {
+  const moveRate = bpm / danceMoves().bpm
+  const built: Kit[] = kits.map(({ body, clip, move, baked }, k) => {
     const matrices = new InstancedBufferAttribute(new Float32Array(size * 16), 16)
     matrices.setUsage(DynamicDrawUsage)
     const geometries = baked.parts.map((part) => {
@@ -195,12 +241,40 @@ export function createCrowdLayer(
       group.add(mesh)
       return { mesh, bucket: part.bucket }
     })
-    return { body, clip, baked, geometries, meshes, matrices, frame: -1 }
+    // Golden-ratio steps spread the kits' loop starts evenly, whatever their number.
+    const offset = (k * 0.618034) % 1
+    return {
+      body,
+      clip,
+      move,
+      rate: move === null ? 1 : moveRate,
+      offset,
+      baked,
+      geometries,
+      meshes,
+      matrices,
+      frame: -1,
+    }
   })
-  const kitFor = (body: 0 | 1, clip: string) =>
-    built.find((kit) => kit.body === body && kit.clip === clip) ??
-    built.find((kit) => kit.clip === clip) ??
-    null
+  const moveCount = new Set(built.flatMap((kit) => (kit.move === null ? [] : [kit.move]))).size
+  /** `dancer`: the member's rank among the dancers, from a start their phase picks. */
+  const kitFor = (member: CrowdMember, dancer: number) => {
+    if (member.pose === 'dance' && moveCount > 0) {
+      // Dancers take the moves in turn, so the floor shows every move the tier bakes.
+      const move = dancer % moveCount
+      return (
+        built.find((kit) => kit.body === member.body && kit.move === move) ??
+        built.find((kit) => kit.move === move) ??
+        null
+      )
+    }
+    const clip = config.clipOf(member.pose)
+    return (
+      built.find((kit) => kit.body === member.body && kit.move === null && kit.clip === clip) ??
+      built.find((kit) => kit.move === null && kit.clip === clip) ??
+      null
+    )
+  }
   // A sitter is scaled as tall as its body stands (the sit loop is shorter than it stands).
   const standHeight = (body: 0 | 1) =>
     built.find((kit) => kit.body === body && kit.clip !== 'sit')?.baked.heightM ??
@@ -224,8 +298,13 @@ export function createCrowdLayer(
       let lift = 0
       if (member.pose === 'dance' && !still) {
         const beat = timeS / beatS + member.phase * 2
-        lift = Math.abs(Math.sin(beat * Math.PI)) * config.groove.bobM
-        yaw += Math.sin(beat * Math.PI * 0.5) * config.groove.swayRad
+        if (kit.move === null) {
+          lift = Math.abs(Math.sin(beat * Math.PI)) * config.groove.bobM
+          yaw += Math.sin(beat * Math.PI * 0.5) * config.groove.swayRad
+        } else {
+          // The move carries the bounce; a slow turn of their own keeps one move's dancers apart.
+          yaw += Math.sin((beat / 8 + member.phase) * Math.PI * 2) * config.dance.swayRad
+        }
       }
       if (kit.clip === 'sit') {
         // The seat lies under the thighs, just behind the loop's origin: put it on the seat.
@@ -248,7 +327,10 @@ export function createCrowdLayer(
 
   const showFrame = (kit: Kit, timeS: number, still: boolean) => {
     const frames = kit.baked.frames
-    const u = still || kit.baked.durationS <= 0 ? 0 : (timeS / kit.baked.durationS) % 1
+    const u =
+      still || kit.baked.durationS <= 0
+        ? 0
+        : ((timeS * kit.rate) / kit.baked.durationS + kit.offset) % 1
     const f = Math.min(frames.length - 1, Math.floor(u * frames.length))
     if (f === kit.frame) return false
     kit.frame = f
@@ -271,8 +353,11 @@ export function createCrowdLayer(
     setMembers(next) {
       const counts = new Map<Kit, number>()
       members = []
+      const first = next.find((member) => member.pose === 'dance')
+      let dancer = first === undefined ? 0 : Math.floor(first.phase * Math.max(1, moveCount))
       for (const member of next) {
-        const kit = kitFor(member.body, config.clipOf(member.pose))
+        const kit = kitFor(member, dancer)
+        if (member.pose === 'dance') dancer += 1
         if (kit === null) continue
         const slot = counts.get(kit) ?? 0
         if (slot >= size) continue
