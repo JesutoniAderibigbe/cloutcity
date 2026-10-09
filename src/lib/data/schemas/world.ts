@@ -419,3 +419,24 @@ export const BoroughsFileSchema = z.strictObject({
   ).length(BOROUGHS.length),
 })
 export type BoroughsFile = z.infer<typeof BoroughsFileSchema>
+
+/**
+ * data/places/game-points.derived.json (S04s): where every place the game map moves stands there
+ * (the places layer's `gx`/`gy`, src/lib/world/placesLayer.ts), in whole local metres. Trips on
+ * both map styles plan to these points (src/lib/world/tripEnds.ts), so travel time, fares and
+ * distances match what the game map draws.
+ */
+export const GamePointsFileSchema = z.strictObject({
+  points: z.record(IdSchema, z.strictObject({ x: z.int(), y: z.int() })),
+})
+export type GamePointsFile = z.infer<typeof GamePointsFileSchema>
+
+/**
+ * data/places/game-gates.derived.json (S04s): the borough that gates each ring landmark the game
+ * map stands in another borough (S07d): it is drawn, and reached, there, so that borough's access
+ * applies instead of its own (src/engine/boroughs.ts `placeGateBorough`).
+ */
+export const GameGatesFileSchema = z.strictObject({
+  gates: z.record(IdSchema, BoroughSchema),
+})
+export type GameGatesFile = z.infer<typeof GameGatesFileSchema>

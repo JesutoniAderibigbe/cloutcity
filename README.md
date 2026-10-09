@@ -50,6 +50,7 @@ files (`.env`, `.env.local`, ...) are gitignored; `.env.example` lists the names
 | `npm run assets:build`            | Rebuilds `public/models` and `data/assets/` from the pinned CC0 packs (see 3D models); `-- --check --offline` verifies                                                                                                       |
 | `npm run blender:build`           | Runs our Blender model scripts headless (Blender 5.2.2) into `scripts/blender/out`; `-- --check` verifies without Blender, `-- --selftest` checks two builds are byte-identical                                              |
 | `npm run homes:update`            | Rewrites `data/homes/engine.derived.json` (the engine's compact home grids and finishes) after editing `data/homes/interiors.json` or `finishes.json`                                                                        |
+| `npm run places:update`           | Rewrites `data/places/game-points.derived.json` and `game-gates.derived.json` (where trips go on the game map, S04s) after changing venues, landmarks, homes, geo or `data/config/compactLayout.json`                        |
 | `npm run thumbs`                  | Renders the shop's item thumbnails from the decor models into `public/thumbs` (see 3D models); `-- --check` verifies                                                                                                         |
 | `npm run econ:update`             | Re-runs the economy bot and rewrites `data/sim/economy-baseline.derived.json` (see Economy simulation)                                                                                                                       |
 
@@ -904,7 +905,17 @@ camera starts over it).
   ballpark, ...) around the start home's cluster at a game scale, so the default view shows them
   beside the venues; the other landmarks stay at their real points. Pins,
   bubbles, plots, clearings, props, pedestrians, camera focus and trip animations use those
-  points; travel time, fares and distances always use real positions on both styles.
+  points. **Trips match the map (S04s):** on both styles a trip plans to these game-map points
+  (`data/places/game-points.derived.json`, read by `src/lib/world/tripEnds.ts`), so the place
+  sheet's times, fares, walking energy and modes are the ones the game map shows, and a ring
+  landmark is gated by the start home's borough (`data/places/game-gates.derived.json`,
+  `placeGateBorough` in `src/engine/boroughs.ts`). The map style is a client-side view only, so
+  one canonical trip per pair of places leaves nothing to gain by switching style (anti-cheat);
+  Real NYC draws the same trip between the real points over the same game minutes
+  (`realDrawnRoute` in `src/state/tripDriver.ts`). A ring landmark's flex bonus still waits for
+  its own borough to open (`flexMultiplierFor` in `src/engine/flex.ts`), so early clout keeps its
+  pace. After changing venues, landmarks, homes, geo or `compactLayout.json`, run
+  `npm run places:update` and commit both derived files.
   **Real NYC**: the full city as before, every place at its real point.
   Both share every material: a switch changes colours, heights, visibility and instance data and
   rebuilds the buildings layer, never a shader program.

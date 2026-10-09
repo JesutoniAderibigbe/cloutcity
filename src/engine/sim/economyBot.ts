@@ -47,8 +47,8 @@
  *
  * Maximum honest clout (S18c): with the `maxClout` option the bot plays for clout as hard as an
  * honest player can: after the second shift it flexes up to `clout.flex.maxPerGameDay` times, at
- * the first places of `maxClout.flexPlaces` (best multiplier first) whose borough and hours let
- * it, buying deli coffee for the energy when it can; it buys the cheapest wearable it does not
+ * the first places of `maxClout.flexPlaces` (best multiplier at its clout first) whose borough
+ * and hours let it, buying deli coffee for the energy when it can; it buys the cheapest wearable it does not
  * own whenever its cash after the rent reserve and `STYLE_BUFFER` covers it, and wears it; at
  * bedtime it takes a club night at the first club of `maxClout.clubs` whose door lets it in (the
  * club pays its configured clout once a night, DEC-12). Its pace sets the S18c honest-pace
@@ -75,9 +75,9 @@ import {
 } from '../actions'
 import type { CareerPathId } from '@/lib/data/avatarIds'
 import { calendar, minutesPerDay } from '../clock'
-import { playerLevel, totalClout } from '../clout'
+import { levelClout, playerLevel, totalClout } from '../clout'
 import type { EngineConfig, HomeId, JobId } from '../config'
-import { flexAction } from '../flex'
+import { flexAction, flexMultiplierFor } from '../flex'
 import { initialEventsState } from '../events'
 import { advanceMinutes, initialSnapshot, type GameSnapshot } from '../game'
 import { initialGoalsState, syncGoals, type GoalsState } from '../goals'
@@ -430,11 +430,21 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
     if (result.flex?.viral === true) viralFlexes += 1
   }
 
+  /**
+   * `places`, best multiplier at the player's clout first (a ring landmark's bonus waits for its
+   * own borough, S04s); the sort is stable, so ties keep the given order.
+   */
+  function bestFirst(places: readonly Place[]): Place[] {
+    const clout = levelClout(snapshot.player, config)
+    const at = (place: Place) => flexMultiplierFor(place, clout, config) ?? 0
+    return [...places].sort((a, b) => at(b) - at(a))
+  }
+
   /** See "Maximum honest clout" in the module comment: up to the day's flex limit. */
   function flexAll(places: readonly Place[]): void {
     const def = adjusted(flexAction(config))
     let done = 0
-    for (const place of places) {
+    for (const place of bestFirst(places)) {
       if (done >= config.clout.flex.maxPerGameDay) return
       for (let i = 0; i < MAX_FUEL_STEPS && snapshot.player.stats.energy <= def.energyCost; i++) {
         const spare = snapshot.player.cash - rentReserve(snapshot.player, config)
@@ -500,7 +510,7 @@ export function runEconomyBot(options: EconomyBotOptions, config: EngineConfig):
   function flexOnce(places: readonly Place[]): boolean {
     const def = adjusted(flexAction(config))
     if (snapshot.player.stats.energy < def.energyCost) return false
-    for (const place of places) {
+    for (const place of bestFirst(places)) {
       const before = flexes
       flex(place)
       if (flexes > before) return true

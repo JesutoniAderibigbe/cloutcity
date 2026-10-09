@@ -317,7 +317,8 @@ function CityScene3D({
     }
   }, [config.camera, look])
   // The game map style stands venues at their compact points (S04n): the pins, plots, props,
-  // the living city, trips and the avatar's rest all follow; travel maths keeps the real ones.
+  // the living city and the avatar's rest all follow. Trips plan to those points on both styles
+  // (S04s); the Real NYC style draws them between the real ones.
   const compact = look.plots
   const pins = parsed.ok ? parsed.geo.places.pins : null
   const stylePins = useMemo(
@@ -491,7 +492,7 @@ function CityScene3D({
                     animation={travelAnimation}
                     enabled={!hidden}
                     trail={tier !== 'low' || config.travel.trailOnLow}
-                    pins={compact ? pins : null}
+                    compact={compact}
                   />
                 </Suspense>
               ) : null}

@@ -27,8 +27,13 @@ export interface ActiveTrip {
   readonly id: number
   readonly destination: PlayerSpot
   readonly mode: TravelMode
-  /** The route as animated: its first and last legs reach the avatar's resting points. */
+  /**
+   * The route as animated on the game map: the trip as taken (S04s: trips plan to the game
+   * map's points), its first and last legs reaching the avatar's resting points.
+   */
   readonly route: Route
+  /** The same trip as the Real NYC style draws it, between the real points, over the same time. */
+  readonly realRoute: Route
   /** The personal clock at departure and at arrival (whole game minutes). */
   readonly departMinute: number
   readonly arriveMinute: number

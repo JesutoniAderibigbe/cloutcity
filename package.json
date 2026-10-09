@@ -33,6 +33,7 @@
     "econ:update": "vitest run src/engine/sim --update",
     "avatar:update": "vitest run src/lib/data/avatar-derived.test.ts --update",
     "homes:update": "vitest run src/lib/data/homes-derived.test.ts --update",
+    "places:update": "vitest run src/lib/world/gameTrips-derived.test.ts --update",
     "thumbs": "node scripts/assets/thumbs.ts"
   },
   "dependencies": {

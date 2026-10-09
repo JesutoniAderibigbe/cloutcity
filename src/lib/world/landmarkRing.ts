@@ -5,8 +5,9 @@
  * `landmarkRing` (CompactLayoutConfigSchema) for the rules. Pure and deterministic: the server
  * plans it once into the places layer (placesLayer.ts, the landmark pins' `gx`/`gy`/`game`).
  *
- * Only where a landmark is drawn on the game map moves. Travel time, fares and distances stay
- * on the real positions (src/engine/transit), as for the compact venues (S04n).
+ * Trips match the map (S04s): on both map styles a ring landmark is reached at its ring spot
+ * (data/places/game-points.derived.json) and gated by the ring home's borough
+ * (data/places/game-gates.derived.json), as the compact venues are reached at theirs (S04n).
  */
 import type { LandmarkRingConfig } from '@/lib/data/schemas/scene'
 import type { PreparedArea } from '@/lib/geo/lookup'

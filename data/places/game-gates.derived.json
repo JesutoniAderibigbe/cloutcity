@@ -1,0 +1,10 @@
+{
+  "gates": {
+    "wedge-building": "queens",
+    "deco-spire": "queens",
+    "statue-of-liberty": "queens",
+    "brooklyn-arena": "queens",
+    "midtown-terminal": "queens",
+    "times-square": "queens"
+  }
+}
