@@ -1,0 +1,423 @@
+{
+  "grid": { "cols": 10, "rows": 8, "cellM": 1 },
+  "heightM": 3.2,
+  "openings": [{ "kind": "door", "wall": "right", "at": 6, "span": 1, "sillM": 0, "heightM": 2.3 }],
+  "camera": { "position": [1, 7.2, 9.2], "target": [0, 0.5, -0.3], "fovDeg": 40 },
+  "entry": { "slot": "f9-6", "rotationDeg": -80 },
+  "shell": {
+    "wallPaint": "peach-glow",
+    "floorFinish": "marble-tile",
+    "crown": false,
+    "accentBack": "lilac-haze"
+  },
+  "backdrop": { "kind": "room", "tint": null },
+  "mood": {
+    "music": "salon-rnb",
+    "bpm": 88,
+    "tint": "bubblegum-300",
+    "openMix": 0.18,
+    "openAmbientScale": 1,
+    "openSunScale": 1,
+    "closedAmbientScale": 0.8
+  },
+  "decor": [
+    {
+      "id": "salon-sofa",
+      "item": "velvet-chesterfield",
+      "slot": "f3-7",
+      "turn": 2,
+      "footprint": "2x1",
+      "token": "lilac-300"
+    },
+    {
+      "id": "salon-plant",
+      "item": "fiddle-leaf-fig",
+      "slot": "f9-0",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "cream-100"
+    },
+    {
+      "id": "salon-plant-2",
+      "item": "fiddle-leaf-fig",
+      "slot": "f0-7",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "cream-100"
+    }
+  ],
+  "fixtures": [],
+  "kinds": {
+    "salon-chair": {
+      "parts": [
+        { "shape": "disc", "size": [0.5, 0.05, 0.5], "at": [0, 0.025, 0], "token": "gold-400" },
+        { "shape": "disc", "size": [0.12, 0.45, 0.12], "at": [0, 0.275, 0], "token": "gold-400" },
+        { "shape": "box", "size": [0.52, 0.12, 0.5], "at": [0, 0.55, 0], "token": "bubblegum-300" },
+        {
+          "shape": "box",
+          "size": [0.5, 0.62, 0.1],
+          "at": [0, 0.93, -0.22],
+          "token": "bubblegum-300"
+        },
+        {
+          "shape": "box",
+          "size": [0.08, 0.08, 0.42],
+          "at": [-0.27, 0.75, 0],
+          "token": "bubblegum-300",
+          "repeat": { "count": 2, "step": [0.54, 0, 0] }
+        },
+        { "shape": "box", "size": [0.4, 0.04, 0.16], "at": [0, 0.18, 0.38], "token": "gold-400" },
+        {
+          "shape": "box",
+          "size": [0.3, 0.12, 0.1],
+          "at": [0, 1.33, -0.2],
+          "token": "bubblegum-300"
+        }
+      ],
+      "anchors": [
+        {
+          "pose": "sit",
+          "at": [0, 0.59, 0.02],
+          "headingDeg": 0,
+          "approach": [
+            [0.72, 0, 0.05],
+            [-0.72, 0, 0.05],
+            [0, 0, 0.75]
+          ]
+        }
+      ]
+    },
+    "dryer-seat": {
+      "parts": [
+        { "shape": "box", "size": [0.55, 0.45, 0.5], "at": [0, 0.22, 0], "token": "grape-400" },
+        {
+          "shape": "box",
+          "size": [0.55, 0.55, 0.12],
+          "at": [0, 0.65, -0.22],
+          "token": "grape-400"
+        },
+        { "shape": "disc", "size": [0.08, 1, 0.08], "at": [0, 0.95, -0.32], "token": "silver-300" },
+        { "shape": "disc", "size": [0.5, 0.36, 0.5], "at": [0, 1.45, -0.1], "token": "white-50" },
+        {
+          "shape": "disc",
+          "size": [0.42, 0.04, 0.42],
+          "at": [0, 1.27, -0.1],
+          "token": "lilac-300",
+          "glow": "steady"
+        }
+      ],
+      "anchors": [
+        {
+          "pose": "sit",
+          "at": [0, 0.46, 0.02],
+          "headingDeg": 0,
+          "approach": [
+            [0, 0, 0.75],
+            [0.72, 0, 0.05],
+            [-0.72, 0, 0.05]
+          ]
+        }
+      ]
+    },
+    "nail-table": {
+      "parts": [
+        { "shape": "box", "size": [1, 0.05, 0.5], "at": [0, 0.76, 0], "token": "white-50" },
+        { "shape": "box", "size": [0.95, 0.72, 0.45], "at": [0, 0.37, 0], "token": "blush-300" },
+        {
+          "shape": "box",
+          "size": [0.26, 0.12, 0.2],
+          "at": [0.2, 0.84, -0.05],
+          "token": "white-50"
+        },
+        {
+          "shape": "box",
+          "size": [0.2, 0.04, 0.12],
+          "at": [0.2, 0.83, -0.05],
+          "token": "lilac-300",
+          "glow": "steady"
+        },
+        {
+          "shape": "disc",
+          "size": [0.05, 0.1, 0.05],
+          "at": [-0.3, 0.83, -0.12],
+          "token": "red-700",
+          "repeat": { "count": 5, "step": [0.07, 0, 0] },
+          "tokens": ["red-700", "pink-400", "grape-400", "taxi-400", "lagoon-400"]
+        },
+        {
+          "shape": "box",
+          "size": [0.24, 0.02, 0.16],
+          "at": [-0.05, 0.795, 0.1],
+          "token": "mist-100"
+        }
+      ],
+      "anchors": []
+    },
+    "nail-chair": {
+      "parts": [
+        { "shape": "box", "size": [0.44, 0.06, 0.42], "at": [0, 0.48, 0], "token": "lilac-300" },
+        {
+          "shape": "box",
+          "size": [0.44, 0.46, 0.05],
+          "at": [0, 0.74, -0.19],
+          "token": "lilac-300"
+        },
+        {
+          "shape": "box",
+          "size": [0.04, 0.48, 0.04],
+          "at": [-0.19, 0.24, 0.17],
+          "token": "gold-400",
+          "repeat": { "count": 2, "step": [0.38, 0, 0] },
+          "rows": { "count": 2, "step": [0, 0, -0.34] }
+        }
+      ],
+      "anchors": [
+        {
+          "pose": "sit",
+          "at": [0, 0.48, 0.02],
+          "headingDeg": 0,
+          "approach": [
+            [0.72, 0, 0.05],
+            [-0.72, 0, 0.05],
+            [0, 0, 0.72]
+          ]
+        }
+      ]
+    }
+  },
+  "pieces": [
+    { "kind": "salon-chair", "slot": "f1-2", "turn": 3, "offset": [-0.1, 0, -0.2] },
+    { "kind": "salon-chair", "slot": "f1-4", "turn": 3, "offset": [-0.1, 0, -0.2] },
+    { "kind": "dryer-seat", "slot": "f3-0", "turn": 0 },
+    { "kind": "dryer-seat", "slot": "f4-0", "turn": 0 },
+    { "kind": "nail-table", "slot": "f7-2", "turn": 1 },
+    { "kind": "nail-chair", "slot": "f6-2", "turn": 1, "offset": [0.3, 0, 0] },
+    { "kind": "nail-chair", "slot": "f8-2", "turn": 3, "offset": [-0.3, 0, 0] },
+    { "kind": "nail-table", "slot": "f7-4", "turn": 1 },
+    { "kind": "nail-chair", "slot": "f6-4", "turn": 1, "offset": [0.3, 0, 0] },
+    { "kind": "nail-chair", "slot": "f8-4", "turn": 3, "offset": [-0.3, 0, 0] }
+  ],
+  "build": [
+    { "shape": "box", "size": [0.45, 0.85, 4.4], "at": [-4.77, 0.43, -0.9], "token": "white-50" },
+    { "shape": "box", "size": [0.5, 0.05, 4.5], "at": [-4.75, 0.875, -0.9], "token": "blush-300" },
+    { "shape": "box", "size": [0.04, 1.3, 1], "at": [-4.97, 1.75, -2], "token": "gold-400" },
+    {
+      "shape": "box",
+      "size": [0.03, 1.2, 0.9],
+      "at": [-4.94, 1.75, -2],
+      "token": "dawn-100",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [0.06, 0.08, 0.08],
+      "at": [-4.92, 2.42, -2.4],
+      "token": "lamp-200",
+      "glow": "steady",
+      "repeat": { "count": 5, "step": [0, 0, 0.2] }
+    },
+    {
+      "shape": "disc",
+      "size": [0.08, 0.18, 0.08],
+      "at": [-4.8, 0.98, -2.25],
+      "token": "bubblegum-300",
+      "repeat": { "count": 4, "step": [0, 0, 0.12] },
+      "tokens": ["bubblegum-300", "gold-400", "white-50", "grape-400"]
+    },
+    { "shape": "box", "size": [0.04, 1.3, 1], "at": [-4.97, 1.75, 0], "token": "gold-400" },
+    {
+      "shape": "box",
+      "size": [0.03, 1.2, 0.9],
+      "at": [-4.94, 1.75, 0],
+      "token": "dawn-100",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [0.06, 0.08, 0.08],
+      "at": [-4.92, 2.42, -0.4],
+      "token": "lamp-200",
+      "glow": "steady",
+      "repeat": { "count": 5, "step": [0, 0, 0.2] }
+    },
+    {
+      "shape": "disc",
+      "size": [0.08, 0.18, 0.08],
+      "at": [-4.8, 0.98, -0.25],
+      "token": "bubblegum-300",
+      "repeat": { "count": 4, "step": [0, 0, 0.12] },
+      "tokens": ["bubblegum-300", "gold-400", "white-50", "grape-400"]
+    },
+    { "shape": "box", "size": [2.4, 1.6, 0.06], "at": [-3.4, 1.7, -3.96], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.12, 0.7, 0.06],
+      "at": [-4.4, 1.95, -3.9],
+      "token": "coal-900",
+      "repeat": { "count": 12, "step": [0.18, 0, 0] },
+      "rows": { "count": 2, "step": [0, -0.78, 0] },
+      "tokens": [
+        "coal-900",
+        "brownstone-600",
+        "amber-800",
+        "pink-400",
+        "gold-400",
+        "grape-400",
+        "clay-300",
+        "sky-400"
+      ]
+    },
+    { "shape": "box", "size": [0.06, 1.2, 2.6], "at": [4.96, 1.6, -2], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.05, 0.03, 2.4],
+      "at": [4.9, 1.15, -2],
+      "token": "gold-400",
+      "rows": { "count": 5, "step": [0, 0.22, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.05, 0.12, 0.05],
+      "at": [4.88, 1.24, -3.1],
+      "token": "pink-400",
+      "repeat": { "count": 16, "step": [0, 0, 0.145] },
+      "rows": { "count": 5, "step": [0, 0.22, 0] },
+      "tokens": [
+        "pink-400",
+        "red-700",
+        "grape-400",
+        "lagoon-400",
+        "taxi-400",
+        "snow-50",
+        "coal-900",
+        "bubblegum-300"
+      ]
+    },
+    { "shape": "box", "size": [1.4, 1, 0.55], "at": [2.6, 0.5, 2.6], "token": "white-50" },
+    { "shape": "box", "size": [1.5, 0.05, 0.62], "at": [2.6, 1.02, 2.6], "token": "gold-400" },
+    {
+      "shape": "box",
+      "size": [1.3, 0.1, 0.02],
+      "at": [2.6, 0.8, 2.89],
+      "token": "pink-400",
+      "glow": "steady"
+    },
+    { "shape": "box", "size": [0.3, 0.2, 0.25], "at": [2.2, 1.15, 2.55], "token": "coal-800" },
+    { "shape": "disc", "size": [0.14, 0.14, 0.14], "at": [3.05, 1.12, 2.5], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.04, 0.35, 0.04],
+      "at": [3.05, 1.35, 2.5],
+      "token": "awninggreen-500"
+    },
+    {
+      "shape": "box",
+      "size": [0.12, 0.08, 0.08],
+      "at": [3.05, 1.52, 2.5],
+      "token": "bubblegum-300"
+    },
+    {
+      "shape": "box",
+      "size": [1.8, 0.3, 0.03],
+      "at": [0.6, 2.4, -3.96],
+      "token": "bubblegum-300",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [1.4, 0.08, 0.02],
+      "at": [0.6, 2.4, -3.93],
+      "token": "snow-50",
+      "glow": "steady"
+    }
+  ],
+  "blocked": ["f0-1", "f0-2", "f0-3", "f0-4", "f7-6"],
+  "danceFloor": null,
+  "partyLights": null,
+  "stringLights": null,
+  "skyline": null,
+  "simSpots": [
+    { "pose": "browse", "slot": "f4-5", "rotationDeg": -30, "heightM": 0 },
+    { "pose": "flex", "slot": "f2-6", "rotationDeg": 10, "heightM": 0 }
+  ],
+  "actions": {
+    "salon-session": [
+      {
+        "poses": ["sit", "browse"],
+        "models": ["salon-chair", "nail-chair", "dryer-seat"],
+        "holdMs": 7000,
+        "bubble": "place.sim.bubble.salon"
+      }
+    ],
+    "flex": [
+      {
+        "poses": ["flex"],
+        "models": [],
+        "holdMs": 3500,
+        "prop": "phone",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.flex"
+      }
+    ]
+  },
+  "crowd": {
+    "poses": ["work", "sit", "talk", "idle"],
+    "spots": [
+      {
+        "activity": "braider",
+        "pose": "work",
+        "at": [-3, -1.38],
+        "headingDeg": -110,
+        "rank": 0,
+        "staff": true
+      },
+      { "activity": "braider", "pose": "work", "at": [-3, 0.62], "headingDeg": -110, "rank": 0 },
+      {
+        "activity": "front-desk",
+        "pose": "work",
+        "at": [2.6, 2.05],
+        "headingDeg": 0,
+        "rank": 0,
+        "staff": true
+      },
+      { "activity": "chat", "pose": "talk", "at": [0.2, -1.8], "headingDeg": 140, "rank": 3 },
+      { "activity": "chat", "pose": "talk", "at": [0.9, -2.2], "headingDeg": -40, "rank": 3 },
+      { "activity": "browse", "pose": "idle", "at": [4.3, -1.6], "headingDeg": 90, "rank": 4 },
+      { "activity": "waiting", "pose": "idle", "at": [1, 1.4], "headingDeg": 170, "rank": 5 }
+    ],
+    "seats": [
+      { "activity": "braids", "kind": "salon-chair", "rank": 1 },
+      { "activity": "nails", "kind": "nail-chair", "rank": 1 },
+      { "activity": "dryer", "kind": "dryer-seat", "rank": 3 },
+      { "activity": "waiting", "model": "couch", "rank": 4 }
+    ],
+    "hours": [
+      [0, 0.4],
+      [1, 0.4],
+      [2, 0.4],
+      [3, 0.4],
+      [4, 0.4],
+      [5, 0.4],
+      [6, 0.4],
+      [7, 0.4],
+      [8, 0.4],
+      [9, 0.4],
+      [10, 0.53],
+      [11, 0.67],
+      [12, 0.8],
+      [13, 0.77],
+      [14, 0.73],
+      [15, 0.7],
+      [16, 0.85],
+      [17, 1],
+      [18, 0.9],
+      [19, 0.8],
+      [20, 0.6],
+      [21, 0.4],
+      [22, 0.4],
+      [23, 0.4]
+    ],
+    "busyDays": [5, 6],
+    "quietShare": 0.75
+  }
+}

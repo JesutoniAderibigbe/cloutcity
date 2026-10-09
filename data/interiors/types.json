@@ -5,7 +5,11 @@
     "food-spot": "food-spot",
     "coffee-shop": "coffee",
     "food-cart": "food-cart",
-    "bodega": "bodega"
+    "bodega": "bodega",
+    "barber": "barber",
+    "salon": "salon",
+    "boutique": "boutique",
+    "thrift": "thrift"
   },
   "byVenue": {}
 }
