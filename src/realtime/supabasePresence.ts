@@ -30,7 +30,12 @@ export function createSupabasePresence(
             await callRpc(
               rpc,
               'presence_beat',
-              { p_spot: announce.spot, p_place: announce.place, p_borough: announce.borough },
+              {
+                p_spot: announce.spot,
+                p_place: announce.place,
+                p_borough: announce.borough,
+                p_activity: announce.activity,
+              },
               VoidSchema,
             ),
           ),
@@ -43,6 +48,10 @@ export function createSupabasePresence(
     },
     leave: async () =>
       rpc === null ? signedOut() : done(await callRpc(rpc, 'presence_leave', {}, VoidSchema)),
+    setGhost: async (ghost) =>
+      rpc === null
+        ? signedOut()
+        : done(await callRpc(rpc, 'presence_set_ghost', { p_ghost: ghost }, VoidSchema)),
     publicSnapshot: async (): Promise<ApiResult<PublicSnapshot>> => {
       try {
         const snapshot = parsePublicSnapshot(await fetchJson(PUBLIC_PRESENCE_PATH))

@@ -424,6 +424,14 @@ them through `src/lib/world/places.ts` (`mapPlaces()`, `placeAccess()`,
   station venue is within 25 m of its station, and that landmarks off land have an `approach`.
   `scripts/geo/streets.test.ts` and `src/lib/world/streetProps.test.ts` need every venue inside
   a prop zone (a district or a `geo.json` streets zone) with street-prop chunks around it.
+- **Presence place list (S42c).** The heartbeat (`presence_beat`) accepts only a real place in
+  its own borough, from `private.presence_places`. A new venue or landmark needs its
+  `(id, borough)` row inserted by a new migration; `tests/integration/presence.test.ts` fails
+  until the table matches `data/venues` and `data/landmarks`, and players at a missing place are
+  refused by the heartbeat. Players inside an interior come from presence
+  (`src/scene/players/insideFeed.ts`): their announced activity (`realtime.json`
+  `presence.inside.actions`, by place action) or one their id picks from
+  `presence.inside.byInterior` (a new interior needs a list there).
 - **A new venue type** (S41 added barber, salon, food-cart, mall, bank, pharmacy, laundromat,
   community-center, lounge, studio) needs an entry in `VENUE_TYPES`
   (`src/lib/data/schemas/content.ts`), its actions in `balance.json` `place.venueActions` (and

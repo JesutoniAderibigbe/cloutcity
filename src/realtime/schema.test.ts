@@ -13,9 +13,12 @@ const row = {
 }
 
 describe('parseSnapshot', () => {
-  it('reads players and their look ids', () => {
-    expect(parseSnapshot({ online: 4, players: [row] })).toEqual({
+  it("reads players, their look ids, worn items and activity, and the viewer's ghost mode", () => {
+    expect(
+      parseSnapshot({ online: 4, ghost: true, players: [{ ...row, activity: 'dance' }] }),
+    ).toEqual({
       online: 4,
+      ghost: true,
       players: [
         {
           id: row.id,
@@ -23,12 +26,28 @@ describe('parseSnapshot', () => {
           level: 'scene-regular',
           career: 'streamer',
           look: { body: 'man', skin: 'tone-02' },
+          worn: ['tee-1'],
           spot: 'place',
           place: 'late-lantern-deli',
           borough: 'queens',
+          activity: 'dance',
         },
       ],
     })
+  })
+
+  it('an older server (no ghost, no activity) and unknown activities read as none', () => {
+    const old = parseSnapshot({ online: 2, players: [row, { ...row, activity: 'karaoke' }] })
+    expect(old?.ghost).toBe(false)
+    expect(old?.players.map((p) => p.activity)).toEqual([null, null])
+  })
+
+  it('an activity only counts at a place; malformed worn items read as none', () => {
+    const home = parseSnapshot({
+      online: 1,
+      players: [{ ...row, spot: 'home', activity: 'dance', avatar: { look: {}, worn: [5] } }],
+    })
+    expect(home?.players[0]).toMatchObject({ activity: null, worn: [] })
   })
 
   it('skips bad rows instead of dropping the snapshot', () => {

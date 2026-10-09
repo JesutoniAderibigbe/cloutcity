@@ -6,17 +6,24 @@ import { createPresenceClient, type PresenceMode } from './presenceClient'
 import type { Announce, PresencePlayer } from './types'
 
 const config = realtimeJson.presence as RealtimeConfig['presence']
-const deli: Announce = { spot: 'place', place: 'late-lantern-deli', borough: 'queens' }
-const home: Announce = { spot: 'home', place: null, borough: 'queens' }
+const deli: Announce = {
+  spot: 'place',
+  place: 'late-lantern-deli',
+  borough: 'queens',
+  activity: null,
+}
+const home: Announce = { spot: 'home', place: null, borough: 'queens', activity: null }
 const other: PresencePlayer = {
   id: '00000000-0000-4000-8000-000000000001',
   handle: 'BodegaCat42',
   level: 'local',
   career: null,
   look: null,
+  worn: [],
   spot: 'place',
   place: 'late-lantern-deli',
   borough: 'queens',
+  activity: null,
 }
 
 let fake: FakePresence
@@ -84,6 +91,35 @@ describe('presence client', () => {
     c.kick()
     await vi.advanceTimersByTimeAsync(Math.ceil(60_000 / config.beatsPerMinute))
     expect(fake.beats).toEqual([deli, home])
+    c.stop()
+  })
+
+  it('announces a new activity at the same place (S42c)', async () => {
+    const c = client()
+    c.start()
+    await settle()
+    const dancing: Announce = { ...deli, activity: 'dance' }
+    where = dancing
+    c.kick()
+    await vi.advanceTimersByTimeAsync(Math.ceil(60_000 / config.beatsPerMinute))
+    expect(fake.beats).toEqual([deli, dancing])
+    c.stop()
+  })
+
+  it('ghost mode (a watching mode) leaves once and stops beating; off announces again', async () => {
+    const c = client()
+    c.start()
+    await settle()
+    mode = 'view'
+    c.kick()
+    await settle()
+    expect(fake.leaves).toBe(1)
+    await vi.advanceTimersByTimeAsync(config.beatIntervalMs * 2)
+    expect(fake.beats).toEqual([deli])
+    mode = 'announce'
+    c.kick()
+    await vi.advanceTimersByTimeAsync(Math.ceil(60_000 / config.beatsPerMinute))
+    expect(fake.beats).toEqual([deli, deli])
     c.stop()
   })
 

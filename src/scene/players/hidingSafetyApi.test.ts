@@ -31,6 +31,7 @@ beforeEach(() => {
   setPlayerHidden('p1', false)
   applySnapshot({
     online: 2,
+    ghost: false,
     players: [
       {
         id: 'p1',
@@ -38,9 +39,11 @@ beforeEach(() => {
         level: 'local',
         career: null,
         look: null,
+        worn: [],
         spot: 'place',
         place: 'late-lantern-deli',
         borough: 'queens',
+        activity: null,
       },
     ],
   })

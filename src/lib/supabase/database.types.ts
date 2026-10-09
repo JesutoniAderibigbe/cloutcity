@@ -214,13 +214,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "attestation_recorded_at": string | null,"attested": boolean,"attested_at": string | null,"audio_choice": string | null,"audio_settings": Json | null,"audio_settings_updated_at": string | null,"avatar": NonNullable<Json>,"career_path": string | null,"consent_version": string | null,"consented_at": string | null,"created_at": string,"handle": string | null,"id": string,"public_level": string,"updated_at": string
+                    "attestation_recorded_at": string | null,"attested": boolean,"attested_at": string | null,"audio_choice": string | null,"audio_settings": Json | null,"audio_settings_updated_at": string | null,"avatar": NonNullable<Json>,"career_path": string | null,"consent_version": string | null,"consented_at": string | null,"created_at": string,"ghost": boolean,"handle": string | null,"id": string,"public_level": string,"updated_at": string
                   }
                   Insert: {
-                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"audio_settings"?: Json | null,"audio_settings_updated_at"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"handle"?: string | null,"id": string,"public_level"?: string,"updated_at"?: string
+                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"audio_settings"?: Json | null,"audio_settings_updated_at"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"ghost"?: boolean,"handle"?: string | null,"id": string,"public_level"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"audio_settings"?: Json | null,"audio_settings_updated_at"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"handle"?: string | null,"id"?: string,"public_level"?: string,"updated_at"?: string
+                    "attestation_recorded_at"?: string | null,"attested"?: boolean,"attested_at"?: string | null,"audio_choice"?: string | null,"audio_settings"?: Json | null,"audio_settings_updated_at"?: string | null,"avatar"?: NonNullable<Json>,"career_path"?: string | null,"consent_version"?: string | null,"consented_at"?: string | null,"created_at"?: string,"ghost"?: boolean,"handle"?: string | null,"id"?: string,"public_level"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     
@@ -338,6 +338,7 @@ isOneToOne: true
 "consent_version": string | null,
 "consented_at": string | null,
 "created_at": string,
+"ghost": boolean,
 "handle": string | null,
 "id": string,
 "public_level": string,
@@ -441,13 +442,16 @@ isOneToOne: true
 { Args: { "p_target": string }; Returns: undefined
                            },
 "presence_beat":
-{ Args: { "p_borough": string,"p_place": string,"p_spot": string }; Returns: undefined
+{ Args: { "p_activity"?: string,"p_borough": string,"p_place": string,"p_spot": string }; Returns: undefined
                            },
 "presence_leave":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "presence_public_snapshot":
 { Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"presence_set_ghost":
+{ Args: { "p_ghost": boolean }; Returns: undefined
                            },
 "presence_snapshot":
 { Args: Record<PropertyKey, never>; Returns: Json

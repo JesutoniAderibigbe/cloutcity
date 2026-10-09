@@ -7,6 +7,7 @@
 import { z } from 'zod'
 import { CAREER_PATHS, type CareerPathId } from '../avatarIds.ts'
 import { STYLED_SOURCES } from '../cloutSources.ts'
+import { PRESENCE_ACTIVITY_IDS } from '../presenceActivities.ts'
 import {
   GOAL_FACTS,
   PRESTIGE_MUST_KEEP,
@@ -689,6 +690,8 @@ export const RealtimeConfigSchema = z.strictObject({
     /** Rate limits per player (server). */
     beatsPerMinute: positiveInt,
     snapshotsPerMinute: positiveInt,
+    /** Ghost mode switches per player per minute (server). */
+    ghostTogglesPerMinute: positiveInt,
     /**
      * How real players stand on the map: in rings around their place pin (radii in multiples of
      * the drawn height), each over a flat ring in a theme colour so they never read as locals
@@ -704,6 +707,16 @@ export const RealtimeConfigSchema = z.strictObject({
       ringOuterOfHeight: positive,
       /** The townsfolk pose players stand in (ambient.json `townsfolk.poses`, every tier). */
       pose: z.enum(['idle', 'talk', 'wave']),
+    }),
+    /**
+     * Real players inside a venue interior (S42c): the activity a place action announces (the
+     * action ids an interior acts out, data/interiors/venues.json), and, for a player who
+     * announced none, the
+     * activities an interior (data/interiors/types.json ids) picks from by their id.
+     */
+    inside: z.strictObject({
+      actions: z.record(z.string().min(1), z.enum(PRESENCE_ACTIVITY_IDS)),
+      byInterior: z.record(z.string().min(1), z.array(z.enum(PRESENCE_ACTIVITY_IDS)).min(1)),
     }),
   }),
 })

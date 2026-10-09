@@ -15,6 +15,10 @@
  * The keyboard and screen-reader path (A11Y-3) is "Players here", visible on focus, which opens
  * the card on the nearest drawn player; "Next player" steps through the others.
  *
+ * Inside a venue (S42c): the players at the same place go into its interior (insideFeed.ts), and
+ * a tap on one's name tag (a real button, so also the keyboard path) opens the same card over the
+ * interior; "Next player" then steps through the players inside.
+ *
  * Without a Supabase configuration nothing starts and nothing renders.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -23,6 +27,7 @@ import { copy, type CopyKey } from '@/lib/copy'
 import { formatCount } from '@/lib/format'
 import { snakeToCamel } from '@/lib/copy/camel'
 import { safetyApi, type SafetyApi } from '@/lib/supabase/safetyApi'
+import { useApartmentView } from '@/state/apartmentView'
 import { onPlaceOpened } from '@/state/placeSheet'
 import {
   playersBridge,
@@ -33,8 +38,12 @@ import {
   useSelectedPlayer,
   type PlayerCard,
 } from '@/state/presence'
+import { useSceneFocus } from '@/state/sceneFocus'
 import { selectLocal, townsfolkStore } from '@/state/townsfolk'
+import { tripStore } from '@/state/trip'
+import { interiorOccupants, onOccupantPicked } from '@/state/venueOccupants'
 import { FREE_SCENE_ROW_SELECTOR } from '../types'
+import { startInsideFeed } from './insideFeed'
 import { lookColours } from './lookColors'
 import { startPresence } from './presenceRuntime'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
@@ -201,9 +210,13 @@ export default function PlayersOverlay({
   pins,
   hidden,
 }: {
-  /** Every place pin's id and borough (what presence announces). */
-  readonly pins: readonly { readonly id: string; readonly borough: string }[]
-  /** The apartment or creator has the screen: no tags or card over it. */
+  /** Every place pin's id, borough (what presence announces) and venue type or category. */
+  readonly pins: readonly {
+    readonly id: string
+    readonly borough: string
+    readonly category: string
+  }[]
+  /** Another scene (the apartment, the creator or a venue's interior) has the screen. */
   readonly hidden: boolean
 }) {
   const card = useSelectedPlayer()
@@ -213,8 +226,25 @@ export default function PlayersOverlay({
   const headingRef = useRef<HTMLHeadingElement>(null)
   const cardRef = useRef<HTMLElement>(null)
   const boroughOf = useMemo(() => new Map(pins.map((pin) => [pin.id, pin.borough])), [pins])
+  const categoryOf = useMemo(() => new Map(pins.map((pin) => [pin.id, pin.category])), [pins])
+  // A venue's interior has the screen (the room focus without the apartment): only the card
+  // shows, over the interior; the map's tags, count and finder wait for the map.
+  const focus = useSceneFocus()
+  const apartment = useApartmentView()
+  const inside = hidden && focus === 'room' && apartment === null
 
   useEffect(() => startPresence(boroughOf), [boroughOf])
+  useEffect(() => startInsideFeed(categoryOf), [categoryOf])
+  // A tap on a name tag inside a venue opens their card.
+  useEffect(
+    () =>
+      onOccupantPicked((_, id) => {
+        setFocusCard(true)
+        selectLocal(null)
+        selectPlayer(id)
+      }),
+    [],
+  )
   // One thing at a time: a place sheet or a local's card closes the player card.
   useEffect(() => onPlaceOpened(() => selectPlayer(null)), [])
   useEffect(
@@ -240,6 +270,10 @@ export default function PlayersOverlay({
 
   const drawnIds = () => {
     const { players } = presenceStore.getState()
+    if (inside) {
+      const { spot } = tripStore.getState()
+      return spot?.kind === 'place' ? interiorOccupants(spot.placeId).map((o) => o.id) : []
+    }
     return (playersBridge.current?.heads() ?? [])
       .map((head) => head.id)
       .filter((id) => players.some((p) => p.id === id))
@@ -261,29 +295,34 @@ export default function PlayersOverlay({
 
   return (
     <>
-      {hidden || rows === '' ? null : (
+      {(hidden && !inside) || rows === '' ? null : (
         <>
-          <NameTags hidden={hidden} />
+          {inside ? null : <NameTags hidden={hidden} />}
           <div
             data-cc-feature={PLAYERS_FEATURE}
-            className="pointer-events-none absolute inset-0 grid grid-cols-1"
+            // Over the interior: the city's layer is invisible and under the room slot then.
+            className={`pointer-events-none absolute inset-0 grid grid-cols-1 ${inside ? 'visible z-10' : ''}`}
             style={{ gridTemplateRows: rows }}
           >
             <div className="players-row relative flex min-h-0 flex-col items-center justify-start gap-2 overflow-hidden px-3 pt-2">
-              <div className="flex w-full justify-end">
-                <OnlineChip />
-              </div>
-              <button
-                type="button"
-                onClick={find}
-                data-players-find=""
-                className="pointer-events-auto sr-only min-h-11 rounded-full glass px-4 text-sm font-semibold text-fg focus:not-sr-only focus-visible:outline-2 focus-visible:outline-focus"
-              >
-                {copy('players.find')}
-              </button>
-              <p role="status" className="sr-only">
-                {empty && card === null ? copy('players.none') : ''}
-              </p>
+              {inside ? null : (
+                <>
+                  <div className="players-online flex w-full justify-end">
+                    <OnlineChip />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={find}
+                    data-players-find=""
+                    className="pointer-events-auto sr-only min-h-11 rounded-full glass px-4 text-sm font-semibold text-fg focus:not-sr-only focus-visible:outline-2 focus-visible:outline-focus"
+                  >
+                    {copy('players.find')}
+                  </button>
+                  <p role="status" className="sr-only">
+                    {empty && card === null ? copy('players.none') : ''}
+                  </p>
+                </>
+              )}
               {card === null ? null : (
                 <section
                   role="dialog"

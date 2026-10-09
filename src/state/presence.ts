@@ -9,7 +9,13 @@
  */
 import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
-import type { CloutLevelId, LookIds, PresenceSnapshot, PublicSnapshot } from '@/realtime/types'
+import type {
+  CloutLevelId,
+  LookIds,
+  PresenceActivity,
+  PresenceSnapshot,
+  PublicSnapshot,
+} from '@/realtime/types'
 
 /** One real player drawn on the map. */
 export interface MapPlayer {
@@ -18,6 +24,9 @@ export interface MapPlayer {
   readonly look: LookIds | null
   readonly handle: string
   readonly level: CloutLevelId
+  readonly worn: readonly string[]
+  /** What they announced doing at the place, or null. */
+  readonly activity: PresenceActivity | null
 }
 
 /** What a player card shows: a signed-in view's player. */
@@ -38,6 +47,11 @@ interface PresenceState {
   /** Blocked or muted on this device this session (the server hides them from the next read). */
   readonly hidden: ReadonlySet<string>
   readonly selected: PlayerCard | null
+  /**
+   * This account's ghost mode as the server last answered (S42c), or null while unknown (signed
+   * out, a guest, or no read yet): the Settings switch shows only once it is known.
+   */
+  readonly ghost: boolean | null
 }
 
 const INITIAL: PresenceState = {
@@ -46,6 +60,7 @@ const INITIAL: PresenceState = {
   elsewhere: 0,
   hidden: new Set(),
   selected: null,
+  ghost: null,
 }
 
 export const presenceStore = createStore<PresenceState>()(() => INITIAL)
@@ -59,7 +74,15 @@ export function applySnapshot(snapshot: PresenceSnapshot): void {
       elsewhere++
       continue
     }
-    players.push({ id: p.id, place: p.place, look: p.look, handle: p.handle, level: p.level })
+    players.push({
+      id: p.id,
+      place: p.place,
+      look: p.look,
+      handle: p.handle,
+      level: p.level,
+      worn: p.worn,
+      activity: p.activity,
+    })
   }
   const { selected } = presenceStore.getState()
   const still = selected === null ? null : snapshot.players.find((p) => p.id === selected.id)
@@ -67,6 +90,7 @@ export function applySnapshot(snapshot: PresenceSnapshot): void {
     online: snapshot.online,
     players,
     elsewhere,
+    ghost: snapshot.ghost,
     // A player who left, or whom the server now hides, closes their card.
     selected:
       still === undefined || still === null
@@ -77,7 +101,13 @@ export function applySnapshot(snapshot: PresenceSnapshot): void {
 
 /** A signed-out read: the online count only; nobody is drawn. */
 export function applyPublicSnapshot(snapshot: PublicSnapshot): void {
-  presenceStore.setState({ online: snapshot.online, players: [], elsewhere: 0, selected: null })
+  presenceStore.setState({
+    online: snapshot.online,
+    players: [],
+    elsewhere: 0,
+    selected: null,
+    ghost: null,
+  })
 }
 
 /** Reads keep failing: hide the count and the players rather than show stale ones. */
@@ -87,6 +117,11 @@ export function presenceUnavailable(): void {
 
 export function resetPresence(): void {
   presenceStore.setState({ ...INITIAL, hidden: presenceStore.getState().hidden })
+}
+
+/** The server accepted a ghost mode switch: this device follows at once. */
+export function setGhostKnown(ghost: boolean): void {
+  if (presenceStore.getState().ghost !== ghost) presenceStore.setState({ ghost })
 }
 
 /** Hides (or shows again, after an Undo) a player on this device at once. */
@@ -121,11 +156,17 @@ export function visiblePlayers(state: PresenceState = presenceStore.getState()):
 }
 
 const onlineNow = () => presenceStore.getState().online
+const ghostNow = () => presenceStore.getState().ghost
 const selectedNow = () => presenceStore.getState().selected
 const none = () => null
 
 export function useOnlineCount(): number | null {
   return useSyncExternalStore(presenceStore.subscribe, onlineNow, none)
+}
+
+/** This account's ghost mode, or null while unknown. */
+export function useGhost(): boolean | null {
+  return useSyncExternalStore(presenceStore.subscribe, ghostNow, none)
 }
 
 export function useSelectedPlayer(): PlayerCard | null {
@@ -138,3 +179,13 @@ export interface PlayersBridge {
 }
 
 export const playersBridge: { current: PlayersBridge | null } = { current: null }
+
+/**
+ * What the Settings switch asks of the running presence loop (presenceRuntime.ts sets it while
+ * it runs with a server): turn ghost mode on or off. Resolves whether the server accepted it.
+ */
+export interface PresenceControl {
+  setGhost(ghost: boolean): Promise<boolean>
+}
+
+export const presenceControl: { current: PresenceControl | null } = { current: null }

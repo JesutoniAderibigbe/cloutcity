@@ -20,6 +20,8 @@ export interface FakePresence extends PresenceTransport {
   leaves: number
   snapshots: number
   publicSnapshots: number
+  /** This viewer's ghost mode, as the server holds it (setGhost changes it). */
+  ghost: boolean
   /** While set, every call answers this code. */
   failWith: ApiErrorCode | null
 }
@@ -32,6 +34,7 @@ export function createFakePresence(players: PresencePlayer[] = []): FakePresence
     leaves: 0,
     snapshots: 0,
     publicSnapshots: 0,
+    ghost: false,
     failWith: null,
     beat: (announce) => {
       if (fake.failWith !== null) return Promise.resolve(failure(fake.failWith))
@@ -44,13 +47,19 @@ export function createFakePresence(players: PresencePlayer[] = []): FakePresence
       return Promise.resolve({
         ok: true,
         data: {
-          online: fake.players.length + 1 + fake.othersOnline,
+          online: fake.players.length + (fake.ghost ? 0 : 1) + fake.othersOnline,
+          ghost: fake.ghost,
           players: [...fake.players],
         },
       })
     },
     leave: () => {
       fake.leaves++
+      return Promise.resolve({ ok: true, data: null })
+    },
+    setGhost: (ghost) => {
+      if (fake.failWith !== null) return Promise.resolve(failure(fake.failWith))
+      fake.ghost = ghost
       return Promise.resolve({ ok: true, data: null })
     },
     publicSnapshot: (): Promise<ApiResult<PublicSnapshot>> => {

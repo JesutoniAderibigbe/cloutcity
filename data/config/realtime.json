@@ -18,6 +18,7 @@
     "publicCacheS": 15,
     "beatsPerMinute": 6,
     "snapshotsPerMinute": 8,
+    "ghostTogglesPerMinute": 6,
     "map": {
       "ringStartOfHeight": 0.9,
       "ringStepOfHeight": 0.7,
@@ -26,6 +27,16 @@
       "ringInnerOfHeight": 0.34,
       "ringOuterOfHeight": 0.5,
       "pose": "idle"
+    },
+    "inside": {
+      "actions": {
+        "club-night": "dance",
+        "rooftop-hang": "lounge"
+      },
+      "byInterior": {
+        "club": ["dance", "dance", "bar", "booth", "chat"],
+        "lounge": ["lounge", "lounge", "bar", "chat"]
+      }
     }
   }
 }

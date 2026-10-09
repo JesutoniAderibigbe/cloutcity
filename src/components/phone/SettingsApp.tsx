@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { setSoundSheetOpen } from '@/components/audio/soundSheet'
 import { CLEAN_SCREEN_ATTR } from '@/components/nav/CleanScreenExit'
 import { resumeTour } from '@/components/tour/tourControl'
@@ -10,6 +10,7 @@ import { SHORTCUTS_SCREEN, phoneConfig } from '@/lib/phone/phoneConfig'
 import { MAP_STYLES } from '@/lib/world/mapStyleIds'
 import { dismissHudPanel } from '@/state/hudPanel'
 import { setMapStyle, useMapStyle } from '@/state/mapStyle'
+import { presenceControl, useGhost } from '@/state/presence'
 import { PHONE_BUTTON } from './phoneUi'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/map'
@@ -43,9 +44,71 @@ function useCleanScreen(): boolean {
   )
 }
 
+/** The switch's track and knob (the clean-screen and ghost rows). */
+function SwitchKnob({ on }: { readonly on: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`relative h-7 w-12 shrink-0 rounded-full border border-line-strong transition-colors motion-reduce:transition-none ${
+        on ? 'bg-taxi' : 'bg-track'
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 size-5.5 rounded-full bg-surface shadow transition-[left] motion-reduce:transition-none ${
+          on ? 'left-[1.375rem]' : 'left-0.5'
+        }`}
+      />
+    </span>
+  )
+}
+
+/**
+ * Ghost mode (S42c): off every other player's map, venue and online count, while still seeing
+ * them. The server holds the setting (it follows the account to every device), so the row shows
+ * once presence has read it: signed in with an account, with the shared city running.
+ */
+function GhostRow() {
+  const ghost = useGhost()
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+  if (ghost === null) return null
+  const toggle = async () => {
+    const control = presenceControl.current
+    if (control === null || busy) return
+    setBusy(true)
+    const ok = await control.setGhost(!ghost)
+    setBusy(false)
+    setFailed(!ok)
+  }
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={ghost}
+      aria-busy={busy}
+      data-phone-setting="ghost"
+      onClick={() => void toggle()}
+      className={`${ROW} rounded-none`}
+    >
+      <RowText
+        icon="👻"
+        title={copy('phone.settings.ghost')}
+        hint={copy(
+          failed
+            ? 'phone.settings.ghostFailed'
+            : ghost
+              ? 'phone.settings.ghostOnHint'
+              : 'phone.settings.ghostHint',
+        )}
+      />
+      <SwitchKnob on={ghost} />
+    </button>
+  )
+}
+
 /**
  * Settings & Help (S58, S48 lite): sound and graphics (the settings sheet), the clean-screen
- * HUD toggle, the map style (S04m, also on the map's chip), the tour replay, the keyboard shortcuts (also opened with `?`, which lands here at
+ * HUD toggle, ghost mode (S42c), the map style (S04m, also on the map's chip), the tour replay, the keyboard shortcuts (also opened with `?`, which lands here at
  * the shortcuts), the Help questions from data/copy and the fine print.
  */
 export function SettingsApp({ screen }: { readonly screen: string }) {
@@ -104,19 +167,9 @@ export function SettingsApp({ screen }: { readonly screen: string }) {
               title={copy('phone.settings.clean')}
               hint={copy('phone.settings.cleanHint')}
             />
-            <span
-              aria-hidden="true"
-              className={`relative h-7 w-12 shrink-0 rounded-full border border-line-strong transition-colors motion-reduce:transition-none ${
-                clean ? 'bg-taxi' : 'bg-track'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 size-5.5 rounded-full bg-surface shadow transition-[left] motion-reduce:transition-none ${
-                  clean ? 'left-[1.375rem]' : 'left-0.5'
-                }`}
-              />
-            </span>
+            <SwitchKnob on={clean} />
           </button>
+          <GhostRow />
           <div data-phone-setting="map-style" className={`${ROW} rounded-none`}>
             <RowText
               icon="🗺️"

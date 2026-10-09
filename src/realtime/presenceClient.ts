@@ -13,7 +13,10 @@ import { log } from '@/lib/log'
 import type { RealtimeConfig } from '@/lib/data/schemas/config'
 import type { Announce, PresenceSnapshot, PresenceTransport, PublicSnapshot } from './types'
 
-/** `announce`: an account (beats and reads); `view`: a guest (reads); `public`: signed out. */
+/**
+ * `announce`: an account (beats and reads); `view`: a guest, or an account in ghost mode (reads
+ * only); `public`: signed out.
+ */
 export type PresenceMode = 'announce' | 'view' | 'public'
 
 export interface PresenceClientOptions {
@@ -39,7 +42,12 @@ export interface PresenceClient {
 }
 
 const sameAnnounce = (a: Announce | null, b: Announce | null) =>
-  a !== null && b !== null && a.spot === b.spot && a.place === b.place && a.borough === b.borough
+  a !== null &&
+  b !== null &&
+  a.spot === b.spot &&
+  a.place === b.place &&
+  a.borough === b.borough &&
+  a.activity === b.activity
 
 export function createPresenceClient(options: PresenceClientOptions): PresenceClient {
   const { transport, config } = options

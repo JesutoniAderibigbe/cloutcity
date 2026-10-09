@@ -196,6 +196,21 @@ body {
   grid-row: 4;
 }
 
+/* While a sheet is open the map style and Map data chips move up into the free row's corners, and
+   a tall sheet leaves that row one chip high: the online count moves to the middle, between them,
+   and on a phone, too narrow for three chips in a row, it waits for the sheet to close. */
+.cc-overlay:has([data-overlay-zone='sheet'] > * > :not([data-overlay-passive])) .players-online {
+  display: none;
+}
+
+/* The HUD's wide breakpoint (layout.json hudWideMinWidthPx). */
+@media (min-width: 640px) {
+  .cc-overlay:has([data-overlay-zone='sheet'] > * > :not([data-overlay-passive])) .players-online {
+    display: flex;
+    justify-content: center;
+  }
+}
+
 /* UX-15: in the bottom-end corner above the tab bar while the sheet zone is empty; back in the
    free scene row's corner while a sheet (or the Places panel) fills it, so the chip never sits
    under a sheet. A sheet is open when the zone's content wrapper (OverlayLayout.tsx) holds a

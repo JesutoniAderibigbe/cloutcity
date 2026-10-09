@@ -7,7 +7,10 @@
  * What crosses the wire is coarse on purpose: a spot (at a place, at home, travelling), a place
  * pin id and a borough. Never coordinates, never an address.
  */
+import type { PresenceActivity } from '@/lib/data/presenceActivities'
 import type { ApiResult } from '@/lib/supabase/rpc'
+
+export { PRESENCE_ACTIVITY_IDS, type PresenceActivity } from '@/lib/data/presenceActivities'
 
 export const PRESENCE_BOROUGHS = [
   'queens',
@@ -36,6 +39,8 @@ export interface Announce {
   readonly spot: PresenceSpot
   readonly place: string | null
   readonly borough: PresenceBorough
+  /** What they are doing at the place (their last place action there), or null. */
+  readonly activity: PresenceActivity | null
 }
 
 /** A look as other players see it: option ids only (src/engine/appearance.ts `PublicAvatar`). */
@@ -49,14 +54,20 @@ export interface PresencePlayer {
   readonly career: string | null
   /** Null when their save has not synced a look yet. */
   readonly look: LookIds | null
+  /** The worn item ids the server accepted (drawn over the look). */
+  readonly worn: readonly string[]
   readonly spot: PresenceSpot
   readonly place: string | null
   readonly borough: PresenceBorough
+  /** What they announced doing at their place, or null. */
+  readonly activity: PresenceActivity | null
 }
 
 export interface PresenceSnapshot {
   /** Every player online now (the viewer included): never padded. */
   readonly online: number
+  /** This viewer's own ghost mode: they announce nothing and nobody sees them. */
+  readonly ghost: boolean
   readonly players: readonly PresencePlayer[]
 }
 
@@ -72,6 +83,8 @@ export interface PresenceTransport {
   snapshot(): Promise<ApiResult<PresenceSnapshot>>
   /** Takes the player off the map at once. */
   leave(): Promise<ApiResult<null>>
+  /** Turns ghost mode on (off every snapshot and count at once) or off. */
+  setGhost(ghost: boolean): Promise<ApiResult<null>>
   /** The signed-out view: the online count only (a cached server route). */
   publicSnapshot(): Promise<ApiResult<PublicSnapshot>>
 }
