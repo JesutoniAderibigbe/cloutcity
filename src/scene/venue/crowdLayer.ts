@@ -8,7 +8,8 @@
  * `crowd.dance.moves` of them, baked like a walk), each local the move their phase picks, at the
  * venue's beat, every kit's loop offset from the others' so the floor never moves in unison, with
  * a gentle turn from their own phase. If the moves cannot load, dancers fall back to the `dance`
- * pose's clip with a bob and sway on the beat. Sitters sit on the seat they were given.
+ * pose's clip with a bob and sway on the beat, as the poses with a move (a rep at the gym, a
+ * boxer's bounce, S43b) always do. Sitters sit on the seat they were given.
  *
  * Locals are NPCs, never players (UX-3): the merged `npc-*` models, never the player look's parts,
  * no name tag, never picked or counted. Loaded in its own lazy chunk with the bakers, after the
@@ -84,8 +85,8 @@ function withMoves(rig: RigModel, moves: RigModel | undefined): RigModel {
 }
 
 /**
- * Bakes the tier's kits: each body the tier draws (the man alone on one body) in each clip its
- * poses use, and in the tier's dance moves. Rejects when a body fails to load (the venue stays
+ * Bakes the tier's kits: each body the tier draws (the man alone on one body) in each clip the
+ * interior's drawn poses use (S43b), and in the tier's dance moves. Rejects when a body fails to load (the venue stays
  * empty of locals); when only the moves fail, the dancers keep the `dance` pose's clip.
  */
 export async function bakeCrowdKits(
@@ -296,15 +297,16 @@ export function createCrowdLayer(
       const k = member.heightM / (kit.clip === 'sit' ? stand : kit.baked.heightM)
       let yaw = member.headingRad
       let lift = 0
-      if (member.pose === 'dance' && !still) {
+      const move = still ? undefined : config.moves.get(member.pose)
+      if (member.pose === 'dance' && kit.move !== null && !still) {
+        // The move carries the bounce; a slow turn of their own keeps one move's dancers apart.
         const beat = timeS / beatS + member.phase * 2
-        if (kit.move === null) {
-          lift = Math.abs(Math.sin(beat * Math.PI)) * config.groove.bobM
-          yaw += Math.sin(beat * Math.PI * 0.5) * config.groove.swayRad
-        } else {
-          // The move carries the bounce; a slow turn of their own keeps one move's dancers apart.
-          yaw += Math.sin((beat / 8 + member.phase) * Math.PI * 2) * config.dance.swayRad
-        }
+        yaw += Math.sin((beat / 8 + member.phase) * Math.PI * 2) * config.dance.swayRad
+      } else if (move !== undefined) {
+        // The groove (a dancer without the moves), a rep, a boxer's bounce: a bob and sway.
+        const beat = (timeS / beatS) * move.perBeat + member.phase * 2
+        lift = Math.abs(Math.sin(beat * Math.PI)) * move.bobM
+        yaw += Math.sin(beat * Math.PI * 0.5) * move.swayRad
       }
       if (kit.clip === 'sit') {
         // The seat lies under the thighs, just behind the loop's origin: put it on the seat.

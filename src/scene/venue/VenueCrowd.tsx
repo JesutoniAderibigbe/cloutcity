@@ -24,10 +24,12 @@ import { crowdConfig } from './data'
 export const CROWD_FAILED_MESSAGE = 'venue crowd: the locals could not load; the venue stays empty'
 
 export default function VenueCrowd({
+  interiorId,
   members,
   tier,
   bpm,
 }: {
+  readonly interiorId: string
   readonly members: readonly CrowdMember[]
   readonly tier: QualityTier
   readonly bpm: number
@@ -52,7 +54,7 @@ export default function VenueCrowd({
     let active = true
     let built: CrowdLayer | null = null
     let dispose = () => {}
-    const config = crowdConfig(tier)
+    const config = crowdConfig(tier, interiorId)
     if (config.max === 0) return
     bakeCrowdKits(tier, config, modelsConfig().cacheMaxEntries).then(
       (kits) => {
@@ -77,7 +79,7 @@ export default function VenueCrowd({
       built?.dispose()
       dispose()
     }
-  }, [tier, bpm, material])
+  }, [tier, interiorId, bpm, material])
 
   const shown = layer !== null && layer.tier === tier ? layer.layer : null
   useEffect(() => {

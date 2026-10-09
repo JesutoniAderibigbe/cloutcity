@@ -6,7 +6,8 @@
  *
  * - the activity they announced (their last place action there, presenceRuntime.ts), else
  * - one their id picks from the interior's list (realtime.json `inside.byInterior`): the same
- *   player always does the same thing, and it suits the room (a club dances, a lounge lounges).
+ *   player always does the same thing, and it suits the room (a club dances, a lounge lounges);
+ *   an interior with no list (S43b's) stands them at any free standing spot (`idle`).
  *
  * Blocked, muted, banned, suspended and ghost players never reach the snapshot (the server), and
  * players blocked or muted on this device this session are left out at once. Nobody is padded in.
@@ -27,10 +28,15 @@ import {
 
 const inside = (realtimeJson.presence as RealtimeConfig['presence']).inside
 const byVenueType: Readonly<Record<string, string | undefined>> = typesJson.byVenueType
+const byVenue: Readonly<Record<string, string | undefined>> = typesJson.byVenue
 
-/** The interior a place opens (by its venue type, data/interiors/types.json), or null. */
-export function interiorOf(category: string | undefined): string | null {
-  return category === undefined ? null : (byVenueType[category] ?? null)
+/**
+ * The interior a place opens (data/interiors/types.json): its own when it has one (S43b: the
+ * boxing gym, the warehouse), else its venue type's; or null.
+ */
+export function interiorOf(category: string | undefined, placeId?: string): string | null {
+  const own = placeId === undefined ? undefined : byVenue[placeId]
+  return own ?? (category === undefined ? null : (byVenueType[category] ?? null))
 }
 
 /** 32-bit FNV-1a: a stable pick from a player's opaque id. */
@@ -83,7 +89,7 @@ export function startInsideFeed(categoryOf: ReadonlyMap<string, string>): () => 
   let lastKey = ''
   const sync = () => {
     const placeId = placeNow()
-    const interiorId = placeId === null ? null : interiorOf(categoryOf.get(placeId))
+    const interiorId = placeId === null ? null : interiorOf(categoryOf.get(placeId), placeId)
     const target = interiorId === null ? null : placeId
     if (fed !== null && fed !== target) {
       setInteriorOccupants(fed, [])

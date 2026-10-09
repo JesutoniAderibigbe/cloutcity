@@ -1,6 +1,30 @@
 {
   "byVenueType": {
     "club": "club",
-    "lounge": "lounge"
+    "lounge": "lounge",
+    "food-spot": "food-spot",
+    "coffee-shop": "coffee",
+    "food-cart": "food-cart",
+    "bodega": "bodega",
+    "barber": "barber",
+    "salon": "salon",
+    "boutique": "boutique",
+    "thrift": "thrift",
+    "gym": "gym",
+    "park": "park",
+    "studio": "studio",
+    "job-site": "job-site",
+    "mall": "mall",
+    "bank": "bank",
+    "pharmacy": "pharmacy",
+    "laundromat": "laundromat",
+    "community-center": "community",
+    "subway-station": "station"
+  },
+  "byVenue": {
+    "southpaw-social": "boxing",
+    "pallet-row-warehouse": "warehouse",
+    "wallabout-freight": "warehouse",
+    "northside-dispatch": "depot"
   }
 }

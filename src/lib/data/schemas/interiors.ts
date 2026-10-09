@@ -1,12 +1,14 @@
 /**
  * Schemas for venue interiors (S43): the 3D inside views a place sheet shows behind it.
  *
- * - data/interiors/venues.json: each interior's layout (a room shell like an apartment's, from
+ * - data/interiors/venues/<id>.json: each interior's layout (a room shell like an apartment's, from
  *   the same finishes), its catalog furniture and code-built pieces (bars, stools, DJ booth), the
  *   glowing parts and how they animate, the dance floor, party lights, string lights and skyline,
  *   its music mood and lighting, where the player's Sim acts out each place action, and where
- *   the locals stand, dance and sit and how busy each hour is. Which venue
- *   types (data/venues/venues.json `type`) open which interior is data/interiors/types.json.
+ *   the locals stand, dance and sit and how busy each hour is. One file per interior, so
+ *   each loads in its own small lazy chunk (S43b). Which venue types (data/venues/venues.json
+ *   `type`), and which single venues, open which interior is data/interiors/types.json.
+ * - data/interiors/sim.json: the poses, props and hands every interior adds to the room Sim's.
  * - data/config/interiors.json: the per-tier caps (draw calls, triangles) and crowd sizes, the
  *   locals' poses, frames and colours, and the lights' tier counts.
  *
@@ -131,7 +133,7 @@ const CrowdSeatSchema = z
     message: 'a seat names a piece kind or a furniture model, not both',
   })
 
-const InteriorSchema = z.strictObject({
+export const InteriorSchema = z.strictObject({
   grid: z.strictObject({ cols: z.int().min(2), rows: z.int().min(2), cellM: positive }),
   heightM: positive,
   openings: z.array(
@@ -245,6 +247,12 @@ const InteriorSchema = z.strictObject({
   /** Each place action the venue offers, as the steps the player's Sim acts out. */
   actions: z.record(IdSchema, z.array(StepSchema).min(1)),
   crowd: z.strictObject({
+    /**
+     * The locals' poses, most important first: a tier bakes the clips of the first poses up to
+     * its `clipsMax` (data/config/interiors.json), so a low-end phone still shows the barbers
+     * cutting before the people waiting.
+     */
+    poses: z.array(IdSchema).min(1),
     spots: z.array(CrowdSpotSchema).min(1),
     seats: z.array(CrowdSeatSchema),
     /** How busy each opening hour is (0–23, share of the tier's crowd). */
@@ -257,8 +265,8 @@ const InteriorSchema = z.strictObject({
 })
 export type InteriorData = z.infer<typeof InteriorSchema>
 
-export const InteriorsFileSchema = z.strictObject({
-  /** Poses, props and hand points the venues add to the room Sim's (data/config/roomSim.json). */
+/** data/interiors/sim.json: what every interior adds to the room Sim (data/config/roomSim.json). */
+export const InteriorSimFileSchema = z.strictObject({
   sim: z.strictObject({
     poses: z.record(
       IdSchema,
@@ -283,16 +291,18 @@ export const InteriorsFileSchema = z.strictObject({
     /** The player's dance: a bob and sway over a held clip (src/scene/apartment/sim/SimAvatar). */
     groove: z.strictObject({ clip: IdSchema, bobM: nonNegative, swayDeg: nonNegative }),
   }),
-  interiors: z.record(IdSchema, InteriorSchema),
 })
-export type InteriorsFile = z.infer<typeof InteriorsFileSchema>
+export type InteriorSimFile = z.infer<typeof InteriorSimFileSchema>
 
 /**
  * data/interiors/types.json: venue type → interior id, the types whose sheet shows an inside
- * view. Its own small file: the place sheet's chunk reads it to know whether to load an interior.
+ * view, and single venues that open another interior than their type's (the boxing gym, the
+ * warehouse, the dispatch depot). Its own small file: the place sheet's chunk reads it to know
+ * whether to load an interior.
  */
 export const InteriorTypesFileSchema = z.strictObject({
   byVenueType: z.record(IdSchema, IdSchema),
+  byVenue: z.record(IdSchema, IdSchema),
 })
 
 export const InteriorsConfigSchema = z.strictObject({
@@ -309,11 +319,12 @@ export const InteriorsConfigSchema = z.strictObject({
   crowd: z.strictObject({
     /** Locals at a full hour. */
     max: perTier(z.int().nonnegative()),
-    /** Bodies (woman, man) a tier draws: each body and pose costs four draw calls. */
+    /** Bodies (woman, man) a tier draws: each body and clip costs four draw calls. */
     bodies: perTier(z.int().min(1).max(2)),
-    poses: perTier(z.array(IdSchema).min(1)),
+    /** The most clips a tier bakes for one interior (its first poses' clips, S43b). */
+    clipsMax: perTier(z.int().min(1)),
     /** The rig clip each pose loops. */
-    clips: z.record(IdSchema, z.enum(['idle', 'talk', 'wave', 'walk', 'sit'])),
+    clips: z.record(IdSchema, z.enum(['idle', 'talk', 'wave', 'walk', 'sit', 'interact', 'run'])),
     /** Baked frames per loop. */
     frames: perTier(z.int().min(2)),
     heightM: z.strictObject({ min: positive, max: positive }),
@@ -333,6 +344,14 @@ export const InteriorsConfigSchema = z.strictObject({
       frames: perTier(z.int().min(2)),
       swayDeg: nonNegative,
     }),
+    /**
+     * Poses that move on top of their loop like the dance's groove (a rep, a boxer's bounce):
+     * a bob of `bobM` `perBeat` times a beat, swaying `swayDeg` either way.
+     */
+    moves: z.record(
+      IdSchema,
+      z.strictObject({ bobM: nonNegative, swayDeg: nonNegative, perBeat: positive }),
+    ),
     palette: z.strictObject({
       skin: z.array(hex).min(1),
       tops: z.array(hex).min(1),

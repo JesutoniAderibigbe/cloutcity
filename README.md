@@ -439,16 +439,22 @@ them through `src/lib/world/places.ts` (`mapPlaces()`, `placeAccess()`,
   `data/places/icons.json` (plus `PLACE_ICON_GROUPS` and a `categories.*` label) and a plot style
   in `data/config/plots.json`. A shop type also joins `SHOP_VENUE_TYPES`
   (`src/engine/placeActions.ts`); a flex spot joins `clout.flex.venueTypes`.
-- **Inside views (S43).** A venue type listed in `data/interiors/types.json` shows a 3D interior
-  behind its place sheet while the player is there (`src/components/places/VenueInterior.tsx`,
-  drawn by `src/scene/venue/`, reusing the apartment's room shell, orbit, furniture models and
-  room Sim). Each interior in `data/interiors/venues.json` lists its room (grid, finishes,
+- **Inside views (S43).** A venue type listed in `data/interiors/types.json` `byVenueType` (or a
+  single venue in `byVenue`: the boxing gym, the warehouse) shows a 3D interior behind its place
+  sheet while the player is there (`src/components/places/VenueInterior.tsx`, drawn by
+  `src/scene/venue/`, reusing the apartment's room shell, orbit, furniture models and room Sim).
+  Each interior is its own file, `data/interiors/venues/<id>.json`, loaded in its own lazy chunk
+  (add it to `INTERIOR_LOADERS` in `src/scene/venue/data.ts`); the Sim poses and props they share
+  are `data/interiors/sim.json`. An interior lists its room (grid, finishes,
   camera), catalog furniture (`decor`, `fixtures`), code-built pieces (`kinds`/`pieces` placed on
   cells, one-off `build` parts in room metres; `glow` parts animate in one instanced mesh),
   the dance floor, party lights, string lights and skyline, its music mood, the steps the
   player's Sim acts out for each place action (`actions`, with `simSpots`), and its locals'
-  spots, seats and busy hours (`crowd`). Per-tier caps and crowd sizes live in
-  `data/config/interiors.json`. Real players inside come from presence through
+  spots, seats and busy hours (`crowd`, with its poses most important first: a tier bakes only
+  the clips of its first poses, `clipsMax`). Every action the sheet offers there (the type's
+  actions, a shift per job, flex) needs steps, and a step that names furniture falls back to a
+  `simSpots` pose, then to standing. Per-tier caps, crowd sizes and the poses' clips and moves
+  live in `data/config/interiors.json`. Real players inside come from presence through
   `src/state/venueOccupants.ts` (`setInteriorOccupants`). `src/lib/data/interiors-data.test.ts`
   checks the files against the rest of the data.
 - **nameMode.** A landmark is `generic` when its real name contains a corporate or sponsor brand

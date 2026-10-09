@@ -34,10 +34,14 @@ export const INTERIOR_FAILED_MESSAGE = 'Venue interior failed to start; the plac
 const ROOM_SLOT_SELECTOR = '[data-scene-slot="room"]'
 
 const byVenueType: Readonly<Record<string, string | undefined>> = typesJson.byVenueType
+const byVenue: Readonly<Record<string, string | undefined>> = typesJson.byVenue
 
-/** The interior a venue type opens, or null (data/interiors/types.json). */
-export function interiorFor(type: string): string | null {
-  return byVenueType[type] ?? null
+/**
+ * The interior a venue opens, or null (data/interiors/types.json): its own when it has one (the
+ * boxing gym, the warehouse), else its type's.
+ */
+export function interiorFor(venue: Pick<Venue, 'id' | 'type'>): string | null {
+  return byVenue[venue.id] ?? byVenueType[venue.type] ?? null
 }
 
 class InteriorBoundary extends Component<
@@ -83,7 +87,7 @@ export function VenueInterior({
   readonly minute: number
   readonly name: string
 }) {
-  const interiorId = interiorFor(place.type)
+  const interiorId = interiorFor(place)
   // The Home panel's room has the slot while it shows.
   const roomShown = useApartmentView() !== null
   const tier = useActiveTier() ?? 'mid'

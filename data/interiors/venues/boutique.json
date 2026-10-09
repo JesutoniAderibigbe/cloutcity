@@ -1,0 +1,346 @@
+{
+  "grid": { "cols": 10, "rows": 8, "cellM": 1 },
+  "heightM": 3.4,
+  "openings": [
+    { "kind": "door", "wall": "right", "at": 6, "span": 1, "sillM": 0, "heightM": 2.3 },
+    { "kind": "window", "wall": "left", "at": 2, "span": 4, "sillM": 0.3, "heightM": 2.2 }
+  ],
+  "camera": { "position": [1, 7.2, 9.2], "target": [0, 0.6, -0.3], "fovDeg": 40 },
+  "entry": { "slot": "f9-6", "rotationDeg": -80 },
+  "shell": {
+    "wallPaint": "gallery-white",
+    "floorFinish": "herringbone-oak",
+    "crown": false,
+    "accentBack": null
+  },
+  "backdrop": { "kind": "room", "tint": null },
+  "mood": {
+    "music": "boutique-house",
+    "bpm": 112,
+    "tint": "bubblegum-300",
+    "openMix": 0.16,
+    "openAmbientScale": 1,
+    "openSunScale": 1,
+    "closedAmbientScale": 0.8
+  },
+  "decor": [
+    {
+      "id": "fit-bench",
+      "item": "velvet-chesterfield",
+      "slot": "f9-4",
+      "turn": 3,
+      "footprint": "2x1",
+      "token": "pink-400"
+    },
+    {
+      "id": "btq-rug",
+      "item": "hand-knotted-rug",
+      "slot": "f2-4",
+      "turn": 0,
+      "footprint": "2x2",
+      "token": "lilac-300"
+    },
+    {
+      "id": "btq-plant",
+      "item": "fiddle-leaf-fig",
+      "slot": "f6-0",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "cream-100"
+    },
+    {
+      "id": "btq-plant-2",
+      "item": "fiddle-leaf-fig",
+      "slot": "f0-7",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "charcoal-800"
+    }
+  ],
+  "fixtures": [],
+  "kinds": {},
+  "pieces": [],
+  "build": [
+    { "shape": "box", "size": [3.7, 0.03, 0.03], "at": [-2.8, 1.45, -3.7], "token": "silver-300" },
+    {
+      "shape": "box",
+      "size": [0.05, 0.75, 0.4],
+      "at": [-4.528, 1.055, -3.7],
+      "token": "coal-900",
+      "repeat": { "count": 25, "step": [0.144, 0, 0] },
+      "tokens": [
+        "coal-900",
+        "cream-100",
+        "pink-400",
+        "sand-200",
+        "sky-400",
+        "charcoal-800",
+        "white-50",
+        "teal-700"
+      ]
+    },
+    { "shape": "box", "size": [3.7, 0.03, 0.03], "at": [-2.8, 2.55, -3.7], "token": "silver-300" },
+    {
+      "shape": "box",
+      "size": [0.05, 0.7, 0.4],
+      "at": [-4.528, 2.18, -3.7],
+      "token": "teal-700",
+      "repeat": { "count": 25, "step": [0.144, 0, 0] },
+      "tokens": [
+        "teal-700",
+        "white-50",
+        "charcoal-800",
+        "sky-400",
+        "sand-200",
+        "pink-400",
+        "cream-100",
+        "coal-900"
+      ]
+    },
+    {
+      "shape": "box",
+      "size": [2, 0.04, 0.3],
+      "at": [0.6, 1.1, -3.84],
+      "token": "oak-500",
+      "rows": { "count": 3, "step": [0, 0.45, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.26, 0.12, 0.16],
+      "at": [-0.2, 1.18, -3.84],
+      "token": "white-50",
+      "repeat": { "count": 5, "step": [0.38, 0, 0] },
+      "rows": { "count": 3, "step": [0, 0.45, 0] },
+      "tokens": ["white-50", "coal-900", "pink-400", "sky-400", "taxi-400"]
+    },
+    {
+      "shape": "box",
+      "size": [3, 0.05, 0.03],
+      "at": [0.6, 2.8, -3.95],
+      "token": "bubblegum-300",
+      "glow": "steady"
+    },
+    { "shape": "box", "size": [0.06, 2.3, 1.6], "at": [2.4, 1.15, -3.2], "token": "white-50" },
+    { "shape": "box", "size": [0.06, 2.3, 1.6], "at": [3.7, 1.15, -3.2], "token": "white-50" },
+    { "shape": "box", "size": [2.6, 0.06, 1.6], "at": [3.7, 2.33, -3.2], "token": "white-50" },
+    { "shape": "box", "size": [0.06, 2.3, 1.6], "at": [4.97, 1.15, -3.2], "token": "white-50" },
+    { "shape": "box", "size": [1.2, 1.9, 0.04], "at": [3.05, 1.05, -2.42], "token": "grape-400" },
+    { "shape": "box", "size": [1.2, 1.9, 0.04], "at": [4.33, 1.05, -2.42], "token": "pink-400" },
+    {
+      "shape": "box",
+      "size": [1.26, 0.04, 0.04],
+      "at": [3.05, 2.05, -2.4],
+      "token": "gold-400",
+      "repeat": { "count": 2, "step": [1.28, 0, 0] }
+    },
+    { "shape": "box", "size": [0.05, 2.1, 1.1], "at": [4.96, 1.2, -0.5], "token": "gold-400" },
+    {
+      "shape": "box",
+      "size": [0.03, 2, 1],
+      "at": [4.93, 1.2, -0.5],
+      "token": "dawn-100",
+      "glow": "steady"
+    },
+    { "shape": "box", "size": [1.6, 0.8, 0.8], "at": [-0.3, 0.4, -0.6], "token": "oak-500" },
+    { "shape": "box", "size": [1.7, 0.05, 0.9], "at": [-0.3, 0.82, -0.6], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.3, 0.08, 0.25],
+      "at": [-0.85, 0.89, -0.75],
+      "token": "cream-100",
+      "repeat": { "count": 4, "step": [0.37, 0, 0] },
+      "rows": { "count": 2, "step": [0, 0, 0.32] },
+      "tokens": ["cream-100", "coal-900", "pink-400", "sky-400"]
+    },
+    {
+      "shape": "box",
+      "size": [0.3, 0.08, 0.25],
+      "at": [-0.85, 0.97, -0.75],
+      "token": "sand-200",
+      "repeat": { "count": 4, "step": [0.37, 0, 0] },
+      "rows": { "count": 2, "step": [0, 0, 0.32] },
+      "tokens": ["sand-200", "teal-700", "white-50"]
+    },
+    { "shape": "disc", "size": [0.9, 0.04, 0.9], "at": [2, 1.4, 0.6], "token": "silver-300" },
+    { "shape": "disc", "size": [0.05, 1.4, 0.05], "at": [2, 0.7, 0.6], "token": "silver-300" },
+    { "shape": "disc", "size": [0.5, 0.03, 0.5], "at": [2, 0.015, 0.6], "token": "silver-300" },
+    {
+      "shape": "box",
+      "size": [0.05, 0.8, 0.4],
+      "at": [2.42, 0.98, 0.6],
+      "token": "coal-900",
+      "repeat": { "count": 1, "step": [0, 0, 0] }
+    },
+    { "shape": "box", "size": [0.4, 0.8, 0.05], "at": [2, 0.98, 1.02], "token": "pink-400" },
+    { "shape": "box", "size": [0.05, 0.8, 0.4], "at": [1.58, 0.98, 0.6], "token": "sand-200" },
+    { "shape": "box", "size": [0.4, 0.8, 0.05], "at": [2, 0.98, 0.18], "token": "sky-400" },
+    { "shape": "disc", "size": [0.34, 0.04, 0.34], "at": [-4.4, 0.02, -1.3], "token": "iron-900" },
+    { "shape": "disc", "size": [0.03, 0.6, 0.03], "at": [-4.4, 0.32, -1.3], "token": "iron-900" },
+    { "shape": "box", "size": [0.3, 0.55, 0.18], "at": [-4.4, 0.85, -1.3], "token": "coal-900" },
+    { "shape": "box", "size": [0.38, 0.55, 0.22], "at": [-4.4, 1.38, -1.3], "token": "pink-400" },
+    { "shape": "disc", "size": [0.1, 0.1, 0.1], "at": [-4.4, 1.7, -1.3], "token": "fog-300" },
+    { "shape": "disc", "size": [0.2, 0.24, 0.2], "at": [-4.4, 1.86, -1.3], "token": "fog-300" },
+    { "shape": "disc", "size": [0.34, 0.04, 0.34], "at": [-4.4, 0.02, 0.6], "token": "iron-900" },
+    { "shape": "disc", "size": [0.03, 0.6, 0.03], "at": [-4.4, 0.32, 0.6], "token": "iron-900" },
+    { "shape": "box", "size": [0.3, 0.55, 0.18], "at": [-4.4, 0.85, 0.6], "token": "teal-700" },
+    { "shape": "box", "size": [0.38, 0.55, 0.22], "at": [-4.4, 1.38, 0.6], "token": "cream-100" },
+    { "shape": "disc", "size": [0.1, 0.1, 0.1], "at": [-4.4, 1.7, 0.6], "token": "fog-300" },
+    { "shape": "disc", "size": [0.2, 0.24, 0.2], "at": [-4.4, 1.86, 0.6], "token": "fog-300" },
+    { "shape": "box", "size": [1.8, 1, 0.6], "at": [-3.6, 0.5, 2.7], "token": "coal-900" },
+    { "shape": "box", "size": [1.9, 0.05, 0.7], "at": [-3.6, 1.02, 2.7], "token": "oak-500" },
+    { "shape": "box", "size": [0.32, 0.22, 0.26], "at": [-3.2, 1.16, 2.7], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.26, 0.16, 0.02],
+      "at": [-3.2, 1.3, 2.82],
+      "token": "mint-400",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [0.26, 0.32, 0.1],
+      "at": [-4.1, 1.2, 2.7],
+      "token": "pink-400",
+      "repeat": { "count": 2, "step": [0.3, 0, 0] },
+      "tokens": ["pink-400", "coal-900"]
+    },
+    { "shape": "disc", "size": [0.16, 0.24, 0.16], "at": [-2.85, 1.17, 2.6], "token": "white-50" },
+    {
+      "shape": "disc",
+      "size": [0.26, 0.2, 0.26],
+      "at": [-2.85, 1.38, 2.6],
+      "token": "bubblegum-300"
+    },
+    {
+      "shape": "disc",
+      "size": [0.02, 0.9, 0.02],
+      "at": [-0.3, 2.95, -0.6],
+      "token": "iron-900",
+      "repeat": { "count": 2, "step": [1.15, 0, 0] }
+    },
+    {
+      "shape": "disc",
+      "size": [0.4, 0.22, 0.4],
+      "at": [-0.3, 2.45, -0.6],
+      "token": "gold-400",
+      "repeat": { "count": 2, "step": [1.15, 0, 0] }
+    },
+    {
+      "shape": "disc",
+      "size": [0.22, 0.05, 0.22],
+      "at": [-0.3, 2.33, -0.6],
+      "token": "lamp-200",
+      "glow": "night",
+      "repeat": { "count": 2, "step": [1.15, 0, 0] }
+    }
+  ],
+  "blocked": [
+    "f7-0",
+    "f7-1",
+    "f8-0",
+    "f8-1",
+    "f9-0",
+    "f9-1",
+    "f4-2",
+    "f4-3",
+    "f5-2",
+    "f5-3",
+    "f6-4",
+    "f6-5",
+    "f7-4",
+    "f7-5",
+    "f0-2",
+    "f0-3",
+    "f0-4",
+    "f0-6",
+    "f1-6"
+  ],
+  "danceFloor": null,
+  "partyLights": null,
+  "stringLights": null,
+  "skyline": null,
+  "simSpots": [
+    { "pose": "work", "slot": "f1-5", "rotationDeg": 180, "heightM": 0 },
+    { "pose": "browse", "slot": "f2-1", "rotationDeg": 180, "heightM": 0 },
+    { "pose": "flex", "slot": "f8-3", "rotationDeg": -90, "heightM": 0 }
+  ],
+  "actions": {
+    "shift-retail": [
+      {
+        "poses": ["work"],
+        "models": [],
+        "holdMs": 7000,
+        "prop": "bag",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.work"
+      }
+    ],
+    "flex": [
+      {
+        "poses": ["flex"],
+        "models": [],
+        "holdMs": 3500,
+        "prop": "phone",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.flex"
+      }
+    ]
+  },
+  "crowd": {
+    "poses": ["idle", "work", "talk", "sit"],
+    "spots": [
+      {
+        "activity": "register",
+        "pose": "work",
+        "at": [-3.4, 2.1],
+        "headingDeg": 0,
+        "rank": 0,
+        "staff": true
+      },
+      {
+        "activity": "stylist",
+        "pose": "work",
+        "at": [-0.3, -1.3],
+        "headingDeg": 0,
+        "rank": 0,
+        "staff": true
+      },
+      { "activity": "browse", "pose": "idle", "at": [-3, -2.8], "headingDeg": 180, "rank": 1 },
+      { "activity": "browse", "pose": "idle", "at": [-1.6, -2.85], "headingDeg": 170, "rank": 2 },
+      { "activity": "browse", "pose": "idle", "at": [0.6, -0.05], "headingDeg": 180, "rank": 2 },
+      { "activity": "mirror", "pose": "idle", "at": [3.9, -0.4], "headingDeg": 90, "rank": 3 },
+      { "activity": "browse", "pose": "idle", "at": [2.95, 0.7], "headingDeg": -90, "rank": 4 },
+      { "activity": "chat", "pose": "talk", "at": [-1.6, 1.7], "headingDeg": 120, "rank": 4 },
+      { "activity": "chat", "pose": "talk", "at": [-0.9, 2], "headingDeg": -110, "rank": 4 }
+    ],
+    "seats": [{ "activity": "waiting", "model": "couch", "rank": 3 }],
+    "hours": [
+      [0, 0.47],
+      [1, 0.47],
+      [2, 0.46],
+      [3, 0.45],
+      [4, 0.45],
+      [5, 0.44],
+      [6, 0.43],
+      [7, 0.43],
+      [8, 0.42],
+      [9, 0.41],
+      [10, 0.41],
+      [11, 0.4],
+      [12, 0.6],
+      [13, 0.8],
+      [14, 0.77],
+      [15, 0.73],
+      [16, 0.7],
+      [17, 0.85],
+      [18, 1],
+      [19, 0.75],
+      [20, 0.5],
+      [21, 0.49],
+      [22, 0.49],
+      [23, 0.48]
+    ],
+    "busyDays": [5, 6],
+    "quietShare": 0.7
+  }
+}

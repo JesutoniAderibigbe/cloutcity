@@ -1,6 +1,7 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import realtimeJson from '@data/config/realtime.json'
 import typesJson from '@data/interiors/types.json'
-import interiorsJson from '@data/interiors/venues.json'
 import venuesJson from '@data/venues/venues.json'
 import { afterEach, describe, expect, expectTypeOf, it } from 'vitest'
 import type { PresenceActivity, PresencePlayer } from '@/realtime/types'
@@ -13,9 +14,12 @@ const inside = realtimeJson.presence.inside
 const club = venuesJson.venues.find((venue) => venue.type === 'club')
 const deli = venuesJson.venues.find((venue) => venue.type === 'bodega')
 if (club === undefined || deli === undefined) throw new Error('test: no club or bodega venue')
+// Every venue type has an interior now (S43b): the deli's pin stands in for a place without one
+// (a landmark's category).
+const NO_INTERIOR = 'landmark'
 const categoryOf = new Map([
   [club.id, club.type],
-  [deli.id, deli.type],
+  [deli.id, NO_INTERIOR],
 ])
 
 const idle = {
@@ -57,11 +61,21 @@ describe('activities', () => {
   })
 
   it('config names real interiors and real place actions', () => {
-    const interiors = new Set(Object.values(typesJson.byVenueType))
-    expect(new Set(Object.keys(inside.byInterior))).toEqual(interiors)
-    // The place actions an interior acts out (the Sim's actions there).
+    const interiors = new Set([
+      ...Object.values(typesJson.byVenueType),
+      ...Object.values(typesJson.byVenue),
+    ])
+    for (const id of Object.keys(inside.byInterior)) expect(interiors).toContain(id)
+    // The place actions an interior acts out (the Sim's actions there, one file each, S43b).
+    const dir = join(import.meta.dirname, '../../../data/interiors/venues')
     const actions = new Set(
-      Object.values(interiorsJson.interiors).flatMap((interior) => Object.keys(interior.actions)),
+      readdirSync(dir)
+        .filter((name) => name.endsWith('.json'))
+        .flatMap((name) =>
+          Object.keys(
+            (JSON.parse(readFileSync(join(dir, name), 'utf8')) as { actions: object }).actions,
+          ),
+        ),
     )
     for (const id of Object.keys(inside.actions)) expect(actions).toContain(id)
   })
@@ -109,7 +123,10 @@ describe('occupantsAt', () => {
 
   it('knows which places have an interior', () => {
     expect(interiorOf('club')).toBe('club')
-    expect(interiorOf('bodega')).toBeNull()
+    expect(interiorOf('bodega')).toBe('bodega')
+    // A single venue can open its own (S43b): the boxing gym.
+    expect(interiorOf('gym', 'southpaw-social')).toBe('boxing')
+    expect(interiorOf(NO_INTERIOR)).toBeNull()
     expect(interiorOf(undefined)).toBeNull()
   })
 })
@@ -126,7 +143,7 @@ describe('startInsideFeed', () => {
     standAt(club.id)
     expect(interiorOccupants(club.id).map((o) => o.id)).toEqual([uuid(1), uuid(2)])
     expect(interiorOccupants(club.id)[0]?.activity).toBe('dance')
-    // A bodega has no interior: nothing is fed.
+    // A place with no interior: nothing is fed.
     standAt(deli.id)
     expect(interiorOccupants(club.id)).toEqual([])
     expect(interiorOccupants(deli.id)).toEqual([])

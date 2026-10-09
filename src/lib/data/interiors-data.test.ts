@@ -1,12 +1,13 @@
 /**
- * S43 data: data/interiors/venues.json (each venue interior's layout, pieces, lights, crowd and
- * the Sim's actions), data/interiors/types.json (which venue types open an interior) and
+ * S43 data: data/interiors/venues/<id>.json (each venue interior's layout, pieces, lights, crowd
+ * and the Sim's actions), data/interiors/sim.json (the Sim's venue poses and props),
+ * data/interiors/types.json (which venue types and venues open an interior) and
  * data/config/interiors.json (per-tier caps and crowd), checked against each other and the rest
- * of the data: every venue type with an interior exists and every action it offers is acted out,
- * finishes, palette tokens, catalog items, models and copy exist, and every cell, spot and pose
- * is inside the room and drawable.
+ * of the data: every venue type with an interior exists and every action its sheet offers is
+ * acted out, finishes, palette tokens, catalog items, models and copy exist, and every cell, spot
+ * and pose is inside the room and drawable.
  */
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseSlot } from '@/engine/homeGrid'
@@ -14,9 +15,11 @@ import { baseCopy } from '@/lib/copy/all'
 import { balance } from './config'
 import { items, venues } from './content'
 import {
+  InteriorSchema,
+  InteriorSimFileSchema,
   InteriorTypesFileSchema,
   InteriorsConfigSchema,
-  InteriorsFileSchema,
+  type InteriorData,
 } from './schemas/interiors'
 import { RoomSimConfigSchema } from './schemas/roomSim'
 import { QUALITY_TIERS } from './schemas/config'
@@ -24,7 +27,17 @@ import { QUALITY_TIERS } from './schemas/config'
 const DATA = join(import.meta.dirname, '../../../data')
 const readJson = (path: string): unknown => JSON.parse(readFileSync(join(DATA, path), 'utf8'))
 
-const file = InteriorsFileSchema.parse(readJson('interiors/venues.json'))
+const file = {
+  sim: InteriorSimFileSchema.parse(readJson('interiors/sim.json')).sim,
+  interiors: Object.fromEntries(
+    readdirSync(join(DATA, 'interiors/venues'))
+      .filter((name) => name.endsWith('.json'))
+      .map((name): [string, InteriorData] => [
+        name.replace(/\.json$/, ''),
+        InteriorSchema.parse(readJson(`interiors/venues/${name}`)),
+      ]),
+  ) as Record<string, InteriorData | undefined>,
+}
 const types = InteriorTypesFileSchema.parse(readJson('interiors/types.json'))
 const config = InteriorsConfigSchema.parse(readJson('config/interiors.json'))
 const roomSim = RoomSimConfigSchema.parse(readJson('config/roomSim.json'))
@@ -38,6 +51,16 @@ const manifest = readJson('assets/manifest.json') as {
   models: { id: string; kind: string; clips: string[] }[]
 }
 const interactions = readJson('homes/interactions.json') as { models: Record<string, unknown> }
+const homeInteriors = readJson('homes/interiors.json') as {
+  homes: Record<string, { fixtures: { model?: string }[] }>
+}
+/** Models a room scene loads (src/scene/apartment/decorModels.ts): decor items' and fixtures'. */
+const roomModels = new Set([
+  ...Object.values(scene.models.decor).map((entry) => entry.model),
+  ...Object.values(homeInteriors.homes).flatMap((home) =>
+    home.fixtures.flatMap((fixture) => (fixture.model === undefined ? [] : [fixture.model])),
+  ),
+])
 
 const tokens = new Set([
   ...Object.keys(theme.colors ?? {}),
@@ -49,7 +72,17 @@ const frameRigs = new Set(
   (readJson('avatar/options.json') as { bodies: { rig: string }[] }).bodies.map((body) => body.rig),
 )
 const rigs = manifest.models.filter((model) => model.kind === 'rig' && frameRigs.has(model.id))
-const interiors = Object.entries(file.interiors)
+const interiors = Object.entries(file.interiors).flatMap(([id, interior]) =>
+  interior === undefined ? [] : [[id, interior] as const],
+)
+
+/** Every action a venue's sheet can offer: its type's, a shift per job, the club night, flex. */
+function sheetActions(venue: { type: string; jobIds?: readonly string[] }): string[] {
+  const offered = [...(balance.place.venueActions[venue.type] ?? []), 'flex']
+  for (const job of venue.jobIds ?? []) offered.push(`shift-${job}`)
+  if (venue.type === 'club') offered.push('club-night')
+  return offered
+}
 
 /** Every palette token a value names, wherever it sits. */
 function tokensIn(value: unknown, key = ''): string[] {
@@ -68,10 +101,14 @@ function tokensIn(value: unknown, key = ''): string[] {
 }
 
 describe('data/interiors/types.json (S43)', () => {
-  it('maps venue types that exist to interiors that exist', () => {
+  it('maps venue types and venues that exist to interiors that exist', () => {
     const venueTypes = new Set(venues.map((venue) => venue.type))
     for (const [type, interior] of Object.entries(types.byVenueType)) {
       expect(venueTypes).toContain(type)
+      expect(Object.keys(file.interiors)).toContain(interior)
+    }
+    for (const [venueId, interior] of Object.entries(types.byVenue)) {
+      expect(venues.map((venue) => venue.id)).toContain(venueId)
       expect(Object.keys(file.interiors)).toContain(interior)
     }
   })
@@ -80,15 +117,21 @@ describe('data/interiors/types.json (S43)', () => {
     expect(types.byVenueType.club).toBe('club')
     expect(types.byVenueType.lounge).toBe('lounge')
   })
+
+  it('opens an inside view at every venue in the data (S43b)', () => {
+    for (const venue of venues) {
+      expect(types.byVenue[venue.id] ?? types.byVenueType[venue.type], venue.id).toBeDefined()
+    }
+  })
 })
 
-describe('data/interiors/venues.json (S43)', () => {
-  it('acts out every action the venue type offers', () => {
-    for (const [type, id] of Object.entries(types.byVenueType)) {
-      const interior = file.interiors[id]
-      const offered = [...(balance.place.venueActions[type] ?? []), 'flex']
-      if (type === 'club') offered.push('club-night')
-      for (const action of offered) expect(Object.keys(interior?.actions ?? {})).toContain(action)
+describe('data/interiors/venues (S43)', () => {
+  it('acts out every action the sheet offers at each venue with an inside view', () => {
+    for (const venue of venues) {
+      const id = types.byVenue[venue.id] ?? types.byVenueType[venue.type]
+      if (id === undefined) continue
+      const actions = Object.keys(file.interiors[id]?.actions ?? {})
+      for (const action of sheetActions(venue)) expect(actions, `${venue.id}`).toContain(action)
     }
   })
 
@@ -131,9 +174,8 @@ describe('data/interiors/venues.json (S43)', () => {
         expect(Object.keys(scene.models.decor)).toContain(decor.item)
         expect(theme.colors).toHaveProperty(decor.token)
       }
-      for (const fixture of interior.fixtures) {
-        expect(manifest.models.map((model) => model.id)).toContain(fixture.model)
-      }
+      // Only models a room scene loads, else the fixture stays a stand-in box.
+      for (const fixture of interior.fixtures) expect(roomModels).toContain(fixture.model)
       for (const piece of interior.pieces) expect(Object.keys(interior.kinds)).toContain(piece.kind)
     }
     for (const prop of Object.values(file.sim.props)) {
@@ -185,11 +227,34 @@ describe('data/interiors/venues.json (S43)', () => {
             : Object.keys(interactions.models).includes(model)
         expect(anchored).toBe(true)
       }
-      for (const spot of interior.crowd.spots) {
-        expect(Object.keys(config.crowd.clips)).toContain(spot.pose)
+      for (const pose of interior.crowd.poses) {
+        expect(Object.keys(config.crowd.clips)).toContain(pose)
       }
+      for (const spot of interior.crowd.spots) expect(interior.crowd.poses).toContain(spot.pose)
+      if (interior.crowd.seats.length > 0) expect(interior.crowd.poses).toContain('sit')
       // A staff member is in whenever the venue is open.
       expect(interior.crowd.spots.some((spot) => spot.staff === true)).toBe(true)
+    }
+  })
+
+  it('draws the staff on every tier (their pose, or a standing stand-in, in its first clips)', () => {
+    for (const [id, interior] of interiors) {
+      for (const tier of QUALITY_TIERS) {
+        const clips = new Set<string>()
+        const drawn = new Set<string>()
+        for (const pose of interior.crowd.poses) {
+          const clip = config.crowd.clips[pose] ?? ''
+          if (!clips.has(clip) && clips.size >= config.crowd.clipsMax[tier]) continue
+          clips.add(clip)
+          drawn.add(pose)
+        }
+        for (const spot of interior.crowd.spots.filter((entry) => entry.staff === true)) {
+          const shown =
+            drawn.has(spot.pose) ||
+            (spot.pose !== 'dance' && (drawn.has('talk') || drawn.has('idle')))
+          expect(shown, `${id} ${tier} ${spot.activity}`).toBe(true)
+        }
+      }
     }
   })
 
@@ -213,27 +278,30 @@ describe('data/config/interiors.json (S43)', () => {
     expect(config.crowd.max.high).toBeGreaterThanOrEqual(config.crowd.max.mid)
   })
 
-  it('caps grow with the tier, and every tier pose has a clip', () => {
-    for (const caps of [config.caps.drawCallsMax, config.caps.trianglesMax]) {
+  it('caps grow with the tier, and every pose plays a clip every rig has', () => {
+    for (const caps of [
+      config.caps.drawCallsMax,
+      config.caps.trianglesMax,
+      config.crowd.clipsMax,
+    ]) {
       expect(caps.mid).toBeGreaterThanOrEqual(caps.low)
       expect(caps.high).toBeGreaterThanOrEqual(caps.mid)
-    }
-    for (const tier of QUALITY_TIERS) {
-      for (const pose of config.crowd.poses[tier]) {
-        expect(Object.keys(config.crowd.clips)).toContain(pose)
-      }
     }
     for (const clip of Object.values(config.crowd.clips)) {
       for (const rig of rigs) expect(rig.clips).toContain(clip)
     }
+    for (const pose of Object.keys(config.crowd.moves)) {
+      expect(Object.keys(config.crowd.clips)).toContain(pose)
+    }
   })
 
-  it('leaves room in the low tier for the locals the tier draws (four calls per body and clip)', () => {
-    const clips = new Set(config.crowd.poses.low.map((pose) => config.crowd.clips[pose]))
-    // With the dance moves loaded, the dance pose's clip gives way to the tier's moves.
-    const withMoves = clips.size - 1 + config.crowd.dance.moves.low
-    for (const count of [clips.size, withMoves]) {
-      expect(config.crowd.bodies.low * count * 4).toBeLessThan(config.caps.drawCallsMax.low)
+  it('leaves room on every tier for the locals it draws (four calls per body and clip)', () => {
+    for (const tier of QUALITY_TIERS) {
+      // With the dance moves loaded, the dance pose's clip gives way to the tier's moves.
+      const clips = config.crowd.clipsMax[tier] - 1 + config.crowd.dance.moves[tier]
+      for (const count of [config.crowd.clipsMax[tier], clips]) {
+        expect(config.crowd.bodies[tier] * count * 4).toBeLessThan(config.caps.drawCallsMax[tier])
+      }
     }
   })
 

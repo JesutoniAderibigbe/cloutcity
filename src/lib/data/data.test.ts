@@ -67,9 +67,10 @@ import {
 } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
 import {
+  InteriorSchema,
+  InteriorSimFileSchema,
   InteriorTypesFileSchema,
   InteriorsConfigSchema,
-  InteriorsFileSchema,
 } from './schemas/interiors'
 import { InteractionsFileSchema, RoomSimConfigSchema } from './schemas/roomSim'
 import {
@@ -190,7 +191,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'homes/interiors.json': HomeInteriorsFileSchema,
   'homes/interactions.json': InteractionsFileSchema,
   'interiors/types.json': InteriorTypesFileSchema,
-  'interiors/venues.json': InteriorsFileSchema,
+  'interiors/sim.json': InteriorSimFileSchema,
   'homes/finishes.json': FinishesFileSchema,
   'homes/engine.derived.json': HomeEngineTablesSchema,
   'homes/neighborhoods.json': NeighborhoodsFileSchema,
@@ -215,6 +216,7 @@ function schemaFor(file: string): z.ZodType | undefined {
   if (file === 'landmarks/blender.derived.json') return BlenderModelsFileSchema
   if (/^geo\/districts\/[a-z0-9-]+\.[a-z]+\.derived\.json$/.test(file)) return BuildingsFileSchema
   if (/^geo\/blocks\.[a-z]+\.derived\.json$/.test(file)) return BlocksFileSchema
+  if (/^interiors\/venues\/[a-z0-9-]+\.json$/.test(file)) return InteriorSchema
   if (/^copy\/[\w-]+\/base\.json$/.test(file)) return NamespaceBaseSchema
   if (/^copy\/[\w-]+\/[\w-]+\.json$/.test(file)) return SlangPackSchema
   return SCHEMAS[file]

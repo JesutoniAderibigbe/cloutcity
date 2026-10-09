@@ -202,7 +202,7 @@ export class SimController {
 
   /**
    * Acts out action `actionId` (a home action, balance.json `place.homeActions`, or a venue
-   * action, data/interiors/venues.json), then gets up.
+   * action, data/interiors/venues/<id>.json), then gets up.
    */
   perform(actionId: string): void {
     this.interrupt()

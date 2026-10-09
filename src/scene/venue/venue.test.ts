@@ -1,11 +1,30 @@
-import { describe, expect, it } from 'vitest'
+import { readdirSync } from 'node:fs'
+import { join } from 'node:path'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { InstancedMesh, Mesh } from 'three'
 import { createToonRamp } from '../toonRamp'
 import { toonRamp } from '../apartment/data'
 import { SimController } from '../apartment/sim/simController'
 import { cellOf, isFree } from '../apartment/sim/simWorld'
 import { buildVenue } from './buildVenue'
-import { crowdConfig, lightsConfig, venueBudget, venueInterior, venueSimData } from './data'
+import {
+  crowdConfig,
+  lightsConfig,
+  loadVenueInterior,
+  VENUE_INTERIOR_IDS,
+  venueBudget,
+  venueInterior,
+  venueSimData,
+} from './data'
+
+const INTERIOR_FILES = readdirSync(join(import.meta.dirname, '../../../data/interiors/venues'))
+  .filter((name) => name.endsWith('.json'))
+  .map((name) => name.replace(/\.json$/, ''))
+  .sort()
+
+beforeAll(async () => {
+  await Promise.all(VENUE_INTERIOR_IDS.map(loadVenueInterior))
+})
 
 const DEG = Math.PI / 180
 
@@ -34,6 +53,11 @@ function settle(sim: SimController, seconds = 30) {
 }
 
 describe('venue interiors (S43)', () => {
+  it('loads each interior file in its own chunk, and nothing it does not know', async () => {
+    expect([...VENUE_INTERIOR_IDS].sort()).toEqual(INTERIOR_FILES)
+    await expect(loadVenueInterior('no-such-room')).rejects.toThrow(/unknown interior/)
+  })
+
   it('builds the club as an apartment room with its bar and booth seats for the locals', () => {
     const club = venueInterior('club')
     expect(club.room.room.widthM).toBe(12)
@@ -80,6 +104,29 @@ describe('venue interiors (S43)', () => {
     expect(settle(sim).clip).toBe('sit')
   })
 
+  it('acts out every action of every interior where it fits, its spots on the floor', () => {
+    for (const id of VENUE_INTERIOR_IDS) {
+      const interior = venueInterior(id)
+      for (const spot of interior.crowdSpots)
+        expect(cellOf(interior.world, spot), id).not.toBeNull()
+      const data = venueSimData(id)
+      for (const [action, steps] of data.actions) {
+        const sim = controllerFor(id)
+        sim.perform(action)
+        const frame = settle(sim)
+        const shown = steps.find((step) => step.bubble !== null)
+        expect(frame.bubble, `${id} ${action}`).toBe(shown?.bubble ?? null)
+        const clips = (shown?.poses ?? []).map((pose) => data.poses.get(pose)?.clip)
+        expect(clips, `${id} ${action}`).toContain(frame.clip)
+        // Furniture the step names, where the room has it, is used (reachable): its first pose.
+        const models = new Set(interior.world.items.map((item) => item.model))
+        if (shown?.models.some((model) => models.has(model)) === true) {
+          expect(frame.clip, `${id} ${action} on furniture`).toBe(clips[0])
+        }
+      }
+    }
+  })
+
   it('draws everything that glows in one instanced mesh and animates it on the beat', () => {
     for (const id of ['club', 'lounge']) {
       const ramp = createToonRamp(toonRamp)
@@ -104,10 +151,15 @@ describe('venue interiors (S43)', () => {
     }
   })
 
-  it('keeps the low tier to one body in two clips within its caps', () => {
-    const low = crowdConfig('low')
-    expect(low.bodies).toBe(1)
-    expect(new Set([...low.poses].map((pose) => low.clipOf(pose))).size).toBe(2)
-    expect(venueBudget('low').drawCallsMax).toBeGreaterThan(low.bodies * 2 * 4)
+  it('keeps the low tier to one body in two clips within its caps, its first poses first', () => {
+    for (const id of VENUE_INTERIOR_IDS) {
+      const low = crowdConfig('low', id)
+      expect(low.bodies).toBe(1)
+      expect(low.clips.length).toBeLessThanOrEqual(2)
+      expect(venueBudget('low').drawCallsMax).toBeGreaterThan(low.bodies * low.clips.length * 4)
+    }
+    // The club still dances on the low tier; its chatter talks.
+    expect([...crowdConfig('low', 'club').poses]).toEqual(['dance', 'talk'])
+    expect(crowdConfig('high', 'club').clips).toEqual(['wave', 'talk', 'sit', 'idle'])
   })
 })

@@ -1,0 +1,440 @@
+{
+  "grid": { "cols": 9, "rows": 8, "cellM": 1 },
+  "heightM": 3,
+  "openings": [{ "kind": "door", "wall": "right", "at": 6, "span": 1, "sillM": 0, "heightM": 2.3 }],
+  "camera": { "position": [1.3, 7, 8.8], "target": [0, 0.5, -0.3], "fovDeg": 40 },
+  "entry": { "slot": "f8-6", "rotationDeg": -70 },
+  "shell": {
+    "wallPaint": "butter-cream",
+    "floorFinish": "bodega-checker",
+    "crown": false,
+    "accentBack": null
+  },
+  "backdrop": { "kind": "room", "tint": null },
+  "mood": {
+    "music": "bodega-radio",
+    "bpm": 102,
+    "tint": "lamp-200",
+    "openMix": 0.15,
+    "openAmbientScale": 1,
+    "openSunScale": 1,
+    "closedAmbientScale": 0.85
+  },
+  "decor": [
+    {
+      "id": "bodega-crate",
+      "item": "milk-crate",
+      "slot": "f4-7",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "cream-100"
+    }
+  ],
+  "fixtures": [{ "model": "fridge", "slot": "f4-0", "turn": 0 }],
+  "kinds": {},
+  "pieces": [],
+  "build": [
+    { "shape": "box", "size": [4.2, 0.3, 0.7], "at": [-2.1, 0.15, -3.64], "token": "steel-700" },
+    { "shape": "box", "size": [4.2, 0.3, 0.7], "at": [-2.1, 2.2, -3.64], "token": "steel-700" },
+    {
+      "shape": "box",
+      "size": [4, 1.75, 0.03],
+      "at": [-2.1, 1.18, -3.95],
+      "token": "dawn-100",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [4, 0.03, 0.55],
+      "at": [-2.1, 0.32, -3.65],
+      "token": "silver-300",
+      "rows": { "count": 4, "step": [0, 0.42, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.1, 0.24, 0.1],
+      "at": [-3.95, 0.45, -3.55],
+      "token": "tomato-400",
+      "repeat": { "count": 16, "step": [0.24, 0, 0] },
+      "rows": { "count": 4, "step": [0, 0.42, 0] },
+      "tokens": ["tomato-400", "lagoon-400", "mustard-300", "awninggreen-500", "bubblegum-300"]
+    },
+    {
+      "shape": "box",
+      "size": [0.06, 1.8, 0.06],
+      "at": [-4.17, 1.2, -3.3],
+      "token": "steel-700",
+      "repeat": { "count": 5, "step": [1.02, 0, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.03, 0.4, 0.03],
+      "at": [-3.75, 1.2, -3.25],
+      "token": "silver-300",
+      "repeat": { "count": 4, "step": [1.02, 0, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [4.2, 0.2, 0.04],
+      "at": [-2.1, 2.2, -3.27],
+      "token": "cobalt-400",
+      "glow": "steady"
+    },
+    { "shape": "box", "size": [0.08, 1.6, 2.6], "at": [-2.9, 0.8, -0.3], "token": "white-50" },
+    { "shape": "box", "size": [0.76, 0.2, 2.6], "at": [-2.9, 0.1, -0.3], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.76, 0.04, 2.6],
+      "at": [-2.9, 0.4, -0.3],
+      "token": "steel-400",
+      "rows": { "count": 4, "step": [0, 0.42, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.76, 1.6, 0.05],
+      "at": [-2.9, 0.8, -1.6],
+      "token": "white-50",
+      "repeat": { "count": 2, "step": [0, 0, 2.6] }
+    },
+    {
+      "shape": "box",
+      "size": [0.2, 0.26, 0.2],
+      "at": [-3.12, 0.55, -1.4],
+      "token": "tomato-400",
+      "repeat": { "count": 9, "step": [0, 0, 0.27] },
+      "rows": { "count": 3, "step": [0, 0.42, 0] },
+      "tokens": [
+        "tomato-400",
+        "mustard-300",
+        "cobalt-400",
+        "awninggreen-500",
+        "bubblegum-300",
+        "orange-400",
+        "white-50",
+        "lagoon-400"
+      ]
+    },
+    {
+      "shape": "box",
+      "size": [0.2, 0.26, 0.2],
+      "at": [-2.68, 0.55, -1.4],
+      "token": "mustard-300",
+      "repeat": { "count": 9, "step": [0, 0, 0.27] },
+      "rows": { "count": 3, "step": [0, 0.42, 0] },
+      "tokens": [
+        "lagoon-400",
+        "white-50",
+        "orange-400",
+        "bubblegum-300",
+        "awninggreen-500",
+        "cobalt-400",
+        "mustard-300",
+        "tomato-400"
+      ]
+    },
+    {
+      "shape": "box",
+      "size": [0.72, 0.18, 0.04],
+      "at": [-2.9, 1.75, -1.62],
+      "token": "awningred-500"
+    },
+    { "shape": "box", "size": [0.08, 1.6, 2.6], "at": [-0.9, 0.8, -0.3], "token": "white-50" },
+    { "shape": "box", "size": [0.76, 0.2, 2.6], "at": [-0.9, 0.1, -0.3], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.76, 0.04, 2.6],
+      "at": [-0.9, 0.4, -0.3],
+      "token": "steel-400",
+      "rows": { "count": 4, "step": [0, 0.42, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.76, 1.6, 0.05],
+      "at": [-0.9, 0.8, -1.6],
+      "token": "white-50",
+      "repeat": { "count": 2, "step": [0, 0, 2.6] }
+    },
+    {
+      "shape": "box",
+      "size": [0.2, 0.26, 0.2],
+      "at": [-1.12, 0.55, -1.4],
+      "token": "tomato-400",
+      "repeat": { "count": 9, "step": [0, 0, 0.27] },
+      "rows": { "count": 3, "step": [0, 0.42, 0] },
+      "tokens": [
+        "tomato-400",
+        "mustard-300",
+        "cobalt-400",
+        "awninggreen-500",
+        "bubblegum-300",
+        "orange-400",
+        "white-50",
+        "lagoon-400"
+      ]
+    },
+    {
+      "shape": "box",
+      "size": [0.2, 0.26, 0.2],
+      "at": [-0.68, 0.55, -1.4],
+      "token": "mustard-300",
+      "repeat": { "count": 9, "step": [0, 0, 0.27] },
+      "rows": { "count": 3, "step": [0, 0.42, 0] },
+      "tokens": [
+        "lagoon-400",
+        "white-50",
+        "orange-400",
+        "bubblegum-300",
+        "awninggreen-500",
+        "cobalt-400",
+        "mustard-300",
+        "tomato-400"
+      ]
+    },
+    {
+      "shape": "box",
+      "size": [0.72, 0.18, 0.04],
+      "at": [-0.9, 1.75, -1.62],
+      "token": "awningred-500"
+    },
+    { "shape": "box", "size": [0.75, 1.05, 3.4], "at": [2.55, 0.52, -1.8], "token": "walnut-700" },
+    {
+      "shape": "box",
+      "size": [0.85, 0.06, 3.5],
+      "at": [2.55, 1.08, -1.8],
+      "token": "countertop-100"
+    },
+    { "shape": "box", "size": [0.7, 0.36, 1.4], "at": [2.55, 1.3, -2.6], "token": "glass-300" },
+    {
+      "shape": "box",
+      "size": [0.6, 0.04, 1.3],
+      "at": [2.55, 1.14, -2.6],
+      "token": "lamp-200",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [0.4, 0.12, 0.28],
+      "at": [2.55, 1.18, -3],
+      "token": "blush-300",
+      "repeat": { "count": 3, "step": [0, 0, 0.36] },
+      "tokens": ["blush-300", "mustard-300", "clay-300"]
+    },
+    { "shape": "box", "size": [0.4, 0.26, 0.32], "at": [2.55, 1.24, -1.25], "token": "coal-800" },
+    {
+      "shape": "box",
+      "size": [0.02, 0.18, 0.28],
+      "at": [2.34, 1.4, -1.25],
+      "token": "mint-400",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [0.6, 0.12, 0.5],
+      "at": [2.55, 1.17, -0.55],
+      "token": "taxi-400",
+      "repeat": { "count": 1, "step": [0, 0, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.12, 0.08, 0.1],
+      "at": [2.35, 1.27, -0.75],
+      "token": "bubblegum-300",
+      "repeat": { "count": 4, "step": [0.13, 0, 0] },
+      "rows": { "count": 3, "step": [0, 0, 0.16] },
+      "tokens": [
+        "tomato-400",
+        "mustard-300",
+        "cobalt-400",
+        "awninggreen-500",
+        "bubblegum-300",
+        "orange-400",
+        "white-50",
+        "lagoon-400"
+      ]
+    },
+    { "shape": "box", "size": [0.34, 0.14, 0.2], "at": [2.65, 1.18, -0.05], "token": "orange-400" },
+    { "shape": "box", "size": [0.14, 0.13, 0.13], "at": [2.5, 1.27, -0.05], "token": "orange-400" },
+    {
+      "shape": "box",
+      "size": [0.04, 0.05, 0.03],
+      "at": [2.46, 1.35, -0.1],
+      "token": "orange-400",
+      "repeat": { "count": 2, "step": [0, 0, 0.09] }
+    },
+    { "shape": "box", "size": [0.3, 1.2, 2.6], "at": [4.3, 1.6, -1.8], "token": "steel-700" },
+    {
+      "shape": "box",
+      "size": [0.04, 0.18, 0.12],
+      "at": [4.13, 1.18, -2.95],
+      "token": "awningred-500",
+      "repeat": { "count": 15, "step": [0, 0, 0.16] },
+      "rows": { "count": 5, "step": [0, 0.22, 0] },
+      "tokens": ["awningred-500", "white-50", "cobalt-400", "taxi-400"]
+    },
+    {
+      "shape": "box",
+      "size": [0.03, 0.5, 0.9],
+      "at": [4.45, 2.5, -0.7],
+      "token": "taxi-400",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [0.04, 0.26, 0.18],
+      "at": [2.2, 2.15, -2.9],
+      "token": "mustard-300",
+      "repeat": { "count": 6, "step": [0, 0, 0.3] },
+      "tokens": ["mustard-300", "tomato-400", "cobalt-400", "awninggreen-500"]
+    },
+    { "shape": "box", "size": [0.02, 0.02, 1.9], "at": [2.2, 2.3, -2.15], "token": "iron-900" },
+    { "shape": "box", "size": [0.6, 1.5, 0.5], "at": [-4.1, 0.75, 2.6], "token": "coal-800" },
+    {
+      "shape": "box",
+      "size": [0.4, 0.3, 0.02],
+      "at": [-4.1, 1.2, 2.86],
+      "token": "sky-400",
+      "glow": "steady"
+    },
+    { "shape": "box", "size": [1.2, 0.7, 0.5], "at": [-3.8, 0.35, 1.2], "token": "wood-500" },
+    {
+      "shape": "disc",
+      "size": [0.22, 0.3, 0.22],
+      "at": [-4.15, 0.85, 1.2],
+      "token": "bubblegum-300",
+      "repeat": { "count": 3, "step": [0.34, 0, 0] },
+      "tokens": ["bubblegum-300", "taxi-400", "tomato-400"]
+    },
+    {
+      "shape": "box",
+      "size": [0.03, 0.5, 1.4],
+      "at": [-4.48, 2.2, -1],
+      "token": "awningred-500",
+      "glow": "steady"
+    },
+    {
+      "shape": "box",
+      "size": [0.03, 0.16, 1.2],
+      "at": [-4.46, 2.2, -1],
+      "token": "snow-50",
+      "glow": "steady"
+    },
+    { "shape": "box", "size": [0.6, 0.3, 0.45], "at": [0.8, 0.15, 3.3], "token": "wood-300" },
+    {
+      "shape": "disc",
+      "size": [0.12, 0.12, 0.12],
+      "at": [0.6, 0.34, 3.2],
+      "token": "tomato-400",
+      "repeat": { "count": 4, "step": [0.13, 0, 0] },
+      "rows": { "count": 2, "step": [0, 0, 0.18] },
+      "tokens": ["tomato-400", "mustard-300", "awninggreen-500"]
+    }
+  ],
+  "blocked": [
+    "f0-0",
+    "f1-0",
+    "f2-0",
+    "f3-0",
+    "f1-2",
+    "f1-3",
+    "f1-4",
+    "f3-2",
+    "f3-3",
+    "f3-4",
+    "f7-0",
+    "f7-1",
+    "f7-2",
+    "f7-3",
+    "f8-0",
+    "f8-1",
+    "f8-2",
+    "f8-3",
+    "f0-4",
+    "f0-5",
+    "f0-6",
+    "f1-5",
+    "f5-7"
+  ],
+  "danceFloor": null,
+  "partyLights": null,
+  "stringLights": null,
+  "skyline": null,
+  "simSpots": [
+    { "pose": "use", "slot": "f6-1", "rotationDeg": 90, "heightM": 0 },
+    { "pose": "browse", "slot": "f2-3", "rotationDeg": 0, "heightM": 0 },
+    { "pose": "flex", "slot": "f4-5", "rotationDeg": 20, "heightM": 0 }
+  ],
+  "actions": {
+    "bodega-breakfast": [
+      { "poses": ["grab"], "models": ["fridge"], "holdMs": 1400, "optional": true },
+      { "poses": ["use"], "models": [], "holdMs": 2200, "bubble": "place.sim.bubble.order" },
+      {
+        "poses": ["browse"],
+        "models": [],
+        "holdMs": 3800,
+        "prop": "wrap",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.eat"
+      }
+    ],
+    "flex": [
+      {
+        "poses": ["flex"],
+        "models": [],
+        "holdMs": 3500,
+        "prop": "phone",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.flex"
+      }
+    ]
+  },
+  "crowd": {
+    "poses": ["work", "idle", "talk"],
+    "spots": [
+      {
+        "activity": "register",
+        "pose": "work",
+        "at": [3.2, -1.25],
+        "headingDeg": -90,
+        "rank": 0,
+        "staff": true
+      },
+      { "activity": "deli", "pose": "work", "at": [3.2, -2.7], "headingDeg": -90, "rank": 2 },
+      { "activity": "shop", "pose": "idle", "at": [-1.9, -2.2], "headingDeg": 180, "rank": 1 },
+      { "activity": "shop", "pose": "idle", "at": [-1.85, 0.6], "headingDeg": -90, "rank": 2 },
+      { "activity": "queue", "pose": "idle", "at": [0.95, -1], "headingDeg": 90, "rank": 1 },
+      { "activity": "queue", "pose": "talk", "at": [0.6, -0.1], "headingDeg": 70, "rank": 3 },
+      { "activity": "chat", "pose": "talk", "at": [1.6, 2.6], "headingDeg": 130, "rank": 4 },
+      { "activity": "chat", "pose": "talk", "at": [2.4, 3.05], "headingDeg": -120, "rank": 4 },
+      { "activity": "shop", "pose": "idle", "at": [-3.95, -2.5], "headingDeg": 180, "rank": 3 }
+    ],
+    "seats": [],
+    "hours": [
+      [0, 0.4],
+      [1, 0.42],
+      [2, 0.43],
+      [3, 0.45],
+      [4, 0.47],
+      [5, 0.48],
+      [6, 0.5],
+      [7, 0.75],
+      [8, 1],
+      [9, 0.8],
+      [10, 0.6],
+      [11, 0.67],
+      [12, 0.73],
+      [13, 0.8],
+      [14, 0.83],
+      [15, 0.85],
+      [16, 0.88],
+      [17, 0.9],
+      [18, 0.85],
+      [19, 0.8],
+      [20, 0.75],
+      [21, 0.7],
+      [22, 0.6],
+      [23, 0.5]
+    ],
+    "busyDays": [5, 6],
+    "quietShare": 0.85
+  }
+}

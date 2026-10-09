@@ -710,7 +710,7 @@ export const RealtimeConfigSchema = z.strictObject({
     }),
     /**
      * Real players inside a venue interior (S42c): the activity a place action announces (the
-     * action ids an interior acts out, data/interiors/venues.json), and, for a player who
+     * action ids an interior acts out, data/interiors/venues/<id>.json), and, for a player who
      * announced none, the
      * activities an interior (data/interiors/types.json ids) picks from by their id.
      */

@@ -1,0 +1,299 @@
+{
+  "grid": { "cols": 10, "rows": 8, "cellM": 1 },
+  "heightM": 0.24,
+  "openings": [],
+  "camera": { "position": [1.6, 5.6, 10.2], "target": [0, 0.5, -0.6], "fovDeg": 40 },
+  "entry": { "slot": "f8-6", "rotationDeg": -40 },
+  "shell": {
+    "wallPaint": "gallery-white",
+    "floorFinish": "polished-concrete",
+    "crown": false,
+    "accentBack": null
+  },
+  "backdrop": { "kind": "sky", "tint": null },
+  "mood": {
+    "music": "street-sizzle",
+    "bpm": 92,
+    "tint": "amber-400",
+    "openMix": 0.12,
+    "openAmbientScale": 1,
+    "openSunScale": 1,
+    "closedAmbientScale": 0.95
+  },
+  "decor": [],
+  "fixtures": [],
+  "kinds": {
+    "high-table": {
+      "parts": [
+        { "shape": "disc", "size": [0.6, 0.05, 0.6], "at": [0, 1.05, 0], "token": "steel-400" },
+        { "shape": "disc", "size": [0.08, 1.04, 0.08], "at": [0, 0.52, 0], "token": "steel-700" },
+        { "shape": "disc", "size": [0.42, 0.03, 0.42], "at": [0, 0.015, 0], "token": "steel-700" },
+        { "shape": "box", "size": [0.22, 0.06, 0.16], "at": [0.1, 1.1, 0.05], "token": "white-50" },
+        {
+          "shape": "box",
+          "size": [0.18, 0.04, 0.12],
+          "at": [0.1, 1.14, 0.05],
+          "token": "amber-400"
+        }
+      ],
+      "anchors": []
+    },
+    "crate-seat": {
+      "parts": [
+        { "shape": "box", "size": [0.42, 0.34, 0.42], "at": [0, 0.17, 0], "token": "mint-400" },
+        { "shape": "box", "size": [0.36, 0.02, 0.36], "at": [0, 0.345, 0], "token": "teal-700" }
+      ],
+      "anchors": [
+        {
+          "pose": "sit",
+          "at": [0, 0.35, 0.02],
+          "headingDeg": 0,
+          "approach": [
+            [0, 0, 0.7],
+            [0.7, 0, 0],
+            [-0.7, 0, 0]
+          ]
+        }
+      ]
+    }
+  },
+  "pieces": [
+    { "kind": "high-table", "slot": "f2-4", "turn": 0 },
+    { "kind": "high-table", "slot": "f6-5", "turn": 0 },
+    { "kind": "crate-seat", "slot": "f7-3", "turn": 3 },
+    { "kind": "crate-seat", "slot": "f8-4", "turn": 2 },
+    { "kind": "crate-seat", "slot": "f4-6", "turn": 1 },
+    { "kind": "crate-seat", "slot": "f1-6", "turn": 0 }
+  ],
+  "build": [
+    { "shape": "box", "size": [30, 0.02, 6], "at": [0, 0.01, -7], "token": "asphalt-800" },
+    {
+      "shape": "box",
+      "size": [1.6, 0.025, 0.14],
+      "at": [-12, 0.02, -7.4],
+      "token": "taxi-400",
+      "repeat": { "count": 9, "step": [3, 0, 0] }
+    },
+    { "shape": "box", "size": [30, 0.16, 0.3], "at": [0, 0.08, -4.15], "token": "concrete-200" },
+    { "shape": "box", "size": [30, 0.02, 4], "at": [0, 0.005, 6], "token": "concrete-400" },
+    { "shape": "box", "size": [2.6, 1.05, 1.2], "at": [-1, 0.7, -2.6], "token": "silver-300" },
+    { "shape": "box", "size": [2.7, 0.06, 1.3], "at": [-1, 1.25, -2.6], "token": "steel-400" },
+    { "shape": "box", "size": [2.6, 0.2, 0.02], "at": [-1, 0.9, -1.99], "token": "awningred-500" },
+    { "shape": "box", "size": [2.6, 0.08, 0.02], "at": [-1, 0.75, -1.99], "token": "taxi-400" },
+    {
+      "shape": "disc",
+      "size": [0.36, 0.36, 0.08],
+      "at": [-1.9, 0.2, -1.98],
+      "token": "rubber-900",
+      "repeat": { "count": 2, "step": [1.8, 0, 0] }
+    },
+    { "shape": "box", "size": [1.4, 0.05, 0.8], "at": [-1.4, 1.3, -2.7], "token": "iron-900" },
+    {
+      "shape": "disc",
+      "size": [0.3, 0.06, 0.3],
+      "at": [-1.75, 1.35, -2.7],
+      "token": "amber-400",
+      "repeat": { "count": 3, "step": [0.35, 0, 0] },
+      "tokens": ["amber-400", "latte-300", "tomato-400"]
+    },
+    { "shape": "box", "size": [0.5, 0.16, 0.5], "at": [-0.15, 1.36, -2.65], "token": "steel-700" },
+    {
+      "shape": "disc",
+      "size": [0.08, 0.2, 0.08],
+      "at": [-0.3, 1.5, -2.5],
+      "token": "white-50",
+      "repeat": { "count": 3, "step": [0.14, 0, 0] },
+      "tokens": ["white-50", "red-600", "white-50"]
+    },
+    { "shape": "box", "size": [2.6, 1.1, 0.06], "at": [-1, 2.1, -3.2], "token": "steel-700" },
+    {
+      "shape": "box",
+      "size": [0.75, 0.55, 0.02],
+      "at": [-1.85, 2.15, -3.16],
+      "token": "taxi-400",
+      "glow": "steady",
+      "repeat": { "count": 3, "step": [0.85, 0, 0] },
+      "tokens": ["taxi-400", "orange-400", "awninggreen-500"]
+    },
+    {
+      "shape": "box",
+      "size": [0.6, 0.05, 0.02],
+      "at": [-1.85, 2.3, -3.14],
+      "token": "coal-900",
+      "repeat": { "count": 3, "step": [0.85, 0, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.5, 0.05, 0.02],
+      "at": [-1.85, 2.05, -3.14],
+      "token": "coal-900",
+      "repeat": { "count": 3, "step": [0.85, 0, 0] }
+    },
+    { "shape": "disc", "size": [0.07, 2.4, 0.07], "at": [0.4, 1.2, -3.1], "token": "steel-700" },
+    {
+      "shape": "disc",
+      "size": [3.2, 0.16, 3.2],
+      "at": [-0.4, 2.85, -2.6],
+      "token": "awningred-500"
+    },
+    { "shape": "disc", "size": [2.6, 0.18, 2.6], "at": [-0.4, 2.95, -2.6], "token": "taxi-400" },
+    {
+      "shape": "disc",
+      "size": [1.6, 0.16, 1.6],
+      "at": [-0.4, 3.07, -2.6],
+      "token": "awningred-500"
+    },
+    {
+      "shape": "box",
+      "size": [0.07, 0.09, 0.07],
+      "at": [-1.6, 2.62, -1.4],
+      "token": "lamp-200",
+      "glow": "night",
+      "repeat": { "count": 8, "step": [0.36, 0, 0] }
+    },
+    {
+      "shape": "box",
+      "size": [0.12, 0.3, 0.12],
+      "at": [-1.75, 1.75, -2.7],
+      "token": "mist-100",
+      "glow": "beat",
+      "repeat": { "count": 3, "step": [0.35, 0.1, 0] },
+      "tokens": ["mist-100", "fog-50", "mist-200"]
+    },
+    { "shape": "disc", "size": [0.14, 4.2, 0.14], "at": [3.6, 2.1, -3.65], "token": "iron-900" },
+    { "shape": "box", "size": [1, 0.08, 0.1], "at": [3.15, 4.15, -3.65], "token": "iron-900" },
+    {
+      "shape": "box",
+      "size": [0.5, 0.12, 0.3],
+      "at": [2.7, 4.08, -3.65],
+      "token": "lamp-200",
+      "glow": "night"
+    },
+    {
+      "shape": "disc",
+      "size": [0.26, 0.55, 0.26],
+      "at": [-4.3, 0.28, -3.5],
+      "token": "signal-500"
+    },
+    { "shape": "disc", "size": [0.34, 0.08, 0.34], "at": [-4.3, 0.6, -3.5], "token": "signal-500" },
+    { "shape": "box", "size": [0.5, 0.1, 0.12], "at": [-4.3, 0.36, -3.5], "token": "signal-500" },
+    {
+      "shape": "disc",
+      "size": [0.5, 0.85, 0.5],
+      "at": [4.4, 0.43, -0.5],
+      "token": "awninggreen-500"
+    },
+    { "shape": "box", "size": [0.5, 1, 0.45], "at": [-4.4, 0.5, -0.5], "token": "cobalt-400" }
+  ],
+  "blocked": [
+    "f2-0",
+    "f2-1",
+    "f3-0",
+    "f3-1",
+    "f4-0",
+    "f4-1",
+    "f5-0",
+    "f5-1",
+    "f8-0",
+    "f0-0",
+    "f9-3",
+    "f0-3"
+  ],
+  "danceFloor": null,
+  "partyLights": null,
+  "stringLights": null,
+  "skyline": {
+    "seed": 23,
+    "count": 14,
+    "sides": ["back", "left", "right"],
+    "gapM": [7, 14],
+    "heightM": [6, 16],
+    "widthM": [3, 6],
+    "baseM": -1,
+    "tokens": ["brownstone-700", "brick-500", "limestone-200", "brick-600", "concrete-200"],
+    "capToken": "steel-700",
+    "windowToken": "window-200",
+    "windowDayToken": "glass-600",
+    "windowRows": 4,
+    "windowCols": 3
+  },
+  "simSpots": [
+    { "pose": "use", "slot": "f3-2", "rotationDeg": 180, "heightM": 0 },
+    { "pose": "browse", "slot": "f2-5", "rotationDeg": 170, "heightM": 0 },
+    { "pose": "flex", "slot": "f5-4", "rotationDeg": 0, "heightM": 0 }
+  ],
+  "actions": {
+    "street-meal": [
+      { "poses": ["use"], "models": [], "holdMs": 1600, "bubble": "place.sim.bubble.order" },
+      {
+        "poses": ["sit", "browse"],
+        "models": ["crate-seat"],
+        "holdMs": 4500,
+        "prop": "wrap",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.eat"
+      }
+    ],
+    "flex": [
+      {
+        "poses": ["flex"],
+        "models": [],
+        "holdMs": 3500,
+        "prop": "phone",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.flex"
+      }
+    ]
+  },
+  "crowd": {
+    "poses": ["work", "idle", "sit", "talk"],
+    "spots": [
+      {
+        "activity": "cart",
+        "pose": "work",
+        "at": [-1.4, -3.55],
+        "headingDeg": 0,
+        "rank": 0,
+        "staff": true
+      },
+      { "activity": "cart", "pose": "work", "at": [-0.3, -3.55], "headingDeg": 0, "rank": 4 },
+      { "activity": "queue", "pose": "idle", "at": [0, -1.2], "headingDeg": 180, "rank": 1 },
+      { "activity": "queue", "pose": "idle", "at": [0.05, -0.4], "headingDeg": 175, "rank": 2 },
+      { "activity": "queue", "pose": "idle", "at": [0.15, 0.4], "headingDeg": 185, "rank": 4 },
+      { "activity": "eat", "pose": "idle", "at": [-2.05, 0.8], "headingDeg": -120, "rank": 2 },
+      { "activity": "eat", "pose": "talk", "at": [-2.95, 0.75], "headingDeg": 120, "rank": 3 },
+      { "activity": "eat", "pose": "idle", "at": [1.95, 1.3], "headingDeg": -100, "rank": 3 },
+      { "activity": "chat", "pose": "talk", "at": [-3.6, 2.6], "headingDeg": 60, "rank": 5 },
+      { "activity": "chat", "pose": "talk", "at": [-2.9, 3], "headingDeg": -130, "rank": 5 }
+    ],
+    "seats": [{ "activity": "eat", "kind": "crate-seat", "rank": 2 }],
+    "hours": [
+      [0, 1],
+      [1, 0.83],
+      [2, 0.67],
+      [3, 0.5],
+      [4, 0.47],
+      [5, 0.45],
+      [6, 0.42],
+      [7, 0.4],
+      [8, 0.38],
+      [9, 0.35],
+      [10, 0.32],
+      [11, 0.3],
+      [12, 0.65],
+      [13, 1],
+      [14, 0.75],
+      [15, 0.5],
+      [16, 0.53],
+      [17, 0.57],
+      [18, 0.6],
+      [19, 0.75],
+      [20, 0.9],
+      [21, 0.93],
+      [22, 0.95],
+      [23, 0.97]
+    ],
+    "busyDays": [5, 6],
+    "quietShare": 0.85
+  }
+}

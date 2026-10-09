@@ -1,0 +1,254 @@
+{
+  "grid": { "cols": 12, "rows": 9, "cellM": 1 },
+  "heightM": 0.12,
+  "openings": [],
+  "camera": { "position": [1.8, 6.6, 10.6], "target": [0, 0.5, -0.5], "fovDeg": 40 },
+  "entry": { "slot": "f10-7", "rotationDeg": -60 },
+  "shell": {
+    "wallPaint": "forest-green",
+    "floorFinish": "polished-concrete",
+    "crown": false,
+    "accentBack": null
+  },
+  "backdrop": { "kind": "sky", "tint": null },
+  "mood": {
+    "music": "park-boombox",
+    "bpm": 94,
+    "tint": "lamp-200",
+    "openMix": 0.1,
+    "openAmbientScale": 1,
+    "openSunScale": 1,
+    "closedAmbientScale": 0.95
+  },
+  "decor": [],
+  "fixtures": [{ "model": "radio", "slot": "f6-7", "turn": 2 }],
+  "kinds": {
+    "park-bench": {
+      "parts": [
+        { "shape": "box", "size": [1.6, 0.06, 0.42], "at": [0, 0.45, 0], "token": "wood-500" },
+        { "shape": "box", "size": [1.6, 0.36, 0.05], "at": [0, 0.72, -0.2], "token": "wood-500" },
+        {
+          "shape": "box",
+          "size": [0.06, 0.45, 0.42],
+          "at": [-0.7, 0.22, 0],
+          "token": "awninggreen-500",
+          "repeat": { "count": 2, "step": [1.4, 0, 0] }
+        }
+      ],
+      "anchors": [
+        {
+          "pose": "sit",
+          "at": [-0.38, 0.47, 0.04],
+          "headingDeg": 0,
+          "approach": [[-0.38, 0, 0.75]]
+        },
+        { "pose": "sit", "at": [0.38, 0.47, 0.04], "headingDeg": 0, "approach": [[0.38, 0, 0.75]] }
+      ]
+    }
+  },
+  "pieces": [
+    { "kind": "park-bench", "slot": "f1-6", "turn": 2, "offset": [0.5, 0, 0.2] },
+    { "kind": "park-bench", "slot": "f4-6", "turn": 2, "offset": [0.5, 0, 0.2] },
+    { "kind": "park-bench", "slot": "f10-2", "turn": 3, "offset": [0.2, 0, 0.5] }
+  ],
+  "build": [
+    { "shape": "box", "size": [30, 0.02, 30], "at": [0, -0.005, 0], "token": "park-400" },
+    { "shape": "box", "size": [12, 0.025, 9], "at": [0, 0.013, 0], "token": "lawn-400" },
+    { "shape": "box", "size": [6.6, 0.03, 6], "at": [-2.4, 0.03, -1.4], "token": "asphalt-600" },
+    { "shape": "box", "size": [6.4, 0.005, 0.07], "at": [-2.4, 0.047, -4.2], "token": "white-50" },
+    {
+      "shape": "box",
+      "size": [0.07, 0.005, 5.8],
+      "at": [-5.55, 0.047, -1.4],
+      "token": "white-50",
+      "repeat": { "count": 2, "step": [6.3, 0, 0] }
+    },
+    { "shape": "box", "size": [1.9, 0.004, 2.6], "at": [-2.4, 0.047, -2.9], "token": "cobalt-400" },
+    { "shape": "disc", "size": [1.9, 0.004, 1.9], "at": [-2.4, 0.046, -1.6], "token": "white-50" },
+    {
+      "shape": "disc",
+      "size": [1.78, 0.004, 1.78],
+      "at": [-2.4, 0.048, -1.6],
+      "token": "asphalt-600"
+    },
+    { "shape": "box", "size": [6.4, 0.005, 0.07], "at": [-2.4, 0.047, 1.5], "token": "white-50" },
+    { "shape": "box", "size": [2, 0.03, 9], "at": [3.2, 0.03, 0], "token": "pavement-300" },
+    { "shape": "disc", "size": [0.16, 3.2, 0.16], "at": [-2.4, 1.6, -4.45], "token": "navy-700" },
+    { "shape": "box", "size": [0.12, 0.12, 0.7], "at": [-2.4, 3.05, -4.1], "token": "navy-700" },
+    { "shape": "box", "size": [1.5, 0.95, 0.06], "at": [-2.4, 3.2, -3.75], "token": "white-50" },
+    { "shape": "box", "size": [0.5, 0.4, 0.02], "at": [-2.4, 3.05, -3.71], "token": "tomato-400" },
+    {
+      "shape": "disc",
+      "size": [0.48, 0.03, 0.48],
+      "at": [-2.4, 2.95, -3.47],
+      "token": "orange-400"
+    },
+    { "shape": "disc", "size": [0.38, 0.32, 0.38], "at": [-2.4, 2.77, -3.47], "token": "mist-100" },
+    {
+      "shape": "disc",
+      "size": [0.07, 3, 0.07],
+      "at": [-5.9, 1.5, -4.4],
+      "token": "steel-400",
+      "repeat": { "count": 5, "step": [1.6, 0, 0] }
+    },
+    { "shape": "box", "size": [7, 0.04, 0.04], "at": [-2.5, 2.95, -4.4], "token": "steel-400" },
+    { "shape": "box", "size": [7, 2.8, 0.01], "at": [-2.5, 1.5, -4.4], "token": "steel-400" },
+    {
+      "shape": "disc",
+      "size": [0.07, 3, 0.07],
+      "at": [-5.9, 1.5, -2.8],
+      "token": "steel-400",
+      "repeat": { "count": 4, "step": [0, 0, 1.6] }
+    },
+    { "shape": "box", "size": [0.01, 2.8, 6], "at": [-5.9, 1.5, -1.4], "token": "steel-400" },
+    { "shape": "disc", "size": [0.22, 1.6, 0.22], "at": [4.9, 0.8, -3.6], "token": "bark-700" },
+    { "shape": "disc", "size": [1.6, 0.9, 1.6], "at": [4.9, 2, -3.6], "token": "leaf-700" },
+    { "shape": "disc", "size": [1.2, 0.8, 1.2], "at": [4.9, 2.7, -3.6], "token": "leaf-500" },
+    { "shape": "disc", "size": [0.6, 0.5, 0.6], "at": [4.9, 3.25, -3.6], "token": "leaf-500" },
+    { "shape": "disc", "size": [0.22, 1.6, 0.22], "at": [5, 0.8, 1], "token": "bark-700" },
+    { "shape": "disc", "size": [1.6, 0.9, 1.6], "at": [5, 2, 1], "token": "leaf-700" },
+    { "shape": "disc", "size": [1.2, 0.8, 1.2], "at": [5, 2.7, 1], "token": "grass-500" },
+    { "shape": "disc", "size": [0.6, 0.5, 0.6], "at": [5, 3.25, 1], "token": "leaf-500" },
+    { "shape": "disc", "size": [0.22, 1.6, 0.22], "at": [1.5, 0.8, 3.7], "token": "bark-700" },
+    { "shape": "disc", "size": [1.6, 0.9, 1.6], "at": [1.5, 2, 3.7], "token": "leaf-700" },
+    { "shape": "disc", "size": [1.2, 0.8, 1.2], "at": [1.5, 2.7, 3.7], "token": "leaf-500" },
+    { "shape": "disc", "size": [0.6, 0.5, 0.6], "at": [1.5, 3.25, 3.7], "token": "leaf-500" },
+    { "shape": "disc", "size": [0.22, 1.6, 0.22], "at": [-5.2, 0.8, 3.7], "token": "bark-700" },
+    { "shape": "disc", "size": [1.6, 0.9, 1.6], "at": [-5.2, 2, 3.7], "token": "leaf-700" },
+    { "shape": "disc", "size": [1.2, 0.8, 1.2], "at": [-5.2, 2.7, 3.7], "token": "grass-500" },
+    { "shape": "disc", "size": [0.6, 0.5, 0.6], "at": [-5.2, 3.25, 3.7], "token": "leaf-500" },
+    { "shape": "disc", "size": [0.12, 3.4, 0.12], "at": [1.6, 1.7, -3.9], "token": "iron-900" },
+    { "shape": "box", "size": [0.5, 0.14, 0.12], "at": [1.8, 3.4, -3.9], "token": "iron-900" },
+    {
+      "shape": "box",
+      "size": [0.3, 0.12, 0.26],
+      "at": [1.95, 3.32, -3.9],
+      "token": "lamp-200",
+      "glow": "night"
+    },
+    { "shape": "disc", "size": [0.12, 3.4, 0.12], "at": [5.4, 1.7, -1.2], "token": "iron-900" },
+    { "shape": "box", "size": [0.5, 0.14, 0.12], "at": [5.6, 3.4, -1.2], "token": "iron-900" },
+    {
+      "shape": "box",
+      "size": [0.3, 0.12, 0.26],
+      "at": [5.75, 3.32, -1.2],
+      "token": "lamp-200",
+      "glow": "night"
+    },
+    { "shape": "disc", "size": [0.12, 3.4, 0.12], "at": [-3.9, 1.7, 3.9], "token": "iron-900" },
+    { "shape": "box", "size": [0.5, 0.14, 0.12], "at": [-3.7, 3.4, 3.9], "token": "iron-900" },
+    {
+      "shape": "box",
+      "size": [0.3, 0.12, 0.26],
+      "at": [-3.55, 3.32, 3.9],
+      "token": "lamp-200",
+      "glow": "night"
+    },
+    {
+      "shape": "disc",
+      "size": [0.5, 0.85, 0.5],
+      "at": [2.4, 0.43, 3.9],
+      "token": "awninggreen-500"
+    },
+    { "shape": "disc", "size": [0.36, 0.9, 0.36], "at": [2.4, 0.45, -3.9], "token": "steel-400" },
+    { "shape": "disc", "size": [0.5, 0.08, 0.5], "at": [2.4, 0.92, -3.9], "token": "steel-400" }
+  ],
+  "blocked": ["f11-0", "f11-5", "f7-8", "f0-8", "f8-8", "f8-0"],
+  "danceFloor": null,
+  "partyLights": null,
+  "stringLights": null,
+  "skyline": {
+    "seed": 31,
+    "count": 16,
+    "sides": ["back", "left", "right"],
+    "gapM": [8, 16],
+    "heightM": [6, 18],
+    "widthM": [3, 6],
+    "baseM": -1,
+    "tokens": ["brick-500", "brownstone-700", "brick-600", "limestone-200", "concrete-200"],
+    "capToken": "steel-700",
+    "windowToken": "window-200",
+    "windowDayToken": "glass-600",
+    "windowRows": 4,
+    "windowCols": 3
+  },
+  "simSpots": [
+    { "pose": "use", "slot": "f3-3", "rotationDeg": 180, "heightM": 0 },
+    { "pose": "browse", "slot": "f9-5", "rotationDeg": -60, "heightM": 0 },
+    { "pose": "flex", "slot": "f7-4", "rotationDeg": 10, "heightM": 0 }
+  ],
+  "actions": {
+    "walk-in-the-park": [
+      {
+        "poses": ["use"],
+        "models": [],
+        "holdMs": 3200,
+        "prop": "ball",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.hoops"
+      },
+      { "poses": ["sit", "browse"], "models": ["park-bench"], "holdMs": 4500 }
+    ],
+    "flex": [
+      {
+        "poses": ["flex"],
+        "models": [],
+        "holdMs": 3500,
+        "prop": "phone",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.flex"
+      }
+    ]
+  },
+  "crowd": {
+    "poses": ["workout", "sit", "talk", "work", "idle", "dance"],
+    "spots": [
+      {
+        "activity": "hoops",
+        "pose": "workout",
+        "at": [-3.2, -2],
+        "headingDeg": 160,
+        "rank": 0,
+        "staff": true
+      },
+      { "activity": "hoops", "pose": "workout", "at": [-1.7, -1.3], "headingDeg": 200, "rank": 1 },
+      { "activity": "hoops", "pose": "workout", "at": [-2.6, -0.3], "headingDeg": 175, "rank": 2 },
+      { "activity": "hoops", "pose": "work", "at": [-1, -2.6], "headingDeg": 230, "rank": 3 },
+      { "activity": "sideline", "pose": "talk", "at": [0.9, 0.4], "headingDeg": -100, "rank": 2 },
+      { "activity": "sideline", "pose": "talk", "at": [1.1, -0.5], "headingDeg": -80, "rank": 3 },
+      { "activity": "boombox", "pose": "dance", "at": [0.7, 1.8], "headingDeg": 180, "rank": 4 },
+      { "activity": "stroll", "pose": "idle", "at": [3.2, 2.4], "headingDeg": 180, "rank": 4 },
+      { "activity": "stroll", "pose": "talk", "at": [3.3, -0.6], "headingDeg": 10, "rank": 5 },
+      { "activity": "fountain", "pose": "idle", "at": [2.4, -3.3], "headingDeg": 180, "rank": 5 }
+    ],
+    "seats": [{ "activity": "bench", "kind": "park-bench", "rank": 1 }],
+    "hours": [
+      [0, 0.3],
+      [1, 0.3],
+      [2, 0.3],
+      [3, 0.3],
+      [4, 0.3],
+      [5, 0.3],
+      [6, 0.3],
+      [7, 0.37],
+      [8, 0.43],
+      [9, 0.5],
+      [10, 0.53],
+      [11, 0.57],
+      [12, 0.6],
+      [13, 0.68],
+      [14, 0.75],
+      [15, 0.82],
+      [16, 0.9],
+      [17, 0.95],
+      [18, 1],
+      [19, 0.9],
+      [20, 0.8],
+      [21, 0.7],
+      [22, 0.57],
+      [23, 0.43]
+    ],
+    "busyDays": [6, 7],
+    "quietShare": 0.8
+  }
+}

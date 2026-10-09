@@ -119,6 +119,19 @@ describe('venue crowd (S43)', () => {
     expect(crowd.find((member) => member.spot === 'bartender')?.pose).toBe('talk')
   })
 
+  it('lets a standing local at work stand instead when the tier draws neither work nor talk', () => {
+    const spots = [
+      spot('desk', { activity: 'front-desk', pose: 'work', rank: 0, staff: true }),
+      spot('bench', { activity: 'rest', pose: 'sit', y: 0.45, rank: 1 }),
+      spot('floor', { activity: 'dance', pose: 'dance', rank: 1 }),
+    ]
+    const crowd = planCrowd(input({ spots, poses: new Set(['idle', 'sit']) }))
+    expect(crowd.find((member) => member.spot === 'desk')?.pose).toBe('idle')
+    expect(crowd.find((member) => member.spot === 'bench')?.pose).toBe('sit')
+    // A dancer has no stand-in.
+    expect(crowd.map((member) => member.spot)).not.toContain('floor')
+  })
+
   it('draws only the man on a one-body tier, at heights in range', () => {
     for (const member of planCrowd(input({ bodies: 1 }))) {
       expect(member.body).toBe(1)

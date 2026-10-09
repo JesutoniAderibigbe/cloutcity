@@ -62,6 +62,22 @@
     "place.interior.exitLabel": "Leave {place} for the map",
     "place.sim.bubble.dance": "Let's go!",
     "place.sim.bubble.flex": "Say cheese",
-    "place.sim.bubble.hang": "Vibes"
+    "place.sim.bubble.hang": "Vibes",
+    "place.sim.bubble.order": "One of those, please",
+    "place.sim.bubble.eat": "So good",
+    "place.sim.bubble.coffee": "Caffeine hit",
+    "place.sim.bubble.work": "On the clock",
+    "place.sim.bubble.cut": "Fresh fade, fresh me",
+    "place.sim.bubble.salon": "Glow-up in progress",
+    "place.sim.bubble.workout": "One more rep",
+    "place.sim.bubble.box": "Hands up, chin down",
+    "place.sim.bubble.hoops": "Buckets!",
+    "place.sim.bubble.studio": "From the top",
+    "place.sim.bubble.code": "Shipping it",
+    "place.sim.bubble.lift": "Lift with the legs",
+    "place.sim.bubble.deliver": "Out for delivery",
+    "place.sim.bubble.budget": "Budget's looking right",
+    "place.sim.bubble.pharmacy": "Picked up, all set",
+    "place.sim.bubble.laundry": "Spin cycle"
   }
 }

@@ -1,0 +1,365 @@
+{
+  "grid": { "cols": 10, "rows": 8, "cellM": 1 },
+  "heightM": 3.2,
+  "openings": [{ "kind": "door", "wall": "right", "at": 6, "span": 1, "sillM": 0, "heightM": 2.3 }],
+  "camera": { "position": [1.4, 7.4, 9.2], "target": [0, 0.5, -0.3], "fovDeg": 40 },
+  "entry": { "slot": "f9-6", "rotationDeg": -80 },
+  "shell": {
+    "wallPaint": "exposed-brick",
+    "floorFinish": "worn-oak",
+    "crown": false,
+    "accentBack": null
+  },
+  "backdrop": { "kind": "room", "tint": null },
+  "mood": {
+    "music": "thrift-funk",
+    "bpm": 104,
+    "tint": "amber-400",
+    "openMix": 0.18,
+    "openAmbientScale": 1,
+    "openSunScale": 1,
+    "closedAmbientScale": 0.8
+  },
+  "decor": [
+    {
+      "id": "thr-crate-1",
+      "item": "milk-crate",
+      "slot": "f4-7",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "cream-100"
+    },
+    {
+      "id": "thr-crate-2",
+      "item": "milk-crate",
+      "slot": "f5-7",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "cream-100"
+    },
+    {
+      "id": "thr-rug",
+      "item": "thrift-flatweave-rug",
+      "slot": "f7-3",
+      "turn": 0,
+      "footprint": "2x2",
+      "token": "teal-700"
+    },
+    {
+      "id": "thr-sofa",
+      "item": "corduroy-sofa",
+      "slot": "f9-3",
+      "turn": 3,
+      "footprint": "2x1",
+      "token": "orange-400"
+    },
+    {
+      "id": "thr-chair",
+      "item": "cloud-lounge-chair",
+      "slot": "f7-5",
+      "turn": 2,
+      "footprint": "1x1",
+      "token": "lilac-300"
+    },
+    {
+      "id": "thr-lamp",
+      "item": "arc-floor-lamp",
+      "slot": "f9-1",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "cream-100"
+    },
+    {
+      "id": "thr-plant",
+      "item": "starter-plant",
+      "slot": "f0-4",
+      "turn": 0,
+      "footprint": "1x1",
+      "token": "orange-400"
+    }
+  ],
+  "fixtures": [],
+  "kinds": {},
+  "pieces": [],
+  "build": [
+    { "shape": "box", "size": [4.5, 0.03, 0.03], "at": [-2.5, 1.45, -3.7], "token": "silver-300" },
+    {
+      "shape": "box",
+      "size": [0.05, 0.75, 0.4],
+      "at": [-4.629, 1.055, -3.7],
+      "token": "mustard-300",
+      "repeat": { "count": 31, "step": [0.142, 0, 0] },
+      "tokens": [
+        "mustard-300",
+        "teal-700",
+        "tomato-400",
+        "denim-500",
+        "sand-200",
+        "grape-400",
+        "awninggreen-500",
+        "clay-300",
+        "cream-100",
+        "brownstone-600",
+        "sky-400",
+        "rust-500"
+      ]
+    },
+    { "shape": "box", "size": [4.5, 0.03, 0.03], "at": [-2.5, 2.5, -3.7], "token": "silver-300" },
+    {
+      "shape": "box",
+      "size": [0.05, 0.65, 0.4],
+      "at": [-4.629, 2.155, -3.7],
+      "token": "rust-500",
+      "repeat": { "count": 31, "step": [0.142, 0, 0] },
+      "tokens": [
+        "rust-500",
+        "sky-400",
+        "brownstone-600",
+        "cream-100",
+        "clay-300",
+        "awninggreen-500",
+        "grape-400",
+        "sand-200",
+        "denim-500",
+        "tomato-400",
+        "teal-700",
+        "mustard-300"
+      ]
+    },
+    { "shape": "box", "size": [0.03, 0.03, 3.1], "at": [-4.7, 1.45, -1.1], "token": "silver-300" },
+    {
+      "shape": "box",
+      "size": [0.4, 0.75, 0.05],
+      "at": [-4.7, 1.055, -2.529],
+      "token": "denim-500",
+      "repeat": { "count": 21, "step": [0, 0, 0.143] },
+      "tokens": [
+        "denim-500",
+        "sand-200",
+        "grape-400",
+        "awninggreen-500",
+        "clay-300",
+        "cream-100",
+        "brownstone-600",
+        "sky-400",
+        "rust-500",
+        "mustard-300",
+        "teal-700",
+        "tomato-400"
+      ]
+    },
+    {
+      "shape": "box",
+      "size": [2.6, 0.04, 0.34],
+      "at": [1.9, 0.9, -3.82],
+      "token": "wood-500",
+      "rows": { "count": 3, "step": [0, 0.5, 0] }
+    },
+    { "shape": "box", "size": [2.6, 1.9, 0.04], "at": [1.9, 1, -3.98], "token": "wood-700" },
+    {
+      "shape": "box",
+      "size": [0.3, 0.26, 0.24],
+      "at": [0.9, 1.06, -3.82],
+      "token": "mustard-300",
+      "repeat": { "count": 6, "step": [0.4, 0, 0] },
+      "rows": { "count": 2, "step": [0, 0.5, 0] },
+      "tokens": ["mustard-300", "teal-700", "rust-500", "cream-100", "sky-400"]
+    },
+    {
+      "shape": "box",
+      "size": [0.02, 0.3, 0.3],
+      "at": [0.8, 2.08, -3.82],
+      "token": "coal-900",
+      "repeat": { "count": 14, "step": [0.04, 0, 0] },
+      "tokens": ["coal-900", "tomato-400", "mustard-300", "grape-400"]
+    },
+    { "shape": "box", "size": [0.9, 0.4, 0.03], "at": [-2.4, 2.95, -3.95], "token": "taxi-400" },
+    { "shape": "box", "size": [0.7, 0.1, 0.02], "at": [-2.4, 2.95, -3.92], "token": "tomato-400" },
+    { "shape": "box", "size": [0.03, 0.4, 0.9], "at": [-4.95, 2.5, -1.1], "token": "mint-400" },
+    { "shape": "disc", "size": [1, 0.04, 1], "at": [-1.4, 1.35, -1], "token": "silver-300" },
+    { "shape": "disc", "size": [0.05, 1.35, 0.05], "at": [-1.4, 0.68, -1], "token": "silver-300" },
+    { "shape": "disc", "size": [0.56, 0.03, 0.56], "at": [-1.4, 0.015, -1], "token": "silver-300" },
+    { "shape": "box", "size": [0.05, 0.75, 0.42], "at": [-0.94, 0.95, -1], "token": "mustard-300" },
+    { "shape": "box", "size": [0.05, 0.75, 0.42], "at": [-1.86, 0.95, -1], "token": "teal-700" },
+    {
+      "shape": "box",
+      "size": [0.42, 0.75, 0.05],
+      "at": [-1.4, 0.95, -0.54],
+      "token": "tomato-400"
+    },
+    { "shape": "box", "size": [0.42, 0.75, 0.05], "at": [-1.4, 0.95, -1.46], "token": "denim-500" },
+    { "shape": "box", "size": [0.3, 0.7, 0.05], "at": [-1.08, 0.97, -0.68], "token": "sand-200" },
+    { "shape": "box", "size": [0.3, 0.7, 0.05], "at": [-1.72, 0.97, -1.32], "token": "grape-400" },
+    { "shape": "disc", "size": [1, 0.04, 1], "at": [1.2, 1.35, -0.9], "token": "silver-300" },
+    { "shape": "disc", "size": [0.05, 1.35, 0.05], "at": [1.2, 0.68, -0.9], "token": "silver-300" },
+    {
+      "shape": "disc",
+      "size": [0.56, 0.03, 0.56],
+      "at": [1.2, 0.015, -0.9],
+      "token": "silver-300"
+    },
+    { "shape": "box", "size": [0.05, 0.75, 0.42], "at": [1.66, 0.95, -0.9], "token": "sand-200" },
+    { "shape": "box", "size": [0.05, 0.75, 0.42], "at": [0.74, 0.95, -0.9], "token": "grape-400" },
+    {
+      "shape": "box",
+      "size": [0.42, 0.75, 0.05],
+      "at": [1.2, 0.95, -0.44],
+      "token": "awninggreen-500"
+    },
+    { "shape": "box", "size": [0.42, 0.75, 0.05], "at": [1.2, 0.95, -1.36], "token": "clay-300" },
+    { "shape": "box", "size": [0.3, 0.7, 0.05], "at": [1.52, 0.97, -0.58], "token": "cream-100" },
+    {
+      "shape": "box",
+      "size": [0.3, 0.7, 0.05],
+      "at": [0.88, 0.97, -1.22],
+      "token": "brownstone-600"
+    },
+    { "shape": "disc", "size": [1, 0.04, 1], "at": [-1, 1.35, 1.4], "token": "silver-300" },
+    { "shape": "disc", "size": [0.05, 1.35, 0.05], "at": [-1, 0.68, 1.4], "token": "silver-300" },
+    { "shape": "disc", "size": [0.56, 0.03, 0.56], "at": [-1, 0.015, 1.4], "token": "silver-300" },
+    { "shape": "box", "size": [0.05, 0.75, 0.42], "at": [-0.54, 0.95, 1.4], "token": "clay-300" },
+    { "shape": "box", "size": [0.05, 0.75, 0.42], "at": [-1.46, 0.95, 1.4], "token": "cream-100" },
+    {
+      "shape": "box",
+      "size": [0.42, 0.75, 0.05],
+      "at": [-1, 0.95, 1.86],
+      "token": "brownstone-600"
+    },
+    { "shape": "box", "size": [0.42, 0.75, 0.05], "at": [-1, 0.95, 0.94], "token": "sky-400" },
+    { "shape": "box", "size": [0.3, 0.7, 0.05], "at": [-0.68, 0.97, 1.72], "token": "rust-500" },
+    { "shape": "box", "size": [0.3, 0.7, 0.05], "at": [-1.32, 0.97, 1.08], "token": "mustard-300" },
+    {
+      "shape": "box",
+      "size": [0.02, 0.28, 0.28],
+      "at": [-0.64, 0.44, 3.5],
+      "token": "coal-900",
+      "repeat": { "count": 14, "step": [0.02, 0, 0] },
+      "rows": { "count": 2, "step": [1, 0, 0] },
+      "tokens": ["coal-900", "tomato-400", "cobalt-400", "mustard-300"]
+    },
+    { "shape": "box", "size": [0.12, 0.2, 0.02], "at": [4.25, 1.1, 0], "token": "taxi-400" },
+    { "shape": "disc", "size": [0.6, 0.36, 0.6], "at": [3.1, 0.18, 0.1], "token": "walnut-700" },
+    { "shape": "box", "size": [1.9, 1, 0.6], "at": [-3.5, 0.5, 2.7], "token": "wood-700" },
+    { "shape": "box", "size": [2, 0.05, 0.7], "at": [-3.5, 1.02, 2.7], "token": "wood-300" },
+    { "shape": "box", "size": [0.42, 0.3, 0.36], "at": [-3.1, 1.2, 2.7], "token": "gilt-400" },
+    {
+      "shape": "box",
+      "size": [0.36, 0.12, 0.02],
+      "at": [-3.1, 1.4, 2.84],
+      "token": "taxi-400",
+      "glow": "steady"
+    },
+    { "shape": "box", "size": [0.5, 0.3, 0.36], "at": [-4, 1.2, 2.7], "token": "sand-200" },
+    { "shape": "box", "size": [0.36, 0.04, 0.3], "at": [-4, 1.36, 2.7], "token": "denim-500" }
+  ],
+  "blocked": [
+    "f0-0",
+    "f1-0",
+    "f2-0",
+    "f3-0",
+    "f4-0",
+    "f5-0",
+    "f6-0",
+    "f7-0",
+    "f0-1",
+    "f0-2",
+    "f0-3",
+    "f3-2",
+    "f6-2",
+    "f3-5",
+    "f4-5",
+    "f0-6",
+    "f1-6"
+  ],
+  "danceFloor": null,
+  "partyLights": null,
+  "stringLights": null,
+  "skyline": null,
+  "simSpots": [
+    { "pose": "work", "slot": "f1-5", "rotationDeg": 180, "heightM": 0 },
+    { "pose": "browse", "slot": "f4-3", "rotationDeg": 200, "heightM": 0 },
+    { "pose": "flex", "slot": "f5-5", "rotationDeg": 0, "heightM": 0 }
+  ],
+  "actions": {
+    "shift-retail": [
+      {
+        "poses": ["work"],
+        "models": [],
+        "holdMs": 7000,
+        "prop": "bag",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.work"
+      }
+    ],
+    "flex": [
+      {
+        "poses": ["flex"],
+        "models": [],
+        "holdMs": 3500,
+        "prop": "phone",
+        "propAt": "hands",
+        "bubble": "place.sim.bubble.flex"
+      }
+    ]
+  },
+  "crowd": {
+    "poses": ["idle", "work", "sit", "talk"],
+    "spots": [
+      {
+        "activity": "register",
+        "pose": "work",
+        "at": [-3.3, 2.1],
+        "headingDeg": 0,
+        "rank": 0,
+        "staff": true
+      },
+      {
+        "activity": "sorter",
+        "pose": "work",
+        "at": [1.9, -3.15],
+        "headingDeg": 180,
+        "rank": 0,
+        "staff": true
+      },
+      { "activity": "browse", "pose": "idle", "at": [-0.8, -1], "headingDeg": -90, "rank": 1 },
+      { "activity": "browse", "pose": "idle", "at": [1.2, -0.1], "headingDeg": 180, "rank": 1 },
+      { "activity": "browse", "pose": "idle", "at": [-3, -2.9], "headingDeg": 180, "rank": 2 },
+      { "activity": "browse", "pose": "idle", "at": [-1, 2.3], "headingDeg": 180, "rank": 3 },
+      { "activity": "crates", "pose": "work", "at": [0.5, 2.6], "headingDeg": 180, "rank": 3 },
+      { "activity": "chat", "pose": "talk", "at": [2.4, 1.2], "headingDeg": 120, "rank": 4 },
+      { "activity": "chat", "pose": "talk", "at": [3, 1.55], "headingDeg": -130, "rank": 5 }
+    ],
+    "seats": [
+      { "activity": "lounge", "model": "couch", "rank": 2 },
+      { "activity": "lounge", "model": "armchair", "rank": 4 }
+    ],
+    "hours": [
+      [0, 0.47],
+      [1, 0.47],
+      [2, 0.46],
+      [3, 0.45],
+      [4, 0.45],
+      [5, 0.44],
+      [6, 0.43],
+      [7, 0.43],
+      [8, 0.42],
+      [9, 0.41],
+      [10, 0.41],
+      [11, 0.4],
+      [12, 0.55],
+      [13, 0.7],
+      [14, 0.73],
+      [15, 0.77],
+      [16, 0.8],
+      [17, 0.9],
+      [18, 1],
+      [19, 0.75],
+      [20, 0.5],
+      [21, 0.49],
+      [22, 0.49],
+      [23, 0.48]
+    ],
+    "busyDays": [6, 7],
+    "quietShare": 0.75
+  }
+}
