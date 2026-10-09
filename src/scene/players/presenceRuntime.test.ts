@@ -53,6 +53,7 @@ describe('currentAnnounce', () => {
       destination: { kind: 'place' as const, placeId: 'bridge-walk' },
       mode: 'walk' as const,
       route: { legs: [] } as never,
+      realRoute: { legs: [] } as never,
       departMinute: 0,
       arriveMinute: 10,
       durationMs: 1000,
