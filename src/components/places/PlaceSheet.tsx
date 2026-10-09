@@ -31,6 +31,7 @@ import { ActionList, type DoneOutcome } from './ActionList'
 import { ShopSection } from './ShopSection'
 import { TravelSection } from './TravelSection'
 import { TripProgress } from './TripProgress'
+import { VenueInterior } from './VenueInterior'
 // Copy namespaces this module renders (DEC-11: they load with this module's chunk).
 import '@/lib/copy/ns/boroughs'
 import '@/lib/copy/ns/club'
@@ -344,6 +345,15 @@ function PlaceCard({ place }: { readonly place: Place }) {
       )}
       {view.kind !== 'look-only' && hasShop(place) ? (
         <ShopSection place={place} headingId={`${titleId}-shop`} />
+      ) : null}
+      {'type' in place ? (
+        <VenueInterior
+          place={place}
+          here={here}
+          open={view.kind === 'actions' && view.hours.status !== 'closed'}
+          minute={clock.minute}
+          name={name}
+        />
       ) : null}
     </div>
   )

@@ -55,6 +55,13 @@
     "place.actions.laundry.name": "Do laundry",
     "place.actions.communityHang.name": "Volunteer and hang out",
     "place.actions.rooftopHang.name": "Catch the view",
-    "place.actions.studioSession.name": "Studio session"
+    "place.actions.studioSession.name": "Studio session",
+    "place.interior.label": "Inside {place}",
+    "place.interior.reset": "Reset view",
+    "place.interior.exit": "Map",
+    "place.interior.exitLabel": "Leave {place} for the map",
+    "place.sim.bubble.dance": "Let's go!",
+    "place.sim.bubble.flex": "Say cheese",
+    "place.sim.bubble.hang": "Vibes"
   }
 }
