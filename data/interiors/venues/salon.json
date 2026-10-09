@@ -391,6 +391,11 @@
       { "activity": "dryer", "kind": "dryer-seat", "rank": 3 },
       { "activity": "waiting", "model": "couch", "rank": 4 }
     ],
+    "players": {
+      "style": ["braids", "nails", "dryer"],
+      "wait": ["waiting"],
+      "work": ["braider", "front-desk"]
+    },
     "hours": [
       [0, 0.4],
       [1, 0.4],

@@ -5,6 +5,7 @@ import {
   nightOf,
   placeOccupants,
   planCrowd,
+  wantedSpots,
   type CrowdInput,
   type CrowdSpot,
 } from './venueCrowd'
@@ -157,5 +158,21 @@ describe('venue crowd (S43)', () => {
     expect(placed[3]?.id).toBe('chat-0')
     expect(new Set(placed.map((entry) => entry?.id)).size).toBe(4)
     expect(placed.some((entry) => entry?.staff === true)).toBe(false)
+  })
+
+  it('sends an activity to the spots the interior names for it, staff spots only when named', () => {
+    const gym = [
+      spot('desk', { activity: 'front-desk', pose: 'work', rank: 0, staff: true }),
+      spot('tread-0', { activity: 'treadmill', pose: 'run', rank: 1 }),
+      spot('rack-0', { activity: 'rack', pose: 'workout', rank: 1 }),
+      spot('stretch', { activity: 'stretch', pose: 'idle', rank: 5 }),
+    ]
+    const players = { workout: ['treadmill', 'rack'], work: ['front-desk'] }
+    expect(wantedSpots('workout', players)).toEqual(['treadmill', 'rack'])
+    expect(wantedSpots('chat', players)).toEqual(['chat'])
+    const placed = placeOccupants(gym, ['workout', 'workout', 'work', 'workout'], players)
+    expect(placed.map((entry) => entry?.id)).toEqual(['tread-0', 'rack-0', 'desk', 'stretch'])
+    // Unnamed, a staff spot stays the staff's even when its activity matches.
+    expect(placeOccupants(gym, ['front-desk'])[0]?.id).toBe('tread-0')
   })
 })

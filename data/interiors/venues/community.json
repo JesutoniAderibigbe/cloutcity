@@ -313,6 +313,7 @@
       { "activity": "audience", "kind": "folding-chair", "rank": 1 },
       { "activity": "games", "kind": "hall-chair", "rank": 1 }
     ],
+    "players": { "eat": ["potluck"], "workout": ["pingpong"], "wait": ["audience"] },
     "hours": [
       [0, 0.38],
       [1, 0.37],

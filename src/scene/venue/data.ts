@@ -137,6 +137,8 @@ export interface VenueInterior {
   readonly world: SimWorld
   /** The locals' spots: the listed ones and the seats of the listed kinds and models. */
   readonly crowdSpots: readonly CrowdSpot[]
+  /** Where a real player doing an activity goes (spot and seat activities, best first). */
+  readonly players: Readonly<Record<string, readonly string[] | undefined>>
   readonly crowd: {
     readonly hours: readonly (readonly [number, number])[]
     readonly busyDays: readonly number[]
@@ -513,6 +515,11 @@ function load(id: string, raw: Raw): VenueInterior {
     },
     world,
     crowdSpots,
+    // The schema checks it (src/lib/data/schemas/interiors.ts); the club and lounge list none.
+    players:
+      'players' in raw.crowd
+        ? (raw.crowd.players as Readonly<Record<string, readonly string[] | undefined>>)
+        : {},
     crowd: {
       hours: raw.crowd.hours.map((hour, i) => pair(hour, `${id}.crowd.hours[${i}]`)),
       busyDays: raw.crowd.busyDays,
@@ -718,6 +725,16 @@ export const occupantReserve: { readonly drawCalls: number; readonly triangles: 
 
 export type CrowdClip = 'idle' | 'talk' | 'wave' | 'walk' | 'sit' | 'interact' | 'run'
 const CROWD_CLIPS: readonly string[] = ['idle', 'talk', 'wave', 'walk', 'sit', 'interact', 'run']
+
+/**
+ * The rig clip a standing pose plays (data/config/interiors.json `crowd.clips`: a treadmill's
+ * `run`, a counter's `interact`), or null for a pose it does not list.
+ */
+export function poseClip(pose: string): string | null {
+  return (
+    (interiorsConfigJson.crowd.clips as Readonly<Record<string, string | undefined>>)[pose] ?? null
+  )
+}
 
 /** A pose's movement over its loop: the dance's groove, a rep's bob, a boxer's bounce. */
 export interface CrowdMove {

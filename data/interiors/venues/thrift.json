@@ -333,6 +333,7 @@
       { "activity": "lounge", "model": "couch", "rank": 2 },
       { "activity": "lounge", "model": "armchair", "rank": 4 }
     ],
+    "players": { "browse": ["browse", "crates"], "work": ["crates", "register", "sorter"] },
     "hours": [
       [0, 0.47],
       [1, 0.47],

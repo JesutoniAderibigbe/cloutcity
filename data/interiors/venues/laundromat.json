@@ -247,6 +247,11 @@
       { "activity": "chat", "pose": "talk", "at": [-0.2, 2.9], "headingDeg": -120, "rank": 5 }
     ],
     "seats": [{ "activity": "waiting", "kind": "plastic-chair", "rank": 1 }],
+    "players": {
+      "wash": ["washers", "dryers", "folding"],
+      "wait": ["waiting"],
+      "work": ["attendant"]
+    },
     "hours": [
       [0, 0.43],
       [1, 0.41],

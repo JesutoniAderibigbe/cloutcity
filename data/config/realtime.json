@@ -31,11 +31,48 @@
     "inside": {
       "actions": {
         "club-night": "dance",
-        "rooftop-hang": "lounge"
+        "rooftop-hang": "lounge",
+        "bodega-breakfast": "eat",
+        "street-meal": "eat",
+        "coffee": "sip",
+        "shift-barista": "work",
+        "shift-retail": "work",
+        "shift-delivery": "work",
+        "shift-junior-dev": "work",
+        "workout": "workout",
+        "fresh-cut": "cut",
+        "salon-session": "style",
+        "laundry": "wash",
+        "pharmacy-run": "browse",
+        "budget-check": "wait",
+        "studio-session": "create",
+        "community-hang": "chat",
+        "walk-in-the-park": "stroll"
       },
       "byInterior": {
         "club": ["dance", "dance", "bar", "booth", "chat"],
-        "lounge": ["lounge", "lounge", "bar", "chat"]
+        "lounge": ["lounge", "lounge", "bar", "chat"],
+        "bank": ["wait", "wait", "chat"],
+        "barber": ["cut", "wait", "chat"],
+        "bodega": ["browse", "eat", "wait", "chat"],
+        "boutique": ["browse", "browse", "chat"],
+        "boxing": ["workout", "workout", "chat"],
+        "coffee": ["sip", "sip", "wait", "chat"],
+        "community": ["chat", "chat", "eat", "workout"],
+        "depot": ["work", "work", "chat"],
+        "food-cart": ["eat", "eat", "wait"],
+        "food-spot": ["eat", "eat", "wait", "chat"],
+        "gym": ["workout", "workout", "workout", "chat"],
+        "job-site": ["work", "work", "chat"],
+        "laundromat": ["wash", "wash", "wait", "chat"],
+        "mall": ["browse", "stroll", "eat", "chat"],
+        "park": ["stroll", "workout", "dance", "chat"],
+        "pharmacy": ["browse", "wait"],
+        "salon": ["style", "style", "wait", "chat"],
+        "station": ["wait", "wait", "chat"],
+        "studio": ["create", "dance", "lounge", "chat"],
+        "thrift": ["browse", "browse", "lounge", "chat"],
+        "warehouse": ["work", "work", "chat"]
       }
     }
   }

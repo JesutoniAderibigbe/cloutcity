@@ -474,6 +474,13 @@
       { "activity": "rest", "kind": "mall-bench", "rank": 2 },
       { "activity": "eat", "kind": "court-chair", "rank": 2 }
     ],
+    "players": {
+      "browse": ["window", "kiosk"],
+      "stroll": ["stroll", "mezzanine", "fountain"],
+      "chat": ["fountain", "stroll"],
+      "wait": ["rest"],
+      "work": ["kiosk"]
+    },
     "hours": [
       [0, 0.47],
       [1, 0.46],

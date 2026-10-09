@@ -273,6 +273,11 @@
       { "activity": "lounge", "model": "couch", "rank": 2 },
       { "activity": "lounge", "model": "armchair", "rank": 4 }
     ],
+    "players": {
+      "create": ["session", "booth"],
+      "dance": ["vibe"],
+      "work": ["producer", "photographer"]
+    },
     "hours": [
       [0, 0.9],
       [1, 0.7],

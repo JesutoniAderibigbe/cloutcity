@@ -321,6 +321,7 @@
       { "activity": "dock", "pose": "idle", "at": [4.6, 0], "headingDeg": 90, "rank": 5 }
     ],
     "seats": [],
+    "players": { "work": ["racking", "pallets"], "chat": ["break"], "wait": ["dock"] },
     "hours": [
       [0, 0.33],
       [1, 0.34],

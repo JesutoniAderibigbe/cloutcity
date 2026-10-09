@@ -66,6 +66,8 @@ describe('activities', () => {
       ...Object.values(typesJson.byVenue),
     ])
     for (const id of Object.keys(inside.byInterior)) expect(interiors).toContain(id)
+    // Every interior has its own list (S43c): nobody inside falls back to standing around.
+    for (const id of interiors) expect(Object.keys(inside.byInterior)).toContain(id)
     // The place actions an interior acts out (the Sim's actions there, one file each, S43b).
     const dir = join(import.meta.dirname, '../../../data/interiors/venues')
     const actions = new Set(
@@ -90,6 +92,8 @@ describe('activities', () => {
     const picks = new Set(Array.from({ length: 40 }, (_, n) => fallbackActivity(uuid(n), 'club')))
     expect(picks.size).toBeGreaterThan(1)
     expect(fallbackActivity(uuid(1), 'no-such-interior')).toBe('idle')
+    expect(inside.byInterior.gym).toContain(fallbackActivity(uuid(1), 'gym'))
+    expect(inside.byInterior.barber).toContain(fallbackActivity(uuid(1), 'barber'))
   })
 })
 

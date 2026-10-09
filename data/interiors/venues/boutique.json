@@ -314,6 +314,11 @@
       { "activity": "chat", "pose": "talk", "at": [-0.9, 2], "headingDeg": -110, "rank": 4 }
     ],
     "seats": [{ "activity": "waiting", "model": "couch", "rank": 3 }],
+    "players": {
+      "browse": ["browse", "mirror"],
+      "work": ["register", "stylist"],
+      "wait": ["waiting"]
+    },
     "hours": [
       [0, 0.47],
       [1, 0.47],

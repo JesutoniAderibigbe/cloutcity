@@ -316,6 +316,7 @@
       { "activity": "waiting", "model": "couch", "rank": 2 },
       { "activity": "waiting", "model": "armchair", "rank": 3 }
     ],
+    "players": { "wait": ["waiting"] },
     "hours": [
       [0, 0.4],
       [1, 0.4],

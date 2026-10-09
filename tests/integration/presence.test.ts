@@ -8,6 +8,7 @@ import realtimeJson from '@data/config/realtime.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
 import venuesJson from '@data/venues/venues.json'
 import { beforeAll, describe, expect, it } from 'vitest'
+import { PRESENCE_ACTIVITY_IDS } from '@/lib/data/presenceActivities'
 import {
   anonClient,
   expectRpcError,
@@ -114,6 +115,11 @@ describe('settings', () => {
       .sort((a, b) => (a.id < b.id ? -1 : 1))
     expect(rows).toEqual(places)
   })
+
+  it('the activity list matches src/lib/data/presenceActivities.ts (S43c)', async () => {
+    const rows = await sql<{ id: string }[]>`select id from private.presence_activities order by id`
+    expect(rows.map((row) => row.id)).toEqual([...PRESENCE_ACTIVITY_IDS].sort())
+  })
 })
 
 describe('presence_beat and presence_snapshot', () => {
@@ -155,6 +161,10 @@ describe('presence_beat and presence_snapshot', () => {
     expect((await beat(b, 'home', null, 'brooklyn', 'dance')).error).toBeNull()
     row = (await snapshot(a)).players.find((r) => r.id === b.id)
     expect(row).toMatchObject({ spot: 'home', activity: null })
+    // S43c: the everyday places' activities too (a workout at the gym).
+    expect((await beat(b, 'place', 'rep-count-gym', 'queens', 'workout')).error).toBeNull()
+    row = (await snapshot(a)).players.find((r) => r.id === b.id)
+    expect(row).toMatchObject({ place: 'rep-count-gym', activity: 'workout' })
     expectRpcError(
       (await beat(b, 'place', 'glowmatic', 'queens', 'karaoke')).error,
       'invalid_argument',

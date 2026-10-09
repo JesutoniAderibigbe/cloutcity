@@ -316,6 +316,11 @@
       { "activity": "chat", "pose": "talk", "at": [0.3, 2.4], "headingDeg": 120, "rank": 4 }
     ],
     "seats": [{ "activity": "bench", "kind": "bench", "rank": 2 }],
+    "players": {
+      "workout": ["treadmill", "rack", "dumbbells", "bench"],
+      "idle": ["stretch"],
+      "work": ["front-desk", "trainer"]
+    },
     "hours": [
       [0, 0.43],
       [1, 0.44],

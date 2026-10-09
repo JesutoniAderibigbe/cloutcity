@@ -254,6 +254,7 @@
       { "activity": "waiting", "pose": "idle", "at": [0.8, 1.6], "headingDeg": 160, "rank": 5 }
     ],
     "seats": [{ "activity": "bench", "kind": "platform-bench", "rank": 2 }],
+    "players": { "wait": ["waiting", "bench", "turnstile"], "dance": ["busker"] },
     "hours": [
       [0, 0.2],
       [1, 0.22],

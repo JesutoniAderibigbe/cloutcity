@@ -365,6 +365,7 @@
       { "activity": "eat", "kind": "diner-chair", "rank": 1 },
       { "activity": "eat", "kind": "window-stool", "rank": 2 }
     ],
+    "players": { "wait": ["queue"], "work": ["kitchen", "register"] },
     "hours": [
       [0, 0.42],
       [1, 0.34],

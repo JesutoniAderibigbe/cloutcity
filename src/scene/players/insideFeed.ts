@@ -6,8 +6,8 @@
  *
  * - the activity they announced (their last place action there, presenceRuntime.ts), else
  * - one their id picks from the interior's list (realtime.json `inside.byInterior`): the same
- *   player always does the same thing, and it suits the room (a club dances, a lounge lounges);
- *   an interior with no list (S43b's) stands them at any free standing spot (`idle`).
+ *   player always does the same thing, and it suits the room (a club dances, a gym works out,
+ *   a barbershop gets a cut, S43c); an interior with no list stands them anywhere (`idle`).
  *
  * Blocked, muted, banned, suspended and ghost players never reach the snapshot (the server), and
  * players blocked or muted on this device this session are left out at once. Nobody is padded in.

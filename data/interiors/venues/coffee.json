@@ -396,6 +396,11 @@
       { "activity": "sip", "model": "couch", "rank": 2 },
       { "activity": "sip", "model": "armchair", "rank": 4 }
     ],
+    "players": {
+      "sip": ["sip", "pickup"],
+      "wait": ["queue", "pickup"],
+      "work": ["barista", "register"]
+    },
     "hours": [
       [0, 0.4],
       [1, 0.4],

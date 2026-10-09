@@ -16,6 +16,7 @@
  * narrows it (src/scene/venue/data.ts), so classic zod never ships to the browser for it.
  */
 import { z } from 'zod'
+import { PRESENCE_ACTIVITY_IDS } from '../presenceActivities.ts'
 import { QUALITY_TIERS } from './config'
 import { CopyKeyRefSchema, IdSchema } from './content'
 
@@ -255,6 +256,13 @@ export const InteriorSchema = z.strictObject({
     poses: z.array(IdSchema).min(1),
     spots: z.array(CrowdSpotSchema).min(1),
     seats: z.array(CrowdSeatSchema),
+    /**
+     * Where a real player doing an activity (src/lib/data/presenceActivities.ts) stands or sits
+     * here, as spot and seat activities, best first (S43c: a workout takes a treadmill, a rack,
+     * then the dumbbells). Staff spots are taken only when named here (a player on shift stands
+     * behind the counter). An activity not listed looks for spots of its own name.
+     */
+    players: z.partialRecord(z.enum(PRESENCE_ACTIVITY_IDS), z.array(IdSchema).min(1)).optional(),
     /** How busy each opening hour is (0–23, share of the tier's crowd). */
     hours: z.array(z.tuple([z.int().min(0).max(23), share])).min(1),
     /** Days of the week (1-based, the clock's `dayOfWeek`) at full crowd. */

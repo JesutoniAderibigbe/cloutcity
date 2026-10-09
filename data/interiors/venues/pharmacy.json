@@ -371,6 +371,11 @@
       { "activity": "checkout", "pose": "talk", "at": [1.4, 2], "headingDeg": 180, "rank": 4 }
     ],
     "seats": [{ "activity": "waiting", "kind": "wait-chair", "rank": 3 }],
+    "players": {
+      "browse": ["shop"],
+      "wait": ["pickup", "waiting"],
+      "work": ["pharmacist", "checkout"]
+    },
     "hours": [
       [0, 0.4],
       [1, 0.41],

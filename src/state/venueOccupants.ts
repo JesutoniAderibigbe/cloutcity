@@ -12,12 +12,13 @@
 import { useSyncExternalStore } from 'react'
 import { createStore } from 'zustand/vanilla'
 import type { PublicAvatar } from '@/engine/appearance'
+import type { PresenceActivity } from '@/lib/data/presenceActivities'
 
 /**
  * What a player is doing inside: the interior puts them at a spot for it (the dance floor, the
- * bar, a booth). Unknown activities stand wherever there is room.
+ * bar, a booth, a treadmill, the barber's chair). Unknown activities stand wherever there is room.
  */
-export type InteriorActivity = 'dance' | 'bar' | 'booth' | 'chat' | 'lounge' | 'idle'
+export type InteriorActivity = PresenceActivity
 
 export interface InteriorOccupant {
   /** The player's opaque id (never shown). */

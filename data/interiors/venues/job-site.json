@@ -246,6 +246,7 @@
       { "activity": "beanbag", "pose": "idle", "at": [3, 3.2], "headingDeg": 120, "rank": 5 }
     ],
     "seats": [{ "activity": "code", "kind": "desk-chair", "rank": 1 }],
+    "players": { "work": ["code", "coffee"], "chat": ["coffee", "beanbag"], "lounge": ["beanbag"] },
     "hours": [
       [0, 0.42],
       [1, 0.44],

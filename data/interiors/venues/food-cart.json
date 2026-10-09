@@ -267,6 +267,7 @@
       { "activity": "chat", "pose": "talk", "at": [-2.9, 3], "headingDeg": -130, "rank": 5 }
     ],
     "seats": [{ "activity": "eat", "kind": "crate-seat", "rank": 2 }],
+    "players": { "wait": ["queue"], "work": ["cart"] },
     "hours": [
       [0, 1],
       [1, 0.83],

@@ -207,17 +207,36 @@ export function planCrowd(input: CrowdInput): CrowdMember[] {
 }
 
 /**
- * The spots real players take (S43 hook): each occupant's activity at the first free spot of
- * that activity (best rank first), else any free standing spot; extra occupants stand at none.
+ * Where an occupant doing `activity` goes, best first: the interior's `players` list for it
+ * (S43c: a workout takes a treadmill, then a rack), else spots of the activity's own name.
+ */
+export function wantedSpots(
+  activity: string,
+  players: Readonly<Record<string, readonly string[] | undefined>>,
+): readonly string[] {
+  return players[activity] ?? [activity]
+}
+
+/**
+ * The spots real players take (S43 hook): each occupant's activity at the first free spot it
+ * wants (`wantedSpots`, best rank first; a staff spot only when the interior's `players` names
+ * it, so a player on shift stands behind the counter), else any free standing guest spot; extra
+ * occupants stand at none.
  */
 export function placeOccupants(
   spots: readonly CrowdSpot[],
   activities: readonly string[],
+  players: Readonly<Record<string, readonly string[] | undefined>> = {},
 ): (CrowdSpot | null)[] {
-  const free = [...spots].filter((spot) => !spot.staff).sort((a, b) => a.rank - b.rank)
+  const free = [...spots].sort((a, b) => a.rank - b.rank)
   return activities.map((activity) => {
-    let index = free.findIndex((spot) => spot.activity === activity)
-    if (index < 0) index = free.findIndex((spot) => spot.y === 0)
+    const named = players[activity] !== undefined
+    let index = -1
+    for (const want of wantedSpots(activity, players)) {
+      index = free.findIndex((spot) => spot.activity === want && (named || !spot.staff))
+      if (index >= 0) break
+    }
+    if (index < 0) index = free.findIndex((spot) => !spot.staff && spot.y === 0)
     if (index < 0) return null
     const [spot] = free.splice(index, 1)
     return spot ?? null

@@ -234,6 +234,11 @@
       { "activity": "courier", "pose": "idle", "at": [-0.4, 1.6], "headingDeg": 150, "rank": 5 }
     ],
     "seats": [],
+    "players": {
+      "work": ["sorting", "lockers", "dispatch"],
+      "chat": ["courier"],
+      "wait": ["courier"]
+    },
     "hours": [
       [0, 0.33],
       [1, 0.34],

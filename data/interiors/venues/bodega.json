@@ -408,6 +408,7 @@
       { "activity": "shop", "pose": "idle", "at": [-3.95, -2.5], "headingDeg": 180, "rank": 3 }
     ],
     "seats": [],
+    "players": { "browse": ["shop"], "eat": ["queue", "deli"], "wait": ["queue"] },
     "hours": [
       [0, 0.4],
       [1, 0.42],

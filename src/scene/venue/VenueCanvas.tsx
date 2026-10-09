@@ -296,7 +296,12 @@ function VenueScene({
   const occupants = useInteriorOccupants(placeId).slice(0, occupantsMax(tier))
   const activities = occupants.map((occupant) => occupant.activity).join('|')
   const occupantSpots = useMemo(
-    () => placeOccupants(interior.crowdSpots, activities === '' ? [] : activities.split('|')),
+    () =>
+      placeOccupants(
+        interior.crowdSpots,
+        activities === '' ? [] : activities.split('|'),
+        interior.players,
+      ),
     [interior, activities],
   )
   // The crowd changes with the hour, not every minute.

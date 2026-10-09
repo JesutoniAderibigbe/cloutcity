@@ -334,6 +334,7 @@
       { "activity": "atm", "pose": "work", "at": [-4.55, 0.4], "headingDeg": -90, "rank": 3 }
     ],
     "seats": [{ "activity": "waiting", "kind": "wait-chair", "rank": 3 }],
+    "players": { "wait": ["queue", "waiting", "window"], "chat": ["queue", "advisor"] },
     "hours": [
       [0, 0.15],
       [1, 0.17],

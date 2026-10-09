@@ -6,11 +6,14 @@ import { createToonRamp } from '../toonRamp'
 import { toonRamp } from '../apartment/data'
 import { SimController } from '../apartment/sim/simController'
 import { cellOf, isFree } from '../apartment/sim/simWorld'
+import realtimeJson from '@data/config/realtime.json'
+import { placeOccupants, wantedSpots } from '@/lib/world/venueCrowd'
 import { buildVenue } from './buildVenue'
 import {
   crowdConfig,
   lightsConfig,
   loadVenueInterior,
+  poseClip,
   VENUE_INTERIOR_IDS,
   venueBudget,
   venueInterior,
@@ -123,6 +126,28 @@ describe('venue interiors (S43)', () => {
         if (shown?.models.some((model) => models.has(model)) === true) {
           expect(frame.clip, `${id} ${action} on furniture`).toBe(clips[0])
         }
+      }
+    }
+  })
+
+  it('has a spot for every activity a real player does inside, in its pose', () => {
+    const inside = realtimeJson.presence.inside.byInterior as Record<string, string[] | undefined>
+    for (const id of VENUE_INTERIOR_IDS) {
+      const interior = venueInterior(id)
+      const activities = new Set(interior.crowdSpots.map((spot) => spot.activity))
+      for (const [activity, wants] of Object.entries(interior.players))
+        for (const want of wants ?? []) expect(activities, `${id} ${activity}`).toContain(want)
+      // Every interior gives a player who announced nothing something it suits (S43c).
+      const list = inside[id]
+      expect(list, id).toBeDefined()
+      for (const activity of list ?? []) {
+        if (activity === 'idle') continue
+        const [placed] = placeOccupants(interior.crowdSpots, [activity], interior.players)
+        expect(wantedSpots(activity, interior.players), `${id} ${activity}`).toContain(
+          placed?.activity,
+        )
+        const pose = placed?.pose ?? ''
+        expect(pose === 'sit' || pose === 'dance' || poseClip(pose) !== null, pose).toBe(true)
       }
     }
   })

@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Vector3, type AnimationClip, type Group } from 'three'
 import type { QualityTier } from '@/lib/data/schemas/config'
-import type { CrowdSpot } from '@/lib/world/venueCrowd'
+import { wantedSpots, type CrowdSpot } from '@/lib/world/venueCrowd'
 import { log } from '@/lib/log'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 import { onPlaceActionDone } from '@/state/placeSheet'
@@ -31,7 +31,7 @@ import { SimAvatar } from '../apartment/sim/SimAvatar'
 import { rotate, type Body } from '../apartment/sim/simController'
 import { createToonRamp } from '../toonRamp'
 import type { DanceMoves } from './danceMoves'
-import { venueGroove, venueInterior, venueSimData } from './data'
+import { poseClip, venueGroove, venueInterior, venueSimData } from './data'
 import { VENUE_AVATAR_NAME } from './types'
 
 const DEG = Math.PI / 180
@@ -42,20 +42,25 @@ const MOVES_FAILED_MESSAGE = 'venue: the dance moves could not load'
 
 /**
  * The clip a real player plays for what they are doing (seated where their spot is a seat): a
- * dancer the move their id picks once the moves are in `available`, else a wave.
+ * dancer the move their id picks once the moves are in `available`, else a wave; at a spot for
+ * their activity, the spot's pose (S43c: a treadmill runs, a counter serves); else they talk at
+ * the bar or in a chat, or stand.
  */
 function occupantClip(
   occupant: InteriorOccupant,
-  seated: boolean,
+  spot: CrowdSpot,
+  wanted: readonly string[],
   moves: DanceMoves | null,
   pick: (id: string, n: number) => number,
   available: ReadonlySet<string>,
 ): string {
-  if (seated) return 'sit'
+  if (spot.y > 0) return 'sit'
   if (occupant.activity === 'dance') {
     const move = moves?.moves[pick(occupant.id, moves.moves.length)]
     return move !== undefined && available.has(move) ? move : 'wave'
   }
+  const clip = wanted.includes(spot.activity) ? poseClip(spot.pose) : null
+  if (clip !== null && available.has(clip)) return clip
   if (occupant.activity === 'bar' || occupant.activity === 'chat') return 'talk'
   return 'idle'
 }
@@ -102,6 +107,7 @@ function Occupant({
   tier,
   sitContact,
   dance,
+  wanted,
   bpm,
 }: {
   readonly placeId: string
@@ -111,6 +117,8 @@ function Occupant({
   /** The room Sim's sit contact, in rig units: a seated player's hips go on the seat. */
   readonly sitContact: readonly [number, number, number]
   readonly dance: ReturnType<typeof useDanceMoves>
+  /** The spot activities this player's activity goes to here (src/lib/world/venueCrowd.ts). */
+  readonly wanted: readonly string[]
   /** The venue's beat: a move plays at it. */
   readonly bpm: number
 }) {
@@ -133,7 +141,8 @@ function Occupant({
   )
   const clip = occupantClip(
     occupant,
-    seated,
+    spot,
+    wanted,
     dance?.moves ?? null,
     dance?.pick ?? (() => 0),
     available,
@@ -296,6 +305,7 @@ export default function VenuePeople({
                 tier={tier}
                 sitContact={data.poses.get('sit')?.contact ?? [0, 0, 0]}
                 dance={dance}
+                wanted={wantedSpots(occupant.activity, interior.players)}
                 bpm={interior.mood.bpm}
               />
             )

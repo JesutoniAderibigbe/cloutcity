@@ -245,6 +245,7 @@
       { "activity": "watch", "pose": "talk", "at": [-2.4, 0.95], "headingDeg": 160, "rank": 5 }
     ],
     "seats": [{ "activity": "bench", "kind": "gym-bench", "rank": 3 }],
+    "players": { "workout": ["ring", "bags", "rope"], "chat": ["watch"], "idle": ["watch"] },
     "hours": [
       [0, 0.43],
       [1, 0.44],
