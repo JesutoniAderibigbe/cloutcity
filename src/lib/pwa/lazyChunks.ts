@@ -26,6 +26,18 @@ export const OPTIONAL_CHUNK_MARKERS = [
   // the marker is a value only finishes.json holds (a floor's pattern; the engine's derived copy
   // has no patterns).
   { id: 'home-finishes', marker: 'pattern:"herringbone"' },
+  // A venue's inside view (S43, src/scene/venue/VenueCanvas.tsx): decoration behind the place
+  // sheet, whose actions all work without it; offline before it was ever cached the sheet shows
+  // over the map as before (VenueInterior's boundary).
+  { id: 'venue-interior', marker: 'cc-feature:venue-interior' },
+  // The room scene stack the apartment and the venue interiors share (the room's scene graph and
+  // orbit, buildApartment.ts and RoomOrbit.tsx; the room Sim's data and props, sim/), which the
+  // bundler splits out of both once two lazy imports use it.
+  { id: 'room-scene', marker: 'apartment-decor-merged' },
+  { id: 'room-sim', marker: 'room sim data: ' },
+  // Its locals' kit bakers (src/scene/venue/crowdLayer.ts) and its players (VenuePeople.tsx).
+  { id: 'venue-crowd', marker: 'venue crowd: ' },
+  { id: 'venue-people', marker: 'venueOccupant' },
   // Buy mode 2.0 (S40, src/components/hud/HomeDecor.tsx): the furniture lists, catalogue and
   // finishes; offline before it was ever cached, the Home panel says so and rest and moves work.
   { id: 'home-decor', marker: 'cc-feature:home-decor' },

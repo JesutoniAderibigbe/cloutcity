@@ -20,7 +20,6 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, type RefObject } 
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PCFShadowMap, type IUniform } from 'three'
 import type { QualityTier } from '@/lib/data/schemas/config'
-import { log } from '@/lib/log'
 import { attachTapDetector } from '../pins/tap'
 import { ApartmentTestHook } from './apartmentTestHook'
 import { buildApartment, type ApartmentObjects, type PlacedFill } from './buildApartment'
@@ -39,7 +38,7 @@ import {
 } from './data'
 import { boundingSphere, type Sphere } from './fit'
 import { lightingAt } from './lighting'
-import type { DecorModels } from './decorModels'
+import { useDecorModels } from './useDecorModels'
 import { useReducedMotion } from '@/lib/useReducedMotion'
 import { NEAR_M, RoomOrbit, type FreeArea, type RoomOrbitHandle } from './RoomOrbit'
 import { createPlaceholderVisuals } from './visuals'
@@ -126,41 +125,6 @@ interface RoomProps extends Pick<
   readonly readyRef: RefObject<boolean>
 }
 
-/**
- * The decor models at `tier`, loaded in their own lazy chunk (decorModels.ts) after the room is
- * up; null until then, and for good if they fail (the stand-ins stay: an expected condition, e.g.
- * offline, so it logs at info).
- */
-function useDecorModels(tier: QualityTier): DecorModels | null {
-  const [decor, setDecor] = useState<{ tier: QualityTier; models: DecorModels } | null>(null)
-  useEffect(() => {
-    let active = true
-    let loaded: DecorModels | null = null
-    import('./decorModels')
-      .then((module) => module.loadDecorModels(tier, roomGlow))
-      .then(
-        (models) => {
-          if (!active) {
-            models.dispose()
-            return
-          }
-          loaded = models
-          setDecor({ tier, models })
-        },
-        (error: unknown) => {
-          log.info('apartment decor models failed to load', {
-            error: error instanceof Error ? error.message : String(error),
-          })
-        },
-      )
-    return () => {
-      active = false
-      loaded?.dispose()
-    }
-  }, [tier])
-  return decor !== null && decor.tier === tier ? decor.models : null
-}
-
 function Room({
   interior,
   placed,
@@ -174,7 +138,7 @@ function Room({
   const gl = useThree((state) => state.gl)
   const get = useThree((state) => state.get)
   const invalidate = useThree((state) => state.invalidate)
-  const decor = useDecorModels(tier)
+  const decor = useDecorModels(tier, roomGlow)
   const built = useMemo(() => {
     // The code-built stand-ins draw at once; the hand-made decor models (S04h) take over the
     // items scene.json `models.decor` maps once they have loaded.

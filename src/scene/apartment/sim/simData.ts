@@ -73,7 +73,8 @@ export interface SimData {
   readonly bubble: { readonly aboveHeadM: number; readonly joint: string }
   readonly walkable: ReadonlySet<string>
   readonly anchors: ReadonlyMap<string, readonly SimAnchor[]>
-  readonly spots: Readonly<Record<HomeIdLiteral, readonly SimSpot[]>>
+  /** Fallback spots by scope (a home id; a venue interior's id, S43). */
+  readonly spots: Readonly<Record<string, readonly SimSpot[]>>
 }
 
 const DEG = Math.PI / 180
@@ -88,7 +89,8 @@ function vec3(value: readonly number[], what: string): Vec3 {
   return [x, y, z]
 }
 
-interface RawStep {
+/** One step as data/config/roomSim.json (or a venue's actions, S43) writes it. */
+export interface RawStep {
   readonly poses: readonly string[]
   readonly models: readonly string[]
   readonly holdMs: number
@@ -98,7 +100,8 @@ interface RawStep {
   readonly bubble?: string
 }
 
-function step(raw: RawStep, what: string): SimStep {
+/** A raw step with its defaults filled in; throws on an unknown `propAt` (fail fast). */
+export function simStep(raw: RawStep, what: string): SimStep {
   const propAt = raw.propAt ?? 'anchor'
   if (propAt !== 'anchor' && propAt !== 'hands') fail(`${what}.propAt`)
   return {
@@ -142,7 +145,7 @@ function load(): SimData {
     Object.entries(raw.actions as Record<string, readonly RawStep[]>).map(
       ([id, steps]): [string, SimStep[]] => [
         id,
-        steps.map((entry, i) => step(entry, `actions.${id}[${i}]`)),
+        steps.map((entry, i) => simStep(entry, `actions.${id}[${i}]`)),
       ],
     ),
   )
@@ -191,7 +194,7 @@ function load(): SimData {
     poses,
     props,
     actions,
-    fallback: step({ ...raw.fallback, models: [] }, 'fallback'),
+    fallback: simStep({ ...raw.fallback, models: [] }, 'fallback'),
     hands: new Map(
       Object.entries(raw.hands).map(([pose, at]): [string, Vec3] => [
         pose,

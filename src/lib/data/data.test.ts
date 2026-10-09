@@ -66,6 +66,11 @@ import {
   StreetPropsConfigSchema,
 } from './schemas/scene'
 import { EconomyBaselineSchema } from './schemas/sim'
+import {
+  InteriorTypesFileSchema,
+  InteriorsConfigSchema,
+  InteriorsFileSchema,
+} from './schemas/interiors'
 import { InteractionsFileSchema, RoomSimConfigSchema } from './schemas/roomSim'
 import {
   AudioManifestSchema,
@@ -146,6 +151,7 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'config/creator.json': CreatorConfigSchema,
   'config/geo.json': GeoConfigSchema,
   'config/handles.json': HandlesConfigSchema,
+  'config/interiors.json': InteriorsConfigSchema,
   'config/layout.json': LayoutConfigSchema,
   'config/moderation.json': ModerationConfigSchema,
   'config/offline.json': OfflineConfigSchema,
@@ -179,6 +185,8 @@ const SCHEMAS: Readonly<Record<string, z.ZodType>> = {
   'homes/homes.json': HomesFileSchema,
   'homes/interiors.json': HomeInteriorsFileSchema,
   'homes/interactions.json': InteractionsFileSchema,
+  'interiors/types.json': InteriorTypesFileSchema,
+  'interiors/venues.json': InteriorsFileSchema,
   'homes/finishes.json': FinishesFileSchema,
   'homes/engine.derived.json': HomeEngineTablesSchema,
   'homes/neighborhoods.json': NeighborhoodsFileSchema,

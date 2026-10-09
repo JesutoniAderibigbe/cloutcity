@@ -18,7 +18,6 @@
  * - Anything new (another action, a tap) cancels what runs: a Sim in a pose gets up first.
  * - Under reduced motion every walk and pose change is a cut; holds still last their time.
  */
-import type { HomeIdLiteral } from '@/lib/data/homes'
 import type { SimData, SimPose, SimStep, Vec3 } from './simData'
 import {
   cellOf,
@@ -136,7 +135,8 @@ function routeLength(points: readonly P2[]): number {
 
 export interface SimControllerOptions {
   readonly data: SimData
-  readonly home: HomeIdLiteral
+  /** Whose fallback spots apply (`data.spots`): a home id, or a venue interior's id (S43). */
+  readonly home: string
   readonly world: SimWorld
   readonly start: Body
   /** The avatar's metres per rig unit (its height over the rig's). */
@@ -148,7 +148,7 @@ export interface SimControllerOptions {
 
 export class SimController {
   private readonly data: SimData
-  private home: HomeIdLiteral
+  private home: string
   private world: SimWorld
   private k: number
   private walkClipS: number
@@ -172,7 +172,7 @@ export class SimController {
     this.clip = this.standClip()
   }
 
-  setWorld(world: SimWorld, home: HomeIdLiteral): void {
+  setWorld(world: SimWorld, home: string): void {
     this.world = world
     this.home = home
   }
@@ -200,7 +200,10 @@ export class SimController {
     this.body = body
   }
 
-  /** Acts out home action `actionId` (balance.json `place.homeActions`), then gets up. */
+  /**
+   * Acts out action `actionId` (a home action, balance.json `place.homeActions`, or a venue
+   * action, data/interiors/venues.json), then gets up.
+   */
   perform(actionId: string): void {
     this.interrupt()
     const steps = this.data.actions.get(actionId) ?? [this.data.fallback]
@@ -545,7 +548,7 @@ export class SimController {
       }
     }
     for (const poseId of step.poses) {
-      const spot = this.data.spots[this.home].find((candidate) => candidate.pose === poseId)
+      const spot = (this.data.spots[this.home] ?? []).find((candidate) => candidate.pose === poseId)
       const placed = spot === undefined ? null : placeSpot(this.world, spot)
       if (placed !== null) {
         const best = this.bestOf([placed], origin)
