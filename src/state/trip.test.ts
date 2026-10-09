@@ -17,12 +17,9 @@ import {
   type ActiveTrip,
 } from './trip'
 
-const trip = (departMinute: number, arriveMinute: number): ActiveTrip => ({
-  id: 1,
-  destination: { kind: 'place', placeId: 'late-lantern-deli' },
-  mode: 'walk',
-  route: {
-    mode: 'walk',
+const trip = (departMinute: number, arriveMinute: number): ActiveTrip => {
+  const route = {
+    mode: 'walk' as const,
     from: { x: 0, y: 0 },
     to: { x: 1, y: 1 },
     legs: [],
@@ -31,12 +28,19 @@ const trip = (departMinute: number, arriveMinute: number): ActiveTrip => ({
     transfers: 0,
     walkedM: 0,
     rushHour: false,
-  },
-  departMinute,
-  arriveMinute,
-  durationMs: 3000,
-  startedAtMs: 0,
-})
+  }
+  return {
+    id: 1,
+    destination: { kind: 'place', placeId: 'late-lantern-deli' },
+    mode: 'walk',
+    route,
+    realRoute: route,
+    departMinute,
+    arriveMinute,
+    durationMs: 3000,
+    startedAtMs: 0,
+  }
+}
 
 describe('trip store', () => {
   it('the HUD clock counts up from departure to arrival with the animation', () => {

@@ -22,7 +22,7 @@
 import type { Hours, Venue } from '@/lib/data/schemas/content'
 import { applyAction, findAction, type ActionDef, type ActionError } from './actions'
 import { traitAdjustedAction } from './traits'
-import { boroughAccess, type BoroughAccess } from './boroughs'
+import { placeBoroughAccess, type BoroughAccess } from './boroughs'
 import { calendar, type Rollovers } from './clock'
 import {
   findCloutLevel,
@@ -38,7 +38,7 @@ import {
   flexAction,
   flexBase,
   flexLimit,
-  flexPlaceMultiplier,
+  flexMultiplierFor,
   performFlex,
   viralChance,
 } from './flex'
@@ -281,7 +281,7 @@ function flexOffer(
   snapshot: GameSnapshot,
   config: EngineConfig,
 ): Unblocked<PlaceAction> | null {
-  const placeMultiplier = flexPlaceMultiplier(place, config)
+  const placeMultiplier = flexMultiplierFor(place, levelClout(snapshot.player, config), config)
   if (placeMultiplier === null) return null
   const { player } = snapshot
   const gain = (viral: boolean) =>
@@ -358,7 +358,12 @@ export function placeActions(
   config: EngineConfig,
 ): PlaceView {
   if (!isVenue(place) && place.category === 'memorial') return { kind: 'look-only' }
-  const access = boroughAccess(place.borough, levelClout(snapshot.player, config), config)
+  const access = placeBoroughAccess(
+    place.id,
+    place.borough,
+    levelClout(snapshot.player, config),
+    config,
+  )
   const hours = placeHoursNow(place, snapshot, config)
   const unblocked = isVenue(place)
     ? venueActions(place, snapshot, config)
@@ -595,7 +600,12 @@ export function shopBlock(
   snapshot: GameSnapshot,
   config: EngineConfig,
 ): PlaceActionBlock | null {
-  const access = boroughAccess(place.borough, levelClout(snapshot.player, config), config)
+  const access = placeBoroughAccess(
+    place.id,
+    place.borough,
+    levelClout(snapshot.player, config),
+    config,
+  )
   if (access.status !== 'open') return { code: 'borough-locked', access }
   const hours = placeHoursNow(place, snapshot, config)
   if (hours.status === 'closed') return { code: 'closed', opensAt: hours.opensAt }

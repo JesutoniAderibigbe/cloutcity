@@ -25,8 +25,6 @@ import { setTravelAnimator, tripStore, type ActiveTrip } from '@/state/trip'
 import type { AvatarConfig } from '../avatar/buildAvatar'
 import { beginContinuous, endContinuous } from '../quality/continuity'
 import type { ScenePalette, TravelAnimation } from '../types'
-import type { GeoPin } from '../geo/schema'
-import { placeMoves, relocateRoute } from './relocateRoute'
 import { createTravelRunner } from './travelRunner'
 
 interface TravelAnimatorProps {
@@ -45,10 +43,11 @@ interface TravelAnimatorProps {
   /** The tier draws the trail (off on low unless the config allows it). */
   readonly trail: boolean
   /**
-   * The pins when the game map draws venues at compact points (S04n): trips start and end
-   * there. Null on the Real NYC style.
+   * True on the game map style: the avatar follows the trip as taken (S04s: trips plan to the
+   * game map's points); on the Real NYC style it follows the trip's drawing between the real
+   * points (src/state/tripDriver.ts `realRoute`).
    */
-  readonly pins: readonly GeoPin[] | null
+  readonly compact: boolean
 }
 
 export function TravelAnimator({
@@ -61,9 +60,8 @@ export function TravelAnimator({
   animation,
   enabled,
   trail,
-  pins,
+  compact,
 }: TravelAnimatorProps) {
-  const moves = useMemo(() => (pins === null ? [] : placeMoves(pins)), [pins])
   const get = useThree((state) => state.get)
   const invalidate = useThree((state) => state.invalidate)
   const scene = useThree((state) => state.scene)
@@ -101,7 +99,7 @@ export function TravelAnimator({
         return
       }
       if (runner.tripId !== trip.id) beginContinuous('travel')
-      runner.start(moves.length === 0 ? trip : { ...trip, route: relocateRoute(trip.route, moves) })
+      runner.start(compact ? trip : { ...trip, route: trip.realRoute })
       invalidate()
     }
     follow(tripStore.getState().active)
@@ -112,7 +110,7 @@ export function TravelAnimator({
       off()
       stop()
     }
-  }, [runner, avatarRef, invalidate, moves])
+  }, [runner, avatarRef, invalidate, compact])
 
   // The player's own gesture takes the camera back from the follow.
   useEffect(() => {

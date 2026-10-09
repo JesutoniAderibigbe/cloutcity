@@ -83,7 +83,7 @@ test.describe('Places panel', () => {
     )
     for (const [id, borough, key] of [
       ['brooklyn-bridge', 'brooklyn', 'boroughs.brooklyn.locked'],
-      ['times-square', 'manhattan', 'boroughs.manhattan.locked'],
+      ['central-park', 'manhattan', 'boroughs.manhattan.locked'],
     ] as const) {
       await expect(dialog.locator(`[data-place-button="${id}"]`)).toHaveAccessibleName(
         copyText('places.locked.label', {
@@ -92,6 +92,11 @@ test.describe('Places panel', () => {
         }),
       )
     }
+    // A famous-places ring landmark stands beside the Queens home on the game map, and trips go
+    // there on both styles (S04s): Queens gates it, so it is open.
+    await expect(dialog.locator('[data-place-button="times-square"]')).toHaveAccessibleName(
+      placeName('times-square'),
+    )
     await expect(dialog.locator('[data-place-button="bronx-ballpark"]')).toHaveAccessibleName(
       copyText('places.locked.label', {
         place: placeName('bronx-ballpark'),

@@ -8,7 +8,9 @@
  * 2. `startTrip` commits the trip to the save at once through the store (`commitTrip`, DEC-22):
  *    fare, clock, rent and location. Only then does the presentation start.
  * 3. The presentation (src/state/trip.ts) animates for at most `transit.animation.maxMs`, the HUD
- *    clock counting up through the trip, and the 3D map moves the avatar along the route. It
+ *    clock counting up through the trip, and the 3D map moves the avatar along the route: the
+ *    trip as taken on the game map, or a route between the real points on the Real NYC style
+ *    (S04s: trips plan to the game map's points on both styles, src/lib/world/tripEnds.ts). It
  *    cuts straight to the arrival when the player prefers reduced motion, the 3D map cannot
  *    animate (no WebGL, not drawn yet, a lost context), the apartment has the screen or the tab
  *    is hidden; Skip, and the tab being hidden mid-trip, cut too.
@@ -16,25 +18,29 @@
  *    trip did (time, fare, any delay, rent on the way), and a random event may fire there,
  *    except during the first-run tour and after a delayed train (one bad break is enough).
  */
+import { calendar } from '@/engine/clock'
 import { engineConfig } from '@/engine/config'
 import type { EventContext } from '@/engine/events'
 import type { GameSnapshot } from '@/engine/game'
 import { transitConfig } from '@/engine/transit/config'
-import type { Route, TravelMode } from '@/engine/transit/plan'
+import { planTrip, type Route, type TravelMode } from '@/engine/transit/plan'
 import { createTimeline } from '@/engine/transit/timeline'
 import {
+  planDirect,
   takeTrip,
   tripOptions,
   type TripError,
   type TripOption,
   type TripResult,
 } from '@/engine/transit/trip'
+import type { LocalPoint } from '@/lib/geo/projection'
 import type { TripEnd } from '@/lib/world/tripEnds'
 import { log } from '@/lib/log'
 import { openPlace } from './placeSheet'
 import { sceneFocusStore } from './sceneFocus'
 import { gameStore } from './store'
 import { spotId, tripStore, type ActiveTrip, type PlayerSpot } from './trip'
+import type { TransitWorld } from '@/engine/transit/world'
 import { ensureTransitWorld, transitWorldStore, type TransitWorldStatus } from './transitWorld'
 
 export interface TripPlan {
@@ -98,20 +104,63 @@ function shouldCut(): boolean {
   )
 }
 
-/** The route as animated: from the avatar's resting point and on to the destination's. */
-function animatedRoute(route: Route, plan: TripPlan): Route {
+/** The route as animated: from the avatar's resting point `from` and on to `to`. */
+function animatedRoute(route: Route, from: LocalPoint, to: LocalPoint): Route {
   const legs = route.legs.map((leg, index) => {
     const first = index === 0
     const last = index === route.legs.length - 1
     if (!first && !last) return leg
     const points = leg.polyline.length > 0 ? [...leg.polyline] : [leg.from, leg.to]
-    if (first) points.unshift(plan.from.rest)
-    if (last) points.push(plan.to.rest)
+    if (first) points.unshift(from)
+    if (last) points.push(to)
     return { ...leg, polyline: points }
   })
   // The animation ends (and a cut or Skip lands the avatar) where it rests, not on the route's
   // end point (a landmark's approach).
-  return { ...route, from: plan.from.rest, to: plan.to.rest, legs }
+  return { ...route, from, to, legs }
+}
+
+const samePoint = (a: LocalPoint, b: LocalPoint) => a.x === b.x && a.y === b.y
+
+/**
+ * The trip as the Real NYC style draws it (S04s). The trip itself was planned to the game map's
+ * points (its time, fare and energy are what the save holds); where an end stands elsewhere in
+ * the real city the drawing follows a route between the real points instead: the same mode,
+ * else a taxi (bridges and tunnels reach any island approach), else a straight line. It plays
+ * over the trip's own game minutes, so the HUD clock and the arrival match the trip as taken.
+ */
+export function realDrawnRoute(
+  route: Route,
+  plan: TripPlan,
+  minuteOfDay: number,
+  world: TransitWorld | null,
+): Route {
+  const moved =
+    !samePoint(plan.from.stop.point, plan.from.real.point) ||
+    !samePoint(plan.to.stop.point, plan.to.real.point)
+  if (!moved) return animatedRoute(route, plan.from.real.rest, plan.to.real.rest)
+  const from = plan.from.real.point
+  const to = plan.to.real.point
+  const planners =
+    world === null
+      ? []
+      : [route.mode, 'taxi' as const].map(
+          (mode) => () => planTrip(from, to, mode, { config: transitConfig, minuteOfDay, world }),
+        )
+  planners.push(() => planDirect(from, to, minuteOfDay, transitConfig))
+  let drawn = route
+  for (const planner of planners) {
+    const planned = planner()
+    if (planned.ok) {
+      drawn = planned.route
+      break
+    }
+  }
+  return animatedRoute(
+    { ...drawn, durationMin: route.durationMin },
+    plan.from.real.rest,
+    plan.to.real.rest,
+  )
 }
 
 let tripCount = 0
@@ -207,7 +256,7 @@ export function startTrip(plan: TripPlan, mode: TravelMode): StartTripResult {
 
   const id = ++tripCount
   const destination = result.to
-  const animated = animatedRoute(result.route, plan)
+  const animated = animatedRoute(result.route, plan.from.rest, plan.to.rest)
   const cut = shouldCut()
   const durationMs = cut
     ? 0
@@ -218,6 +267,12 @@ export function startTrip(plan: TripPlan, mode: TravelMode): StartTripResult {
     destination,
     mode,
     route: animated,
+    realRoute: realDrawnRoute(
+      result.route,
+      plan,
+      calendar(departMinute, engineConfig).minuteOfDay,
+      route.world,
+    ),
     departMinute,
     arriveMinute: result.snapshot.clock.minute,
     durationMs,

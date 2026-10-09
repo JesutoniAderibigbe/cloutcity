@@ -14,7 +14,8 @@
  */
 import { applyAction, type ActionDef, type ActionError, type ActionResult } from './actions'
 import { calendar } from './clock'
-import { recordClout, styleScore, type LevelUp } from './clout'
+import { boroughAccess } from './boroughs'
+import { levelClout, recordClout, styleScore, type LevelUp } from './clout'
 import type { EngineConfig } from './config'
 import type { GameSnapshot, PlayerState } from './game'
 import { placeAllows, type Place } from './places'
@@ -48,6 +49,25 @@ export function flexPlaceMultiplier(place: Place, config: EngineConfig): number 
   return config.clout.flex.venueTypes.includes(place.type)
     ? config.place.flexMultiplier.default
     : null
+}
+
+/**
+ * The multiplier a flex at `place` gets for a player with `clout` (their `levelClout`): the
+ * place's own (`flexPlaceMultiplier`), except at a famous-places ring landmark (S04s,
+ * `config.gates`) whose own borough has not opened to the player yet, which counts as the
+ * default. The ring brings the landmark to the start home, not its bonus: the Manhattan
+ * statue's x2 is still a reward for making it to Manhattan, so early clout keeps its pace.
+ */
+export function flexMultiplierFor(
+  place: Place,
+  clout: number,
+  config: EngineConfig,
+): number | null {
+  const multiplier = flexPlaceMultiplier(place, config)
+  if (multiplier === null || !config.gates.has(place.id)) return multiplier
+  return boroughAccess(place.borough, clout, config).status === 'open'
+    ? multiplier
+    : Math.min(multiplier, config.place.flexMultiplier.default)
 }
 
 /** The chance (0..maxChance) a flex goes viral for this style score at this place. */
@@ -122,7 +142,7 @@ export function performFlex(
   place: Place,
   config: EngineConfig,
 ): FlexResult {
-  const placeMultiplier = flexPlaceMultiplier(place, config)
+  const placeMultiplier = flexMultiplierFor(place, levelClout(snapshot.player, config), config)
   if (placeMultiplier === null) {
     return { ok: false, error: { code: 'FLEX_NOT_ALLOWED', placeId: place.id } }
   }

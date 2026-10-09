@@ -19,8 +19,11 @@ const perf = readJson<{ programsMax: Record<'low' | 'mid' | 'high', number> }>(
   'data/config/perf.json',
 )
 
-/** About 2.6 km on foot from the Queens home: a full-length animation. */
-const FAR = 'glowmatic'
+/**
+ * Two hours on foot from the Queens home (a Queens park the game map leaves where it is; the
+ * compact venues are a few minutes' walk, S04s): a full-length animation.
+ */
+const FAR = 'flushing-meadows'
 
 async function boot(page: Page): Promise<void> {
   await page.addInitScript(() => {

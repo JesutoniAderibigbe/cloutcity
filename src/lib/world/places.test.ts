@@ -89,10 +89,12 @@ describe('gating places', () => {
 })
 
 describe('accessible names explain the lock', () => {
-  // Memorials are never locked (DEC-46), so they are left out here; see below.
+  // Memorials are never locked (DEC-46), and the famous-places ring stands beside the Queens
+  // home (S04s, gated by Queens), so both are left out here; see below.
   const locked = mapPlaces().filter(
     (entry) =>
       (entry.borough === 'brooklyn' || entry.borough === 'manhattan') &&
+      !engineConfig.gates.has(entry.id) &&
       entry.category !== 'memorial',
   )
 
@@ -180,7 +182,7 @@ describe('accessible names at and around the unlock level', () => {
     (_pack, copy) => {
       for (const entry of mapPlaces()) {
         if (entry.borough !== 'brooklyn' && entry.borough !== 'manhattan') continue
-        if (entry.category === 'memorial') continue
+        if (entry.category === 'memorial' || engineConfig.gates.has(entry.id)) continue
         const threshold = minClout(unlock[entry.borough])
         const plain = placeName(entry, { copy })
         const open = placeAccessibleName(entry, placeAccess(entry, threshold), { copy })

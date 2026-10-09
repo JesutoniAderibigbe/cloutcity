@@ -5,9 +5,9 @@
  * (CompactLayoutConfigSchema) for the rules. Pure and deterministic: the server plans it once,
  * from the same data every time, into the places layer (placesLayer.ts `gx`/`gy`).
  *
- * Only where things are drawn on the game map moves. Travel time, fares and every distance the
- * game computes stay on real positions (src/engine/transit), so balance is the same on both map
- * styles.
+ * Trips match the map (S04s): on both map styles, travel plans to these points
+ * (data/places/game-points.derived.json, src/lib/world/tripEnds.ts), so the trip times on offer
+ * are the ones the game map shows and the style can never change a trip's cost.
  */
 import type { CompactLayoutConfig } from '@/lib/data/schemas/scene'
 import type { PreparedArea } from '@/lib/geo/lookup'

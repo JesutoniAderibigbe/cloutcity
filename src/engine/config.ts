@@ -12,6 +12,7 @@ import avatarEngineJson from '@data/avatar/engine.derived.json'
 import balanceJson from '@data/config/balance.json'
 import progressionJson from '@data/config/progression.json'
 import eventsJson from '@data/events/events.json'
+import gatesJson from '@data/places/game-gates.derived.json'
 import homesJson from '@data/homes/engine.derived.json'
 import itemsJson from '@data/items/items.json'
 import landmarksJson from '@data/landmarks/landmarks.json'
@@ -116,6 +117,12 @@ export interface EngineConfig {
    * judges place rules (memorials, government buildings) on this, never on what a caller says.
    */
   readonly places: ReadonlyMap<string, LocationCategory>
+  /**
+   * The borough that gates a place the game map stands in another borough (S04s: the
+   * famous-places ring, data/places/game-gates.derived.json), by id. Trips on both map styles
+   * plan to the game map's points, so such a place is reached, and gated, where it is drawn.
+   */
+  readonly gates: ReadonlyMap<string, Borough>
   /** Goals and their rewards (src/engine/goals.ts), in display order. */
   readonly goals: readonly GoalDef[]
   /** How grants are capped and how many records the save keeps (src/engine/grants.ts). */
@@ -380,6 +387,7 @@ export const engineConfig: EngineConfig = {
   // JSON imports widen string unions to `string`; data.test.ts validates the file itself.
   events: { ...balanceJson.events, catalog: eventsJson.events as readonly GameEvent[] },
   places: placeCategories(landmarksJson.landmarks, venuesJson.venues),
+  gates: new Map(Object.entries(gatesJson.gates as Readonly<Record<string, Borough>>)),
   place: balanceJson.place,
   goals: progression.goals,
   grants: progression.grants,

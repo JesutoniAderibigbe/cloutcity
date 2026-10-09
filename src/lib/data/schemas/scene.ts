@@ -1268,8 +1268,9 @@ export const PlotsConfigSchema = z.strictObject({
  * plot stays wholly inside its area, off parks, clear of the subway ribbons and landmark models,
  * and never overlaps another (the grid's gap between plots is the road). Homes and fixed venues
  * never move; landmarks move only into the famous-places ring (`landmarkRing`, S07d). The server plans it (src/lib/world/compactLayout.ts) into the places
- * layer's `gx`/`gy`; the Real NYC style keeps every real position. Travel time, fares and
- * distances always use the real positions.
+ * layer's `gx`/`gy`; the Real NYC style draws every real position. Trips plan to the game map's
+ * positions on both styles (S04s, data/places/game-points.derived.json), so the style never
+ * changes a trip's time or fare.
  */
 export const CompactLayoutConfigSchema = z.strictObject({
   /**
@@ -1305,8 +1306,9 @@ export const CompactLayoutConfigSchema = z.strictObject({
    * cluster (src/lib/world/landmarkRing.ts), so the default view shows them beside the venues,
    * the way a game map shows its sights. Each goes the nearest fitting spot out from the
    * cluster's centre along its bearing (swept either side by `sweepDeg`): wholly on the home's
-   * borough, off parks, clear of every plot, subway ribbon and other landmark. Real NYC keeps
-   * the real positions, and travel always uses them.
+   * borough, off parks, clear of every plot, subway ribbon and other landmark. Real NYC draws
+   * the real positions; trips on both styles go to the ring spot, gated by the home's borough
+   * (S04s, data/places/game-gates.derived.json).
    */
   landmarkRing: z
     .strictObject({

@@ -45,9 +45,19 @@ export function boroughAccess(
 }
 
 /**
- * Whether a player with `clout` may go to the place with `placeId` in `borough`: its borough's
- * access, except that a memorial is open to everyone (DEC-46: a memorial is never locked behind
- * clout or held out as a reward). The category comes from `config.places`, never the caller.
+ * The borough that gates the place with `placeId`, whose data borough is `borough`: where the
+ * game map stands it (`config.gates`, S04s: a famous-places ring landmark is drawn, and reached,
+ * beside the start home), else its own. From config, never the caller.
+ */
+export function placeGateBorough(placeId: string, borough: Borough, config: EngineConfig): Borough {
+  return config.gates.get(placeId) ?? borough
+}
+
+/**
+ * Whether a player with `clout` may go to the place with `placeId` in `borough`: its gate
+ * borough's access (`placeGateBorough`), except that a memorial is open to everyone (DEC-46: a
+ * memorial is never locked behind clout or held out as a reward). The category comes from
+ * `config.places`, never the caller.
  */
 export function placeBoroughAccess(
   placeId: string,
@@ -56,7 +66,7 @@ export function placeBoroughAccess(
   config: EngineConfig,
 ): BoroughAccess {
   if (config.places.get(placeId) === 'memorial') return { status: 'open' }
-  return boroughAccess(borough, clout, config)
+  return boroughAccess(placeGateBorough(placeId, borough, config), clout, config)
 }
 
 /** `boroughAccess` for every borough. */

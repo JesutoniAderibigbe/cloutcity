@@ -50,8 +50,9 @@ export interface PlacePin {
    */
   readonly badge?: true
   /**
-   * Where the venue stands on the game map style (S04n, compactLayout.ts), local metres; omitted
-   * when it stands at its real point there too. Never used for travel or distances.
+   * Where the place stands on the game map style (S04n, compactLayout.ts; S07d, the ring),
+   * local metres; omitted when it stands at its real point there too. Trips plan to it on both
+   * styles (S04s, data/places/game-points.derived.json, kept equal by gameTrips-derived.test.ts).
    */
   readonly gx?: number
   readonly gy?: number

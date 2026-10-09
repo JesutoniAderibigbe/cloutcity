@@ -348,6 +348,8 @@ describe('borough gating of every real place', () => {
     const snapshot = snapshotAt(NOON, { clout: 0 })
     let checked = 0
     for (const entry of allPlaces) {
+      // A famous-places ring landmark is gated where the game map draws it (S04s): below.
+      if (engineConfig.gates.has(entry.id)) continue
       const access = boroughAccess(entry.borough, 0, engineConfig)
       if (access.status === 'open') continue
       const reason = boroughClosedReason(entry.borough, access, plain)
@@ -367,6 +369,28 @@ describe('borough gating of every real place', () => {
     }
     // Brooklyn and Manhattan places, plus the teaser boroughs' landmarks.
     expect(checked).toBeGreaterThan(10)
+  })
+
+  it('a ring landmark is open from clout 0 (S04s); its flex bonus waits for its own borough', () => {
+    const statue = allPlaces.find((entry) => entry.id === 'statue-of-liberty')
+    if (statue === undefined) throw new Error('no statue')
+    expect(engineConfig.gates.get(statue.id)).toBe('queens')
+    const bonus = engineConfig.place.flexMultiplier.byLandmark['statue-of-liberty']
+    expect(bonus).toBeGreaterThan(engineConfig.place.flexMultiplier.default)
+    const flexAt = (clout: number) =>
+      actionsAt(statue.id, snapshotAt(NOON, { clout })).find((action) => action.kind === 'flex')
+    const early = flexAt(0)
+    expect(early?.block).toBeNull()
+    expect(early?.kind === 'flex' && early.placeMultiplier).toBe(
+      engineConfig.place.flexMultiplier.default,
+    )
+    const manhattan = engineConfig.boroughs.manhattan
+    const opens =
+      manhattan.access === 'clout'
+        ? (findCloutLevel(manhattan.level, engineConfig)?.minClout ?? 0)
+        : 0
+    const later = flexAt(opens)
+    expect(later?.kind === 'flex' && later.placeMultiplier).toBe(bonus)
   })
 
   it('teaser boroughs stay closed at any clout, with their teaser as the reason', () => {
