@@ -9,7 +9,12 @@
     "barber": "barber",
     "salon": "salon",
     "boutique": "boutique",
-    "thrift": "thrift"
+    "thrift": "thrift",
+    "gym": "gym",
+    "park": "park",
+    "studio": "studio"
   },
-  "byVenue": {}
+  "byVenue": {
+    "southpaw-social": "boxing"
+  }
 }

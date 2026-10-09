@@ -565,6 +565,11 @@ const INTERIOR_LOADERS: Readonly<Record<string, () => Promise<{ default: unknown
   salon: () => import('@data/interiors/venues/salon.json'),
   boutique: () => import('@data/interiors/venues/boutique.json'),
   thrift: () => import('@data/interiors/venues/thrift.json'),
+  // S43b: fitness and fun
+  gym: () => import('@data/interiors/venues/gym.json'),
+  boxing: () => import('@data/interiors/venues/boxing.json'),
+  park: () => import('@data/interiors/venues/park.json'),
+  studio: () => import('@data/interiors/venues/studio.json'),
 }
 
 /** Every interior id with a data file. */
