@@ -32,7 +32,8 @@ import { placePlayers, type PlacementConfig } from '@/lib/world/playerPlacement'
 import type { MapPlayer } from '@/state/presence'
 import { kitMeshes, type KitMeshes } from '../ambient/layer'
 import type { AnimatedKit } from '../ambient/pedestrianKits'
-import { farFade, flatNormals } from '../ambient/townsfolk'
+import { flatNormals } from '../ambient/flatNormals'
+import { farFade } from '../ambient/townsfolk'
 import { LOOK_BODIES, lookColours } from './lookColors'
 
 export interface PlayersLayerOptions {
